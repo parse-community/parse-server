@@ -1,7 +1,7 @@
 const mongodb = require('mongodb');
 const Collection = mongodb.Collection;
 
-export default class MongoCollection {
+class MongoCollection {
   _mongoCollection:Collection;
 
   constructor(mongoCollection:Collection) {
@@ -107,3 +107,5 @@ export default class MongoCollection {
     return this._mongoCollection.drop();
   }
 }
+
+module.exports = { MongoCollection };

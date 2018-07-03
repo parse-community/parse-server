@@ -1,8 +1,8 @@
-import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
-import * as middleware from '../middlewares';
+const { ClassesRouter } = require('./ClassesRouter');
+const rest = require('../rest');
+const  middleware = require('../middlewares');
 
-export class AudiencesRouter extends ClassesRouter {
+class AudiencesRouter extends ClassesRouter {
 
   className() {
     return '_Audience';
@@ -41,4 +41,4 @@ export class AudiencesRouter extends ClassesRouter {
   }
 }
 
-export default AudiencesRouter;
+module.exports = { AudiencesRouter };

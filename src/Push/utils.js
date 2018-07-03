@@ -1,7 +1,7 @@
-import Parse    from 'parse/node';
-import deepcopy from 'deepcopy';
+const Parse    = require('parse/node');
+const deepcopy = require('deepcopy');
 
-export function isPushIncrementing(body) {
+function isPushIncrementing(body) {
   return body.data &&
          body.data.badge &&
          typeof body.data.badge == 'string' &&
@@ -10,7 +10,7 @@ export function isPushIncrementing(body) {
 
 const localizableKeys = ['alert', 'title'];
 
-export function getLocalesFromPush(body) {
+function getLocalesFromPush(body) {
   const data = body.data;
   if (!data) {
     return [];
@@ -25,7 +25,7 @@ export function getLocalesFromPush(body) {
   }, []))];
 }
 
-export function transformPushBodyForLocale(body, locale) {
+function transformPushBodyForLocale(body, locale) {
   const data = body.data;
   if (!data) {
     return body;
@@ -40,7 +40,7 @@ export function transformPushBodyForLocale(body, locale) {
   return stripLocalesFromBody(body);
 }
 
-export function stripLocalesFromBody(body) {
+function stripLocalesFromBody(body) {
   if (!body.data) { return body; }
   Object.keys(body.data).forEach((key) => {
     localizableKeys.forEach((localizableKey) => {
@@ -52,7 +52,7 @@ export function stripLocalesFromBody(body) {
   return body;
 }
 
-export function bodiesPerLocales(body, locales = []) {
+function bodiesPerLocales(body, locales = []) {
   // Get all tranformed bodies for each locale
   const result = locales.reduce((memo, locale) => {
     memo[locale] = transformPushBodyForLocale(body, locale);
@@ -63,7 +63,7 @@ export function bodiesPerLocales(body, locales = []) {
   return result;
 }
 
-export function groupByLocaleIdentifier(installations, locales = []) {
+function groupByLocaleIdentifier(installations, locales = []) {
   return installations.reduce((map, installation) => {
     let added = false;
     locales.forEach((locale) => {
@@ -88,7 +88,7 @@ export function groupByLocaleIdentifier(installations, locales = []) {
  * @param {Object} where A query condition
  * @param {Array} validPushTypes An array of valid push types(string)
  */
-export function validatePushType(where = {}, validPushTypes = []) {
+function validatePushType(where = {}, validPushTypes = []) {
   var deviceTypeField = where.deviceType || {};
   var deviceTypes = [];
   if (typeof deviceTypeField === 'string') {
@@ -105,10 +105,21 @@ export function validatePushType(where = {}, validPushTypes = []) {
   }
 }
 
-export function applyDeviceTokenExists(where) {
+function applyDeviceTokenExists(where) {
   where = deepcopy(where);
   if (!where.hasOwnProperty('deviceToken')) {
     where['deviceToken'] = {'$exists': true};
   }
   return where;
+}
+
+module.exports = {
+  isPushIncrementing,
+  getLocalesFromPush,
+  bodiesPerLocales,
+  groupByLocaleIdentifier,
+  stripLocalesFromBody,
+  validatePushType,
+  applyDeviceTokenExists,
+  transformPushBodyForLocale,
 }

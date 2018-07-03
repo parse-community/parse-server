@@ -1,13 +1,13 @@
 /** @flow weak */
 
-import * as triggers        from "../triggers";
+const  triggers        = require("../triggers");
 // @flow-disable-next
-import * as Parse           from "parse/node";
+const  Parse           = require("parse/node");
 // @flow-disable-next
-import * as request         from "request";
-import { logger }           from '../logger';
-import http                 from 'http';
-import https                from 'https';
+const  request         = require("request");
+const { logger }           = require('../logger');
+const http                 = require('http');
+const https                = require('https');
 
 const DefaultHooksCollectionName = "_Hooks";
 const HTTPAgents = {
@@ -15,7 +15,7 @@ const HTTPAgents = {
   https: new https.Agent({ keepAlive: true }),
 }
 
-export class HooksController {
+class HooksController {
   _applicationId:string;
   _webhookKey:string;
   database: any;
@@ -230,4 +230,4 @@ function wrapToHTTPRequest(hook, key) {
   }
 }
 
-export default HooksController;
+module.exports = { HooksController };

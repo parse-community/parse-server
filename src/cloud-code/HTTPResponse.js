@@ -1,5 +1,5 @@
 
-export default class HTTPResponse {
+class HTTPResponse {
   constructor(response, body) {
     let _text, _data;
     this.status = response.statusCode;
@@ -47,3 +47,5 @@ export default class HTTPResponse {
     });
   }
 }
+
+module.exports = HTTPResponse;

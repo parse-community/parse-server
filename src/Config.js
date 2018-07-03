@@ -2,10 +2,10 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
-import AppCache from './cache';
-import SchemaCache from './Controllers/SchemaCache';
-import DatabaseController from './Controllers/DatabaseController';
-import net from 'net';
+const { AppCache } = require('./cache');
+const { SchemaCache } = require('./Controllers/SchemaCache');
+const DatabaseController = require('./Controllers/DatabaseController');
+const net = require('net');
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -17,7 +17,7 @@ function removeTrailingSlash(str) {
   return str;
 }
 
-export class Config {
+class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
@@ -271,5 +271,5 @@ export class Config {
   }
 }
 
-export default Config;
+module.exports = { Config };
 module.exports = Config;

@@ -1,13 +1,13 @@
 // FilesController.js
-import { randomHexString } from '../cryptoUtils';
-import AdaptableController from './AdaptableController';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import path  from 'path';
-import mime from 'mime';
+const { randomHexString } = require('../cryptoUtils');
+const { AdaptableController } = require('./AdaptableController');
+const { FilesAdapter } = require('../Adapters/Files/FilesAdapter');
+const path  = require('path');
+const mime = require('mime');
 
 const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
 
-export class FilesController extends AdaptableController {
+class FilesController extends AdaptableController {
 
   getFileData(config, filename) {
     return this.adapter.getFileData(filename);
@@ -87,4 +87,4 @@ export class FilesController extends AdaptableController {
   }
 }
 
-export default FilesController;
+module.exports = { FilesController };

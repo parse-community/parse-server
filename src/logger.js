@@ -1,7 +1,7 @@
 'use strict';
-import defaults from './defaults';
-import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
-import { LoggerController }     from './Controllers/LoggerController';
+const defaults = require('./defaults');
+const { WinstonLoggerAdapter } = require('./Adapters/Logger/WinstonLoggerAdapter');
+const { LoggerController }     = require('./Controllers/LoggerController');
 
 function defaultLogger() {
   const options = {
@@ -15,20 +15,31 @@ function defaultLogger() {
 
 let logger = defaultLogger();
 
-export function setLogger(aLogger) {
+function setLogger(aLogger) {
   logger = aLogger;
 }
 
-export function getLogger() {
+function getLogger() {
   return logger;
 }
 
+// Object.defineProperty(module, 'exports', {
+//   get: getLogger
+// });
+
 // for: `import logger from './logger'`
-Object.defineProperty(module.exports, 'default', {
+// Object.defineProperty(module.exports, 'default', {
+//   get: getLogger
+// });
+module.exports = {
+  setLogger,
+  getLogger,
+};
+// // for: `import { logger } from './logger'`
+Object.defineProperty(module.exports, 'logger', {
   get: getLogger
 });
 
-// for: `import { logger } from './logger'`
-Object.defineProperty(module.exports, 'logger', {
+Object.defineProperty(exports, 'logger', {
   get: getLogger
 });

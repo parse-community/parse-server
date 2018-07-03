@@ -1,12 +1,12 @@
 
-import PromiseRouter from '../PromiseRouter';
-import rest          from '../rest';
-import _             from 'lodash';
-import Parse         from 'parse/node';
+const { PromiseRouter } = require('../PromiseRouter');
+const rest          = require('../rest');
+const _             = require('lodash');
+const Parse         = require('parse/node');
 
 const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 
-export class ClassesRouter extends PromiseRouter {
+class ClassesRouter extends PromiseRouter {
 
   className(req) {
     return req.params.className;
@@ -143,4 +143,4 @@ export class ClassesRouter extends PromiseRouter {
   }
 }
 
-export default ClassesRouter;
+module.exports = { ClassesRouter };

@@ -1,9 +1,9 @@
-import winston from 'winston';
-import fs from 'fs';
-import path from 'path';
-import DailyRotateFile from 'winston-daily-rotate-file';
-import _ from 'lodash';
-import defaults  from '../../defaults';
+const winston = require('winston');
+const fs = require('fs');
+const path = require('path');
+const DailyRotateFile = require('winston-daily-rotate-file');
+const _ = require('lodash');
+const defaults  = require('../../defaults');
 
 const logger = new winston.Logger();
 const additionalTransports = [];
@@ -45,7 +45,7 @@ function updateTransports(options) {
   });
 }
 
-export function configureLogger({
+function configureLogger({
   logsFolder = defaults.logsFolder,
   jsonLogs = defaults.jsonLogs,
   logLevel = winston.level,
@@ -78,12 +78,12 @@ export function configureLogger({
   updateTransports(options);
 }
 
-export function addTransport(transport) {
+function addTransport(transport) {
   additionalTransports.push(transport);
   updateTransports();
 }
 
-export function removeTransport(transport) {
+function removeTransport(transport) {
   const transportName = typeof transport == 'string' ? transport : transport.name;
   const transports = Object.assign({}, logger.transports);
   delete transports[transportName];
@@ -95,5 +95,4 @@ export function removeTransport(transport) {
   });
 }
 
-export { logger };
-export default logger;
+module.exports = { logger, configureLogger, addTransport, removeTransport };

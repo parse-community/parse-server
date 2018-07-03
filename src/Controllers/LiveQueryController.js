@@ -1,6 +1,6 @@
-import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
-import { LiveQueryOptions } from '../Options';
-export class LiveQueryController {
+const { ParseCloudCodePublisher } = require('../LiveQuery/ParseCloudCodePublisher');
+const { LiveQueryOptions } = require('../Options');
+class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;
 
@@ -47,4 +47,4 @@ export class LiveQueryController {
   }
 }
 
-export default LiveQueryController;
+module.exports = { LiveQueryController };

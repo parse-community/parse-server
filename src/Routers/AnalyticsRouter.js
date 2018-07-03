@@ -1,5 +1,5 @@
 // AnalyticsRouter.js
-import PromiseRouter from '../PromiseRouter';
+const { PromiseRouter } = require('../PromiseRouter');
 
 function appOpened(req) {
   const analyticsController = req.config.analyticsController;
@@ -12,9 +12,11 @@ function trackEvent(req) {
 }
 
 
-export class AnalyticsRouter extends PromiseRouter {
+class AnalyticsRouter extends PromiseRouter {
   mountRoutes() {
     this.route('POST','/events/AppOpened', appOpened);
     this.route('POST','/events/:eventName', trackEvent);
   }
 }
+
+module.exports = { AnalyticsRouter };

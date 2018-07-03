@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: "off"*/
-export class AnalyticsAdapter {
+class AnalyticsAdapter {
 
   /*
   @param parameters: the analytics request body, analytics info will be in the dimensions property
@@ -19,4 +19,4 @@ export class AnalyticsAdapter {
   }
 }
 
-export default AnalyticsAdapter;
+module.exports = { AnalyticsAdapter };

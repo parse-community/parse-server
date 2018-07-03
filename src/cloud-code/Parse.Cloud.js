@@ -1,5 +1,5 @@
-import { Parse }     from 'parse/node';
-import * as triggers from '../triggers';
+const { Parse }     = require('parse/node');
+const  triggers = require('../triggers');
 
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {

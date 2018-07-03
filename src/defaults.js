@@ -1,4 +1,4 @@
-import { nullParser } from './Options/parsers';
+const { nullParser } = require('./Options/parsers');
 const { ParseServerOptions } = require('./Options/Definitions');
 const logsFolder = (() => {
   let folder = './logs/';
@@ -32,5 +32,5 @@ const computedDefaults = {
   level,
 }
 
-export default Object.assign({}, DefinitionDefaults, computedDefaults);
+module.exports = Object.assign({}, DefinitionDefaults, computedDefaults);
 export const DefaultMongoURI = DefinitionDefaults.databaseURI;

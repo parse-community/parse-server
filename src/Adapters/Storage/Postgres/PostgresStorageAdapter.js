@@ -1,10 +1,10 @@
 // @flow
-import { createClient } from './PostgresClient';
+const { createClient } = require('./PostgresClient');
 // @flow-disable-next
-import Parse            from 'parse/node';
+const Parse            = require('parse/node');
 // @flow-disable-next
-import _                from 'lodash';
-import sql              from './sql';
+const _                = require('lodash');
+const sql              = require('./sql');
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -685,7 +685,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
   return { pattern: patterns.join(' AND '), values, sorts };
 }
 
-export class PostgresStorageAdapter implements StorageAdapter {
+class PostgresStorageAdapter implements StorageAdapter {
 
   canSortOnJoinTables: boolean;
 
@@ -2023,4 +2023,4 @@ var GeoPointCoder = {
   }
 };
 
-export default PostgresStorageAdapter;
+module.exports = { PostgresStorageAdapter };

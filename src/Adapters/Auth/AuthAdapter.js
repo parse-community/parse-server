@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: "off"*/
-export class AuthAdapter {
+class AuthAdapter {
 
   /*
   @param appIds: the specified app ids in the configuration
@@ -19,4 +19,4 @@ export class AuthAdapter {
   }
 }
 
-export default AuthAdapter;
+module.exports = { AuthAdapter };

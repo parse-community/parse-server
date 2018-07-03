@@ -7,11 +7,11 @@
  */
 
 // @flow-disable-next
-import { MongoClient, GridStore, Db} from 'mongodb';
-import { FilesAdapter }              from './FilesAdapter';
-import defaults                      from '../../defaults';
+const { MongoClient, GridStore, Db} = require('mongodb');
+const { FilesAdapter }              = require('./FilesAdapter');
+const defaults                      = require('../../defaults');
 
-export class GridStoreAdapter extends FilesAdapter {
+class GridStoreAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
 
@@ -78,4 +78,4 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 }
 
-export default GridStoreAdapter;
+module.exports = { GridStoreAdapter };

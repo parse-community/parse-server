@@ -1,5 +1,5 @@
-import Config from "../src/Config";
-import {PushQueue} from "../src/Push/PushQueue";
+const Config = require("../src/Config");
+const { PushQueue } = require("../src/Push/PushQueue");
 
 describe('PushQueue', () => {
   describe('With a defined channel', () => {

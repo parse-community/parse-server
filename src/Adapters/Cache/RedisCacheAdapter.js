@@ -1,5 +1,5 @@
-import redis from 'redis';
-import logger from '../../logger';
+const redis = require('redis');
+const logger = require('../../logger');
 
 const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 
@@ -7,7 +7,7 @@ function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
-export class RedisCacheAdapter {
+class RedisCacheAdapter {
 
   constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
     this.client = redis.createClient(redisCtx);
@@ -81,4 +81,4 @@ export class RedisCacheAdapter {
   }
 }
 
-export default RedisCacheAdapter;
+module.exports = { RedisCacheAdapter };

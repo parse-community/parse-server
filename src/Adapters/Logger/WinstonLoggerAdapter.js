@@ -1,9 +1,9 @@
-import { LoggerAdapter } from './LoggerAdapter';
-import { logger, addTransport, configureLogger } from './WinstonLogger';
+const { LoggerAdapter } = require('./LoggerAdapter');
+const { logger, addTransport, configureLogger } = require('./WinstonLogger');
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
-export class WinstonLoggerAdapter extends LoggerAdapter {
+class WinstonLoggerAdapter extends LoggerAdapter {
   constructor(options) {
     super();
     if (options) {
@@ -59,4 +59,4 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
   }
 }
 
-export default WinstonLoggerAdapter;
+module.exports = { WinstonLoggerAdapter };

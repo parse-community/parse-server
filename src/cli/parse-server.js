@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
-import ParseServer from '../index';
-import definitions from './definitions/parse-server';
-import cluster from 'cluster';
-import os from 'os';
-import runner from './utils/runner';
+const ParseServer = require('../index');
+const definitions = require('./definitions/parse-server');
+const cluster = require('cluster');
+const os = require('os');
+const runner = require('./utils/runner');
 
 const help = function(){
   console.log('  Get Started guide:');

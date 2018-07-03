@@ -1,8 +1,8 @@
-import { version }     from '../../package.json';
-import PromiseRouter   from '../PromiseRouter';
-import * as middleware from "../middlewares";
+const { version }     = require('../../package.json');
+const { PromiseRouter } = require('../PromiseRouter');
+const  middleware = require("../middlewares");
 
-export class FeaturesRouter extends PromiseRouter {
+class FeaturesRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET','/serverInfo', middleware.promiseEnforceMasterKeyAccess, req => {
       const features = {
@@ -54,3 +54,5 @@ export class FeaturesRouter extends PromiseRouter {
     });
   }
 }
+
+module.exports = { FeaturesRouter };

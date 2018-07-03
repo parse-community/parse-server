@@ -1,4 +1,4 @@
-import redis from 'redis';
+const redis = require('redis');
 
 function createPublisher({redisURL}): any {
   return redis.createClient(redisURL, { no_ready_check: true });

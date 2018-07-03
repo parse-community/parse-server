@@ -1,7 +1,7 @@
-import LRU from 'lru-cache';
-import defaults  from '../../defaults';
+const LRU = require('lru-cache');
+const defaults  = require('../../defaults');
 
-export class LRUCache {
+class LRUCache {
   constructor({
     ttl = defaults.cacheTTL,
     maxSize = defaults.cacheMaxSize,
@@ -30,4 +30,4 @@ export class LRUCache {
 
 }
 
-export default LRUCache;
+module.exports = { LRUCache };

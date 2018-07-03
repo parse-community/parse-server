@@ -15,7 +15,7 @@
 
 import type { Config } from '../../Config'
 
-export class FilesAdapter {
+class FilesAdapter {
 
   /* Responsible for storing the file in order to be retrieved later by its filename
    *
@@ -54,4 +54,4 @@ export class FilesAdapter {
   getFileLocation(config: Config, filename: string): string { }
 }
 
-export default FilesAdapter;
+module.exports = { FilesAdapter, adapter: FilesAdapter };

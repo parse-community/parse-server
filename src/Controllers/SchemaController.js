@@ -16,8 +16,8 @@
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
 const Parse = require('parse/node').Parse;
-import { StorageAdapter }     from '../Adapters/Storage/StorageAdapter';
-import DatabaseController     from './DatabaseController';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+const DatabaseController     = require('./DatabaseController');
 import type {
   Schema,
   SchemaFields,
@@ -372,7 +372,7 @@ const typeToString = (type: SchemaField | string): string => {
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
-export default class SchemaController {
+class SchemaController {
   _dbAdapter: StorageAdapter;
   data: any;
   perms: any;
@@ -1094,7 +1094,7 @@ function getObjectType(obj): ?(SchemaField | string) {
   return 'Object';
 }
 
-export {
+module.exports = {
   load,
   classNameIsValid,
   fieldNameIsValid,

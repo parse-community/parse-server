@@ -1,7 +1,7 @@
 // This class handles the Account Lockout Policy settings.
-import Parse from 'parse/node';
+const Parse = require('parse/node');
 
-export class AccountLockout {
+class AccountLockout {
   constructor(user, config) {
     this._user = user;
     this._config = config;
@@ -151,4 +151,4 @@ export class AccountLockout {
 
 }
 
-export default AccountLockout;
+module.exports = { AccountLockout };

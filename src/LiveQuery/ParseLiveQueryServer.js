@@ -1,16 +1,16 @@
-import tv4 from 'tv4';
-import Parse from 'parse/node';
-import { Subscription } from './Subscription';
-import { Client } from './Client';
-import { ParseWebSocketServer } from './ParseWebSocketServer';
-import logger from '../logger';
-import RequestSchema from './RequestSchema';
-import { matchesQuery, queryHash } from './QueryTools';
-import { ParsePubSub } from './ParsePubSub';
-import { SessionTokenCache } from './SessionTokenCache';
-import _ from 'lodash';
-import uuid from 'uuid';
-import { runLiveQueryEventHandlers } from '../triggers';
+const tv4 = require('tv4');
+const Parse = require('parse/node');
+const { Subscription } = require('./Subscription');
+const { Client } = require('./Client');
+const { ParseWebSocketServer } = require('./ParseWebSocketServer');
+const logger = require('../logger').logger;
+const RequestSchema = require('./RequestSchema');
+const { matchesQuery, queryHash } = require('./QueryTools');
+const { ParsePubSub } = require('./ParsePubSub');
+const { SessionTokenCache } = require('./SessionTokenCache');
+const _ = require('lodash');
+const uuid = require('uuid');
+const { runLiveQueryEventHandlers } = require('../triggers');
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -573,6 +573,6 @@ class ParseLiveQueryServer {
   }
 }
 
-export {
+module.exports = {
   ParseLiveQueryServer
 }

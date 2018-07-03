@@ -13,7 +13,7 @@ describe('LoggerController', () => {
         expect(res.length).not.toBe(0);
         done();
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       })
     }).not.toThrow();
@@ -75,7 +75,7 @@ describe('LoggerController', () => {
         expect(res.length).toBe(0);
         done();
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         fail("should not fail");
         done();
       })

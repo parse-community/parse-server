@@ -240,7 +240,7 @@ describe('PushController', () => {
       }
       done()
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -311,7 +311,7 @@ describe('PushController', () => {
       }
       done()
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -656,7 +656,7 @@ describe('PushController', () => {
       expect(pushStatus.get('numSent')).toBe(3);
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

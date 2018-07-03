@@ -1,6 +1,6 @@
 const Parse = require('parse/node');
 const ParseLiveQueryServer = require('../src/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
-const ParseServer = require('../src/ParseServer').default;
+const ParseServer = require('../src/ParseServer').ParseServer;
 
 // Global mock info
 const queryHashValue = 'hash';

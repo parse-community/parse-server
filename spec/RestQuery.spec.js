@@ -199,7 +199,7 @@ describe('rest query', () => {
         });
       return Promise.all([p0, p1]);
     }).then(done).catch((err) => {
-      jfail(err);
+      done.fail(err);
       fail('should not fail');
       done();
     })

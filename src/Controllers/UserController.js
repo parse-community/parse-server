@@ -1,14 +1,14 @@
-import { randomString }    from '../cryptoUtils';
-import { inflate }         from '../triggers';
-import AdaptableController from './AdaptableController';
-import MailAdapter         from '../Adapters/Email/MailAdapter';
-import rest                from '../rest';
-import Parse               from 'parse/node';
+const { randomString }    = require('../cryptoUtils');
+const { inflate }         = require('../triggers');
+const { AdaptableController } = require('./AdaptableController');
+const { MailAdapter }     = require('../Adapters/Email/MailAdapter');
+const rest                = require('../rest');
+const Parse               = require('parse/node');
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
 
-export class UserController extends AdaptableController {
+class UserController extends AdaptableController {
 
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
@@ -252,4 +252,4 @@ function buildEmailLink(destination, username, token, config) {
   }
 }
 
-export default UserController;
+module.exports = { UserController };

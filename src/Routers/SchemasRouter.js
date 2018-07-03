@@ -3,8 +3,8 @@
 var Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
-import PromiseRouter   from '../PromiseRouter';
-import * as middleware from "../middlewares";
+const { PromiseRouter }   = require('../PromiseRouter');
+const  middleware = require("../middlewares");
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(
@@ -80,7 +80,7 @@ const deleteSchema = req => {
     .then(() => ({ response: {} }));
 }
 
-export class SchemasRouter extends PromiseRouter {
+class SchemasRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET', '/schemas', middleware.promiseEnforceMasterKeyAccess, getAllSchemas);
     this.route('GET', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, getOneSchema);
@@ -90,3 +90,5 @@ export class SchemasRouter extends PromiseRouter {
     this.route('DELETE', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, deleteSchema);
   }
 }
+
+module.exports = { SchemasRouter };

@@ -91,9 +91,6 @@ describe('verbose logs', () => {
             done();
           });
         });
-      }).catch((err) => {
-        fail(JSON.stringify(err));
-        done();
-      })
+      }).catch(done.fail);
   });
 });

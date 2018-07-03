@@ -1,7 +1,7 @@
-import { Parse } from 'parse/node';
-import AdaptableController from './AdaptableController';
-import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
-import url from 'url';
+const { Parse } = require('parse/node');
+const { AdaptableController } = require('./AdaptableController');
+const { LoggerAdapter } = require('../Adapters/Logger/LoggerAdapter');
+const url = require('url');
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 const LOG_STRING_TRUNCATE_LENGTH = 1000;
@@ -26,7 +26,7 @@ const logLevels = [
   'silly',
 ]
 
-export class LoggerController extends AdaptableController {
+class LoggerController extends AdaptableController {
 
   constructor(adapter, appId, options = {logLevel: 'info'}) {
     super(adapter, appId, options);
@@ -244,4 +244,4 @@ export class LoggerController extends AdaptableController {
   }
 }
 
-export default LoggerController;
+module.exports = { LoggerController };

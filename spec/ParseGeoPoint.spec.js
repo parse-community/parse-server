@@ -146,7 +146,7 @@ describe('Parse.GeoPoint testing', () => {
       done();
     }, (err) => {
       fail("Couldn't query GeoPoint");
-      jfail(err)
+      done.fail(err)
     });
   });
 

@@ -1,14 +1,14 @@
-import PromiseRouter from '../PromiseRouter';
-import Config from '../Config';
-import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import qs from 'querystring';
+const { PromiseRouter } = require('../PromiseRouter');
+const Config = require('../Config');
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const qs = require('querystring');
 
 const public_html = path.resolve(__dirname, "../../public_html");
 const views = path.resolve(__dirname, '../../views');
 
-export class PublicAPIRouter extends PromiseRouter {
+class PublicAPIRouter extends PromiseRouter {
 
   verifyEmail(req) {
     const { token, username } = req.query;
@@ -233,4 +233,4 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 }
 
-export default PublicAPIRouter;
+module.exports = { PublicAPIRouter };

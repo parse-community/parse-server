@@ -1,9 +1,9 @@
 /* @flow */
 
-import { randomBytes, createHash } from 'crypto';
+const { randomBytes, createHash } = require('crypto');
 
 // Returns a new random hex string of the given even size.
-export function randomHexString(size: number): string {
+function randomHexString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomHexString is useless.');
   }
@@ -19,7 +19,7 @@ export function randomHexString(size: number): string {
 // because chars length of 62 doesn't divide the number of all bytes
 // (256) evenly. Such bias is acceptable for most cases when the output
 // length is long enough and doesn't need to be uniform.
-export function randomString(size: number): string {
+function randomString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomString is useless.');
   }
@@ -35,15 +35,23 @@ export function randomString(size: number): string {
 }
 
 // Returns a new random alphanumeric string suitable for object ID.
-export function newObjectId(size: number = 10): string {
+function newObjectId(size: number = 10): string {
   return randomString(size);
 }
 
 // Returns a new random hex string suitable for secure tokens.
-export function newToken(): string {
+function newToken(): string {
   return randomHexString(32);
 }
 
-export function md5Hash(string: string): string {
+function md5Hash(string: string): string {
   return createHash('md5').update(string).digest('hex');
+}
+
+module.exports = {
+  randomString,
+  randomHexString,
+  md5Hash,
+  newToken,
+  newObjectId,
 }

@@ -1,12 +1,12 @@
-import { ParseMessageQueue }      from '../ParseMessageQueue';
-import rest                       from '../rest';
-import { applyDeviceTokenExists } from './utils';
-import Parse from 'parse/node';
+const { ParseMessageQueue }      = require('../ParseMessageQueue');
+const rest                       = require('../rest');
+const { applyDeviceTokenExists } = require('./utils');
+const Parse = require('parse/node');
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
 
-export class PushQueue {
+class PushQueue {
   parsePublisher: Object;
   channel: String;
   batchSize: Number;
@@ -60,3 +60,5 @@ export class PushQueue {
     });
   }
 }
+
+module.exports = { PushQueue };

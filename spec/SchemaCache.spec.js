@@ -1,6 +1,6 @@
-const CacheController = require('../src/Controllers/CacheController.js').default;
-const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').default;
-const SchemaCache = require('../src/Controllers/SchemaCache').default;
+const CacheController = require('../src/Controllers/CacheController.js').CacheController;
+const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
+const SchemaCache = require('../src/Controllers/SchemaCache').SchemaCache;
 
 describe('SchemaCache', () => {
   let cacheController;

@@ -1,7 +1,7 @@
 const DEFAULT_CACHE_TTL = 5 * 1000;
 
 
-export class InMemoryCache {
+class InMemoryCache {
   constructor({
     ttl = DEFAULT_CACHE_TTL
   }) {
@@ -62,4 +62,4 @@ export class InMemoryCache {
 
 }
 
-export default InMemoryCache;
+module.exports = { InMemoryCache };

@@ -1,8 +1,8 @@
-import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import * as middleware from "../middlewares";
+const { Parse } = require('parse/node');
+const { PromiseRouter } = require('../PromiseRouter');
+const  middleware = require("../middlewares");
 
-export class LogsRouter extends PromiseRouter {
+class LogsRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route('GET','/scriptlog', middleware.promiseEnforceMasterKeyAccess, this.validateRequest,  (req) => {
@@ -51,4 +51,4 @@ export class LogsRouter extends PromiseRouter {
   }
 }
 
-export default LogsRouter;
+module.exports = { LogsRouter };

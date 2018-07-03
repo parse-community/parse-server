@@ -1,4 +1,4 @@
-export function loadAdapter(adapter, defaultAdapter, options) {
+function loadAdapter(adapter, defaultAdapter, options) {
   if (!adapter) {
     if (!defaultAdapter) {
       return options;
@@ -35,4 +35,4 @@ export function loadAdapter(adapter, defaultAdapter, options) {
   return adapter;
 }
 
-export default loadAdapter;
+module.exports = { loadAdapter };

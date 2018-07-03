@@ -1,7 +1,7 @@
 // @flow
-import MongoCollection       from './MongoCollection';
-import MongoSchemaCollection from './MongoSchemaCollection';
-import { StorageAdapter }    from '../StorageAdapter';
+const { MongoCollection }       = require('./MongoCollection');
+const { MongoSchemaCollection } = require('./MongoSchemaCollection');
+import { StorageAdapter } from '../StorageAdapter';
 import type { SchemaType,
   QueryType,
   StorageClass,
@@ -19,11 +19,11 @@ import {
   transformPointerString,
 } from './MongoTransform';
 // @flow-disable-next
-import Parse                 from 'parse/node';
+const Parse                 = require('parse/node');
 // @flow-disable-next
-import _                     from 'lodash';
-import defaults              from '../../../defaults';
-import logger                from '../../../logger';
+const _                     = require('lodash');
+const defaults              = require('../../../defaults');
+const logger                = require('../../../logger');
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -83,7 +83,7 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
 }
 
 
-export class MongoStorageAdapter implements StorageAdapter {
+class MongoStorageAdapter implements StorageAdapter {
   // Private
   _uri: string;
   _collectionPrefix: string;
@@ -813,4 +813,4 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 }
 
-export default MongoStorageAdapter;
+module.exports = { MongoStorageAdapter };

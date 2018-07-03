@@ -96,5 +96,5 @@ function ParseServerRESTController(applicationId, router) {
   };
 }
 
-export default ParseServerRESTController;
+module.exports = { ParseServerRESTController };
 export { ParseServerRESTController };

@@ -1,8 +1,8 @@
-import PromiseRouter   from '../PromiseRouter';
-import * as middleware from "../middlewares";
-import { Parse }       from "parse/node";
+const { PromiseRouter }   = require('../PromiseRouter');
+const  middleware = require("../middlewares");
+const { Parse }       = require("parse/node");
 
-export class PushRouter extends PromiseRouter {
+class PushRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route("POST", "/push", middleware.promiseEnforceMasterKeyAccess, PushRouter.handlePOST);
@@ -68,4 +68,4 @@ export class PushRouter extends PromiseRouter {
   }
 }
 
-export default PushRouter;
+module.exports = { PushRouter };

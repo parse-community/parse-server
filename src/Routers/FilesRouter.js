@@ -1,12 +1,12 @@
-import express             from 'express';
-import BodyParser          from 'body-parser';
-import * as Middlewares    from '../middlewares';
-import Parse               from 'parse/node';
-import Config              from '../Config';
-import mime                from 'mime';
-import logger              from '../logger';
+const express             = require('express');
+const BodyParser          = require('body-parser');
+const  Middlewares    = require('../middlewares');
+const Parse               = require('parse/node');
+const Config              = require('../Config');
+const mime                = require('mime');
+const logger              = require('../logger').logger;
 
-export class FilesRouter {
+class FilesRouter {
 
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
@@ -183,3 +183,5 @@ function handleFileStream(stream, req, res, contentType) {
     });
   });
 }
+
+module.exports = { FilesRouter };

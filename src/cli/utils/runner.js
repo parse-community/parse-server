@@ -1,5 +1,5 @@
 
-import program from './commander';
+const program = require('./commander');
 
 function logStartupOptions(options) {
   for (const key in options) {

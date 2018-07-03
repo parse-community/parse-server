@@ -2,10 +2,10 @@ const MAIN_SCHEMA = "__MAIN_SCHEMA";
 const SCHEMA_CACHE_PREFIX = "__SCHEMA";
 const ALL_KEYS = "__ALL_KEYS";
 
-import { randomString } from '../cryptoUtils';
-import defaults from '../defaults';
+const { randomString } = require('../cryptoUtils');
+const defaults = require('../defaults');
 
-export default class SchemaCache {
+class SchemaCache {
   cache: Object;
 
   constructor(cacheController, ttl = defaults.schemaCacheTTL, singleCache = false) {
@@ -83,3 +83,5 @@ export default class SchemaCache {
     });
   }
 }
+
+module.exports = { SchemaCache };

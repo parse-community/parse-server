@@ -1,4 +1,4 @@
-export class NullCacheAdapter {
+class NullCacheAdapter {
 
   constructor() {}
 
@@ -21,4 +21,4 @@ export class NullCacheAdapter {
   }
 }
 
-export default NullCacheAdapter;
+module.exports = { NullCacheAdapter };

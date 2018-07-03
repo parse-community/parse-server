@@ -40,7 +40,7 @@ describe('Installations', () => {
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         done();
-      }).catch((error) => { console.log(error); jfail(error); done(); });
+      }).catch((error) => { console.log(error); done.fail(error); done(); });
   });
 
   it('creates an ios installation with ids', (done) => {
@@ -58,7 +58,7 @@ describe('Installations', () => {
         expect(obj.deviceToken).toEqual(t);
         expect(obj.deviceType).toEqual(device);
         done();
-      }).catch((error) => { console.log(error); jfail(error); done(); });
+      }).catch((error) => { console.log(error); done.fail(error); done(); });
   });
 
   it('creates an embedded installation with ids', (done) => {
@@ -76,7 +76,7 @@ describe('Installations', () => {
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         done();
-      }).catch((error) => { console.log(error); jfail(error); done(); });
+      }).catch((error) => { console.log(error); done.fail(error); done(); });
   });
 
   it('creates an android installation with all fields', (done) => {
@@ -99,7 +99,7 @@ describe('Installations', () => {
         expect(obj.channels[0]).toEqual('foo');
         expect(obj.channels[1]).toEqual('bar');
         done();
-      }).catch((error) => { console.log(error); jfail(error); done(); });
+      }).catch((error) => { console.log(error); done.fail(error); done(); });
   });
 
   it('creates an ios installation with all fields', (done) => {
@@ -122,7 +122,7 @@ describe('Installations', () => {
         expect(obj.channels[0]).toEqual('foo');
         expect(obj.channels[1]).toEqual('bar');
         done();
-      }).catch((error) => { console.log(error); jfail(error); done(); });
+      }).catch((error) => { console.log(error); done.fail(error); done(); });
   });
 
   it('should properly fail queying installations', (done) => {
@@ -293,7 +293,7 @@ describe('Installations', () => {
         expect(results[0]['_id']).toEqual(secondObject._id);
         done();
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -352,7 +352,7 @@ describe('Installations', () => {
         expect(results[0].channels[0]).toEqual('baz');
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -429,7 +429,7 @@ describe('Installations', () => {
         expect(results[0].deviceToken).toEqual(u);
         done();
       }).catch(err => {
-        jfail(err);
+        done.fail(err);
         done();
       })
   });
@@ -522,7 +522,7 @@ describe('Installations', () => {
         expect(results.length).toEqual(0);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -571,7 +571,7 @@ describe('Installations', () => {
         expect(results.length).toEqual(0);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -599,7 +599,7 @@ describe('Installations', () => {
         expect(results[0].installationId).toEqual(installId2);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -629,7 +629,7 @@ describe('Installations', () => {
         expect(results[0].channels.length).toEqual(0);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -667,7 +667,7 @@ describe('Installations', () => {
         expect(results[0].deviceType).toEqual('ios');
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -710,7 +710,7 @@ describe('Installations', () => {
         expect(results[0].score).toEqual(1);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -753,7 +753,7 @@ describe('Installations', () => {
         expect(results[0].deviceToken).toEqual(t);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -801,7 +801,7 @@ describe('Installations', () => {
         expect(results[0].score).toEqual(1);
         done();
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -809,7 +809,7 @@ describe('Installations', () => {
   it('ios merge existing same token no installation id', (done) => {
     // Test creating installation when there is an existing object with the
     // same device token but no installation ID.  This is possible when
-    // developers import device tokens from another push provider; the import
+    // developers const { device tokens } = require(another push provider); the import
     // process does not generate installation IDs. When they later integrate
     // the Parse SDK, their app is going to save the installation. This save
     // op will have a client-generated installation ID as well as a device
@@ -951,7 +951,7 @@ describe('Installations', () => {
       }).then(() => {
         done();
       }, (err) => {
-        jfail(err)
+        done.fail(err)
         done();
       });
     });

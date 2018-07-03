@@ -138,4 +138,4 @@ const RequestSchema = {
   'unsubscribe': unsubscribe
 }
 
-export default RequestSchema;
+module.exports = { RequestSchema };

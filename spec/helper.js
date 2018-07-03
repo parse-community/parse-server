@@ -23,15 +23,15 @@ if (global._babelPolyfill) {
   process.exit(1);
 }
 
-const cache = require('../src/cache').default;
+const cache = require('../src/cache').AppCache;
 const ParseServer = require('../src/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../src/TestUtils');
-const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const { GridStoreAdapter } = require('../src/Adapters/Files/GridStoreAdapter');
 const FSAdapter = require('@parse/fs-files-adapter');
-import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
-const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
+const { PostgresStorageAdapter } = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+const { MongoStorageAdapter } = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const { RedisCacheAdapter } = require('../src/Adapters/Cache/RedisCacheAdapter');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';

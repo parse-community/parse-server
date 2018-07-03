@@ -1352,7 +1352,7 @@ describe('schemas', () => {
       expect(results.length).toBe(1);
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1415,7 +1415,7 @@ describe('schemas', () => {
       expect(results.length).toBe(1);
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1473,7 +1473,7 @@ describe('schemas', () => {
       expect(results.length).toBe(1);
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -1539,7 +1539,7 @@ describe('schemas', () => {
       expect(results.length).toBe(1);
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1633,7 +1633,7 @@ describe('schemas', () => {
       expect(res[0].get('anotherObject')).not.toBeUndefined();
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1758,7 +1758,7 @@ describe('schemas', () => {
       done();
     }).catch((err) => {
       fail('should not fail');
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -1823,7 +1823,7 @@ describe('schemas', () => {
       expect(user.get('userProfile')).not.toBeUndefined();
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

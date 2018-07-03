@@ -257,7 +257,7 @@ describe('rest create', () => {
         expect(r.get('username')).toEqual('hello');
         done();
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       })
   });
@@ -314,7 +314,7 @@ describe('rest create', () => {
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
       }).catch(err => {
-        jfail(err);
+        done.fail(err);
         done();
       })
   });
@@ -437,7 +437,7 @@ describe('rest create', () => {
 
         done();
       }).catch(err => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });

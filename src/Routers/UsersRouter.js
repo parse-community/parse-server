@@ -1,14 +1,14 @@
 // These methods handle the User-related routes.
 
-import Parse from 'parse/node';
-import Config from '../Config';
-import AccountLockout from '../AccountLockout';
-import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
-import Auth from '../Auth';
-import passwordCrypto from '../password';
+const Parse = require('parse/node');
+const Config = require('../Config');
+const { AccountLockout } = require('../AccountLockout');
+const { ClassesRouter } = require('./ClassesRouter');
+const rest = require('../rest');
+const Auth = require('../Auth');
+const passwordCrypto = require('../password');
 
-export class UsersRouter extends ClassesRouter {
+class UsersRouter extends ClassesRouter {
 
   className() {
     return '_User';
@@ -330,4 +330,4 @@ export class UsersRouter extends ClassesRouter {
   }
 }
 
-export default UsersRouter;
+module.exports = { UsersRouter };

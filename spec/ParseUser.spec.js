@@ -7,7 +7,7 @@
 
 "use strict";
 
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const { MongoStorageAdapter } = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const request = require('request');
 const passwordCrypto = require('../src/password');
 const Config = require('../src/Config');

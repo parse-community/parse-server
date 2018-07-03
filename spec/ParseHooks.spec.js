@@ -2,7 +2,7 @@
 /* global describe, it, expect, fail, Parse */
 const request = require('request');
 const triggers = require('../src/triggers');
-const HooksController = require('../src/Controllers/HooksController').default;
+const HooksController = require('../src/Controllers/HooksController').HooksController;
 const express = require("express");
 const bodyParser = require('body-parser');
 
@@ -28,7 +28,7 @@ describe('Hooks', () => {
       expect(res.constructor).toBe(Array.prototype.constructor);
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -38,7 +38,7 @@ describe('Hooks', () => {
       expect(res.constructor).toBe(Array.prototype.constructor);
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -79,7 +79,7 @@ describe('Hooks', () => {
           })
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       })
   });
@@ -103,7 +103,7 @@ describe('Hooks', () => {
       // delete
       return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     }).then((res) => {
       expect(res.className).toBe("MyClass");
@@ -112,13 +112,13 @@ describe('Hooks', () => {
 
       return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     }).then(() => {
       // Find again! but should be deleted
       return Parse.Hooks.getTrigger("MyClass","beforeDelete");
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     }).then(function(){
       fail("should not succeed");
@@ -170,7 +170,7 @@ describe('Hooks', () => {
       }).then(() => {
         done();
       }, (err) => {
-        jfail(err);
+        done.fail(err);
         done();
       })
   });
@@ -193,7 +193,7 @@ describe('Hooks', () => {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -298,7 +298,7 @@ describe('Hooks', () => {
       const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
       return hooksController.load()
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail('Should properly create all hooks');
       done();
     }).then(function() {
@@ -308,7 +308,7 @@ describe('Hooks', () => {
       }
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail('should properly load all hooks');
       done();
     })
@@ -323,14 +323,14 @@ describe('Hooks', () => {
     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL + "/SomeFunction").then(function(){
       return Parse.Cloud.run("SOME_TEST_FUNCTION")
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail creating a function");
       done();
     }).then(function(res){
       expect(res).toBe("OK!");
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail calling a function");
       done();
     });
@@ -345,7 +345,7 @@ describe('Hooks', () => {
     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL + "/SomeFunctionError").then(function(){
       return Parse.Cloud.run("SOME_TEST_FUNCTION")
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail creating a function");
       done();
     }).then(function() {
@@ -375,14 +375,14 @@ describe('Hooks', () => {
     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL + "/ExpectingKey").then(function(){
       return Parse.Cloud.run("SOME_TEST_FUNCTION")
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail creating a function");
       done();
     }).then(function(res){
       expect(res).toBe("correct key provided");
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail calling a function");
       done();
     });
@@ -402,7 +402,7 @@ describe('Hooks', () => {
         Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL + "/ExpectingKeyAlso").then(function(){
           return Parse.Cloud.run("SOME_TEST_FUNCTION")
         }, (err) => {
-          jfail(err);
+          done.fail(err);
           fail("Should not fail creating a function");
           done();
         }).then(function(){
@@ -442,7 +442,7 @@ describe('Hooks', () => {
       expect(res.get("hello")).toEqual("world");
       done();
     }).fail((err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail creating a function");
       done();
     });
@@ -498,7 +498,7 @@ describe('Hooks', () => {
       expect(res.get("foo")).toEqual("bar");
       done();
     }).fail((err) => {
-      jfail(err);
+      done.fail(err);
       fail("Should not fail creating a function");
       done();
     });

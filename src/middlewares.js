@@ -1,9 +1,9 @@
-import AppCache from './cache';
-import log from './logger';
-import Parse from 'parse/node';
-import auth from './Auth';
-import Config from './Config';
-import ClientSDK from './ClientSDK';
+const { AppCache } = require('./cache');
+const log = require('./logger').logger;
+const Parse = require('parse/node');
+const auth = require('./Auth');
+const Config = require('./Config');
+const ClientSDK = require('./ClientSDK');
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -11,7 +11,7 @@ import ClientSDK from './ClientSDK';
 // Adds info to the request:
 // req.config - the Config for this app
 // req.auth - the Auth for this request
-export function handleParseHeaders(req, res, next) {
+function handleParseHeaders(req, res, next) {
   var mountPathLength = req.originalUrl.length - req.url.length;
   var mountPath = req.originalUrl.slice(0, mountPathLength);
   var mount = req.protocol + '://' + req.get('host') + mountPath;
@@ -243,7 +243,7 @@ function decodeBase64(str) {
   return new Buffer(str, 'base64').toString()
 }
 
-export function allowCrossDomain(req, res, next) {
+function allowCrossDomain(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
@@ -257,7 +257,7 @@ export function allowCrossDomain(req, res, next) {
   }
 }
 
-export function allowMethodOverride(req, res, next) {
+function allowMethodOverride(req, res, next) {
   if (req.method === 'POST' && req.body._method) {
     req.originalMethod = req.method;
     req.method = req.body._method;
@@ -266,7 +266,7 @@ export function allowMethodOverride(req, res, next) {
   next();
 }
 
-export function handleParseErrors(err, req, res, next) {
+function handleParseErrors(err, req, res, next) {
   if (err instanceof Parse.Error) {
     let httpStatus;
     // TODO: fill out this mapping
@@ -300,7 +300,7 @@ export function handleParseErrors(err, req, res, next) {
 
 }
 
-export function enforceMasterKeyAccess(req, res, next) {
+function enforceMasterKeyAccess(req, res, next) {
   if (!req.auth.isMaster) {
     res.status(403);
     res.end('{"error":"unauthorized: master key is required"}');
@@ -309,7 +309,7 @@ export function enforceMasterKeyAccess(req, res, next) {
   next();
 }
 
-export function promiseEnforceMasterKeyAccess(request) {
+function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
     const error = new Error();
     error.status = 403;
@@ -323,3 +323,12 @@ function invalidRequest(req, res) {
   res.status(403);
   res.end('{"error":"unauthorized"}');
 }
+
+module.exports = {
+  handleParseHeaders,
+  allowCrossDomain,
+  allowMethodOverride,
+  handleParseErrors,
+  enforceMasterKeyAccess,
+  promiseEnforceMasterKeyAccess,
+};

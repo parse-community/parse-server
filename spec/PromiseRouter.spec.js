@@ -1,4 +1,4 @@
-const PromiseRouter = require("../src/PromiseRouter").default;
+const PromiseRouter = require("../src/PromiseRouter").PromiseRouter;
 
 describe("PromiseRouter", () => {
   it("should properly handle rejects", (done) => {
@@ -13,7 +13,7 @@ describe("PromiseRouter", () => {
     });
 
     router.routes[0].handler({}).then((result) => {
-      jfail(result);
+      done.fail(result);
       fail("this should not be called");
       done();
     }, (error)=> {

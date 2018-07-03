@@ -1,5 +1,5 @@
-import MongoCollection from './MongoCollection';
-import Parse           from 'parse/node';
+const MongoCollection = require('./MongoCollection');
+const Parse           = require('parse/node');
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -208,4 +208,4 @@ class MongoSchemaCollection {
 MongoSchemaCollection._TESTmongoSchemaToParseSchema = mongoSchemaToParseSchema
 MongoSchemaCollection.parseFieldTypeToMongoFieldType = parseFieldTypeToMongoFieldType
 
-export default MongoSchemaCollection
+module.exports = { MongoSchemaCollection };

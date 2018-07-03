@@ -1,16 +1,16 @@
 // @flow
 // @flow-disable-next
-import deepcopy               from 'deepcopy';
-import AdaptableController    from '../Controllers/AdaptableController';
-import { master }             from '../Auth';
-import Config                 from '../Config';
-import { PushAdapter }        from '../Adapters/Push/PushAdapter';
-import rest                   from '../rest';
-import { pushStatusHandler }  from '../StatusHandler';
-import * as utils             from './utils';
-import { ParseMessageQueue }  from '../ParseMessageQueue';
-import { PushQueue }          from './PushQueue';
-import logger                 from '../logger';
+const deepcopy               = require('deepcopy');
+const { AdaptableController }    = require('../Controllers/AdaptableController');
+const { master }             = require('../Auth');
+const Config                 = require('../Config');
+const { PushAdapter }        = require('../Adapters/Push/PushAdapter');
+const rest                   = require('../rest');
+const { pushStatusHandler }  = require('../StatusHandler');
+const  utils             = require('./utils');
+const { ParseMessageQueue }  = require('../ParseMessageQueue');
+const { PushQueue }          = require('./PushQueue');
+const logger                 = require('../logger').logger;
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
@@ -21,7 +21,7 @@ function groupByBadge(installations) {
   }, {});
 }
 
-export class PushWorker {
+class PushWorker {
   subscriber: ?any;
   adapter: any;
   channel: string;
@@ -102,4 +102,4 @@ export class PushWorker {
   }
 }
 
-export default PushWorker;
+module.exports = { PushWorker };

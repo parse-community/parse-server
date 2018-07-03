@@ -974,7 +974,7 @@ describe('Cloud Code', () => {
         expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
         done();
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });
@@ -1007,7 +1007,7 @@ describe('Cloud Code', () => {
       expect(object.get('remove')).toBeUndefined();
       done();
     }).fail((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -1032,7 +1032,7 @@ describe('Cloud Code', () => {
       expect(() => { objectAgain.relation('testsRelation') }).not.toThrow();
       done();
     }).fail((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1200,7 +1200,7 @@ describe('Cloud Code', () => {
           done();
         }).catch(err => {
           console.error(err);
-          jfail(err);
+          done.fail(err);
           done();
         });
       });
@@ -1227,7 +1227,7 @@ describe('Cloud Code', () => {
           expect(jobStatus.get('status')).toEqual('failed');
           done();
         }).catch(err => {
-          jfail(err);
+          done.fail(err);
           done();
         });
       });
@@ -1838,8 +1838,7 @@ describe('afterFind hooks', () => {
     }).then((results) => {
       expect(results[0].objectId).toEqual(null);
       expect(hook.method).not.toHaveBeenCalled();
-      done();
-    });
+    }).then(done).catch(done.fail)
   });
 
   it('should skip afterFind hooks for distinct', (done) => {

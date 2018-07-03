@@ -1,6 +1,6 @@
-import logger from '../logger';
+const logger = require('../logger').logger;
 
-import type { FlattenedObjectData } from './Subscription';
+const { FlattenedObjectData } = require('./Subscription');
 export type Message = { [attr: string]: any };
 
 const dafaultFields = ['className', 'objectId', 'updatedAt', 'createdAt', 'ACL'];
@@ -100,6 +100,6 @@ class Client {
   }
 }
 
-export {
+module.exports = {
   Client
 }

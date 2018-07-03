@@ -1,6 +1,6 @@
-import { ParsePubSub } from './ParsePubSub';
-import Parse  from 'parse/node';
-import logger from '../logger';
+const { ParsePubSub } = require('./ParsePubSub');
+const Parse  = require('parse/node');
+const logger = require('../logger').logger;
 
 class ParseCloudCodePublisher {
   parsePublisher: Object;

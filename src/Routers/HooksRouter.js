@@ -1,8 +1,8 @@
-import { Parse }       from 'parse/node';
-import PromiseRouter   from '../PromiseRouter';
-import * as middleware from "../middlewares";
+const { Parse }       = require('parse/node');
+const { PromiseRouter } = require('../PromiseRouter');
+const  middleware = require("../middlewares");
 
-export class HooksRouter extends PromiseRouter {
+class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
     return config.hooksController.createHook(aHook).then((hook) => ({response: hook}));
   }
@@ -97,4 +97,4 @@ export class HooksRouter extends PromiseRouter {
   }
 }
 
-export default HooksRouter;
+module.exports = { HooksRouter };

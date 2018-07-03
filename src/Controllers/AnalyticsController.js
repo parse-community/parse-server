@@ -1,7 +1,7 @@
-import AdaptableController from './AdaptableController';
-import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
+const { AdaptableController } = require('./AdaptableController');
+const { AnalyticsAdapter } = require('../Adapters/Analytics/AnalyticsAdapter');
 
-export class AnalyticsController extends AdaptableController {
+class AnalyticsController extends AdaptableController {
   appOpened(req) {
     return Promise.resolve().then(() => {
       return this.adapter.appOpened(req.body, req);
@@ -27,4 +27,4 @@ export class AnalyticsController extends AdaptableController {
   }
 }
 
-export default AnalyticsController;
+module.exports = { AnalyticsController };

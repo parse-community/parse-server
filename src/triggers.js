@@ -1,8 +1,8 @@
 // triggers.js
-import Parse    from 'parse/node';
-import { logger } from './logger';
+const Parse    = require('parse/node');
+const { logger } = require('./logger');
 
-export const Types = {
+const Types = {
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
@@ -46,47 +46,47 @@ function validateClassNameForTriggers(className, type) {
 
 const _triggerStore = {};
 
-export function addFunction(functionName, handler, validationHandler, applicationId) {
+function addFunction(functionName, handler, validationHandler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Functions[functionName] = handler;
   _triggerStore[applicationId].Validators[functionName] = validationHandler;
 }
 
-export function addJob(jobName, handler, applicationId) {
+function addJob(jobName, handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Jobs[jobName] = handler;
 }
 
-export function addTrigger(type, className, handler, applicationId) {
+function addTrigger(type, className, handler, applicationId) {
   validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
 }
 
-export function addLiveQueryEventHandler(handler, applicationId) {
+function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
-export function removeFunction(functionName, applicationId) {
+function removeFunction(functionName, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   delete _triggerStore[applicationId].Functions[functionName]
 }
 
-export function removeTrigger(type, className, applicationId) {
+function removeTrigger(type, className, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   delete _triggerStore[applicationId].Triggers[type][className]
 }
 
-export function _unregisterAll() {
+function _unregisterAll() {
   Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
 }
 
-export function getTrigger(className, triggerType, applicationId) {
+function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw "Missing ApplicationID";
   }
@@ -100,11 +100,11 @@ export function getTrigger(className, triggerType, applicationId) {
   return undefined;
 }
 
-export function triggerExists(className: string, type: string, applicationId: string): boolean {
+function triggerExists(className: string, type: string, applicationId: string): boolean {
   return (getTrigger(className, type, applicationId) != undefined);
 }
 
-export function getFunction(functionName, applicationId) {
+function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
@@ -112,7 +112,7 @@ export function getFunction(functionName, applicationId) {
   return undefined;
 }
 
-export function getJob(jobName, applicationId) {
+function getJob(jobName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs[jobName];
@@ -120,7 +120,7 @@ export function getJob(jobName, applicationId) {
   return undefined;
 }
 
-export function getJobs(applicationId) {
+function getJobs(applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
@@ -129,7 +129,7 @@ export function getJobs(applicationId) {
 }
 
 
-export function getValidator(functionName, applicationId) {
+function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {
     return manager.Validators[functionName];
@@ -137,7 +137,7 @@ export function getValidator(functionName, applicationId) {
   return undefined;
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
+function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
   var request = {
     triggerName: triggerType,
     object: parseObject,
@@ -166,7 +166,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
+function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
   isGet = !!isGet;
 
   var request = {
@@ -199,7 +199,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
 // The API will call this with REST API formatted objects, this will
 // transform them to Parse.Object instances expected by Cloud Code.
 // Any changes made to the object in a beforeSave will be included.
-export function getResponseObject(request, resolve, reject) {
+function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
@@ -269,7 +269,7 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   });
 }
 
-export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config) {
+function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
@@ -305,7 +305,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
   });
 }
 
-export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
+function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
@@ -393,7 +393,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
+function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
   if (!parseObject) {
     return Promise.resolve({});
   }
@@ -436,7 +436,7 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
 
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
-export function inflate(data, restObject) {
+function inflate(data, restObject) {
   var copy = typeof data == 'object' ? data : {className: data};
   for (var key in restObject) {
     copy[key] = restObject[key];
@@ -444,7 +444,32 @@ export function inflate(data, restObject) {
   return Parse.Object.fromJSON(copy);
 }
 
-export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
   if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
+}
+
+module.exports = {
+  Types,
+  addFunction,
+  addJob,
+  addTrigger,
+  addLiveQueryEventHandler,
+  removeFunction,
+  removeTrigger,
+  getTrigger,
+  triggerExists,
+  getFunction,
+  getJob,
+  getJobs,
+  getValidator,
+  maybeRunAfterFindTrigger,
+  maybeRunQueryTrigger,
+  maybeRunTrigger,
+  inflate,
+  runLiveQueryEventHandlers
+};
+
+if (process.env.TESTING == '1') {
+  module.exports._unregisterAll = _unregisterAll;
 }
