@@ -1,5 +1,5 @@
-const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 const fs = require('fs');
 
 const loremFile = __dirname + '/support/lorem.txt';

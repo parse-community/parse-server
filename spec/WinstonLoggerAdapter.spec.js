@@ -1,6 +1,6 @@
 'use strict';
 
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 const request = require('request');
 
 describe('info logs', () => {

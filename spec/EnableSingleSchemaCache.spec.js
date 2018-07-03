@@ -1,6 +1,6 @@
-const auth = require('../src/Auth');
-const Config = require('../src/Config');
-const rest = require('../src/rest');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
 
 describe('Enable single schema cache', () => {
   beforeEach((done) => {

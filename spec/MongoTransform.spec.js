@@ -1,7 +1,7 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const transform = require('../lib/Adapters/Storage/Mongo/MongoTransform');
 const dd = require('deep-diff');
 const mongodb = require('mongodb');
 

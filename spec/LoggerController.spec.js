@@ -1,5 +1,5 @@
-const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 describe('LoggerController', () => {
   it('can check process a query without throwing', (done) => {

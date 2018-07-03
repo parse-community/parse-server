@@ -1,4 +1,4 @@
-import {
+const {
   numberParser,
   numberOrBoolParser,
   booleanParser,
@@ -6,7 +6,7 @@ import {
   arrayParser,
   moduleOrObjectParser,
   nullParser,
-} from '../src/Options/parsers';
+} = require('../lib/Options/parsers');
 
 describe('parsers', () => {
   it('parses correctly with numberParser', () => {

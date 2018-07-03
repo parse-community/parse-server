@@ -5,9 +5,9 @@
 const request = require('request');
 const rp = require('request-promise');
 const Parse = require("parse/node");
-const Config = require('../src/Config');
-const SchemaController = require('../src/Controllers/SchemaController');
-const TestUtils = require('../src/TestUtils');
+const Config = require('../lib/Config');
+const SchemaController = require('../lib/Controllers/SchemaController');
+const TestUtils = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
 

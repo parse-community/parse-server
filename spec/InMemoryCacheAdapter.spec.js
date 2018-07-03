@@ -1,4 +1,4 @@
-const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').default;
+const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter').default;
 
 describe('InMemoryCacheAdapter', function() {
   const KEY = 'hello';

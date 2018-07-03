@@ -1,4 +1,4 @@
-const parser = require('../src/Adapters/Storage/Postgres/PostgresConfigParser');
+const parser = require('../lib/Adapters/Storage/Postgres/PostgresConfigParser');
 
 const queryParamTests = {
   'a=1&b=2': { a: '1', b: '2' },

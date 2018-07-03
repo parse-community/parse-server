@@ -7,10 +7,10 @@
 
 "use strict";
 
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const request = require('request');
-const passwordCrypto = require('../src/password');
-const Config = require('../src/Config');
+const passwordCrypto = require('../lib/password');
+const Config = require('../lib/Config');
 const rp = require('request-promise');
 
 function verifyACL(user) {
