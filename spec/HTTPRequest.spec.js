@@ -132,21 +132,6 @@ describe("httpRequest", () => {
     });
   })
 
-  it("should fail on 404", (done) => {
-    httpRequest({
-      url: httpRequestServer + "/404",
-    }).then(function(){
-      fail("should not succeed");
-      done();
-    }, function(httpResponse){
-      expect(httpResponse.status).toBe(404);
-      expect(httpResponse.buffer).toEqual(new Buffer('NO'));
-      expect(httpResponse.text).toEqual('NO');
-      expect(httpResponse.data).toBe(undefined);
-      done();
-    })
-  })
-
   it("should post on echo", (done) => {
     let calls = 0;
     httpRequest({

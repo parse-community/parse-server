@@ -632,24 +632,6 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('fails to upload without a file name', done => {
-    const headers = {
-      'Content-Type': 'application/octet-stream',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest'
-    };
-    request.post({
-      headers: headers,
-      url: 'http://localhost:8378/1/files/',
-      body: 'yolo',
-    }, (error, response, body) => {
-      expect(error).toBe(null);
-      expect(response.statusCode).toBe(400);
-      expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
-      done();
-    });
-  });
-
   it('fails to delete an unkown file', done => {
     const headers = {
       'Content-Type': 'application/octet-stream',
