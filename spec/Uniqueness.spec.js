@@ -1,7 +1,7 @@
 'use strict';
 
 const Parse = require("parse/node");
-const Config = require('../src/Config');
+const Config = require('../lib/Config');
 
 describe('Uniqueness', function() {
   it('fail when create duplicate value in unique field', done => {

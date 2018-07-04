@@ -1,5 +1,5 @@
 const TestObject = Parse.Object.extend('TestObject');
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const rp = require('request-promise');
 const defaultHeaders = {
@@ -8,6 +8,9 @@ const defaultHeaders = {
 }
 
 describe('Parse.Polygon testing', () => {
+
+  beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
+
   it('polygon save open path', (done) => {
     const coords = [[0,0],[0,1],[1,1],[1,0]];
     const closed = [[0,0],[0,1],[1,1],[1,0],[0,0]];
@@ -128,144 +131,150 @@ describe('Parse.Polygon testing', () => {
     }, done.fail);
   });
 
-  it('polygonContain query', (done) => {
-    const points1 = [[0,0],[0,1],[1,1],[1,0]];
-    const points2 = [[0,0],[0,2],[2,2],[2,0]];
-    const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
-    const polygon1 = new Parse.Polygon(points1);
-    const polygon2 = new Parse.Polygon(points2);
-    const polygon3 = new Parse.Polygon(points3);
-    const obj1 = new TestObject({location: polygon1});
-    const obj2 = new TestObject({location: polygon2});
-    const obj3 = new TestObject({location: polygon3});
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const where = {
-        location: {
-          $geoIntersects: {
-            $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 }
-          }
-        }
-      };
-      return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
-        json: { where, '_method': 'GET' },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    }).then((resp) => {
-      expect(resp.results.length).toBe(2);
-      done();
-    }, done.fail);
-  });
+  describe('with location', () => {
+    beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
 
-  it('polygonContain query no reverse input (Regression test for #4608)', (done) => {
-    const points1 = [[.25,0],[.25,1.25],[.75,1.25],[.75,0]];
-    const points2 = [[0,0],[0,2],[2,2],[2,0]];
-    const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
-    const polygon1 = new Parse.Polygon(points1);
-    const polygon2 = new Parse.Polygon(points2);
-    const polygon3 = new Parse.Polygon(points3);
-    const obj1 = new TestObject({location: polygon1});
-    const obj2 = new TestObject({location: polygon2});
-    const obj3 = new TestObject({location: polygon3});
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const where = {
-        location: {
-          $geoIntersects: {
-            $point: { __type: 'GeoPoint', latitude: 0.5, longitude:1.0 }
+    it('polygonContain query', (done) => {
+      const points1 = [[0,0],[0,1],[1,1],[1,0]];
+      const points2 = [[0,0],[0,2],[2,2],[2,0]];
+      const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
+      const polygon1 = new Parse.Polygon(points1);
+      const polygon2 = new Parse.Polygon(points2);
+      const polygon3 = new Parse.Polygon(points3);
+      const obj1 = new TestObject({location: polygon1});
+      const obj2 = new TestObject({location: polygon2});
+      const obj3 = new TestObject({location: polygon3});
+      Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+        const where = {
+          location: {
+            $geoIntersects: {
+              $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 }
+            }
           }
-        }
-      };
-      return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
-        json: { where, '_method': 'GET' },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    }).then((resp) => {
-      expect(resp.results.length).toBe(2);
-      done();
-    }, done.fail);
-  });
+        };
+        return rp.post({
+          url: Parse.serverURL + '/classes/TestObject',
+          json: { where, '_method': 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey
+          }
+        });
+      }).then((resp) => {
+        expect(resp.results.length).toBe(2);
+        done();
+      }, done.fail);
+    });
 
-  it('polygonContain query real data (Regression test for #4608)', (done) => {
-    const detroit = [[42.631655189280224,-83.78406753121705],[42.633047793854814,-83.75333640366955],[42.61625254348911,-83.75149921669944],[42.61526926650296,-83.78161794858735],[42.631655189280224,-83.78406753121705]];
-    const polygon = new Parse.Polygon(detroit);
-    const obj = new TestObject({location: polygon});
-    obj.save().then(() => {
-      const where = {
-        location: {
-          $geoIntersects: {
-            $point: { __type: 'GeoPoint', latitude: 42.624599, longitude:-83.770162 }
+    it('polygonContain query no reverse input (Regression test for #4608)', (done) => {
+      const points1 = [[.25,0],[.25,1.25],[.75,1.25],[.75,0]];
+      const points2 = [[0,0],[0,2],[2,2],[2,0]];
+      const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
+      const polygon1 = new Parse.Polygon(points1);
+      const polygon2 = new Parse.Polygon(points2);
+      const polygon3 = new Parse.Polygon(points3);
+      const obj1 = new TestObject({location: polygon1});
+      const obj2 = new TestObject({location: polygon2});
+      const obj3 = new TestObject({location: polygon3});
+      Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+        const where = {
+          location: {
+            $geoIntersects: {
+              $point: { __type: 'GeoPoint', latitude: 0.5, longitude:1.0 }
+            }
           }
-        }
-      };
-      return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
-        json: { where, '_method': 'GET' },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    }).then((resp) => {
-      expect(resp.results.length).toBe(1);
-      done();
-    }, done.fail);
-  });
+        };
+        return rp.post({
+          url: Parse.serverURL + '/classes/TestObject',
+          json: { where, '_method': 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey
+          }
+        });
+      }).then((resp) => {
+        expect(resp.results.length).toBe(2);
+        done();
+      }, done.fail);
+    });
 
-  it('polygonContain invalid input', (done) => {
-    const points = [[0,0],[0,1],[1,1],[1,0]];
-    const polygon = new Parse.Polygon(points);
-    const obj = new TestObject({location: polygon});
-    obj.save().then(() => {
-      const where = {
-        location: {
-          $geoIntersects: {
-            $point: { __type: 'GeoPoint', latitude: 181, longitude: 181 }
+    it('polygonContain query real data (Regression test for #4608)', (done) => {
+      const detroit = [[42.631655189280224,-83.78406753121705],[42.633047793854814,-83.75333640366955],[42.61625254348911,-83.75149921669944],[42.61526926650296,-83.78161794858735],[42.631655189280224,-83.78406753121705]];
+      const polygon = new Parse.Polygon(detroit);
+      const obj = new TestObject({location: polygon});
+      obj.save().then(() => {
+        const where = {
+          location: {
+            $geoIntersects: {
+              $point: { __type: 'GeoPoint', latitude: 42.624599, longitude:-83.770162 }
+            }
           }
-        }
-      };
-      return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
-        json: { where, '_method': 'GET' },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    }).then(done.fail, () => done());
-  });
+        };
+        return rp.post({
+          url: Parse.serverURL + '/classes/TestObject',
+          json: { where, '_method': 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey
+          }
+        });
+      }).then((resp) => {
+        expect(resp.results.length).toBe(1);
+        done();
+      }, done.fail);
+    });
 
-  it('polygonContain invalid geoPoint', (done) => {
-    const points = [[0,0],[0,1],[1,1],[1,0]];
-    const polygon = new Parse.Polygon(points);
-    const obj = new TestObject({location: polygon});
-    obj.save().then(() => {
-      const where = {
-        location: {
-          $geoIntersects: {
-            $point: []
+    it('polygonContain invalid input', (done) => {
+      const points = [[0,0],[0,1],[1,1],[1,0]];
+      const polygon = new Parse.Polygon(points);
+      const obj = new TestObject({location: polygon});
+      obj.save().then(() => {
+        const where = {
+          location: {
+            $geoIntersects: {
+              $point: { __type: 'GeoPoint', latitude: 181, longitude: 181 }
+            }
           }
-        }
-      };
-      return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
-        json: { where, '_method': 'GET' },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    }).then(done.fail, () => done());
+        };
+        return rp.post({
+          url: Parse.serverURL + '/classes/TestObject',
+          json: { where, '_method': 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey
+          }
+        });
+      }).then(done.fail, () => done());
+    });
+
+    it('polygonContain invalid geoPoint', (done) => {
+      const points = [[0,0],[0,1],[1,1],[1,0]];
+      const polygon = new Parse.Polygon(points);
+      const obj = new TestObject({location: polygon});
+      obj.save().then(() => {
+        const where = {
+          location: {
+            $geoIntersects: {
+              $point: []
+            }
+          }
+        };
+        return rp.post({
+          url: Parse.serverURL + '/classes/TestObject',
+          json: { where, '_method': 'GET' },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey
+          }
+        });
+      }).then(done.fail, () => done());
+    });
   });
 });
 
 describe_only_db('mongo')('Parse.Polygon testing', () => {
+
+  beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
   it('support 2d and 2dsphere', (done) => {
     const coords = [[0,0],[0,1],[1,1],[1,0],[0,0]];
     // testings against REST API, use raw formats
@@ -314,7 +323,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
   });
 
   it('polygon coordinates reverse input', (done) => {
-    const Config = require('../src/Config');
+    const Config = require('../lib/Config');
     const config = Config.get('test');
 
     // When stored the first point should be the last point

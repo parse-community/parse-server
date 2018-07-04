@@ -1,6 +1,6 @@
 const Parse = require('parse/node');
-const ParseLiveQueryServer = require('../src/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
-const ParseServer = require('../src/ParseServer').default;
+const ParseLiveQueryServer = require('../lib/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
+const ParseServer = require('../lib/ParseServer').default;
 
 // Global mock info
 const queryHashValue = 'hash';
@@ -11,7 +11,7 @@ describe('ParseLiveQueryServer', function() {
   beforeEach(function(done) {
     // Mock ParseWebSocketServer
     const mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
-    jasmine.mockLibrary('../src/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer', mockParseWebSocketServer);
+    jasmine.mockLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer', mockParseWebSocketServer);
     // Mock Client
     const mockClient = function(id, socket, hasMasterKey) {
       this.pushConnect = jasmine.createSpy('pushConnect');
@@ -28,19 +28,19 @@ describe('ParseLiveQueryServer', function() {
       this.hasMasterKey = hasMasterKey;
     }
     mockClient.pushError = jasmine.createSpy('pushError');
-    jasmine.mockLibrary('../src/LiveQuery/Client', 'Client', mockClient);
+    jasmine.mockLibrary('../lib/LiveQuery/Client', 'Client', mockClient);
     // Mock Subscription
     const mockSubscriotion = function() {
       this.addClientSubscription = jasmine.createSpy('addClientSubscription');
       this.deleteClientSubscription = jasmine.createSpy('deleteClientSubscription');
     }
-    jasmine.mockLibrary('../src/LiveQuery/Subscription', 'Subscription', mockSubscriotion);
+    jasmine.mockLibrary('../lib/LiveQuery/Subscription', 'Subscription', mockSubscriotion);
     // Mock queryHash
     const mockQueryHash = jasmine.createSpy('matchesQuery').and.returnValue(queryHashValue);
-    jasmine.mockLibrary('../src/LiveQuery/QueryTools', 'queryHash', mockQueryHash);
+    jasmine.mockLibrary('../lib/LiveQuery/QueryTools', 'queryHash', mockQueryHash);
     // Mock matchesQuery
     const mockMatchesQuery = jasmine.createSpy('matchesQuery').and.returnValue(true);
-    jasmine.mockLibrary('../src/LiveQuery/QueryTools', 'matchesQuery', mockMatchesQuery);
+    jasmine.mockLibrary('../lib/LiveQuery/QueryTools', 'matchesQuery', mockMatchesQuery);
     // Mock ParsePubSub
     const mockParsePubSub = {
       createPublisher: function() {
@@ -56,7 +56,7 @@ describe('ParseLiveQueryServer', function() {
         }
       }
     };
-    jasmine.mockLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
+    jasmine.mockLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
     // Make mock SessionTokenCache
     const mockSessionTokenCache = function(){
       this.getUserId = function(sessionToken){
@@ -69,7 +69,7 @@ describe('ParseLiveQueryServer', function() {
         return Parse.Promise.as(testUserId);
       };
     };
-    jasmine.mockLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
+    jasmine.mockLibrary('../lib/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
     done();
   });
 
@@ -167,7 +167,7 @@ describe('ParseLiveQueryServer', function() {
     };
     parseLiveQueryServer._handleSubscribe(incompleteParseConn, {});
 
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -273,7 +273,7 @@ describe('ParseLiveQueryServer', function() {
     };
     parseLiveQueryServer._handleUnsubscribe(incompleteParseConn, {});
 
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -284,7 +284,7 @@ describe('ParseLiveQueryServer', function() {
     };
     parseLiveQueryServer._handleUnsubscribe(parseWebSocket, {});
 
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -299,7 +299,7 @@ describe('ParseLiveQueryServer', function() {
     };
     parseLiveQueryServer._handleUnsubscribe(parseWebSocket, {});
 
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -445,7 +445,7 @@ describe('ParseLiveQueryServer', function() {
     const invalidRequest = '{}';
     // Trigger message event
     parseWebSocket.emit('message', invalidRequest);
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -461,7 +461,7 @@ describe('ParseLiveQueryServer', function() {
     const unknownRequest = '{"op":"unknown"}';
     // Trigger message event
     parseWebSocket.emit('message', unknownRequest);
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     expect(Client.pushError).toHaveBeenCalled();
   });
 
@@ -788,7 +788,7 @@ describe('ParseLiveQueryServer', function() {
     const parseObject = {};
     expect(parseLiveQueryServer._matchesSubscription(parseObject, subscription)).toBe(true);
     // Make sure matchesQuery is called
-    const matchesQuery = require('../src/LiveQuery/QueryTools').matchesQuery;
+    const matchesQuery = require('../lib/LiveQuery/QueryTools').matchesQuery;
     expect(matchesQuery).toHaveBeenCalledWith(parseObject, subscription.query);
   });
 
@@ -1209,18 +1209,18 @@ describe('ParseLiveQueryServer', function() {
   });
 
   afterEach(function(){
-    jasmine.restoreLibrary('../src/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
-    jasmine.restoreLibrary('../src/LiveQuery/Client', 'Client');
-    jasmine.restoreLibrary('../src/LiveQuery/Subscription', 'Subscription');
-    jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'queryHash');
-    jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'matchesQuery');
-    jasmine.restoreLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub');
-    jasmine.restoreLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache');
+    jasmine.restoreLibrary('../lib/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer');
+    jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
+    jasmine.restoreLibrary('../lib/LiveQuery/Subscription', 'Subscription');
+    jasmine.restoreLibrary('../lib/LiveQuery/QueryTools', 'queryHash');
+    jasmine.restoreLibrary('../lib/LiveQuery/QueryTools', 'matchesQuery');
+    jasmine.restoreLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub');
+    jasmine.restoreLibrary('../lib/LiveQuery/SessionTokenCache', 'SessionTokenCache');
   });
 
   // Helper functions to add mock client and subscription to a liveQueryServer
   function addMockClient(parseLiveQueryServer, clientId) {
-    const Client = require('../src/LiveQuery/Client').Client;
+    const Client = require('../lib/LiveQuery/Client').Client;
     const client = new Client(clientId, {});
     parseLiveQueryServer.clients.set(clientId, client);
     return client;

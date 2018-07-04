@@ -1,4 +1,4 @@
-const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 /*
 To run this test part of the complete suite
 set PARSE_SERVER_TEST_CACHE='redis'

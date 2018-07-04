@@ -1,9 +1,9 @@
 
-const loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
+const loadAdapter = require("../lib/Adapters/AdapterLoader").loadAdapter;
 const FilesAdapter = require("@parse/fs-files-adapter").default;
 const S3Adapter = require("@parse/s3-files-adapter").default;
 const ParsePushAdapter = require("@parse/push-adapter").default;
-const Config = require('../src/Config');
+const Config = require('../lib/Config');
 
 describe("AdapterLoader", ()=>{
 
@@ -33,7 +33,7 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should instantiate an adapter from string that is module", (done) => {
-    const adapterPath = require('path').resolve("./src/Adapters/Files/FilesAdapter");
+    const adapterPath = require('path').resolve("./lib/Adapters/Files/FilesAdapter");
     const adapter = loadAdapter({
       adapter: adapterPath
     });

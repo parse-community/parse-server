@@ -1,11 +1,11 @@
 "use strict"
 // Sets up a Parse API server for testing.
 const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
-
+const supportsColor = require('supports-color');
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(new SpecReporter());
+jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }, spec: { displayDuration: true }}));
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -23,15 +23,15 @@ if (global._babelPolyfill) {
   process.exit(1);
 }
 
-const cache = require('../src/cache').default;
-const ParseServer = require('../src/index').ParseServer;
+const cache = require('../lib/cache').default;
+const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
-const TestUtils = require('../src/TestUtils');
-const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const TestUtils = require('../lib/TestUtils');
+const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
-const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
+const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -114,7 +114,6 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
-
 // Set up a default API server for testing with default configuration.
 let server;
 
@@ -173,7 +172,7 @@ beforeEach(done => {
       throw error;
     }
   }
-  TestUtils.destroyAllDataPermanently()
+  TestUtils.destroyAllDataPermanently(true)
     .catch(error => {
     // For tests that connect to their own mongo, there won't be any data to delete.
       if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
@@ -197,7 +196,7 @@ afterEach(function(done) {
       fail('There were open connections to the server left after the test finished');
     }
     on_db('postgres', () => {
-      TestUtils.destroyAllDataPermanently().then(done, done);
+      TestUtils.destroyAllDataPermanently(true).then(done, done);
     }, done);
   };
   Parse.Cloud._removeAllHooks();
@@ -412,17 +411,25 @@ global.jfail = function(err) {
 
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
-    return xit;
+    return (name, suite) => {
+      return xit(`[not on ${excluded.join(',')}] ${name}`, suite);
+    };
   } else {
-    return it;
+    return (name, suite) => {
+      return it(`[not on ${excluded.join(',')}] ${name}`, suite);
+    };
   }
 }
 
 global.it_only_db = db => {
-  if (process.env.PARSE_SERVER_TEST_DB === db) {
-    return it;
+  if (process.env.PARSE_SERVER_TEST_DB === db || !process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return (name, suite) => {
+      return it(`[${db}] ${name}`, suite);
+    };
   } else {
-    return xit;
+    return (name, suite) => {
+      return xit(`[${db}] ${name}`, suite);
+    };
   }
 };
 
@@ -436,11 +443,17 @@ global.fit_exclude_dbs = excluded => {
 
 global.describe_only_db = db => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
-    return describe;
+    return (name, suite) => {
+      return describe(`[${db}] ${name}`, suite);
+    };
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
-    return describe;
+    return (name, suite) => {
+      return describe(`[${db}] ${name}`, suite);
+    };
   } else {
-    return () => {};
+    return (name, suite) => {
+      return xdescribe(`[${db}] ${name}`, suite);
+    };
   }
 }
 

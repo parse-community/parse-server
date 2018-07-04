@@ -426,7 +426,7 @@ class DatabaseController {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
                 });
-                for (const updateOperation: any in update) {
+                for (const updateOperation in update) {
                   if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
                     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
                   }
@@ -654,11 +654,16 @@ class DatabaseController {
   }
 
   // Won't delete collections in the system namespace
-  // Returns a promise.
-  deleteEverything() {
+  /**
+   * Delete all classes and clears the schema cache
+   *
+   * @param {boolean} fast set to true if it's ok to just delete rows and not indexes
+   * @returns {Promise<void>} when the deletions completes
+   */
+  deleteEverything(fast: boolean = false): Promise<void> {
     this.schemaPromise = null;
     return Promise.all([
-      this.adapter.deleteAllClasses(),
+      this.adapter.deleteAllClasses(fast),
       this.schemaCache.clear()
     ]);
   }
@@ -869,7 +874,8 @@ class DatabaseController {
     op,
     distinct,
     pipeline,
-    readPreference
+    readPreference,
+    isWrite,
   }: any = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
@@ -930,7 +936,11 @@ class DatabaseController {
                   }
                 }
                 if (!isMaster) {
-                  query = addReadACL(query, aclGroup);
+                  if (isWrite) {
+                    query = addWriteACL(query, aclGroup);
+                  } else {
+                    query = addReadACL(query, aclGroup);
+                  }
                 }
                 validateQuery(query);
                 if (count) {

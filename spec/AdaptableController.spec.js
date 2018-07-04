@@ -1,7 +1,7 @@
 
-const AdaptableController = require("../src/Controllers/AdaptableController").AdaptableController;
-const FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
-const FilesController = require("../src/Controllers/FilesController").FilesController;
+const AdaptableController = require("../lib/Controllers/AdaptableController").AdaptableController;
+const FilesAdapter = require("../lib/Adapters/Files/FilesAdapter").default;
+const FilesController = require("../lib/Controllers/FilesController").FilesController;
 
 const MockController = function(options) {
   AdaptableController.call(this, options);
@@ -70,7 +70,7 @@ describe("AdaptableController", ()=>{
     done();
   });
 
-  it("should accept an object adapter", (done) => {
+  it("should accept an prototype based object adapter", (done) => {
     function AGoodAdapter() {}
     AGoodAdapter.prototype.createFile = function() { };
     AGoodAdapter.prototype.deleteFile = function() { };

@@ -1,4 +1,4 @@
-const DatabaseController = require('../src/Controllers/DatabaseController.js');
+const DatabaseController = require('../lib/Controllers/DatabaseController.js');
 const validateQuery = DatabaseController._validateQuery;
 
 describe('DatabaseController', function() {

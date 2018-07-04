@@ -3,7 +3,7 @@
 const Parse = require('parse/node');
 const request = require('request-promise');
 
-// const Config = require('../src/Config');
+// const Config = require('../lib/Config');
 
 const EMAIL = 'foo@bar.com';
 const ZIP = '10001';
