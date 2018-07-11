@@ -1,4 +1,4 @@
-import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
+const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
 const databaseURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 
 const getColumns = (client, className) => {

@@ -1,7 +1,7 @@
 const Parse = require('parse/node');
 
-const Id = require('../src/LiveQuery/Id');
-const QueryTools = require('../src/LiveQuery/QueryTools');
+const Id = require('../lib/LiveQuery/Id');
+const QueryTools = require('../lib/LiveQuery/QueryTools');
 const queryHash = QueryTools.queryHash;
 const matchesQuery = QueryTools.matchesQuery;
 

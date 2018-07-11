@@ -1,8 +1,8 @@
-const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 describe('LoggerController', () => {
-  it('can check process a query without throwing', (done) => {
+  it('can process an empty query without throwing', (done) => {
     // Make mock request
     const query = {};
 
@@ -37,7 +37,7 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can process a query without throwing', (done) => {
+  it('can process an ascending query without throwing', (done) => {
     // Make mock request
     const query = {
       from: "2016-01-01Z00:00:00",
@@ -58,7 +58,7 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can check process a query without throwing', (done) => {
+  it('can process a descending query without throwing', (done) => {
     // Make mock request
     const query = {
       from: "2016-01-01",

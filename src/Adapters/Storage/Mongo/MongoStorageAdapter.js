@@ -313,11 +313,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  // Delete all data known to this adapter. Used for testing.
-  deleteAllClasses() {
+  deleteAllClasses(fast: boolean) {
     return storageAdapterAllCollections(this)
-      .then(collections => Promise.all(collections.map(collection => collection.drop())))
-      .catch(err => this.handleError(err));
+      .then(collections => Promise.all(collections.map(collection => fast ? collection.remove({}) : collection.drop())));
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -557,26 +555,17 @@ export class MongoStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
     let isPointerField = false;
     pipeline = pipeline.map((stage) => {
-      if (stage.$group && stage.$group._id && (typeof stage.$group._id === 'string')) {
-        const field = stage.$group._id.substring(1);
-        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+      if (stage.$group) {
+        stage.$group = this._parseAggregateGroupArgs(schema, stage.$group);
+        if (stage.$group._id && (typeof stage.$group._id === 'string') && stage.$group._id.indexOf('$_p_') >= 0) {
           isPointerField = true;
-          stage.$group._id = `$_p_${field}`;
         }
       }
       if (stage.$match) {
-        for (const field in stage.$match) {
-          if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-            const transformMatch = { [`_p_${field}`] : `${schema.fields[field].targetClass}$${stage.$match[field]}` };
-            stage.$match = transformMatch;
-          }
-          if (field === 'objectId') {
-            const transformMatch = Object.assign({}, stage.$match);
-            transformMatch._id = stage.$match[field];
-            delete transformMatch.objectId;
-            stage.$match = transformMatch;
-          }
-        }
+        stage.$match = this._parseAggregateArgs(schema, stage.$match);
+      }
+      if (stage.$project) {
+        stage.$project = this._parseAggregateProjectArgs(schema, stage.$project);
       }
       return stage;
     });
@@ -608,6 +597,130 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
+  // This function will recursively traverse the pipeline and convert any Pointer or Date columns.
+  // If we detect a pointer column we will rename the column being queried for to match the column
+  // in the database. We also modify the value to what we expect the value to be in the database
+  // as well.
+  // For dates, the driver expects a Date object, but we have a string coming in. So we'll convert
+  // the string to a Date so the driver can perform the necessary comparison.
+  //
+  // The goal of this method is to look for the "leaves" of the pipeline and determine if it needs
+  // to be converted. The pipeline can have a few different forms. For more details, see:
+  //     https://docs.mongodb.com/manual/reference/operator/aggregation/
+  //
+  // If the pipeline is an array, it means we are probably parsing an '$and' or '$or' operator. In
+  // that case we need to loop through all of it's children to find the columns being operated on.
+  // If the pipeline is an object, then we'll loop through the keys checking to see if the key name
+  // matches one of the schema columns. If it does match a column and the column is a Pointer or
+  // a Date, then we'll convert the value as described above.
+  //
+  // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
+  // down a tree to find a "leaf node" and checking to see if it needs to be converted.
+  _parseAggregateArgs(schema: any, pipeline: any): any {
+    if (Array.isArray(pipeline)) {
+      return pipeline.map((value) => this._parseAggregateArgs(schema, value));
+    } else if (typeof pipeline === 'object') {
+      const returnValue = {};
+      for (const field in pipeline) {
+        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+          if (typeof pipeline[field] === 'object') {
+            // Pass objects down to MongoDB...this is more than likely an $exists operator.
+            returnValue[`_p_${field}`] = pipeline[field];
+          } else {
+            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+          }
+        } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+          returnValue[field] = this._convertToDate(pipeline[field]);
+        } else {
+          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
+        }
+
+        if (field === 'objectId') {
+          returnValue['_id'] = returnValue[field];
+          delete returnValue[field];
+        } else if (field === 'createdAt') {
+          returnValue['_created_at'] = returnValue[field];
+          delete returnValue[field];
+        } else if (field === 'updatedAt') {
+          returnValue['_updated_at'] = returnValue[field];
+          delete returnValue[field];
+        }
+      }
+      return returnValue;
+    }
+    return pipeline;
+  }
+
+  // This function is slightly different than the one above. Rather than trying to combine these
+  // two functions and making the code even harder to understand, I decided to split it up. The
+  // difference with this function is we are not transforming the values, only the keys of the
+  // pipeline.
+  _parseAggregateProjectArgs(schema: any, pipeline: any): any {
+    const returnValue = {};
+    for (const field in pipeline) {
+      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        returnValue[`_p_${field}`] = pipeline[field];
+      } else {
+        returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
+      }
+
+      if (field === 'objectId') {
+        returnValue['_id'] = returnValue[field];
+        delete returnValue[field];
+      } else if (field === 'createdAt') {
+        returnValue['_created_at'] = returnValue[field];
+        delete returnValue[field];
+      } else if (field === 'updatedAt') {
+        returnValue['_updated_at'] = returnValue[field];
+        delete returnValue[field];
+      }
+    }
+    return returnValue;
+  }
+
+  // This function is slightly different than the two above. MongoDB $group aggregate looks like:
+  //     { $group: { _id: <expression>, <field1>: { <accumulator1> : <expression1> }, ... } }
+  // The <expression> could be a column name, prefixed with the '$' character. We'll look for
+  // these <expression> and check to see if it is a 'Pointer' or if it's one of createdAt,
+  // updatedAt or objectId and change it accordingly.
+  _parseAggregateGroupArgs(schema: any, pipeline: any): any {
+    if (Array.isArray(pipeline)) {
+      return pipeline.map((value) => this._parseAggregateGroupArgs(schema, value));
+    } else if (typeof pipeline === 'object') {
+      const returnValue = {};
+      for (const field in pipeline) {
+        returnValue[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
+      }
+      return returnValue;
+    } else if (typeof pipeline === 'string') {
+      const field = pipeline.substring(1);
+      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        return `$_p_${field}`;
+      } else if (field == 'createdAt') {
+        return '$_created_at';
+      } else if (field == 'updatedAt') {
+        return '$_updated_at';
+      }
+    }
+    return pipeline;
+  }
+
+  // This function will attempt to convert the provided value to a Date object. Since this is part
+  // of an aggregation pipeline, the value can either be a string or it can be another object with
+  // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
+  // recursive method to traverse down to the "leaf node" which is going to be the string.
+  _convertToDate(value: any): any {
+    if (typeof value === 'string') {
+      return new Date(value);
+    }
+
+    const returnValue = {}
+    for (const field in value) {
+      returnValue[field] = this._convertToDate(value[field])
+    }
+    return returnValue;
+  }
+
   _parseReadPreference(readPreference: ?string): ?string {
     switch (readPreference) {
     case 'PRIMARY':
@@ -626,8 +739,6 @@ export class MongoStorageAdapter implements StorageAdapter {
       readPreference = ReadPreference.NEAREST;
       break;
     case undefined:
-      // this is to match existing tests, which were failing as mongodb@3.0 don't report readPreference anymore
-      readPreference = ReadPreference.PRIMARY;
       break;
     default:
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');

@@ -2,7 +2,7 @@
 
 const request = require('request');
 const requestp = require('request-promise');
-const Config = require('../src/Config');
+const Config = require('../lib/Config');
 
 describe("Email Verification Token Expiration: ", () => {
 

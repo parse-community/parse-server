@@ -1,4 +1,4 @@
-const CacheController = require('../src/Controllers/CacheController.js').default;
+const CacheController = require('../lib/Controllers/CacheController.js').default;
 
 describe('CacheController', function() {
   let FakeCacheAdapter;

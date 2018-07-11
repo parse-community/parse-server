@@ -8,7 +8,6 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-import Auth from './Auth';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
@@ -54,9 +53,9 @@ function del(config, auth, className, objectId) {
       'bad objectId');
   }
 
-  if (className === '_User' && !auth.couldUpdateUserId(objectId)) {
+  if (className === '_User' && auth.isUnauthenticated()) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-      'insufficient auth to delete user');
+      'Insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -67,14 +66,16 @@ function del(config, auth, className, objectId) {
     const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery || className == '_Session') {
-      return find(config, Auth.master(config), className, {objectId: objectId})
+      return new RestQuery(config, auth, className, { objectId })
+        .forWrite()
+        .execute()
         .then((response) => {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
             firstResult.className = className;
             if (className === '_Session' && !auth.isMaster) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
               }
             }
             var cacheAdapter = config.cacheController;
@@ -110,6 +111,8 @@ function del(config, auth, className, objectId) {
     }, options);
   }).then(() => {
     return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
+  }).catch((error) => {
+    handleSessionMissingError(error, className, auth);
   });
 }
 
@@ -130,18 +133,31 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery) {
-      return find(config, Auth.master(config), className, restWhere);
+      // Do not use find, as it runs the before finds
+      return new RestQuery(config, auth, className, restWhere)
+        .forWrite()
+        .execute();
     }
     return Promise.resolve({});
-  }).then((response) => {
+  }).then(({ results }) => {
     var originalRestObject;
-    if (response && response.results && response.results.length) {
-      originalRestObject = response.results[0];
+    if (results && results.length) {
+      originalRestObject = results[0];
     }
-
-    var write = new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK);
-    return write.execute();
+    return new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK)
+      .execute();
+  }).catch((error) => {
+    handleSessionMissingError(error, className, auth);
   });
+}
+
+function handleSessionMissingError(error, className) {
+  // If we're trying to update a user without / with bad session token
+  if (className === '_User'
+      && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
+  }
+  throw error;
 }
 
 const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];

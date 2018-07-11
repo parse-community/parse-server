@@ -3,7 +3,7 @@
 const Parse = require('parse/node');
 const ReadPreference = require('mongodb').ReadPreference;
 const rp = require('request-promise');
-const Config = require("../src/Config");
+const Config = require("../lib/Config");
 
 describe_only_db('mongo')('Read preference option', () => {
   it('should find in primary by default', (done) => {
@@ -27,15 +27,54 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject') >= 0) {
-            myObjectReadPreference = call.args[2].readPreference.preference;
+            myObjectReadPreference = true;
+            expect(call.args[2].readPreference.preference).toBe(ReadPreference.PRIMARY);
           }
         });
 
-        expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference).toBe(true);
 
         done();
       });
     });
+  });
+
+  it('should preserve the read preference set (#4831)', async () => {
+    const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const adapterOptions = {
+      uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      mongoOptions: {
+        readPreference: ReadPreference.NEAREST,
+      }
+    };
+    await reconfigureServer({ databaseAdapter: new MongoStorageAdapter(adapterOptions) });
+
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    await Parse.Object.saveAll([obj0, obj1])
+    spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+    const query = new Parse.Query('MyObject');
+    query.equalTo('boolKey', false);
+
+    const results = await query.find();
+    expect(results.length).toBe(1);
+    expect(results[0].get('boolKey')).toBe(false);
+
+    let myObjectReadPreference = null;
+    databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+      if (call.args[0].indexOf('MyObject') >= 0) {
+        myObjectReadPreference = true;
+        expect(call.args[2].readPreference.preference).toBe(ReadPreference.NEAREST);
+      }
+    });
+
+    expect(myObjectReadPreference).toBe(true);
   });
 
   it('should change read preference in the beforeFind trigger', (done) => {
@@ -442,18 +481,20 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference2 = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject0') >= 0) {
-            myObjectReadPreference0 = call.args[2].readPreference.preference;
+            myObjectReadPreference0 = true;
+            expect(call.args[2].readPreference.preference).toBe(ReadPreference.PRIMARY);
           }
           if (call.args[0].indexOf('MyObject1') >= 0) {
-            myObjectReadPreference1 = call.args[2].readPreference.preference;
+            myObjectReadPreference1 = true;
+            expect(call.args[2].readPreference.preference).toBe(ReadPreference.PRIMARY);
           }
           if (call.args[0].indexOf('MyObject2') >= 0) {
             myObjectReadPreference2 = call.args[2].readPreference.preference;
           }
         });
 
-        expect(myObjectReadPreference0).toEqual(ReadPreference.PRIMARY);
-        expect(myObjectReadPreference1).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference0).toBe(true);
+        expect(myObjectReadPreference1).toBe(true);
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();
@@ -555,18 +596,20 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference2 = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject0') >= 0) {
-            myObjectReadPreference0 = call.args[2].readPreference.preference;
+            myObjectReadPreference0 = true;
+            expect(call.args[2].readPreference.preference).toBe(ReadPreference.PRIMARY);
           }
           if (call.args[0].indexOf('MyObject1') >= 0) {
-            myObjectReadPreference1 = call.args[2].readPreference.preference;
+            myObjectReadPreference1 = true;
+            expect(call.args[2].readPreference.preference).toBe(ReadPreference.PRIMARY);
           }
           if (call.args[0].indexOf('MyObject2') >= 0) {
             myObjectReadPreference2 = call.args[2].readPreference.preference;
           }
         });
 
-        expect(myObjectReadPreference0).toEqual(ReadPreference.PRIMARY);
-        expect(myObjectReadPreference1).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference0).toBe(true);
+        expect(myObjectReadPreference1).toBe(true);
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();

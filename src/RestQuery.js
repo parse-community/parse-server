@@ -24,12 +24,13 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.clientSDK = clientSDK;
   this.response = null;
   this.findOptions = {};
+  this.isWrite = false;
+
   if (!this.auth.isMaster) {
-    this.findOptions.acl = this.auth.user ? [this.auth.user.id] : null;
     if (this.className == '_Session') {
-      if (!this.findOptions.acl) {
+      if (!this.auth.user) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-          'This session token is invalid.');
+          'Invalid session token');
       }
       this.restWhere = {
         '$and': [this.restWhere, {
@@ -44,6 +45,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   }
 
   this.doCount = false;
+  this.includeAll = false;
 
   // The format for this.include is not the same as the format for the
   // include option - it's the paths we should include, in order,
@@ -85,6 +87,9 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     }
     case 'count':
       this.doCount = true;
+      break;
+    case 'includeAll':
+      this.includeAll = true;
       break;
     case 'distinct':
     case 'pipeline':
@@ -150,6 +155,8 @@ RestQuery.prototype.execute = function(executeOptions) {
   return Promise.resolve().then(() => {
     return this.buildRestWhere();
   }).then(() => {
+    return this.handleIncludeAll();
+  }).then(() => {
     return this.runFind(executeOptions);
   }).then(() => {
     return this.runCount();
@@ -182,17 +189,28 @@ RestQuery.prototype.buildRestWhere = function() {
   });
 }
 
+// Marks the query for a write attempt, so we read the proper ACL (write instead of read)
+RestQuery.prototype.forWrite = function() {
+  this.isWrite = true;
+  return this;
+}
+
 // Uses the Auth object to get the list of roles, adds the user id
 RestQuery.prototype.getUserAndRoleACL = function() {
-  if (this.auth.isMaster || !this.auth.user) {
+  if (this.auth.isMaster) {
     return Promise.resolve();
   }
-  return this.auth.getUserRoles().then((roles) => {
-    // Concat with the roles to prevent duplications on multiple calls
-    const aclSet = new Set([].concat(this.findOptions.acl, roles));
-    this.findOptions.acl = Array.from(aclSet);
+
+  this.findOptions.acl = ['*'];
+
+  if (this.auth.user) {
+    return this.auth.getUserRoles().then((roles) => {
+      this.findOptions.acl = this.findOptions.acl.concat(roles, [this.auth.user.id]);
+      return;
+    });
+  } else {
     return Promise.resolve();
-  });
+  }
 };
 
 // Changes the className if redirectClassNameForKey is set.
@@ -517,6 +535,9 @@ RestQuery.prototype.runFind = function(options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
+  if (this.isWrite) {
+    findOptions.isWrite = true;
+  }
   return this.config.database.find(this.className, this.restWhere, findOptions)
     .then((results) => {
       if (this.className === '_User') {
@@ -549,6 +570,31 @@ RestQuery.prototype.runCount = function() {
   return this.config.database.find(this.className, this.restWhere, this.findOptions)
     .then((c) => {
       this.response.count = c;
+    });
+};
+
+// Augments this.response with all pointers on an object
+RestQuery.prototype.handleIncludeAll = function() {
+  if (!this.includeAll) {
+    return;
+  }
+  return this.config.database.loadSchema()
+    .then(schemaController => schemaController.getOneSchema(this.className))
+    .then(schema => {
+      const includeFields = [];
+      const keyFields = [];
+      for (const field in schema.fields) {
+        if (schema.fields[field].type && schema.fields[field].type === 'Pointer') {
+          includeFields.push([field]);
+          keyFields.push(field);
+        }
+      }
+      // Add fields to include, keys, remove dups
+      this.include = [...new Set([...this.include, ...includeFields])];
+      // if this.keys not set, then all keys are already included
+      if (this.keys) {
+        this.keys = [...new Set([...this.keys, ...keyFields])];
+      }
     });
 };
 

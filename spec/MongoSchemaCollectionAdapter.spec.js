@@ -1,6 +1,6 @@
 'use strict';
 
-const MongoSchemaCollection = require('../src/Adapters/Storage/Mongo/MongoSchemaCollection').default;
+const MongoSchemaCollection = require('../lib/Adapters/Storage/Mongo/MongoSchemaCollection').default;
 
 describe('MongoSchemaCollection', () => {
   it('can transform legacy _client_permissions keys to parse format', done => {

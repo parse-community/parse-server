@@ -1,7 +1,7 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const transform = require('../lib/Adapters/Storage/Mongo/MongoTransform');
 const dd = require('deep-diff');
 const mongodb = require('mongodb');
 
@@ -24,7 +24,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('built-in timestamps', (done) => {
+  it('built-in timestamps with date', (done) => {
     const input = {
       createdAt: "2015-10-06T21:24:50.332Z",
       updatedAt: "2015-10-06T21:24:50.332Z"

@@ -1,9 +1,9 @@
-const Subscription = require('../src/LiveQuery/Subscription').Subscription;
+const Subscription = require('../lib/LiveQuery/Subscription').Subscription;
 let logger;
 describe('Subscription', function() {
 
   beforeEach(function() {
-    logger = require('../src/logger').logger;
+    logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callThrough();
   });
 
