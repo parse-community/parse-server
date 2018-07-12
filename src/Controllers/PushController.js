@@ -41,18 +41,15 @@ export class PushController {
 
     if (body.data && body.data.badge) {
       const badge = body.data.badge;
-      const incrementby = 'incrementby'; // make a variable to reduce likelihood of a typo below
       let restUpdate = {};
       if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
         restUpdate = { badge: { __op: 'Increment', amount: 1 } }
-      } else if (typeof badge == 'string' && badge.toLowerCase().startsWith(incrementby) &&
-                 parseInt(badge.substring(incrementby.length), 10) == badge.substring(incrementby.length) &&
-                 parseInt(badge.substring(incrementby.length), 10) > 0) {
-        restUpdate = { badge: { __op: 'Increment', amount: parseInt(badge.substring(incrementby.length), 10) } }
+      } else if (typeof badge == 'object' && 'increment' in badge && Number(badge.increment)) {
+        restUpdate = { badge: { __op: 'Increment', amount: badge.increment } }
       } else if (Number(badge)) {
         restUpdate = { badge: badge }
       } else {
-        throw "Invalid value for badge, expected number or 'Increment' or 'IncrementByN' (where N is a +ve integer)";
+        throw "Invalid value for badge, expected number or 'Increment' or {increment: number}";
       }
 
       // Force filtering on only valid device tokens
