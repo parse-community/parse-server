@@ -261,7 +261,7 @@ describe('PushController', () => {
     }
     const payload = {data:{
       alert: "Hello World!",
-      badge: {increment: 3},
+      badge: { __op: 'Increment', amount: 3 },
     }}
     const installations = [];
     while(installations.length != 10) {

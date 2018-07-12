@@ -11,7 +11,8 @@ export function isPushIncrementing(body) {
     return true;
   }
 
-  return typeof badge == 'object' && 'increment' in badge && Number(badge.increment);
+  return typeof badge == 'object' && typeof badge.__op == 'string' &&
+         badge.__op.toLowerCase() == "increment" && Number(badge.amount);
 }
 
 const localizableKeys = ['alert', 'title'];
