@@ -2,10 +2,17 @@ import Parse    from 'parse/node';
 import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {
-  return body.data &&
-         body.data.badge &&
-         typeof body.data.badge == 'string' &&
-         body.data.badge.toLowerCase() == "increment"
+  if (!body.data || !body.data.badge) {
+    return false;
+  }
+
+  const badge = body.data.badge;
+  if (typeof badge == 'string' && badge.toLowerCase() == "increment") {
+    return true;
+  }
+
+  return typeof badge == 'object' && typeof badge.__op == 'string' &&
+         badge.__op.toLowerCase() == "increment" && Number(badge.amount);
 }
 
 const localizableKeys = ['alert', 'title'];
