@@ -251,7 +251,7 @@ describe('PushController', () => {
         const badge = body.data.badge;
         installations.forEach((installation) => {
           expect(installation.badge).toEqual(badge);
-          expect(installation.originalBadge + 1).toEqual(installation.badge);
+          expect(installation.originalBadge + 3).toEqual(installation.badge);
         })
         return successfulTransmissions(body, installations);
       },
