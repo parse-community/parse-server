@@ -61,7 +61,7 @@
     "jasmine": "3.1.0",
     "jasmine-spec-reporter": "^4.1.0",
     "mongodb-runner": "4.0.0",
-    "nodemon": "1.18.1",
+    "nodemon": "1.18.2",
     "nyc": "^12.0.2",
     "request-promise": "4.2.2",
     "supports-color": "^5.4.0"
