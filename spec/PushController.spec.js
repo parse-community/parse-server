@@ -1,8 +1,8 @@
 "use strict";
-const PushController = require('../src/Controllers/PushController').PushController;
-const StatusHandler = require('../src/StatusHandler');
-const Config = require('../src/Config');
-const validatePushType = require('../src/Push/utils').validatePushType;
+const PushController = require('../lib/Controllers/PushController').PushController;
+const StatusHandler = require('../lib/StatusHandler');
+const Config = require('../lib/Config');
+const validatePushType = require('../lib/Push/utils').validatePushType;
 
 const successfulTransmissions = function(body, installations) {
 
@@ -237,6 +237,84 @@ describe('PushController', () => {
       for (let i = 0; i < 15; i++) {
         const installation = results[i];
         expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
+      }
+      done()
+    }).catch((err) => {
+      jfail(err);
+      done();
+    });
+  });
+
+  it('properly increment badges by more than 1', (done) => {
+    const pushAdapter = {
+      send: function(body, installations) {
+        const badge = body.data.badge;
+        installations.forEach((installation) => {
+          expect(installation.badge).toEqual(badge);
+          expect(installation.originalBadge + 3).toEqual(installation.badge);
+        })
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios", "android"];
+      }
+    }
+    const payload = {data:{
+      alert: "Hello World!",
+      badge: { __op: 'Increment', amount: 3 },
+    }}
+    const installations = [];
+    while(installations.length != 10) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    while(installations.length != 15) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "android");
+      installations.push(installation);
+    }
+    const config = Config.get(Parse.applicationId);
+    const auth = {
+      isMaster: true
+    }
+
+    const pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return Parse.Object.saveAll(installations)
+    }).then(() => {
+      return pushController.sendPush(payload, {}, config, auth);
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      // Check we actually sent 15 pushes.
+      const query = new Parse.Query('_PushStatus');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('numSent')).toBe(15);
+    }).then(() => {
+      // Check that the installations were actually updated.
+      const query = new Parse.Query('_Installation');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(15);
+      for (let i = 0; i < 15; i++) {
+        const installation = results[i];
+        expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 3);
       }
       done()
     }).catch((err) => {

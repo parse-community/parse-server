@@ -1,5 +1,5 @@
-const ParseServerRESTController = require('../src/ParseServerRESTController').ParseServerRESTController;
-const ParseServer = require('../src/ParseServer').default;
+const ParseServerRESTController = require('../lib/ParseServerRESTController').ParseServerRESTController;
+const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 
 let RESTController;

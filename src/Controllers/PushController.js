@@ -44,10 +44,13 @@ export class PushController {
       let restUpdate = {};
       if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
         restUpdate = { badge: { __op: 'Increment', amount: 1 } }
+      } else if (typeof badge == 'object' && typeof badge.__op == 'string' &&
+                 badge.__op.toLowerCase() == 'increment' && Number(badge.amount)) {
+        restUpdate = { badge: { __op: 'Increment', amount: badge.amount } }
       } else if (Number(badge)) {
         restUpdate = { badge: badge }
       } else {
-        throw "Invalid value for badge, expected number or 'Increment'";
+        throw "Invalid value for badge, expected number or 'Increment' or {increment: number}";
       }
 
       // Force filtering on only valid device tokens

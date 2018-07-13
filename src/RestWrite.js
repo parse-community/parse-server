@@ -282,7 +282,9 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.findUsersWithAuthData(authData).then((r) => {
-    results = r;
+    results = r.filter((user) => {
+      return !this.auth.isMaster && user.ACL && Object.keys(user.ACL).length > 0;
+    });
     if (results.length > 1) {
       // More than 1 user with the passed id's
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
@@ -963,7 +965,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
   if (this.className === '_User' &&
       this.query &&
-      !this.auth.couldUpdateUserId(this.query.objectId)) {
+      this.auth.isUnauthenticated()) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, `Cannot modify user ${this.query.objectId}.`);
   }
 
@@ -980,7 +982,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
   if (this.query) {
     // Force the user to not lockout
     // Matched with parse.com
-    if (this.className === '_User' && this.data.ACL) {
+    if (this.className === '_User' && this.data.ACL && this.auth.isMaster !== true) {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // update password timestamp if user password is being changed

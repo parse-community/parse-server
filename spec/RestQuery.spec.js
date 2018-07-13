@@ -1,8 +1,8 @@
 'use strict'
 // These tests check the "find" functionality of the REST API.
-const auth = require('../src/Auth');
-const Config = require('../src/Config');
-const rest = require('../src/rest');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
 
 const querystring = require('querystring');
 const rp = require('request-promise');

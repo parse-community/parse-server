@@ -1,7 +1,7 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const transform = require('../lib/Adapters/Storage/Mongo/MongoTransform');
 const dd = require('deep-diff');
 const mongodb = require('mongodb');
 
@@ -24,7 +24,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('built-in timestamps', (done) => {
+  it('built-in timestamps with date', (done) => {
     const input = {
       createdAt: "2015-10-06T21:24:50.332Z",
       updatedAt: "2015-10-06T21:24:50.332Z"
@@ -351,6 +351,41 @@ describe('parseObjectToMongoObjectForCreate', () => {
       }
     });
     expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
+    done();
+  });
+
+  it('$regex in $all list', (done) => {
+    const input = {
+      arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$regex: '^\\Qtwo\\E'}, {$regex: '^\\Qthree\\E'}]},
+    };
+    const outputValue = {
+      arrayField: {'$all': [/^\Qone\E/, /^\Qtwo\E/, /^\Qthree\E/]},
+    };
+
+    const output = transform.transformWhere(null, input);
+    jequal(outputValue.arrayField, output.arrayField);
+    done();
+  });
+
+  it('$regex in $all list must be { $regex: "string" }', (done) => {
+    const input = {
+      arrayField: {'$all': [{$regex: 1}]},
+    };
+
+    expect(() => {
+      transform.transformWhere(null, input)
+    }).toThrow();
+    done();
+  });
+
+  it('all values in $all must be $regex (start with string) or non $regex (start with string)', (done) => {
+    const input = {
+      arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$unknown: '^\\Qtwo\\E'}]},
+    };
+
+    expect(() => {
+      transform.transformWhere(null, input)
+    }).toThrow();
     done();
   });
 });

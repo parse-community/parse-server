@@ -5,9 +5,9 @@
 const request = require('request');
 const rp = require('request-promise');
 const Parse = require("parse/node");
-const Config = require('../src/Config');
-const SchemaController = require('../src/Controllers/SchemaController');
-const TestUtils = require('../src/TestUtils');
+const Config = require('../lib/Config');
+const SchemaController = require('../lib/Controllers/SchemaController');
+const TestUtils = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
 
@@ -973,6 +973,25 @@ describe('miscellaneous', function() {
         done();
       });
     });
+  });
+
+  it('test beforeDelete with locked down ACL', async () => {
+    let called = false;
+    Parse.Cloud.beforeDelete('GameScore', (req, res) => {
+      called = true;
+      res.success();
+    });
+    const object = new Parse.Object('GameScore');
+    object.setACL(new Parse.ACL());
+    await object.save();
+    const objects = await new Parse.Query('GameScore').find();
+    expect(objects.length).toBe(0);
+    try {
+      await object.destroy();
+    } catch(e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+    expect(called).toBe(false);
   });
 
   it('test cloud function query parameters', (done) => {

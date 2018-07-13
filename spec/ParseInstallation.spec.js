@@ -2,15 +2,15 @@
 // These tests check the Installations functionality of the REST API.
 // Ported from installation_collection_test.go
 
-const auth = require('../src/Auth');
-const Config = require('../src/Config');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
-const rest = require('../src/rest');
+const rest = require('../lib/rest');
 const request = require("request");
 
 let config;
 let database;
-const defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
+const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 
 const delay = function delay(delay) {
   return new Promise(resolve => setTimeout(resolve, delay));

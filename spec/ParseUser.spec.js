@@ -7,9 +7,10 @@
 
 "use strict";
 
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const request = require('request');
-const passwordCrypto = require('../src/password');
-const Config = require('../src/Config');
+const passwordCrypto = require('../lib/password');
+const Config = require('../lib/Config');
 const rp = require('request-promise');
 
 function verifyACL(user) {
@@ -100,7 +101,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('user login with non-string username with REST API', (done) => {
+  it('user login with non-string username with REST API (again)', (done) => {
     Parse.User.signUp('asdf', 'zxcv', null, {
       success: () => {
         return rp.post({
@@ -211,6 +212,106 @@ describe('Parse.User testing', () => {
       fail("Should not fail");
       done();
     })
+  });
+
+  it('should let masterKey lockout user', (done) => {
+    const user = new Parse.User();
+    const ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('asdf');
+    user.setPassword('zxcv');
+    user.setACL(ACL);
+    user.signUp().then(() => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      // Lock the user down
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      expect(user.getACL().getPublicReadAccess()).toBe(false);
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then(done.fail).catch((err) => {
+      expect(err.message).toBe('Invalid username/password.');
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
+    });
+  });
+
+  it_only_db('mongo')('should let legacy users without ACL login', async() => {
+    const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const adapter = new MongoStorageAdapter({ collectionPrefix: 'test_', uri: databaseURI });
+    await adapter.connect();
+    await adapter.database.dropDatabase();
+    delete adapter.connectionPromise;
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'newUser',
+      password: 'password',
+    });
+
+    const collection = await adapter._adaptiveCollection('_User');
+    await collection.insertOne({
+      // the hashed password is 'password' hashed
+      "_hashed_password": "$2b$10$mJ2ca2UbCM9hlojYHZxkQe8pyEXe5YMg0nMdvP4AJBeqlTEZJ6/Uu",
+      "_session_token": "xxx",
+      "email": "xxx@a.b",
+      "username": "oldUser",
+      "emailVerified": true,
+      "_email_verify_token": "yyy",
+    });
+
+    // get the 2 users
+    const users = await collection.find();
+    expect(users.length).toBe(2);
+
+    const aUser = await Parse.User.logIn('oldUser', 'password');
+    expect(aUser).not.toBeUndefined();
+
+    const newUser = await Parse.User.logIn('newUser', 'password');
+    expect(newUser).not.toBeUndefined();
+  });
+
+  it('should be let masterKey lock user out with authData', (done) => {
+    let objectId;
+    let sessionToken;
+
+    rp.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: { key: "value", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((body) => {
+      objectId = body.objectId;
+      sessionToken = body.sessionToken;
+      expect(sessionToken).toBeDefined();
+      expect(objectId).toBeDefined();
+      const user = new Parse.User();
+      user.id = objectId;
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      // update the user
+      const options = {
+        url: `http://localhost:8378/1/classes/_User/`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { key: "otherValue", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }
+      return rp.post(options);
+    }).then((res) => {
+      // Because the user is locked out, this should behave as creating a new user
+      expect(res.objectId).not.toEqual(objectId);
+    }).then(done)
+      .catch(done.fail);
   });
 
   it("user login with files", (done) => {
@@ -422,6 +523,71 @@ describe('Parse.User testing', () => {
         });
       }
     });
+  });
+
+  it('never locks himself up', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'username',
+      password: 'password'
+    });
+    user.setACL(new Parse.ACL());
+    await user.save();
+    await user.fetch();
+    expect(user.getACL().getReadAccess(user)).toBe(true);
+    expect(user.getACL().getWriteAccess(user)).toBe(true);
+    const publicReadACL = new Parse.ACL();
+    publicReadACL.setPublicReadAccess(true);
+
+    // Create an administrator role with a single admin user
+    const role = new Parse.Role('admin', publicReadACL);
+    const admin = new Parse.User();
+    await admin.signUp({
+      username: 'admin',
+      password: 'admin',
+    });
+    role.getUsers().add(admin);
+    await role.save(null, { useMasterKey: true });
+
+    // Grant the admins write rights on the user
+    const acl = user.getACL();
+    acl.setRoleWriteAccess(role, true);
+    acl.setRoleReadAccess(role, true);
+
+    // Update with the masterKey just to be sure
+    await user.save({ ACL: acl }, { useMasterKey: true });
+
+    // Try to update from admin... should all work fine
+    await user.save({ key: 'fromAdmin'}, { sessionToken: admin.getSessionToken() });
+    await user.fetch();
+    expect(user.toJSON().key).toEqual('fromAdmin');
+
+    // Try to save when logged out (public)
+    let failed = false;
+    try {
+      // Ensure no session token is sent
+      await Parse.User.logOut();
+      await user.save({ key: 'fromPublic'});
+    } catch(e) {
+      failed = true;
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+    }
+    expect({ failed }).toEqual({ failed: true });
+
+    // Try to save with a random user, should fail
+    failed = false;
+    const anyUser = new Parse.User();
+    await anyUser.signUp({
+      username: 'randomUser',
+      password: 'password'
+    });
+    try {
+      await user.save({ key: 'fromAnyUser'});
+    } catch(e) {
+      failed = true;
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+    }
+    expect({ failed }).toEqual({ failed: true });
   });
 
   it("current user", (done) => {
@@ -1722,7 +1888,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should fail linking with existing', (done) => {
+  it('should fail linking with existing through REST', (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -2278,7 +2444,7 @@ describe('Parse.User testing', () => {
         }, (error, response, body) => {
           expect(error).toBe(null);
           const b = JSON.parse(body);
-          expect(b.error).toBe('invalid session token');
+          expect(b.error).toBe('Invalid session token');
           request.put({
             headers: {
               'X-Parse-Application-Id': 'test',
@@ -2370,7 +2536,7 @@ describe('Parse.User testing', () => {
             expect(error).toBe(null);
             const b = JSON.parse(body);
             expect(b.code).toEqual(209);
-            expect(b.error).toBe('invalid session token');
+            expect(b.error).toBe('Invalid session token');
             done();
           });
         });
@@ -2412,7 +2578,7 @@ describe('Parse.User testing', () => {
         }, (error,response,body) => {
           const b = JSON.parse(body);
           expect(b.code).toEqual(209);
-          expect(b.error).toBe('invalid session token');
+          expect(b.error).toBe('Invalid session token');
           done();
         });
       });
@@ -2449,7 +2615,7 @@ describe('Parse.User testing', () => {
       done();
     }, function(err) {
       expect(err.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
-      expect(err.message).toBe('invalid session token');
+      expect(err.message).toBe('Invalid session token');
       done();
     });
   });
@@ -2525,7 +2691,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("invalid session tokens are rejected", (done) => {
+  it("Invalid session tokens are rejected", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
         request.get({
@@ -2538,7 +2704,7 @@ describe('Parse.User testing', () => {
           },
         }, (error, response, body) => {
           expect(body.code).toBe(209);
-          expect(body.error).toBe('invalid session token');
+          expect(body.error).toBe('Invalid session token');
           done();
         })
       }
@@ -3515,14 +3681,18 @@ describe('Parse.User testing', () => {
       email: 'yo@lo.com'
     }).then(() => {
       const token = user.getSessionToken();
-      const promises = [];
-      while(promises.length != 5) {
-        promises.push(Parse.User.logIn('yolo', 'yolo').then((res) => {
-          // ensure a new session token is generated at each login
-          expect(res.getSessionToken()).not.toBe(token);
-        }));
+      let promise = Promise.resolve();
+      let count = 0;
+      while(count < 5) {
+        promise = promise.then(() => {
+          return Parse.User.logIn('yolo', 'yolo').then((res) => {
+            // ensure a new session token is generated at each login
+            expect(res.getSessionToken()).not.toBe(token);
+          });
+        });
+        count++;
       }
-      return Promise.all(promises);
+      return promise;
     }).then(() => {
       // wait because session destruction is not synchronous
       return new Promise((resolve) => {

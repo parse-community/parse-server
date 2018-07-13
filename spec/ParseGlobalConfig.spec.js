@@ -1,7 +1,7 @@
 'use strict';
 
 const request = require('request');
-const Config = require('../src/Config');
+const Config = require('../lib/Config');
 
 describe('a GlobalConfig', () => {
   beforeEach(done => {

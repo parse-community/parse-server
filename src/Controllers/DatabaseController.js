@@ -50,7 +50,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 }
 
-const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
+const specialQuerykeys = ['$and', '$or', '$nor', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
 const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
@@ -108,6 +108,14 @@ const validateQuery = (query: any): void => {
       query.$and.forEach(validateQuery);
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+    }
+  }
+
+  if (query.$nor) {
+    if (query.$nor instanceof Array && query.$nor.length > 0) {
+      query.$nor.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $nor format - use an array of at least 1 value.');
     }
   }
 
@@ -286,6 +294,16 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
   return output;
 }
 
+/**
+ * When querying, the fieldName may be compound, extract the root fieldName
+ *     `temperature.celsius` becomes `temperature`
+ * @param {string} fieldName that may be a compound field name
+ * @returns {string} the root name of the field
+ */
+const getRootFieldName = (fieldName: string): string => {
+  return fieldName.split('.')[0]
+}
+
 const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 
 class DatabaseController {
@@ -403,12 +421,12 @@ class DatabaseController {
                   if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
-                  fieldName = fieldName.split('.')[0];
-                  if (!SchemaController.fieldNameIsValid(fieldName) && !isSpecialUpdateKey(fieldName)) {
+                  const rootFieldName = getRootFieldName(fieldName);
+                  if (!SchemaController.fieldNameIsValid(rootFieldName) && !isSpecialUpdateKey(rootFieldName)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
                 });
-                for (const updateOperation: any in update) {
+                for (const updateOperation in update) {
                   if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
                     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
                   }
@@ -636,11 +654,16 @@ class DatabaseController {
   }
 
   // Won't delete collections in the system namespace
-  // Returns a promise.
-  deleteEverything() {
+  /**
+   * Delete all classes and clears the schema cache
+   *
+   * @param {boolean} fast set to true if it's ok to just delete rows and not indexes
+   * @returns {Promise<void>} when the deletions completes
+   */
+  deleteEverything(fast: boolean = false): Promise<void> {
     this.schemaPromise = null;
     return Promise.all([
-      this.adapter.deleteAllClasses(),
+      this.adapter.deleteAllClasses(fast),
       this.schemaCache.clear()
     ]);
   }
@@ -851,7 +874,8 @@ class DatabaseController {
     op,
     distinct,
     pipeline,
-    readPreference
+    readPreference,
+    isWrite,
   }: any = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
@@ -892,7 +916,8 @@ class DatabaseController {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
               }
-              if (!SchemaController.fieldNameIsValid(fieldName)) {
+              const rootFieldName = getRootFieldName(fieldName);
+              if (!SchemaController.fieldNameIsValid(rootFieldName)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
               }
             });
@@ -911,7 +936,11 @@ class DatabaseController {
                   }
                 }
                 if (!isMaster) {
-                  query = addReadACL(query, aclGroup);
+                  if (isWrite) {
+                    query = addWriteACL(query, aclGroup);
+                  } else {
+                    query = addReadACL(query, aclGroup);
+                  }
                 }
                 validateQuery(query);
                 if (count) {

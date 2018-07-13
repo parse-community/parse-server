@@ -1,7 +1,85 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...master)
+
+### 2.8.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.2)
+
+#### Improvements:
+
+* Removes npm-git scripts as npm supports using git repositories that build, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+
+### 2.8.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...2.8.1)
+
+##### Bug Fixes:
+* Ensure legacy users without ACL's are not locked out, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Use common HTTP agent to increase webhooks performance, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Adds withinPolygon support for Polygon objects, thanks to [Mads Bjerre](https://github.com/madsb)
+
+#### Dependency Updates:
+* [ws@5.2.0](https://www.npmjs.com/package/ws)
+* [commander@2.15.1](https://www.npmjs.com/package/commander)
+* [nodemon@1.17.5](https://www.npmjs.com/package/nodemon)
+
+##### Devevelopment Dependencies Updates:
+* [flow-bin@0.73.0](https://www.npmjs.com/package/flow-bin)
+* [cross-env@5.1.6](https://www.npmjs.com/package/cross-env)
+* [gaze@1.1.3](https://www.npmjs.com/package/gaze)
+* [deepcopy@1.0.0](https://www.npmjs.com/package/deepcopy)
+* [deep-diff@1.0.1](https://www.npmjs.com/package/deep-diff)
+
+
+### 2.8.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...2.8.0)
+
+Ensure all the files are properly exported to the final package.
+
+### 2.8.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.0...2.7.4)
+
+#### New Features
+* Adding Mongodb element to add `arrayMatches` the #4762 (#4766), thanks to [Jérémy Piednoel](https://github.com/jeremypiednoel)
+* Adds ability to Lockout users (#4749), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes:
+* Fixes issue when using afterFind with relations (#4752), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New query condition support to match all strings that starts with some other given strings (#3864), thanks to [Eduard Bosch Bertran](https://github.com/eduardbosch)
+* Allow creation of indices on default fields (#4738), thanks to [Claire Neveu](https://github.com/ClaireNeveu)
+* Purging empty class (#4676), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Postgres: Fixes issues comparing to zero or false (#4667), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Fix Aggregate Match Pointer (#4643), thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements:
+* Allow Parse.Error when returning from Cloud Code (#4695), thanks to [Saulo Tauil](https://github.com/saulogt)
+* Fix typo: "requrest" -> "request" (#4761), thanks to [Joseph Frazier](https://github.com/josephfrazier)
+* Send version for Vkontakte API (#4725), thanks to [oleg](https://github.com/alekoleg)
+* Ensure we respond with invalid password even if email is unverified (#4708), thanks to [dblythy](https://github.com/dblythy)
+* Add _password_history to default sensitive data (#4699), thanks to [Jong Eun Lee](https://github.com/yomybaby)
+* Check for node version in postinstall script (#4657), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Remove FB Graph API version from URL to use the oldest non deprecated version, thanks to [SebC](https://github.com/SebC99)
+
+#### Dependency Updates:
+* [@parse/push-adapter@2.0.3](https://www.npmjs.com/package/@parse/push-adapter)
+* [@parse/simple-mailgun-adapter@1.0.2](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
+* [uws@10.148.0](https://www.npmjs.com/package/uws)
+* [body-parser@1.18.3](https://www.npmjs.com/package/body-parser)
+* [mime@2.3.1](https://www.npmjs.com/package/mime)
+* [request@2.85.0](https://www.npmjs.com/package/request)
+* [mongodb@3.0.7](https://www.npmjs.com/package/mongodb)
+* [bcrypt@2.0.1](https://www.npmjs.com/package/bcrypt)
+* [ws@5.1.1](https://www.npmjs.com/package/ws)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.1.5](https://www.npmjs.com/package/cross-env)
+* [flow-bin@0.71.0](https://www.npmjs.com/package/flow-bin)
+* [deep-diff@1.0.0](https://www.npmjs.com/package/deep-diff)
+* [nodemon@1.17.3](https://www.npmjs.com/package/nodemon)
+
 
 ### 2.7.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...2.7.3)
@@ -1079,7 +1157,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Improve compatability of cloud code beforeSave hook for newly created object
 * Fix: ACL creation for master key only objects
 * Fix: Allow uploading files without Content-Type
-* Fix: Add features to http requrest to match Parse.com
+* Fix: Add features to http request to match Parse.com
 * Fix: Bugs in development script when running from locations other than project root
 * Fix: Can pass query constraints in URL
 * Fix: Objects with legacy "_tombstone" key now don't cause issues.

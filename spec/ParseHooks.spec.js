@@ -1,20 +1,28 @@
 "use strict";
 /* global describe, it, expect, fail, Parse */
 const request = require('request');
-const triggers = require('../src/triggers');
-const HooksController = require('../src/Controllers/HooksController').default;
+const triggers = require('../lib/triggers');
+const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require("express");
 const bodyParser = require('body-parser');
 
 const port = 12345;
 const hookServerURL = "http://localhost:" + port;
-const AppCache = require('../src/cache').AppCache;
-
-const app = express();
-app.use(bodyParser.json({ 'type': '*/*' }))
-app.listen(12345);
+const AppCache = require('../lib/cache').AppCache;
 
 describe('Hooks', () => {
+  let server;
+  let app;
+  beforeAll((done) => {
+    app = express();
+    app.use(bodyParser.json({ 'type': '*/*' }))
+    server = app.listen(12345, undefined, done);
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
   it("should have no hooks registered", (done) => {
     Parse.Hooks.getFunctions().then((res) => {
       expect(res.constructor).toBe(Array.prototype.constructor);
@@ -328,7 +336,7 @@ describe('Hooks', () => {
     });
   });
 
-  it("should run the function on the test server", (done) => {
+  it("should run the function on the test server (error handling)", (done) => {
 
     app.post("/SomeFunctionError", function(req, res) {
       res.json({error: {code: 1337, error: "hacking that one!"}});

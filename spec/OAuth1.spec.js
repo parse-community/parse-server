@@ -1,4 +1,4 @@
-const OAuth = require("../src/Adapters/Auth/OAuth1Client");
+const OAuth = require("../lib/Adapters/Auth/OAuth1Client");
 
 describe('OAuth', function() {
   it("Nonce should have right length", (done) => {

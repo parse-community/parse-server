@@ -306,7 +306,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
-    } else if (fieldName === '$or' || fieldName === '$and') {
+    } else if (['$or', '$nor', '$and'].includes(fieldName)) {
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach((subQuery) =>  {
@@ -317,8 +317,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           index += clause.values.length;
         }
       });
-      const orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
-      patterns.push(`(${clauses.join(orOrAnd)})`);
+
+      const orOrAnd = fieldName === '$and' ? ' AND ' : ' OR ';
+      const not = fieldName === '$nor' ? ' NOT ' : '';
+
+      patterns.push(`${not}(${clauses.join(orOrAnd)})`);
       values.push(...clauseValues);
     }
 
@@ -418,7 +421,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
-      patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      if (isAnyValueRegexStartsWith(fieldValue.$all)) {
+        if (!isAllValuesRegexOrNone(fieldValue.$all)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+            + fieldValue.$all);
+        }
+
+        for (let i = 0; i < fieldValue.$all.length; i += 1) {
+          const value = processRegexPattern(fieldValue.$all[i].$regex);
+          fieldValue.$all[i] = value.substring(1) + '%';
+        }
+        patterns.push(`array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`);
+      } else {
+        patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      }
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index += 2;
     }
@@ -431,6 +447,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       }
       values.push(fieldName);
       index += 1;
+    }
+
+    if (fieldValue.$containedBy) {
+      const arr = fieldValue.$containedBy;
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
+      }
+
+      patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
+      values.push(fieldName, JSON.stringify(arr));
+      index += 2;
     }
 
     if (fieldValue.$text) {
@@ -505,21 +535,60 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index += 2;
     }
 
+    if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
+      const centerSphere = fieldValue.$geoWithin.$centerSphere;
+      if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance');
+      }
+      // Get point, convert to geo point if necessary and validate
+      let point = centerSphere[0];
+      if (point instanceof Array && point.length === 2) {
+        point = new Parse.GeoPoint(point[1], point[0]);
+      } else if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
+      }
+      Parse.GeoPoint._validate(point.latitude, point.longitude);
+      // Get distance and validate
+      const distance = centerSphere[1];
+      if(isNaN(distance) || distance < 0) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere distance invalid');
+      }
+      const distanceInKM = distance * 6371 * 1000;
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) <= $${index + 3}`);
+      values.push(fieldName, point.longitude, point.latitude, distanceInKM);
+      index += 4;
+    }
+
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
       const polygon = fieldValue.$geoWithin.$polygon;
-      if (!(polygon instanceof Array)) {
+      let points;
+      if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
+        if (!polygon.coordinates || polygon.coordinates.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
+          );
+        }
+        points = polygon.coordinates;
+      } else if ((polygon instanceof Array)) {
+        if (polygon.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          );
+        }
+        points = polygon;
+      } else {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
         );
       }
-      if (polygon.length < 3) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-        );
-      }
-      const points = polygon.map((point) => {
+      points = points.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          Parse.GeoPoint._validate(point[1], point[0]);
+          return `(${point[0]}, ${point[1]})`;
+        }
         if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
         } else {
@@ -1314,7 +1383,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
-        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+        updatePatterns.push(`$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
 
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
@@ -1387,11 +1456,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (sort) {
       const sortCopy: any = sort;
       const sorting = Object.keys(sort).map((key) => {
+        const transformKey = transformDotFieldToComponents(key).join('->');
         // Using $idx pattern gives:  non-integer constant in ORDER BY
         if (sortCopy[key] === 1) {
-          return `"${key}" ASC`;
+          return `${transformKey} ASC`;
         }
-        return `"${key}" DESC`;
+        return `${transformKey} DESC`;
       }).join();
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
@@ -1795,6 +1865,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             t.none(sql.array.addUnique),
             t.none(sql.array.remove),
             t.none(sql.array.containsAll),
+            t.none(sql.array.containsAllRegex),
             t.none(sql.array.contains)
           ]);
         });
@@ -2005,6 +2076,40 @@ function processRegexPattern(s) {
   return literalizeRegexPart(s);
 }
 
+function isStartsWithRegex(value) {
+  if (!value || typeof value !== 'string' || !value.startsWith('^')) {
+    return false;
+  }
+
+  const matches = value.match(/\^\\Q.*\\E/);
+  return !!matches;
+}
+
+function isAllValuesRegexOrNone(values) {
+  if (!values || !Array.isArray(values) || values.length === 0) {
+    return true;
+  }
+
+  const firstValuesIsRegex = isStartsWithRegex(values[0].$regex);
+  if (values.length === 1) {
+    return firstValuesIsRegex;
+  }
+
+  for (let i = 1, length = values.length; i < length; ++i) {
+    if (firstValuesIsRegex !== isStartsWithRegex(values[i].$regex)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isAnyValueRegexStartsWith(values) {
+  return values.some(function (value) {
+    return isStartsWithRegex(value.$regex);
+  });
+}
+
 function createLiteralRegex(remaining) {
   return remaining.split('').map(c => {
     if (c.match(/[0-9a-zA-Z]/) !== null) {
@@ -2047,5 +2152,14 @@ function literalizeRegexPart(s: string) {
       .replace(/^'([^'])/, `''$1`)
   );
 }
+
+var GeoPointCoder = {
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'GeoPoint'
+    );
+  }
+};
 
 export default PostgresStorageAdapter;
