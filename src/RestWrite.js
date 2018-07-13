@@ -190,9 +190,16 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
     if (!this.query) {
       this.data.createdAt = this.updatedAt;
 
-      // Only assign new objectId if we are creating new object
-      if (!this.data.objectId) {
+      const creatingObject = !this.data.objectId;
+      if (creatingObject) {
+        // Only assign new objectId if we are creating new object
         this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+        // On Role, assume is not disabled, and assign 'enabled' to true
+        if(this.className === '_Role'){
+          if(this.data.enabled === undefined){
+            this.data.enabled = true;
+          }
+        }
       }
     }
   }
@@ -1085,6 +1092,12 @@ RestWrite.prototype.runDatabaseOperation = function() {
       .then(response => {
         response.objectId = this.data.objectId;
         response.createdAt = this.data.createdAt;
+
+        // (#4591) Role "enabled" key is generated with on create, and SDKs might not support this change yet.
+        // removing this line will brake RoleTest ("should create an enabled role by default")
+        if(this.className === "_Role" && !this.query){
+          response.enabled = this.data.enabled;
+        }
 
         if (this.responseShouldHaveUsername) {
           response.username = this.data.username;

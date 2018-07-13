@@ -527,4 +527,320 @@ describe('Parse Role testing', () => {
           });
       });
   });
+
+  it('should be able to create an enabled role (#4591)', (done) => {
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('some_active_role', roleACL);
+    role.set('enabled', true);
+    role.save({}, {useMasterKey : true})
+      .then((savedRole)=>{
+        expect(savedRole.get('enabled')).toEqual(true);
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((roles) => {
+        expect(roles.length).toEqual(1);
+        const role = roles[0];
+        expect(role.get('enabled')).toEqual(true);
+        done();
+      });
+  });
+
+  it('should be able to create a disabled role (#4591)', (done) => {
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('some_disabled_role', roleACL);
+    role.set('enabled', false);
+    role.save({}, {useMasterKey : true})
+      .then(() => {
+        expect(role.get('enabled')).toEqual(false);
+
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((roles) => {
+        expect(roles.length).toEqual(1);
+        const role = roles[0];
+        expect(role.get('enabled')).toEqual(false);
+        done();
+      });
+  });
+
+  it('should create an enabled role by default (#4591)', (done) => {
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('some_active_role', roleACL);
+    role.save({}, {useMasterKey : true})
+      .then(() => {
+        expect(role.get('enabled')).toEqual(true);
+
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((roles) => {
+        expect(roles.length).toEqual(1);
+        const role = roles[0];
+        expect(role.get('enabled')).toEqual(true);
+        done();
+      });
+  });
+
+  it('should properly handle enabled/disabled role states permissions across multiple role levels properly (#4591)', (done) => {
+    // Owners inherit from Collaborators
+    // Collaborators inherit from members
+    // Members does not inherit from any role
+    // Owner -> Collaborator -> member -> [protected objects]
+    // If any role is disabled, the remaining role link tree is broken.
+    const owner = new Parse.User();
+    const collaborator = new Parse.User();
+    const member = new Parse.User();
+    let ownerRole, collaboratorRole, memberRole;
+    let objectOnlyForOwners; // Acl access by owners only
+    let objectOnlyForCollaborators; // Acl access by collaborators only
+    let objectOnlyForMembers; // Acl access by members only
+    let ownerACL, collaboratorACL, memberACL;
+
+    return owner.save({ username: 'owner', password: 'pass' })
+      .then(() => collaborator.save({ username: 'collaborator', password: 'pass' }))
+      .then(() => member.save({ username: 'member', password: 'pass' }))
+      .then(() => {
+        ownerACL = new Parse.ACL();
+        ownerACL.setRoleReadAccess("ownerRole", true);
+        ownerACL.setRoleWriteAccess("ownerRole", true);
+        ownerRole = new Parse.Role('ownerRole', ownerACL);
+        ownerRole.getUsers().add(owner);
+        return ownerRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        collaboratorACL = new Parse.ACL();
+        collaboratorACL.setRoleReadAccess('collaboratorRole', true);
+        collaboratorACL.setRoleWriteAccess('collaboratorRole', true);
+        collaboratorRole = new Parse.Role('collaboratorRole', collaboratorACL);
+        collaboratorRole.getUsers().add(collaborator);
+        // owners inherit from collaborators
+        collaboratorRole.getRoles().add(ownerRole);
+        return collaboratorRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        memberACL = new Parse.ACL();
+        memberACL.setRoleReadAccess('memberRole', true);
+        memberRole = new Parse.Role('memberRole', memberACL);
+        memberRole.set('enabled', false); // Disabled!!
+        memberRole.getUsers().add(member);
+        // collaborators inherit from members
+        memberRole.getRoles().add(collaboratorRole);
+        return memberRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        // routine check
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((x) => {
+        expect(x.length).toEqual(3);
+        x.forEach(role => {
+          if(role.name === "ownerRole") expect(role.get('enabled').toBeEqual(true));
+          if(role.name === "collaboratorRole") expect(role.get('enabled').toBeEqual(true));
+          if(role.name === "memberRole") expect(role.get('enabled').toBeEqual(false));
+        });
+
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("memberRole", true);
+        acl.setRoleWriteAccess("memberRole", true);
+        objectOnlyForMembers = new Parse.Object('TestObjectRoles');
+        objectOnlyForMembers.setACL(acl);
+        return objectOnlyForMembers.save(null, { useMasterKey: true });
+      }).then(() => {
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("collaboratorRole", true);
+        acl.setRoleWriteAccess("collaboratorRole", true);
+        objectOnlyForCollaborators = new Parse.Object('TestObjectRoles');
+        objectOnlyForCollaborators.setACL(acl);
+        return objectOnlyForCollaborators.save(null, { useMasterKey: true });
+      }).then(() => {
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("ownerRole", true);
+        acl.setRoleWriteAccess("ownerRole", true);
+        objectOnlyForOwners = new Parse.Object('TestObjectRoles');
+        objectOnlyForOwners.setACL(acl);
+        return objectOnlyForOwners.save(null, { useMasterKey: true });
+      })
+
+      .then(() => {
+        // First level role - members should not be able to edit object when their role is disabled
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: member.getSessionToken() });
+      }).then(() => {
+        fail('A disabled role cannot grant permission to its users. (Level-0)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Second level role - collaborators should not be able to edit object when member role is disabled
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: collaborator.getSessionToken() });
+      }).then(() => {
+        fail('A disabled role cannot grant permission to its child roles. (Level-1)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Third level role - admins should not be able to edit object when member role is disabled
+        return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        fail('A disabled role cannot grant permission to its child roles. (Level-2)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Owners should be able to inherit form collaborator role and edit object
+        objectOnlyForCollaborators.set('hello', 'hello');
+        return objectOnlyForCollaborators.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        return Promise.resolve()
+      }, () => {
+        fail('Enabled roles should grant permissions to child roles normally.');
+        done()
+      })
+
+      .then(() => {
+        // Set members enabled and collaborators to disabled
+        // Members should be able to edit. Collaborators and Owners should not.
+        memberRole.set('enabled', true);
+        collaboratorRole.set('enabled', false);
+        return memberRole.save({}, {useMasterKey: true}).then(() => collaboratorRole.save({}, {useMasterKey: true}));
+      }).then(() => {
+        // this should succeed
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: member.getSessionToken() });
+      }, () => {
+        fail('Enabled roles should grant permissions to its users.');
+        done()
+      })
+      .then(() => {
+        expect(objectOnlyForMembers.get('hello')).toEqual('hello');
+        // this should fail, collaborator should not be able to edit, since their role is disabled
+        objectOnlyForMembers.unset('hello');
+        return objectOnlyForMembers.save(null, { sessionToken: collaborator.getSessionToken() });
+      })
+      .then(() => {
+        fail('Disabled roles cannot not grant permission ot its users');
+        done();
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+      .then(() => {
+        // this should fail
+        return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        fail('Disabled roles cannot not grant permission to its children roles');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      // Extra uneeded check
+      .then(() => {
+        // Check that role tree operate normally in enabled/disabled state.
+        // Collaborators should not be able to edit admin role protected objects.
+        collaboratorRole.set('enabled', true);
+        ownerRole.set('enabled', false);
+        return ownerRole.save({}, {useMasterKey: true}).then(() => collaboratorRole.save({}, {useMasterKey: true}));
+      }).then(() => {
+        objectOnlyForOwners.unset('hello');
+        return objectOnlyForOwners.save(null, { sessionToken: collaborator.getSessionToken() });
+      }).then(() => {
+        fail('Roles do not work this way. Child inherits from parent, not the other way around');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        done();
+      });
+  });
+
+  it('parent role should still be able to edit roles that it has disabled and have R/W access to (#4591)', (done) => {
+    const admin = new Parse.User();
+    const member = new Parse.User();
+    let adminRole, membersRole;
+    let adminACL, memberACL;
+
+    return admin.save({ username: 'admin', password: 'pass' })
+      .then(() => member.save({ username: 'member', password: 'pass' }))
+      .then(() => {
+        adminACL = new Parse.ACL();
+        adminACL.setRoleReadAccess("ownerRole", true);
+        adminACL.setRoleWriteAccess("ownerRole", true);
+        adminRole = new Parse.Role('ownerRole', adminACL);
+        adminRole.getUsers().add(admin);
+        return adminRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        memberACL = new Parse.ACL();
+        memberACL.setRoleReadAccess('collaboratorRole', true);
+        // admin can write on this role
+        memberACL.setRoleWriteAccess('ownerRole', true);
+        membersRole = new Parse.Role('collaboratorRole', memberACL);
+        membersRole.getUsers().add(member);
+        // admins inherit from members
+        membersRole.getRoles().add(adminRole);
+        return membersRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        // admins should be able to edit members when members are enabled
+        membersRole.set('enabled', false)
+        return membersRole.save(null, { sessionToken: admin.getSessionToken() });
+      }).then(() => {
+        return Promise.resolve()
+      }, () => {
+        fail('parent role should be able to edit child roles when enabled child roles are enabled');
+        return Promise.resolve()
+      })
+      .then(() => {
+        // admins should be able to edit members even when members role is disabled
+        membersRole.set('enabled', true)
+        return membersRole.save(null, { sessionToken: admin.getSessionToken() });
+      }).then(() => {
+        return Promise.resolve()
+      }, () => {
+        fail('parent role should be able to edit child roles when enabled child roles are disabled');
+        return Promise.resolve()
+      })
+      .then(() => {
+        done();
+      });
+  });
+
+  it('disabled roles cannot edit themselves even with R/W access (#4591)', (done) => {
+    const member = new Parse.User();
+    let role;
+    let roleACL;
+
+    return member.save({ username: 'member', password: 'pass' })
+      .then(() => {
+        roleACL = new Parse.ACL();
+        roleACL.setRoleReadAccess("ownerRole", true);
+        roleACL.setRoleWriteAccess("ownerRole", true);
+        role = new Parse.Role('ownerRole', roleACL);
+        role.getUsers().add(member);
+        role.set('enabled', false);
+        return role.save({}, { useMasterKey: true });
+      }).then(() => {
+        role.set('enabled', true)
+        return role.save(null, { sessionToken: member.getSessionToken() });
+      }).then(() => {
+        fail('disabled role should not grand permission to its users, even for itself');
+        done();
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        done()
+      })
+  });
+
 });

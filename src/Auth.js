@@ -131,6 +131,11 @@ Auth.prototype._loadRoles = function() {
         __type: 'Pointer',
         className: '_User',
         objectId: this.user.id
+      },
+      // By using $ne instead of $eq=true we support earlier versions of parse where the 'enabled' field might be undefined
+      // $ne should not affect performance since Roles are often fetched from cache
+      'enabled': {
+        '$ne' : false
       }
     };
     // First get the role ids this user is directly a member of
@@ -191,6 +196,9 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queri
   } else {
     restWhere = { 'roles': { '$in': ins }}
   }
+  // Always make sure roles are enabled
+  restWhere.enabled = { '$ne' : false }
+
   const query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
   return query.execute().then((response) => {
     var results = response.results;
