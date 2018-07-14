@@ -427,7 +427,8 @@ class DatabaseController {
                   }
                 });
                 for (const updateOperation in update) {
-                  if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
+                  const a: any = updateOperation
+                  if (Object.keys(a).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
                     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
                   }
                 }
@@ -660,7 +661,7 @@ class DatabaseController {
    * @param {boolean} fast set to true if it's ok to just delete rows and not indexes
    * @returns {Promise<void>} when the deletions completes
    */
-  deleteEverything(fast: boolean = false): Promise<void> {
+  deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
     return Promise.all([
       this.adapter.deleteAllClasses(fast),
