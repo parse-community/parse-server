@@ -1,6 +1,7 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+import { AuthRoles } from "./AuthRoles";
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -17,6 +18,11 @@ function Auth({ config, isMaster = false, isReadOnly = false, user, installation
   this.userRoles = [];
   this.fetchedRoles = false;
   this.rolePromise = null;
+
+  // return the auth role validator
+  this.getAuthRoles = () => {
+    return new AuthRoles(this, master(this.config), this.isMaster)
+  }
 }
 
 // Whether this auth could possibly modify the given user id.
@@ -126,92 +132,24 @@ Auth.prototype._loadRoles = function() {
       return Promise.resolve(cachedRoles);
     }
 
-    var restWhere = {
-      'users': {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.user.id
-      }
-    };
-    // First get the role ids this user is directly a member of
-    var query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-    return query.execute().then((response) => {
-      var results = response.results;
-      if (!results.length) {
-        this.userRoles = [];
+    const authRoles = this.getAuthRoles()
+    return authRoles.findRoles()
+      .then((result) => {
+        // mark the roles as fetched and clear promise
         this.fetchedRoles = true;
         this.rolePromise = null;
-
+        // role names
+        const names = result.names;
+        if (!names.length) {
+          this.userRoles = [];
+        }else{
+          this.userRoles = names
+        }
         cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
-        return Promise.resolve(this.userRoles);
-      }
-      var rolesMap = results.reduce((m, r) => {
-        m.names.push(r.name);
-        m.ids.push(r.objectId);
-        return m;
-      }, {ids: [], names: []});
-
-      // run the recursive finding
-      return this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names)
-        .then((roleNames) => {
-          this.userRoles = roleNames.map((r) => {
-            return 'role:' + r;
-          });
-          this.fetchedRoles = true;
-          this.rolePromise = null;
-          cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
-          return Promise.resolve(this.userRoles);
-        });
-    });
+        return Promise.resolve(this.userRoles)
+      })
   });
 };
-
-// Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queriedRoles = {}) {
-  const ins = roleIDs.filter((roleID) => {
-    return queriedRoles[roleID] !== true;
-  }).map((roleID) => {
-    // mark as queried
-    queriedRoles[roleID] = true;
-    return {
-      __type: 'Pointer',
-      className: '_Role',
-      objectId: roleID
-    }
-  });
-
-  // all roles are accounted for, return the names
-  if (ins.length == 0) {
-    return Promise.resolve([...new Set(names)]);
-  }
-  // Build an OR query across all parentRoles
-  let restWhere;
-  if (ins.length == 1) {
-    restWhere = { 'roles': ins[0] };
-  } else {
-    restWhere = { 'roles': { '$in': ins }}
-  }
-  const query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-  return query.execute().then((response) => {
-    var results = response.results;
-    // Nothing found
-    if (!results.length) {
-      return Promise.resolve(names);
-    }
-    // Map the results with all Ids and names
-    const resultMap = results.reduce((memo, role) => {
-      memo.names.push(role.name);
-      memo.ids.push(role.objectId);
-      return memo;
-    }, {ids: [], names: []});
-    // store the new found names
-    names = names.concat(resultMap.names);
-    // find the next ones, circular roles will be cut
-    return this._getAllRolesNamesForRoleIds(resultMap.ids, names, queriedRoles)
-  }).then((names) => {
-    return Promise.resolve([...new Set(names)])
-  })
-}
 
 const createSession = function(config, {
   userId,
