@@ -1,5 +1,3 @@
-/*eslint no-console: ["error", { allow: ["warn", "log", "error"] }] */
-
 const RestQuery = require('./RestQuery');
 import  _ from "lodash";
 import Auth from "./Auth";
@@ -94,7 +92,6 @@ AuthRoles.prototype.findRolesOfRolesRecursively = function() {
   const query = new RestQuery(this.auth.config, this.master, '_Role', restWhere, {});
   return query.execute()
     .then((response) => {
-      // console.log('Roles for', this.manifest[roleIdToCompute], response);
       // remove from pending
       _.pullAt(this.toCompute, [0])
       // add to computed
@@ -139,8 +136,6 @@ AuthRoles.prototype.addToManifest = function(roles, parentId = undefined){
 AuthRoles.prototype.computeAccess = function() {
   return new Promise((resolve) => {
     _.forEach(this.manifest, (role) => {
-      // console.log("")
-      // console.log("Computing Access for role ... ", role.name);
       this.computeAccessOnRole(role)
     })
     resolve()
@@ -160,18 +155,13 @@ AuthRoles.prototype.computeAccessOnRole = function(role){
     // currently processing. It is considered circular (inconclusive)
     // ex: R3* <- R2 <- R3* <- R1
     result = OppResult.inconclusive
-    // console.warn("         -> Role Already being processed");
   }else if(role.tag === OppResult.rejected){
     result = OppResult.rejected
-    // console.error("         -> Role Already rejected");
   }else if(role.tag === OppResult.accepted){
     result = OppResult.accepted
-    // console.log("         -> Role Already accepted");
   }else{
     // mark processing
     role.tag = OppResult.processing
-
-    // console.log(" (role parents ", role.parents,")")
 
     // paths are computed following 'or' logic
     // only one path to a role is sufficient to accept the role
@@ -213,7 +203,6 @@ AuthRoles.prototype.computeAccessOnRole = function(role){
  * Links conflicts. Roles that blocks other roles
  */
 AuthRoles.prototype.markRejected = function(roleBlocking, roleThatIsBlocked){
-  // console.log(roleBlocking.name," is blocking ", roleThatIsBlocked.name);
   const roleBlockingId = roleBlocking.objectId;
   const roleThatIsBlockedId = roleThatIsBlocked.objectId;
   if(this.rejections[roleBlockingId]){
@@ -225,18 +214,21 @@ AuthRoles.prototype.markRejected = function(roleBlocking, roleThatIsBlocked){
 
 /**
  * Loops through previous roles that were rejected because of the
- * role that was just accepted and re operate on that role.
+ * role that was just accepted and re-operate on that role.
  */
 AuthRoles.prototype.resolvePreviousRejectionsIfPossible = function(roleThatWasJustAccepted){
   const rejections = this.rejections[ roleThatWasJustAccepted.objectId ]
-  // console.log('Trying to resolve ...', rejections);
   if(rejections){
     _.forEach(rejections, (previouslyRejectedRoleIdByTheOneThatWasJustAccepted) => {
-      const role = this.manifest[ previouslyRejectedRoleIdByTheOneThatWasJustAccepted ]
-      if(role.tag !== OppResult.accepted){
-        // // console.log('Can Resolve');
-        role.tag = OppResult.accepted;
-        this.resolvePreviousRejectionsIfPossible(role)
+      const rolePreviouslyRejected = this.manifest[ previouslyRejectedRoleIdByTheOneThatWasJustAccepted ]
+      // make sure we it is still rejected
+      if(rolePreviouslyRejected.tag !== OppResult.accepted){
+        // accept it
+        rolePreviouslyRejected.tag = OppResult.accepted;
+        addIfNeed(this.accessibleRoles.ids, rolePreviouslyRejected.objectId)
+        addIfNeed(this.accessibleRoles.names, "role:" + rolePreviouslyRejected.name)
+        // do the same of this role
+        this.resolvePreviousRejectionsIfPossible(rolePreviouslyRejected)
       }
     })
   }
@@ -253,23 +245,19 @@ AuthRoles.prototype.isAnyPathValid = function(role){
   for (let index = 0; index < parentIds.length; index++) {
     const parentId = parentIds[index];
     const parentRole = this.manifest[parentId]
-    // console.log("         ...checking path", parentRole.name, "(", parentRole.objectId ,")")
     if(!parentRole) continue;
 
     const pathResult = this.computeAccessOnRole(parentRole)
     if(pathResult === OppResult.accepted){
-      // console.log("         accepted")
       // path accepted, skip all other paths and return
       return OppResult.accepted
     }else if(pathResult === OppResult.rejected){
-      // console.error("         rejected")
       // path rejected, but prioritize inconclusive over
       // rejected.
       if(finalResult !== OppResult.inconclusive){
         finalResult = OppResult.rejected
       }
     }else if(pathResult === OppResult.inconclusive){
-      // console.log("         inconclusive")
       finalResult = OppResult.inconclusive
     }
 
@@ -290,29 +278,22 @@ AuthRoles.prototype.isRoleAccessible = function(role){
   if(this.isMaster === true) return true;
   const acl = role.ACL;
   const userRoles = this.accessibleRoles.names
-  // console.log("                     ##isRoleAccessible?", role.name, acl)
   // (5)
   if(acl === {} || !acl){
-    // console.log("                     ##NO ACL")
     return false
   }
   // (1)
   if(isAnyExplicitlyGranted(acl, [this.userId])){
-    // console.log("                     ##User Explicitly Granted")
     return true
   }
   // (2, 4)
   if(isAnyExplicitlyGranted(acl, ["*", "role:" + role.name])){
-    // console.log("                     ##Role/Public Explicitly Granted")
     return true
   }
   // (3)
   if(isAnyExplicitlyGranted(acl, userRoles)){
-    // console.log("                     ##Inherited from roles we have")
     return true
   }
-
-  // console.log("                     ##NO")
   return false
 }
 
