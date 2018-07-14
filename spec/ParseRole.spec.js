@@ -2,7 +2,6 @@
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
-const RestQuery = require("../lib/RestQuery");
 const Auth = require("../lib/Auth").Auth;
 const Config = require("../lib/Config");
 
@@ -65,7 +64,10 @@ describe('Parse Role testing', () => {
   });
 
   const createRole = function(name, sibling, user) {
-    const role = new Parse.Role(name, new Parse.ACL());
+    // role needs to follow acl
+    const ACL = new Parse.ACL()
+    ACL.setRoleReadAccess(name, true)
+    const role = new Parse.Role(name, ACL);
     if (user) {
       const users = role.relation('users');
       users.add(user);
@@ -76,71 +78,11 @@ describe('Parse Role testing', () => {
     return role.save({}, { useMasterKey: true });
   };
 
-  it("should not recursively load the same role multiple times", (done) => {
-    const rootRole = "RootRole";
-    const roleNames = ["FooRole", "BarRole", "BazRole"];
-    const allRoles = [rootRole].concat(roleNames);
-
-    const roleObjs = {};
-    const createAllRoles = function(user) {
-      const promises = allRoles.map(function(roleName) {
-        return createRole(roleName, null, user)
-          .then(function(roleObj) {
-            roleObjs[roleName] = roleObj;
-            return roleObj;
-          });
-      });
-      return Promise.all(promises);
-    };
-
-    const restExecute = spyOn(RestQuery.prototype, "execute").and.callThrough();
-
-    let user,
-      auth,
-      getAllRolesSpy;
-    createTestUser().then((newUser) => {
-      user = newUser;
-      return createAllRoles(user);
-    }).then ((roles) => {
-      const rootRoleObj = roleObjs[rootRole];
-      roles.forEach(function(role, i) {
-        // Add all roles to the RootRole
-        if (role.id !== rootRoleObj.id) {
-          role.relation("roles").add(rootRoleObj);
-        }
-        // Add all "roleNames" roles to the previous role
-        if (i > 0) {
-          role.relation("roles").add(roles[i - 1]);
-        }
-      });
-
-      return Parse.Object.saveAll(roles, { useMasterKey: true });
-    }).then(() => {
-      auth = new Auth({config: Config.get("test"), isMaster: true, user: user});
-      getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
-
-      return auth._loadRoles();
-    }).then ((roles) => {
-      expect(roles.length).toEqual(4);
-
-      allRoles.forEach(function(name) {
-        expect(roles.indexOf("role:" + name)).not.toBe(-1);
-      });
-
-      // 1 Query for the initial setup
-      // 1 query for the parent roles
-      expect(restExecute.calls.count()).toEqual(2);
-
-      // 1 call for the 1st layer of roles
-      // 1 call for the 2nd layer
-      expect(getAllRolesSpy.calls.count()).toEqual(2);
-      done()
-    }).catch(() =>  {
-      fail("should succeed");
-      done();
-    });
-
-  });
+  const createSelfAcl = function(roleName){
+    const acl = new Parse.ACL()
+    acl.setRoleReadAccess(roleName, true)
+    return acl
+  }
 
   it("should recursively load roles", (done) => {
     const rolesNames = ["FooRole", "BarRole", "BazRole"];
@@ -211,26 +153,35 @@ describe('Parse Role testing', () => {
   });
 
   it("Should properly resolve roles", (done) => {
-    const admin = new Parse.Role("Admin", new Parse.ACL());
-    const moderator = new Parse.Role("Moderator", new Parse.ACL());
-    const superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
-    const contentManager = new Parse.Role('ContentManager', new Parse.ACL());
-    const superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    const admin = new Parse.Role("Admin", createSelfAcl("Admin"));
+    const moderator = new Parse.Role("Moderator", createSelfAcl("Moderator"));
+    const superModerator = new Parse.Role("SuperModerator",createSelfAcl("SuperModerator"));
+    const contentManager = new Parse.Role('ContentManager', createSelfAcl("ContentManager"));
+    const superContentManager = new Parse.Role('SuperContentManager', createSelfAcl("SuperContentManager"));
     Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
       contentManager.getRoles().add([moderator, superContentManager]);
       moderator.getRoles().add([admin, superModerator]);
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => {
-      const auth = new Auth({ config: Config.get("test"), isMaster: true });
+      const auth = new Auth({ config: Config.get("test"), isMaster: false });
+      // For each role, create a user that
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
-        return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
+        const authRoles = auth.getAuthRoles()
+        authRoles.toCompute = [ role.id ]
+        return authRoles.findRolesOfRolesRecursively().then(() => {
+          const roleNames = []
+          for (const key in authRoles.manifest) {
+            if (authRoles.manifest.hasOwnProperty(key)) {
+              roleNames.push(authRoles.manifest[key].name)
+            }
+          }
           return Parse.Promise.as({
             id: role.id,
             name: role.get('name'),
-            roleNames: result
+            roleNames: roleNames
           });
         })
       });
@@ -527,4 +478,285 @@ describe('Parse Role testing', () => {
           });
       });
   });
+
+  it('Roles should follow ACL properly', (done) => {
+    const r1ACL = createSelfAcl("r1")
+    const r1 = new Parse.Role("r1", r1ACL);
+    const r2ACL = createSelfAcl("r2")
+    const r2 = new Parse.Role("r2", r2ACL);
+    const r3ACL = createSelfAcl("r3")
+    const r3 = new Parse.Role("r3", r3ACL);
+    let user;
+    Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
+      .then(() => createTestUser())
+      .then((u) => {
+        user = u
+        r1.getUsers().add(user)
+        r2.getRoles().add(r1)
+        r3.getRoles().add(r2)
+        return Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
+      })
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        // R1[ok] -> R2[ok] -> R3[ok]
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(3);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r2")).not.toBe(-1);
+        expect(roles.indexOf("role:r3")).not.toBe(-1);
+
+        r2.setACL(new Parse.ACL())
+        return r2.save({}, { useMasterKey: true })
+      })
+
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // only R1 should be accessed
+        // R1[ok] -> R2[x] -> R3[x because of R2]
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(1);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+
+        const ACL = new Parse.ACL()
+        ACL.setReadAccess(user, true)
+        r2.setACL(ACL)
+        return r2.save({}, { useMasterKey: true })
+      })
+
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        // R1[ok] -> R2[ok(user access)] -> R3[ok]
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(3);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r2")).not.toBe(-1);
+        expect(roles.indexOf("role:r3")).not.toBe(-1);
+
+        r2.setACL(new Parse.ACL())
+        const r3ACL = new Parse.ACL()
+        r3ACL.setReadAccess(user, true)
+        return Parse.Object.saveAll([r2, r3], {useMasterKey: true})
+      })
+
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        // R1[ok] -> R2[x] -> R3[x(eaven if user has direct access)]
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(1);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+
+        done()
+      })
+      .catch(error => fail(error))
+  })
+
+  it('Roles should handle multiple paths properly using ACL', (done) => {
+    /**
+     * R1 -> R2 -> R3 -> R4
+     * R5 -> R6 -> R3
+     * R7 -> R8 -> R3
+     */
+    const r1ACL = createSelfAcl("r1")
+    const r1 = new Parse.Role("r1", r1ACL);
+    const r2ACL = createSelfAcl("r2")
+    const r2 = new Parse.Role("r2", r2ACL);
+    const r3ACL = createSelfAcl("r3")
+    const r3 = new Parse.Role("r3", r3ACL);
+    const r4ACL = createSelfAcl("r4")
+    const r4 = new Parse.Role("r4", r4ACL);
+    const r5ACL = createSelfAcl("r5")
+    const r5 = new Parse.Role("r5", r5ACL);
+    const r6ACL = createSelfAcl("r6")
+    const r6 = new Parse.Role("r6", r6ACL);
+    const r7ACL = createSelfAcl("r7")
+    const r7 = new Parse.Role("r7", r7ACL);
+    const r8ACL = createSelfAcl("r8")
+    const r8 = new Parse.Role("r8", r8ACL);
+    let user;
+    Parse.Object.saveAll([r1, r2, r3, r4, r5, r6, r7, r8], {useMasterKey: true})
+      .then(() => createTestUser())
+      .then((u) => {
+        user = u
+        // direct roles
+        r1.getUsers().add(user)
+        r5.getUsers().add(user)
+        r7.getUsers().add(user)
+        // indirect
+        r2.getRoles().add(r1)
+        r6.getRoles().add(r5)
+        r8.getRoles().add(r7)
+
+        r3.getRoles().add([r2,r6,r8]) // multy paths to get to r3
+        r4.getRoles().add(r3) // r4 relies on r3
+        return Parse.Object.saveAll([r1, r2, r3, r4, r5, r6, r7, r8], {useMasterKey: true})
+      })
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(8);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r2")).not.toBe(-1);
+        expect(roles.indexOf("role:r3")).not.toBe(-1);
+        expect(roles.indexOf("role:r4")).not.toBe(-1);
+        expect(roles.indexOf("role:r5")).not.toBe(-1);
+        expect(roles.indexOf("role:r6")).not.toBe(-1);
+        expect(roles.indexOf("role:r7")).not.toBe(-1);
+        expect(roles.indexOf("role:r8")).not.toBe(-1);
+
+        // disable any path, r3 should still be accessible
+        const acl = createSelfAcl("test")
+        r2.setACL(acl)
+        r6.setACL(acl)
+        return Parse.Object.saveAll([r2, r6], {useMasterKey: true})
+      })
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(6);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r2")).toBe(-1);
+        expect(roles.indexOf("role:r3")).not.toBe(-1);
+        expect(roles.indexOf("role:r4")).not.toBe(-1);
+        expect(roles.indexOf("role:r5")).not.toBe(-1);
+        expect(roles.indexOf("role:r6")).toBe(-1);
+        expect(roles.indexOf("role:r7")).not.toBe(-1);
+        expect(roles.indexOf("role:r8")).not.toBe(-1);
+
+        done()
+      })
+      .catch(error => fail(error))
+  })
+
+  it('Roles should handle circular properly using ACL', (done) => {
+    /**
+     * R1 -> R2 -> R3 -> R4 -> R3
+     */
+    const r1ACL = createSelfAcl("r1")
+    const r1 = new Parse.Role("r1", r1ACL);
+    const r2ACL = createSelfAcl("r2")
+    const r2 = new Parse.Role("r2", r2ACL);
+    const r3ACL = createSelfAcl("r3")
+    const r3 = new Parse.Role("r3", r3ACL);
+    const r4ACL = createSelfAcl("r4")
+    const r4 = new Parse.Role("r4", r4ACL);
+    let user;
+    Parse.Object.saveAll([r1, r2, r3, r4], {useMasterKey: true})
+      .then(() => createTestUser())
+      .then((u) => {
+        user = u
+        // direct roles
+        r1.getUsers().add(user)
+        // indirect
+        r2.getRoles().add(r1)
+        r3.getRoles().add(r2)
+        r4.getRoles().add(r3)
+        r3.getRoles().add(r4)
+        return Parse.Object.saveAll([r1, r2, r3, r4], {useMasterKey: true})
+      })
+      .then(() => {
+        const auth = new Auth({ config: Config.get("test"), user });
+        // all roles should be accessed
+        return auth.getUserRoles()
+      })
+      .then((roles) => {
+        expect(roles.length).toBe(4);
+        expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r2")).not.toBe(-1);
+        expect(roles.indexOf("role:r3")).not.toBe(-1);
+        expect(roles.indexOf("role:r4")).not.toBe(-1);
+
+        done()
+      })
+      .catch(error => fail(error))
+  })
+
+  it('Roles security for objects should follow ACL properly', (done) => {
+    const r1ACL = createSelfAcl("r1")
+    const r1 = new Parse.Role("r1", r1ACL);
+    const r2ACL = createSelfAcl("r2")
+    const r2 = new Parse.Role("r2", r2ACL);
+    const r3ACL = createSelfAcl("r3")
+    const r3 = new Parse.Role("r3", r3ACL);
+    let user;
+    Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
+      .then(() => createTestUser())
+      .then((u) => {
+        user = u
+        r1.getUsers().add(user)
+        r2.getRoles().add(r1)
+        r3.getRoles().add(r2)
+        return Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
+      })
+      .then(() => {
+        const objACL = new Parse.ACL();
+        objACL.setRoleReadAccess(r3, true)
+        const obj = new Parse.Object('TestObjectRoles');
+        obj.set('ACL', objACL);
+        return obj.save(null, { useMasterKey: true });
+      })
+      .then(() => {
+        const query = new Parse.Query("TestObjectRoles");
+        return query.find()
+      })
+      .then((objects) => {
+        expect(objects.length).toBe(1);
+
+        r2.setACL(new Parse.ACL())
+        return r2.save({}, { useMasterKey: true })
+      })
+
+      .then(() => {
+        const query = new Parse.Query("TestObjectRoles");
+        return query.find()
+      })
+      .then((objects) => {
+        expect(objects.length).toBe(0);
+
+        const ACL = new Parse.ACL()
+        ACL.setReadAccess(user, true)
+        r2.setACL(ACL)
+        return r2.save({}, { useMasterKey: true })
+      })
+
+      .then(() => {
+        const query = new Parse.Query("TestObjectRoles");
+        return query.find()
+      })
+      .then((objects) => {
+        expect(objects.length).toBe(1);
+
+        r2.setACL(new Parse.ACL())
+        const r3ACL = new Parse.ACL()
+        r3ACL.setReadAccess(user, true)
+        return Parse.Object.saveAll([r2, r3], {useMasterKey: true})
+      })
+
+      .then(() => {
+        const query = new Parse.Query("TestObjectRoles");
+        return query.find()
+      })
+      .then((objects) => {
+        expect(objects.length).toBe(0);
+
+        done()
+      })
+      .catch(error => fail(error))
+  })
 });
