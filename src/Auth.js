@@ -1,6 +1,7 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+import { AuthRoles } from "./AuthRoles";
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -18,6 +19,11 @@ function Auth({ config, cacheController = undefined, isMaster = false, isReadOnl
   this.userRoles = [];
   this.fetchedRoles = false;
   this.rolePromise = null;
+
+  // return the auth role validator
+  this.getAuthRoles = () => {
+    return new AuthRoles(this, master(this.config), this.isMaster)
+  }
 }
 
 // Whether this auth could possibly modify the given user id.
