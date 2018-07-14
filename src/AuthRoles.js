@@ -223,14 +223,21 @@ AuthRoles.prototype.resolvePreviousRejectionsIfPossible = function(roleThatWasJu
       const rolePreviouslyRejected = this.manifest[ previouslyRejectedRoleIdByTheOneThatWasJustAccepted ]
       // make sure we it is still rejected
       if(rolePreviouslyRejected.tag !== OppResult.accepted){
-        // accept it
-        rolePreviouslyRejected.tag = OppResult.accepted;
-        addIfNeed(this.accessibleRoles.ids, rolePreviouslyRejected.objectId)
-        addIfNeed(this.accessibleRoles.names, "role:" + rolePreviouslyRejected.name)
-        // do the same of this role
-        this.resolvePreviousRejectionsIfPossible(rolePreviouslyRejected)
+        // accept it if possible, we still need to check the acl !
+        if(this.isRoleAccessible(rolePreviouslyRejected)){
+          rolePreviouslyRejected.tag = OppResult.accepted;
+          addIfNeed(this.accessibleRoles.ids, rolePreviouslyRejected.objectId)
+          addIfNeed(this.accessibleRoles.names, "role:" + rolePreviouslyRejected.name)
+          // do the same of this role
+          this.resolvePreviousRejectionsIfPossible(rolePreviouslyRejected)
+        }else{
+          // role is still rejected, because its acl did not validate
+        }
       }
     })
+    // clear rejections, this is not required since we will never
+    // re-accept the same role twice, but freeing memory is never a bad idea.
+    delete this.rejections[ roleThatWasJustAccepted.objectId ]
   }
 }
 
