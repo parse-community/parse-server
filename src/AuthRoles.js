@@ -282,10 +282,15 @@ AuthRoles.prototype.isAnyPathValid = function(role){
 // 3- Role is accessible from other roles we have
 // 4- Role is publicly accessible
 AuthRoles.prototype.isRoleAccessible = function(role){
+
+  // Accept role regardless of its ACL if we are using Master.
+  // Usually when using Master, we will never reach here.
+  // This is basically only used for tests.
   if(this.isMaster === true) return true;
+
   const acl = role.ACL;
   const userRoles = this.accessibleRoles.names
-  // (5)
+
   if(acl === {} || !acl){
     return false
   }
