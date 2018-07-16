@@ -262,6 +262,13 @@ function createTestUser(success, error) {
   }
 }
 
+function createUser(username = "test", password = "test") {
+  const user = new Parse.User();
+  user.set('username', username);
+  user.set('password', password);
+  return user.signUp();
+}
+
 // Shims for compatibility with the old qunit tests.
 function ok(bool, message) {
   expect(bool).toBeTruthy(message);
@@ -393,6 +400,7 @@ global.Item = Item;
 global.Container = Container;
 global.create = create;
 global.createTestUser = createTestUser;
+global.createUser = createUser;
 global.ok = ok;
 global.equal = equal;
 global.strictEqual = strictEqual;

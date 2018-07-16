@@ -78,6 +78,8 @@ describe('Parse Role testing', () => {
     return role.save({}, { useMasterKey: true });
   };
 
+  // Create an ACL for the target Role
+  // ACL should give the role 'Read' access to it self.
   const createSelfAcl = function(roleName){
     const acl = new Parse.ACL()
     acl.setRoleReadAccess(roleName, true)
@@ -486,18 +488,26 @@ describe('Parse Role testing', () => {
     const r2 = new Parse.Role("r2", r2ACL);
     const r3ACL = createSelfAcl("r3")
     const r3 = new Parse.Role("r3", r3ACL);
-    let user;
-    Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
-      .then(() => createTestUser())
+    const r4ACL = createSelfAcl("r4")
+    const r4 = new Parse.Role("r4", r4ACL);
+    let user1;
+    let user2;
+    Parse.Object.saveAll([r1, r2, r3, r4], {useMasterKey: true})
+      .then(() => createUser("1"))
       .then((u) => {
-        user = u
-        r1.getUsers().add(user)
+        user1 = u
+        return createUser("2")
+      })
+      .then((u) => {
+        user2 = u
+        r1.getUsers().add([user1, user2])
         r2.getRoles().add(r1)
         r3.getRoles().add(r2)
-        return Parse.Object.saveAll([r1, r2, r3], {useMasterKey: true})
+        r4.getUsers().add(user2)
+        return Parse.Object.saveAll([r1, r2, r3, r4], {useMasterKey: true})
       })
       .then(() => {
-        const auth = new Auth({ config: Config.get("test"), user });
+        const auth = new Auth({ config: Config.get("test"), user: user1 });
         // all roles should be accessed
         // R1[ok] -> R2[ok] -> R3[ok]
         return auth.getUserRoles()
@@ -507,13 +517,16 @@ describe('Parse Role testing', () => {
         expect(roles.indexOf("role:r1")).not.toBe(-1);
         expect(roles.indexOf("role:r2")).not.toBe(-1);
         expect(roles.indexOf("role:r3")).not.toBe(-1);
+        expect(roles.indexOf("role:r4")).not.toBe(1);
 
+        // Revoke Access to R2
+        // Only R1 should be accessed.
         r2.setACL(new Parse.ACL())
         return r2.save({}, { useMasterKey: true })
       })
 
       .then(() => {
-        const auth = new Auth({ config: Config.get("test"), user });
+        const auth = new Auth({ config: Config.get("test"), user: user1 });
         // only R1 should be accessed
         // R1[ok] -> R2[x] -> R3[x because of R2]
         return auth.getUserRoles()
@@ -521,34 +534,46 @@ describe('Parse Role testing', () => {
       .then((roles) => {
         expect(roles.length).toBe(1);
         expect(roles.indexOf("role:r1")).not.toBe(-1);
+        expect(roles.indexOf("role:r4")).not.toBe(1);
 
+        // R2 access is restored for user1 explicitly
+        // All roles should be accessed by user1
         const ACL = new Parse.ACL()
-        ACL.setReadAccess(user, true)
+        ACL.setReadAccess(user1, true)
         r2.setACL(ACL)
         return r2.save({}, { useMasterKey: true })
       })
 
       .then(() => {
-        const auth = new Auth({ config: Config.get("test"), user });
-        // all roles should be accessed
-        // R1[ok] -> R2[ok(user access)] -> R3[ok]
-        return auth.getUserRoles()
+        // all roles should be accessed by user1
+        // R1[ok] -> R2[ok(user1 explicit access)] -> R3[ok]
+        // Only R1 & R4 should be accessed by user2
+        const auth1 = new Auth({ config: Config.get("test"), user: user1 });
+        const auth2 = new Auth({ config: Config.get("test"), user: user2 });
+        return Promise.all([auth1.getUserRoles(), auth2.getUserRoles()])
       })
-      .then((roles) => {
-        expect(roles.length).toBe(3);
-        expect(roles.indexOf("role:r1")).not.toBe(-1);
-        expect(roles.indexOf("role:r2")).not.toBe(-1);
-        expect(roles.indexOf("role:r3")).not.toBe(-1);
+      .then(([roles1, roles2]) => {
+        expect(roles1.length).toBe(3);
+        expect(roles1.indexOf("role:r1")).not.toBe(-1);
+        expect(roles1.indexOf("role:r2")).not.toBe(-1);
+        expect(roles1.indexOf("role:r3")).not.toBe(-1);
+        expect(roles1.indexOf("role:r4")).not.toBe(1);
+        expect(roles2.length).toBe(2);
+        expect(roles2.indexOf("role:r1")).not.toBe(-1);
+        expect(roles2.indexOf("role:r4")).not.toBe(-1);
 
+        // reject access to r2
+        // give access to r3
+        // only r1 should be accessed since the path to r3 is broken
         r2.setACL(new Parse.ACL())
         const r3ACL = new Parse.ACL()
-        r3ACL.setReadAccess(user, true)
+        r3ACL.setReadAccess(user1, true)
         return Parse.Object.saveAll([r2, r3], {useMasterKey: true})
       })
 
       .then(() => {
-        const auth = new Auth({ config: Config.get("test"), user });
-        // all roles should be accessed
+        const auth = new Auth({ config: Config.get("test"), user: user1 });
+        // only r1 should be accessed
         // R1[ok] -> R2[x] -> R3[x(eaven if user has direct access)]
         return auth.getUserRoles()
       })
@@ -707,8 +732,10 @@ describe('Parse Role testing', () => {
       .then(() => {
         const objACL = new Parse.ACL();
         objACL.setRoleReadAccess(r3, true)
+
+        // object only accessed by R3
         const obj = new Parse.Object('TestObjectRoles');
-        obj.set('ACL', objACL);
+        obj.setACL(objACL);
         return obj.save(null, { useMasterKey: true });
       })
       .then(() => {
@@ -721,7 +748,6 @@ describe('Parse Role testing', () => {
         r2.setACL(new Parse.ACL())
         return r2.save({}, { useMasterKey: true })
       })
-
       .then(() => {
         const query = new Parse.Query("TestObjectRoles");
         return query.find()
@@ -734,7 +760,6 @@ describe('Parse Role testing', () => {
         r2.setACL(ACL)
         return r2.save({}, { useMasterKey: true })
       })
-
       .then(() => {
         const query = new Parse.Query("TestObjectRoles");
         return query.find()
@@ -747,7 +772,6 @@ describe('Parse Role testing', () => {
         r3ACL.setReadAccess(user, true)
         return Parse.Object.saveAll([r2, r3], {useMasterKey: true})
       })
-
       .then(() => {
         const query = new Parse.Query("TestObjectRoles");
         return query.find()
