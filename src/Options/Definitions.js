@@ -262,6 +262,12 @@ module.exports.ParseServerOptions = {
     "action": parsers.booleanParser,
     "default": false
   },
+  "enableExpressErrorHandler": {
+    "env": "PARSE_SERVER_ENABLE_EXPRESS_ERROR_HANDLER",
+    "help": "Enables the default express error handler for all errors",
+    "action": parsers.booleanParser,
+    "default": false
+  },
   "objectIdSize": {
     "env": "PARSE_SERVER_OBJECT_ID_SIZE",
     "help": "Sets the number of characters in generated object id's, default 10",
