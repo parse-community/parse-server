@@ -278,13 +278,23 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   return findPromise;
 }
 
+RestWrite.prototype.filteredObjectsByACL = function(objects) {
+  if (this.auth.isMaster) {
+    return objects;
+  }
+  return objects.filter((object) => {
+    if (!object.ACL) {
+      return true; // legacy users that have no ACL field on them
+    }
+    // Regular users that have been locked out.
+    return object.ACL && Object.keys(object.ACL).length > 0;
+  });
+}
 
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.findUsersWithAuthData(authData).then((r) => {
-    results = r.filter((user) => {
-      return !this.auth.isMaster && user.ACL && Object.keys(user.ACL).length > 0;
-    });
+    results = this.filteredObjectsByACL(r);
     if (results.length > 1) {
       // More than 1 user with the passed id's
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,

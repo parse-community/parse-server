@@ -3706,4 +3706,36 @@ describe('Parse.User testing', () => {
       expect(results.length).toBe(1);
     }).then(done, done.fail);
   });
+
+  describe('issue #4897', () => {
+    it("should be able to login with a legacy user (no ACL)", async () => {
+      // This issue is a side effect of the locked users and legacy users which don't have ACL's
+      // In this scenario, a legacy user wasn't be able to login as there's no ACL on it
+      const database = Config.get(Parse.applicationId).database;
+      const collection = await database.adapter._adaptiveCollection('_User');
+      await collection.insertOne({
+        "_id": "ABCDEF1234",
+        "name": "<some_name>",
+        "email": "<some_email>",
+        "username": "<some_username>",
+        "_hashed_password": "<some_password>",
+        "_auth_data_facebook": {
+          "id": "8675309",
+          "access_token": "jenny"
+        },
+        "sessionToken": "<some_session_token>",
+      });
+      const provider = getMockFacebookProvider();
+      Parse.User._registerAuthenticationProvider(provider);
+      const model = await Parse.User._logInWith("facebook", {});
+      expect(model.id).toBe('ABCDEF1234');
+      ok(model instanceof Parse.User, "Model should be a Parse.User");
+      strictEqual(Parse.User.current(), model);
+      ok(model.extended(), "Should have used subclass.");
+      strictEqual(provider.authData.id, provider.synchronizedUserId);
+      strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+      strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+      ok(model._isLinked("facebook"), "User should be linked to facebook");
+    });
+  });
 });
