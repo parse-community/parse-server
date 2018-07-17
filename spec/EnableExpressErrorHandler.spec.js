@@ -1,4 +1,4 @@
-const ParseServer = require("../src/index");
+const ParseServer = require("../lib/index");
 const express = require('express');
 const rp = require('request-promise');
 
