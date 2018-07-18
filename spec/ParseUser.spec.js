@@ -3708,7 +3708,7 @@ describe('Parse.User testing', () => {
   });
 
   describe('issue #4897', () => {
-    it("should be able to login with a legacy user (no ACL)", async () => {
+    it_only_db('mongo')("should be able to login with a legacy user (no ACL)", async () => {
       // This issue is a side effect of the locked users and legacy users which don't have ACL's
       // In this scenario, a legacy user wasn't be able to login as there's no ACL on it
       const database = Config.get(Parse.applicationId).database;
