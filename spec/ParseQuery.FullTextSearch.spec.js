@@ -280,7 +280,7 @@ describe('Parse.Query Full Text Search testing', () => {
   });
 });
 
-describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
+describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () => {
   it('fullTextSearch: does not create text index if compound index exist', (done) => {
     fullTextHelper().then(() => {
       return databaseAdapter.dropAllIndexes('TestObject');
@@ -449,7 +449,7 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
   });
 });
 
-describe_only_db('postgres')('Parse.Query Full Text Search testing', () => {
+describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', () => {
   it('fullTextSearch: $diacriticSensitive - false', (done) => {
     fullTextHelper().then(() => {
       const where = {

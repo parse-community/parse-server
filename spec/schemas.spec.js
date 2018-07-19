@@ -351,21 +351,6 @@ describe('schemas', () => {
     });
   });
 
-  it('asks for the master key if you use the rest key', done => {
-    request.post({
-      url: 'http://localhost:8378/1/schemas',
-      json: true,
-      headers: restKeyHeaders,
-      body: {
-        className: 'MyClass',
-      },
-    }, (error, response, body) => {
-      expect(response.statusCode).toEqual(403);
-      expect(body.error).toEqual('unauthorized: master key is required');
-      done();
-    });
-  });
-
   it('sends an error if you use mismatching class names', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/A',
@@ -1420,7 +1405,7 @@ describe('schemas', () => {
     })
   });
 
-  it('should throw with invalid value', done => {
+  it('should throw if permission is number', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
@@ -1438,7 +1423,7 @@ describe('schemas', () => {
     })
   });
 
-  it('should throw with invalid value', done => {
+  it('should throw if permission is empty string', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,

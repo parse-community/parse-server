@@ -114,6 +114,8 @@ export interface ParseServerOptions {
   cacheMaxSize : ?number; // = 10000
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request. */
   enableSingleSchemaCache: ?boolean; // = false
+  /* Enables the default express error handler for all errors */
+  enableExpressErrorHandler: ?boolean; // = false
   /* Sets the number of characters in generated object id's, default 10 */
   objectIdSize: ?number; // = 10
   /* The port to run the ParseServer. defaults to 1337.
