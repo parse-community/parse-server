@@ -125,7 +125,7 @@ describe('Parse Role testing', () => {
         }
       });
 
-      // create some additional relations between children roles
+      // create some additional duplicate relations between children roles
       const FooRole = roles.find(function(role) {
         return role.get("name") === "FooRole"
       });
@@ -140,7 +140,7 @@ describe('Parse Role testing', () => {
 
       return Parse.Object.saveAll(roles, { useMasterKey: true });
     }).then(() => {
-      auth = new Auth({config: Config.get("test"), isMaster: true, user: user});
+      auth = new Auth({config: Config.get("test"), user: user});
       const authRoles = auth.getAuthRoles();
       getAllRolesSpy = spyOn(authRoles, "_findAndBuildRolesForRolesRecursivelyOntoMap").and.callThrough();
 
