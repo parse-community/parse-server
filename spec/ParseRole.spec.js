@@ -174,26 +174,41 @@ describe('Parse Role testing', () => {
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => {
-      const auth = new Auth({ config: Config.get("test"), isMaster: false });
-      // For each role, create a user that
-      // For each role, fetch their sibling, what they inherit
+      // For each role, create a user that can access it then
+      // fetch its sibling, what they inherit.
+      // we need to create a user since roles are bounded by ACL.
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
-        const authRoles = auth.getAuthRoles()
-        authRoles.toCompute = [ role.id ]
-        return authRoles.findRolesOfRolesRecursively().then(() => {
-          const roleNames = []
-          for (const key in authRoles.manifest) {
-            if (authRoles.manifest.hasOwnProperty(key)) {
-              roleNames.push(authRoles.manifest[key].name)
+        let user;
+        return createUser("user-for-" + role.name)
+          .then((u) => {
+            user = u;
+            role.getUsers().add(user);
+            return role.save({}, { useMasterKey: true });
+          })
+          .then(() => {
+            const auth = new Auth({ config: Config.get("test"), isMaster: false, user });
+            const authRoles = auth.getAuthRoles();
+            return authRoles.findRolesOfRoles([role]);
+          })
+          .then((rolesMap) => {
+            // find in role map all roles who's id are not our parent role (the target 'role')
+            // these will be the roles fetched from/because of our parent role.
+            const targetParentRoleId = role.id;
+            const roleNames = []
+            for (const objectId in rolesMap) {
+              if (rolesMap.hasOwnProperty(objectId)) {
+                if(objectId !== targetParentRoleId){
+                  roleNames.push(objectId);
+                }
+              }
             }
-          }
-          return Parse.Promise.as({
-            id: role.id,
-            name: role.get('name'),
-            roleNames: roleNames
+            return Parse.Promise.as({
+              id: role.id,
+              name: role.get('name'),
+              roleNames: roleNames
+            });
           });
-        })
       });
 
       return Promise.all(promises);
@@ -701,6 +716,7 @@ describe('Parse Role testing', () => {
         r3.getRoles().add(r2)
         r4.getRoles().add(r3)
         r3.getRoles().add(r4)
+        r4.getRoles().add(r4)
         return Parse.Object.saveAll([r1, r2, r3, r4], {useMasterKey: true})
       })
       .then(() => {
@@ -753,6 +769,8 @@ describe('Parse Role testing', () => {
       .then((objects) => {
         expect(objects.length).toBe(1);
 
+        // r2 is cut, so r3 should not be accessed
+        // so no objects should resolve.
         r2.setACL(new Parse.ACL())
         return r2.save({}, { useMasterKey: true })
       })
@@ -763,6 +781,8 @@ describe('Parse Role testing', () => {
       .then((objects) => {
         expect(objects.length).toBe(0);
 
+        // r2 is user explicitly given accessed.
+        // object should be accessed.
         const ACL = new Parse.ACL()
         ACL.setReadAccess(user, true)
         r2.setACL(ACL)
@@ -775,6 +795,8 @@ describe('Parse Role testing', () => {
       .then((objects) => {
         expect(objects.length).toBe(1);
 
+        // r2 cut, r3 should no resolve even though
+        // user has explicit access.
         r2.setACL(new Parse.ACL())
         const r3ACL = new Parse.ACL()
         r3ACL.setReadAccess(user, true)
