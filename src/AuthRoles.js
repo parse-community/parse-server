@@ -39,7 +39,7 @@ export class AuthRoles {
     this.accessibleRoleNames = new Set();
     // Contains a relation between the role blocking and the roles that are blocked.
     // This will speedup things when we re-accept a previously rejected role.
-    this.blockingRoles = { string: Set }
+    this.blockingRoles = { string: Set };
   }
 
   /**
@@ -60,7 +60,7 @@ export class AuthRoles {
   findDirectRoles(): Promise<Array>{
     var restWhere = { 'users': {  __type: 'Pointer', className: '_User', objectId: this.userId } };
     var query = _getRolesQuery(restWhere, this.masterAuth);
-    return query.execute().then((response) => Promise.resolve(response.results))
+    return query.execute().then((response) => Promise.resolve(response.results));
   }
 
   /**
@@ -218,17 +218,17 @@ export class AuthRoles {
     }
     // (2)
     if(_isAclAccessibleFromRoleName(acl, this.userId)){
-      return true
+      return true;
     }
     // (3)
     if(_isAclAccessibleFromRoleName(acl, `role:${role.name}`)){
-      return true
+      return true;
     }
     // (4)
     if(_isAclAccessibleFromRoleNames(acl, this.accessibleRoleNames)){
-      return true
+      return true;
     }
-    return false
+    return false;
   }
 
   /**
@@ -285,7 +285,7 @@ export class AuthRoles {
    */
   _findAndBuildRolesForRolesRecursivelyOntoMap(idsIterator, ids: Set, currentMapState: RoleChildParentMap, masterAuth: Auth){
     // get the next id to operate on
-    const parentRoleId = idsIterator.next().value
+    const parentRoleId = idsIterator.next().value;
     // no next id on iteration, we are done !
     if(!parentRoleId){
       return Promise.resolve(currentMapState);
@@ -306,11 +306,11 @@ export class AuthRoles {
           // add to role map
           const roleMap: RoleChildParentMapItem = currentMapState[childRoleId];
           if(roleMap){
-          // we already have a parent for this role
-          // lets add another one
+            // we already have a parent for this role
+            // lets add another one
             roleMap.parents.add(parentRoleId);
           }else{
-          // new role
+            // new role
             currentMapState[childRoleId] = RoleInfo(role.name, childRoleId, role.ACL, new Set([parentRoleId]));
           }
         });
@@ -342,11 +342,11 @@ const _isAclAccessibleFromRoleNames = (acl, roleNames: Set) => {
     // match name from ACL Key
     if(roleNames.has(key)){
       // brake when found
-      isNotAccessible = !(_isReadableAcl(value))
+      isNotAccessible = !(_isReadableAcl(value));
     }
     return isNotAccessible;
   })
-  return !(isNotAccessible)
+  return !(isNotAccessible);
 }
 
 /**
@@ -368,5 +368,4 @@ const _isAclAccessibleFromRoleName = (acl, roleName) => {
  * "read" is true
  * @returns {Boolean}
  */
-const _isReadableAcl = (statement) => statement.read === true
-
+const _isReadableAcl = (statement) => statement.read === true;
