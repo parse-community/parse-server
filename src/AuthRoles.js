@@ -29,8 +29,8 @@ const RoleInfo = (name, objectId, ACL, parents: Set, oppResult = null) => ({
 
 export class AuthRoles {
   /**
-   * @param {Auth} auth the Auth object performing the request
-   * @param {*} masterAuth used in queries
+   * @param {Auth} masterAuth the Auth object performing the request
+   * @param {String} userId the id of the user performing the request
    */
   constructor(masterAuth: Auth, userId: String){
     this.masterAuth = masterAuth;
@@ -44,6 +44,7 @@ export class AuthRoles {
 
   /**
    * Returns a promise that resolves with all 'accessibleRoleNames'.
+   * @returns {Promise<Array>}
    */
   findRoles(){
     return this.findDirectRoles()
@@ -55,7 +56,7 @@ export class AuthRoles {
   /**
    * Resolves with a promise once all direct roles are fetched.
    * Direct roles are roles the user is in the 'users' relation.
-   * @returns {Promise} Array of Role objects fetched from db.
+   * @returns {Promise<Array>} Array of Role objects fetched from db.
    */
   findDirectRoles(): Promise<Array>{
     var restWhere = { 'users': {  __type: 'Pointer', className: '_User', objectId: this.userId } };
@@ -66,7 +67,7 @@ export class AuthRoles {
   /**
    * Given a list of roles, find all the parent roles.
    * @param {Array} roles array of role objects fetched from db
-   * @returns {Promise} RoleChildParentMap
+   * @returns {Promise<RoleChildParentMap>} RoleChildParentMap
    */
   findRolesOfRoles(roles): Promise<RoleChildParentMap>{
     const map: RoleChildParentMap = {};
@@ -93,7 +94,7 @@ export class AuthRoles {
    * Iteration will occure in the opposite order:
    *  Admins <- Collaborators <- Members
    * @param {RoleChildParentMap} map our role map
-   * @returns {Promise}
+   * @returns {Promise<void>}
    */
   computeAccess(map: RoleChildParentMap): Promise<void>{
     return new Promise((resolve) => {
@@ -282,8 +283,9 @@ export class AuthRoles {
    * @param {Set} ids the set of role ids to iteratre on
    * @param {RoleChildParentMap} currentMapState our role map
    * @param {Auth} masterAuth
+   * @returns {Promise}
    */
-  _findAndBuildRolesForRolesRecursivelyOntoMap(idsIterator, ids: Set, currentMapState: RoleChildParentMap, masterAuth: Auth){
+  _findAndBuildRolesForRolesRecursivelyOntoMap(idsIterator, ids: Set, currentMapState: RoleChildParentMap, masterAuth: Auth): Promise{
     // get the next id to operate on
     const parentRoleId = idsIterator.next().value;
     // no next id on iteration, we are done !
@@ -325,7 +327,7 @@ export class AuthRoles {
  * @param {Object} restWhere query constraints
  * @param {Auth} masterAuth the master auth we will be using
  */
-const _getRolesQuery = (restWhere = {}, masterAuth: Auth) => {
+const _getRolesQuery = (restWhere = {}, masterAuth: Auth): RestQuery => {
   return new RestQuery(masterAuth.config, masterAuth, '_Role', restWhere, {});
 }
 
@@ -336,7 +338,7 @@ const _getRolesQuery = (restWhere = {}, masterAuth: Auth) => {
  * @param {*} roleNames the role names to compute accessibility on 'acl'
  * @returns {Boolean}
  */
-const _isAclAccessibleFromRoleNames = (acl, roleNames: Set) => {
+const _isAclAccessibleFromRoleNames = (acl, roleNames: Set): Boolean => {
   var isNotAccessible = true;
   _.every(acl, (value, key) => {
     // match name from ACL Key
@@ -355,7 +357,7 @@ const _isAclAccessibleFromRoleNames = (acl, roleNames: Set) => {
  * @param {*} roleName the role name to compute accessibility on 'acl'
  * @returns {Boolean}
  */
-const _isAclAccessibleFromRoleName = (acl, roleName) => {
+const _isAclAccessibleFromRoleName = (acl, roleName): Boolean => {
   const statement = acl[roleName];
   if(statement){
     return _isReadableAcl(statement);
@@ -368,4 +370,4 @@ const _isAclAccessibleFromRoleName = (acl, roleName) => {
  * "read" is true
  * @returns {Boolean}
  */
-const _isReadableAcl = (statement) => statement.read === true;
+const _isReadableAcl = (statement): Boolean => statement.read === true;
