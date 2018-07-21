@@ -22,7 +22,7 @@ function Auth({ config, cacheController = undefined, isMaster = false, isReadOnl
 
   // return the auth role validator
   this.getAuthRoles = () => {
-    return new AuthRoles(this, master(this.config), this.isMaster)
+    return new AuthRoles(master(this.config), this.user.id);
   }
 }
 
