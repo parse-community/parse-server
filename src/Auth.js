@@ -21,7 +21,7 @@ function Auth({ config, isMaster = false, isReadOnly = false, user, installation
 
   // return the auth role validator
   this.getAuthRoles = () => {
-    return new AuthRoles(this, master(this.config), this.isMaster)
+    return new AuthRoles(master(this.config), this.user.id);
   }
 }
 
@@ -139,11 +139,10 @@ Auth.prototype._loadRoles = function() {
         this.fetchedRoles = true;
         this.rolePromise = null;
         // role names
-        const names = result.names;
-        if (!names.length) {
+        if (!result) {
           this.userRoles = [];
         }else{
-          this.userRoles = names
+          this.userRoles = result
         }
         cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
         return Promise.resolve(this.userRoles)
