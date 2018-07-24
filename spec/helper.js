@@ -92,6 +92,7 @@ const defaultConfiguration = {
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
+  filesCacheControl: 'public, max-age=86400',
   silent,
   logLevel,
   push: {

@@ -40,7 +40,7 @@ export class FilesRouter {
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController.getFileStream(config, filename).then((stream) => {
-        handleFileStream(stream, req, res, contentType);
+        handleFileStream(stream, req, res, contentType, config);
       }).catch(() => {
         res.status(404);
         res.set('Content-Type', 'text/plain');
@@ -51,6 +51,9 @@ export class FilesRouter {
         res.status(200);
         res.set('Content-Type', contentType);
         res.set('Content-Length', data.length);
+        if(config.filesCacheControl) {
+          res.set('Cache-Control', config.filesCacheControl);
+        }
         res.end(data);
       }).catch(() => {
         res.status(404);
@@ -118,7 +121,7 @@ function getRange(req) {
 
 // handleFileStream is licenced under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 // Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
-function handleFileStream(stream, req, res, contentType) {
+function handleFileStream(stream, req, res, contentType, config) {
   const buffer_size = 1024 * 1024; //1024Kb
   // Range request, partiall stream the file
   let {
@@ -144,12 +147,16 @@ function handleFileStream(stream, req, res, contentType) {
 
   const contentLength = (end - start) + 1;
 
-  res.writeHead(206, {
+  const headers = {
     'Content-Range': 'bytes ' + start + '-' + end + '/' + stream.length,
     'Accept-Ranges': 'bytes',
     'Content-Length': contentLength,
-    'Content-Type': contentType,
-  });
+    'Content-Type': contentType
+  };
+  if(config.filesCacheControl) {
+    headers['Cache-Control'] = config.filesCacheControl;
+  }
+  res.writeHead(206, headers);
 
   stream.seek(start, function () {
     // get gridFile stream

@@ -64,6 +64,8 @@ export interface ParseServerOptions {
   webhookKey: ?string;
   /* Key for your files */
   fileKey: ?string;
+  /* Cache-Control header for files router */
+  filesCacheControl: ?string; // = public, max-age=86400
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. */
   userSensitiveFields: ?string[]; // = ["email"]
   /* Enable (or disable) anon users, defaults to true
