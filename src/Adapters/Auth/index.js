@@ -16,6 +16,7 @@ const vkontakte = require("./vkontakte");
 const qq = require("./qq");
 const wechat = require("./wechat");
 const weibo = require("./weibo");
+const oauth2 = require("./oauth2");
 
 const anonymous = {
   validateAuthData: () => {
@@ -43,7 +44,8 @@ const providers = {
   vkontakte,
   qq,
   wechat,
-  weibo
+  weibo,
+  oauth2
 }
 function authDataValidator(adapter, appIds, options) {
   return function(authData) {
