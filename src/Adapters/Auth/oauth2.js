@@ -6,11 +6,11 @@
  *
  * The adapter accepts the following config parameters:
  *
- * 1. "tokenIntrospectionEndpointUrl" (required)
+ * 1. "tokenIntrospectionEndpointUrl" (string, required)
  *      The URL of the token introspection endpoint of the OAuth2 provider that
  *      issued the access token to the client that is to be validated.
  *
- * 2. "useridField" (optional)
+ * 2. "useridField" (string, optional)
  *      The name of the field in the token introspection response that contains
  *      the userid. If specified, it will be used to verify the value of the "id"
  *      field in the "authData" JSON that is coming from the client.
@@ -20,7 +20,7 @@
  *      in the RFC, it has to be optional in this adapter as well.
  *      Default: - (undefined)
  *
- * 3. "appidField" (optional)
+ * 3. "appidField" (string, optional)
  *      The name of the field in the token introspection response that contains
  *      the appId of the client. If specified, it will be used to verify it's
  *      value against the set of appIds in the adapter config. The concept of
@@ -30,15 +30,18 @@
  *      provider.
  *      Default: - (undefined)
  *
- * 4. "appIds" (optional)
+ * 4. "appIds" (array of strings, optional)
  *      A set of appIds that are used to restrict accepted access tokens based
  *      on a specific field's value in the token introspection response.
  *      Default: - (undefined)
  *
- * 5. "authorizationHeader" (optional)
+ * 5. "authorizationHeader" (string, optional)
  *      The value of the "Authorization" HTTP header in requests sent to the
  *      introspection endpoint.
  *      Eg. "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
+ *
+ * 6. "debug" (boolean, optional)
+ *      Enables extensive logging using the "verbose" level.
  *
  * The adapter expects requests with the following authData JSON:
  *

@@ -419,7 +419,8 @@ describe('AuthenticationProviders', function() {
         useridField: 'sub',
         appidField: 'appId',
         appIds: ['a', 'b'],
-        authorizationHeader: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
+        authorizationHeader: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+        debug: true
       }
     };
     const {adapter, appIds, providerOptions} = authenticationLoader.loadAuthAdapter('oauth2', options);
