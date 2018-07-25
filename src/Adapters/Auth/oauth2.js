@@ -66,7 +66,7 @@ function validateAuthData(authData, options) {
     logger.verbose(options);
   }
   return requestJson(options, authData.access_token, loggingEnabled).then((response) => {
-    if ( response && response.active && ( !options || !options.hasOwnProperty('userid_field') || !options.userid_field || authData.id == response[options.userid_field] ) ) {
+    if (response && response.active && (!options || !options.hasOwnProperty('userid_field') || !options.userid_field || authData.id == response[options.userid_field])) {
       return;
     }
     throw new Parse.Error(
@@ -94,7 +94,7 @@ function validateAppId(appIds, authData, options) {
       if (response && response[appidField]) {
         var responseValue = response[appidField];
         if (Array.isArray(responseValue)) {
-          for (idx = responseValue.length - 1; idx >= 0; idx--) {
+          for (var idx = responseValue.length - 1; idx >= 0; idx--) {
             if (appIds.indexOf(responseValue[idx]) != -1) {
               return;
             }
@@ -159,7 +159,7 @@ function requestJson(options, access_token, loggingEnabled) {
       method: 'POST',
       headers: headers
     }
-    var postRequest = Https.request( postOptions, function(res) {
+    var postRequest = Https.request(postOptions, function(res) {
       var data = '';
       res.setEncoding('utf8');
       res.on('data', function(chunk) {
