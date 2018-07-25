@@ -5,7 +5,7 @@ const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 
 describe('AuthenticationProviders', function() {
-  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
+  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte", "oauth2"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       const provider = require("../lib/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -411,4 +411,59 @@ describe('AuthenticationProviders', function() {
         done();
       })
   });
+
+  it('properly loads OAuth2 adapter with options', () => {
+    const options = {
+      oauth2: {
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        useridField: 'sub',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+        authorizationHeader: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
+      }
+    };
+    const {adapter, appIds, providerOptions} = authenticationLoader.loadAuthAdapter('oauth2', options);
+    validateAuthenticationAdapter(adapter);
+    expect(providerOptions.tokenIntrospectionEndpointUrl).toEqual('https://example.com/introspect');
+    expect(providerOptions.useridField).toEqual('sub');
+    expect(providerOptions.appidField).toEqual('appId');
+    expect(providerOptions.authorizationHeader).toEqual('Basic dXNlcm5hbWU6cGFzc3dvcmQ=');
+    expect(appIds).toEqual(['a', 'b']);
+  });
+
+  it('validateAppId should fail if OAuth2 tokenIntrospectionEndpointUrl is not configured properly', (done) => {
+    const options = {
+      oauth2: {
+        appIds: ['a', 'b'],
+        appidField: 'appId'
+      }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken'
+    };
+    const {adapter, appIds, providerOptions} = authenticationLoader.loadAuthAdapter('oauth2', options);
+    adapter.validateAppId(appIds, authData, providerOptions)
+      .then(done.fail, err => {
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      })
+  });
+
+  it('validateAuthData should fail if OAuth2 tokenIntrospectionEndpointUrl is not configured properly', (done) => {
+    const options = {
+      oauth2: { }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken'
+    };
+    const {adapter, providerOptions} = authenticationLoader.loadAuthAdapter('oauth2', options);
+    adapter.validateAuthData(authData, providerOptions)
+      .then(done.fail, err => {
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      })
+  });
+
 });

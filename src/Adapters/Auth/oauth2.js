@@ -6,11 +6,11 @@
  *
  * The adapter accepts the following config parameters:
  *
- * 1. "token_introspection_endpoint_url" (required)
+ * 1. "tokenIntrospectionEndpointUrl" (required)
  *      The URL of the token introspection endpoint of the OAuth2 provider that
  *      issued the access token to the client that is to be validated.
  *
- * 2. "userid_field" (optional)
+ * 2. "useridField" (optional)
  *      The name of the field in the token introspection response that contains
  *      the userid. If specified, it will be used to verify the value of the "id"
  *      field in the "authData" JSON that is coming from the client.
@@ -20,7 +20,7 @@
  *      in the RFC, it has to be optional in this adapter as well.
  *      Default: - (undefined)
  *
- * 3. "appid_field" (optional)
+ * 3. "appidField" (optional)
  *      The name of the field in the token introspection response that contains
  *      the appId of the client. If specified, it will be used to verify it's
  *      value against the set of appIds in the adapter config. The concept of
@@ -35,7 +35,7 @@
  *      on a specific field's value in the token introspection response.
  *      Default: - (undefined)
  *
- * 5. "authorization_header" (optional)
+ * 5. "authorizationHeader" (optional)
  *      The value of the "Authorization" HTTP header in requests sent to the
  *      introspection endpoint.
  *      Eg. "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
@@ -58,77 +58,72 @@ var logger = require('../../logger').default;
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {
-  var loggingEnabled = isLoggingEnabled(options);
+  var loggingEnabled = _isLoggingEnabled(options);
   if (loggingEnabled) {
-    logger.verbose('oauth2.validateAuthData(): authData');
-    logger.verbose(authData);
-    logger.verbose('oauth2.validateAuthData(): options');
-    logger.verbose(options);
+    logger.verbose('oauth2.validateAuthData(), authData = %s, options = %s',  _objectToString(authData), _objectToString(options));
   }
   return requestJson(options, authData.access_token, loggingEnabled).then((response) => {
-    if (response && response.active && (!options || !options.hasOwnProperty('userid_field') || !options.userid_field || authData.id == response[options.userid_field])) {
-      return;
+    if (response && response.active && (!options || !options.hasOwnProperty('useridField') || !options.useridField || authData.id == response[options.useridField])) {
+      return Promise.resolve();
     }
-    throw new Parse.Error(
+    return Promise.reject(new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'OAuth2 access token is invalid for this user.');
+      'OAuth2 access token is invalid for this user.'));
   });
 }
 
 function validateAppId(appIds, authData, options) {
-  var loggingEnabled = isLoggingEnabled(options);
+  var loggingEnabled = _isLoggingEnabled(options);
   if (loggingEnabled) {
-    logger.verbose('oauth2.validateAppId(): appIds');
-    logger.verbose(appIds);
-    logger.verbose('oauth2.validateAppId(): authData');
-    logger.verbose(authData);
-    logger.verbose('oauth2.validateAppId(): options');
-    logger.verbose(options);
+    logger.verbose('oauth2.validateAppId(): appIds = %s, authData = %s, options = %s', _objectToString(appIds), _objectToString(authData), _objectToString(options));
   }
-  if (options && options.hasOwnProperty('appid_field') && options.appid_field) {
+  if (options && options.hasOwnProperty('appidField') && options.appidField) {
     if (!appIds.length) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).');
+      return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'));
     }
     return requestJson(options, authData.access_token, loggingEnabled).then((response) => {
-      var appidField = options.appid_field;
+      var appidField = options.appidField;
       if (response && response[appidField]) {
         var responseValue = response[appidField];
         if (Array.isArray(responseValue)) {
           for (var idx = responseValue.length - 1; idx >= 0; idx--) {
             if (appIds.indexOf(responseValue[idx]) != -1) {
-              return;
+              return Promise.resolve();
             }
           }
         } else {
           if (appIds.indexOf(responseValue) != -1) {
-            return;
+            return Promise.resolve();
           }
         }
       }
-      throw new Parse.Error(
+      return Promise.reject(new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'OAuth2: the access_token\'s appID is empty or is not in the list of permitted appIDs in the auth configuration.');
+        'OAuth2: the access_token\'s appID is empty or is not in the list of permitted appIDs in the auth configuration.'));
     });
   } else {
     return Promise.resolve();
   }
 }
 
-function isLoggingEnabled(options) {
+function _isLoggingEnabled(options) {
   return options && options.debug;
+}
+
+function _objectToString(object) {
+  return JSON.stringify(object, null, 2);
 }
 
 // A promise wrapper for api requests
 function requestJson(options, access_token, loggingEnabled) {
   if (loggingEnabled) {
-    logger.verbose('oauth2.requestJson(): options');
-    logger.verbose(options);
+    logger.verbose('oauth2.requestJson(): options = %s', _objectToString(options));
   }
   return new Promise(function(resolve, reject) {
-    if (!options || !options.token_introspection_endpoint_url) {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'OAuth2 token introspection endpoint URL is missing from configuration!');
+    if (!options || !options.tokenIntrospectionEndpointUrl) {
+      reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 token introspection endpoint URL is missing from configuration!'));
     }
-    var url = options.token_introspection_endpoint_url;
+    var url = options.tokenIntrospectionEndpointUrl;
     if (loggingEnabled) {
       logger.verbose('oauth2.requestJson(): url = %s', url);
     }
@@ -140,18 +135,14 @@ function requestJson(options, access_token, loggingEnabled) {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Content-Length': Buffer.byteLength(postData)
     }
-    // Note: the "authorization_header" adapter config must contain the raw value.
+    // Note: the "authorizationHeader" adapter config must contain the raw value.
     //   Thus if HTTP Basic authorization is to be used, it must contain the
     //   base64 encoded version of the concatenated <username> + ":" + <password> string.
-    if (options.authorization_header) {
-      headers['Authorization'] = options.authorization_header;
+    if (options.authorizationHeader) {
+      headers['Authorization'] = options.authorizationHeader;
     }
-    var headersStr = JSON.stringify(headers, null, 2);
     if (loggingEnabled) {
-      logger.verbose('oauth2.requestJson(): request headers');
-      logger.verbose(headersStr);
-      logger.verbose('oauth2.requestJson(): request data');
-      logger.verbose(postData);
+      logger.verbose('oauth2.requestJson(): req headers = %s, req data = %s', _objectToString(headers), _objectToString(postData));
     }
     var postOptions = {
       hostname: parsedUrl.hostname,
@@ -171,26 +162,20 @@ function requestJson(options, access_token, loggingEnabled) {
         } catch (e) {
           logger.error('oauth2.requestJson(): failed to parse response data from %s as JSON', url);
           if (loggingEnabled) {
-            logger.verbose('oauth2.requestJson(): request headers');
-            logger.verbose(headersStr);
-            logger.verbose('oauth2.requestJson(): request data');
-            logger.verbose(postData);
-            logger.verbose('oauth2.requestJson(): response data');
-            logger.verbose(data);
+            logger.verbose('oauth2.requestJson(): req headers = %s, req data = %s, resp data = %s', _objectToString(headers), _objectToString(postData), _objectToString(data));
           }
           return reject(e);
         }
         if (loggingEnabled) {
-          logger.verbose('oauth2.requestJson(): JSON response from %s', url);
-          logger.verbose(data);
+          logger.verbose('oauth2.requestJson(): JSON response from %s = %s', url, _objectToString(data));
         }
-        resolve(data);
+        return resolve(data);
       });
     }).on('error', function() {
       if (loggingEnabled) {
         logger.error('oauth2.requestJson(): error while trying to fetch %s', url);
       }
-      reject('Failed to validate access token ' + access_token + ' with OAuth2 provider (url = ' + url + ', headers: ' + headersStr + ')');
+      return reject('Failed to validate access token %s with OAuth2 provider (url = %s, headers = %s)', access_token, url, _objectToString(headers));
     });
 
     postRequest.write(postData);
