@@ -53,11 +53,11 @@
  * }
  */
 
+import logger from '../../logger';
 var Https = require('https');
 var Parse = require('parse/node').Parse;
 var Url = require('url');
 var Querystring = require('querystring');
-var logger = require('../../logger').default;
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {

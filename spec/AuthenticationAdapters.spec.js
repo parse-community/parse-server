@@ -428,8 +428,9 @@ describe('AuthenticationProviders', function() {
     expect(providerOptions.tokenIntrospectionEndpointUrl).toEqual('https://example.com/introspect');
     expect(providerOptions.useridField).toEqual('sub');
     expect(providerOptions.appidField).toEqual('appId');
-    expect(providerOptions.authorizationHeader).toEqual('Basic dXNlcm5hbWU6cGFzc3dvcmQ=');
     expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions.authorizationHeader).toEqual('Basic dXNlcm5hbWU6cGFzc3dvcmQ=');
+    expect(providerOptions.debug).toEqual(true);
   });
 
   it('validateAppId should fail if OAuth2 tokenIntrospectionEndpointUrl is not configured properly', (done) => {
