@@ -2,7 +2,7 @@
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import path  from 'path';
+import path from 'path';
 import mime from 'mime';
 
 const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
@@ -25,9 +25,11 @@ export class FilesController extends AdaptableController {
       contentType = mime.getType(filename);
     }
 
-    filename = randomHexString(32) + '_' + filename;
+    if (!this.options.preserveFileName) {
+      filename = randomHexString(32) + '_' + filename;
+    }
 
-    var location = this.adapter.getFileLocation(config, filename);
+    const location = this.adapter.getFileLocation(config, filename);
     return this.adapter.createFile(filename, data, contentType).then(() => {
       return Promise.resolve({
         url: location,
