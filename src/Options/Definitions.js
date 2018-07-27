@@ -135,6 +135,12 @@ module.exports.ParseServerOptions = {
     "env": "PARSE_SERVER_FILE_KEY",
     "help": "Key for your files"
   },
+  "preserveFileName": {
+    "env": "PARSE_SERVER_PRESERVE_FILE_NAME",
+    "help": "Enable (or disable) the addition of a unique hash to the file names",
+    "action": parsers.booleanParser,
+    "default": false
+  },
   "userSensitiveFields": {
     "env": "PARSE_SERVER_USER_SENSITIVE_FIELDS",
     "help": "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
