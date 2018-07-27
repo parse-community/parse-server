@@ -64,6 +64,9 @@ export interface ParseServerOptions {
   webhookKey: ?string;
   /* Key for your files */
   fileKey: ?string;
+  /* Enable (or disable) the addition of a unique hash to the file names
+  :ENV: PARSE_SERVER_ADD_FILE_NAME_HASH */
+  addFileNameHash: ?boolean; // = true
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. */
   userSensitiveFields: ?string[]; // = ["email"]
   /* Enable (or disable) anon users, defaults to true
