@@ -81,7 +81,7 @@ describe("FilesController", () => {
     done();
   });
 
-  it("should not add a unique hash to the file name when the preserveFileName option is false", (done) => {
+  it("should not add a unique hash to the file name when the preserveFileName option is true", (done) => {
 
     const config = Config.get(Parse.applicationId)
     const gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse')
