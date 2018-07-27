@@ -232,7 +232,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 #### Advanced options
 
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
-* `addFileNameHash` - Set to false to remove the addition of the unique hash to the file names. Defaults to true.
+* `preserveFileName` - Set to true to remove the unique hash added to the file names. Defaults to false.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).

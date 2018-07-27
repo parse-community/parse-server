@@ -25,7 +25,7 @@ export class FilesController extends AdaptableController {
       contentType = mime.getType(filename);
     }
 
-    if (this.options.addFileNameHash) {
+    if (!this.options.preserveFileName) {
       filename = randomHexString(32) + '_' + filename;
     }
 

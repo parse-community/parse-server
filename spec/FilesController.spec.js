@@ -63,7 +63,7 @@ describe("FilesController", () => {
       });
   });
 
-  it("should add a unique hash to the file name when the addFileNameHash option is true", (done) => {
+  it("should add a unique hash to the file name when the preserveFileName option is false", (done) => {
 
     const config = Config.get(Parse.applicationId)
     const gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse')
@@ -71,7 +71,7 @@ describe("FilesController", () => {
     gridStoreAdapter.createFile.and.returnValue(Promise.resolve())
     const fileName = 'randomFileName.pdf'
     const regexEscapedFileName = fileName.replace(/\./g, "\\$&")
-    const filesController = new FilesController(gridStoreAdapter, null, { addFileNameHash: true })
+    const filesController = new FilesController(gridStoreAdapter, null, { preserveFileName: false })
 
     filesController.createFile(config, fileName)
 
@@ -81,14 +81,14 @@ describe("FilesController", () => {
     done();
   });
 
-  it("should not add a unique hash to the file name when the addFileNameHash option is false", (done) => {
+  it("should not add a unique hash to the file name when the preserveFileName option is false", (done) => {
 
     const config = Config.get(Parse.applicationId)
     const gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse')
     spyOn(gridStoreAdapter, 'createFile')
     gridStoreAdapter.createFile.and.returnValue(Promise.resolve())
     const fileName = 'randomFileName.pdf'
-    const filesController = new FilesController(gridStoreAdapter, null, { addFileNameHash: false })
+    const filesController = new FilesController(gridStoreAdapter, null, { preserveFileName: true })
 
     filesController.createFile(config, fileName)
 

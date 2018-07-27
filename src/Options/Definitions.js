@@ -135,11 +135,11 @@ module.exports.ParseServerOptions = {
     "env": "PARSE_SERVER_FILE_KEY",
     "help": "Key for your files"
   },
-  "addFileNameHash": {
-    "env": "PARSE_SERVER_ADD_FILE_NAME_HASH",
+  "preserveFileName": {
+    "env": "PARSE_SERVER_PRESERVE_FILE_NAME",
     "help": "Enable (or disable) the addition of a unique hash to the file names",
     "action": parsers.booleanParser,
-    "default": true
+    "default": false
   },
   "userSensitiveFields": {
     "env": "PARSE_SERVER_USER_SENSITIVE_FIELDS",
