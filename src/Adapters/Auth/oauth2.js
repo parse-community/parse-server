@@ -54,16 +54,20 @@
  */
 
 import logger from '../../logger';
-var Https = require('https');
-var Parse = require('parse/node').Parse;
-var Url = require('url');
-var Querystring = require('querystring');
+const Https = require('https');
+const Parse = require('parse/node').Parse;
+const Path = require('path');
+const Url = require('url');
+const Querystring = require('querystring');
+
+const scriptName = Path.basename(__filename, '.js');
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {
-  var loggingEnabled = _isLoggingEnabled(options);
+  const _logger = _getLogger(validateAuthData.name);
+  const loggingEnabled = _isLoggingEnabled(options);
   if (loggingEnabled) {
-    logger.verbose('oauth2.validateAuthData(), authData = %s, options = %s',  _objectToString(authData), _objectToString(options));
+    _logger.verbose('authData = %s, options = %s',  _objectToString(authData), _objectToString(options));
   }
   return requestJson(options, authData.access_token, loggingEnabled).then((response) => {
     if (response && response.active && (!options || !options.hasOwnProperty('useridField') || !options.useridField || authData.id == response[options.useridField])) {
@@ -76,18 +80,19 @@ function validateAuthData(authData, options) {
 }
 
 function validateAppId(appIds, authData, options) {
-  var loggingEnabled = _isLoggingEnabled(options);
+  const _logger = _getLogger(validateAppId.name);
+  const loggingEnabled = _isLoggingEnabled(options);
   if (loggingEnabled) {
-    logger.verbose('oauth2.validateAppId(): appIds = %s, authData = %s, options = %s', _objectToString(appIds), _objectToString(authData), _objectToString(options));
+    _logger.verbose('appIds = %s, authData = %s, options = %s', _objectToString(appIds), _objectToString(authData), _objectToString(options));
   }
   if (options && options.hasOwnProperty('appidField') && options.appidField) {
     if (!appIds.length) {
       return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'));
     }
     return requestJson(options, authData.access_token, loggingEnabled).then((response) => {
-      var appidField = options.appidField;
+      const appidField = options.appidField;
       if (response && response[appidField]) {
-        var responseValue = response[appidField];
+        const responseValue = response[appidField];
         if (Array.isArray(responseValue)) {
           for (var idx = responseValue.length - 1; idx >= 0; idx--) {
             if (appIds.indexOf(responseValue[idx]) != -1) {
@@ -117,24 +122,58 @@ function _objectToString(object) {
   return JSON.stringify(object, null, 2);
 }
 
+function _getLogger(functionName) {
+  const prefix = scriptName + '.' + functionName + '(): ';
+  var getFormat = function(arg) {
+    return (new Date()).toISOString() + ' ' + prefix + arg;
+  }
+  return {
+    info: function() {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.info.apply(logger, arguments);
+    },
+    error: function () {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.error.apply(logger, arguments);
+    },
+    warn: function() {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.warn.apply(logger, arguments);
+    },
+    verbose: function() {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.verbose.apply(logger, arguments);
+    },
+    debug: function() {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.debug.apply(logger, arguments);
+    },
+    silly: function() {
+      arguments[0] = getFormat(arguments[0]);
+      return logger.silly.apply(logger, arguments);
+    }
+  };
+}
+
 // A promise wrapper for api requests
 function requestJson(options, access_token, loggingEnabled) {
+  const _logger = _getLogger(requestJson.name);
   if (loggingEnabled) {
-    logger.verbose('oauth2.requestJson(): options = %s', _objectToString(options));
+    _logger.verbose('options = %s', _objectToString(options));
   }
   return new Promise(function(resolve, reject) {
     if (!options || !options.tokenIntrospectionEndpointUrl) {
       reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'OAuth2 token introspection endpoint URL is missing from configuration!'));
     }
-    var url = options.tokenIntrospectionEndpointUrl;
+    const url = options.tokenIntrospectionEndpointUrl;
     if (loggingEnabled) {
-      logger.verbose('oauth2.requestJson(): url = %s', url);
+      _logger.verbose('url = %s', url);
     }
-    var parsedUrl = Url.parse(url);
-    var postData = Querystring.stringify({
+    const parsedUrl = Url.parse(url);
+    const postData = Querystring.stringify({
       'token': access_token
     });
-    var headers = {
+    const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Content-Length': Buffer.byteLength(postData)
     }
@@ -145,16 +184,16 @@ function requestJson(options, access_token, loggingEnabled) {
       headers['Authorization'] = options.authorizationHeader;
     }
     if (loggingEnabled) {
-      logger.verbose('oauth2.requestJson(): req headers = %s, req data = %s', _objectToString(headers), _objectToString(postData));
+      _logger.verbose('req headers = %s, req data = %s', _objectToString(headers), _objectToString(postData));
     }
-    var postOptions = {
+    const postOptions = {
       hostname: parsedUrl.hostname,
       path: parsedUrl.pathname,
       method: 'POST',
       headers: headers
     }
-    var postRequest = Https.request(postOptions, function(res) {
-      var data = '';
+    const postRequest = Https.request(postOptions, function(res) {
+      let data = '';
       res.setEncoding('utf8');
       res.on('data', function(chunk) {
         data += chunk;
@@ -163,20 +202,20 @@ function requestJson(options, access_token, loggingEnabled) {
         try {
           data = JSON.parse(data);
         } catch (e) {
-          logger.error('oauth2.requestJson(): failed to parse response data from %s as JSON', url);
+          _logger.error('failed to parse response data from %s as JSON', url);
           if (loggingEnabled) {
-            logger.verbose('oauth2.requestJson(): req headers = %s, req data = %s, resp data = %s', _objectToString(headers), _objectToString(postData), _objectToString(data));
+            _logger.verbose('req headers = %s, req data = %s, resp data = %s', _objectToString(headers), _objectToString(postData), _objectToString(data));
           }
           return reject(e);
         }
         if (loggingEnabled) {
-          logger.verbose('oauth2.requestJson(): JSON response from %s = %s', url, _objectToString(data));
+          _logger.verbose('JSON response from %s = %s', url, _objectToString(data));
         }
         return resolve(data);
       });
     }).on('error', function() {
       if (loggingEnabled) {
-        logger.error('oauth2.requestJson(): error while trying to fetch %s', url);
+        _logger.error('error while trying to fetch %s', url);
       }
       return reject('Failed to validate access token %s with OAuth2 provider (url = %s, headers = %s)', access_token, url, _objectToString(headers));
     });

@@ -10,11 +10,11 @@ describe('AuthenticationProviders', function() {
       const provider = require("../lib/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
-      const authDataPromise = provider.validateAuthData({}, {});
+      const validateAuthDataPromise = provider.validateAuthData({}, {});
       const validateAppIdPromise = provider.validateAppId("app", "key", {});
-      jequal(authDataPromise.constructor, Promise.prototype.constructor);
+      jequal(validateAuthDataPromise.constructor, Promise.prototype.constructor);
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
-      authDataPromise.then(()=>{}, ()=>{});
+      validateAuthDataPromise.then(()=>{}, ()=>{});
       validateAppIdPromise.then(()=>{}, ()=>{});
       done();
     });
@@ -233,7 +233,7 @@ describe('AuthenticationProviders', function() {
   function validateAuthenticationHandler(authenticationHandler) {
     expect(authenticationHandler).not.toBeUndefined();
     expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
-    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
+    expect(typeof authenticationHandler.setEnableAnonymousUsers).toBe('function');
   }
 
   function validateAuthenticationAdapter(authAdapter) {
@@ -318,6 +318,17 @@ describe('AuthenticationProviders', function() {
       jfail(err);
       done();
     })
+  });
+
+  it('properly loads provider with adapter name', () => {
+    const options = {
+      myAuthentication: {
+        adapter: 'facebook'
+      }
+    };
+    const loadedAuthAdapter1 = authenticationLoader.loadAuthAdapter('myAuthentication', options, 'facebook');
+    const loadedAuthAdapter2 = authenticationLoader.loadAuthAdapter('facebook', options);
+    expect(loadedAuthAdapter1.adapter).toEqual(loadedAuthAdapter2.adapter);
   });
 
   it('properly loads a default adapter with options', () => {

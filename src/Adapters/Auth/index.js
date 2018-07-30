@@ -1,3 +1,4 @@
+import AuthAdapter from './AuthAdapter';
 import loadAdapter from '../AdapterLoader';
 
 const facebook = require('./facebook');
@@ -27,7 +28,7 @@ const anonymous = {
   }
 }
 
-const providers = {
+const adapters = {
   facebook,
   facebookaccountkit,
   instagram,
@@ -47,6 +48,7 @@ const providers = {
   weibo,
   oauth2
 }
+
 function authDataValidator(adapter, appIds, options) {
   return function(authData) {
     return adapter.validateAuthData(authData, options).then(() => {
@@ -58,10 +60,41 @@ function authDataValidator(adapter, appIds, options) {
   }
 }
 
-function loadAuthAdapter(provider, authOptions) {
-  const defaultAdapter = providers[provider];
+function providerName2adapterName(providerName, authOptions) {
+  let adapterName = providerName;
+  if (authOptions && authOptions.hasOwnProperty(providerName)) {
+    const providerOptions = authOptions[providerName];
+    if (providerOptions && providerOptions.hasOwnProperty('adapter')) {
+      adapterName = providerOptions['adapter'];
+    }
+  }
+  return adapterName;
+}
+
+function validateAdapter(adapter) {
+  const mismatches = Object.getOwnPropertyNames(AuthAdapter.prototype).reduce((obj, key) => {
+    const adapterType = typeof adapter[key];
+    const expectedType = typeof AuthAdapter.prototype[key];
+    if (adapterType !== expectedType) {
+      obj[key] = {
+        expected: expectedType,
+        actual: adapterType
+      }
+    }
+    return obj;
+  }, {});
+
+  let ret = null;
+  if (Object.keys(mismatches).length > 0) {
+    ret = new Error('Adapter prototype doesn\'t match expected prototype', adapter, mismatches);
+  }
+  return ret;
+}
+
+function loadAuthAdapter(providerName, authOptions, adapterName) {
+  const defaultAdapter = adapters[adapterName ? adapterName : providerName];
   const adapter = Object.assign({}, defaultAdapter);
-  const providerOptions = authOptions[provider];
+  const providerOptions = authOptions[providerName];
 
   if (!defaultAdapter && !providerOptions) {
     return;
@@ -71,6 +104,9 @@ function loadAuthAdapter(provider, authOptions) {
 
   // Try the configuration methods
   if (providerOptions) {
+    if (providerOptions.hasOwnProperty('adapter')) {
+      delete providerOptions['adapter'];
+    }
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach((key) => {
@@ -81,7 +117,7 @@ function loadAuthAdapter(provider, authOptions) {
     }
   }
 
-  if (!adapter.validateAuthData || !adapter.validateAppId) {
+  if (validateAdapter(adapter)) {
     return;
   }
 
@@ -93,10 +129,20 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
   const setEnableAnonymousUsers = function(enable) {
     _enableAnonymousUsers = enable;
   }
-  // To handle the test cases on configuration
-  const getValidatorForProvider = function(provider) {
 
-    if (provider === 'anonymous' && !_enableAnonymousUsers) {
+  for (var adapterName in adapters) {
+    const adapter = adapters[adapterName];
+    const validationError = validateAdapter(adapter);
+    if (validationError) {
+      throw validationError;
+    }
+  }
+
+  // To handle the test cases on configuration
+  const getValidatorForProvider = function(providerName) {
+    const adapterName = providerName2adapterName(providerName);
+
+    if (adapterName === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
 
@@ -104,7 +150,7 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
       adapter,
       appIds,
       providerOptions
-    } = loadAuthAdapter(provider, authOptions);
+    } = loadAuthAdapter(providerName, authOptions, adapterName);
 
     return authDataValidator(adapter, appIds, providerOptions);
   }
