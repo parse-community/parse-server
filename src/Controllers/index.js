@@ -82,6 +82,7 @@ export function getFilesController(options: ParseServerOptions): FilesController
     databaseURI,
     filesAdapter,
     databaseAdapter,
+    preserveFileName,
   } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
@@ -89,7 +90,7 @@ export function getFilesController(options: ParseServerOptions): FilesController
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
     return new GridStoreAdapter(databaseURI);
   });
-  return new FilesController(filesControllerAdapter, appId);
+  return new FilesController(filesControllerAdapter, appId, { preserveFileName });
 }
 
 export function getUserController(options: ParseServerOptions): UserController {
