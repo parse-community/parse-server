@@ -28,7 +28,7 @@ const anonymous = {
   }
 }
 
-const adapters = {
+const providers = {
   facebook,
   facebookaccountkit,
   instagram,
@@ -45,8 +45,7 @@ const adapters = {
   vkontakte,
   qq,
   wechat,
-  weibo,
-  oauth2
+  weibo
 }
 
 function authDataValidator(adapter, appIds, options) {
@@ -58,17 +57,6 @@ function authDataValidator(adapter, appIds, options) {
       return Promise.resolve();
     });
   }
-}
-
-function providerName2adapterName(providerName, authOptions) {
-  let adapterName = providerName;
-  if (authOptions && authOptions.hasOwnProperty(providerName)) {
-    const providerOptions = authOptions[providerName];
-    if (providerOptions && providerOptions.hasOwnProperty('adapter')) {
-      adapterName = providerOptions['adapter'];
-    }
-  }
-  return adapterName;
 }
 
 function validateAdapter(adapter) {
@@ -91,22 +79,24 @@ function validateAdapter(adapter) {
   return ret;
 }
 
-function loadAuthAdapter(providerName, authOptions, adapterName) {
-  const defaultAdapter = adapters[adapterName ? adapterName : providerName];
-  const adapter = Object.assign({}, defaultAdapter);
-  const providerOptions = authOptions[providerName];
+function loadAuthAdapter(provider, authOptions) {
+  let defaultAdapter = providers[provider];
+  const providerOptions = authOptions[provider];
+  if (providerOptions && providerOptions.hasOwnProperty('oauth2')) {
+    if (providerOptions['oauth2'] === true) {
+      defaultAdapter = oauth2;
+    }
+  }
 
   if (!defaultAdapter && !providerOptions) {
     return;
   }
 
+  const adapter = Object.assign({}, defaultAdapter);
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
-    if (providerOptions.hasOwnProperty('adapter')) {
-      delete providerOptions['adapter'];
-    }
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach((key) => {
@@ -130,8 +120,8 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
     _enableAnonymousUsers = enable;
   }
 
-  for (var adapterName in adapters) {
-    const adapter = adapters[adapterName];
+  for (var prov in providers) {
+    const adapter = providers[prov];
     const validationError = validateAdapter(adapter);
     if (validationError) {
       throw validationError;
@@ -139,10 +129,8 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
   }
 
   // To handle the test cases on configuration
-  const getValidatorForProvider = function(providerName) {
-    const adapterName = providerName2adapterName(providerName);
-
-    if (adapterName === 'anonymous' && !_enableAnonymousUsers) {
+  const getValidatorForProvider = function(provider) {
+    if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
 
@@ -150,7 +138,7 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
       adapter,
       appIds,
       providerOptions
-    } = loadAuthAdapter(providerName, authOptions, adapterName);
+    } = loadAuthAdapter(provider, authOptions);
 
     return authDataValidator(adapter, appIds, providerOptions);
   }
