@@ -313,6 +313,17 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  handleVerificationEmail(req) {
+    const { username, token } = req.body;
+    if (!username) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'you must provide an username');
+    }
+    // TODO
+    // validate username type and token
+    // should define Parse.Error.INVALID_EMAIL_ADDRESS, Parse.Error.TOKEN_MISSING and Parse.Error.INVALID_TOKEN first in Parse
+    return req.config.userController.verifyEmail(username,token);
+  }
+
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -327,6 +338,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });
     this.route('GET', '/verifyPassword', req => { return this.handleVerifyPassword(req); });
+    this.route('POST', '/verifyEmail', req => { return this.handleVerificationEmail(req); });
   }
 }
 
