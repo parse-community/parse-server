@@ -37,8 +37,8 @@ class SessionTokenCache {
         return Parse.Promise.as(userId);
       } else {
         // invalid session tokens are set as undefined in the LRU
-        // it will avoid fetching the parse servers too often for
-        // inexistent sessions
+        // it will avoid quering the parse servers for users too often 
+        // with inexistent sessionsToken
         return Parse.Promise.error('Invalid sessionToken');
       }
     }
