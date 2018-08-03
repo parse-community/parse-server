@@ -235,7 +235,7 @@ const Container = Parse.Object.extend({
 // Convenience method to create a new TestObject with a callback
 function create(options, callback) {
   const t = new TestObject(options);
-  t.save(null, { success: callback });
+  t.save().then(callback);
 }
 
 function createTestUser(success, error) {

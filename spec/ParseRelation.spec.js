@@ -83,7 +83,7 @@ describe('Parse.Relation testing', () => {
     const query = new Parse.Query(ParentObject);
     const object = await query.get(parent.id);
     const relationAgain = object.relation("child");
-    const list = relationAgain.query().find();
+    const list = await relationAgain.query().find();
     equal(list.length, 1,
       "Should have gotten one element back");
     equal(list[0].id, childObjects[0].id,
