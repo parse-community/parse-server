@@ -197,7 +197,7 @@ class ParseLiveQueryServer {
               originalACLCheckingPromise,
               currentACLCheckingPromise
             ]
-          ).then((isOriginalMatched, isCurrentMatched) => {
+          ).then(([isOriginalMatched, isCurrentMatched]) => {
             logger.verbose('Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
               originalParseObject,
               currentParseObject,

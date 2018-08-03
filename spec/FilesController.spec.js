@@ -48,7 +48,8 @@ describe("FilesController", () => {
         () => done.fail('should not succeed'),
         () => setImmediate(() => Promise.resolve('done'))
       )
-      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(() => new Promise(resolve => setTimeout(resolve, 200)))
+      .then(() => logController.getLogs({ from: Date.now() - 1000, size: 1000 }))
       .then((logs) => {
         // we get two logs here: 1. the source of the failure to save the file
         // and 2 the message that will be sent back to the client.

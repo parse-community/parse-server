@@ -62,7 +62,7 @@ describe('miscellaneous', function() {
   });
 
   it('create a valid parse user', function(done) {
-    createTestUser(function(data) {
+    createTestUser().then(function(data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
@@ -104,7 +104,8 @@ describe('miscellaneous', function() {
       .catch(done);
   });
 
-  it('ensure that email is uniquely indexed', done => {
+  it('ensure that email is uniquely indexed', async done => {
+    Parse.User.disableUnsafeCurrentUser();
     let numFailed = 0;
     let numCreated = 0;
     const user1 = new Parse.User();
@@ -138,9 +139,11 @@ describe('miscellaneous', function() {
     Promise.all([p1, p2])
       .then(() => {
         fail('one of the users should not have been created');
-        done();
       })
-      .catch(done);
+      .finally(() => {
+        Parse.User.enableUnsafeCurrentUser();
+        done();
+      });
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
@@ -229,15 +232,16 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('succeed in logging in', function() {
-    createTestUser(async function(u) {
+  it('succeed in logging in', function(done) {
+    createTestUser().then(async function(u) {
       expect(typeof u.id).toEqual('string');
 
       const user = await Parse.User.logIn('test', 'moon-y');
       expect(typeof user.id).toEqual('string');
       expect(user.get('password')).toBeUndefined();
       expect(user.getSessionToken()).not.toBeUndefined();
-      Parse.User.logOut();
+      await Parse.User.logOut();
+      done();
     }, fail);
   });
 
