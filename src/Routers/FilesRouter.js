@@ -61,6 +61,21 @@ export class FilesRouter {
   }
 
   createHandler(req, res, next) {
+    if (req.config.fileCreationPolicy === 'readonly') {
+      next(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to perform the file create operation.'));
+      return;
+    }
+
+    if (req.config.fileCreationPolicy === 'master' && !req.auth.isMaster) {
+      next(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Only master is allowed to create new files.'));
+      return;
+    }
+
+    if (req.config.fileCreationPolicy === 'user' && !req.auth.isMaster && !req.auth.user) {
+      next(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Only master and registred users aire allowed to create new files.'));
+      return;
+    }
+
     if (!req.body || !req.body.length) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
         'Invalid file upload.'));

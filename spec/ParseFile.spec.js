@@ -363,6 +363,95 @@ describe('Parse.File testing', () => {
     });
   });
 
+  it("save file with 'readonly' file creation policy", async () => {
+    await reconfigureServer({
+      fileCreationPolicy: 'readonly'
+    })
+
+    const file = new Parse.File("hello.txt", data, "text/plain");
+    try {
+      await file.save();
+      fail('file.save() should not be allowed')
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+  });
+
+  it("save file with 'master' file creation policy", async done => {
+    await reconfigureServer({
+      fileCreationPolicy: 'master'
+    })
+
+    // Save as anonymous
+    let file = new Parse.File("hello.txt", data, "text/plain");
+    try {
+      await file.save();
+      fail('file.save() should not be allowed for anonymous users')
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+
+    // Save as master
+    file = new Parse.File("hello.txt", data, "text/plain");
+    await file.save({ useMasterKey: true });
+
+    // Save as user
+    let user = new Parse.User();
+    user.set('username', `user${Math.floor(Math.random() * 10000)}`);
+    user.set('password', 'p@ssw0rd');
+    user = await user.signUp();
+    request.post({
+      headers: {
+        'Content-Type': 'text/html',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      },
+      url: 'http://localhost:8378/1/files/file',
+      body: 'fee fi fo',
+    }, (error, response, body) => {
+      const b = JSON.parse(body);
+      expect(b.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+      done();
+    });
+  });
+
+  it("save file with 'user' file creation policy", async done => {
+    await reconfigureServer({
+      fileCreationPolicy: 'user'
+    })
+
+    // Save as anonymous
+    let file = new Parse.File("hello.txt", data, "text/plain");
+    try {
+      await file.save();
+      fail('file.save() should not be allowed for anonymous users')
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+    }
+
+    // Save as master
+    file = new Parse.File("hello.txt", data, "text/plain");
+    await file.save({ useMasterKey: true });
+
+    // Save as user
+    let user = new Parse.User();
+    user.set('username', `user${Math.floor(Math.random() * 10000)}`);
+    user.set('password', 'p@ssw0rd');
+    user = await user.signUp();
+    request.post({
+      headers: {
+        'Content-Type': 'text/html',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      },
+      url: 'http://localhost:8378/1/files/file',
+      body: 'fee fi fo',
+    }, (error) => {
+      expect(error).toBe(null);
+      done();
+    });
+  });
+
   it("file toJSON testing", done => {
     const file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());

@@ -252,6 +252,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
 * `readOnlyMasterKey` -  A masterKey that has full read access to the data, but no write access. This key should be treated the same way as your masterKey, keeping it private.
 * `objectIdSize` - The string length of the newly generated object's ids.
+* `fileCreationPolicy` - Permissions for file creation. Set `readonly` to prevent anyone including master to create new files. Set `master` to only allow master to create files. Set `user` to allow master and users to create files. By default, anonymous users are allowed to create new files.
 
 ##### Logging
 
