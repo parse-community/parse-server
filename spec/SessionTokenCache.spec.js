@@ -65,7 +65,7 @@ describe('SessionTokenCache', function() {
     fit('can get inexisting userId', function(done) {
       const sessionTokenCache = new SessionTokenCache();
       const sessionToken = 'sessionToken';
-      sessionTokenCache.cache.set(sessionToken, null);
+      sessionTokenCache.cache.set(sessionToken, undefined);
 
       sessionTokenCache.getUserId(sessionToken).then(() => {}, (error) => {
         expect(error).not.toBeNull();
