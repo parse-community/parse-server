@@ -204,98 +204,62 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it("save file", done => {
+  it("save file", async () => {
     const file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
-    file.save(expectSuccess({
-      success: function(result) {
-        strictEqual(result, file);
-        ok(file.name());
-        ok(file.url());
-        notEqual(file.name(), "hello.txt");
-        done();
-      }
-    }, done));
+    const result = await file.save();
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello.txt");
   });
 
-  it("save file in object", done => {
+  it("save file in object", async done => {
     const file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
-    file.save(expectSuccess({
-      success: function(result) {
-        strictEqual(result, file);
-        ok(file.name());
-        ok(file.url());
-        notEqual(file.name(), "hello.txt");
+    const result = await file.save();
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello.txt");
 
-        const object = new Parse.Object("TestObject");
-        object.save({
-          file: file
-        }, expectSuccess({
-          success: function(object) {
-            (new Parse.Query("TestObject")).get(object.id, expectSuccess({
-              success: function(objectAgain) {
-                ok(objectAgain.get("file") instanceof Parse.File);
-                done();
-              }
-            }));
-          }
-        }, done));
-      }
-    }, done));
+    const object = new Parse.Object("TestObject");
+    await object.save({ file: file });
+    const objectAgain = await (new Parse.Query("TestObject")).get(object.id);
+    ok(objectAgain.get("file") instanceof Parse.File);
+    done();
   });
 
-  it("save file in object with escaped characters in filename", done => {
+  it("save file in object with escaped characters in filename", async () => {
     const file = new Parse.File("hello . txt", data, "text/plain");
     ok(!file.url());
-    file.save(expectSuccess({
-      success: function(result) {
-        strictEqual(result, file);
-        ok(file.name());
-        ok(file.url());
-        notEqual(file.name(), "hello . txt");
+    const result = await file.save();
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello . txt");
 
-        const object = new Parse.Object("TestObject");
-        object.save({
-          file: file
-        }, expectSuccess({
-          success: function(object) {
-            (new Parse.Query("TestObject")).get(object.id, expectSuccess({
-              success: function(objectAgain) {
-                ok(objectAgain.get("file") instanceof Parse.File);
-
-                done();
-              }
-            }));
-          }
-        }, done));
-      }
-    }, done));
+    const object = new Parse.Object("TestObject");
+    await object.save({ file });
+    const objectAgain = await (new Parse.Query("TestObject")).get(object.id);
+    ok(objectAgain.get("file") instanceof Parse.File);
   });
 
-  it("autosave file in object", done => {
+  it("autosave file in object", async done => {
     let file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     const object = new Parse.Object("TestObject");
-    object.save({
-      file: file
-    }, expectSuccess({
-      success: function(object) {
-        (new Parse.Query("TestObject")).get(object.id, expectSuccess({
-          success: function(objectAgain) {
-            file = objectAgain.get("file");
-            ok(file instanceof Parse.File);
-            ok(file.name());
-            ok(file.url());
-            notEqual(file.name(), "hello.txt");
-            done();
-          }
-        }, done));
-      }
-    }, done));
+    await object.save({ file });
+    const objectAgain = await (new Parse.Query("TestObject")).get(object.id);
+    file = objectAgain.get("file");
+    ok(file instanceof Parse.File);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello.txt");
+    done();
   });
 
-  it("autosave file in object in object", done => {
+  it("autosave file in object in object", async done => {
     let file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
 
@@ -305,44 +269,31 @@ describe('Parse.File testing', () => {
     const parent = new Parse.Object("Parent");
     parent.set("child", child);
 
-    parent.save(expectSuccess({
-      success: function(parent) {
-        const query = new Parse.Query("Parent");
-        query.include("child");
-        query.get(parent.id, expectSuccess({
-          success: function(parentAgain) {
-            const childAgain = parentAgain.get("child");
-            file = childAgain.get("file");
-            ok(file instanceof Parse.File);
-            ok(file.name());
-            ok(file.url());
-            notEqual(file.name(), "hello.txt");
-            done();
-          }
-        }, done));
-      }
-    }, done));
+    await parent.save();
+    const query = new Parse.Query("Parent");
+    query.include("child");
+    const parentAgain = await query.get(parent.id);
+    const childAgain = parentAgain.get("child");
+    file = childAgain.get("file");
+    ok(file instanceof Parse.File);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello.txt");
+    done();
   });
 
-  it("saving an already saved file", done => {
+  it("saving an already saved file", async () => {
     const file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
-    file.save(expectSuccess({
-      success: function(result) {
-        strictEqual(result, file);
-        ok(file.name());
-        ok(file.url());
-        notEqual(file.name(), "hello.txt");
-        const previousName = file.name();
+    const result = await file.save();
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), "hello.txt");
+    const previousName = file.name();
 
-        file.save(expectSuccess({
-          success: function() {
-            equal(file.name(), previousName);
-            done();
-          }
-        }, done));
-      }
-    },  done));
+    await file.save();
+    equal(file.name(), previousName);
   });
 
   it("two saves at the same time", done => {
@@ -354,7 +305,7 @@ describe('Parse.File testing', () => {
     const firstSave = file.save().then(function() { firstName = file.name(); });
     const secondSave = file.save().then(function() { secondName = file.name(); });
 
-    Parse.Promise.when(firstSave, secondSave).then(function() {
+    Promise.all([firstSave, secondSave]).then(function() {
       equal(firstName, secondName);
       done();
     }, function(error) {
@@ -363,18 +314,14 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it("file toJSON testing", done => {
+  it("file toJSON testing", async () => {
     const file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     const object = new Parse.Object("TestObject");
-    object.save({
+    await object.save({
       file: file
-    }, expectSuccess({
-      success: function() {
-        ok(object.toJSON().file.url);
-        done();
-      }
-    }, done));
+    });
+    ok(object.toJSON().file.url);
   });
 
   it("content-type used with no extension", done => {

@@ -42,26 +42,19 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
     })
-      .then(() => {
+      .then(async () => {
         spyOn(emailAdapter, 'sendVerificationEmail');
         const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.setEmail('testIfEnabled@parse.com');
-        user.signUp(null, {
-          success: function(user) {
-            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-            user.fetch()
-              .then(() => {
-                expect(user.get('emailVerified')).toEqual(false);
-                done();
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
+        await user.signUp();
+        expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+        user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(false);
             done();
-          }
-        });
+          });
       });
   });
 
@@ -77,25 +70,18 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
     })
-      .then(() => {
+      .then(async () => {
         spyOn(emailAdapter, 'sendVerificationEmail');
         const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
-        user.signUp(null, {
-          success: function(user) {
-            expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-            user.fetch()
-              .then(() => {
-                expect(user.get('emailVerified')).toEqual(undefined);
-                done();
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
+        await user.signUp();
+        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+        user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(undefined);
             done();
-          }
-        });
+          });
       });
   });
 
@@ -110,83 +96,62 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    })
-      .then(() => {
-        spyOn(emailAdapter, 'sendVerificationEmail');
-        const user = new Parse.User();
-        user.setPassword("asdf");
-        user.setUsername("zxcv");
-        user.signUp(null, {
-          success: function(user) {
-            expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-            user.fetch()
-              .then((user) => {
-                user.set("email", "testWhenUpdating@parse.com");
-                return user.save();
-              }).then((user) => {
-                return user.fetch();
-              }).then(() => {
-                expect(user.get('emailVerified')).toEqual(false);
-                // Wait as on update email, we need to fetch the username
-                setTimeout(function(){
-                  expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-                  done();
-                }, 200);
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
+    }).then(async () => {
+      spyOn(emailAdapter, 'sendVerificationEmail');
+      const user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      await user.signUp();
+      expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+      user.fetch()
+        .then((user) => {
+          user.set("email", "testWhenUpdating@parse.com");
+          return user.save();
+        }).then((user) => {
+          return user.fetch();
+        }).then(() => {
+          expect(user.get('emailVerified')).toEqual(false);
+          // Wait as on update email, we need to fetch the username
+          setTimeout(function(){
+            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
             done();
-          }
+          }, 200);
         });
-      });
+    });
   });
 
-  it('does send a validation email with valid verification link when updating the email', done => {
+  it('does send a validation email with valid verification link when updating the email', async done => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
     })
-      .then(() => {
-        spyOn(emailAdapter, 'sendVerificationEmail').and.callFake((options) => {
-          expect(options.link).not.toBeNull();
-          expect(options.link).not.toMatch(/token=undefined/);
-          Promise.resolve();
-        });
-        const user = new Parse.User();
-        user.setPassword("asdf");
-        user.setUsername("zxcv");
-        user.signUp(null, {
-          success: function(user) {
-            expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-            user.fetch()
-              .then((user) => {
-                user.set("email", "testValidLinkWhenUpdating@parse.com");
-                return user.save();
-              }).then((user) => {
-                return user.fetch();
-              }).then(() => {
-                expect(user.get('emailVerified')).toEqual(false);
-                // Wait as on update email, we need to fetch the username
-                setTimeout(function(){
-                  expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-                  done();
-                }, 200);
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
-            done();
-          }
-        });
-      });
+    spyOn(emailAdapter, 'sendVerificationEmail').and.callFake((options) => {
+      expect(options.link).not.toBeNull();
+      expect(options.link).not.toMatch(/token=undefined/);
+      Promise.resolve();
+    });
+    const user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    await user.signUp();
+    expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+    await user.fetch()
+    user.set("email", "testValidLinkWhenUpdating@parse.com");
+    await user.save();
+    await user.fetch();
+    expect(user.get('emailVerified')).toEqual(false);
+    // Wait as on update email, we need to fetch the username
+    setTimeout(function(){
+      expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+      done();
+    }, 200);
   });
 
   it('does send with a simple adapter', done => {
@@ -211,32 +176,25 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
     })
-      .then(() => {
+      .then(async () => {
         const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.set("email", "testSendSimpleAdapter@parse.com");
-        user.signUp(null, {
-          success: function(user) {
-            expect(calls).toBe(1);
-            user.fetch()
-              .then((user) => {
-                return user.save();
-              }).then(() => {
-                return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch(() => {
-                  fail('Should not fail requesting a password');
-                  done();
-                })
-              }).then(() => {
-                expect(calls).toBe(2);
-                done();
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
+        await user.signUp();
+        expect(calls).toBe(1);
+        user.fetch()
+          .then((user) => {
+            return user.save();
+          }).then(() => {
+            return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch(() => {
+              fail('Should not fail requesting a password');
+              done();
+            })
+          }).then(() => {
+            expect(calls).toBe(2);
             done();
-          }
-        });
+          });
       });
   });
 
@@ -535,25 +493,16 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
     })
-      .then(() => {
+      .then(async () => {
         spyOn(emailAdapter, 'sendVerificationEmail');
         const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
-        user.signUp(null, {
-          success: function(user) {
-            user.fetch()
-              .then(() => {
-                expect(emailAdapter.sendVerificationEmail.calls.count()).toEqual(0);
-                expect(user.get('emailVerified')).toEqual(undefined);
-                done();
-              });
-          },
-          error: function() {
-            fail('Failed to save user');
-            done();
-          }
-        });
+        await user.signUp();
+        await user.fetch()
+        expect(emailAdapter.sendVerificationEmail.calls.count()).toEqual(0);
+        expect(user.get('emailVerified')).toEqual(undefined);
+        done();
       });
   });
 
@@ -574,21 +523,14 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
     })
-      .then(() => {
+      .then(async () => {
         const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.set('email', 'user@parse.com');
-        user.signUp(null, {
-          success: () => {
-            expect(emailSent).toBe(true);
-            done();
-          },
-          error: function() {
-            fail('Failed to save user');
-            done();
-          }
-        });
+        await user.signUp();
+        expect(emailSent).toBe(true);
+        done();
       });
   })
 
@@ -889,4 +831,6 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         });
       });
   });
-})
+
+});
+

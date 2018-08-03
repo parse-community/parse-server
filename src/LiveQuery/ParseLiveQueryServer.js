@@ -174,7 +174,7 @@ class ParseLiveQueryServer {
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
           if (!isOriginalSubscriptionMatched) {
-            originalACLCheckingPromise = Parse.Promise.as(false);
+            originalACLCheckingPromise = Promise.resolve(false);
           } else {
             let originalACL;
             if (message.originalParseObject) {
@@ -186,15 +186,17 @@ class ParseLiveQueryServer {
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
           if (!isCurrentSubscriptionMatched) {
-            currentACLCheckingPromise = Parse.Promise.as(false);
+            currentACLCheckingPromise = Promise.resolve(false);
           } else {
             const currentACL = message.currentParseObject.getACL();
             currentACLCheckingPromise = this._matchesACL(currentACL, client, requestId);
           }
 
-          Parse.Promise.when(
-            originalACLCheckingPromise,
-            currentACLCheckingPromise
+          Promise.all(
+            [
+              originalACLCheckingPromise,
+              currentACLCheckingPromise
+            ]
           ).then((isOriginalMatched, isCurrentMatched) => {
             logger.verbose('Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
               originalParseObject,
@@ -330,12 +332,12 @@ class ParseLiveQueryServer {
   _matchesACL(acl: any, client: any, requestId: number): any {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
-      return Parse.Promise.as(true);
+      return Promise.resolve(true);
     }
     // Check subscription sessionToken matches ACL first
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     if (typeof subscriptionInfo === 'undefined') {
-      return Parse.Promise.as(false);
+      return Promise.resolve(false);
     }
 
     const subscriptionSessionToken = subscriptionInfo.sessionToken;
@@ -343,11 +345,11 @@ class ParseLiveQueryServer {
       return acl.getReadAccess(userId);
     }).then((isSubscriptionSessionTokenMatched) => {
       if (isSubscriptionSessionTokenMatched) {
-        return Parse.Promise.as(true);
+        return Promise.resolve(true);
       }
 
       // Check if the user has any roles that match the ACL
-      return new Parse.Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
 
         // Resolve false right away if the acl doesn't have any roles
         const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
@@ -360,7 +362,7 @@ class ParseLiveQueryServer {
 
             // Pass along a null if there is no user id
             if (!userId) {
-              return Parse.Promise.as(null);
+              return Promise.resolve(null);
             }
 
             // Prepare a user object to query for roles
@@ -374,7 +376,7 @@ class ParseLiveQueryServer {
 
             // Pass along an empty array (of roles) if no user
             if (!user) {
-              return Parse.Promise.as([]);
+              return Promise.resolve([]);
             }
 
             // Then get the user's roles
@@ -400,7 +402,7 @@ class ParseLiveQueryServer {
     }).then((isRoleMatched) => {
 
       if(isRoleMatched) {
-        return Parse.Promise.as(true);
+        return Promise.resolve(true);
       }
 
       // Check client sessionToken matches ACL
@@ -409,9 +411,9 @@ class ParseLiveQueryServer {
         return acl.getReadAccess(userId);
       });
     }).then((isMatched) => {
-      return Parse.Promise.as(isMatched);
+      return Promise.resolve(isMatched);
     }, () => {
-      return Parse.Promise.as(false);
+      return Promise.resolve(false);
     });
   }
 

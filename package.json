@@ -33,7 +33,7 @@
     "lru-cache": "4.1.2",
     "mime": "2.3.1",
     "mongodb": "3.1.1",
-    "parse": "1.11.1",
+    "parse": "git+https://github.com/parse-community/Parse-SDK-JS.git#modernize-sdk",
     "pg-promise": "8.4.5",
     "redis": "2.8.0",
     "request": "2.85.0",

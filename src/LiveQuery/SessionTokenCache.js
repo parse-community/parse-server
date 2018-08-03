@@ -7,7 +7,7 @@ function userForSessionToken(sessionToken){
   q.equalTo("sessionToken", sessionToken);
   return q.first({useMasterKey:true}).then(function(session){
     if(!session){
-      return Parse.Promise.error("No session found for session token");
+      return Promise.reject("No session found for session token");
     }
     return session.get("user");
   });
@@ -25,21 +25,21 @@ class SessionTokenCache {
 
   getUserId(sessionToken: string): any {
     if (!sessionToken) {
-      return Parse.Promise.error('Empty sessionToken');
+      return Promise.reject('Empty sessionToken');
     }
     const userId = this.cache.get(sessionToken);
     if (userId) {
       logger.verbose('Fetch userId %s of sessionToken %s from Cache', userId, sessionToken);
-      return Parse.Promise.as(userId);
+      return Promise.resolve(userId);
     }
     return userForSessionToken(sessionToken).then((user) => {
       logger.verbose('Fetch userId %s of sessionToken %s from Parse', user.id, sessionToken);
       const userId = user.id;
       this.cache.set(sessionToken, userId);
-      return Parse.Promise.as(userId);
+      return Promise.resolve(userId);
     }, (error) => {
       logger.error('Can not fetch userId for sessionToken %j, error %j', sessionToken, error);
-      return Parse.Promise.error(error);
+      return Promise.reject(error);
     });
   }
 }

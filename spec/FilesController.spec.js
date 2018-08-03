@@ -6,7 +6,7 @@ const FilesController = require('../lib/Controllers/FilesController').default;
 
 const mockAdapter = {
   createFile: () => {
-    return Parse.Promise.reject(new Error('it failed'));
+    return Promise.reject(new Error('it failed'));
   },
   deleteFile: () => { },
   getFileData: () => { },
@@ -46,7 +46,7 @@ describe("FilesController", () => {
       .then(() => new Parse.File("yolo.txt", [1, 2, 3], "text/plain").save())
       .then(
         () => done.fail('should not succeed'),
-        () => setImmediate(() => Parse.Promise.as('done'))
+        () => setImmediate(() => Promise.resolve('done'))
       )
       .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
       .then((logs) => {

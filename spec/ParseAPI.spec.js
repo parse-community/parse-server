@@ -29,7 +29,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail(error => {
+    }).catch(error => {
       fail(JSON.stringify(error));
       done();
     })
@@ -51,20 +51,13 @@ describe('miscellaneous', function() {
   });
 
   it('get a TestObject', function(done) {
-    create({ 'bloop' : 'blarg' }, function(obj) {
+    create({ 'bloop' : 'blarg' }, async function(obj) {
       const t2 = new TestObject({ objectId: obj.id });
-      t2.fetch({
-        success: function(obj2) {
-          expect(obj2.get('bloop')).toEqual('blarg');
-          expect(obj2.id).toBeTruthy();
-          expect(obj2.id).toEqual(obj.id);
-          done();
-        },
-        error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const obj2 = await t2.fetch();
+      expect(obj2.get('bloop')).toEqual('blarg');
+      expect(obj2.id).toBeTruthy();
+      expect(obj2.id).toEqual(obj.id);
+      done();
     });
   });
 
@@ -103,7 +96,7 @@ describe('miscellaneous', function() {
         expect(numFailed).toEqual(1);
         expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
       });
-    Parse.Promise.when([p1, p2])
+    Promise.all([p1, p2])
       .then(() => {
         fail('one of the users should not have been created');
         done();
@@ -142,7 +135,7 @@ describe('miscellaneous', function() {
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    Parse.Promise.when([p1, p2])
+    Promise.all([p1, p2])
       .then(() => {
         fail('one of the users should not have been created');
         done();
@@ -236,21 +229,15 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('succeed in logging in', function(done) {
-    createTestUser(function(u) {
+  it('succeed in logging in', function() {
+    createTestUser(async function(u) {
       expect(typeof u.id).toEqual('string');
 
-      Parse.User.logIn('test', 'moon-y', {
-        success: function(user) {
-          expect(typeof user.id).toEqual('string');
-          expect(user.get('password')).toBeUndefined();
-          expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut().then(done);
-        }, error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const user = await Parse.User.logIn('test', 'moon-y');
+      expect(typeof user.id).toEqual('string');
+      expect(user.get('password')).toBeUndefined();
+      expect(user.getSessionToken()).not.toBeUndefined();
+      Parse.User.logOut();
     }, fail);
   });
 
@@ -856,7 +843,7 @@ describe('miscellaneous', function() {
         }
         done();
       });
-    }).fail(() => {
+    }).catch(() => {
       fail('Should not fail');
       done();
     })
