@@ -44,10 +44,7 @@ describe('miscellaneous', function() {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
   it('get a TestObject', function(done) {
@@ -67,13 +64,13 @@ describe('miscellaneous', function() {
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
-  it('fail to create a duplicate username', done => {
+  it('fail to create a duplicate username', async done => {
+    try {
+      await Parse.User.logOut();
+    } catch(e) { /* ignore */ }
     let numCreated = 0;
     let numFailed = 0;
     const p1 = createTestUser();
@@ -101,11 +98,19 @@ describe('miscellaneous', function() {
         fail('one of the users should not have been created');
         done();
       })
-      .catch(done);
+      .catch(() => {})
+      .finally(async () => {
+        try {
+          await Parse.User.logOut();
+        } catch(e) { /* ignore */ }
+        done();
+      });
   });
 
   it('ensure that email is uniquely indexed', async done => {
-    Parse.User.disableUnsafeCurrentUser();
+    try {
+      await Parse.User.logOut();
+    } catch(e) { /* ignore */ }
     let numFailed = 0;
     let numCreated = 0;
     const user1 = new Parse.User();
@@ -140,13 +145,19 @@ describe('miscellaneous', function() {
       .then(() => {
         fail('one of the users should not have been created');
       })
-      .finally(() => {
-        Parse.User.enableUnsafeCurrentUser();
+      .catch(() => {})
+      .finally(async () => {
+        try {
+          await Parse.User.logOut();
+        } catch(e) { /* ignore */ }
         done();
       });
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
+    try {
+      await Parse.User.logOut();
+    } catch(e) { /* ignore */ }
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
