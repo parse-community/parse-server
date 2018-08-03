@@ -2,14 +2,16 @@ import Parse from 'parse/node';
 import LRU from 'lru-cache';
 import logger from '../logger';
 
-function userForSessionToken(sessionToken){
+function userIdForSessionToken(sessionToken) {
   var q = new Parse.Query("_Session");
   q.equalTo("sessionToken", sessionToken);
-  return q.first({useMasterKey:true}).then(function(session){
-    if(!session){
-      return Parse.Promise.error("No session found for session token");
+  return q.first({useMasterKey: true}).then(session => {
+    if (!session) {
+      logger.verbose("No session found for session token");
+      return;
     }
-    return session.get("user");
+    const user = session.get("user");
+    return user.id;
   });
 }
 
@@ -27,14 +29,22 @@ class SessionTokenCache {
     if (!sessionToken) {
       return Parse.Promise.error('Empty sessionToken');
     }
-    const userId = this.cache.get(sessionToken);
-    if (userId) {
-      logger.verbose('Fetch userId %s of sessionToken %s from Cache', userId, sessionToken);
-      return Parse.Promise.as(userId);
+
+    if (this.cache.has(sessionToken)) {
+      const userId = this.cache.get(sessionToken);
+      if (userId) {
+        logger.verbose('Fetch userId %s of sessionToken %s from Cache', userId, sessionToken);
+        return Parse.Promise.as(userId);
+      } else {
+        // invalid session tokens are set as undefined in the LRU
+        // it will avoid fetching the parse servers too often for
+        // inexistent sessions
+        return Parse.Promise.error('Invalid sessionToken');
+      }
     }
-    return userForSessionToken(sessionToken).then((user) => {
-      logger.verbose('Fetch userId %s of sessionToken %s from Parse', user.id, sessionToken);
-      const userId = user.id;
+
+    return userIdForSessionToken(sessionToken).then((userId) => {
+      logger.verbose('Fetch userId %s of sessionToken %s from Parse', userId, sessionToken);
       this.cache.set(sessionToken, userId);
       return Parse.Promise.as(userId);
     }, (error) => {
