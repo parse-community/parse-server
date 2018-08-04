@@ -10,6 +10,12 @@ const SchemaController = require('../lib/Controllers/SchemaController');
 const TestUtils = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
+const headers = {
+  'Content-Type': 'application/json',
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-REST-API-Key': 'rest',
+  'X-Parse-Installation-Id': 'yolo'
+}
 
 describe_only_db('mongo')('miscellaneous', () => {
   it('test rest_create_app', function(done) {
@@ -67,91 +73,79 @@ describe('miscellaneous', function() {
     }, done.fail);
   });
 
-  it('fail to create a duplicate username', async done => {
-    try {
-      await Parse.User.logOut();
-    } catch(e) { /* ignore */ }
-    let numCreated = 0;
+  it('fail to create a duplicate username', async () => {
     let numFailed = 0;
-    const p1 = createTestUser();
-    p1.then(() => {
+    let numCreated = 0;
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    const p2 = createTestUser();
-    p2.then(() => {
+    }, ({ error }) => {
+      numFailed++;
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'otherpassword',
+        username: 'u1',
+        email: 'email@other.email'
+      },
+      headers
+    }).then(() => {
       numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    Promise.all([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(() => {})
-      .finally(async () => {
-        try {
-          await Parse.User.logOut();
-        } catch(e) { /* ignore */ }
-        done();
-      });
+    }, ({ error }) => {
+      numFailed++;
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
   });
 
-  it('ensure that email is uniquely indexed', async done => {
-    try {
-      await Parse.User.logOut();
-    } catch(e) { /* ignore */ }
+  it('ensure that email is uniquely indexed', async () => {
     let numFailed = 0;
     let numCreated = 0;
-    const user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    const p1 = user1.signUp();
-    p1.then(() => {
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    const user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    const p2 = user2.signUp();
-    p2.then(() => {
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u2',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    Promise.all([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-      })
-      .catch(() => {})
-      .finally(async () => {
-        try {
-          await Parse.User.logOut();
-        } catch(e) { /* ignore */ }
-        done();
-      });
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
