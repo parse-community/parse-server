@@ -64,7 +64,7 @@ describe('ParseServerRESTController', () => {
       expect(res.results.length).toBe(1);
       expect(res.results[0].key).toEqual("value");
       done();
-    }).fail((err) => {
+    }).catch((err) => {
       console.log(err);
       jfail(err);
       done();
@@ -81,7 +81,7 @@ describe('ParseServerRESTController', () => {
       // Result is in JSON format
       expect(res.objectId).toEqual(userId);
       done();
-    }).fail((err) => {
+    }).catch((err) => {
       console.log(err);
       jfail(err);
       done();

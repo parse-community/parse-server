@@ -1,5 +1,4 @@
 import request from 'request';
-import Parse from 'parse/node';
 import HTTPResponse from './HTTPResponse';
 import querystring from 'querystring';
 import log from '../logger';
@@ -35,7 +34,6 @@ var encodeBody = function({body, headers = {}}) {
 }
 
 module.exports = function(options) {
-  var promise = new Parse.Promise();
   var callbacks = {
     success: options.success,
     error: options.error
@@ -54,30 +52,30 @@ module.exports = function(options) {
   }
   // force the response as a buffer
   options.encoding = null;
+  return new Promise((resolve, reject) => {
+    request(options, (error, response, body) => {
+      if (error) {
+        if (callbacks.error) {
+          callbacks.error(error);
+        }
+        return reject(error);
+      }
+      const httpResponse = new HTTPResponse(response, body);
 
-  request(options, (error, response, body) => {
-    if (error) {
-      if (callbacks.error) {
-        callbacks.error(error);
+      // Consider <200 && >= 400 as errors
+      if (httpResponse.status < 200 || httpResponse.status >= 400) {
+        if (callbacks.error) {
+          callbacks.error(httpResponse);
+        }
+        return reject(httpResponse);
+      } else {
+        if (callbacks.success) {
+          callbacks.success(httpResponse);
+        }
+        return resolve(httpResponse);
       }
-      return promise.reject(error);
-    }
-    const httpResponse = new HTTPResponse(response, body);
-
-    // Consider <200 && >= 400 as errors
-    if (httpResponse.status < 200 || httpResponse.status >= 400) {
-      if (callbacks.error) {
-        callbacks.error(httpResponse);
-      }
-      return promise.reject(httpResponse);
-    } else {
-      if (callbacks.success) {
-        callbacks.success(httpResponse);
-      }
-      return promise.resolve(httpResponse);
-    }
+    });
   });
-  return promise;
 };
 
 module.exports.encodeBody = encodeBody;

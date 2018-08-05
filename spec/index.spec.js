@@ -292,7 +292,7 @@ describe('server', () => {
               }).then((obj) => {
                 expect(obj.id).toEqual(objId);
                 server.close(done);
-              }).fail(() => {
+              }).catch(() => {
                 server.close(done);
               })
             });

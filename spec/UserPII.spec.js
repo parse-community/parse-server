@@ -31,7 +31,7 @@ describe('Personally Identifiable Information', () => {
       fetchedUser => {
         expect(fetchedUser.get('email')).toBe(EMAIL);
       }, e => console.error('error', e))
-      .done(() => done());
+      .then(done).catch(done.fail);
   });
 
   it('should not be able to get PII via API with object', (done) => {
@@ -42,11 +42,12 @@ describe('Personally Identifiable Information', () => {
         userObj.fetch().then(
           fetchedUser => {
             expect(fetchedUser.get('email')).toBe(undefined);
+            done();
           })
-          .fail(e => {
+          .catch(e => {
             done.fail(JSON.stringify(e));
           })
-          .done(() => done());
+          .then(done).catch(done.fail);
       });
   });
 
@@ -59,7 +60,7 @@ describe('Personally Identifiable Information', () => {
           fetchedUser => {
             expect(fetchedUser.get('email')).toBe(EMAIL);
           }, e => console.error('error', e))
-          .done(() => done());
+          .then(done).catch(done.fail);
       });
   });
 
@@ -285,7 +286,7 @@ describe('Personally Identifiable Information', () => {
               expect(fetchedUser.get('zip')).toBe(undefined);
               expect(fetchedUser.get('ssn')).toBe(undefined);
             }, e => console.error('error', e))
-            .done(() => done());
+            .then(done).catch(done.fail);
         });
     });
 
@@ -300,7 +301,7 @@ describe('Personally Identifiable Information', () => {
               expect(fetchedUser.get('zip')).toBe(ZIP);
               expect(fetchedUser.get('ssn')).toBe(SSN);
             }, e => console.error('error', e))
-            .done(() => done());
+            .then(done).catch(done.fail);
         });
     });
 
@@ -397,7 +398,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.email).toBe(undefined);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
 
     it('should get PII via REST with self credentials', (done) => {
@@ -418,7 +419,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.ssn).toBe(SSN);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
 
     it('should get PII via REST using master key', (done) => {
@@ -438,7 +439,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.ssn).toBe(SSN);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
 
     it('should not get PII via REST by ID', (done) => {
@@ -457,7 +458,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.email).toBe(undefined);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
 
     it('should get PII via REST by ID  with self credentials', (done) => {
@@ -477,7 +478,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.email).toBe(EMAIL);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
 
     it('should get PII via REST by ID  with master key', (done) => {
@@ -497,7 +498,7 @@ describe('Personally Identifiable Information', () => {
             expect(fetchedUser.email).toBe(EMAIL);
           },
           e => console.error('error', e.message)
-        ).done(() => done());
+        ).then(done).catch(done.fail);
     });
   });
 });

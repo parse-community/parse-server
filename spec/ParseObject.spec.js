@@ -25,11 +25,9 @@ describe('Parse.Object testing', () => {
     create({ "test" : "test" }, function(model) {
       const t2 = new TestObject({ objectId: model.id });
       t2.set("test", "changed");
-      t2.save(null, {
-        success: function(model) {
-          equal(model.get("test"), "changed", "Update should have succeeded");
-          done();
-        }
+      t2.save().then(function(model) {
+        equal(model.get("test"), "changed", "Update should have succeeded");
+        done();
       });
     });
   });
@@ -37,15 +35,12 @@ describe('Parse.Object testing', () => {
   it("save without null", function(done) {
     const object = new TestObject();
     object.set("favoritePony", "Rainbow Dash");
-    object.save({
-      success: function(objectAgain) {
-        equal(objectAgain, object);
-        done();
-      },
-      error: function(objectAgain, error) {
-        ok(null, "Error " + error.code + ": " + error.message);
-        done();
-      }
+    object.save().then(function(objectAgain) {
+      equal(objectAgain, object);
+      done();
+    }, function(objectAgain, error) {
+      ok(null, "Error " + error.code + ": " + error.message);
+      done();
     });
   });
 
@@ -74,13 +69,11 @@ describe('Parse.Object testing', () => {
   it("get", function(done) {
     create({ "test" : "test" }, function(model) {
       const t2 = new TestObject({ objectId: model.id });
-      t2.fetch({
-        success: function(model2) {
-          equal(model2.get("test"), "test", "Update should have succeeded");
-          ok(model2.id);
-          equal(model2.id, model.id, "Ids should match");
-          done();
-        }
+      t2.fetch().then(function(model2) {
+        equal(model2.get("test"), "test", "Update should have succeeded");
+        ok(model2.id);
+        equal(model2.id, model.id, "Ids should match");
+        done();
       });
     });
   });
@@ -88,32 +81,24 @@ describe('Parse.Object testing', () => {
   it("delete", function(done) {
     const t = new TestObject();
     t.set("test", "test");
-    t.save(null, {
-      success: function() {
-        t.destroy({
-          success: function() {
-            const t2 = new TestObject({ objectId: t.id });
-            t2.fetch().then(fail, done);
-          }
-        });
-      }
+    t.save().then(function() {
+      t.destroy().then(function() {
+        const t2 = new TestObject({ objectId: t.id });
+        t2.fetch().then(fail, done);
+      });
     });
   });
 
   it("find", function(done) {
     const t = new TestObject();
     t.set("foo", "bar");
-    t.save(null, {
-      success: function() {
-        const query = new Parse.Query(TestObject);
-        query.equalTo("foo", "bar");
-        query.find({
-          success: function(results) {
-            equal(results.length, 1);
-            done();
-          }
-        });
-      }
+    t.save().then(function() {
+      const query = new Parse.Query(TestObject);
+      query.equalTo("foo", "bar");
+      query.find().then(function(results) {
+        equal(results.length, 1);
+        done();
+      });
     });
   });
 
@@ -123,35 +108,27 @@ describe('Parse.Object testing', () => {
     const container = new Container();
     container.set("item", item);
 
-    Parse.Object.saveAll([item, container], {
-      success: function() {
-        const query = new Parse.Query(Container);
-        query.find({
-          success: function(results) {
-            equal(results.length, 1);
-            const containerAgain = results[0];
-            const itemAgain = containerAgain.get("item");
-            itemAgain.fetch({
-              success: function() {
-                equal(itemAgain.get("property"), "x");
-                done();
-              }
-            });
-          }
+    Parse.Object.saveAll([item, container]).then(function() {
+      const query = new Parse.Query(Container);
+      query.find().then(function(results) {
+        equal(results.length, 1);
+        const containerAgain = results[0];
+        const itemAgain = containerAgain.get("item");
+        itemAgain.fetch().then(function() {
+          equal(itemAgain.get("property"), "x");
+          done();
         });
-      }
+      });
     });
   });
 
   it("save adds no data keys (other than createdAt and updatedAt)",
     function(done) {
       const object = new TestObject();
-      object.save(null, {
-        success: function() {
-          const keys = Object.keys(object.attributes).sort();
-          equal(keys.length, 2);
-          done();
-        }
+      object.save().then(function() {
+        const keys = Object.keys(object.attributes).sort();
+        equal(keys.length, 2);
+        done();
       });
     });
 
@@ -161,130 +138,101 @@ describe('Parse.Object testing', () => {
     const container = new Container();
     container.set("item", item);
 
-    container.save(null, {
-      success: function() {
-        const query = new Parse.Query(Container);
-        query.find({
-          success: function(results) {
-            equal(results.length, 1);
-            const containerAgain = results[0];
-            const itemAgain = containerAgain.get("item");
-            itemAgain.fetch({
-              success: function() {
-                equal(itemAgain.get("property"), "x");
-                done();
-              }
-            });
-          }
+    container.save().then(function() {
+      const query = new Parse.Query(Container);
+      query.find().then(function(results) {
+        equal(results.length, 1);
+        const containerAgain = results[0];
+        const itemAgain = containerAgain.get("item");
+        itemAgain.fetch().then(function() {
+          equal(itemAgain.get("property"), "x");
+          done();
         });
-      }
+      });
     });
   });
 
   it("fetch", function(done) {
     const item = new Item({ foo: "bar" });
-    item.save(null, {
-      success: function() {
-        const itemAgain = new Item();
-        itemAgain.id = item.id;
-        itemAgain.fetch({
-          success: function() {
-            itemAgain.save({ foo: "baz" }, {
-              success: function() {
-                item.fetch({
-                  success: function() {
-                    equal(item.get("foo"), itemAgain.get("foo"));
-                    done();
-                  }
-                });
-              }
-            });
-          }
+    item.save().then(function() {
+      const itemAgain = new Item();
+      itemAgain.id = item.id;
+      itemAgain.fetch().then(function() {
+        itemAgain.save({ foo: "baz" }).then(function() {
+          item.fetch().then(function() {
+            equal(item.get("foo"), itemAgain.get("foo"));
+            done();
+          });
         });
-      }
+      });
     });
   });
 
   it("createdAt doesn't change", function(done) {
     const object = new TestObject({ foo: "bar" });
-    object.save(null, {
-      success: function() {
-        const objectAgain = new TestObject();
-        objectAgain.id = object.id;
-        objectAgain.fetch({
-          success: function() {
-            equal(object.createdAt.getTime(), objectAgain.createdAt.getTime());
-            done();
-          }
-        });
-      }
+    object.save().then(function() {
+      const objectAgain = new TestObject();
+      objectAgain.id = object.id;
+      objectAgain.fetch().then(function() {
+        equal(object.createdAt.getTime(), objectAgain.createdAt.getTime());
+        done();
+      });
     });
   });
 
   it("createdAt and updatedAt exposed", function(done) {
     const object = new TestObject({ foo: "bar" });
-    object.save(null, {
-      success: function() {
-        notEqual(object.updatedAt, undefined);
-        notEqual(object.createdAt, undefined);
-        done();
-      }
+    object.save().then(function() {
+      notEqual(object.updatedAt, undefined);
+      notEqual(object.createdAt, undefined);
+      done();
     });
   });
 
   it("updatedAt gets updated", function(done) {
     const object = new TestObject({ foo: "bar" });
-    object.save(null, {
-      success: function() {
-        ok(object.updatedAt, "initial save should cause updatedAt to exist");
-        const firstUpdatedAt = object.updatedAt;
-        object.save({ foo: "baz" }, {
-          success: function() {
-            ok(object.updatedAt, "two saves should cause updatedAt to exist");
-            notEqual(firstUpdatedAt, object.updatedAt);
-            done();
-          }
-        });
-      }
+    object.save().then(function() {
+      ok(object.updatedAt, "initial save should cause updatedAt to exist");
+      const firstUpdatedAt = object.updatedAt;
+      object.save({ foo: "baz" }).then(function() {
+        ok(object.updatedAt, "two saves should cause updatedAt to exist");
+        notEqual(firstUpdatedAt, object.updatedAt);
+        done();
+      });
     });
   });
 
   it("createdAt is reasonable", function(done) {
     const startTime = new Date();
     const object = new TestObject({ foo: "bar" });
-    object.save(null, {
-      success: function() {
-        const endTime = new Date();
-        const startDiff = Math.abs(startTime.getTime() -
-                                 object.createdAt.getTime());
-        ok(startDiff < 5000);
+    object.save().then(function() {
+      const endTime = new Date();
+      const startDiff = Math.abs(startTime.getTime() -
+                                object.createdAt.getTime());
+      ok(startDiff < 5000);
 
-        const endDiff = Math.abs(endTime.getTime() -
-                               object.createdAt.getTime());
-        ok(endDiff < 5000);
+      const endDiff = Math.abs(endTime.getTime() -
+                              object.createdAt.getTime());
+      ok(endDiff < 5000);
 
-        done();
-      }
+      done();
     });
   });
 
   it_exclude_dbs(['postgres'])("can set null", function(done) {
     const obj = new Parse.Object("TestObject");
     obj.set("foo", null);
-    obj.save(null, {
-      success: function(obj) {
-        on_db('mongo', () => {
-          equal(obj.get("foo"), null);
-        });
-        on_db('postgres', () => {
-          fail('should not succeed');
-        });
-        done();
-      },
-      error: function() {
-        fail('should not fail');
-        done();
-      }
+    obj.save().then(function(obj) {
+      on_db('mongo', () => {
+        equal(obj.get("foo"), null);
+      });
+      on_db('postgres', () => {
+        fail('should not succeed');
+      });
+      done();
+    }, function() {
+      fail('should not fail');
+      done();
     });
   });
 
@@ -292,24 +240,21 @@ describe('Parse.Object testing', () => {
     const obj = new Parse.Object("TestObject");
     obj.set("yes", true);
     obj.set("no", false);
-    obj.save(null, {
-      success: function(obj) {
-        equal(obj.get("yes"), true);
-        equal(obj.get("no"), false);
-        done();
-      },
-      error: function(obj, error) {
-        ok(false, error.message);
-        done();
-      }
+    obj.save().then(function(obj) {
+      equal(obj.get("yes"), true);
+      equal(obj.get("no"), false);
+      done();
+    }, function(obj, error) {
+      ok(false, error.message);
+      done();
     });
   });
 
-  it('cannot set invalid date', function(done) {
+  it('cannot set invalid date', async function(done) {
     const obj = new Parse.Object('TestObject');
     obj.set('when', new Date(Date.parse(null)));
     try {
-      obj.save();
+      await obj.save();
     } catch (e) {
       ok(true);
       done();
@@ -321,17 +266,14 @@ describe('Parse.Object testing', () => {
 
   it("invalid class name", function(done) {
     const item = new Parse.Object("Foo^bar");
-    item.save(null, {
-      success: function() {
-        ok(false, "The name should have been invalid.");
-        done();
-      },
-      error: function() {
-        // Because the class name is invalid, the router will not be able to route
-        // it, so it will actually return a -1 error code.
-        // equal(error.code, Parse.Error.INVALID_CLASS_NAME);
-        done();
-      }
+    item.save().then(function() {
+      ok(false, "The name should have been invalid.");
+      done();
+    }, function() {
+      // Because the class name is invalid, the router will not be able to route
+      // it, so it will actually return a -1 error code.
+      // equal(error.code, Parse.Error.INVALID_CLASS_NAME);
+      done();
     });
   });
 
@@ -373,40 +315,31 @@ describe('Parse.Object testing', () => {
     const simple = new Parse.Object("SimpleObject");
     simple.save({
       foo: "bar"
-    }, {
-      success: function(simple) {
-        simple.unset("foo");
+    }).then(function(simple) {
+      simple.unset("foo");
+      ok(!simple.has("foo"), "foo should have been unset.");
+      ok(simple.dirty("foo"), "foo should be dirty.");
+      ok(simple.dirty(), "the whole object should be dirty.");
+      simple.save().then(function(simple) {
         ok(!simple.has("foo"), "foo should have been unset.");
-        ok(simple.dirty("foo"), "foo should be dirty.");
-        ok(simple.dirty(), "the whole object should be dirty.");
-        simple.save(null, {
-          success: function(simple) {
-            ok(!simple.has("foo"), "foo should have been unset.");
-            ok(!simple.dirty("foo"), "the whole object was just saved.");
-            ok(!simple.dirty(), "the whole object was just saved.");
+        ok(!simple.dirty("foo"), "the whole object was just saved.");
+        ok(!simple.dirty(), "the whole object was just saved.");
 
-            const query = new Parse.Query("SimpleObject");
-            query.get(simple.id, {
-              success: function(simpleAgain) {
-                ok(!simpleAgain.has("foo"), "foo should have been removed.");
-                done();
-              },
-              error: function(simpleAgain, error) {
-                ok(false, "Error " + error.code + ": " + error.message);
-                done();
-              }
-            });
-          },
-          error: function(simple, error) {
-            ok(false, "Error " + error.code + ": " + error.message);
-            done();
-          }
+        const query = new Parse.Query("SimpleObject");
+        query.get(simple.id).then(function(simpleAgain) {
+          ok(!simpleAgain.has("foo"), "foo should have been removed.");
+          done();
+        }, function(simpleAgain, error) {
+          ok(false, "Error " + error.code + ": " + error.message);
+          done();
         });
-      },
-      error: function(simple, error) {
+      }, function(simple, error) {
         ok(false, "Error " + error.code + ": " + error.message);
         done();
-      }
+      });
+    }, function(simple, error) {
+      ok(false, "Error " + error.code + ": " + error.message);
+      done();
     });
   });
 
@@ -418,28 +351,22 @@ describe('Parse.Object testing', () => {
     ok(!simple.has("foo"), "foo should have been unset.");
     ok(simple.dirty("foo"), "foo should be dirty.");
     ok(simple.dirty(), "the whole object should be dirty.");
-    simple.save(null, {
-      success: function(simple) {
-        ok(!simple.has("foo"), "foo should have been unset.");
-        ok(!simple.dirty("foo"), "the whole object was just saved.");
-        ok(!simple.dirty(), "the whole object was just saved.");
+    simple.save().then(function(simple) {
+      ok(!simple.has("foo"), "foo should have been unset.");
+      ok(!simple.dirty("foo"), "the whole object was just saved.");
+      ok(!simple.dirty(), "the whole object was just saved.");
 
-        const query = new Parse.Query("SimpleObject");
-        query.get(simple.id, {
-          success: function(simpleAgain) {
-            ok(!simpleAgain.has("foo"), "foo should have been removed.");
-            done();
-          },
-          error: function(simpleAgain, error) {
-            ok(false, "Error " + error.code + ": " + error.message);
-            done();
-          }
-        });
-      },
-      error: function(simple, error) {
+      const query = new Parse.Query("SimpleObject");
+      query.get(simple.id).then(function(simpleAgain) {
+        ok(!simpleAgain.has("foo"), "foo should have been removed.");
+        done();
+      }, function(simpleAgain, error) {
         ok(false, "Error " + error.code + ": " + error.message);
         done();
-      }
+      });
+    }, function(simple, error) {
+      ok(false, "Error " + error.code + ": " + error.message);
+      done();
     });
   });
 
@@ -448,40 +375,31 @@ describe('Parse.Object testing', () => {
     const child = new Parse.Object("Child");
     simple.save({
       child: child
-    }, {
-      success: function(simple) {
-        simple.unset("child");
+    }).then(function(simple) {
+      simple.unset("child");
+      ok(!simple.has("child"), "child should have been unset.");
+      ok(simple.dirty("child"), "child should be dirty.");
+      ok(simple.dirty(), "the whole object should be dirty.");
+      simple.save().then(function(simple) {
         ok(!simple.has("child"), "child should have been unset.");
-        ok(simple.dirty("child"), "child should be dirty.");
-        ok(simple.dirty(), "the whole object should be dirty.");
-        simple.save(null, {
-          success: function(simple) {
-            ok(!simple.has("child"), "child should have been unset.");
-            ok(!simple.dirty("child"), "the whole object was just saved.");
-            ok(!simple.dirty(), "the whole object was just saved.");
+        ok(!simple.dirty("child"), "the whole object was just saved.");
+        ok(!simple.dirty(), "the whole object was just saved.");
 
-            const query = new Parse.Query("SimpleObject");
-            query.get(simple.id, {
-              success: function(simpleAgain) {
-                ok(!simpleAgain.has("child"), "child should have been removed.");
-                done();
-              },
-              error: function(simpleAgain, error) {
-                ok(false, "Error " + error.code + ": " + error.message);
-                done();
-              }
-            });
-          },
-          error: function(simple, error) {
-            ok(false, "Error " + error.code + ": " + error.message);
-            done();
-          }
+        const query = new Parse.Query("SimpleObject");
+        query.get(simple.id).then(function(simpleAgain) {
+          ok(!simpleAgain.has("child"), "child should have been removed.");
+          done();
+        }, function(simpleAgain, error) {
+          ok(false, "Error " + error.code + ": " + error.message);
+          done();
         });
-      },
-      error: function(simple, error) {
+      }, function(simple, error) {
         ok(false, "Error " + error.code + ": " + error.message);
         done();
-      }
+      });
+    }, function(simple, error) {
+      ok(false, "Error " + error.code + ": " + error.message);
+      done();
     });
   });
 
@@ -489,67 +407,40 @@ describe('Parse.Object testing', () => {
     const simpleObject = new Parse.Object("SimpleObject");
     simpleObject.set("foo", "bar");
     simpleObject.unset("foo");
-    simpleObject.save(null, {
-      success: function(simpleObject) {
-        simpleObject.set("foo", "baz");
-        simpleObject.save(null, {
-          success: function(simpleObject) {
-            const query = new Parse.Query("SimpleObject");
-            query.get(simpleObject.id, {
-              success: function(simpleObjectAgain) {
-                equal(simpleObjectAgain.get("foo"), "baz");
-                done();
-              },
-              error: function(simpleObject, error) {
-                ok(false, "Error " + error.code + ": " + error.message);
-                done();
-              }
-            });
-          },
-          error: function(simpleObject, error) {
-            ok(false, "Error " + error.code + ": " + error.message);
-            done();
-          }
-        });
-      },
-      error: function(simpleObject, error) {
-        ok(false, "Error " + error.code + ": " + error.message);
-        done();
-      }
-    });
+    simpleObject.save().then(function(simpleObject) {
+      simpleObject.set("foo", "baz");
+      simpleObject.save().then(function(simpleObject) {
+        const query = new Parse.Query("SimpleObject");
+        query.get(simpleObject.id).then(function(simpleObjectAgain) {
+          equal(simpleObjectAgain.get("foo"), "baz");
+          done();
+        }, done.fail);
+      }, done.fail);
+    }, done.fail);
   });
 
   it("setting after deleting", function(done) {
     const simpleObject = new Parse.Object("SimpleObject");
     simpleObject.set("foo", "bar");
-    simpleObject.save(null, {
-      success: function(simpleObject) {
-        simpleObject.unset("foo");
-        simpleObject.set("foo", "baz");
-        simpleObject.save(null, {
-          success: function(simpleObject) {
-            const query = new Parse.Query("SimpleObject");
-            query.get(simpleObject.id, {
-              success: function(simpleObjectAgain) {
-                equal(simpleObjectAgain.get("foo"), "baz");
-                done();
-              },
-              error: function(simpleObject, error) {
-                ok(false, "Error " + error.code + ": " + error.message);
-                done();
-              }
-            });
-          },
-          error: function(simpleObject, error) {
-            ok(false, "Error " + error.code + ": " + error.message);
-            done();
-          }
+    simpleObject.save().then(function(simpleObject) {
+      simpleObject.unset("foo");
+      simpleObject.set("foo", "baz");
+      simpleObject.save().then(function(simpleObject) {
+        const query = new Parse.Query("SimpleObject");
+        query.get(simpleObject.id).then(function(simpleObjectAgain) {
+          equal(simpleObjectAgain.get("foo"), "baz");
+          done();
+        }, function(error) {
+          ok(false, "Error " + error.code + ": " + error.message);
+          done();
         });
-      },
-      error: function(simpleObject, error) {
+      }, function(error) {
         ok(false, "Error " + error.code + ": " + error.message);
         done();
-      }
+      });
+    }, function(error) {
+      ok(false, "Error " + error.code + ": " + error.message);
+      done();
     });
   });
 
@@ -557,28 +448,22 @@ describe('Parse.Object testing', () => {
     const simple = new Parse.Object("SimpleObject");
     simple.save({
       foo: 5
-    }, {
-      success: function(simple) {
-        simple.increment("foo");
+    }).then(function(simple) {
+      simple.increment("foo");
+      equal(simple.get("foo"), 6);
+      ok(simple.dirty("foo"), "foo should be dirty.");
+      ok(simple.dirty(), "the whole object should be dirty.");
+      simple.save().then(function(simple) {
         equal(simple.get("foo"), 6);
-        ok(simple.dirty("foo"), "foo should be dirty.");
-        ok(simple.dirty(), "the whole object should be dirty.");
-        simple.save(null, {
-          success: function(simple) {
-            equal(simple.get("foo"), 6);
-            ok(!simple.dirty("foo"), "the whole object was just saved.");
-            ok(!simple.dirty(), "the whole object was just saved.");
+        ok(!simple.dirty("foo"), "the whole object was just saved.");
+        ok(!simple.dirty(), "the whole object was just saved.");
 
-            const query = new Parse.Query("SimpleObject");
-            query.get(simple.id, {
-              success: function(simpleAgain) {
-                equal(simpleAgain.get("foo"), 6);
-                done();
-              }
-            });
-          }
+        const query = new Parse.Query("SimpleObject");
+        query.get(simple.id).then(function(simpleAgain) {
+          equal(simpleAgain.get("foo"), 6);
+          done();
         });
-      }
+      });
     });
   });
 
@@ -672,24 +557,21 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object("TestObject");
     object.set("cat", "good");
     object.set("dog", "bad");
-    object.save({
-      success: function(object) {
-        ok(!object.dirty());
-        ok(!object.dirty("cat"));
-        ok(!object.dirty("dog"));
+    object.save().then(function(object) {
+      ok(!object.dirty());
+      ok(!object.dirty("cat"));
+      ok(!object.dirty("dog"));
 
-        object.set("dog", "okay");
+      object.set("dog", "okay");
 
-        ok(object.dirty());
-        ok(!object.dirty("cat"));
-        ok(object.dirty("dog"));
+      ok(object.dirty());
+      ok(!object.dirty("cat"));
+      ok(object.dirty("dog"));
 
-        done();
-      },
-      error: function() {
-        ok(false, "This should have saved.");
-        done();
-      }
+      done();
+    }, function() {
+      ok(false, "This should have saved.");
+      done();
     });
   });
 
@@ -733,8 +615,8 @@ describe('Parse.Object testing', () => {
   });
 
   it("length attribute", function(done) {
-    Parse.User.signUp("bob", "password", null, {
-      success: function(user) {
+    Parse.User.signUp("bob", "password")
+      .then(function(user) {
         const TestObject = Parse.Object.extend("TestObject");
         const obj = new TestObject({
           length: 5,
@@ -743,74 +625,45 @@ describe('Parse.Object testing', () => {
         equal(obj.get("length"), 5);
         ok(obj.get("ACL") instanceof Parse.ACL);
 
-        obj.save(null, {
-          success: function(obj) {
+        obj.save().then(function(obj) {
+          equal(obj.get("length"), 5);
+          ok(obj.get("ACL") instanceof Parse.ACL);
+
+          const query = new Parse.Query(TestObject);
+          query.get(obj.id).then(function(obj) {
             equal(obj.get("length"), 5);
             ok(obj.get("ACL") instanceof Parse.ACL);
 
             const query = new Parse.Query(TestObject);
-            query.get(obj.id, {
-              success: function(obj) {
-                equal(obj.get("length"), 5);
-                ok(obj.get("ACL") instanceof Parse.ACL);
+            query.find().then(function(results) {
+              obj = results[0];
+              equal(obj.get("length"), 5);
+              ok(obj.get("ACL") instanceof Parse.ACL);
 
-                const query = new Parse.Query(TestObject);
-                query.find({
-                  success: function(results) {
-                    obj = results[0];
-                    equal(obj.get("length"), 5);
-                    ok(obj.get("ACL") instanceof Parse.ACL);
-
-                    done();
-                  },
-                  error: function(error) {
-                    ok(false, error.code + ": " + error.message);
-                    done();
-                  }
-                });
-              },
-              error: function(obj, error) {
-                ok(false, error.code + ": " + error.message);
-                done();
-              }
+              done();
             });
-          },
-          error: function(obj, error) {
-            ok(false, error.code + ": " + error.message);
-            done();
-          }
+          });
         });
-      },
-      error: function(user, error) {
-        ok(false, error.code + ": " + error.message);
-        done();
-      }
-    });
+      });
   });
 
   it("old attribute unset then unset", function(done) {
     const TestObject = Parse.Object.extend("TestObject");
     const obj = new TestObject();
     obj.set("x", 3);
-    obj.save({
-      success: function() {
-        obj.unset("x");
-        obj.unset("x");
-        obj.save({
-          success: function() {
-            equal(obj.has("x"), false);
-            equal(obj.get("x"), undefined);
-            const query = new Parse.Query(TestObject);
-            query.get(obj.id, {
-              success: function(objAgain) {
-                equal(objAgain.has("x"), false);
-                equal(objAgain.get("x"), undefined);
-                done();
-              }
-            });
-          }
+    obj.save().then(function() {
+      obj.unset("x");
+      obj.unset("x");
+      obj.save().then(function() {
+        equal(obj.has("x"), false);
+        equal(obj.get("x"), undefined);
+        const query = new Parse.Query(TestObject);
+        query.get(obj.id).then(function(objAgain) {
+          equal(objAgain.has("x"), false);
+          equal(objAgain.get("x"), undefined);
+          done();
         });
-      }
+      });
     });
   });
 
@@ -820,19 +673,15 @@ describe('Parse.Object testing', () => {
     obj.set("x", 5);
     obj.unset("x");
     obj.unset("x");
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -841,19 +690,15 @@ describe('Parse.Object testing', () => {
     const obj = new TestObject();
     obj.unset("x");
     obj.unset("x");
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -861,25 +706,19 @@ describe('Parse.Object testing', () => {
     const TestObject = Parse.Object.extend("TestObject");
     const obj = new TestObject();
     obj.set("x", 3);
-    obj.save({
-      success: function() {
-        obj.unset("x");
-        obj.clear();
-        obj.save({
-          success: function() {
-            equal(obj.has("x"), false);
-            equal(obj.get("x"), undefined);
-            const query = new Parse.Query(TestObject);
-            query.get(obj.id, {
-              success: function(objAgain) {
-                equal(objAgain.has("x"), false);
-                equal(objAgain.get("x"), undefined);
-                done();
-              }
-            });
-          }
+    obj.save().then(function() {
+      obj.unset("x");
+      obj.clear();
+      obj.save().then(function() {
+        equal(obj.has("x"), false);
+        equal(obj.get("x"), undefined);
+        const query = new Parse.Query(TestObject);
+        query.get(obj.id).then(function(objAgain) {
+          equal(objAgain.has("x"), false);
+          equal(objAgain.get("x"), undefined);
+          done();
         });
-      }
+      });
     });
   });
 
@@ -889,19 +728,15 @@ describe('Parse.Object testing', () => {
     obj.set("x", 5);
     obj.unset("x");
     obj.clear();
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -910,19 +745,15 @@ describe('Parse.Object testing', () => {
     const obj = new TestObject();
     obj.unset("x");
     obj.clear();
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -930,25 +761,19 @@ describe('Parse.Object testing', () => {
     const TestObject = Parse.Object.extend("TestObject");
     const obj = new TestObject();
     obj.set("x", 3);
-    obj.save({
-      success: function() {
-        obj.clear();
-        obj.unset("x");
-        obj.save({
-          success: function() {
-            equal(obj.has("x"), false);
-            equal(obj.get("x"), undefined);
-            const query = new Parse.Query(TestObject);
-            query.get(obj.id, {
-              success: function(objAgain) {
-                equal(objAgain.has("x"), false);
-                equal(objAgain.get("x"), undefined);
-                done();
-              }
-            });
-          }
+    obj.save().then(function() {
+      obj.clear();
+      obj.unset("x");
+      obj.save().then(function() {
+        equal(obj.has("x"), false);
+        equal(obj.get("x"), undefined);
+        const query = new Parse.Query(TestObject);
+        query.get(obj.id).then(function(objAgain) {
+          equal(objAgain.has("x"), false);
+          equal(objAgain.get("x"), undefined);
+          done();
         });
-      }
+      });
     });
   });
 
@@ -958,19 +783,15 @@ describe('Parse.Object testing', () => {
     obj.set("x", 5);
     obj.clear();
     obj.unset("x");
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id,).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -979,19 +800,15 @@ describe('Parse.Object testing', () => {
     const obj = new TestObject();
     obj.clear();
     obj.unset("x");
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -999,25 +816,19 @@ describe('Parse.Object testing', () => {
     const TestObject = Parse.Object.extend("TestObject");
     const obj = new TestObject();
     obj.set("x", 3);
-    obj.save({
-      success: function() {
-        obj.clear();
-        obj.clear();
-        obj.save({
-          success: function() {
-            equal(obj.has("x"), false);
-            equal(obj.get("x"), undefined);
-            const query = new Parse.Query(TestObject);
-            query.get(obj.id, {
-              success: function(objAgain) {
-                equal(objAgain.has("x"), false);
-                equal(objAgain.get("x"), undefined);
-                done();
-              }
-            });
-          }
+    obj.save().then(function() {
+      obj.clear();
+      obj.clear();
+      obj.save().then(function() {
+        equal(obj.has("x"), false);
+        equal(obj.get("x"), undefined);
+        const query = new Parse.Query(TestObject);
+        query.get(obj.id).then(function(objAgain) {
+          equal(objAgain.has("x"), false);
+          equal(objAgain.get("x"), undefined);
+          done();
         });
-      }
+      });
     });
   });
 
@@ -1027,19 +838,15 @@ describe('Parse.Object testing', () => {
     obj.set("x", 5);
     obj.clear();
     obj.clear();
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -1048,19 +855,15 @@ describe('Parse.Object testing', () => {
     const obj = new TestObject();
     obj.clear();
     obj.clear();
-    obj.save({
-      success: function() {
-        equal(obj.has("x"), false);
-        equal(obj.get("x"), undefined);
-        const query = new Parse.Query(TestObject);
-        query.get(obj.id, {
-          success: function(objAgain) {
-            equal(objAgain.has("x"), false);
-            equal(objAgain.get("x"), undefined);
-            done();
-          }
-        });
-      }
+    obj.save().then(function() {
+      equal(obj.has("x"), false);
+      equal(obj.get("x"), undefined);
+      const query = new Parse.Query(TestObject);
+      query.get(obj.id).then(function(objAgain) {
+        equal(objAgain.has("x"), false);
+        equal(objAgain.get("x"), undefined);
+        done();
+      });
     });
   });
 
@@ -1076,24 +879,16 @@ describe('Parse.Object testing', () => {
     child2.set('name', 'cersei');
     parent.set('children', [child1, child2]);
 
-    parent.save(null, {
-      success: function() {
-        const query = new Parse.Query(Child);
-        query.ascending('name');
-        query.find({
-          success: function(results) {
-            equal(results.length, 2);
-            equal(results[0].get('name'), 'cersei');
-            equal(results[1].get('name'), 'jamie');
-            done();
-          }
-        });
-      },
-      error: function(error) {
-        fail(error);
+    parent.save().then(function() {
+      const query = new Parse.Query(Child);
+      query.ascending('name');
+      query.find().then(function(results) {
+        equal(results.length, 2);
+        equal(results[0].get('name'), 'cersei');
+        equal(results[1].get('name'), 'jamie');
         done();
-      }
-    });
+      });
+    }, done.fail);
   });
 
   it("two saves at the same time", function(done) {
@@ -1108,20 +903,16 @@ describe('Parse.Object testing', () => {
       }
 
       const query = new Parse.Query("TestObject");
-      query.find({
-        success: function(results) {
-          equal(results.length, 1);
-          equal(results[0].get("cat"), "meow");
-          equal(results[0].get("dog"), "bark");
-          done();
-        }
+      query.find().then(function(results) {
+        equal(results.length, 1);
+        equal(results[0].get("cat"), "meow");
+        equal(results[0].get("dog"), "bark");
+        done();
       });
     };
 
-    const options = { success: success, error: fail };
-
-    object.save({ cat: "meow" }, options);
-    object.save({ dog: "bark" }, options);
+    object.save({ cat: "meow" }).then(success, fail);
+    object.save({ dog: "bark" }).then(success, fail);
   });
 
   // The schema-checking parts of this are working.
@@ -1157,24 +948,20 @@ describe('Parse.Object testing', () => {
 
   it("is not dirty after save", function(done) {
     const obj = new Parse.Object("TestObject");
-    obj.save(expectSuccess({
-      success: function() {
-        obj.set({ "content": "x" });
-        obj.fetch(expectSuccess({
-          success: function(){
-            equal(false, obj.dirty("content"));
-            done();
-          }
-        }));
-      }
-    }));
+    obj.save().then(function() {
+      obj.set({ "content": "x" });
+      obj.fetch().then(function(){
+        equal(false, obj.dirty("content"));
+        done();
+      });
+    });
   });
 
   it("add with an object", function(done) {
     const child = new Parse.Object("Person");
     const parent = new Parse.Object("Person");
 
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return child.save();
 
     }).then(function() {
@@ -1209,22 +996,18 @@ describe('Parse.Object testing', () => {
 
   it("remove object from array", function(done) {
     const obj = new TestObject();
-    obj.save(null, expectSuccess({
-      success: function() {
-        const container = new TestObject();
-        container.add("array", obj);
-        equal(container.get("array").length, 1);
-        container.save(null, expectSuccess({
-          success: function() {
-            const objAgain = new TestObject();
-            objAgain.id = obj.id;
-            container.remove("array", objAgain);
-            equal(container.get("array").length, 0);
-            done();
-          }
-        }));
-      }
-    }));
+    obj.save().then(function() {
+      const container = new TestObject();
+      container.add("array", obj);
+      equal(container.get("array").length, 1);
+      container.save(null).then(function() {
+        const objAgain = new TestObject();
+        objAgain.id = obj.id;
+        container.remove("array", objAgain);
+        equal(container.get("array").length, 0);
+        done();
+      });
+    });
   });
 
   it("async methods", function(done) {
@@ -1296,17 +1079,17 @@ describe('Parse.Object testing', () => {
       ok(!obj.dirty(), "The object should not be dirty");
       ok(obj.get('aDate'));
 
-    }).always(function() {
+    }).finally(function() {
       restController.request = r;
       done();
     });
   });
 
-  it("beforeSave doesn't make object dirty with existing field", function(done) {
+  xit("beforeSave doesn't make object dirty with existing field", function(done) {
     const restController = Parse.CoreManager.getRESTController();
     const r = restController.request;
     restController.request = function() {
-      return r.apply(this, arguments).then(function(result) {
+      return r.apply(restController, arguments).then(function(result) {
         result.aDate = {"__type":"Date", "iso":"2014-06-24T06:06:06.452Z"};
         return result;
       });
@@ -1321,15 +1104,14 @@ describe('Parse.Object testing', () => {
     promise.then(function() {
       ok(obj.dirty(), "The object should be dirty");
       equal(now, obj.get('aDate'));
-
-    }).always(function() {
+    }).finally(function() {
       restController.request = r;
       done();
     });
   });
 
   it("bytes work", function(done) {
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       const obj = new TestObject();
       obj.set("bytes", { __type: "Bytes", base64: "ZnJveW8=" });
       return obj.save();
@@ -1351,19 +1133,18 @@ describe('Parse.Object testing', () => {
   });
 
   it("destroyAll no objects", function(done) {
-    Parse.Object.destroyAll([], function(success, error) {
-      ok(success && !error, "Should be able to destroy no objects");
+    Parse.Object.destroyAll([]).then(function(success) {
+      ok(success, "Should be able to destroy no objects");
       done();
-    });
+    }).catch(done.fail);
   });
 
   it("destroyAll new objects only", function(done) {
-
     const objects = [new TestObject(), new TestObject()];
-    Parse.Object.destroyAll(objects, function(success, error) {
-      ok(success && !error, "Should be able to destroy only new objects");
+    Parse.Object.destroyAll(objects).then(function(success) {
+      ok(success, "Should be able to destroy only new objects");
       done();
-    });
+    }).catch(done.fail);
   });
 
   it("fetchAll", function(done) {
@@ -1407,10 +1188,10 @@ describe('Parse.Object testing', () => {
   });
 
   it("fetchAll no objects", function(done) {
-    Parse.Object.fetchAll([], function(success, error) {
-      ok(success && !error, "Should be able to fetchAll no objects");
+    Parse.Object.fetchAll([]).then(function(success) {
+      ok(Array.isArray(success), "Should be able to fetchAll no objects");
       done();
-    });
+    }).catch(done.fail);
   });
 
   it("fetchAll updates dates", function(done) {
@@ -1433,7 +1214,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAll backbone-style callbacks", function(done) {
+  xit("fetchAll backbone-style callbacks", function(done) {
     const numItems = 11;
     const container = new Container();
     const items = [];
@@ -1462,20 +1243,18 @@ describe('Parse.Object testing', () => {
       });
       return Parse.Object.saveAll(itemsAgain);
     }).then(function() {
-      return Parse.Object.fetchAll(items, {
-        success: function(fetchedItemsAgain) {
+      return Parse.Object.fetchAll(items)
+        .then(function(fetchedItemsAgain) {
           equal(fetchedItemsAgain.length, numItems,
             "Number of items fetched should not change");
           fetchedItemsAgain.forEach(function(item, i) {
             equal(item.get("x"), i * 2);
           });
           done();
-        },
-        error: function() {
+        }, function() {
           ok(false, "Failed to fetchAll");
           done();
-        }
-      });
+        });
     });
   });
 
@@ -1490,16 +1269,20 @@ describe('Parse.Object testing', () => {
       const subContainerAgain = containerAgain.get("subcontainer");
       const itemAgain = containerAgain.get("item");
       const multiClassArray = [subContainerAgain, itemAgain];
-      return Parse.Object.fetchAll(
-        multiClassArray,
-        expectError(Parse.Error.INVALID_CLASS_NAME, done));
+      return Parse.Object.fetchAll(multiClassArray)
+        .catch(e => {
+          expect(e.code).toBe(Parse.Error.INVALID_CLASS_NAME);
+          done();
+        });
     });
   });
 
-  it("fetchAll error on unsaved object", function(done) {
+  it("fetchAll error on unsaved object", async function(done) {
     const unsavedObjectArray = [new TestObject()];
-    Parse.Object.fetchAll(unsavedObjectArray,
-      expectError(Parse.Error.MISSING_OBJECT_ID, done));
+    await Parse.Object.fetchAll(unsavedObjectArray).catch(e => {
+      expect(e.code).toBe(Parse.Error.MISSING_OBJECT_ID);
+      done();
+    });
   });
 
   it("fetchAll error on deleted object", function(done) {
@@ -1518,9 +1301,10 @@ describe('Parse.Object testing', () => {
     }).then(function(deletedObject) {
       const nonExistentObject = new Item({ objectId: deletedObject.id });
       const nonExistentObjectArray = [nonExistentObject, items[1]];
-      return Parse.Object.fetchAll(
-        nonExistentObjectArray,
-        expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+      return Parse.Object.fetchAll(nonExistentObjectArray).catch(e => {
+        expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      });
     });
   });
 
@@ -1596,7 +1380,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAllIfNeeded backbone-style callbacks", function(done) {
+  xit("fetchAllIfNeeded backbone-style callbacks", function(done) {
     const numItems = 11;
     const container = new Container();
     const items = [];
@@ -1624,36 +1408,35 @@ describe('Parse.Object testing', () => {
       return Parse.Object.saveAll(itemsAgain);
     }).then(function() {
       const items = container.get("items");
-      return Parse.Object.fetchAllIfNeeded(items, {
-        success: function(fetchedItems) {
+      return Parse.Object.fetchAllIfNeeded(items)
+        .then(function(fetchedItems) {
           equal(fetchedItems.length, numItems,
             "Number of items should not change");
           fetchedItems.forEach(function(item, j) {
             equal(item.get("x"), j);
           });
           done();
-        },
-
-        error: function() {
+        }, function() {
           ok(false, "Failed to fetchAll");
           done();
-        }
-      });
+        });
     });
   });
 
   it("fetchAllIfNeeded no objects", function(done) {
-    Parse.Object.fetchAllIfNeeded([], function(success, error) {
-      ok(success && !error, "Should be able to fetchAll no objects");
+    Parse.Object.fetchAllIfNeeded([]).then(function(success) {
+      ok(Array.isArray(success), "Should be able to fetchAll no objects");
       done();
-    });
+    }).catch(done.fail);
   });
 
-  it("fetchAllIfNeeded unsaved object", function(done) {
+  it("fetchAllIfNeeded unsaved object", async function(done) {
     const unsavedObjectArray = [new TestObject()];
-    Parse.Object.fetchAllIfNeeded(
-      unsavedObjectArray,
-      expectError(Parse.Error.MISSING_OBJECT_ID, done));
+    await Parse.Object.fetchAllIfNeeded(unsavedObjectArray)
+      .catch(e => {
+        expect(e.code).toBe(Parse.Error.MISSING_OBJECT_ID);
+        done();
+      });
   });
 
   it("fetchAllIfNeeded error on multiple classes", function(done) {
@@ -1668,8 +1451,11 @@ describe('Parse.Object testing', () => {
       const itemAgain = containerAgain.get("item");
       const multiClassArray = [subContainerAgain, itemAgain];
       return Parse.Object.fetchAllIfNeeded(
-        multiClassArray,
-        expectError(Parse.Error.INVALID_CLASS_NAME, done));
+        multiClassArray)
+        .catch(e => {
+          expect(e.code).toBe(Parse.Error.INVALID_CLASS_NAME);
+          done();
+        });
     });
   });
 
@@ -1697,23 +1483,18 @@ describe('Parse.Object testing', () => {
 
     const user = new User2();
     user.set("name", "Me");
-    user.save({height: 181}, expectSuccess({
-      success: function(user) {
+    user.save({height: 181}).then(function(user) {
+      equal(user.get("name"), "Me");
+      equal(user.get("height"), 181);
+
+      const query = new Parse.Query(User2);
+      query.get(user.id).then(function(user) {
+        equal(user.className, "User");
         equal(user.get("name"), "Me");
         equal(user.get("height"), 181);
-
-        const query = new Parse.Query(User2);
-        query.get(user.id, expectSuccess({
-          success: function(user) {
-            equal(user.className, "User");
-            equal(user.get("name"), "Me");
-            equal(user.get("height"), 181);
-
-            done();
-          }
-        }));
-      }
-    }));
+        done();
+      });
+    });
   });
 
   it("create without data", function(done) {
@@ -1853,7 +1634,7 @@ describe('Parse.Object testing', () => {
       expect(foo["_0"]).toEqual("underscore_zero");
       expect(foo["_more"]["_nested"]).toEqual("key");
       done();
-    }).fail(err => {
+    }).catch(err => {
       jfail(err);
       fail("should not fail");
       done();

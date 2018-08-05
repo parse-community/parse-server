@@ -6,7 +6,7 @@ describe('SessionTokenCache', function() {
     const Parse = require('parse/node');
 
     spyOn(Parse, "Query").and.returnValue({
-      first: jasmine.createSpy("first").and.returnValue(Parse.Promise.as(new Parse.Object("_Session", {
+      first: jasmine.createSpy("first").and.returnValue(Promise.resolve(new Parse.Object("_Session", {
         user: new Parse.User({id:"userId"})
       }))),
       equalTo: function(){}

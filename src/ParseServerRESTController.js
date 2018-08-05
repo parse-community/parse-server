@@ -6,15 +6,15 @@ const Parse = require('parse/node');
 
 function getSessionToken(options) {
   if (options && typeof options.sessionToken === 'string') {
-    return Parse.Promise.as(options.sessionToken);
+    return Promise.resolve(options.sessionToken);
   }
-  return Parse.Promise.as(null);
+  return Promise.resolve(null);
 }
 
 function getAuth(options = {}, config) {
   const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId }));
+    return Promise.resolve(new Auth.Auth({config, isMaster: true, installationId }));
   }
   return getSessionToken(options).then((sessionToken) => {
     if (sessionToken) {
@@ -25,7 +25,7 @@ function getAuth(options = {}, config) {
         installationId
       });
     } else {
-      return Parse.Promise.as(new Auth.Auth({ config, installationId }));
+      return Promise.resolve(new Auth.Auth({ config, installationId }));
     }
   })
 }
@@ -48,12 +48,12 @@ function ParseServerRESTController(applicationId, router) {
     if (path === '/batch') {
       const promises = data.requests.map((request) => {
         return handleRequest(request.method, request.path, request.body, options).then((response) => {
-          return Parse.Promise.as({success: response});
+          return Promise.resolve({success: response});
         }, (error) => {
-          return Parse.Promise.as({error: {code: error.code, error: error.message}});
+          return Promise.resolve({error: {code: error.code, error: error.message}});
         });
       });
-      return Parse.Promise.all(promises);
+      return Promise.all(promises);
     }
 
     let query;
@@ -61,7 +61,7 @@ function ParseServerRESTController(applicationId, router) {
       query = data;
     }
 
-    return new Parse.Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       getAuth(options, config).then((auth) => {
         const request = {
           body: data,
