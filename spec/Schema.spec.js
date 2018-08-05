@@ -750,7 +750,7 @@ describe('SchemaController', () => {
     hasAllPODobject().save()
       .then(() => config.database.loadSchema())
       .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
-      .fail(error => {
+      .catch(error => {
         expect(error.code).toEqual(255);
         expect(error.message).toEqual('Field missingField does not exist, cannot delete.');
         done();

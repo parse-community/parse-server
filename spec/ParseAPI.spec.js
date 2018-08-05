@@ -10,6 +10,12 @@ const SchemaController = require('../lib/Controllers/SchemaController');
 const TestUtils = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
+const headers = {
+  'Content-Type': 'application/json',
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-REST-API-Key': 'rest',
+  'X-Parse-Installation-Id': 'yolo'
+}
 
 describe_only_db('mongo')('miscellaneous', () => {
   it('test rest_create_app', function(done) {
@@ -29,7 +35,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail(error => {
+    }).catch(error => {
       fail(JSON.stringify(error));
       done();
     })
@@ -44,113 +50,108 @@ describe('miscellaneous', function() {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
   it('get a TestObject', function(done) {
-    create({ 'bloop' : 'blarg' }, function(obj) {
+    create({ 'bloop' : 'blarg' }, async function(obj) {
       const t2 = new TestObject({ objectId: obj.id });
-      t2.fetch({
-        success: function(obj2) {
-          expect(obj2.get('bloop')).toEqual('blarg');
-          expect(obj2.id).toBeTruthy();
-          expect(obj2.id).toEqual(obj.id);
-          done();
-        },
-        error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const obj2 = await t2.fetch();
+      expect(obj2.get('bloop')).toEqual('blarg');
+      expect(obj2.id).toBeTruthy();
+      expect(obj2.id).toEqual(obj.id);
+      done();
     });
   });
 
   it('create a valid parse user', function(done) {
-    createTestUser(function(data) {
+    createTestUser().then(function(data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
-  it('fail to create a duplicate username', done => {
-    let numCreated = 0;
-    let numFailed = 0;
-    const p1 = createTestUser();
-    p1.then(() => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    const p2 = createTestUser();
-    p2.then(() => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    Parse.Promise.when([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
-  });
-
-  it('ensure that email is uniquely indexed', done => {
+  it('fail to create a duplicate username', async () => {
     let numFailed = 0;
     let numCreated = 0;
-    const user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    const p1 = user1.signUp();
-    p1.then(() => {
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'otherpassword',
+        username: 'u1',
+        email: 'email@other.email'
+      },
+      headers
+    }).then(() => {
+      numCreated++;
+    }, ({ error }) => {
+      numFailed++;
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
+  });
+
+  it('ensure that email is uniquely indexed', async () => {
+    let numFailed = 0;
+    let numCreated = 0;
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, ({ error }) => {
+      numFailed++;
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    const user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    const p2 = user2.signUp();
-    p2.then(() => {
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u2',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    Parse.Promise.when([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
+    try {
+      await Parse.User.logOut();
+    } catch(e) { /* ignore */ }
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -237,20 +238,15 @@ describe('miscellaneous', function() {
   });
 
   it('succeed in logging in', function(done) {
-    createTestUser(function(u) {
+    createTestUser().then(async function(u) {
       expect(typeof u.id).toEqual('string');
 
-      Parse.User.logIn('test', 'moon-y', {
-        success: function(user) {
-          expect(typeof user.id).toEqual('string');
-          expect(user.get('password')).toBeUndefined();
-          expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut().then(done);
-        }, error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const user = await Parse.User.logIn('test', 'moon-y');
+      expect(typeof user.id).toEqual('string');
+      expect(user.get('password')).toBeUndefined();
+      expect(user.getSessionToken()).not.toBeUndefined();
+      await Parse.User.logOut();
+      done();
     }, fail);
   });
 
@@ -856,7 +852,7 @@ describe('miscellaneous', function() {
         }
         done();
       });
-    }).fail(() => {
+    }).catch(() => {
       fail('Should not fail');
       done();
     })

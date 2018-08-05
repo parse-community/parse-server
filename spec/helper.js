@@ -155,10 +155,6 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-// This is needed because we ported a bunch of tests from the non-A+ way.
-// TODO: update tests to work in an A+ way
-Parse.Promise.disableAPlusCompliant();
-
 // 10 minutes timeout
 beforeAll(startDB, 10 * 60 * 1000);
 
@@ -239,27 +235,14 @@ const Container = Parse.Object.extend({
 // Convenience method to create a new TestObject with a callback
 function create(options, callback) {
   const t = new TestObject(options);
-  t.save(null, { success: callback });
+  return t.save().then(callback);
 }
 
-function createTestUser(success, error) {
+function createTestUser() {
   const user = new Parse.User();
   user.set('username', 'test');
   user.set('password', 'moon-y');
-  const promise = user.signUp();
-  if (success || error) {
-    promise.then(function(user) {
-      if (success) {
-        success(user);
-      }
-    }, function(err) {
-      if (error) {
-        error(err);
-      }
-    });
-  } else {
-    return promise;
-  }
+  return user.signUp();
 }
 
 // Shims for compatibility with the old qunit tests.
@@ -274,37 +257,6 @@ function strictEqual(a, b, message) {
 }
 function notEqual(a, b, message) {
   expect(a).not.toEqual(b, message);
-}
-function expectSuccess(params, done) {
-  return {
-    success: params.success,
-    error: function() {
-      fail('failure happened in expectSuccess');
-      done ? done() : null;
-    },
-  }
-}
-function expectError(errorCode, callback) {
-  return {
-    success: function(result) {
-      console.log('got result', result);
-      fail('expected error but got success');
-    },
-    error: function(obj, e) {
-      // Some methods provide 2 parameters.
-      e = e || obj;
-      if (errorCode !== undefined) {
-        if (!e) {
-          fail('expected a specific error but got a blank error');
-          return;
-        }
-        expect(e.code).toEqual(errorCode, e.message);
-      }
-      if (callback) {
-        callback(e);
-      }
-    },
-  }
 }
 
 // Because node doesn't have Parse._.contains
@@ -397,8 +349,6 @@ global.ok = ok;
 global.equal = equal;
 global.strictEqual = strictEqual;
 global.notEqual = notEqual;
-global.expectSuccess = expectSuccess;
-global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;

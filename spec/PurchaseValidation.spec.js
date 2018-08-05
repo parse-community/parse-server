@@ -21,7 +21,7 @@ function createProduct() {
 
 describe("test validate_receipt endpoint", () => {
   beforeEach(done => {
-    createProduct().then(done).fail(function(){
+    createProduct().then(done).catch(function(){
       done();
     });
   })
@@ -182,7 +182,7 @@ describe("test validate_receipt endpoint", () => {
       expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
       expect(productAgain.get("title")).toEqual("a new title");
       done();
-    }).fail(function(err){
+    }).catch(function(err){
       fail(JSON.stringify(err));
       done();
     });
@@ -199,7 +199,7 @@ describe("test validate_receipt endpoint", () => {
     }).then(function(){
       fail("Should not succeed");
       done();
-    }).fail(function(err){
+    }).catch(function(err){
       expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
       expect(err.message).toEqual("title is required.");
       done();

@@ -227,7 +227,7 @@ describe('Parse Role testing', () => {
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
         return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
-          return Parse.Promise.as({
+          return Promise.resolve({
             id: role.id,
             name: role.get('name'),
             roleNames: result
@@ -235,7 +235,7 @@ describe('Parse Role testing', () => {
         })
       });
 
-      return Parse.Promise.when(promises);
+      return Promise.all(promises);
     }).then((results) => {
       results.forEach((result) => {
         const id = result.id;
@@ -257,7 +257,7 @@ describe('Parse Role testing', () => {
         }
       });
       done();
-    }).fail(() => {
+    }).catch(() => {
       done();
     })
 

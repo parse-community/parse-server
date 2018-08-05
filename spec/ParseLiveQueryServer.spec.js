@@ -61,12 +61,12 @@ describe('ParseLiveQueryServer', function() {
     const mockSessionTokenCache = function(){
       this.getUserId = function(sessionToken){
         if (typeof sessionToken === 'undefined') {
-          return Parse.Promise.as(undefined);
+          return Promise.resolve(undefined);
         }
         if (sessionToken === null) {
-          return Parse.Promise.error();
+          return Promise.reject();
         }
-        return Parse.Promise.as(testUserId);
+        return Promise.resolve(testUserId);
       };
     };
     jasmine.mockLibrary('../lib/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
@@ -575,7 +575,7 @@ describe('ParseLiveQueryServer', function() {
       return true;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true);
+      return Promise.resolve(true);
     };
     parseLiveQueryServer._onAfterDelete(message);
 
@@ -610,7 +610,7 @@ describe('ParseLiveQueryServer', function() {
       return false;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true)
+      return Promise.resolve(true)
     };
     // Trigger onAfterSave
     parseLiveQueryServer._onAfterSave(message);
@@ -648,7 +648,7 @@ describe('ParseLiveQueryServer', function() {
       return counter % 2 === 0;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true)
+      return Promise.resolve(true)
     };
     parseLiveQueryServer._onAfterSave(message);
 
@@ -681,7 +681,7 @@ describe('ParseLiveQueryServer', function() {
       return true;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true)
+      return Promise.resolve(true)
     };
     parseLiveQueryServer._onAfterSave(message);
 
@@ -718,7 +718,7 @@ describe('ParseLiveQueryServer', function() {
       return counter % 2 !== 0;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true)
+      return Promise.resolve(true)
     };
     parseLiveQueryServer._onAfterSave(message);
 
@@ -751,7 +751,7 @@ describe('ParseLiveQueryServer', function() {
       return true;
     };
     parseLiveQueryServer._matchesACL = function() {
-      return Parse.Promise.as(true)
+      return Promise.resolve(true)
     };
     parseLiveQueryServer._onAfterSave(message);
 
