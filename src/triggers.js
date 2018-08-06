@@ -291,6 +291,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
           if (!results) {
             throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise");
           }
+          return results;
         });
       }
       return response;
