@@ -56,17 +56,16 @@ export class FunctionsRouter extends PromiseRouter {
       log: req.config.loggerController,
       headers: req.config.headers,
       ip: req.config.ip,
-      jobName
-    };
-    const status = {
+      jobName,
       message: jobHandler.setMessage.bind(jobHandler)
-    }
+    };
+
     return jobHandler.setRunning(jobName, params).then((jobStatus) => {
       request.jobId = jobStatus.objectId
       // run the function async
       process.nextTick(() => {
         Promise.resolve().then(() => {
-          return jobFunction(request, status);
+          return jobFunction(request);
         }).then((result) => {
           jobHandler.setSucceeded(result);
         }, (error) => {

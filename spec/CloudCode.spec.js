@@ -1095,9 +1095,8 @@ describe('Cloud Code', () => {
           expect(req.functionName).toBeUndefined();
           expect(req.jobName).toBe('myJob');
           expect(typeof req.jobId).toBe('string');
-          expect(typeof res.success).toBe('undefined');
-          expect(typeof res.error).toBe('undefined');
-          expect(typeof res.message).toBe('function');
+          expect(typeof req.message).toBe('function');
+          expect(typeof res).toBe('undefined');
           done();
         });
       }).not.toThrow();
@@ -1121,9 +1120,8 @@ describe('Cloud Code', () => {
           expect(req.functionName).toBeUndefined();
           expect(req.jobName).toBe('myJob');
           expect(typeof req.jobId).toBe('string');
-          expect(typeof res.success).toBe('undefined');
-          expect(typeof res.error).toBe('undefined');
-          expect(typeof res.message).toBe('function');
+          expect(typeof req.message).toBe('function');
+          expect(typeof res).toBe('undefined');
           done();
         });
       }).not.toThrow();
@@ -1138,9 +1136,9 @@ describe('Cloud Code', () => {
     });
 
     it('should set the message / success on the job', (done) => {
-      Parse.Cloud.job('myJob', (req, res) => {
-        res.message('hello');
-        const promise = res.message().then(() => {
+      Parse.Cloud.job('myJob', (req) => {
+        req.message('hello');
+        const promise = req.message().then(() => {
           return getJobStatus(req.jobId);
         }).then((jobStatus) => {
           expect(jobStatus.get('message')).toEqual('hello');
@@ -1752,7 +1750,7 @@ describe('afterFind hooks', () => {
           query.find(),
         ]);
       })
-      .then(() => done());
+      .then(() => done()).catch(done.fail);
   });
 
   it('should validate triggers correctly', () => {
