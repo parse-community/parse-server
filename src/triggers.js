@@ -222,16 +222,11 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function(code, message) {
-      if (!message) {
-        if (code instanceof Parse.Error) {
-          return reject(code)
-        }
-        message = code;
-        code = Parse.Error.SCRIPT_FAILED;
+    error: function(error) {
+      if (typeof error === 'string') {
+        return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
       }
-      var scriptError = new Parse.Error(code, message);
-      return reject(scriptError);
+      return reject(error);
     }
   }
 }
@@ -276,7 +271,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
       return resolve();
     }
     const request = getRequestObject(triggerType, auth, null, null, config);
-    const response = getResponseObject(request,
+    const { success, error } = getResponseObject(request,
       object => {
         resolve(object);
       },
@@ -289,16 +284,18 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
       object.className = className;
       return Parse.Object.fromJSON(object);
     });
-    const triggerPromise = trigger(request, response);
-    if (triggerPromise && typeof triggerPromise.then === "function") {
-      return triggerPromise.then(promiseResults => {
-        if(promiseResults) {
-          resolve(promiseResults);
-        }else{
-          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
-        }
-      });
-    }
+    return Promise.resolve().then(() => {
+      const response = trigger(request);
+      if (response && typeof response.then === 'function') {
+        return response.then((results) => {
+          if (!results) {
+            throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise");
+          }
+          return results;
+        });
+      }
+      return response;
+    }).then(success, error);
   }).then((results) => {
     logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
     return results;
@@ -401,7 +398,7 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, (object) => {
+    var { success, error } = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
@@ -410,27 +407,19 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
         triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
-    // Force the current Parse app before the trigger
-    Parse.applicationId = config.applicationId;
-    Parse.javascriptKey = config.javascriptKey || '';
-    Parse.masterKey = config.masterKey;
 
     // AfterSave and afterDelete triggers can return a promise, which if they
     // do, needs to be resolved before this promise is resolved,
     // so trigger execution is synced with RestWrite.execute() call.
     // If triggers do not return a promise, they can run async code parallel
     // to the RestWrite.execute() call.
-    var triggerPromise = trigger(request, response);
-    if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
-    {
-      logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-      if(triggerPromise && typeof triggerPromise.then === "function") {
-        return triggerPromise.then(resolve, resolve);
+    return Promise.resolve().then(() => {
+      const promise = trigger(request);
+      if(triggerType === Types.afterSave || triggerType === Types.afterDelete) {
+        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
       }
-      else {
-        return resolve();
-      }
-    }
+      return promise;
+    }).then(success, error);
   });
 }
 
