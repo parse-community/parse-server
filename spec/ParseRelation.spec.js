@@ -664,10 +664,10 @@ describe('Parse.Relation testing', () => {
   });
 
   it('can query roles in Cloud Code (regession test #1489)', done => {
-    Parse.Cloud.define('isAdmin', (request, response) => {
+    Parse.Cloud.define('isAdmin', (request) => {
       const query = new Parse.Query(Parse.Role);
       query.equalTo('name', 'admin');
-      query.first({ useMasterKey: true })
+      return query.first({ useMasterKey: true })
         .then(role => {
           const relation = new Parse.Relation(role, 'users');
           const admins = relation.query();
@@ -675,7 +675,6 @@ describe('Parse.Relation testing', () => {
           admins.first({ useMasterKey: true })
             .then(user => {
               if (user) {
-                response.success(user);
                 done();
               } else {
                 fail('Should have found admin user, found nothing instead');
