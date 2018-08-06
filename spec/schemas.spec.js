@@ -1656,11 +1656,10 @@ describe('schemas', () => {
 
   it('unset field in beforeSave should not stop object creation', (done) => {
     const hook = {
-      method: function(req, res) {
+      method: function(req) {
         if (req.object.get('undesiredField')) {
           req.object.unset('undesiredField');
         }
-        return res.success();
       }
     };
     spyOn(hook, 'method').and.callThrough();

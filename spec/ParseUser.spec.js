@@ -1615,7 +1615,7 @@ describe('Parse.User testing', () => {
 
   it('should have authData in beforeSave and afterSave', async (done) => {
 
-    Parse.Cloud.beforeSave('_User', (request, response) => {
+    Parse.Cloud.beforeSave('_User', (request) => {
       const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
@@ -1624,10 +1624,9 @@ describe('Parse.User testing', () => {
       } else {
         fail('authData should be set');
       }
-      response.success();
     });
 
-    Parse.Cloud.afterSave('_User', (request, response) => {
+    Parse.Cloud.afterSave('_User', (request) => {
       const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
@@ -1636,7 +1635,6 @@ describe('Parse.User testing', () => {
       } else {
         fail('authData should be set');
       }
-      response.success();
     });
 
     const provider = getMockFacebookProvider();
@@ -2341,9 +2339,8 @@ describe('Parse.User testing', () => {
   });
 
   it('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
-    Parse.Cloud.beforeSave('_User', (req, res) => {
+    Parse.Cloud.beforeSave('_User', (req) => {
       req.object.set('foo', 'bar');
-      res.success();
     });
 
     let originalSessionToken;
@@ -2540,9 +2537,9 @@ describe('Parse.User testing', () => {
   });
 
   it('changes to a user should update the cache', (done) => {
-    Parse.Cloud.define('testUpdatedUser', (req, res) => {
+    Parse.Cloud.define('testUpdatedUser', (req) => {
       expect(req.user.get('han')).toEqual('solo');
-      res.success({});
+      return {};
     });
     const user = new Parse.User();
     user.setUsername('harrison');
