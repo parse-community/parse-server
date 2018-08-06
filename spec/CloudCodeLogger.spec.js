@@ -26,10 +26,10 @@ describe("Cloud Code Logger", () => {
   it("should expose log to functions", done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.define("loggerTest", (req, res) => {
+    Parse.Cloud.define("loggerTest", (req) => {
       req.log.info('logTest', 'info log', { info: 'some log' });
       req.log.error('logTest', 'error log', { error: 'there was an error' });
-      res.success({});
+      return {};
     });
 
     Parse.Cloud.run('loggerTest').then(() => {
@@ -57,8 +57,8 @@ describe("Cloud Code Logger", () => {
   it('trigger should obfuscate password', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.beforeSave(Parse.User, (req, res) => {
-      res.success(req.object);
+    Parse.Cloud.beforeSave(Parse.User, (req) => {
+      return req.object;
     });
 
     Parse.User.signUp('tester123', 'abc')
@@ -75,10 +75,10 @@ describe("Cloud Code Logger", () => {
   it("should expose log to trigger", (done) => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.beforeSave("MyObject", (req, res) => {
+    Parse.Cloud.beforeSave("MyObject", (req) => {
       req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });
       req.log.error('beforeSave MyObject', 'error log', { error: 'there was an error' });
-      res.success({});
+      return {};
     });
 
     const obj = new Parse.Object('MyObject');
@@ -114,8 +114,8 @@ describe("Cloud Code Logger", () => {
   it('should truncate input and result of long lines', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
     const longString = fs.readFileSync(loremFile, 'utf8');
-    Parse.Cloud.define('aFunction', (req, res) => {
-      res.success(req.params);
+    Parse.Cloud.define('aFunction', (req) => {
+      return req.params;
     });
 
     Parse.Cloud.run('aFunction', { longString })
@@ -147,8 +147,8 @@ describe("Cloud Code Logger", () => {
 
   it('should log a denied beforeSave', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
-    Parse.Cloud.beforeSave("MyObject", (req, res) => {
-      res.error('uh oh!');
+    Parse.Cloud.beforeSave("MyObject", () => {
+      throw 'uh oh!';
     });
 
     new Parse.Object('MyObject')
@@ -169,8 +169,8 @@ describe("Cloud Code Logger", () => {
   it('should log cloud function success', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.define('aFunction', (req, res) => {
-      res.success('it worked!');
+    Parse.Cloud.define('aFunction', () => {
+      return 'it worked!';
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
@@ -187,8 +187,8 @@ describe("Cloud Code Logger", () => {
   it('should log cloud function failure', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.define('aFunction', (req, res) => {
-      res.error('it failed!');
+    Parse.Cloud.define('aFunction', () => {
+      throw 'it failed!';
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
@@ -205,10 +205,10 @@ describe("Cloud Code Logger", () => {
   xit('should log a changed beforeSave indicating a change', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.beforeSave("MyObject", (req, res) => {
+    Parse.Cloud.beforeSave("MyObject", (req) => {
       const myObj = req.object;
       myObj.set('aChange', true);
-      res.success(myObj);
+      return myObj;
     });
 
     new Parse.Object('MyObject')
@@ -230,8 +230,8 @@ describe("Cloud Code Logger", () => {
   it('cloud function should obfuscate password', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
-    Parse.Cloud.define('testFunction', (req, res) => {
-      res.success(1002,'verify code success');
+    Parse.Cloud.define('testFunction', () => {
+      return 'verify code success';
     });
 
     Parse.Cloud.run('testFunction', {username:'hawk',password:'123456'})
