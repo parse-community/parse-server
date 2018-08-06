@@ -35,6 +35,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
+- [Upgrading to 3.0.0](#upgrading-to-3.0.0)
 - [Sponsors](#sponsors)
 
 # Getting Started
@@ -379,6 +380,14 @@ Parse Server allows developers to choose from several options when hosting files
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
 `GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+# Upgrading to 3.0.0
+
+Starting 3.0.0, parse-server uses the JS SDK version 2.0. 
+In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
+All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
+
+We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
 
 # Support
 

@@ -558,7 +558,7 @@ describe('PushController', () => {
         expect(spy.calls.count()).toBe(4);
         const allCalls = spy.calls.all();
         allCalls.forEach((call) => {
-          expect(call.args.length).toBe(2);
+          expect(call.args.length).toBe(1);
           const object = call.args[0].object;
           expect(object instanceof Parse.Object).toBe(true);
         });

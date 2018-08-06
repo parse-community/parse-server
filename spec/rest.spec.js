@@ -101,9 +101,8 @@ describe('rest create', () => {
   it('handles object and subdocument', done => {
     const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
 
-    Parse.Cloud.beforeSave('MyClass', function(req, res) {
+    Parse.Cloud.beforeSave('MyClass', function() {
       // this beforeSave trigger should do nothing but can mess with the object
-      res.success();
     });
 
     rest.create(config, auth.nobody(config), 'MyClass', obj)
