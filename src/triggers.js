@@ -137,8 +137,8 @@ export function getValidator(functionName, applicationId) {
   return undefined;
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
-  var request = {
+export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config, context) {
+  const request = {
     triggerName: triggerType,
     object: parseObject,
     master: false,
@@ -162,6 +162,17 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   }
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
+  }
+  if (triggerType === Types.beforeSave) {
+    // Adds ability to set the context
+    request.setContext = function(newContext) {
+      Object.assign(context, newContext);
+    };
+  } else if (triggerType === Types.afterSave) {
+    // Adds context getter
+    request.getContext = function() {
+      return Object.assign({}, context);
+    }
   }
   return request;
 }
@@ -390,14 +401,14 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
+export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config, context) {
   if (!parseObject) {
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
+    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config, context);
     var { success, error } = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), object, auth);
