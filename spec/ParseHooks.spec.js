@@ -5,6 +5,9 @@ const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require("express");
 const bodyParser = require('body-parser');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+
 
 const port = 12345;
 const hookServerURL = "http://localhost:" + port;
@@ -501,5 +504,37 @@ describe('Hooks', () => {
       fail("Should not fail creating a function");
       done();
     });
+  });
+});
+
+describe('triggers', () => {
+  it('should produce a proper request object with context in beforeSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.beforeSave, master, {}, {}, config, context);
+    req.context = {
+      key: 'value'
+    };
+    expect(context.key).toBe('value');
+    req.context = {
+      key: 'newValue'
+    };
+    expect(context.key).toBe('newValue');
+  });
+
+  it('should produce a proper request object with context in afterSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.afterSave, master, {}, {}, config, context);
+    req.context = {
+      key: 'value'
+    };
+    expect(context.key).toBe('value');
+    req.context = {
+      key: 'newValue'
+    };
+    expect(context.key).toBe('newValue');
   });
 });

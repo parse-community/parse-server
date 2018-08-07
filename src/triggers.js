@@ -46,24 +46,58 @@ function validateClassNameForTriggers(className, type) {
 
 const _triggerStore = {};
 
-export function addFunction(functionName, handler, validationHandler, applicationId) {
+const Category = {
+  Functions: 'Functions',
+  Validators: 'Validators',
+  Jobs: 'Jobs',
+  Triggers: 'Triggers'
+}
+
+function getStore(category, name, applicationId) {
+  const path = name.split('.');
+  path.splice(-1); // remove last component
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Functions[functionName] = handler;
-  _triggerStore[applicationId].Validators[functionName] = validationHandler;
+  let store = _triggerStore[applicationId][category];
+  for (const component of path) {
+    store = store[component];
+    if (!store) {
+      return undefined;
+    }
+  }
+  return store;
+}
+
+function add(category, name, handler, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  store[lastComponent] = handler;
+}
+
+function remove(category, name, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  delete store[lastComponent];
+}
+
+function get(category, name, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  return store[lastComponent];
+}
+
+export function addFunction(functionName, handler, validationHandler, applicationId) {
+  add(Category.Functions, functionName, handler, applicationId);
+  add(Category.Validators, functionName, validationHandler, applicationId);
 }
 
 export function addJob(jobName, handler, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Jobs[jobName] = handler;
+  add(Category.Jobs, jobName, handler, applicationId);
 }
 
 export function addTrigger(type, className, handler, applicationId) {
   validateClassNameForTriggers(className, type);
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Triggers[type][className] = handler;
+  add(Category.Triggers, `${type}.${className}`, handler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -73,13 +107,11 @@ export function addLiveQueryEventHandler(handler, applicationId) {
 }
 
 export function removeFunction(functionName, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Functions[functionName]
+  remove(Category.Functions, functionName, applicationId);
 }
 
 export function removeTrigger(type, className, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Triggers[type][className]
+  remove(Category.Triggers, `${type}.${className}`, applicationId);
 }
 
 export function _unregisterAll() {
@@ -90,14 +122,7 @@ export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw "Missing ApplicationID";
   }
-  var manager = _triggerStore[applicationId]
-  if (manager
-    && manager.Triggers
-    && manager.Triggers[triggerType]
-    && manager.Triggers[triggerType][className]) {
-    return manager.Triggers[triggerType][className];
-  }
-  return undefined;
+  return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
 }
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
@@ -105,19 +130,11 @@ export function triggerExists(className: string, type: string, applicationId: st
 }
 
 export function getFunction(functionName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Functions) {
-    return manager.Functions[functionName];
-  }
-  return undefined;
+  return get(Category.Functions, functionName, applicationId);
 }
 
 export function getJob(jobName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Jobs) {
-    return manager.Jobs[jobName];
-  }
-  return undefined;
+  return get(Category.Jobs, jobName, applicationId);
 }
 
 export function getJobs(applicationId) {
@@ -130,11 +147,7 @@ export function getJobs(applicationId) {
 
 
 export function getValidator(functionName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Validators) {
-    return manager.Validators[functionName];
-  }
-  return undefined;
+  return get(Category.Validators, functionName, applicationId);
 }
 
 export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config, context) {
@@ -151,6 +164,18 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     request.original = originalParseObject;
   }
 
+  if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
+    // Adds ability to get set the context, which makes a copy of the object
+    Object.defineProperty(request, 'context', {
+      set: function (newContext) {
+        Object.assign(context, newContext);
+      },
+      get: () => {
+        return Object.assign({}, context);
+      }
+    });
+  }
+
   if (!auth) {
     return request;
   }
@@ -162,17 +187,6 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   }
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
-  }
-  if (triggerType === Types.beforeSave) {
-    // Adds ability to set the context
-    request.setContext = function(newContext) {
-      Object.assign(context, newContext);
-    };
-  } else if (triggerType === Types.afterSave) {
-    // Adds context getter
-    request.getContext = function() {
-      return Object.assign({}, context);
-    }
   }
   return request;
 }
