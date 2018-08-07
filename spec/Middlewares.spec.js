@@ -290,4 +290,16 @@ describe('middlewares', () => {
     middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
+
+  it('should properly expose the headers', () => {
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value
+      }
+    };
+    middlewares.allowCrossDomain({}, res, () => {});
+    expect(Object.keys(headers).length).toBe(4);
+    expect(headers['Access-Control-Expose-Headers']).toBe('X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
+  });
 });
