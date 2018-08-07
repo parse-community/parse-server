@@ -383,7 +383,7 @@ class ParseLiveQueryServer {
             // var rolesQuery = new Parse.Query(Parse.Role);
             // rolesQuery.equalTo("users", user);
             // return rolesQuery.find({useMasterKey:true});
-            return this.roleCache.getRoles(user)
+            return this.roleCache.getRoles(user.id)
           })
           .then((roles) => {
 
