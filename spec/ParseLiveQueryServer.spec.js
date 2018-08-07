@@ -6,6 +6,8 @@ const ParseServer = require('../lib/ParseServer').default;
 const queryHashValue = 'hash';
 const testUserId = 'userId';
 const testClassName = 'TestObject';
+const testRole = new Parse.Role()
+testRole.setName('test_role')
 
 describe('ParseLiveQueryServer', function() {
   beforeEach(function(done) {
@@ -70,6 +72,19 @@ describe('ParseLiveQueryServer', function() {
       };
     };
     jasmine.mockLibrary('../lib/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
+    // Make mock RoleCache
+    const mockRoleCache = function(){
+      this.getRoles = function(userId){
+        if (typeof userId === 'undefined') {
+          return Parse.Promise.as(undefined);
+        }
+        if (userId === null) {
+          return Parse.Promise.error();
+        }
+        return Parse.Promise.as([testRole]);
+      };
+    };
+    jasmine.mockLibrary('../lib/LiveQuery/RoleCache', 'RoleCacheCache', mockRoleCache);
     done();
   });
 
@@ -1065,9 +1080,9 @@ describe('ParseLiveQueryServer', function() {
           //Return a role with the name "liveQueryRead" as that is what was set on the ACL
           const liveQueryRole = new Parse.Role();
           liveQueryRole.set('name', 'liveQueryRead');
-          return [
+          return Parse.Promise.as([
             liveQueryRole
-          ];
+          ]);
         }
       }
     });

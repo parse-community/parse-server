@@ -8,6 +8,7 @@ import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
+import { RoleCache } from './RoleCache';
 import _ from 'lodash';
 import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
@@ -78,8 +79,9 @@ class ParseLiveQueryServer {
       }
     });
 
-    // Initialize sessionToken cache
+    // Initialize sessionToken and rolecache
     this.sessionTokenCache = new SessionTokenCache(config.cacheTimeout);
+    this.roleCache = new RoleCache(config.cacheTimeout);
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
@@ -378,11 +380,12 @@ class ParseLiveQueryServer {
             }
 
             // Then get the user's roles
-            var rolesQuery = new Parse.Query(Parse.Role);
-            rolesQuery.equalTo("users", user);
-            return rolesQuery.find({useMasterKey:true});
-          }).
-          then((roles) => {
+            // var rolesQuery = new Parse.Query(Parse.Role);
+            // rolesQuery.equalTo("users", user);
+            // return rolesQuery.find({useMasterKey:true});
+            return this.roleCache.getRoles(user)
+          })
+          .then((roles) => {
 
             // Finally, see if any of the user's roles allow them read access
             for (const role of roles) {
