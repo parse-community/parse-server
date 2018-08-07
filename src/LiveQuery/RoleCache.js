@@ -34,7 +34,7 @@ class RoleCache {
     return rolesForUserId(userId)
       .then(roles => {
         logger.verbose(`Fetch roles from Parse for userId: ${userId}`);
-        this.cache.set(roles, userId);
+        this.cache.set(userId, roles);
         return Parse.Promise.as(roles);
       }, error => {
         logger.error('Can not fetch roles for userId %j, error %j',userId, error);
