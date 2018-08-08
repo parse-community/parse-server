@@ -832,10 +832,7 @@ describe('Cloud Code', () => {
         expect(body.result).toEqual('second data');
         done();
       })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('trivial beforeSave should not affect fetched pointers (regression test for #1238)', done => {
