@@ -336,43 +336,36 @@ class ParseLiveQueryServer {
     return matchesQuery(parseObject, subscription.query);
   }
 
-  _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
-    return Parse.Promise.as().then(() => {
-      // try to match on user first, less expensive than with roles
-      const subscriptionInfo = client.getSubscriptionInfo(requestId);
-      if (typeof subscriptionInfo === 'undefined') {
-        return Parse.Promise.as(['*']);
-      }
-      let foundUserId;
-      const subscriptionSessionToken = subscriptionInfo.sessionToken;
-      return this.sessionTokenCache.getUserId(subscriptionSessionToken).then((userId) => {
-        foundUserId = userId;
-        if (userId) {
-          return Parse.Promise.as(['*', userId]);
-        }
-        return Parse.Promise.as(['*']);
-      }).then((aclGroup) => {
-        try {
-          return SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op).then(() => {
-            return Parse.Promise.as(true);
-          });
-        } catch(e) {
-          logger.verbose(`Failed matching CLP for ${object.id} ${foundUserId} ${e}`);
-          return Parse.Promise.as(false);
-        }
-        // TODO: handle roles permissions
-        // Object.keys(classLevelPermissions).forEach((key) => {
-        //   const perm = classLevelPermissions[key];
-        //   Object.keys(perm).forEach((key) => {
-        //     if (key.indexOf('role'))
-        //   });
-        // })
-        // // it's rejected here, check the roles
-        // var rolesQuery = new Parse.Query(Parse.Role);
-        // rolesQuery.equalTo("users", user);
-        // return rolesQuery.find({useMasterKey:true});
-      });
-    })
+  async _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
+    // try to match on user first, less expensive than with roles
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    if (typeof subscriptionInfo === 'undefined') {
+      return Promise.resolve(['*']);
+    }
+    const subscriptionSessionToken = subscriptionInfo.sessionToken;
+    const userId = await this.sessionTokenCache.getUserId(subscriptionSessionToken);
+    const aclGroup = ['*']
+    if (userId) {
+      aclGroup.push(userId);
+    }
+    try {
+      await SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op);
+      return Promise.resolve(true);
+    } catch(e) {
+      logger.verbose(`Failed matching CLP for ${object.id} ${userId} ${e}`);
+      return Promise.resolve(false);
+    }
+    // TODO: handle roles permissions
+    // Object.keys(classLevelPermissions).forEach((key) => {
+    //   const perm = classLevelPermissions[key];
+    //   Object.keys(perm).forEach((key) => {
+    //     if (key.indexOf('role'))
+    //   });
+    // })
+    // // it's rejected here, check the roles
+    // var rolesQuery = new Parse.Query(Parse.Role);
+    // rolesQuery.equalTo("users", user);
+    // return rolesQuery.find({useMasterKey:true});
   }
 
   _getCLPOperation(query: any) {

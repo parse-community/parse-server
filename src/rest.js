@@ -68,7 +68,7 @@ function del(config, auth, className, objectId) {
     if (hasTriggers || hasLiveQuery || className == '_Session') {
       return new RestQuery(config, auth, className, { objectId })
         .forWrite()
-        .execute()
+        .execute({ op: 'delete' })
         .then((response) => {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
