@@ -61,12 +61,12 @@ const getAuthForSessionToken = async function({ config, cacheController, session
 
   let results;
   if (config) {
-    var restOptions = {
+    const restOptions = {
       limit: 1,
       include: 'user'
     };
 
-    var query = new RestQuery(config, master(config), '_Session', {sessionToken}, restOptions);
+    const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
     results = (await query.execute()).results;
   } else {
     results = (await new Parse.Query(Parse.Session)
@@ -79,13 +79,13 @@ const getAuthForSessionToken = async function({ config, cacheController, session
   if (results.length !== 1 || !results[0]['user']) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
-  var now = new Date(),
+  const now = new Date(),
     expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
   if (expiresAt < now) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
       'Session token is expired.');
   }
-  var obj = results[0]['user'];
+  const obj = results[0]['user'];
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
@@ -93,14 +93,14 @@ const getAuthForSessionToken = async function({ config, cacheController, session
     cacheController.user.put(sessionToken, obj);
   }
   const userObject = Parse.Object.fromJSON(obj);
-  return new Auth({config, cacheController, isMaster: false, installationId, user: userObject });
+  return new Auth({ config, cacheController, isMaster: false, installationId, user: userObject });
 };
 
-var getAuthForLegacySessionToken = function({config, sessionToken, installationId }) {
+var getAuthForLegacySessionToken = function({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1
   };
-  var query = new RestQuery(config, master(config), '_User', { sessionToken: sessionToken}, restOptions);
+  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then((response) => {
     var results = response.results;
     if (results.length !== 1) {
@@ -109,7 +109,7 @@ var getAuthForLegacySessionToken = function({config, sessionToken, installationI
     const obj = results[0];
     obj.className = '_User';
     const userObject = Parse.Object.fromJSON(obj);
-    return new Auth({config, isMaster: false, installationId, user: userObject});
+    return new Auth({ config, isMaster: false, installationId, user: userObject });
   });
 }
 
@@ -138,9 +138,7 @@ Auth.prototype.getRolesForUser = function() {
       }
     };
     const query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-    return query.execute().then(({ results }) => {
-      return results;
-    });
+    return query.execute().then(({ results }) => results);
   }
 
   return new Parse.Query(Parse.Role)
@@ -149,7 +147,7 @@ Auth.prototype.getRolesForUser = function() {
     .then((results) => results.map((obj) => obj.toJSON()));
 }
 
-// Iterates through the role tree and compiles a users roles
+// Iterates through the role tree and compiles a user's roles
 Auth.prototype._loadRoles = async function() {
   if (this.cacheController) {
     const cachedRoles = await this.cacheController.role.get(this.user.id);
