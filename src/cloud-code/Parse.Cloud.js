@@ -25,9 +25,7 @@ var ParseCloud = {};
  * Defines a Cloud Function.
  *
  * **Available in Cloud Code only.**
- * **Starting parse-server 3.0.0, all cloud hooks and functions are asynchronous**
- * **All response objects are removed and replaced by promises / async/await based resolution**
- *
+
  * @static
  * @memberof Parse.Cloud
  * @param {String} name The name of the Cloud Function
@@ -54,7 +52,7 @@ ParseCloud.job = function(functionName, handler) {
 
 /**
  *
- * Registers an before save function.
+ * Registers a before save function.
  *
  * **Available in Cloud Code only.**
  *
@@ -81,7 +79,7 @@ ParseCloud.beforeSave = function(parseClass, handler) {
 };
 
 /**
- * Registers an before delete function.
+ * Registers a before delete function.
  *
  * **Available in Cloud Code only.**
  *
@@ -107,7 +105,6 @@ ParseCloud.beforeDelete = function(parseClass, handler) {
 };
 
 /**
- *
  * Registers an after save function.
  *
  * **Available in Cloud Code only.**
@@ -187,7 +184,7 @@ ParseCloud.beforeFind = function(parseClass, handler) {
 };
 
 /**
- * Registers a after find function.
+ * Registers an after find function.
  *
  * **Available in Cloud Code only.**
  *
