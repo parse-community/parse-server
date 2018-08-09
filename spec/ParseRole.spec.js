@@ -142,7 +142,7 @@ describe('Parse Role testing', () => {
 
   });
 
-  it("should recursively load roles", (done) => {
+  function testLoadRoles(config, done) {
     const rolesNames = ["FooRole", "BarRole", "BazRole"];
     const roleIds = {};
     createTestUser().then((user) => {
@@ -159,7 +159,7 @@ describe('Parse Role testing', () => {
         return createRole(rolesNames[2], anotherRole, null);
       }).then((lastRole) => {
         roleIds[lastRole.get("name")] = lastRole.id;
-        const auth = new Auth({ config: Config.get("test"), isMaster: true, user: user });
+        const auth = new Auth({ config, isMaster: true, user: user });
         return auth._loadRoles();
       })
     }).then((roles) => {
@@ -172,6 +172,14 @@ describe('Parse Role testing', () => {
       fail("should succeed")
       done();
     });
+  }
+
+  it("should recursively load roles", (done) => {
+    testLoadRoles(Config.get('test'), done);
+  });
+
+  it("should recursively load roles without config", (done) => {
+    testLoadRoles(undefined, done);
   });
 
   it("_Role object should not save without name.", (done) => {
