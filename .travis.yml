@@ -61,8 +61,15 @@ jobs:
       env: 
       before_script: skip
       after_script: skip
-      script: skip
+      script: 
+        - ./release_docs.sh
       deploy:
+        - provider: pages
+          skip_cleanup: true
+          github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
+          local_dir: docs/
+          on:
+            all_branches: true
         - provider: npm
           skip_cleanup: true
           email:
