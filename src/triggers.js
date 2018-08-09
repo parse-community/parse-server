@@ -165,7 +165,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   }
 
   if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
-    // Adds ability to get set the context, which makes a copy of the object
+    // Adds ability to get and set the context. Both will clone the object.
     Object.defineProperty(request, 'context', {
       set: function (newContext) {
         Object.assign(context, newContext);
