@@ -13,6 +13,7 @@ import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController }     from '../Controllers';
+import LRU from 'lru-cache';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -45,8 +46,17 @@ class ParseLiveQueryServer {
     Parse.serverURL = serverURL;
     Parse.initialize(config.appId,  Parse.javaScriptKey, config.masterKey);
 
+    // The cache controller is a proper cache controller
+    // With access to User and Roles
     this.cacheController = getCacheController(config)
 
+    // This auth cache stores the promises for each auth resolution
+    // The main benefit is to be able to reuse the same user / session token resolution
+    // And to chain
+    this.authCache = new LRU({
+      max: 500, // 500 concurrent
+      maxAge: 60 * 60 * 1000 // 1h
+    });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
       server,
@@ -333,25 +343,39 @@ class ParseLiveQueryServer {
     return matchesQuery(parseObject, subscription.query);
   }
 
-  async getAuthForSessionToken(sessionToken: ?string): { auth: ?Auth, userId: ?string } {
+  getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {
+    if (!sessionToken) {
+      return Promise.resolve({});
+    }
+    const fromCache = this.authCache.get(sessionToken);
+    if (fromCache) {
+      return fromCache;
+    }
     try {
-      const auth = await getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken });
-      return { auth, userId: auth && auth.user && auth.user.id }// return the ID of the found user
+      const authPromise = getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken })
+        .then((auth) => {
+          return { auth, userId: auth && auth.user && auth.user.id };
+        }, () => {
+          // If you can't continue, let's just wrap it up and delete it.
+          // Next time, one will try again
+          this.authCache.del(sessionToken);
+        });
+      this.authCache.set(sessionToken, authPromise);
+      return authPromise;
     } catch(e) { /* ignore errors */ }
-    return {};
+    return Promise.resolve({});
   }
 
   async _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
     // try to match on user first, less expensive than with roles
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    if (typeof subscriptionInfo === 'undefined') {
-      return Promise.resolve(['*']);
-    }
-    const subscriptionSessionToken = subscriptionInfo.sessionToken;
     const aclGroup = ['*'];
-    const { userId } = await this.getAuthForSessionToken(subscriptionSessionToken);
-    if (userId) {
-      aclGroup.push(userId);
+    let userId;
+    if (typeof subscriptionInfo !== 'undefined') {
+      const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
+      if (userId) {
+        aclGroup.push(userId);
+      }
     }
     try {
       await SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op);
@@ -390,9 +414,8 @@ class ParseLiveQueryServer {
       return Promise.resolve(false);
     }
 
-    const subscriptionSessionToken = subscriptionInfo.sessionToken;
     // TODO: get auth there and de-duplicate code below to work with the same Auth obj.
-    const { auth, userId } = await this.getAuthForSessionToken(subscriptionSessionToken);
+    const { auth, userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
     const isSubscriptionSessionTokenMatched = acl.getReadAccess(userId);
     if (isSubscriptionSessionTokenMatched) {
       return Promise.resolve(true);
