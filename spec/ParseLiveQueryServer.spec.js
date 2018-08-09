@@ -61,9 +61,12 @@ describe('ParseLiveQueryServer', function() {
     jasmine.mockLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
     spyOn(auth, 'getAuthForSessionToken').and.callFake(({ sessionToken, cacheController }) => {
       if (typeof sessionToken === 'undefined') {
-        return Promise.reject(/*new auth.Auth({ user: undefined })*/);
+        return Promise.reject();
       }
       if (sessionToken === null) {
+        return Promise.reject();
+      }
+      if (sessionToken === 'pleaseThrow') {
         return Promise.reject();
       }
       return Promise.resolve(new auth.Auth({ cacheController, user: { id: testUserId }}));
@@ -1388,7 +1391,27 @@ describe('ParseLiveQueryServer', function() {
       expect(isMatched).toBe(false);
       done();
     });
+  });
 
+  it('should properly pull auth from cache', () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const promise = parseLiveQueryServer.getAuthForSessionToken('sessionToken');
+    const secondPromise = parseLiveQueryServer.getAuthForSessionToken('sessionToken');
+    // should be in the cache
+    expect(parseLiveQueryServer.authCache.get('sessionToken')).toBe(promise);
+    // should be the same promise returned
+    expect(promise).toBe(secondPromise);
+    // the auth should be called only once
+    expect(auth.getAuthForSessionToken.calls.count()).toBe(1);
+  });
+
+  it('should delete from cache throwing auth calls', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const promise = parseLiveQueryServer.getAuthForSessionToken('pleaseThrow');
+    expect(parseLiveQueryServer.authCache.get('pleaseThrow')).toBe(promise);
+    // after the promise finishes, it should have removed it from the cache
+    expect(await promise).toEqual({});
+    expect(parseLiveQueryServer.authCache.get('pleaseThrow')).toBe(undefined);
   });
 
   afterEach(function(){

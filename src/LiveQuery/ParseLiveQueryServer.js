@@ -351,19 +351,17 @@ class ParseLiveQueryServer {
     if (fromCache) {
       return fromCache;
     }
-    try {
-      const authPromise = getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken })
-        .then((auth) => {
-          return { auth, userId: auth && auth.user && auth.user.id };
-        }, () => {
-          // If you can't continue, let's just wrap it up and delete it.
-          // Next time, one will try again
-          this.authCache.del(sessionToken);
-        });
-      this.authCache.set(sessionToken, authPromise);
-      return authPromise;
-    } catch(e) { /* ignore errors */ }
-    return Promise.resolve({});
+    const authPromise = getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken })
+      .then((auth) => {
+        return { auth, userId: auth && auth.user && auth.user.id };
+      }, () => {
+        // If you can't continue, let's just wrap it up and delete it.
+        // Next time, one will try again
+        this.authCache.del(sessionToken);
+        return {};
+      });
+    this.authCache.set(sessionToken, authPromise);
+    return authPromise;
   }
 
   async _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
@@ -379,10 +377,10 @@ class ParseLiveQueryServer {
     }
     try {
       await SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op);
-      return Promise.resolve(true);
+      return true;
     } catch(e) {
       logger.verbose(`Failed matching CLP for ${object.id} ${userId} ${e}`);
-      return Promise.resolve(false);
+      return false;
     }
     // TODO: handle roles permissions
     // Object.keys(classLevelPermissions).forEach((key) => {
@@ -403,22 +401,22 @@ class ParseLiveQueryServer {
       && typeof query.objectId === 'string' ? 'get' : 'find';
   }
 
-  async _matchesACL(acl: any, client: any, requestId: number): any {
+  async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
-      return Promise.resolve(true);
+      return true;
     }
     // Check subscription sessionToken matches ACL first
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     if (typeof subscriptionInfo === 'undefined') {
-      return Promise.resolve(false);
+      return false;
     }
 
     // TODO: get auth there and de-duplicate code below to work with the same Auth obj.
     const { auth, userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
     const isSubscriptionSessionTokenMatched = acl.getReadAccess(userId);
     if (isSubscriptionSessionTokenMatched) {
-      return Promise.resolve(true);
+      return true;
     }
 
     // Check if the user has any roles that match the ACL
@@ -453,8 +451,7 @@ class ParseLiveQueryServer {
       } else  {
         return isRoleMatched;
       }
-    }).catch((error) => {
-      error;
+    }).catch(() => {
       return false;
     });
   }
