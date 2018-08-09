@@ -165,15 +165,8 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   }
 
   if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
-    // Adds ability to get and set the context. Both will clone the object.
-    Object.defineProperty(request, 'context', {
-      set: function (newContext) {
-        Object.assign(context, newContext);
-      },
-      get: () => {
-        return Object.assign({}, context);
-      }
-    });
+    // Set a copy of the context on the request object.
+    request.context = Object.assign({}, context);
   }
 
   if (!auth) {
@@ -426,6 +419,9 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var { success, error } = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+      if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
+        Object.assign(context, request.context);
+      }
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(

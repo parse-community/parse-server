@@ -1834,4 +1834,24 @@ describe('afterFind hooks', () => {
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
   });
+
+  it('should expose context in before and afterSave and let keys be set individually', async () => {
+    let calledBefore = false;
+    let calledAfter = false;
+    Parse.Cloud.beforeSave('MyClass', (req) => {
+      req.context.some = 'value';
+      req.context.yolo = 1;
+      calledBefore = true;
+    });
+    Parse.Cloud.afterSave('MyClass', (req) => {
+      expect(req.context.yolo).toBe(1);
+      expect(req.context.some).toBe('value');
+      calledAfter = true;
+    });
+
+    const object = new Parse.Object('MyClass');
+    await object.save();
+    expect(calledBefore).toBe(true);
+    expect(calledAfter).toBe(true);
+  });
 });
