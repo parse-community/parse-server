@@ -11,7 +11,7 @@ import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
-import { getAuthForSessionToken } from '../Auth';
+import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController }     from '../Controllers';
 
 class ParseLiveQueryServer {
@@ -333,11 +333,12 @@ class ParseLiveQueryServer {
     return matchesQuery(parseObject, subscription.query);
   }
 
-  async getUserId(sessionToken: ?string): ?string {
+  async getAuthForSessionToken(sessionToken: ?string): { auth: ?Auth, userId: ?string } {
     try {
       const auth = await getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken });
-      return auth && auth.user && auth.user.id; // return the ID of the found user
+      return { auth, userId: auth && auth.user && auth.user.id }// return the ID of the found user
     } catch(e) { /* ignore errors */ }
+    return {};
   }
 
   async _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
@@ -348,7 +349,7 @@ class ParseLiveQueryServer {
     }
     const subscriptionSessionToken = subscriptionInfo.sessionToken;
     const aclGroup = ['*'];
-    const userId = await this.getUserId(subscriptionSessionToken);
+    const { userId } = await this.getAuthForSessionToken(subscriptionSessionToken);
     if (userId) {
       aclGroup.push(userId);
     }
@@ -391,7 +392,7 @@ class ParseLiveQueryServer {
 
     const subscriptionSessionToken = subscriptionInfo.sessionToken;
     // TODO: get auth there and de-duplicate code below to work with the same Auth obj.
-    const userId = await this.getUserId(subscriptionSessionToken);
+    const { auth, userId } = await this.getAuthForSessionToken(subscriptionSessionToken);
     const isSubscriptionSessionTokenMatched = acl.getReadAccess(userId);
     if (isSubscriptionSessionTokenMatched) {
       return Promise.resolve(true);
@@ -406,7 +407,6 @@ class ParseLiveQueryServer {
         return false;
       }
 
-      const auth = await getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: subscriptionSessionToken });
       const roleNames = await auth.getUserRoles();
       // Finally, see if any of the user's roles allow them read access
       for (const role of roleNames) {
@@ -425,7 +425,7 @@ class ParseLiveQueryServer {
       // Check client sessionToken matches ACL
       const clientSessionToken = client.sessionToken;
       if (clientSessionToken) {
-        const userId = await this.getUserId(clientSessionToken);
+        const { userId } = await this.getAuthForSessionToken(clientSessionToken);
         return acl.getReadAccess(userId);
       } else  {
         return isRoleMatched;
