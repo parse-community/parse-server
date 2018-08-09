@@ -5,6 +5,9 @@ const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require("express");
 const bodyParser = require('body-parser');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+
 
 const port = 12345;
 const hookServerURL = "http://localhost:" + port;
@@ -501,5 +504,41 @@ describe('Hooks', () => {
       fail("Should not fail creating a function");
       done();
     });
+  });
+});
+
+describe('triggers', () => {
+  it('should produce a proper request object with context in beforeSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {
+      originalKey: 'original'
+    };
+    const req = triggers.getRequestObject(triggers.Types.beforeSave, master, {}, {}, config, context);
+    expect(req.context.originalKey).toBe('original');
+    req.context = {
+      key: 'value'
+    };
+    expect(context.key).toBe(undefined);
+    req.context = {
+      key: 'newValue'
+    };
+    expect(context.key).toBe(undefined);
+  });
+
+  it('should produce a proper request object with context in afterSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.afterSave, master, {}, {}, config, context);
+    expect(req.context).not.toBeUndefined();
+  });
+
+  it('should not set context on beforeFind', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.beforeFind, master, {}, {}, config, context);
+    expect(req.context).toBeUndefined();
   });
 });
