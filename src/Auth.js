@@ -49,13 +49,13 @@ function nobody(config) {
 
 
 // Returns a promise that resolves to an Auth object
-var getAuthForSessionToken = async function({ config, cacheController, sessionToken, installationId }) {
+const getAuthForSessionToken = async function({ config, cacheController, sessionToken, installationId }) {
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
-      return Promise.resolve(new Auth({config, isMaster: false, installationId, user: cachedUser}));
+      return Promise.resolve(new Auth({config, cacheController, isMaster: false, installationId, user: cachedUser}));
     }
   }
 
@@ -93,7 +93,7 @@ var getAuthForSessionToken = async function({ config, cacheController, sessionTo
     cacheController.user.put(sessionToken, obj);
   }
   const userObject = Parse.Object.fromJSON(obj);
-  return new Auth({config, isMaster: false, installationId, user: userObject });
+  return new Auth({config, cacheController, isMaster: false, installationId, user: userObject });
 };
 
 var getAuthForLegacySessionToken = function({config, sessionToken, installationId }) {
