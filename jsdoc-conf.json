@@ -1,0 +1,23 @@
+{
+  "plugins": ["node_modules/jsdoc-babel", "plugins/markdown"],
+  "babel": {
+      "plugins": ["transform-flow-strip-types"]
+  },
+  "source": {
+    "include":  ["./README.md", "./src/cloud-code"],
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "templates": {
+    "default": {
+      "outputSourceFiles": false
+    },
+    "cleverLinks": false,
+    "monospaceLinks": false
+  },
+  "opts": {
+    "recurse": true,
+    "template": "node_modules/minami",
+    "showInheritedInNav": false,
+    "useLongnameInNav": true
+  }
+}
