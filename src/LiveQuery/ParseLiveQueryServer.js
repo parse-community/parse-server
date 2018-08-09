@@ -47,12 +47,11 @@ class ParseLiveQueryServer {
     Parse.initialize(config.appId,  Parse.javaScriptKey, config.masterKey);
 
     // The cache controller is a proper cache controller
-    // With access to User and Roles
+    // with access to User and Roles
     this.cacheController = getCacheController(config)
 
-    // This auth cache stores the promises for each auth resolution
-    // The main benefit is to be able to reuse the same user / session token resolution
-    // And to chain
+    // This auth cache stores the promises for each auth resolution.
+    // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
       maxAge: 60 * 60 * 1000 // 1h
@@ -354,7 +353,7 @@ class ParseLiveQueryServer {
     const authPromise = getAuthForSessionToken({ cacheController: this.cacheController, sessionToken: sessionToken })
       .then((auth) => {
         return { auth, userId: auth && auth.user && auth.user.id };
-      }, () => {
+      }).catch(() => {
         // If you can't continue, let's just wrap it up and delete it.
         // Next time, one will try again
         this.authCache.del(sessionToken);

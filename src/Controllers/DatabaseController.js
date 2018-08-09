@@ -1007,10 +1007,10 @@ class DatabaseController {
       })
   }
 
-  addPointerPermissions(schema: any, className: string, operation: string, query: any, aclGroup: any[] = []) {
+  addPointerPermissions(schema: SchemaController.SchemaController, className: string, operation: string, query: any, aclGroup: any[] = []) {
   // Check if class has public permission for operation
   // If the BaseCLP pass, let go through
-    if (schema.testBaseCLP(className, aclGroup, operation)) {
+    if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
     const perms = schema.perms[className];

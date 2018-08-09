@@ -859,12 +859,12 @@ export default class SchemaController {
     return Promise.resolve(this);
   }
 
-  // Validates the base CLP for an operation
-  testBaseCLP(className: string, aclGroup: string[], operation: string) {
-    return SchemaController.testBaseCLP(this.perms[className], aclGroup, operation);
+  testPermissionsForClassName(className: string, aclGroup: string[], operation: string) {
+    return SchemaController.testPermissions(this.perms[className], aclGroup, operation);
   }
 
-  static testBaseCLP(classPermissions: ?any, aclGroup: string[], operation: string) {
+  // Tests that the class level permission let pass the operation for a given aclGroup
+  static testPermissions(classPermissions: ?any, aclGroup: string[], operation: string): boolean {
     if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
@@ -881,7 +881,7 @@ export default class SchemaController {
 
   // Validates an operation passes class-level-permissions set in the schema
   static validatePermission(classPermissions: ?any, className: string, aclGroup: string[], operation: string) {
-    if (SchemaController.testBaseCLP(classPermissions, aclGroup, operation)) {
+    if (SchemaController.testPermissions(classPermissions, aclGroup, operation)) {
       return Promise.resolve();
     }
 
