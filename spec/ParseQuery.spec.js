@@ -3474,6 +3474,50 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('include with *', async () => {
+    const child1 = new TestObject({ foo: 'bar', name: 'ac' });
+    const child2 = new TestObject({ foo: 'baz', name: 'flo' });
+    const child3 = new TestObject({ foo: 'bad', name: 'mo' });
+    const parent = new Container({ child1, child2, child3 });
+    await Parse.Object.saveAll([parent, child1, child2, child3]);
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { objectId: parent.id },
+        include: '*',
+      }
+    });
+    const resp = await rp.get(Parse.serverURL + "/classes/Container", options);
+    const result = resp.results[0];
+    equal(result.child1.foo, 'bar');
+    equal(result.child2.foo, 'baz');
+    equal(result.child3.foo, 'bad');
+    equal(result.child1.name, 'ac');
+    equal(result.child2.name, 'flo');
+    equal(result.child3.name, 'mo');
+  });
+
+  it('include with * overrides', async () => {
+    const child1 = new TestObject({ foo: 'bar', name: 'ac' });
+    const child2 = new TestObject({ foo: 'baz', name: 'flo' });
+    const child3 = new TestObject({ foo: 'bad', name: 'mo' });
+    const parent = new Container({ child1, child2, child3 });
+    await Parse.Object.saveAll([parent, child1, child2, child3]);
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { objectId: parent.id },
+        include: 'child2,*',
+      }
+    });
+    const resp = await rp.get(Parse.serverURL + "/classes/Container", options);
+    const result = resp.results[0];
+    equal(result.child1.foo, 'bar');
+    equal(result.child2.foo, 'baz');
+    equal(result.child3.foo, 'bad');
+    equal(result.child1.name, 'ac');
+    equal(result.child2.name, 'flo');
+    equal(result.child3.name, 'mo');
+  });
+
   it('includeAll', (done) => {
     const child1 = new TestObject({ foo: 'bar', name: 'ac' });
     const child2 = new TestObject({ foo: 'baz', name: 'flo' });
