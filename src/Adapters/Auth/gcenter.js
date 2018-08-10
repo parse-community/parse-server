@@ -8,8 +8,7 @@ var url = require('url');
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
-  return new Promise(function (resolve, reject)
-  {
+  return new Promise(function (resolve, reject) {
     var identity = {
       publicKeyUrl: authData.pKeyUrl,
       timestamp: authData.timeStamp,
@@ -19,12 +18,12 @@ function validateAuthData(authData) {
       bundleId: authData.bid
     };
 
-    return verify(identity, function (err, token)
-    {
-      if(err)
+    return verify(identity, function (err, token) {
+      if(err) {
         return reject('Failed to validate this access token with Game Center.');
-      else
+      } else {
         return resolve(token);
+      }
     });
   });
 }
