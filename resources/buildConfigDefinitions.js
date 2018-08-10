@@ -250,7 +250,7 @@ Do not edit manually, but update Options/index.js
 `
 
 const babel = require("babel-core");
-const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin ], auxiliaryCommentBefore });
+const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin ], auxiliaryCommentBefore, sourceMaps: false });
 require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');
 require('fs').writeFileSync('./src/Options/docs.js', docs);
 

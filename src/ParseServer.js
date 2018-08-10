@@ -133,7 +133,7 @@ class ParseServer {
 
   /**
    * @static
-   * app creates an express app for the parse server
+   * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app({maxUploadSize = '20mb', appId}) {
     // This app serves the Parse API directly.
@@ -253,9 +253,9 @@ class ParseServer {
   }
 
   /**
-   * Creates a new ParseServer adn starts it.
+   * Creates a new ParseServer and starts it.
    * @param {ParseServerOptions} options used to start the server
-   * @param {Function} callback called when the server started
+   * @param {Function} callback called when the server has started
    * @returns {ParseServer} the parse server instance
    */
   static start(options: ParseServerOptions, callback: ?()=>void) {

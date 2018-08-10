@@ -3,7 +3,7 @@
  */
 /**
  * @static
- * attempts to load an adapter, or fallbacks to the default adapter
+ * Attempt to load an adapter or fallback to the default.
  * @param {Adapter} adapter an adapter
  * @param {Adapter} defaultAdapter the default adapter to load
  * @param {any} options options to pass to the contstructor

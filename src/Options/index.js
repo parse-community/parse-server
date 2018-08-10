@@ -19,7 +19,7 @@ export interface ParseServerOptions {
   /* URL to your parse server with http:// or https://.
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
-  /* Restrict masterKey to be used by only these ips. defaults to [] (allow all ips) */
+  /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips) */
   masterKeyIps: ?string[]; // = []
   /* Sets the app name */
   appName: ?string;
@@ -29,7 +29,7 @@ export interface ParseServerOptions {
   filesAdapter: ?Adapter<FilesAdapter>;
   /* Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications */
   push: ?any;
-  /* Configuration for push scheduling. Defaults to false. */
+  /* Configuration for push scheduling, defaults to false. */
   scheduledPush: ?boolean; // = false
   /* Adapter module for the logging sub-system */
   loggerAdapter: ?Adapter<LoggerAdapter>;
@@ -47,7 +47,7 @@ export interface ParseServerOptions {
   /* Disables console output
   :ENV: SILENT */
   silent: ?boolean;
-  /* The full URI to your mongodb database */
+  /* The full URI to your database. Supported databases are mongodb or postres. */
   databaseURI: string; // = mongodb://localhost:27017/parse
   /* Options to pass to the mongodb client */
   databaseOptions: ?any;
@@ -86,13 +86,13 @@ export interface ParseServerOptions {
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?any;
-  /* Max file size for uploads. defaults to 20mb */
+  /* Max file size for uploads, defaults to 20mb */
   maxUploadSize: ?string; // = 20mb
   /* Enable (or disable) user email validation, defaults to false */
   verifyUserEmails: ?boolean; // = false
   /* Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false */
   preventLoginWithUnverifiedEmail: ?boolean; // = false
-  /* Email verification token validity duration */
+  /* Email verification token validity duration, in seconds */
   emailVerifyTokenValidityDuration: ?number;
   /* account lockout policy for failed login attempts */
   accountLockout: ?any;
@@ -100,7 +100,7 @@ export interface ParseServerOptions {
   passwordPolicy: ?any;
   /* Adapter module for the cache */
   cacheAdapter: ?Adapter<CacheAdapter>;
-  /* Adapter module for the email sending */
+  /* Adapter module for email sending */
   emailAdapter: ?Adapter<MailAdapter>;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
@@ -123,16 +123,16 @@ export interface ParseServerOptions {
   cacheTTL: ?number; // = 5000
   /* Sets the maximum size for the in memory cache, defaults to 10000 */
   cacheMaxSize : ?number; // = 10000
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request. */
+  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request. */
   enableSingleSchemaCache: ?boolean; // = false
   /* Enables the default express error handler for all errors */
   enableExpressErrorHandler: ?boolean; // = false
   /* Sets the number of characters in generated object id's, default 10 */
   objectIdSize: ?number; // = 10
-  /* The port to run the ParseServer. defaults to 1337.
+  /* The port to run the ParseServer, defaults to 1337.
   :ENV: PORT */
   port: ?number; // = 1337
-  /* The host to serve ParseServer on. defaults to 0.0.0.0 */
+  /* The host to serve ParseServer on, defaults to 0.0.0.0 */
   host: ?string; // = 0.0.0.0
   /* Mount path for the server, defaults to /parse */
   mountPath: ?string; // = /parse
@@ -178,13 +178,13 @@ export interface LiveQueryServerOptions {
   serverURL: ?string,
   /* A JSON object that serves as a whitelist of keys. It is used for validating clients when they try to connect to the LiveQuery server. Check the following Security section and our protocol specification for details.*/
   keyPairs: ?any,
-  /* Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients. Defaults to 10 * 1000 ms (10 s).*/
+  /* Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).*/
   websocketTimeout: ?number,
-  /* Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details. Defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).*/
+  /* Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).*/
   cacheTimeout: ?number,
-  /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO.*/
+  /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE, defaults to INFO.*/
   logLevel: ?string,
-  /* The port to run the LiveQuery server. Defaults to 1337.*/
+  /* The port to run the LiveQuery server, defaults to 1337.*/
   port: ?number, // = 1337
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,

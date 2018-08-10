@@ -16,7 +16,7 @@ export class AnalyticsAdapter {
   }
 
   /**
-  @param {String} 8eventName: the name of the custom eventName
+  @param {String} eventName: the name of the custom eventName
   @param {any} parameters: the analytics request body, analytics info will be in the dimensions property
   @param {Request} req: the original http request
    */
