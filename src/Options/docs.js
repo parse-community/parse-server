@@ -15,7 +15,7 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {String} logLevel Sets the level for logs
  * @property {Boolean} silent Disables console output
- * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postres.
+ * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
  * @property {Any} databaseOptions Options to pass to the mongodb client
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
  * @property {String} cloud Full path to your cloud code main.js

@@ -47,7 +47,7 @@ export interface ParseServerOptions {
   /* Disables console output
   :ENV: SILENT */
   silent: ?boolean;
-  /* The full URI to your database. Supported databases are mongodb or postres. */
+  /* The full URI to your database. Supported databases are mongodb or postgres. */
   databaseURI: string; // = mongodb://localhost:27017/parse
   /* Options to pass to the mongodb client */
   databaseOptions: ?any;
