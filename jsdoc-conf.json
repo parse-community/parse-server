@@ -4,20 +4,20 @@
       "plugins": ["transform-flow-strip-types"]
   },
   "source": {
-    "include":  ["./README.md", "./src/cloud-code"],
+    "include":  ["./README.md", "./src/cloud-code", "./src/Options/docs.js", "./src/ParseServer.js", "./src/Adapters"],
     "excludePattern": "(^|\\/|\\\\)_"
   },
   "templates": {
     "default": {
-      "outputSourceFiles": false
+      "outputSourceFiles": false,
+      "showInheritedInNav": false,
+      "useLongnameInNav": true
     },
-    "cleverLinks": false,
+    "cleverLinks": true,
     "monospaceLinks": false
   },
   "opts": {
-    "recurse": true,
-    "template": "node_modules/minami",
-    "showInheritedInNav": false,
-    "useLongnameInNav": true
+    "template": "node_modules/@parse/minami",
+    "recurse": true
   }
 }

@@ -45,6 +45,7 @@
     "ws": "6.0.0"
   },
   "devDependencies": {
+    "@parse/minami": "^1.0.0",
     "babel-cli": "6.26.0",
     "babel-core": "6.26.0",
     "babel-eslint": "^8.2.2",
@@ -62,7 +63,6 @@
     "jasmine-spec-reporter": "^4.1.0",
     "jsdoc": "^3.5.5",
     "jsdoc-babel": "^0.4.0",
-    "minami": "^1.2.3",
     "mongodb-runner": "4.0.0",
     "nodemon": "1.18.3",
     "nyc": "^12.0.2",

@@ -162,7 +162,8 @@ function parseDefaultValue(elt, value, t) {
 }
 
 function inject(t, list) {
-  return list.map((elt) => {
+  let comments = '';
+  const results = list.map((elt) => {
     if (!elt.name) {
       return;
     }
@@ -186,23 +187,42 @@ function inject(t, list) {
         throw new Error(`Unable to parse value for ${elt.name} `);
       }
     }
+    let type = elt.type.replace('TypeAnnotation', '');
+    if (type === 'Generic') {
+      type = elt.typeAnnotation.id.name;
+    }
+    if (type === 'Array') {
+      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+    }
+    if (type === 'NumberOrBoolean') {
+      type = 'Number|Boolean';
+    }
+    if (type === 'Adapter') {
+      const adapterType = elt.typeAnnotation.typeParameters.params[0].id.name;
+      type = `Adapter<${adapterType}>`;
+    }
+    comments += ` * @property {${type}} ${elt.name} ${elt.help}\n`;
     const obj = t.objectExpression(props);
     return t.objectProperty(t.stringLiteral(elt.name), obj);
   }).filter((elt) => {
     return elt != undefined;
   });
+  return { results, comments };
 }
 
 const makeRequire = function(variableName, module, t) {
   const decl = t.variableDeclarator(t.identifier(variableName),  t.callExpression(t.identifier('require'), [t.stringLiteral(module)]));
   return t.variableDeclaration('var', [decl])
 }
-
+let docs = ``;
 const plugin = function (babel) {
   const t = babel.types;
   const moduleExports = t.memberExpression(t.identifier('module'), t.identifier('exports'));
   return {
     visitor: {
+      ImportDeclaration: function(path) {
+        path.remove();
+      },
       Program: function(path) {
         // Inject the parser's loader
         path.unshiftContainer('body', makeRequire('parsers', './parsers', t));
@@ -210,11 +230,12 @@ const plugin = function (babel) {
       ExportDeclaration: function(path) {
         // Export declaration on an interface
         if (path.node && path.node.declaration && path.node.declaration.type == 'InterfaceDeclaration') {
-          const l = inject(t, doInterface(path.node.declaration));
+          const { results, comments } = inject(t, doInterface(path.node.declaration));
           const id = path.node.declaration.id.name;
           const exports = t.memberExpression(moduleExports, t.identifier(id));
+          docs += `/**\n * @interface ${id}\n${comments} */\n\n`;
           path.replaceWith(
-            t.assignmentExpression('=', exports, t.objectExpression(l))
+            t.assignmentExpression('=', exports, t.objectExpression(results))
           )
         }
       }
@@ -229,5 +250,7 @@ Do not edit manually, but update Options/index.js
 `
 
 const babel = require("babel-core");
-const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin ], auxiliaryCommentBefore });
+const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin ], auxiliaryCommentBefore, sourceMaps: false });
 require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');
+require('fs').writeFileSync('./src/Options/docs.js', docs);
+
