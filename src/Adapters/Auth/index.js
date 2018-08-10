@@ -6,6 +6,7 @@ const instagram = require("./instagram");
 const linkedin = require("./linkedin");
 const meetup = require("./meetup");
 const google = require("./google");
+const gcenter = require("./gcenter");
 const github = require("./github");
 const twitter = require("./twitter");
 const spotify = require("./spotify");
@@ -33,6 +34,7 @@ const providers = {
   linkedin,
   meetup,
   google,
+  gcenter,
   github,
   twitter,
   spotify,
