@@ -388,13 +388,6 @@ describe('AuthenticationProviders', function() {
       })
   });
 
-  it('should fail to load adapter if provider is not available on the list', () => {
-    const authenticationHandler = authenticationLoader();
-    validateAuthenticationHandler(authenticationHandler);
-    const validator = authenticationHandler.getValidatorForProvider('unknown');
-    expect(validator).toBeUndefined();
-  });
-
   it('properly verify a game center identity', () => {
     const authenticationHandler = authenticationLoader({
       gcenter: path.resolve('./src/Adapters/Auth/gcenter.js')
