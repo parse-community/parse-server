@@ -69,7 +69,10 @@ addParseCloud();
 // "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
 
 class ParseServer {
-
+  /**
+   * @constructor
+   * @param {ParseServerOptions} options the parse server initialization options
+  */
   constructor(options: ParseServerOptions) {
     injectDefaults(options);
     const {
@@ -128,6 +131,10 @@ class ParseServer {
     }
   }
 
+  /**
+   * @static
+   * Create an express app for the parse server
+   * @param {Object} options let you specify the maxUploadSize when creating the express app  */
   static app({maxUploadSize = '20mb', appId}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
@@ -212,6 +219,12 @@ class ParseServer {
     return appRouter;
   }
 
+  /**
+   * starts the parse server's express app
+   * @param {ParseServerOptions} options to use to start the server
+   * @param {Function} callback called when the server has started
+   * @returns {ParseServer} the parse server instance
+   */
   start(options: ParseServerOptions, callback: ?()=>void) {
     const app = express();
     if (options.middleware) {
@@ -239,11 +252,24 @@ class ParseServer {
     return this;
   }
 
+  /**
+   * Creates a new ParseServer and starts it.
+   * @param {ParseServerOptions} options used to start the server
+   * @param {Function} callback called when the server has started
+   * @returns {ParseServer} the parse server instance
+   */
   static start(options: ParseServerOptions, callback: ?()=>void) {
     const parseServer = new ParseServer(options);
     return parseServer.start(options, callback);
   }
 
+  /**
+   * Helper method to create a liveQuery server
+   * @static
+   * @param {Server} httpServer an optional http server to pass
+   * @param {LiveQueryServerOptions} config options fot he liveQueryServer
+   * @returns {ParseLiveQueryServer} the live query server instance
+   */
   static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
     if (!httpServer || (config && config.port)) {
       var app = express();

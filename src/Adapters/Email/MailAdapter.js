@@ -1,10 +1,14 @@
 /*eslint no-unused-vars: "off"*/
-/*
-  Mail Adapter prototype
-  A MailAdapter should implement at least sendMail()
+/**
+ * @module Adapters
+ */
+/**
+ * @interface MailAdapter
+ * Mail Adapter prototype
+ * A MailAdapter should implement at least sendMail()
  */
 export class MailAdapter {
-  /*
+  /**
    * A method for sending mail
    * @param options would have the parameters
    * - to: the recipient
