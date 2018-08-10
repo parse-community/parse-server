@@ -4,7 +4,7 @@
       "plugins": ["transform-flow-strip-types"]
   },
   "source": {
-    "include":  ["./README.md", "./src/cloud-code"],
+    "include":  ["./README.md", "./src/cloud-code", "./src/Options/docs.js", "./src/ParseServer.js"],
     "excludePattern": "(^|\\/|\\\\)_"
   },
   "templates": {
@@ -16,7 +16,6 @@
   },
   "opts": {
     "recurse": true,
-    "template": "node_modules/minami",
     "showInheritedInNav": false,
     "useLongnameInNav": true
   }

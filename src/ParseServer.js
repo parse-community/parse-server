@@ -68,8 +68,12 @@ addParseCloud();
 // "sessionLength": optional length in seconds for how long Sessions should be valid for
 // "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
 
+/** @class ParseServer */
 class ParseServer {
-
+  /**
+   * @constructor
+   * @param {ParseServerOptions} options the parse server initialization options
+  */
   constructor(options: ParseServerOptions) {
     injectDefaults(options);
     const {
@@ -114,6 +118,7 @@ class ParseServer {
     }
   }
 
+  /** @member the express app for the server */
   get app() {
     if (!this._app) {
       this._app = ParseServer.app(this.config);
@@ -121,6 +126,7 @@ class ParseServer {
     return this._app;
   }
 
+  /** @method app the express app for the server */
   handleShutdown() {
     const { adapter } = this.config.databaseController;
     if (adapter && typeof adapter.handleShutdown === 'function') {
@@ -128,6 +134,10 @@ class ParseServer {
     }
   }
 
+  /**
+   * @static
+   * @method app creates an express app for the parse server
+   * @param  */
   static app({maxUploadSize = '20mb', appId}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
