@@ -1,4 +1,15 @@
-export function loadAdapter(adapter, defaultAdapter, options) {
+/**
+ * @module AdapterLoader
+ */
+/**
+ * @static
+ * attempts to load an adapter, or fallbacks to the default adapter
+ * @param {Adapter} adapter an adapter
+ * @param {Adapter} defaultAdapter the default adapter to load
+ * @param {any} options options to pass to the contstructor
+ * @returns {Object} the loaded adapter
+ */
+export function loadAdapter<T>(adapter, defaultAdapter, options): T {
   if (!adapter) {
     if (!defaultAdapter) {
       return options;

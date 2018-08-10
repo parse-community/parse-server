@@ -191,8 +191,15 @@ function inject(t, list) {
     if (type === 'Generic') {
       type = elt.typeAnnotation.id.name;
     }
+    if (type === 'Array') {
+      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+    }
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';
+    }
+    if (type === 'Adapter') {
+      const adapterType = elt.typeAnnotation.typeParameters.params[0].id.name;
+      type = `Adapter<${adapterType}>`;
     }
     comments += ` * @property {${type}} ${elt.name} ${elt.help}\n`;
     const obj = t.objectExpression(props);
@@ -207,12 +214,15 @@ const makeRequire = function(variableName, module, t) {
   const decl = t.variableDeclarator(t.identifier(variableName),  t.callExpression(t.identifier('require'), [t.stringLiteral(module)]));
   return t.variableDeclaration('var', [decl])
 }
-let docs = '';
+let docs = ``;
 const plugin = function (babel) {
   const t = babel.types;
   const moduleExports = t.memberExpression(t.identifier('module'), t.identifier('exports'));
   return {
     visitor: {
+      ImportDeclaration: function(path) {
+        path.remove();
+      },
       Program: function(path) {
         // Inject the parser's loader
         path.unshiftContainer('body', makeRequire('parsers', './parsers', t));

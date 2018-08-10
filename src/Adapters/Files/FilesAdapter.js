@@ -14,10 +14,15 @@
 // database adapter.
 
 import type { Config } from '../../Config'
-
+/**
+ * @module Adapters
+ */
+/**
+ * @interface FilesAdapter
+ */
 export class FilesAdapter {
 
-  /* Responsible for storing the file in order to be retrieved later by its filename
+  /** Responsible for storing the file in order to be retrieved later by its filename
    *
    * @param {string} filename - the filename to save
    * @param {*} data - the buffer of data from the file
@@ -28,7 +33,7 @@ export class FilesAdapter {
    */
   createFile(filename: string, data, contentType: string): Promise { }
 
-  /* Responsible for deleting the specified file
+  /** Responsible for deleting the specified file
    *
    * @param {string} filename - the filename to delete
    *
@@ -36,7 +41,7 @@ export class FilesAdapter {
    */
   deleteFile(filename: string): Promise { }
 
-  /* Responsible for retrieving the data of the specified file
+  /** Responsible for retrieving the data of the specified file
    *
    * @param {string} filename - the name of file to retrieve
    *
@@ -44,7 +49,7 @@ export class FilesAdapter {
    */
   getFileData(filename: string): Promise<any> { }
 
-  /* Returns an absolute URL where the file can be accessed
+  /** Returns an absolute URL where the file can be accessed
    *
    * @param {Config} config - server configuration
    * @param {string} filename

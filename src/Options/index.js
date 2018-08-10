@@ -1,5 +1,13 @@
+import { AnalyticsAdapter } from "../Adapters/Analytics/AnalyticsAdapter";
+import { FilesAdapter } from "../Adapters/Files/FilesAdapter";
+import { LoggerAdapter } from "../Adapters/Logger/LoggerAdapter";
+import { StorageAdapter } from "../Adapters/Storage/StorageAdapter";
+import { CacheAdapter } from "../Adapters/Cache/CacheAdapter";
+import { MailAdapter } from "../Adapters/Email/MailAdapter";
+import { PubSubAdapter } from "../Adapters/PubSub/PubSubAdapter";
+
 // @flow
-type Adapter = string|any;
+type Adapter<T> = string|any|T;
 type NumberOrBoolean = number|boolean;
 
 export interface ParseServerOptions {
@@ -16,15 +24,15 @@ export interface ParseServerOptions {
   /* Sets the app name */
   appName: ?string;
   /* Adapter module for the analytics */
-  analyticsAdapter: ?Adapter;
+  analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
-  filesAdapter: ?Adapter;
+  filesAdapter: ?Adapter<FilesAdapter>;
   /* Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications */
   push: ?any;
   /* Configuration for push scheduling. Defaults to false. */
   scheduledPush: ?boolean; // = false
   /* Adapter module for the logging sub-system */
-  loggerAdapter: ?Adapter;
+  loggerAdapter: ?Adapter<LoggerAdapter>;
   /* Log as structured JSON objects
   :ENV: JSON_LOGS */
   jsonLogs: ?boolean;
@@ -44,7 +52,7 @@ export interface ParseServerOptions {
   /* Options to pass to the mongodb client */
   databaseOptions: ?any;
   /* Adapter module for the database */
-  databaseAdapter: ?Adapter;
+  databaseAdapter: ?Adapter<StorageAdapter>;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes */
@@ -91,9 +99,9 @@ export interface ParseServerOptions {
   /* Password policy for enforcing password related rules */
   passwordPolicy: ?any;
   /* Adapter module for the cache */
-  cacheAdapter: ?Adapter;
+  cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for the email sending */
-  emailAdapter: ?Adapter;
+  emailAdapter: ?Adapter<MailAdapter>;
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
@@ -158,7 +166,7 @@ export interface LiveQueryOptions {
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,
   /* LiveQuery pubsub adapter */
-  pubSubAdapter: ?Adapter,
+  pubSubAdapter: ?Adapter<PubSubAdapter>,
 }
 
 export interface LiveQueryServerOptions {
@@ -181,5 +189,5 @@ export interface LiveQueryServerOptions {
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,
   /* LiveQuery pubsub adapter */
-  pubSubAdapter: ?Adapter,
+  pubSubAdapter: ?Adapter<PubSubAdapter>,
 }

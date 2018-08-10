@@ -3,13 +3,13 @@
  * @property {String} appId Your Parse Application ID
  * @property {String} masterKey Your Parse Master Key
  * @property {String} serverURL URL to your parse server with http:// or https://.
- * @property {Array} masterKeyIps Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)
+ * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)
  * @property {String} appName Sets the app name
- * @property {Adapter} analyticsAdapter Adapter module for the analytics
- * @property {Adapter} filesAdapter Adapter module for the files sub-system
+ * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
+ * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
  * @property {Boolean} scheduledPush Configuration for push scheduling. Defaults to false.
- * @property {Adapter} loggerAdapter Adapter module for the logging sub-system
+ * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {Boolean} verbose Set the logging to verbose
@@ -17,7 +17,7 @@
  * @property {Boolean} silent Disables console output
  * @property {String} databaseURI The full URI to your mongodb database
  * @property {Any} databaseOptions Options to pass to the mongodb client
- * @property {Adapter} databaseAdapter Adapter module for the database
+ * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
  * @property {String} cloud Full path to your cloud code main.js
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {String} clientKey Key for iOS, MacOS, tvOS clients
@@ -28,7 +28,7 @@
  * @property {String} webhookKey Key sent with outgoing webhook calls
  * @property {String} fileKey Key for your files
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
- * @property {Array} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users.
+ * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users.
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anon users, defaults to true
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Any} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
@@ -38,8 +38,8 @@
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration
  * @property {Any} accountLockout account lockout policy for failed login attempts
  * @property {Any} passwordPolicy Password policy for enforcing password related rules
- * @property {Adapter} cacheAdapter Adapter module for the cache
- * @property {Adapter} emailAdapter Adapter module for the email sending
+ * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
+ * @property {Adapter<MailAdapter>} emailAdapter Adapter module for the email sending
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {CustomPagesOptions} customPages custom pages for password validation and reset
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
@@ -72,9 +72,9 @@
 
 /**
  * @interface LiveQueryOptions
- * @property {Array} classNames parse-server's LiveQuery classNames
+ * @property {String[]} classNames parse-server's LiveQuery classNames
  * @property {String} redisURL parse-server's LiveQuery redisURL
- * @property {Adapter} pubSubAdapter LiveQuery pubsub adapter
+ * @property {Adapter<PubSubAdapter>} pubSubAdapter LiveQuery pubsub adapter
  */
 
 /**
@@ -88,6 +88,6 @@
  * @property {String} logLevel This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO.
  * @property {Number} port The port to run the LiveQuery server. Defaults to 1337.
  * @property {String} redisURL parse-server's LiveQuery redisURL
- * @property {Adapter} pubSubAdapter LiveQuery pubsub adapter
+ * @property {Adapter<PubSubAdapter>} pubSubAdapter LiveQuery pubsub adapter
  */
 
