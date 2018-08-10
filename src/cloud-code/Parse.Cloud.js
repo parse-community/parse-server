@@ -227,7 +227,7 @@ ParseCloud.httpRequest = require("./httpRequest");
 module.exports = ParseCloud;
 
 /**
- * @typedef Parse.Cloud.TriggerRequest
+ * @interface Parse.Cloud.TriggerRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
@@ -240,7 +240,7 @@ module.exports = ParseCloud;
  */
 
 /**
- * @typedef Parse.Cloud.BeforeFindRequest
+ * @interface Parse.Cloud.BeforeFindRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
@@ -253,7 +253,7 @@ module.exports = ParseCloud;
  */
 
 /**
- * @typedef Parse.Cloud.AfterFindRequest
+ * @interface Parse.Cloud.AfterFindRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
@@ -266,7 +266,7 @@ module.exports = ParseCloud;
  */
 
 /**
- * @typedef Parse.Cloud.FunctionRequest
+ * @interface Parse.Cloud.FunctionRequest
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
@@ -274,7 +274,7 @@ module.exports = ParseCloud;
  */
 
 /**
- * @typedef Parse.Cloud.JobRequest
+ * @interface Parse.Cloud.JobRequest
  * @property {Object} params The params passed to the background job.
  * @property {function} message If message is called with a string argument, will update the current message to be stored in the job status.
  */

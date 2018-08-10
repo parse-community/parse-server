@@ -24,7 +24,7 @@ module.exports.ParseServerOptions = {
   },
   "masterKeyIps": {
     "env": "PARSE_SERVER_MASTER_KEY_IPS",
-    "help": "Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)",
+    "help": "Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)",
     "action": parsers.arrayParser,
     "default": []
   },
@@ -49,7 +49,7 @@ module.exports.ParseServerOptions = {
   },
   "scheduledPush": {
     "env": "PARSE_SERVER_SCHEDULED_PUSH",
-    "help": "Configuration for push scheduling. Defaults to false.",
+    "help": "Configuration for push scheduling, defaults to false.",
     "action": parsers.booleanParser,
     "default": false
   },
@@ -84,7 +84,7 @@ module.exports.ParseServerOptions = {
   },
   "databaseURI": {
     "env": "PARSE_SERVER_DATABASE_URI",
-    "help": "The full URI to your mongodb database",
+    "help": "The full URI to your database. Supported databases are mongodb or postgres.",
     "required": true,
     "default": "mongodb://localhost:27017/parse"
   },
@@ -166,7 +166,7 @@ module.exports.ParseServerOptions = {
   },
   "maxUploadSize": {
     "env": "PARSE_SERVER_MAX_UPLOAD_SIZE",
-    "help": "Max file size for uploads. defaults to 20mb",
+    "help": "Max file size for uploads, defaults to 20mb",
     "default": "20mb"
   },
   "verifyUserEmails": {
@@ -183,7 +183,7 @@ module.exports.ParseServerOptions = {
   },
   "emailVerifyTokenValidityDuration": {
     "env": "PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION",
-    "help": "Email verification token validity duration",
+    "help": "Email verification token validity duration, in seconds",
     "action": parsers.numberParser("emailVerifyTokenValidityDuration")
   },
   "accountLockout": {
@@ -203,7 +203,7 @@ module.exports.ParseServerOptions = {
   },
   "emailAdapter": {
     "env": "PARSE_SERVER_EMAIL_ADAPTER",
-    "help": "Adapter module for the email sending",
+    "help": "Adapter module for email sending",
     "action": parsers.moduleOrObjectParser
   },
   "publicServerURL": {
@@ -264,7 +264,7 @@ module.exports.ParseServerOptions = {
   },
   "enableSingleSchemaCache": {
     "env": "PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE",
-    "help": "Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request.",
+    "help": "Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.",
     "action": parsers.booleanParser,
     "default": false
   },
@@ -282,13 +282,13 @@ module.exports.ParseServerOptions = {
   },
   "port": {
     "env": "PORT",
-    "help": "The port to run the ParseServer. defaults to 1337.",
+    "help": "The port to run the ParseServer, defaults to 1337.",
     "action": parsers.numberParser("port"),
     "default": 1337
   },
   "host": {
     "env": "PARSE_SERVER_HOST",
-    "help": "The host to serve ParseServer on. defaults to 0.0.0.0",
+    "help": "The host to serve ParseServer on, defaults to 0.0.0.0",
     "default": "0.0.0.0"
   },
   "mountPath": {
@@ -370,21 +370,21 @@ module.exports.LiveQueryServerOptions = {
   },
   "websocketTimeout": {
     "env": "PARSE_LIVE_QUERY_SERVER_WEBSOCKET_TIMEOUT",
-    "help": "Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients. Defaults to 10 * 1000 ms (10 s).",
+    "help": "Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).",
     "action": parsers.numberParser("websocketTimeout")
   },
   "cacheTimeout": {
     "env": "PARSE_LIVE_QUERY_SERVER_CACHE_TIMEOUT",
-    "help": "Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details. Defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).",
+    "help": "Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).",
     "action": parsers.numberParser("cacheTimeout")
   },
   "logLevel": {
     "env": "PARSE_LIVE_QUERY_SERVER_LOG_LEVEL",
-    "help": "This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO."
+    "help": "This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE, defaults to INFO."
   },
   "port": {
     "env": "PARSE_LIVE_QUERY_SERVER_PORT",
-    "help": "The port to run the LiveQuery server. Defaults to 1337.",
+    "help": "The port to run the LiveQuery server, defaults to 1337.",
     "action": parsers.numberParser("port"),
     "default": 1337
   },
