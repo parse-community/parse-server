@@ -1,0 +1,16 @@
+{
+  "name": "@parse/init",
+  "version": "0.0.1",
+  "description": "Initialize easily new parse-servers",
+  "main": "init.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Florent Vilmart",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.1",
+    "inquirer": "^6.1.0",
+    "shelljs": "^0.8.2"
+  }
+}
