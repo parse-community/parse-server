@@ -1,6 +1,6 @@
 // Helper functions for accessing the google API.
 var Parse = require('parse/node').Parse;
-const { request } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 
 function validateIdToken(id, token) {
   return googleRequest("tokeninfo?id_token=" + token)
@@ -48,7 +48,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function googleRequest(path) {
-  return request("https://www.googleapis.com/oauth2/v3/" + path);
+  return httpsRequest.request("https://www.googleapis.com/oauth2/v3/" + path);
 }
 
 module.exports = {

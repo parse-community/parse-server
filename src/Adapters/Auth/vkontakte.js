@@ -2,7 +2,7 @@
 
 // Helper functions for accessing the vkontakte API.
 
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var logger = require('../../logger').default;
 
@@ -41,7 +41,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(host, path) {
-  return get("https://" + host + "/" + path);
+  return httpsRequest.get("https://" + host + "/" + path);
 }
 
 module.exports = {

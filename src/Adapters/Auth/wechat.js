@@ -1,5 +1,5 @@
 // Helper functions for accessing the WeChat Graph API.
-var { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
@@ -19,7 +19,7 @@ function validateAppId() {
 
 // A promisey wrapper for WeChat graph requests.
 function graphRequest(path) {
-  return get('https://api.weixin.qq.com/sns/' + path);
+  return httpsRequest.get('https://api.weixin.qq.com/sns/' + path);
 }
 
 module.exports = {

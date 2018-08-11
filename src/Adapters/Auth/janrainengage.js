@@ -1,5 +1,5 @@
 // Helper functions for accessing the Janrain Engage API.
-var { request } = require('./httpsRequest');
+var httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
 
@@ -41,7 +41,7 @@ function apiRequest(api_key, auth_token) {
     }
   };
 
-  return request(post_options, post_data);
+  return httpsRequest.request(post_options, post_data);
 }
 
 module.exports = {

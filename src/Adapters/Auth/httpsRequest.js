@@ -1,12 +1,15 @@
 const https = require('https');
 
-function makeCallback(resolve, reject) {
+function makeCallback(resolve, reject, noJSON) {
   return function(res) {
     let data = '';
     res.on('data', (chunk) => {
       data += chunk;
     });
     res.on('end', () => {
+      if (noJSON) {
+        return resolve(data);
+      }
       try {
         data = JSON.parse(data);
       } catch(e) {
@@ -19,10 +22,10 @@ function makeCallback(resolve, reject) {
 }
 
 // A promisey wrapper for FB graph requests.
-function get(path) {
+function get(options, noJSON = false) {
   return new Promise((resolve, reject) => {
     https
-      .get(path, makeCallback(resolve, reject))
+      .get(options, makeCallback(resolve, reject, noJSON))
       .on('error', reject);
   });
 }

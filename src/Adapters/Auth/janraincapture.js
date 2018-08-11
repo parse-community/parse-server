@@ -1,7 +1,7 @@
 // Helper functions for accessing the Janrain Capture API.
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
@@ -30,7 +30,7 @@ function request(host, access_token) {
     'attribute_name': 'uuid' // we only need to pull the uuid for this access token to make sure it matches
   });
 
-  return get({ host: host, path: '/entity?' + query_string_data });
+  return httpsRequest.get({ host: host, path: '/entity?' + query_string_data });
 }
 
 module.exports = {

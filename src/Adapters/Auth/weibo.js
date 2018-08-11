@@ -1,5 +1,5 @@
 // Helper functions for accessing the weibo Graph API.
-var { request } = require('./httpsRequest');
+var httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
 
@@ -32,7 +32,7 @@ function graphRequest(access_token) {
       'Content-Length': Buffer.byteLength(postData)
     }
   };
-  return request(options, postData);
+  return httpsRequest.request(options, postData);
 }
 
 module.exports = {

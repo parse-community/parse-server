@@ -1,9 +1,9 @@
 const crypto = require('crypto');
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 const Parse  = require('parse/node').Parse;
 
 const graphRequest = (path) => {
-  return get(`https://graph.accountkit.com/v1.1/${path}`);
+  return httpsRequest.get(`https://graph.accountkit.com/v1.1/${path}`);
 };
 
 function getRequestPath(authData, options) {

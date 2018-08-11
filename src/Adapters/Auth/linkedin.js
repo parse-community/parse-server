@@ -1,6 +1,6 @@
 // Helper functions for accessing the linkedin API.
 var Parse = require('parse/node').Parse;
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
@@ -30,7 +30,7 @@ function request(path, access_token, is_mobile_sdk) {
   if(is_mobile_sdk) {
     headers['x-li-src'] = 'msdk';
   }
-  return get({
+  return httpsRequest.get({
     host: 'api.linkedin.com',
     path: '/v1/' + path,
     headers: headers

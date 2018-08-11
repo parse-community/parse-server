@@ -1,5 +1,5 @@
 // Helper functions for accessing the Spotify API.
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
@@ -36,7 +36,7 @@ function validateAppId(appIds, authData) {
 
 // A promisey wrapper for Spotify API requests.
 function request(path, access_token) {
-  return get({
+  return httpsRequest.get({
     host: 'api.spotify.com',
     path: '/v1/' + path,
     headers: {

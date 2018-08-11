@@ -3,9 +3,19 @@ const Config = require("../lib/Config");
 const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
+const responses = {
+  instagram: { data: { id: 'userId' } },
+  janrainengage: { stat: 'ok', profile: { identifier: 'userId' }},
+  janraincapture: { stat: 'ok', result: 'userId' },
+  vkontakte: { response: { user_id: 'userId'}},
+  google: { sub: 'userId' },
+  wechat: { errcode: 0 },
+  weibo: { uid: 'userId' },
+  qq: 'callback( {"openid":"userId"} );' // yes it's like that, run eval in the client :P
+}
 
 describe('AuthenticationProviders', function() {
-  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
+  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte", "qq", "spotify", "wechat", "weibo"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       const provider = require("../lib/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -17,6 +27,32 @@ describe('AuthenticationProviders', function() {
       authDataPromise.then(()=>{}, ()=>{});
       validateAppIdPromise.then(()=>{}, ()=>{});
       done();
+    });
+
+    it(`should provide the right responses for adapter ${providerName}`, async () => {
+      if (providerName === 'twitter') {
+        return;
+      }
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake((options) => {
+        if (options === "https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.59&grant_type=client_credentials") {
+          return {
+            access_token: 'access_token'
+          }
+        }
+        return Promise.resolve(responses[providerName] || { id: 'userId' });
+      });
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'request').and.callFake(() => {
+        return Promise.resolve(responses[providerName] || { id: 'userId' });
+      });
+      const provider = require("../lib/Adapters/Auth/" + providerName);
+      let params = {};
+      if (providerName === 'vkontakte') {
+        params = {
+          appIds: 'appId',
+          appSecret: 'appSecret'
+        }
+      }
+      await provider.validateAuthData({ id: 'userId' }, params);
     });
   });
 

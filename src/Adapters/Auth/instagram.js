@@ -1,6 +1,6 @@
 // Helper functions for accessing the instagram API.
 var Parse = require('parse/node').Parse;
-const { get } = require('./httpsRequest');
+const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
@@ -22,7 +22,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(path) {
-  return get("https://api.instagram.com/v1/" + path);
+  return httpsRequest.get("https://api.instagram.com/v1/" + path);
 }
 
 module.exports = {
