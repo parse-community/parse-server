@@ -1,5 +1,5 @@
 // Helper functions for accessing the Facebook Graph API.
-var https = require('https');
+var { get } = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
@@ -36,24 +36,7 @@ function validateAppId(appIds, authData) {
 
 // A promisey wrapper for FB graph requests.
 function graphRequest(path) {
-  return new Promise(function(resolve, reject) {
-    https.get('https://graph.facebook.com/' + path, function(res) {
-      var data = '';
-      res.on('data', function(chunk) {
-        data += chunk;
-      });
-      res.on('end', function() {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function() {
-      reject('Failed to validate this access token with Facebook.');
-    });
-  });
+  return get('https://graph.facebook.com/' + path);
 }
 
 module.exports = {

@@ -1,32 +1,9 @@
 const crypto = require('crypto');
-const https = require('https');
+const { get } = require('./httpsRequest');
 const Parse  = require('parse/node').Parse;
 
 const graphRequest = (path) => {
-  return new Promise((resolve, reject) => {
-    https.get(`https://graph.accountkit.com/v1.1/${path}`, (res) => {
-      var data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        try {
-          data = JSON.parse(data);
-          if (data.error) {
-            // when something wrong with fb graph request (token corrupted etc.)
-            // instead of network issue
-            reject(data.error);
-          } else {
-            resolve(data);
-          }
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', function () {
-      reject('Failed to validate this access token with Facebook Account Kit.');
-    });
-  });
+  return get(`https://graph.accountkit.com/v1.1/${path}`);
 };
 
 function getRequestPath(authData, options) {
@@ -60,6 +37,9 @@ function validateAppId(appIds, authData, options) {
 function validateAuthData(authData, options) {
   return graphRequest(getRequestPath(authData, options))
     .then(data => {
+      if (data && data.error) {
+        throw data.error;
+      }
       if (data && data.id == authData.id) {
         return;
       }

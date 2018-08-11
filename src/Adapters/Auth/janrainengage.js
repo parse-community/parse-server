@@ -1,11 +1,11 @@
 // Helper functions for accessing the Janrain Engage API.
-var https = require('https');
+var { request } = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var querystring = require('querystring');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
-  return request(options.api_key, authData.auth_token)
+  return apiRequest(options.api_key, authData.auth_token)
     .then((data) => {
       //successful response will have a "stat" (status) of 'ok' and a profile node with an identifier
       //see: http://developers.janrain.com/overview/social-login/identity-providers/user-profile-data/#normalized-user-profile-data
@@ -23,7 +23,7 @@ function validateAppId() {
 }
 
 // A promisey wrapper for api requests
-function request(api_key, auth_token) {
+function apiRequest(api_key, auth_token) {
 
   var post_data = querystring.stringify({
     'token': auth_token,
@@ -41,29 +41,7 @@ function request(api_key, auth_token) {
     }
   };
 
-  return new Promise(function (resolve, reject) {
-    // Create the post request.
-    var post_req = https.request(post_options, function (res) {
-      var data = '';
-      res.setEncoding('utf8');
-      // Append data as we receive it from the Janrain engage server.
-      res.on('data', function (d) {
-        data += d;
-      });
-      // Once we have all the data, we can parse it and return the data we want.
-      res.on('end', function () {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    });
-
-    post_req.write(post_data);
-    post_req.end();
-  });
+  return request(post_options, post_data);
 }
 
 module.exports = {
