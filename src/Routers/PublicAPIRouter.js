@@ -172,14 +172,55 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  /**
+   * loading the template for invalid verification link page
+   * this method returns the template for the page stored in memory
+   * on first access it will load the template file from disk
+   */
+  loadInvalidVerificationLinkPageTemplate(config) {
+    if (this.invalid_verification_link_page_template_file) {
+      return this.invalid_verification_link_page_template_file;
+    } else {
+      this.invalid_verification_link_page_template_file = this.loadPageTemplateFile("invalid_verification_link");
+      if (this.invalid_verification_link_page_template_file) {
+        this.invalid_verification_link_page_template_file = this.invalid_verification_link_page_template_file.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
+      }
+      return this.invalid_verification_link_page_template_file;
+    }
+  }
+
+  loadPageTemplateFile(filename) {
+    fs.readFile(path.resolve(views, filename), 'utf-8', (err, data) => {
+      if (err) {
+        return null;
+      }
+      return data;
+    });
+  }
+
   invalidVerificationLink(req) {
     const config = req.config;
-    if (req.query.username && req.params.appId) {
-      const params = qs.stringify({username: req.query.username, appId: req.params.appId});
+    if (!config.publicServerURL) {
       return Promise.resolve({
-        status: 302,
-        location: `${config.invalidVerificationLinkURL}?${params}`
+        status: 404,
+        text: 'Not found.'
       });
+    }
+
+    if (req.query.username && req.params.appId) {
+      // load page template from file or from memory
+      var invalid_verification_link_page = this.loadInvalidVerificationLinkPageTemplate(config);
+      if (invalid_verification_link_page) {
+        // replace dynamic template attributes
+        invalid_verification_link_page = invalid_verification_link_page.replace("USERNAME", `'${req.query.username}'`);
+        invalid_verification_link_page = invalid_verification_link_page.replace("APPID", `'${req.params.appId}'`);
+        // send page to the client
+        return Promise.resolve({
+          text: invalid_verification_link_page
+        });
+      } else {
+        Promise.reject("Could not load invalid_verification_link template.");
+      }
     } else {
       return this.invalidLink(req);
     }
