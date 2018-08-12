@@ -41,25 +41,10 @@ export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
-    const data = body.pipeline || body;
-    let pipeline = [];
-
-    if (Array.isArray(data)) {
-      pipeline = data.map((stage) => {
-        const stageName = Object.keys(stage)[0];
-        return this.transformStage(stageName, stage);
-      });
-    } else {
-      const stages = [];
-      for (const stageName in data) {
-        stages.push(this.transformStage(stageName, data));
-      }
-      pipeline = stages;
-    }
     if (body.distinct) {
       options.distinct = String(body.distinct);
     }
-    options.pipeline = pipeline;
+    options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
@@ -73,7 +58,48 @@ export class AggregateRouter extends ClassesRouter {
     });
   }
 
-  transformStage(stageName, stage) {
+  /* Builds a pipeline from the body. Originally the body could be passed as a single object,
+   * and now we support many options
+   *
+   * Array
+   *
+   * body: [{
+   *   group: { objectId: '$name' },
+   * }]
+   *
+   * Object
+   *
+   * body: {
+   *   group: { objectId: '$name' },
+   * }
+   *
+   *
+   * Pipeline Operator with an Array or an Object
+   *
+   * body: {
+   *   pipeline: {
+   *     group: { objectId: '$name' },
+   *   }
+   * }
+   *
+   */
+  static getPipeline(body) {
+    let pipeline = body.pipeline || body;
+
+    if (!Array.isArray(pipeline)) {
+      pipeline = Object.keys(pipeline).map((key) => { return { [key]: pipeline[key] } });
+    }
+
+    return pipeline.map((stage) => {
+      const keys = Object.keys(stage);
+      if (keys.length != 1) {
+        throw new Error(`Pipeline stages should only have one key found ${keys.join(' ')}`);
+      }
+      return AggregateRouter.transformStage(keys[0], stage);
+    });
+  }
+
+  static transformStage(stageName, stage) {
     if (ALLOWED_KEYS.indexOf(stageName) === -1) {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,

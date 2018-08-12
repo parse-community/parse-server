@@ -100,7 +100,7 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
-  it('group by field with pipeline key', (done) => {
+  it('group by pipeline operator', async () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         pipeline: {
@@ -108,17 +108,14 @@ describe('Parse.Query Aggregate testing', () => {
         }
       }
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
-        expect(resp.results.length).toBe(3);
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[0].objectId).not.toBe(undefined);
-        expect(resp.results[1].objectId).not.toBe(undefined);
-        expect(resp.results[2].objectId).not.toBe(undefined);
-        done();
-      }).catch(done.fail);
+    const resp = await rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+    expect(resp.results.length).toBe(3);
+    expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[0].objectId).not.toBe(undefined);
+    expect(resp.results[1].objectId).not.toBe(undefined);
+    expect(resp.results[2].objectId).not.toBe(undefined);
   });
 
   it('group by empty object', (done) => {
