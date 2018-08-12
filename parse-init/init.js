@@ -38,13 +38,13 @@ async function getInstallationsDir() {
     ]);
     target_directory = answer.target_directory;
   }
-  console.log(`This will setup parse-server in ${target_directory}`);
+  console.log(`This will setup parse-server in ${chalk.bold(target_directory)}`);
   await confirm(`Do you want to continue?`);
-  console.log(`Setting up parse-server in ${target_directory}`);
+  console.log(`Setting up parse-server in ${chalk.bold(target_directory)}`);
   return target_directory;
 }
 
-async function getAppConfiguration() {
+function getAppConfiguration() {
   const questions = [
     {
       type: 'input',
@@ -74,10 +74,10 @@ async function getAppConfiguration() {
     }
   ];
 
-  return await inquirer.prompt(questions);
+  return inquirer.prompt(questions);
 }
 
-async function confirm(message, defaults = true) {
+function confirm(message, defaults = true) {
   return inquirer.prompt([
     {
       type: 'confirm',
@@ -95,59 +95,60 @@ async function confirm(message, defaults = true) {
 (async function main() {
   let target_directory = await getInstallationsDir();
   target_directory = path.resolve(target_directory);
-  if (!fs.existsSync(target_directory)) {
-    shell.mkdir(target_directory);
-  }
-  if (fs.existsSync(`${target_directory}/package.json`)) {
-    await confirm(`package.json exists\nDo you want to continue? ${chalk.red(`this will erase your configuration`)}`, false);
+  if (fs.existsSync(target_directory)) {
+    console.log(chalk.red(`${chalk.bold(target_directory)} already exists.\naborting...`));
+    process.exit(1);
   }
 
-  if (fs.existsSync(`${target_directory}/config.js`)) {
-    await confirm(`config.js exists\nDo you want to continue? \n${chalk.red(`this will erase your configuration`)}`, false);
-  }
+  shell.mkdir(target_directory);
+
   const config = await getAppConfiguration();
+  const {
+    masterKey,
+    databaseURI
+  } = config;
+
+  // Cleanup sensitive info
+  delete config.masterKey;
+  delete config.databaseURI;
+
   shell.cd(target_directory);
 
   const packageContent = {
     scripts: {
-      start: "parse-server config.js"
+      start: "node -r dotenv/config node_modules/.bin/parse-server config.js"
     }
   };
   fs.writeFileSync(
     target_directory + "/package.json",
-    JSON.stringify(packageContent, null, 2) + "\n"
+    JSON.stringify(packageContent, null, 2) + '\n'
   );
+  ok('Added package.json');
 
   fs.writeFileSync(
-    target_directory + "/config.js",
-    `module.exports = ` + JSON.stringify(config, null, 2) + ";\n"
+    target_directory + '/config.js',
+    'module.exports = ' + JSON.stringify(config, null, 2) + ';\n'
   );
+  ok('Added config.js');
 
-  if (fs.existsSync(target_directory + '/cloud')) {
-    ok('cloud/ exists');
-  } else {
-    shell.mkdir(target_directory + '/cloud');
-    ok('Created cloud/');
-  }
+  fs.writeFileSync(
+    target_directory + '/.env',
+    `PARSE_SERVER_MASTER_KEY=${masterKey}\nPARSE_SERVER_DATABASE_URI=${databaseURI}\n`
+  )
+  ok('Added .env');
 
-  if (fs.existsSync(target_directory + '/cloud/main.js')) {
-    ok('cloud/main.js exists');
-  } else {
-    fs.writeFileSync(target_directory + '/cloud/main.js', `// Cloud Code entry point\n`);
-    ok('Created cloud/main.js');
-  }
+  shell.mkdir(target_directory + '/cloud');
+  ok('Created cloud/');
 
-  if (fs.existsSync(target_directory + '/public')) {
-    ok('public/ exists');
-  } else {
-    shell.mkdir(target_directory + '/public');
-    ok('Created public/');
-  }
+  fs.writeFileSync(target_directory + '/cloud/main.js', `// Cloud Code entry point\n`);
+  ok('Created cloud/main.js');
+  shell.mkdir(target_directory + '/public');
+  ok('Created public/');
 
   if (useYarn) {
-    shell.exec("yarn add parse-server");
+    shell.exec("yarn add parse-server dotenv");
   } else {
-    shell.exec("npm install parse-server --save");
+    shell.exec("npm install parse-server dotenv --save");
   }
 
   console.log(chalk.green(`parse-server is installed in \n\t${target_directory}!\n`));

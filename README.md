@@ -208,7 +208,7 @@ Logs are also be viewable in Parse Dashboard.
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
-## Inside a Docker container (alternate options)
+## Inside a Docker container
 
 ```
 $ git clone https://github.com/parse-community/parse-server
