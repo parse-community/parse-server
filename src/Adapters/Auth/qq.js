@@ -31,12 +31,7 @@ function parseResponseData(data) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
   }
   data = data.substring(starPos + 1,endPos - 1);
-  try {
-    data = JSON.parse(data);
-  } catch(e) {
-    throw e;
-  }
-  return data;
+  return JSON.parse(data);
 }
 
 module.exports = {

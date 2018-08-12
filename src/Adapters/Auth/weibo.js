@@ -21,7 +21,7 @@ function validateAppId() {
 // A promisey wrapper for weibo graph requests.
 function graphRequest(access_token) {
   var postData = querystring.stringify({
-    "access_token":access_token
+    "access_token": access_token
   });
   var options = {
     hostname: 'api.weibo.com',

@@ -21,7 +21,6 @@ function makeCallback(resolve, reject, noJSON) {
   };
 }
 
-// A promisey wrapper for FB graph requests.
 function get(options, noJSON = false) {
   return new Promise((resolve, reject) => {
     https
