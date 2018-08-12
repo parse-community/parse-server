@@ -1,6 +1,6 @@
 // Helper functions for accessing the meetup API.
-var https = require('https');
 var Parse = require('parse/node').Parse;
+const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
@@ -22,29 +22,12 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(path, access_token) {
-  return new Promise(function(resolve, reject) {
-    https.get({
-      host: 'api.meetup.com',
-      path: '/2/' + path,
-      headers: {
-        'Authorization': 'bearer ' + access_token
-      }
-    }, function(res) {
-      var data = '';
-      res.on('data', function(chunk) {
-        data += chunk;
-      });
-      res.on('end', function() {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function() {
-      reject('Failed to validate this access token with Meetup.');
-    });
+  return httpsRequest.get({
+    host: 'api.meetup.com',
+    path: '/2/' + path,
+    headers: {
+      'Authorization': 'bearer ' + access_token
+    }
   });
 }
 
