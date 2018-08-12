@@ -12,15 +12,14 @@ Parse Server is an [open source version of the Parse backend](http://blog.parsep
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
 - [Getting Started](#getting-started)
-    - [Running Parse Server](#running-parse-server)
-        - [Locally](#locally)
-        - [Docker](#inside-a-docker-container)
-        - [Saving an Object](#saving-your-first-object)
-        - [Connect an SDK](#connect-your-app-to-parse-server)
+    - [Creating your first application](#creating-your-first-application)
+    - [Saving an Object](#saving-your-first-object)
+    - [Connect an SDK](#connect-your-app-to-parse-server)
     - [Running elsewhere](#running-parse-server-elsewhere)
         - [Sample Application](#parse-server-sample-application)
         - [Parse Server + Express](#parse-server--express)
     - [Logging](#logging)
+    - [Docker](#inside-a-docker-container)
 - [Documentation](#documentation)
     - [Configuration](#configuration)
         - [Basic Options](#basic-options)
@@ -40,35 +39,43 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
-April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/](http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/)
+Parse-Server is built on the top of node. Before you can get started, you should have the latest version of node and npm installed.
+We always recommend you run your server on the LTS versions as we focus on providing the most stability on those versions.
 
-The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
+You can find the latest versions of [node.js here](https://nodejs.org/en/).
 
-## Running Parse Server
+In order to be fully functional, `parse-server` requires a database to run. You'll need to either have [mongodb](https://www.mongodb.com/download-center) or [postgres](https://www.postgresql.org/download/) setup, locally or remotely.
 
-### Locally
+There are many service providers that offer hosting of mongodb and postgres.
+
+:warning: Before creating your first app, your DB should be accessible and running.
+
+## Creating your first application
+
+In order to create your first application, you can use the `@parse/init` project.
+
+The `@parse/init` project is an interactive command line tool that bootstraps a functional parse-server setup on your local machine.
+
+In order to create your first parse app in the `my-parse-app` folder, run the following command:
+
+```sh
+$ npx @parse/init my-parse-app
 ```
-$ npm install -g parse-server mongodb-runner
-$ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
+
+The script above will create a fully functional `parse-server` setup in `my-parse-app` folder with:
+
+- `package.json`: the nodejs package definition, that defines the dependencies for your project.
+- `cloud`: the folder for your cloud code.
+- `cloud/main.js`: the main entrypoint for cloud code.
+- `public`: the folder for publicly accessible static contents.
+
+You can start the server with the following command:
+
+```sh
+$ npm start
 ```
-***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
- 
 
-### Inside a Docker container
-```
-$ docker build --tag parse-server .
-$ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
-```  
-
-You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
-
-That's it! You are now running a standalone version of Parse Server on your machine.
-
-**Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
-
-### Saving your first object
+## Saving your first object
 
 Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). Run the following:
 
@@ -134,7 +141,7 @@ $ curl -X GET \
 
 To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
 
-### Connect your app to Parse Server
+## Connect your app to Parse Server
 
 Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://github.com/parse-community/parse-server/wiki/Parse-Server-Guide#using-parse-sdks-with-parse-server).
 
@@ -200,6 +207,22 @@ Logs are also be viewable in Parse Dashboard.
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+## Inside a Docker container (alternate options)
+
+```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
+$ docker build --tag parse-server .
+$ docker run --name my-mongo -d mongo
+$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+```  
+
+You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
+
+That's it! You are now running a standalone version of Parse Server on your machine.
+
+**Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
 # Documentation
 
