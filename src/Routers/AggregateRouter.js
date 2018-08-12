@@ -4,7 +4,7 @@ import * as middleware from '../middlewares';
 import Parse         from 'parse/node';
 import UsersRouter   from './UsersRouter';
 
-const BASE_KEYS = ['where', 'distinct'];
+const BASE_KEYS = ['where', 'distinct', 'pipeline'];
 
 const PIPELINE_KEYS = [
   'addFields',
@@ -41,17 +41,18 @@ export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
+    const data = body.pipeline || body;
     let pipeline = [];
 
-    if (Array.isArray(body)) {
-      pipeline = body.map((stage) => {
+    if (Array.isArray(data)) {
+      pipeline = data.map((stage) => {
         const stageName = Object.keys(stage)[0];
         return this.transformStage(stageName, stage);
       });
     } else {
       const stages = [];
-      for (const stageName in body) {
-        stages.push(this.transformStage(stageName, body));
+      for (const stageName in data) {
+        stages.push(this.transformStage(stageName, data));
       }
       pipeline = stages;
     }

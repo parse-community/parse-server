@@ -100,6 +100,27 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('group by field with pipeline key', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        pipeline: {
+          group: { objectId: '$name' },
+        }
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(3);
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).not.toBe(undefined);
+        expect(resp.results[1].objectId).not.toBe(undefined);
+        expect(resp.results[2].objectId).not.toBe(undefined);
+        done();
+      }).catch(done.fail);
+  });
+
   it('group by empty object', (done) => {
     const obj = new TestObject();
     const pipeline = [{
