@@ -8,6 +8,7 @@ const path = require('path');
 const CWD = process.cwd();
 const crypto = require('crypto');
 const DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017/parse';
+const CHECK = '✓';
 
 let useYarn = false;
 if (shell.which("yarn")) {
@@ -18,20 +19,29 @@ function generateKey() {
   return crypto.randomBytes(16).toString('hex');
 }
 
+function ok(message) {
+  console.log(chalk.green(`${CHECK} ${message}`));
+}
+
 async function getInstallationsDir() {
-  const questions = [
-    {
-      type: 'input',
-      name: 'target_directory',
-      message: 'Enter an installation directory',
-      default: CWD,
-    },
-  ];
-  const answers = await inquirer.prompt(questions);
-  console.log(`This will setup parse-server in ${answers.target_directory}`);
+  let target_directory;
+  if (process.argv.length == 3) {
+    target_directory =  process.argv[2];
+  } else {
+    const answer = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'target_directory',
+        message: 'Enter an installation directory',
+        default: CWD,
+      },
+    ]);
+    target_directory = answer.target_directory;
+  }
+  console.log(`This will setup parse-server in ${target_directory}`);
   await confirm(`Do you want to continue?`);
-  console.log(`Setting up parse-server in ${answers.target_directory}`);
-  return answers;
+  console.log(`Setting up parse-server in ${target_directory}`);
+  return target_directory;
 }
 
 async function getAppConfiguration() {
@@ -83,7 +93,7 @@ async function confirm(message, defaults = true) {
 }
 
 (async function main() {
-  let { target_directory } = await getInstallationsDir();
+  let target_directory = await getInstallationsDir();
   target_directory = path.resolve(target_directory);
   if (!fs.existsSync(target_directory)) {
     shell.mkdir(target_directory);
@@ -98,7 +108,11 @@ async function confirm(message, defaults = true) {
   const config = await getAppConfiguration();
   shell.cd(target_directory);
 
-  const packageContent = { scripts: { start: "parse-server config.js" } };
+  const packageContent = {
+    scripts: {
+      start: "parse-server config.js"
+    }
+  };
   fs.writeFileSync(
     target_directory + "/package.json",
     JSON.stringify(packageContent, null, 2) + "\n"
@@ -109,13 +123,35 @@ async function confirm(message, defaults = true) {
     `module.exports = ` + JSON.stringify(config, null, 2) + ";\n"
   );
 
+  if (fs.existsSync(target_directory + '/cloud')) {
+    ok('cloud/ exists');
+  } else {
+    shell.mkdir(target_directory + '/cloud');
+    ok('Created cloud/');
+  }
+
+  if (fs.existsSync(target_directory + '/cloud/main.js')) {
+    ok('cloud/main.js exists');
+  } else {
+    fs.writeFileSync(target_directory + '/cloud/main.js', `// Cloud Code entry point\n`);
+    ok('Created cloud/main.js');
+  }
+
+  if (fs.existsSync(target_directory + '/public')) {
+    ok('public/ exists');
+  } else {
+    shell.mkdir(target_directory + '/public');
+    ok('Created public/');
+  }
+
   if (useYarn) {
     shell.exec("yarn add parse-server");
   } else {
     shell.exec("npm install parse-server --save");
   }
 
-  console.log(chalk.green(`parse-server is installed in ${target_directory}!\n`));
+  console.log(chalk.green(`parse-server is installed in \n\t${target_directory}!\n`));
+  await confirm('Do you want to start the server now?');
   if (useYarn) {
     shell.exec("yarn start");
   } else {
