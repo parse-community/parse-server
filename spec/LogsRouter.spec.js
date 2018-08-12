@@ -87,8 +87,8 @@ describe('LogsRouter', () => {
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(200);
           // 4th entry is our actual GET request
-          expect(body[3].url).toEqual('/1/login?username=test&password=********');
-          expect(body[3].message).toEqual('REQUEST for [GET] /1/login?username=test&password=********: {}');
+          expect(body[2].url).toEqual('/1/login?username=test&password=********');
+          expect(body[2].message).toEqual('REQUEST for [GET] /1/login?username=test&password=********: {}');
           done();
         });
       });
@@ -114,8 +114,8 @@ describe('LogsRouter', () => {
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(200);
           // 4th entry is our actual GET request
-          expect(body[3].url).toEqual('/1/login?username=test&password=********');
-          expect(body[3].message).toEqual('REQUEST for [GET] /1/login?username=test&password=********: {}');
+          expect(body[2].url).toEqual('/1/login?username=test&password=********');
+          expect(body[2].message).toEqual('REQUEST for [GET] /1/login?username=test&password=********: {}');
           done();
         });
       });
@@ -144,8 +144,8 @@ describe('LogsRouter', () => {
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(200);
           // 4th entry is our actual GET request
-          expect(body[3].url).toEqual('/1/login');
-          expect(body[3].message).toEqual('REQUEST for [POST] /1/login: {}');
+          expect(body[2].url).toEqual('/1/login');
+          expect(body[2].message).toEqual('REQUEST for [POST] /1/login: {}');
           done();
         });
       });
