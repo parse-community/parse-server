@@ -1,15 +1,50 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...master)
+
+### 2.8.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
+
+#### Improvements
+* Adds ability to forward errors to express handler (#4697)
+* Adds ability to increment the push badge with an arbitrary value (#4889)
+* Adds ability to preserve the file names when uploading (#4915)
+* `_User` now follow regular ACL policy. Letting administrator lock user out. (#4860) and (#4898)
+* Ensure dates are properly handled in aggregates (#4743)
+* Aggregates: Improved support for stages sharing the same name
+* Add includeAll option
+* Added verify password to users router and tests. (#4747)
+* Ensure read preference is never overriden, so DB config prevails (#4833)
+* add support for geoWithin.centerSphere queries via withJSON (#4825)
+* Allow sorting an object field (#4806)
+* Postgres: Don't merge JSON fields after save() to keep same behaviour as MongoDB (#4808) (#4815)
+
+#### Dependency updates
+* [commander@2.16.0](https://www.npmjs.com/package/commander)
+* [mongodb@3.1.1](https://www.npmjs.com/package/mongodb)
+* [pg-promise@8.4.5](https://www.npmjs.com/package/pg-promise)
+* [ws@6.0.0](https://www.npmjs.com/package/ws)
+* [bcrypt@3.0.0](https://www.npmjs.com/package/bcrypt)
+* [uws@10.148.1](https://www.npmjs.com/package/uws)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.2.0](https://www.npmjs.com/package/cross-env)
+* [eslint@5.0.0](https://www.npmjs.com/package/eslint)
+* [flow-bin@0.76.0](https://www.npmjs.com/package/flow-bin)
+* [mongodb-runner@4.0.0](https://www.npmjs.com/package/mongodb-runner)
+* [nodemon@1.18.1](https://www.npmjs.com/package/nodemon)
+* [nyc@12.0.2](https://www.npmjs.com/package/nyc)
+* [request-promise@4.2.2](https://www.npmjs.com/package/request-promise)
+* [supports-color@5.4.0](https://www.npmjs.com/package/supports-color)
 
 ### 2.8.3
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.2)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...2.8.3)
 
 * Adds support for JS SDK 2.0 job status header
 
 ### 2.8.2
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...2.8.1)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...2.8.2)
 
 ##### Bug Fixes:
 * Ensure legacy users without ACL's are not locked out, thanks to [Florent Vilmart](https://github.com/flovilmart)
