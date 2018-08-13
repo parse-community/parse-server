@@ -3,10 +3,13 @@
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...master)
 
+#### Improvements:
+* Adds Pipeline Operator to Aggregate Router
+
 ### 2.8.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
 
-#### Improvements
+#### Improvements:
 * Adds ability to forward errors to express handler (#4697)
 * Adds ability to increment the push badge with an arbitrary value (#4889)
 * Adds ability to preserve the file names when uploading (#4915)
