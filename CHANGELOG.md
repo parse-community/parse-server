@@ -6,7 +6,10 @@
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router
 
-#### Dependency updates
+#### Bug Fixes:
+* Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
+
+#### Dependency updates:
 * [@parse/simple-mailgun-adapter@1.1.0](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
 
 ### 2.8.4

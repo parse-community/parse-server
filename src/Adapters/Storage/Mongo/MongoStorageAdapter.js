@@ -470,7 +470,12 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
     const mongoKeys = _.reduce(keys, (memo, key) => {
-      memo[transformKey(className, key, schema)] = 1;
+      if (key === 'ACL') {
+        memo['_rperm'] = 1;
+        memo['_wperm'] = 1;
+      } else {
+        memo[transformKey(className, key, schema)] = 1;
+      }
       return memo;
     }, {});
 
