@@ -6,6 +6,9 @@
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router
 
+#### Bug Fixes:
+* Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
+
 ### 2.8.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
 
