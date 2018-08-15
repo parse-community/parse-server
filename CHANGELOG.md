@@ -6,6 +6,9 @@
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router
 
+#### Dependency updates
+* [@parse/simple-mailgun-adapter@1.1.0](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
+
 ### 2.8.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
 
