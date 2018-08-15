@@ -1437,9 +1437,16 @@ export class PostgresStorageAdapter implements StorageAdapter {
     let columns = '*';
     if (keys) {
       // Exclude empty keys
-      keys = keys.filter((key) => {
-        return key.length > 0;
-      });
+      // Replace ACL by it's keys
+      keys = keys.reduce((memo, key) => {
+        if (key === 'ACL') {
+          memo.push('_rperm');
+          memo.push('_wperm');
+        } else if (key.length > 0) {
+          memo.push(key);
+        }
+        return memo;
+      }, []);
       columns = keys.map((key, index) => {
         if (key === '$score') {
           return `ts_rank_cd(to_tsvector($${2}, $${3}:name), to_tsquery($${4}, $${5}), 32) as score`;
