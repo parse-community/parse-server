@@ -5,7 +5,7 @@ var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
 
-const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt'];
+const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 // restOptions can include:
 //   skip
 //   limit
