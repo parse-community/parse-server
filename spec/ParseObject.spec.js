@@ -1762,6 +1762,38 @@ describe('Parse.Object testing', () => {
     })
   });
 
+  it('should include ACLs with select', (done) => {
+    const score = new Parse.Object("GameScore");
+    const player = new Parse.Object("Player");
+    score.set({
+      "score": 1234
+    });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setPublicWriteAccess(false);
+
+    score.save().then(() => {
+      player.set("gameScore", score);
+      player.set("other", "value");
+      player.setACL(acl);
+      return player.save();
+    }).then(() => {
+      const query = new Parse.Query("Player");
+      query.include("gameScore");
+      query.select("gameScore");
+      return query.find();
+    }).then((res) => {
+      const obj = res[0];
+      const gameScore = obj.get("gameScore");
+      const other = obj.get("other");
+      expect(other).toBeUndefined();
+      expect(gameScore).not.toBeUndefined();
+      expect(gameScore.get("score")).toBe(1234);
+      expect(obj.getACL().getPublicReadAccess()).toBe(true);
+      expect(obj.getACL().getPublicWriteAccess()).toBe(false);
+    }).then(done).catch(done.fail);
+  });
+
   it ('Update object field should store exactly same sent object', async (done) => {
     let object = new TestObject();
 
