@@ -172,7 +172,7 @@ Ensure all the files are properly exported to the final package.
 
 #### Improvements:
 * Improved match aggregate
-* Do not mark the empty pushs as failed 
+* Do not mark the empty push as failed
 * Support pointer in aggregate query
 * Introduces flow types for storage
 * Postgres: Refactoring of Postgres Storage Adapter
