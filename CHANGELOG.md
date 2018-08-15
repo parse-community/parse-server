@@ -9,6 +9,9 @@
 #### Bug Fixes:
 * Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
 
+#### Dependency updates:
+* [@parse/simple-mailgun-adapter@1.1.0](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
+
 ### 2.8.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
 
@@ -175,7 +178,7 @@ Ensure all the files are properly exported to the final package.
 
 #### Improvements:
 * Improved match aggregate
-* Do not mark the empty pushs as failed 
+* Do not mark the empty push as failed
 * Support pointer in aggregate query
 * Introduces flow types for storage
 * Postgres: Refactoring of Postgres Storage Adapter
