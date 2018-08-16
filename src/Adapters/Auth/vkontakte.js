@@ -10,8 +10,8 @@ var logger = require('../../logger').default;
 function validateAuthData(authData, params) {
   return vkOAuth2Request(params).then(function (response) {
     if (response && response.access_token) {
-      return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token + "&v=5.59").then(function (response) {
-        if (response && response.response && response.response.user_id == authData.id) {
+      return request("api.vk.com", "method/users.get?access_token=" + authData.access_token + "&v=5.8").then(function (response) {
+        if (response && response.response && response.response.length && response.response[0].id == authData.id) {
           return;
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
