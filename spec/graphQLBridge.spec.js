@@ -1,9 +1,9 @@
 /*eslint-disable*/
-const GraphQLParseSchema = require('../src/graphql/Schema').GraphQLParseSchema;
-const Config = require('../src/Config');
-const Auth = require('../src/Auth').Auth;
+const GraphQLParseSchema = require('../lib/graphql/Schema').GraphQLParseSchema;
+const Config = require('../lib/Config');
+const Auth = require('../lib/Auth').Auth;
 const { /*print, */printSchema, graphql }  = require('graphql');
-const { addFunction } = require('../src/triggers');
+const { addFunction } = require('../lib/triggers');
 //const { /*print, printSchema,*/ GraphQLID, GraphQLNonNull }  = require('graphql');
 
 let config;
@@ -54,7 +54,7 @@ describe('graphQLbridge', () => {
     }).then(done);
   });
 
-  fit('base test', (done) => {
+  it('base test', (done) => {
     console.log(printSchema(schema));
     done();
       /*
@@ -145,7 +145,7 @@ describe('graphQLbridge', () => {
       `,root, context)*/
   });
 
-  fit('test query', (done) => {
+  it('test query', (done) => {
     const context = {
       config,
       auth: new Auth({config})
