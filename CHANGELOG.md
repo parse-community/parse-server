@@ -7,6 +7,7 @@
 * Adds Pipeline Operator to Aggregate Router
 
 #### Bug Fixes:
+* Fixes issue that would crash the server when mongo objects had undefined values [#4966](https://github.com/parse-community/parse-server/issues/4966)
 * Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
 
 #### Dependency updates:

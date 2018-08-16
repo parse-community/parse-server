@@ -1078,11 +1078,11 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
   case 'string':
   case 'number':
   case 'boolean':
-    return mongoObject;
   case 'undefined':
+    return mongoObject;
   case 'symbol':
   case 'function':
-    throw 'bad value in mongoObjectToParseObject';
+    throw 'bad value in nestedMongoObjectToNestedParseObject';
   case 'object':
     if (mongoObject === null) {
       return null;
@@ -1137,8 +1137,8 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
   case 'string':
   case 'number':
   case 'boolean':
-    return mongoObject;
   case 'undefined':
+    return mongoObject;
   case 'symbol':
   case 'function':
     throw 'bad value in mongoObjectToParseObject';
