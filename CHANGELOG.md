@@ -2,6 +2,8 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...master)
+#### Bug fixes:
+* Fixes issue with vkontatke authentication
 
 
 ### 3.0.0
