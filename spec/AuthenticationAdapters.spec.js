@@ -7,7 +7,7 @@ const responses = {
   instagram: { data: { id: 'userId' } },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' }},
   janraincapture: { stat: 'ok', result: 'userId' },
-  vkontakte: { response: { user_id: 'userId'}},
+  vkontakte: { response: [{ id: 'userId'}]},
   google: { sub: 'userId' },
   wechat: { errcode: 0 },
   weibo: { uid: 'userId' },
