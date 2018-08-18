@@ -24,6 +24,5 @@ fi
 
 npm run docs
 
-rm -rf docs/api/*
 mkdir -p "docs/api/${DEST}"
 cp -R out/* "docs/api/${DEST}"
