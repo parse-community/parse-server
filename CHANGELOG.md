@@ -1,16 +1,43 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...master)
+#### Bug fixes:
+* Fixes issue with vkontatke authentication
+
+
+### 3.0.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...3.0.0)
+
+`parse-server` 3.0.0 comes with brand new handlers for cloud code. It now fully supports promises and async / await.
+For more informations, visit the v3.0.0 [migration guide](https://github.com/parse-community/parse-server/blob/master/3.0.0.md).
+
+#### Breaking changes:
+* Cloud Code handlers have a new interface based on promises.
+* response.success / response.error are removed in Cloud Code
+* Cloud Code runs with Parse-SDK 2.0
+* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}`
 
 #### Improvements:
-* Adds Pipeline Operator to Aggregate Router
+* Adds Pipeline Operator to Aggregate Router.
+* Adds documentations for parse-server's adapters, constructors and more.
+* Adds ability to pass a context object between `beforeSave` and `afterSave` affecting the same object.
 
 #### Bug Fixes:
+* Fixes issue that would crash the server when mongo objects had undefined values [#4966](https://github.com/parse-community/parse-server/issues/4966)
 * Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
 
 #### Dependency updates:
 * [@parse/simple-mailgun-adapter@1.1.0](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
+* [mongodb@3.1.3](https://www.npmjs.com/package/mongodb)
+* [request@2.88.0](https://www.npmjs.com/package/request)
+
+##### Devevelopment Dependencies Updates:
+* [@parse/minami@1.0.0](https://www.npmjs.com/package/@parse/minami)
+* [deep-diff@1.0.2](https://www.npmjs.com/package/deep-diff)
+* [flow-bin@0.79.0](https://www.npmjs.com/package/flow-bin)
+* [jsdoc@3.5.5](https://www.npmjs.com/package/jsdoc)
+* [jsdoc-babel@0.4.0](https://www.npmjs.com/package/jsdoc-babel)
 
 ### 2.8.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.4)
