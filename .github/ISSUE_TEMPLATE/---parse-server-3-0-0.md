@@ -1,20 +1,11 @@
 ---
-name: "\U0001F41B Report an issue"
-about: Report an issue on parse-server
+name: "\U0001F525 parse-server 3.0.0"
+about: Report an issue while migrating to parse-server 3.0.0
 
 ---
 
 <!--- 
-
-**We use GitHub Issues for reporting bugs with parse-server.**
-
-If you have a *question*, you should join the gitter chat where a community of more than 200 parse users gather.
-
-- https://gitter.im/ParsePlatform/Chat
-
-If you have a non-bug question, ask on Stack Overflow or Server Fault: 
-- https://stackoverflow.com/questions/tagged/parse.com 
-- https://serverfault.com/tags/parse
+** Use this template only if you have an issue migrating to parse-server 3.0.0 **
 
 If you have a vulnerability disclosure, please follow our policy available here https://github.com/parse-community/parse-server/blob/master/SECURITY.md
 
@@ -22,6 +13,12 @@ You may also search through existing issues before opening a new one: https://gi
 
 --- Please use this template. If you don't use this template, your issue may be closed without comment. ---
 --->
+
+# Before opening the issue please ensure that you have:
+
+- [ ] [Read the migration guide](https://github.com/parse-community/parse-server/blob/master/3.0.0.md) to parse-server 3.0.0
+- [ ] [Read the migration guide](https://github.com/parse-community/Parse-SDK-JS/blob/master/2.0.0.md) to Parse SDK JS 2.0.0
+
 ### Issue Description
 
 <!--- Describe your issue in as much detail as possible. -->
