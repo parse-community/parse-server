@@ -29,7 +29,7 @@ You may also search through existing issues before opening a new one: https://gi
 
 ### Push Configuration
 
-Please provide a copy of you `push` configuration here, obfuscating any sensitive part.
+Please provide a copy of your `push` configuration here, obfuscating any sensitive part.
 
 ### Environment Setup
 
