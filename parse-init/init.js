@@ -9,6 +9,7 @@ const CWD = process.cwd();
 const crypto = require('crypto');
 const DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017/parse';
 const CHECK = '✓';
+const program = require('commander');
 
 let useYarn = false;
 if (shell.which("yarn")) {
@@ -23,11 +24,11 @@ function ok(message) {
   console.log(chalk.green(`${CHECK} ${message}`));
 }
 
-async function getInstallationsDir() {
+async function getInstallationsDir({ directory, interactive }) {
   let target_directory;
-  if (process.argv.length == 3) {
-    target_directory =  process.argv[2];
-  } else {
+  if (directory) {
+    target_directory =  directory;
+  } else if (interactive) {
     const answer = await inquirer.prompt([
       {
         type: 'input',
@@ -37,6 +38,8 @@ async function getInstallationsDir() {
       },
     ]);
     target_directory = answer.target_directory;
+  } else {
+    target_directory = './parse-server'
   }
   console.log(`This will setup parse-server in ${chalk.bold(target_directory)}`);
   await confirm(`Do you want to continue?`);
@@ -44,7 +47,15 @@ async function getInstallationsDir() {
   return target_directory;
 }
 
-function getAppConfiguration() {
+function getAppConfiguration({ interactive }) {
+  if (!interactive) {
+    return {
+      appName: 'My Parse Server',
+      appId: generateKey(),
+      masterKey: generateKey(),
+      databaseURI: DEFAULT_MONGODB_URI
+    };
+  }
   const questions = [
     {
       type: 'input',
@@ -92,8 +103,11 @@ function confirm(message, defaults = true) {
   });
 }
 
-(async function main() {
-  let target_directory = await getInstallationsDir();
+async function main({
+  directory,
+  interactive,
+}) {
+  let target_directory = await getInstallationsDir({ interactive, directory });
   target_directory = path.resolve(target_directory);
   if (fs.existsSync(target_directory)) {
     console.log(chalk.red(`${chalk.bold(target_directory)} already exists.\naborting...`));
@@ -102,7 +116,7 @@ function confirm(message, defaults = true) {
 
   shell.mkdir(target_directory);
 
-  const config = await getAppConfiguration();
+  const config = await getAppConfiguration({ interactive });
   const {
     masterKey,
     databaseURI
@@ -152,10 +166,17 @@ function confirm(message, defaults = true) {
   }
 
   console.log(chalk.green(`parse-server is installed in \n\t${target_directory}!\n`));
-  await confirm('Do you want to start the server now?');
+  await confirm(`Do you want to start the server now?\nEnsure a database running on ${databaseURI}`);
   if (useYarn) {
     shell.exec("yarn start");
   } else {
     shell.exec("npm start");
   }
-})();
+}
+
+program
+  .option('-i, --interactive', 'Configure manually')
+  .option('-d, --directory [directory]', 'The target directory where to create a new parse-server')
+  .parse(process.argv);
+
+main(program);
