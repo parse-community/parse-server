@@ -66,7 +66,7 @@ export function loadClass(className, schema) {
     const inputType = c.graphQLInputObjectType();
     const updateType = c.graphQLUpdateInputObjectType();
     const queryType = c.graphQLQueryInputObjectType()
-    ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c }
+    ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c, displayName: c.displayName }
   }
   return ParseClassCache[className];
 }
@@ -129,6 +129,10 @@ export class ParseClass {
 
   constructor(className, schema) {
     this.className = className;
+    this.displayName = className;
+    if (className.startsWith('_')) {
+      this.displayName = className.slice(1) + 's';
+    }
     this.schema = schema;
     this.class = this.schema[className];
   }
@@ -136,7 +140,7 @@ export class ParseClass {
   graphQLConfig() {
     const className = this.className;
     return {
-      name: className,
+      name: this.className,
       description: `Parse Class ${className}`,
       interfaces: [ParseObjectInterface],
       fields: this.buildFields(graphQLField, false, true),
@@ -173,7 +177,7 @@ export class ParseClass {
   graphQLInputConfig() {
     const className = this.className;
     return {
-      name: className + 'Input',
+      name: this.displayName + 'Input',
       description: `Parse Class ${className} Input`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);
@@ -188,7 +192,7 @@ export class ParseClass {
   graphQLQueryConfig() {
     const className = this.className;
     return {
-      name: className + 'Query',
+      name: this.displayName + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
         return this.buildFields(graphQLQueryField, true);
@@ -203,7 +207,7 @@ export class ParseClass {
   graphQLUpdateInputConfig() {
     const className = this.className;
     return {
-      name: className + 'Update',
+      name: this.displayName + 'Update',
       description: `Parse Class ${className} Update`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);

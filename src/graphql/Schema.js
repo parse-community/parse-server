@@ -102,12 +102,12 @@ export class GraphQLParseSchema {
     }
     Object.keys(this.schema).forEach((className) => {
       const {
-        queryType, objectType
+        queryType, objectType, displayName
       } = loadClass(className, this.schema);
       if (className.startsWith('_')) {
-        className = className.slice(1).toLowerCase() + 's';
+        className = className.slice(1) + 's';
       }
-      MainSchemaOptions.fields[className] = {
+      MainSchemaOptions.fields[displayName] = {
         type: new GraphQLList(objectType),
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
@@ -141,10 +141,10 @@ export class GraphQLParseSchema {
 
     Object.keys(this.schema).forEach((className) => {
       const {
-        inputType, objectType, updateType
+        inputType, objectType, updateType, displayName
       } = loadClass(className, this.schema);
 
-      MainSchemaMutationOptions.fields['create' + className] = {
+      MainSchemaMutationOptions.fields['create' + displayName] = {
         type: objectType,
         fields: objectType.fields,
         description: `use this method to create a new ${className}`,
@@ -158,7 +158,7 @@ export class GraphQLParseSchema {
         }
       }
 
-      MainSchemaMutationOptions.fields['update' + className] = {
+      MainSchemaMutationOptions.fields['update' + displayName] = {
         type: objectType,
         description: `use this method to update an existing ${className}`,
         args: {
@@ -176,7 +176,7 @@ export class GraphQLParseSchema {
         }
       }
 
-      MainSchemaMutationOptions.fields['destroy' + className] = {
+      MainSchemaMutationOptions.fields['destroy' + displayName] = {
         type: objectType,
         description: `use this method to update delete an existing ${className}`,
         args: {
