@@ -3,9 +3,19 @@ const Config = require("../lib/Config");
 const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
+const responses = {
+  instagram: { data: { id: 'userId' } },
+  janrainengage: { stat: 'ok', profile: { identifier: 'userId' }},
+  janraincapture: { stat: 'ok', result: 'userId' },
+  vkontakte: { response: [{ id: 'userId'}]},
+  google: { sub: 'userId' },
+  wechat: { errcode: 0 },
+  weibo: { uid: 'userId' },
+  qq: 'callback( {"openid":"userId"} );' // yes it's like that, run eval in the client :P
+}
 
 describe('AuthenticationProviders', function() {
-  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
+  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte", "qq", "spotify", "wechat", "weibo"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       const provider = require("../lib/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -17,6 +27,32 @@ describe('AuthenticationProviders', function() {
       authDataPromise.then(()=>{}, ()=>{});
       validateAppIdPromise.then(()=>{}, ()=>{});
       done();
+    });
+
+    it(`should provide the right responses for adapter ${providerName}`, async () => {
+      if (providerName === 'twitter') {
+        return;
+      }
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake((options) => {
+        if (options === "https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.59&grant_type=client_credentials") {
+          return {
+            access_token: 'access_token'
+          }
+        }
+        return Promise.resolve(responses[providerName] || { id: 'userId' });
+      });
+      spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'request').and.callFake(() => {
+        return Promise.resolve(responses[providerName] || { id: 'userId' });
+      });
+      const provider = require("../lib/Adapters/Auth/" + providerName);
+      let params = {};
+      if (providerName === 'vkontakte') {
+        params = {
+          appIds: 'appId',
+          appSecret: 'appSecret'
+        }
+      }
+      await provider.validateAuthData({ id: 'userId' }, params);
     });
   });
 
@@ -120,7 +156,7 @@ describe('AuthenticationProviders', function() {
         }
         expect(res.get("installationId")).toEqual('yolo');
         done();
-      }).fail(() => {
+      }).catch(() => {
         fail('should not fail fetching the session');
         done();
       })
@@ -163,67 +199,43 @@ describe('AuthenticationProviders', function() {
     }).catch(done.fail);
   });
 
-  it("unlink and link with custom provider", (done) => {
+  it("unlink and link with custom provider", async () => {
     const provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("myoauth", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+    const model  = await Parse.User._logInWith("myoauth");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("myoauth"), "User should be linked to myoauth");
 
-        model._unlinkFrom("myoauth", {
-          success: function(model) {
+    await model._unlinkFrom("myoauth");
+    ok(!model._isLinked("myoauth"),
+      "User should not be linked to myoauth");
+    ok(!provider.synchronizedUserId, "User id should be cleared");
+    ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
+    ok(!provider.synchronizedExpiration,
+      "Expiration should be cleared");
+    // make sure the auth data is properly deleted
+    const config = Config.get(Parse.applicationId);
+    const res = await config.database.adapter.find('_User', {
+      fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+    }, { objectId: model.id }, {})
+    expect(res.length).toBe(1);
+    expect(res[0]._auth_data_myoauth).toBeUndefined();
+    expect(res[0]._auth_data_myoauth).not.toBeNull();
 
-            ok(!model._isLinked("myoauth"),
-              "User should not be linked to myoauth");
-            ok(!provider.synchronizedUserId, "User id should be cleared");
-            ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
-            ok(!provider.synchronizedExpiration,
-              "Expiration should be cleared");
-            // make sure the auth data is properly deleted
-            const config = Config.get(Parse.applicationId);
-            config.database.adapter.find('_User', {
-              fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
-            }, { objectId: model.id }, {})
-              .then(res => {
-                expect(res.length).toBe(1);
-                expect(res[0]._auth_data_myoauth).toBeUndefined();
-                expect(res[0]._auth_data_myoauth).not.toBeNull();
+    await model._linkWith("myoauth");
 
-                model._linkWith("myoauth", {
-                  success: function(model) {
-                    ok(provider.synchronizedUserId, "User id should have a value");
-                    ok(provider.synchronizedAuthToken,
-                      "Auth token should have a value");
-                    ok(provider.synchronizedExpiration,
-                      "Expiration should have a value");
-                    ok(model._isLinked("myoauth"),
-                      "User should be linked to myoauth");
-                    done();
-                  },
-                  error: function() {
-                    ok(false, "linking again should succeed");
-                    done();
-                  }
-                });
-              });
-          },
-          error: function() {
-            ok(false, "unlinking should succeed");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    ok(provider.synchronizedUserId, "User id should have a value");
+    ok(provider.synchronizedAuthToken,
+      "Auth token should have a value");
+    ok(provider.synchronizedExpiration,
+      "Expiration should have a value");
+    ok(model._isLinked("myoauth"),
+      "User should be linked to myoauth");
   });
 
   function validateValidator(validator) {
@@ -410,5 +422,62 @@ describe('AuthenticationProviders', function() {
         expect(err.type).toBe('OAuthException');
         done();
       })
+  });
+});
+
+describe('google auth adapter', () => {
+  const google = require('../lib/Adapters/Auth/google');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should use id_token for validation is passed', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ sub: 'userId' });
+    });
+    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+  });
+
+  it('should use id_token for validation is passed and responds with user_id', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ user_id: 'userId' });
+    });
+    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+  });
+
+  it('should use access_token for validation is passed and responds with user_id', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ user_id: 'userId' });
+    });
+    await google.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+  });
+
+  it('should use access_token for validation is passed with sub', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ sub: 'userId' });
+    });
+    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+  });
+
+  it('should fail when the id_token is invalid', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ sub: 'badId' });
+    });
+    try {
+      await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+      fail()
+    } catch(e) {
+      expect(e.message).toBe('Google auth is invalid for this user.');
+    }
+  });
+
+  it('should fail when the access_token is invalid', async () => {
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ sub: 'badId' });
+    });
+    try {
+      await google.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+      fail()
+    } catch(e) {
+      expect(e.message).toBe('Google auth is invalid for this user.');
+    }
   });
 });

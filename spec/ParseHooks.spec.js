@@ -5,6 +5,9 @@ const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require("express");
 const bodyParser = require('body-parser');
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+
 
 const port = 12345;
 const hookServerURL = "http://localhost:" + port;
@@ -287,7 +290,7 @@ describe('Hooks', () => {
       promises.push(Parse.Hooks.createFunction("AFunction" + i, "http://url.com/function" + i));
     }
 
-    Parse.Promise.when(promises).then(function(){
+    Promise.all(promises).then(function(){
       for (let  i = 0; i < 5; i++) {
         // Delete everything from memory, as the server just started
         triggers.removeTrigger("beforeSave", "MyClass" + i, Parse.applicationId);
@@ -441,7 +444,7 @@ describe('Hooks', () => {
     }).then(function(res) {
       expect(res.get("hello")).toEqual("world");
       done();
-    }).fail((err) => {
+    }).catch((err) => {
       jfail(err);
       fail("Should not fail creating a function");
       done();
@@ -462,7 +465,7 @@ describe('Hooks', () => {
     }).then(function(res) {
       expect(res.get("hello")).toEqual("world");
       done();
-    }).fail((err) => {
+    }).catch((err) => {
       fail(`Should not fail: ${JSON.stringify(err)}`);
       done();
     });
@@ -485,22 +488,57 @@ describe('Hooks', () => {
       const obj = new Parse.Object("SomeRandomObject");
       return obj.save();
     }).then(function() {
-      const promise = new Parse.Promise();
-      // Wait a bit here as it's an after save
-      setTimeout(() => {
-        expect(triggerCount).toBe(1);
-        new Parse.Query("AnotherObject")
-          .get(newObjectId)
-          .then((r) => promise.resolve(r));
-      }, 500);
-      return promise;
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          expect(triggerCount).toBe(1);
+          new Parse.Query("AnotherObject")
+            .get(newObjectId)
+            .then((r) => resolve(r));
+        }, 500);
+      });
     }).then(function(res){
       expect(res.get("foo")).toEqual("bar");
       done();
-    }).fail((err) => {
+    }).catch((err) => {
       jfail(err);
       fail("Should not fail creating a function");
       done();
     });
+  });
+});
+
+describe('triggers', () => {
+  it('should produce a proper request object with context in beforeSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {
+      originalKey: 'original'
+    };
+    const req = triggers.getRequestObject(triggers.Types.beforeSave, master, {}, {}, config, context);
+    expect(req.context.originalKey).toBe('original');
+    req.context = {
+      key: 'value'
+    };
+    expect(context.key).toBe(undefined);
+    req.context = {
+      key: 'newValue'
+    };
+    expect(context.key).toBe(undefined);
+  });
+
+  it('should produce a proper request object with context in afterSave', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.afterSave, master, {}, {}, config, context);
+    expect(req.context).not.toBeUndefined();
+  });
+
+  it('should not set context on beforeFind', () => {
+    const config = Config.get('test');
+    const master = auth.master(config);
+    const context = {};
+    const req = triggers.getRequestObject(triggers.Types.beforeFind, master, {}, {}, config, context);
+    expect(req.context).toBeUndefined();
   });
 });

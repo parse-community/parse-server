@@ -1,9 +1,9 @@
 import AppCache from './cache';
-import log from './logger';
 import Parse from 'parse/node';
 import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
+import defaultLogger from './logger';
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -179,7 +179,7 @@ export function handleParseHeaders(req, res, next) {
       }
       else {
         // TODO: Determine the correct error scenario.
-        log.error('error getting auth for sessionToken', error);
+        req.config.loggerController.error('error getting auth for sessionToken', error);
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
@@ -247,7 +247,7 @@ export function allowCrossDomain(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
-
+  res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
     res.sendStatus(200);
@@ -267,6 +267,7 @@ export function allowMethodOverride(req, res, next) {
 }
 
 export function handleParseErrors(err, req, res, next) {
+  const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
     let httpStatus;
     // TODO: fill out this mapping

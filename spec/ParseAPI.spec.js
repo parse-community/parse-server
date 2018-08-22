@@ -10,6 +10,12 @@ const SchemaController = require('../lib/Controllers/SchemaController');
 const TestUtils = require('../lib/TestUtils');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
+const headers = {
+  'Content-Type': 'application/json',
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-REST-API-Key': 'rest',
+  'X-Parse-Installation-Id': 'yolo'
+}
 
 describe_only_db('mongo')('miscellaneous', () => {
   it('test rest_create_app', function(done) {
@@ -29,7 +35,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail(error => {
+    }).catch(error => {
       fail(JSON.stringify(error));
       done();
     })
@@ -44,113 +50,108 @@ describe('miscellaneous', function() {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
   it('get a TestObject', function(done) {
-    create({ 'bloop' : 'blarg' }, function(obj) {
+    create({ 'bloop' : 'blarg' }, async function(obj) {
       const t2 = new TestObject({ objectId: obj.id });
-      t2.fetch({
-        success: function(obj2) {
-          expect(obj2.get('bloop')).toEqual('blarg');
-          expect(obj2.id).toBeTruthy();
-          expect(obj2.id).toEqual(obj.id);
-          done();
-        },
-        error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const obj2 = await t2.fetch();
+      expect(obj2.get('bloop')).toEqual('blarg');
+      expect(obj2.id).toBeTruthy();
+      expect(obj2.id).toEqual(obj.id);
+      done();
     });
   });
 
   it('create a valid parse user', function(done) {
-    createTestUser(function(data) {
+    createTestUser().then(function(data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
       done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    }, done.fail);
   });
 
-  it('fail to create a duplicate username', done => {
-    let numCreated = 0;
-    let numFailed = 0;
-    const p1 = createTestUser();
-    p1.then(() => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    const p2 = createTestUser();
-    p2.then(() => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-    Parse.Promise.when([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
-  });
-
-  it('ensure that email is uniquely indexed', done => {
+  it('fail to create a duplicate username', async () => {
     let numFailed = 0;
     let numCreated = 0;
-    const user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    const p1 = user1.signUp();
-    p1.then(() => {
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'otherpassword',
+        username: 'u1',
+        email: 'email@other.email'
+      },
+      headers
+    }).then(() => {
+      numCreated++;
+    }, ({ error }) => {
+      numFailed++;
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
+  });
+
+  it('ensure that email is uniquely indexed', async () => {
+    let numFailed = 0;
+    let numCreated = 0;
+    const p1 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, ({ error }) => {
+      numFailed++;
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    const user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    const p2 = user2.signUp();
-    p2.then(() => {
+    const p2 = rp.post(Parse.serverURL + '/users', {
+      json: {
+        password: 'asdf',
+        username: 'u2',
+        email: 'dupe@dupe.dupe'
+      },
+      headers
+    }).then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
-    }, error => {
+    }, ({ error }) => {
       numFailed++;
-      expect(numFailed).toEqual(1);
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    Parse.Promise.when([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
+    await Promise.all([p1, p2])
+    expect(numFailed).toEqual(1);
+    expect(numCreated).toBe(1);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', async done => {
+    try {
+      await Parse.User.logOut();
+    } catch(e) { /* ignore */ }
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -237,20 +238,15 @@ describe('miscellaneous', function() {
   });
 
   it('succeed in logging in', function(done) {
-    createTestUser(function(u) {
+    createTestUser().then(async function(u) {
       expect(typeof u.id).toEqual('string');
 
-      Parse.User.logIn('test', 'moon-y', {
-        success: function(user) {
-          expect(typeof user.id).toEqual('string');
-          expect(user.get('password')).toBeUndefined();
-          expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut().then(done);
-        }, error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
+      const user = await Parse.User.logIn('test', 'moon-y');
+      expect(typeof user.id).toEqual('string');
+      expect(user.get('password')).toBeUndefined();
+      expect(user.getSessionToken()).not.toBeUndefined();
+      await Parse.User.logOut();
+      done();
     }, fail);
   });
 
@@ -347,9 +343,8 @@ describe('miscellaneous', function() {
     const acl = new Parse.ACL({
       '*': { read: true, write: false }
     });
-    Parse.Cloud.beforeSave('BeforeSaveAddACL', function(req, res) {
+    Parse.Cloud.beforeSave('BeforeSaveAddACL', function(req) {
       req.object.setACL(acl);
-      res.success();
     });
 
     const obj = new Parse.Object('BeforeSaveAddACL');
@@ -373,7 +368,7 @@ describe('miscellaneous', function() {
   it('object is set on create and update', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+    Parse.Cloud.beforeSave('GameScore', (req) => {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
@@ -391,10 +386,9 @@ describe('miscellaneous', function() {
         expect(object.createdAt).not.toBeUndefined();
         expect(object.updatedAt).not.toBeUndefined();
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -416,11 +410,11 @@ describe('miscellaneous', function() {
   it('works when object is passed to success', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+    Parse.Cloud.beforeSave('GameScore', (req) => {
       const object = req.object;
       object.set('foo', 'bar');
       triggerTime++;
-      res.success(object);
+      return object;
     });
 
     const obj = new Parse.Object('GameScore');
@@ -438,7 +432,7 @@ describe('miscellaneous', function() {
   it('original object is set on update', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+    Parse.Cloud.beforeSave('GameScore', (req) => {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
@@ -466,10 +460,9 @@ describe('miscellaneous', function() {
         expect(originalObject.updatedAt).not.toBeUndefined();
         expect(originalObject.get('foo')).toEqual('bar');
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -492,16 +485,14 @@ describe('miscellaneous', function() {
   it('pointer mutation properly saves object', done => {
     const className = 'GameScore';
 
-    Parse.Cloud.beforeSave(className, (req, res) => {
+    Parse.Cloud.beforeSave(className, (req) => {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
 
       const child = object.get('child');
       expect(child instanceof Parse.Object).toBeTruthy();
       child.set('a', 'b');
-      child.save().then(() => {
-        res.success();
-      });
+      return child.save();
     });
 
     const obj = new Parse.Object(className);
@@ -532,18 +523,17 @@ describe('miscellaneous', function() {
   });
 
   it('pointer reassign is working properly (#1288)', (done) => {
-    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+    Parse.Cloud.beforeSave('GameScore', (req) => {
 
       const obj = req.object;
       if (obj.get('point')) {
-        return res.success();
+        return;
       }
       const TestObject1 = Parse.Object.extend('TestObject1');
       const newObj = new TestObject1({'key1': 1});
 
       return newObj.save().then((newObj) => {
         obj.set('point' , newObj);
-        res.success();
       });
     });
     let pointId;
@@ -564,7 +554,7 @@ describe('miscellaneous', function() {
   it('test afterSave get full object on create and update', function(done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req, res) {
+    Parse.Cloud.afterSave('GameScore', function(req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.id).not.toBeUndefined();
@@ -578,10 +568,9 @@ describe('miscellaneous', function() {
         // Update
         expect(object.get('foo')).toEqual('baz');
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -605,7 +594,7 @@ describe('miscellaneous', function() {
     let triggerTime = 0;
     // Register a mock beforeSave hook
 
-    Parse.Cloud.afterSave('GameScore', function(req, res) {
+    Parse.Cloud.afterSave('GameScore', function(req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
@@ -629,10 +618,9 @@ describe('miscellaneous', function() {
         expect(originalObject.updatedAt).not.toBeUndefined();
         expect(originalObject.get('foo')).toEqual('bar');
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -655,7 +643,7 @@ describe('miscellaneous', function() {
   it('test afterSave get full original object even req auth can not query it', (done) => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req, res) {
+    Parse.Cloud.afterSave('GameScore', function(req) {
       const object = req.object;
       const originalObject = req.original;
       if (triggerTime == 0) {
@@ -671,10 +659,9 @@ describe('miscellaneous', function() {
         expect(originalObject.updatedAt).not.toBeUndefined();
         expect(originalObject.get('foo')).toEqual('bar');
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -702,7 +689,7 @@ describe('miscellaneous', function() {
   it('afterSave flattens custom operations', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req, res) {
+    Parse.Cloud.afterSave('GameScore', function(req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       const originalObject = req.original;
@@ -715,10 +702,9 @@ describe('miscellaneous', function() {
         // Check the originalObject
         expect(originalObject.get('yolo')).toEqual(1);
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -739,7 +725,7 @@ describe('miscellaneous', function() {
   it('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave('GameScore', function(req, res) {
+    Parse.Cloud.beforeSave('GameScore', function(req) {
       const object = req.object;
       if (triggerTime == 0) {
         const acl = object.getACL();
@@ -750,10 +736,9 @@ describe('miscellaneous', function() {
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -778,7 +763,7 @@ describe('miscellaneous', function() {
   it('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req, res) {
+    Parse.Cloud.afterSave('GameScore', function(req) {
       const object = req.object;
       if (triggerTime == 0) {
         const acl = object.getACL();
@@ -789,10 +774,9 @@ describe('miscellaneous', function() {
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else {
-        res.error();
+        throw new Error();
       }
       triggerTime++;
-      res.success();
     });
 
     const obj = new Parse.Object('GameScore');
@@ -856,7 +840,7 @@ describe('miscellaneous', function() {
         }
         done();
       });
-    }).fail(() => {
+    }).catch(() => {
       fail('Should not fail');
       done();
     })
@@ -864,8 +848,8 @@ describe('miscellaneous', function() {
 
   it('test cloud function error handling', (done) => {
     // Register a function which will fail
-    Parse.Cloud.define('willFail', (req, res) => {
-      res.error('noway');
+    Parse.Cloud.define('willFail', () => {
+      throw new Error('noway');
     });
     Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
@@ -879,8 +863,8 @@ describe('miscellaneous', function() {
 
   it('test cloud function error handling with custom error code', (done) => {
     // Register a function which will fail
-    Parse.Cloud.define('willFail', (req, res) => {
-      res.error(999, 'noway');
+    Parse.Cloud.define('willFail', () => {
+      throw new Parse.Error(999, 'noway');
     });
     Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
@@ -894,8 +878,8 @@ describe('miscellaneous', function() {
 
   it('test cloud function error handling with standard error code', (done) => {
     // Register a function which will fail
-    Parse.Cloud.define('willFail', (req, res) => {
-      res.error('noway');
+    Parse.Cloud.define('willFail', () => {
+      throw new Error('noway');
     });
     Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
@@ -909,11 +893,10 @@ describe('miscellaneous', function() {
 
   it('test beforeSave/afterSave get installationId', function(done) {
     let triggerTime = 0;
-    Parse.Cloud.beforeSave('GameScore', function(req, res) {
+    Parse.Cloud.beforeSave('GameScore', function(req) {
       triggerTime++;
       expect(triggerTime).toEqual(1);
       expect(req.installationId).toEqual('yolo');
-      res.success();
     });
     Parse.Cloud.afterSave('GameScore', function(req) {
       triggerTime++;
@@ -940,11 +923,10 @@ describe('miscellaneous', function() {
 
   it('test beforeDelete/afterDelete get installationId', function(done) {
     let triggerTime = 0;
-    Parse.Cloud.beforeDelete('GameScore', function(req, res) {
+    Parse.Cloud.beforeDelete('GameScore', function(req) {
       triggerTime++;
       expect(triggerTime).toEqual(1);
       expect(req.installationId).toEqual('yolo');
-      res.success();
     });
     Parse.Cloud.afterDelete('GameScore', function(req) {
       triggerTime++;
@@ -977,9 +959,8 @@ describe('miscellaneous', function() {
 
   it('test beforeDelete with locked down ACL', async () => {
     let called = false;
-    Parse.Cloud.beforeDelete('GameScore', (req, res) => {
+    Parse.Cloud.beforeDelete('GameScore', () => {
       called = true;
-      res.success();
     });
     const object = new Parse.Object('GameScore');
     object.setACL(new Parse.ACL());
@@ -995,8 +976,8 @@ describe('miscellaneous', function() {
   });
 
   it('test cloud function query parameters', (done) => {
-    Parse.Cloud.define('echoParams', (req, res) => {
-      res.success(req.params);
+    Parse.Cloud.define('echoParams', (req) => {
+      return req.params;
     });
     const headers = {
       'Content-Type': 'application/json',
@@ -1024,8 +1005,8 @@ describe('miscellaneous', function() {
 
   it('test cloud function parameter validation', (done) => {
     // Register a function with validation
-    Parse.Cloud.define('functionWithParameterValidationFailure', (req, res) => {
-      res.success('noway');
+    Parse.Cloud.define('functionWithParameterValidationFailure', () => {
+      return 'noway';
     }, (request) => {
       return request.params.success === 100;
     });
@@ -1041,9 +1022,9 @@ describe('miscellaneous', function() {
   });
 
   it('can handle null params in cloud functions (regression test for #1742)', done => {
-    Parse.Cloud.define('func', (request, response) => {
+    Parse.Cloud.define('func', (request) => {
       expect(request.params.nullParam).toEqual(null);
-      response.success('yay');
+      return 'yay';
     });
 
     Parse.Cloud.run('func', {nullParam: null})
@@ -1057,10 +1038,10 @@ describe('miscellaneous', function() {
 
   it('can handle date params in cloud functions (#2214)', done => {
     const date = new Date();
-    Parse.Cloud.define('dateFunc', (request, response) => {
+    Parse.Cloud.define('dateFunc', (request) => {
       expect(request.params.date.__type).toEqual('Date');
       expect(request.params.date.iso).toEqual(date.toISOString());
-      response.success('yay');
+      return 'yay';
     });
 
     Parse.Cloud.run('dateFunc', {date: date})
@@ -1518,12 +1499,10 @@ describe('miscellaneous', function() {
   });
 
   it('should not update schema beforeSave #2672', (done) => {
-    Parse.Cloud.beforeSave('MyObject', (request, response) => {
+    Parse.Cloud.beforeSave('MyObject', (request) => {
       if (request.object.get('secret')) {
-        response.error('cannot set secret here');
-        return;
+        throw 'cannot set secret here';
       }
-      response.success();
     });
 
     const object = new Parse.Object('MyObject');

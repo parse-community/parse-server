@@ -100,6 +100,24 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('group by pipeline operator', async () => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        pipeline: {
+          group: { objectId: '$name' },
+        }
+      }
+    });
+    const resp = await rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+    expect(resp.results.length).toBe(3);
+    expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+    expect(resp.results[0].objectId).not.toBe(undefined);
+    expect(resp.results[1].objectId).not.toBe(undefined);
+    expect(resp.results[2].objectId).not.toBe(undefined);
+  });
+
   it('group by empty object', (done) => {
     const obj = new TestObject();
     const pipeline = [{

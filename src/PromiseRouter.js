@@ -181,7 +181,7 @@ function makeExpressHandler(appId, promiseHandler) {
           })
         }
         res.json(result.response);
-      }, (e) => {
+      }, (error) => next(error)).catch((e) => {
         log.error(`Error generating response. ${inspect(e)}`, {error: e});
         next(e);
       });

@@ -21,7 +21,7 @@ describe('info logs', () => {
         // Check the error log
         // Regression #2639
         winstonLoggerAdapter.query({
-          from: new Date(Date.now() - 500),
+          from: new Date(Date.now() - 200),
           size: 100,
           level: 'error'
         }, (results) => {

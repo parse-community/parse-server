@@ -1,13 +1,14 @@
+import { AuthRoles } from "./AuthRoles";
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
-import { AuthRoles } from "./AuthRoles";
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
 // userObject is a Parse.User and can be null if there's no user.
-function Auth({ config, isMaster = false, isReadOnly = false, user, installationId } = {}) {
+function Auth({ config, cacheController = undefined, isMaster = false, isReadOnly = false, user, installationId }) {
   this.config = config;
+  this.cacheController = cacheController || (config && config.cacheController);
   this.installationId = installationId;
   this.isMaster = isMaster;
   this.user = user;
@@ -21,7 +22,7 @@ function Auth({ config, isMaster = false, isReadOnly = false, user, installation
 
   // return the auth role validator
   this.getAuthRoles = () => {
-    return new AuthRoles(master(this.config), this.user.id);
+    return new AuthRoles(master(this.config), this.user);
   }
 }
 
@@ -54,47 +55,58 @@ function nobody(config) {
 
 
 // Returns a promise that resolves to an Auth object
-var getAuthForSessionToken = function({ config, sessionToken, installationId } = {}) {
-  return config.cacheController.user.get(sessionToken).then((userJSON) => {
+const getAuthForSessionToken = async function({ config, cacheController, sessionToken, installationId }) {
+  cacheController = cacheController || (config && config.cacheController);
+  if (cacheController) {
+    const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
-      return Promise.resolve(new Auth({config, isMaster: false, installationId, user: cachedUser}));
+      return Promise.resolve(new Auth({config, cacheController, isMaster: false, installationId, user: cachedUser}));
     }
+  }
 
-    var restOptions = {
+  let results;
+  if (config) {
+    const restOptions = {
       limit: 1,
       include: 'user'
     };
 
-    var query = new RestQuery(config, master(config), '_Session', {sessionToken}, restOptions);
-    return query.execute().then((response) => {
-      var results = response.results;
-      if (results.length !== 1 || !results[0]['user']) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
-      }
+    const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
+    results = (await query.execute()).results;
+  } else {
+    results = (await new Parse.Query(Parse.Session)
+      .limit(1)
+      .include('user')
+      .equalTo('sessionToken', sessionToken)
+      .find({ useMasterKey: true })).map((obj) => obj.toJSON())
+  }
 
-      var now = new Date(),
-        expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
-      if (expiresAt < now) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-          'Session token is expired.');
-      }
-      var obj = results[0]['user'];
-      delete obj.password;
-      obj['className'] = '_User';
-      obj['sessionToken'] = sessionToken;
-      config.cacheController.user.put(sessionToken, obj);
-      const userObject = Parse.Object.fromJSON(obj);
-      return new Auth({config, isMaster: false, installationId, user: userObject});
-    });
-  });
+  if (results.length !== 1 || !results[0]['user']) {
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+  }
+  const now = new Date(),
+    expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
+  if (expiresAt < now) {
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
+      'Session token is expired.');
+  }
+  const obj = results[0]['user'];
+  delete obj.password;
+  obj['className'] = '_User';
+  obj['sessionToken'] = sessionToken;
+  if (cacheController) {
+    cacheController.user.put(sessionToken, obj);
+  }
+  const userObject = Parse.Object.fromJSON(obj);
+  return new Auth({ config, cacheController, isMaster: false, installationId, user: userObject });
 };
 
-var getAuthForLegacySessionToken = function({config, sessionToken, installationId } = {}) {
+var getAuthForLegacySessionToken = function({ config, sessionToken, installationId }) {
   var restOptions = {
     limit: 1
   };
-  var query = new RestQuery(config, master(config), '_User', { sessionToken: sessionToken}, restOptions);
+  var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then((response) => {
     var results = response.results;
     if (results.length !== 1) {
@@ -103,7 +115,7 @@ var getAuthForLegacySessionToken = function({config, sessionToken, installationI
     const obj = results[0];
     obj.className = '_User';
     const userObject = Parse.Object.fromJSON(obj);
-    return new Auth({config, isMaster: false, installationId, user: userObject});
+    return new Auth({ config, isMaster: false, installationId, user: userObject });
   });
 }
 
@@ -122,33 +134,35 @@ Auth.prototype.getUserRoles = function() {
   return this.rolePromise;
 };
 
-// Iterates through the role tree and compiles a users roles
-Auth.prototype._loadRoles = function() {
-  var cacheAdapter = this.config.cacheController;
-  return cacheAdapter.role.get(this.user.id).then((cachedRoles) => {
+// Iterates through the role tree and compiles a user's roles
+Auth.prototype._loadRoles = async function() {
+  // attempt to load from cache first
+  if (this.cacheController) {
+    const cachedRoles = await this.cacheController.role.get(this.user.id);
     if (cachedRoles != null) {
       this.fetchedRoles = true;
       this.userRoles = cachedRoles;
-      return Promise.resolve(cachedRoles);
+      return cachedRoles;
     }
-
-    const authRoles = this.getAuthRoles()
-    return authRoles.findRoles()
-      .then((result) => {
-        // mark the roles as fetched and clear promise
-        this.fetchedRoles = true;
-        this.rolePromise = null;
-        // role names
-        if (!result) {
-          this.userRoles = [];
-        }else{
-          this.userRoles = result
-        }
-        cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
-        return Promise.resolve(this.userRoles)
-      })
-  });
+  }
+  // if cache miss (or cache not available) compute roles
+  const authRoles = this.getAuthRoles();
+  const roleNames = await authRoles.findRoles();
+  // mark the roles as fetched and clear the promise
+  this.fetchedRoles = true;
+  this.rolePromise = null;
+  this.userRoles = roleNames;
+  this.cacheRoles();
+  return this.userRoles;
 };
+
+Auth.prototype.cacheRoles = function() {
+  if (!this.cacheController) {
+    return false;
+  }
+  this.cacheController.role.put(this.user.id, Array(...this.userRoles));
+  return true;
+}
 
 const createSession = function(config, {
   userId,

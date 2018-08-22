@@ -6,7 +6,11 @@ about: Report an issue on parse-server
 
 <!--- 
 
-We use GitHub Issues for bugs.
+**We use GitHub Issues for reporting bugs with parse-server.**
+
+If you have a *question*, you should join the gitter chat where a community of more than 200 parse users gather.
+
+- https://gitter.im/ParsePlatform/Chat
 
 If you have a non-bug question, ask on Stack Overflow or Server Fault: 
 - https://stackoverflow.com/questions/tagged/parse.com 

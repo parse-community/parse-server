@@ -2,7 +2,7 @@
 
 // Helper functions for accessing the vkontakte API.
 
-var https = require('https');
+const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 var logger = require('../../logger').default;
 
@@ -10,8 +10,8 @@ var logger = require('../../logger').default;
 function validateAuthData(authData, params) {
   return vkOAuth2Request(params).then(function (response) {
     if (response && response.access_token) {
-      return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token + "&v=5.59").then(function (response) {
-        if (response && response.response && response.response.user_id == authData.id) {
+      return request("api.vk.com", "method/users.get?access_token=" + authData.access_token + "&v=5.8").then(function (response) {
+        if (response && response.response && response.response.length && response.response[0].id == authData.id) {
           return;
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
@@ -41,24 +41,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(host, path) {
-  return new Promise(function (resolve, reject) {
-    https.get("https://" + host + "/" + path, function (res) {
-      var data = '';
-      res.on('data', function (chunk) {
-        data += chunk;
-      });
-      res.on('end', function () {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function () {
-      reject('Failed to validate this access token with Vk.');
-    });
-  });
+  return httpsRequest.get("https://" + host + "/" + path);
 }
 
 module.exports = {

@@ -166,7 +166,7 @@ export class HooksController {
 }
 
 function wrapToHTTPRequest(hook, key) {
-  return (req, res) => {
+  return (req) => {
     const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
@@ -195,37 +195,38 @@ function wrapToHTTPRequest(hook, key) {
       logger.warn('Making outgoing webhook request without webhookKey being set!');
     }
 
-    request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
-      var result;
-      if (body) {
-        if (typeof body === "string") {
-          try {
-            body = JSON.parse(body);
-          } catch (e) {
-            err = {
-              error: "Malformed response",
-              code: -1,
-              partialResponse: body.substring(0, 100)
-            };
+    return new Promise((resolve, reject) => {
+      request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
+        var result;
+        if (body) {
+          if (typeof body === "string") {
+            try {
+              body = JSON.parse(body);
+            } catch (e) {
+              err = {
+                error: "Malformed response",
+                code: -1,
+                partialResponse: body.substring(0, 100)
+              };
+            }
+          }
+          if (!err) {
+            result = body.success;
+            err = body.error;
           }
         }
-        if (!err) {
-          result = body.success;
-          err = body.error;
+        if (err) {
+          return reject(err);
+        } else if (hook.triggerName === 'beforeSave') {
+          if (typeof result === 'object') {
+            delete result.createdAt;
+            delete result.updatedAt;
+          }
+          return resolve({object: result});
+        } else {
+          return resolve(result);
         }
-      }
-
-      if (err) {
-        return res.error(err);
-      } else if (hook.triggerName === 'beforeSave') {
-        if (typeof result === 'object') {
-          delete result.createdAt;
-          delete result.updatedAt;
-        }
-        return res.success({object: result});
-      } else {
-        return res.success(result);
-      }
+      });
     });
   }
 }

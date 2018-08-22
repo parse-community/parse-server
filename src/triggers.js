@@ -46,24 +46,58 @@ function validateClassNameForTriggers(className, type) {
 
 const _triggerStore = {};
 
-export function addFunction(functionName, handler, validationHandler, applicationId) {
+const Category = {
+  Functions: 'Functions',
+  Validators: 'Validators',
+  Jobs: 'Jobs',
+  Triggers: 'Triggers'
+}
+
+function getStore(category, name, applicationId) {
+  const path = name.split('.');
+  path.splice(-1); // remove last component
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Functions[functionName] = handler;
-  _triggerStore[applicationId].Validators[functionName] = validationHandler;
+  let store = _triggerStore[applicationId][category];
+  for (const component of path) {
+    store = store[component];
+    if (!store) {
+      return undefined;
+    }
+  }
+  return store;
+}
+
+function add(category, name, handler, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  store[lastComponent] = handler;
+}
+
+function remove(category, name, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  delete store[lastComponent];
+}
+
+function get(category, name, applicationId) {
+  const lastComponent = name.split('.').splice(-1);
+  const store = getStore(category, name, applicationId);
+  return store[lastComponent];
+}
+
+export function addFunction(functionName, handler, validationHandler, applicationId) {
+  add(Category.Functions, functionName, handler, applicationId);
+  add(Category.Validators, functionName, validationHandler, applicationId);
 }
 
 export function addJob(jobName, handler, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Jobs[jobName] = handler;
+  add(Category.Jobs, jobName, handler, applicationId);
 }
 
 export function addTrigger(type, className, handler, applicationId) {
   validateClassNameForTriggers(className, type);
-  applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].Triggers[type][className] = handler;
+  add(Category.Triggers, `${type}.${className}`, handler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -73,13 +107,11 @@ export function addLiveQueryEventHandler(handler, applicationId) {
 }
 
 export function removeFunction(functionName, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Functions[functionName]
+  remove(Category.Functions, functionName, applicationId);
 }
 
 export function removeTrigger(type, className, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Triggers[type][className]
+  remove(Category.Triggers, `${type}.${className}`, applicationId);
 }
 
 export function _unregisterAll() {
@@ -90,14 +122,7 @@ export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {
     throw "Missing ApplicationID";
   }
-  var manager = _triggerStore[applicationId]
-  if (manager
-    && manager.Triggers
-    && manager.Triggers[triggerType]
-    && manager.Triggers[triggerType][className]) {
-    return manager.Triggers[triggerType][className];
-  }
-  return undefined;
+  return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
 }
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
@@ -105,19 +130,11 @@ export function triggerExists(className: string, type: string, applicationId: st
 }
 
 export function getFunction(functionName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Functions) {
-    return manager.Functions[functionName];
-  }
-  return undefined;
+  return get(Category.Functions, functionName, applicationId);
 }
 
 export function getJob(jobName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Jobs) {
-    return manager.Jobs[jobName];
-  }
-  return undefined;
+  return get(Category.Jobs, jobName, applicationId);
 }
 
 export function getJobs(applicationId) {
@@ -130,15 +147,11 @@ export function getJobs(applicationId) {
 
 
 export function getValidator(functionName, applicationId) {
-  var manager = _triggerStore[applicationId];
-  if (manager && manager.Validators) {
-    return manager.Validators[functionName];
-  }
-  return undefined;
+  return get(Category.Validators, functionName, applicationId);
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
-  var request = {
+export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config, context) {
+  const request = {
     triggerName: triggerType,
     object: parseObject,
     master: false,
@@ -149,6 +162,11 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
 
   if (originalParseObject) {
     request.original = originalParseObject;
+  }
+
+  if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
+    // Set a copy of the context on the request object.
+    request.context = Object.assign({}, context);
   }
 
   if (!auth) {
@@ -222,16 +240,11 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function(code, message) {
-      if (!message) {
-        if (code instanceof Parse.Error) {
-          return reject(code)
-        }
-        message = code;
-        code = Parse.Error.SCRIPT_FAILED;
+    error: function(error) {
+      if (typeof error === 'string') {
+        return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
       }
-      var scriptError = new Parse.Error(code, message);
-      return reject(scriptError);
+      return reject(error);
     }
   }
 }
@@ -276,7 +289,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
       return resolve();
     }
     const request = getRequestObject(triggerType, auth, null, null, config);
-    const response = getResponseObject(request,
+    const { success, error } = getResponseObject(request,
       object => {
         resolve(object);
       },
@@ -289,16 +302,18 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
       object.className = className;
       return Parse.Object.fromJSON(object);
     });
-    const triggerPromise = trigger(request, response);
-    if (triggerPromise && typeof triggerPromise.then === "function") {
-      return triggerPromise.then(promiseResults => {
-        if(promiseResults) {
-          resolve(promiseResults);
-        }else{
-          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
-        }
-      });
-    }
+    return Promise.resolve().then(() => {
+      const response = trigger(request);
+      if (response && typeof response.then === 'function') {
+        return response.then((results) => {
+          if (!results) {
+            throw new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise");
+          }
+          return results;
+        });
+      }
+      return response;
+    }).then(success, error);
   }).then((results) => {
     logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
     return results;
@@ -393,44 +408,39 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
+export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config, context) {
   if (!parseObject) {
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, (object) => {
+    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config, context);
+    var { success, error } = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+      if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
+        Object.assign(context, request.context);
+      }
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
-    // Force the current Parse app before the trigger
-    Parse.applicationId = config.applicationId;
-    Parse.javascriptKey = config.javascriptKey || '';
-    Parse.masterKey = config.masterKey;
 
     // AfterSave and afterDelete triggers can return a promise, which if they
     // do, needs to be resolved before this promise is resolved,
     // so trigger execution is synced with RestWrite.execute() call.
     // If triggers do not return a promise, they can run async code parallel
     // to the RestWrite.execute() call.
-    var triggerPromise = trigger(request, response);
-    if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
-    {
-      logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-      if(triggerPromise && typeof triggerPromise.then === "function") {
-        return triggerPromise.then(resolve, resolve);
+    return Promise.resolve().then(() => {
+      const promise = trigger(request);
+      if(triggerType === Types.afterSave || triggerType === Types.afterDelete) {
+        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
       }
-      else {
-        return resolve();
-      }
-    }
+      return promise;
+    }).then(success, error);
   });
 }
 

@@ -354,6 +354,32 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('object with undefined nested values', () => {
+    const input = {
+      _id: 'vQHyinCW1l',
+      urls: { firstUrl: 'https://', secondUrl: undefined }, };
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: {
+        urls: { type: 'Object' }
+      }
+    });
+    expect(output.urls).toEqual({
+      firstUrl: 'https://', secondUrl: undefined
+    });
+  });
+
+  it('undefined objects', () => {
+    const input = {
+      _id: 'vQHyinCW1l',
+      urls: undefined, };
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: {
+        urls: { type: 'Object' }
+      }
+    });
+    expect(output.urls).toBeUndefined();
+  });
+
   it('$regex in $all list', (done) => {
     const input = {
       arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$regex: '^\\Qtwo\\E'}, {$regex: '^\\Qthree\\E'}]},

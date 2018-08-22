@@ -21,9 +21,7 @@
       "describe_only": true,
       "on_db": true,
       "defaultConfiguration": true,
-      "expectSuccess": true,
       "range": true,
-      "expectError": true,
       "jequal": true,
       "create": true,
       "arrayContains": true

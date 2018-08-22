@@ -28,141 +28,115 @@ function verifyACL(user) {
 }
 
 describe('Parse.User testing', () => {
-  it("user sign up class method", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function(user) {
-        ok(user.getSessionToken());
-        done();
-      }
-    });
+  it("user sign up class method", async (done) => {
+    const user = await Parse.User.signUp("asdf", "zxcv");
+    ok(user.getSessionToken());
+    done();
   });
 
-  it("user sign up instance method", (done) => {
+  it("user sign up instance method", async () => {
     const user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
-    user.signUp(null, {
-      success: function(user) {
-        ok(user.getSessionToken());
-        done();
+    await user.signUp();
+    ok(user.getSessionToken());
+  });
+
+  it("user login wrong username", async (done) => {
+    await Parse.User.signUp("asdf", "zxcv");
+    try {
+      await Parse.User.logIn("non_existent_user", "asdf3");
+      done.fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
+    }
+  });
+
+  it("user login wrong password", async (done) => {
+    await Parse.User.signUp("asdf", "zxcv");
+    try {
+      await Parse.User.logIn("asdf", "asdfWrong");
+      done.fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
+    }
+  });
+
+  it('user login with non-string username with REST API', async (done) => {
+    await Parse.User.signUp('asdf', 'zxcv');
+    rp.post({
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
       },
-      error: function(userAgain, error) {
-        ok(undefined, error);
+      json: {
+        _method: 'GET',
+        username: {'$regex':'^asd'},
+        password: 'zxcv',
       }
+    }).then((res) => {
+      fail(`no request should succeed: ${JSON.stringify(res)}`);
+      done();
+    }).catch((err) => {
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
+      done();
     });
   });
 
-  it("user login wrong username", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function() {
-        Parse.User.logIn("non_existent_user", "asdf3",
-          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+  it('user login with non-string username with REST API (again)', async (done) => {
+    await Parse.User.signUp('asdf', 'zxcv');
+    rp.post({
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
       },
-      error: function(err) {
-        jfail(err);
-        fail("Shit should not fail");
-        done();
+      json: {
+        _method: 'GET',
+        username: 'asdf',
+        password: {'$regex':'^zx'},
       }
+    }).then((res) => {
+      fail(`no request should succeed: ${JSON.stringify(res)}`);
+      done();
+    }).catch((err) => {
+      expect(err.statusCode).toBe(404);
+      expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
+      done();
     });
   });
 
-  it("user login wrong password", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function() {
-        Parse.User.logIn("asdf", "asdfWrong",
-          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+  it('user login using POST with REST API', async (done) => {
+    await Parse.User.signUp('some_user', 'some_password');
+    rp.post({
+      url: 'http://localhost:8378/1/login',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: {
+        username: 'some_user',
+        password: 'some_password',
       }
+    }).then((res) => {
+      expect(res.username).toBe('some_user');
+      done();
+    }).catch((err) => {
+      fail(`no request should fail: ${JSON.stringify(err)}`);
+      done();
     });
   });
 
-  it('user login with non-string username with REST API', (done) => {
-    Parse.User.signUp('asdf', 'zxcv', null, {
-      success: () => {
-        return rp.post({
-          url: 'http://localhost:8378/1/login',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          json: {
-            _method: 'GET',
-            username: {'$regex':'^asd'},
-            password: 'zxcv',
-          }
-        }).then((res) => {
-          fail(`no request should succeed: ${JSON.stringify(res)}`);
-          done();
-        }).catch((err) => {
-          expect(err.statusCode).toBe(404);
-          expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
-          done();
-        });
-      },
-    });
-  });
-
-  it('user login with non-string username with REST API (again)', (done) => {
-    Parse.User.signUp('asdf', 'zxcv', null, {
-      success: () => {
-        return rp.post({
-          url: 'http://localhost:8378/1/login',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          json: {
-            _method: 'GET',
-            username: 'asdf',
-            password: {'$regex':'^zx'},
-          }
-        }).then((res) => {
-          fail(`no request should succeed: ${JSON.stringify(res)}`);
-          done();
-        }).catch((err) => {
-          expect(err.statusCode).toBe(404);
-          expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
-          done();
-        });
-      },
-    });
-  });
-
-  it('user login using POST with REST API', (done) => {
-    Parse.User.signUp('some_user', 'some_password', null, {
-      success: () => {
-        return rp.post({
-          url: 'http://localhost:8378/1/login',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          json: {
-            username: 'some_user',
-            password: 'some_password',
-          }
-        }).then((res) => {
-          expect(res.username).toBe('some_user');
-          done();
-        }).catch((err) => {
-          fail(`no request should fail: ${JSON.stringify(err)}`);
-          done();
-        });
-      },
-    });
-  });
-
-  it("user login", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function() {
-        Parse.User.logIn("asdf", "zxcv", {
-          success: function(user) {
-            equal(user.get("username"), "asdf");
-            verifyACL(user);
-            done();
-          }
-        });
-      }
-    });
+  it("user login", async (done) => {
+    await Parse.User.signUp("asdf", "zxcv");
+    const user = await Parse.User.logIn("asdf", "zxcv");
+    equal(user.get("username"), "asdf");
+    verifyACL(user);
+    done();
   });
 
   it('should respect ACL without locking user out', (done) => {
@@ -360,7 +334,7 @@ describe('Parse.User testing', () => {
     let user = null;
     let sessionToken = null;
 
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return Parse.User.signUp("Jason", "Parse", { "code": "red" });
 
     }).then(function(newUser) {
@@ -396,7 +370,7 @@ describe('Parse.User testing', () => {
     }, function(error) {
       ok(error);
       // Handle the error.
-      return Parse.Promise.as();
+      return Promise.resolve();
 
     }).then(function() {
       done();
@@ -406,123 +380,91 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("cannot save non-authed user", (done) => {
+  it("cannot save non-authed user", async (done) => {
     let user = new Parse.User();
     user.set({
       "password": "asdf",
       "email": "asdf@example.com",
       "username": "zxcv"
     });
-    user.signUp(null, {
-      success: function(userAgain) {
-        equal(userAgain, user);
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(userNotAuthed) {
-            user = new Parse.User();
-            user.set({
-              "username": "hacker",
-              "password": "password"
-            });
-            user.signUp(null, {
-              success: function(userAgain) {
-                equal(userAgain, user);
-                userNotAuthed.set("username", "changed");
-                userNotAuthed.save().then(fail, (err) => {
-                  expect(err.code).toEqual(Parse.Error.SESSION_MISSING);
-                  done();
-                });
-              },
-              error: function(model, error) {
-                ok(undefined, error);
-              }
-            });
-          },
-          error: function(model, error) {
-            ok(undefined, error);
-          }
-        });
-      }
+    let userAgain = await user.signUp();
+    equal(userAgain, user);
+    const query = new Parse.Query(Parse.User);
+    const userNotAuthed = await query.get(user.id);
+    user = new Parse.User();
+    user.set({
+      "username": "hacker",
+      "password": "password"
+    });
+    userAgain = await user.signUp();
+    equal(userAgain, user);
+    userNotAuthed.set("username", "changed");
+    userNotAuthed.save().then(fail, (err) => {
+      expect(err.code).toEqual(Parse.Error.SESSION_MISSING);
+      done();
     });
   });
 
-  it("cannot delete non-authed user", (done) => {
+  it("cannot delete non-authed user", async (done) => {
     let user = new Parse.User();
-    user.signUp({
+    await user.signUp({
       "password": "asdf",
       "email": "asdf@example.com",
       "username": "zxcv"
-    }, {
-      success: function() {
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(userNotAuthed) {
-            user = new Parse.User();
-            user.signUp({
-              "username": "hacker",
-              "password": "password"
-            }, {
-              success: function(userAgain) {
-                equal(userAgain, user);
-                userNotAuthed.set("username", "changed");
-                userNotAuthed.destroy(expectError(
-                  Parse.Error.SESSION_MISSING, done));
-              }
-            });
-          }
-        });
-      }
     });
+    const query = new Parse.Query(Parse.User);
+    const userNotAuthed = await query.get(user.id);
+    user = new Parse.User();
+    const userAgain = await user.signUp({
+      "username": "hacker",
+      "password": "password"
+    });
+    equal(userAgain, user);
+    userNotAuthed.set("username", "changed");
+    try {
+      await userNotAuthed.destroy();
+      done.fail();
+    } catch(e) {
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+      done();
+    }
   });
 
-  it("cannot saveAll with non-authed user", (done) => {
+  it("cannot saveAll with non-authed user", async (done) => {
     let user = new Parse.User();
-    user.signUp({
+    await user.signUp({
       "password": "asdf",
       "email": "asdf@example.com",
       "username": "zxcv"
-    }, {
-      success: function() {
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(userNotAuthed) {
-            user = new Parse.User();
-            user.signUp({
-              username: "hacker",
-              password: "password"
-            }, {
-              success: function() {
-                query.get(user.id, {
-                  success: function(userNotAuthedNotChanged) {
-                    userNotAuthed.set("username", "changed");
-                    const object = new TestObject();
-                    object.save({
-                      user: userNotAuthedNotChanged
-                    }, {
-                      success: function() {
-                        const item1 = new TestObject();
-                        item1.save({
-                          number: 0
-                        }, {
-                          success: function(item1) {
-                            item1.set("number", 1);
-                            const item2 = new TestObject();
-                            item2.set("number", 2);
-                            Parse.Object.saveAll(
-                              [item1, item2, userNotAuthed],
-                              expectError(Parse.Error.SESSION_MISSING, done));
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
     });
+    const query = new Parse.Query(Parse.User);
+    const userNotAuthed = await query.get(user.id);
+    user = new Parse.User();
+    await user.signUp({
+      username: "hacker",
+      password: "password"
+    });
+    const userNotAuthedNotChanged = await query.get(user.id);
+    userNotAuthed.set("username", "changed");
+    const object = new TestObject();
+    await object.save({
+      user: userNotAuthedNotChanged
+    });
+    const item1 = new TestObject();
+    await item1.save({
+      number: 0
+    });
+    item1.set("number", 1);
+    const item2 = new TestObject();
+    item2.set("number", 2);
+    try {
+      await Parse.Object.saveAll(
+        [item1, item2, userNotAuthed]);
+      done.fail();
+    } catch(e) {
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+      done();
+    }
   });
 
   it('never locks himself up', async () => {
@@ -661,79 +603,55 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("user associations", (done) => {
+  it("user associations", async (done) => {
     const child = new TestObject();
-    child.save(null, {
-      success: function() {
-        const user = new Parse.User();
-        user.set("password", "asdf");
-        user.set("email", "asdf@example.com");
-        user.set("username", "zxcv");
-        user.set("child", child);
-        user.signUp(null, {
-          success: function() {
-            const object = new TestObject();
-            object.set("user", user);
-            object.save(null, {
-              success: function() {
-                const query = new Parse.Query(TestObject);
-                query.get(object.id, {
-                  success: function(objectAgain) {
-                    const userAgain = objectAgain.get("user");
-                    userAgain.fetch({
-                      success: function() {
-                        equal(user.id, userAgain.id);
-                        equal(userAgain.get("child").id, child.id);
-                        done();
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    });
-  });
-
-  it("user queries", (done) => {
+    await child.save();
     const user = new Parse.User();
     user.set("password", "asdf");
     user.set("email", "asdf@example.com");
     user.set("username", "zxcv");
-    user.signUp(null, {
-      success: function() {
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(userAgain) {
-            equal(userAgain.id, user.id);
-            query.find({
-              success: function(users) {
-                equal(users.length, 1);
-                equal(users[0].id, user.id);
-                ok(userAgain.get("email"), "asdf@example.com");
-                done();
-              }
-            });
-          }
-        });
-      }
-    });
+    user.set("child", child);
+    await user.signUp();
+    const object = new TestObject();
+    object.set("user", user);
+    await object.save();
+    const query = new Parse.Query(TestObject);
+    const objectAgain = await query.get(object.id);
+    const userAgain = objectAgain.get("user");
+    await userAgain.fetch();
+    equal(user.id, userAgain.id);
+    equal(userAgain.get("child").id, child.id);
+    done();
+  });
+
+  it("user queries", async (done) => {
+    const user = new Parse.User();
+    user.set("password", "asdf");
+    user.set("email", "asdf@example.com");
+    user.set("username", "zxcv");
+    await user.signUp();
+    const query = new Parse.Query(Parse.User);
+    const userAgain = await query.get(user.id);
+    equal(userAgain.id, user.id);
+    const users = await query.find();
+    equal(users.length, 1);
+    equal(users[0].id, user.id);
+    ok(userAgain.get("email"), "asdf@example.com");
+    done();
   });
 
   function signUpAll(list, optionsOrCallback) {
-    let promise = Parse.Promise.as();
+    let promise = Promise.resolve();
     list.forEach((user) => {
       promise = promise.then(function() {
         return user.signUp();
       });
     });
     promise = promise.then(function() { return list; });
-    return promise._thenRunCallbacks(optionsOrCallback);
+    return promise.then(optionsOrCallback);
   }
 
-  it("contained in user array queries", (done) => {
+  it("contained in user array queries", async (done) => {
     const USERS = 4;
     const MESSAGES = 5;
 
@@ -746,7 +664,7 @@ describe('Parse.User testing', () => {
       return user;
     });
 
-    signUpAll(userList, function(users) {
+    signUpAll(userList, async function(users) {
       // Make a list of messages.
       if (!users || users.length != USERS) {
         fail('signupAll failed');
@@ -761,108 +679,72 @@ describe('Parse.User testing', () => {
       });
 
       // Save all the messages.
-      Parse.Object.saveAll(messageList, function() {
+      await Parse.Object.saveAll(messageList);
 
-        // Assemble an "in" list.
-        const inList = [users[0], users[3], users[3]];  // Intentional dupe
-        const query = new Parse.Query(TestObject);
-        query.containedIn("from", inList);
-        query.find({
-          success: function(results) {
-            equal(results.length, 3);
-            done();
-          }
-        });
-
-      });
+      // Assemble an "in" list.
+      const inList = [users[0], users[3], users[3]];  // Intentional dupe
+      const query = new Parse.Query(TestObject);
+      query.containedIn("from", inList);
+      const results = await query.find();
+      equal(results.length, 3);
+      done();
     });
   });
 
-  it("saving a user signs them up but doesn't log them in", (done) => {
+  it("saving a user signs them up but doesn't log them in", async (done) => {
     const user = new Parse.User();
-    user.save({
+    await user.save({
       password: "asdf",
       email: "asdf@example.com",
       username: "zxcv"
-    }, {
-      success: function() {
-        equal(Parse.User.current(), null);
-        done();
-      }
     });
+    equal(Parse.User.current(), null);
+    done();
   });
 
-  it("user updates", (done) => {
+  it("user updates", async (done) => {
     const user = new Parse.User();
-    user.signUp({
+    await user.signUp({
       password: "asdf",
       email: "asdf@example.com",
       username: "zxcv"
-    }, {
-      success: function(user) {
-        user.set("username", "test");
-        user.save(null, {
-          success: function() {
-            equal(Object.keys(user.attributes).length, 6);
-            ok(user.attributes["username"]);
-            ok(user.attributes["email"]);
-            user.destroy({
-              success: function() {
-                const query = new Parse.Query(Parse.User);
-                query.get(user.id, {
-                  error: function(model, error) {
-                    // The user should no longer exist.
-                    equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
-                    done();
-                  }
-                });
-              },
-              error: function(model, error) {
-                ok(undefined, error);
-              }
-            });
-          },
-          error: function(model, error) {
-            ok(undefined, error);
-          }
-        });
-      },
-      error: function(model, error) {
-        ok(undefined, error);
-      }
     });
+
+    user.set("username", "test");
+    await user.save();
+    equal(Object.keys(user.attributes).length, 6);
+    ok(user.attributes["username"]);
+    ok(user.attributes["email"]);
+    await user.destroy();
+    const query = new Parse.Query(Parse.User);
+    try {
+      await query.get(user.id);
+      done.fail();
+    } catch (error) {
+      // The user should no longer exist.
+      equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
+      done();
+    }
   });
 
-  it("count users", (done) => {
+  it("count users", async (done) => {
     const james = new Parse.User();
     james.set("username", "james");
     james.set("password", "mypass");
-    james.signUp(null, {
-      success: function() {
-        const kevin = new Parse.User();
-        kevin.set("username", "kevin");
-        kevin.set("password", "mypass");
-        kevin.signUp(null, {
-          success: function() {
-            const query = new Parse.Query(Parse.User);
-            query.count({
-              success: function(count) {
-                equal(count, 2);
-                done();
-              }
-            });
-          }
-        });
-      }
-    });
+    await james.signUp();
+    const kevin = new Parse.User();
+    kevin.set("username", "kevin");
+    kevin.set("password", "mypass");
+    await kevin.signUp();
+    const query = new Parse.Query(Parse.User);
+    const count = await query.count();
+    equal(count, 2);
+    done();
   });
 
-  it("user sign up with container class", (done) => {
-    Parse.User.signUp("ilya", "mypass", { "array": ["hello"] }, {
-      success: function() {
-        done();
-      }
-    });
+  it("user sign up with container class", async (done) => {
+    await Parse.User.signUp("ilya", "mypass", { "array": ["hello"] });
+    done();
   });
 
   it("user modified while saving", (done) => {
@@ -870,22 +752,23 @@ describe('Parse.User testing', () => {
     const user = new Parse.User();
     user.set("username", "alice");
     user.set("password", "password");
-    user.signUp(null, {
-      success: function(userAgain) {
-        equal(userAgain.get("username"), "bob");
-        ok(userAgain.dirty("username"));
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(freshUser) {
-            equal(freshUser.id, user.id);
-            equal(freshUser.get("username"), "alice");
-            Parse.Object.enableSingleInstance();
-            done();
-          }
-        });
-      }
+    user.signUp().then(function(userAgain) {
+      equal(userAgain.get("username"), "bob");
+      ok(userAgain.dirty("username"));
+      const query = new Parse.Query(Parse.User);
+      query.get(user.id).then((freshUser) => {
+        console.log(freshUser.toJSON());
+        equal(freshUser.id, user.id);
+        equal(freshUser.get("username"), "alice");
+        Parse.Object.enableSingleInstance();
+        done();
+      });
     });
-    ok(user.set("username", "bob"));
+    // Jump a frame so the signup call is properly sent
+    // This is due to the fact that now, we use real promises
+    process.nextTick(() => {
+      ok(user.set("username", "bob"));
+    });
   });
 
   it("user modified while saving with unsaved child", (done) => {
@@ -894,48 +777,41 @@ describe('Parse.User testing', () => {
     user.set("username", "alice");
     user.set("password", "password");
     user.set("child", new TestObject());
-    user.signUp(null, {
-      success: function(userAgain) {
-        equal(userAgain.get("username"), "bob");
-        // Should be dirty, but it depends on batch support.
-        // ok(userAgain.dirty("username"));
-        const query = new Parse.Query(Parse.User);
-        query.get(user.id, {
-          success: function(freshUser) {
-            equal(freshUser.id, user.id);
-            // Should be alice, but it depends on batch support.
-            equal(freshUser.get("username"), "bob");
-            Parse.Object.enableSingleInstance();
-            done();
-          }
-        });
-      }
+    user.signUp().then((userAgain) => {
+      equal(userAgain.get("username"), "bob");
+      // Should be dirty, but it depends on batch support.
+      // ok(userAgain.dirty("username"));
+      const query = new Parse.Query(Parse.User);
+      query.get(user.id).then((freshUser) => {
+        equal(freshUser.id, user.id);
+        // Should be alice, but it depends on batch support.
+        equal(freshUser.get("username"), "bob");
+        Parse.Object.enableSingleInstance();
+        done();
+      });
     });
     ok(user.set("username", "bob"));
   });
 
-  it("user loaded from localStorage from signup", (done) => {
-    Parse.User.signUp("alice", "password", null, {
-      success: function(alice) {
-        ok(alice.id, "Alice should have an objectId");
-        ok(alice.getSessionToken(), "Alice should have a session token");
-        equal(alice.get("password"), undefined,
-          "Alice should not have a password");
+  it("user loaded from localStorage from signup", async (done) => {
+    const alice = await Parse.User.signUp("alice", "password");
+    ok(alice.id, "Alice should have an objectId");
+    ok(alice.getSessionToken(), "Alice should have a session token");
+    equal(alice.get("password"), undefined,
+      "Alice should not have a password");
 
-        // Simulate the environment getting reset.
-        Parse.User._currentUser = null;
-        Parse.User._currentUserMatchesDisk = false;
+    // Simulate the environment getting reset.
+    Parse.User._currentUser = null;
+    Parse.User._currentUserMatchesDisk = false;
 
-        const aliceAgain = Parse.User.current();
-        equal(aliceAgain.get("username"), "alice");
-        equal(aliceAgain.id, alice.id, "currentUser should have objectId");
-        ok(aliceAgain.getSessionToken(),
-          "currentUser should have a sessionToken");
-        equal(alice.get("password"), undefined,
-          "currentUser should not have password");
-        done();
-      }
-    });
+    const aliceAgain = Parse.User.current();
+    equal(aliceAgain.get("username"), "alice");
+    equal(aliceAgain.id, alice.id, "currentUser should have objectId");
+    ok(aliceAgain.getSessionToken(),
+      "currentUser should have a sessionToken");
+    equal(alice.get("password"), undefined,
+      "currentUser should not have password");
+    done();
   });
 
 
@@ -1039,55 +915,42 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("user with missing username", (done) => {
+  it("user with missing username", async (done) => {
     const user = new Parse.User();
     user.set("password", "foo");
-    user.signUp(null, {
-      success: function() {
-        ok(null, "This should have failed");
-        done();
-      },
-      error: function(userAgain, error) {
-        equal(error.code, Parse.Error.OTHER_CAUSE);
-        done();
-      }
-    });
+    try {
+      await user.signUp();
+      done.fail();
+    } catch(error) {
+      equal(error.code, Parse.Error.OTHER_CAUSE);
+      done();
+    }
   });
 
-  it("user with missing password", (done) => {
+  it("user with missing password", async (done) => {
     const user = new Parse.User();
     user.set("username", "foo");
-    user.signUp(null, {
-      success: function() {
-        ok(null, "This should have failed");
-        done();
-      },
-      error: function(userAgain, error) {
-        equal(error.code, Parse.Error.OTHER_CAUSE);
-        done();
-      }
-    });
+    try {
+      await user.signUp();
+      done.fail();
+    } catch(error) {
+      equal(error.code, Parse.Error.OTHER_CAUSE);
+      done();
+    }
   });
 
-  it("user stupid subclassing", (done) => {
+  it("user stupid subclassing", async (done) => {
 
     const SuperUser = Parse.Object.extend("User");
     const user = new SuperUser();
     user.set("username", "bob");
     user.set("password", "welcome");
     ok(user instanceof Parse.User, "Subclassing User should have worked");
-    user.signUp(null, {
-      success: function() {
-        done();
-      },
-      error: function() {
-        ok(false, "Signing up should have worked");
-        done();
-      }
-    });
+    await user.signUp();
+    done();
   });
 
-  it("user signup class method uses subclassing", (done) => {
+  it("user signup class method uses subclassing", async (done) => {
 
     const SuperUser = Parse.User.extend({
       secret: function() {
@@ -1095,64 +958,38 @@ describe('Parse.User testing', () => {
       }
     });
 
-    Parse.User.signUp("bob", "welcome", null, {
-      success: function(user) {
-        ok(user instanceof SuperUser, "Subclassing User should have worked");
-        equal(user.secret(), 1337);
-        done();
-      },
-      error: function() {
-        ok(false, "Signing up should have worked");
-        done();
-      }
-    });
+    const user = await Parse.User.signUp("bob", "welcome");
+    ok(user instanceof SuperUser, "Subclassing User should have worked");
+    equal(user.secret(), 1337);
+    done();
   });
 
-  it("user on disk gets updated after save", (done) => {
+  it("user on disk gets updated after save", async (done) => {
     Parse.User.extend({
       isSuper: function() {
         return true;
       }
     });
-    Parse.User.signUp("bob", "welcome", null, {
-      success: function(user) {
-        // Modify the user and save.
-        user.save("secret", 1337, {
-          success: function() {
-            // Force the current user to read from disk
-            delete Parse.User._currentUser;
-            delete Parse.User._currentUserMatchesDisk;
 
-            const userFromDisk = Parse.User.current();
-            equal(userFromDisk.get("secret"), 1337);
-            ok(userFromDisk.isSuper(), "The subclass should have been used");
-            done();
-          },
-          error: function() {
-            ok(false, "Saving should have worked");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "Sign up should have worked");
-        done();
-      }
-    });
+    const user = await Parse.User.signUp("bob", "welcome");
+    await user.save("secret", 1337)
+    delete Parse.User._currentUser;
+    delete Parse.User._currentUserMatchesDisk;
+
+    const userFromDisk = Parse.User.current();
+    equal(userFromDisk.get("secret"), 1337);
+    ok(userFromDisk.isSuper(), "The subclass should have been used");
+    done();
   });
 
-  it("current user isn't dirty", (done) => {
-
-    Parse.User.signUp("andrew", "oppa", { style: "gangnam" }, expectSuccess({
-      success: function(user) {
-        ok(!user.dirty("style"), "The user just signed up.");
-        Parse.User._currentUser = null;
-        Parse.User._currentUserMatchesDisk = false;
-        const userAgain = Parse.User.current();
-        ok(!userAgain.dirty("style"), "The user was just read from disk.");
-        done();
-      }
-    }));
+  it("current user isn't dirty", async (done) => {
+    const user = await Parse.User.signUp("andrew", "oppa", { style: "gangnam" });
+    ok(!user.dirty("style"), "The user just signed up.");
+    Parse.User._currentUser = null;
+    Parse.User._currentUserMatchesDisk = false;
+    const userAgain = Parse.User.current();
+    ok(!userAgain.dirty("style"), "The user was just read from disk.");
+    done();
   });
 
   const getMockFacebookProviderWithIdToken = function(id, token) {
@@ -1255,29 +1092,21 @@ describe('Parse.User testing', () => {
     }
   });
 
-  it("log in with provider", (done) => {
+  it("log in with provider", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
-        done();
-      },
-      error: function(model, error) {
-        jfail(error);
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    done();
   });
 
-  it("user authData should be available in cloudcode (#2342)", (done) => {
+  it("user authData should be available in cloudcode (#2342)", async (done) => {
 
     Parse.Cloud.define('checkLogin', (req, res) => {
       expect(req.user).not.toBeUndefined();
@@ -1287,105 +1116,66 @@ describe('Parse.User testing', () => {
 
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
 
-        Parse.Cloud.run('checkLogin').then(done, done);
-      },
-      error: function(model, error) {
-        jfail(error);
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    Parse.Cloud.run('checkLogin').then(done, done);
   });
 
-  it("log in with provider and update token", (done) => {
+  it("log in with provider and update token", async (done) => {
     const provider = getMockFacebookProvider();
     const secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
-    const errorHandler = function() {
-      fail('should not fail');
-      done();
-    }
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: () => {
-        Parse.User._registerAuthenticationProvider(secondProvider);
-        return Parse.User.logOut().then(() => {
-          Parse.User._logInWith("facebook", {
-            success: () => {
-              expect(secondProvider.synchronizedAuthToken).toEqual('jenny_valid_token');
-              // Make sure we can login with the new token again
-              Parse.User.logOut().then(() => {
-                Parse.User._logInWith("facebook", {
-                  success: done,
-                  error: errorHandler
-                });
-              });
-            },
-            error: errorHandler
-          });
-        })
-      },
-      error: errorHandler
-    }).catch((err) => {
-      errorHandler(err);
-      done();
-    });
+    await Parse.User._logInWith("facebook");
+    Parse.User._registerAuthenticationProvider(secondProvider);
+    await Parse.User.logOut();
+    await Parse.User._logInWith("facebook");
+    expect(secondProvider.synchronizedAuthToken).toEqual('jenny_valid_token');
+    // Make sure we can login with the new token again
+    await Parse.User.logOut();
+    await Parse.User._logInWith("facebook");
+    done();
   });
 
-  it('returns authData when authed and logged in with provider (regression test for #1498)', done => {
+  it('returns authData when authed and logged in with provider (regression test for #1498)', async (done) => {
     Parse.Object.enableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith('facebook', {
-      success: user => {
-        const userQuery = new Parse.Query(Parse.User);
-        userQuery.get(user.id)
-          .then(user => {
-            expect(user.get('authData')).not.toBeUndefined();
-            Parse.Object.disableSingleInstance();
-            done();
-          });
-      }
-    });
+    const user = await Parse.User._logInWith('facebook');
+    const userQuery = new Parse.Query(Parse.User);
+    userQuery.get(user.id)
+      .then(user => {
+        expect(user.get('authData')).not.toBeUndefined();
+        Parse.Object.disableSingleInstance();
+        done();
+      });
   });
 
-  it('only creates a single session for an installation / user pair (#2885)', done => {
+  it('only creates a single session for an installation / user pair (#2885)', async (done) => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User.logInWith('facebook', {
-      success: () => {
-        return Parse.User.logInWith('facebook', {
-          success: () => {
-            return Parse.User.logInWith('facebook', {
-              success: (user) => {
-                const sessionToken = user.getSessionToken();
-                const query = new Parse.Query('_Session');
-                return query.find({ useMasterKey: true })
-                  .then((results) => {
-                    expect(results.length).toBe(1);
-                    expect(results[0].get('sessionToken')).toBe(sessionToken);
-                    expect(results[0].get('createdWith')).toEqual({
-                      action: 'login',
-                      authProvider: 'facebook'
-                    });
-                    done();
-                  }).catch(done.fail);
-              }
-            });
-          }
+    await Parse.User.logInWith('facebook')
+    await Parse.User.logInWith('facebook');
+    const user = await Parse.User.logInWith('facebook');
+    const sessionToken = user.getSessionToken();
+    const query = new Parse.Query('_Session');
+    return query.find({ useMasterKey: true })
+      .then((results) => {
+        expect(results.length).toBe(1);
+        expect(results[0].get('sessionToken')).toBe(sessionToken);
+        expect(results[0].get('createdWith')).toEqual({
+          action: 'login',
+          authProvider: 'facebook'
         });
-      }
-    });
+        done();
+      }).catch(done.fail);
   });
 
   it('log in with provider with files', done => {
@@ -1408,509 +1198,313 @@ describe('Parse.User testing', () => {
     }).catch(done.fail);
   });
 
-  it("log in with provider twice", (done) => {
+  it("log in with provider twice", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
 
-        Parse.User.logOut().then(() => {
-          ok(provider.loggedOut);
-          provider.loggedOut = false;
-
-          Parse.User._logInWith("facebook", {
-            success: function(innerModel) {
-              ok(innerModel instanceof Parse.User,
-                "Model should be a Parse.User");
-              ok(innerModel === Parse.User.current(),
-                "Returned model should be the current user");
-              ok(provider.authData.id === provider.synchronizedUserId);
-              ok(provider.authData.access_token === provider.synchronizedAuthToken);
-              ok(innerModel._isLinked("facebook"),
-                "User should be linked to facebook");
-              ok(innerModel.existed(), "User should not be newly-created");
-              done();
-            },
-            error: function(model, error) {
-              jfail(error);
-              ok(false, "LogIn should have worked");
-              done();
-            }
-          });
-        }, done.fail);
-      },
-      error: function(model, error) {
-        jfail(error);
-        ok(false, "LogIn should have worked");
-        done();
-      }
-    });
+    Parse.User.logOut().then(async () => {
+      ok(provider.loggedOut);
+      provider.loggedOut = false;
+      const innerModel = await Parse.User._logInWith("facebook");
+      ok(innerModel instanceof Parse.User,
+        "Model should be a Parse.User");
+      ok(innerModel === Parse.User.current(),
+        "Returned model should be the current user");
+      ok(provider.authData.id === provider.synchronizedUserId);
+      ok(provider.authData.access_token === provider.synchronizedAuthToken);
+      ok(innerModel._isLinked("facebook"),
+        "User should be linked to facebook");
+      ok(innerModel.existed(), "User should not be newly-created");
+      done();
+    }, done.fail);
   });
 
-  it("log in with provider failed", (done) => {
+  it("log in with provider failed", async (done) => {
     const provider = getMockFacebookProvider();
     provider.shouldError = true;
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function() {
-        ok(false, "logIn should not have succeeded");
-      },
-      error: function(model, error) {
-        ok(error, "Error should be non-null");
-        done();
-      }
-    });
+    try {
+      await Parse.User._logInWith("facebook");
+      done.fail();
+    } catch (error) {
+      ok(error, "Error should be non-null");
+      done();
+    }
   });
 
-  it("log in with provider cancelled", (done) => {
+  it("log in with provider cancelled", async (done) => {
     const provider = getMockFacebookProvider();
     provider.shouldCancel = true;
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function() {
-        ok(false, "logIn should not have succeeded");
-      },
-      error: function(model, error) {
-        ok(error === null, "Error should be null");
-        done();
-      }
-    });
+    try {
+      await Parse.User._logInWith("facebook");
+      done.fail();
+    } catch (error) {
+      ok(error === null, "Error should be null");
+      done();
+    }
   });
 
-  it("login with provider should not call beforeSave trigger", (done) => {
+  it("login with provider should not call beforeSave trigger", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function() {
-        Parse.User.logOut().then(() => {
-          Parse.Cloud.beforeSave(Parse.User, function(req, res) {
-            res.error("Before save shouldn't be called on login");
-          });
-
-          Parse.User._logInWith("facebook", {
-            success: function() {
-              done();
-            },
-            error: function(model, error) {
-              ok(undefined, error);
-              done();
-            }
-          });
-        });
-      }
+    await Parse.User._logInWith("facebook");
+    Parse.User.logOut().then(async () => {
+      Parse.Cloud.beforeSave(Parse.User, function(req, res) {
+        res.error("Before save shouldn't be called on login");
+      });
+      await Parse.User._logInWith("facebook");
+      done();
     });
   });
 
-  it("link with provider", (done) => {
+  it("link with provider", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = new Parse.User();
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
-    user.signUp(null, {
-      success: function() {
-        user._linkWith("facebook", {
-          success: function(model) {
-            ok(model instanceof Parse.User, "Model should be a Parse.User");
-            strictEqual(Parse.User.current(), model);
-            strictEqual(provider.authData.id, provider.synchronizedUserId);
-            strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-            strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-            ok(model._isLinked("facebook"), "User should be linked");
-            done();
-          },
-          error: function() {
-            ok(false, "linking should have succeeded");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "signup should not have failed");
-        done();
-      }
-    });
+    await user.signUp();
+    const model = await user._linkWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked");
+    done();
   });
 
   // What this means is, only one Parse User can be linked to a
   // particular Facebook account.
-  it("link with provider for already linked user", (done) => {
+  it("link with provider for already linked user", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = new Parse.User();
     user.set("username", "testLinkWithProviderToAlreadyLinkedUser");
     user.set("password", "mypass");
-    user.signUp(null, {
-      success: function() {
-        user._linkWith("facebook", {
-          success: function(model) {
-            ok(model instanceof Parse.User, "Model should be a Parse.User");
-            strictEqual(Parse.User.current(), model);
-            strictEqual(provider.authData.id, provider.synchronizedUserId);
-            strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-            strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-            ok(model._isLinked("facebook"), "User should be linked.");
-            const user2 = new Parse.User();
-            user2.set("username", "testLinkWithProviderToAlreadyLinkedUser2");
-            user2.set("password", "mypass");
-            user2.signUp(null, {
-              success: function() {
-                user2._linkWith('facebook', {
-                  success: (err) => {
-                    jfail(err);
-                    done();
-                  },
-                  error: function(model, error) {
-                    expect(error.code).toEqual(
-                      Parse.Error.ACCOUNT_ALREADY_LINKED);
-                    done();
-                  },
-                });
-              },
-              error: function() {
-                ok(false, "linking should have failed");
-                done();
-              }
-            });
-          },
-          error: function() {
-            ok(false, "linking should have succeeded");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "signup should not have failed");
-        done();
-      }
-    });
+    await user.signUp();
+    const model = await user._linkWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked.");
+    const user2 = new Parse.User();
+    user2.set("username", "testLinkWithProviderToAlreadyLinkedUser2");
+    user2.set("password", "mypass");
+    await user2.signUp();
+    try {
+      await user2._linkWith('facebook');
+      done.fail();
+    } catch (error) {
+      expect(error.code).toEqual(
+        Parse.Error.ACCOUNT_ALREADY_LINKED);
+      done();
+    }
   });
 
-  it("link with provider failed", (done) => {
+  it("link with provider failed", async (done) => {
     const provider = getMockFacebookProvider();
     provider.shouldError = true;
     Parse.User._registerAuthenticationProvider(provider);
     const user = new Parse.User();
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
-    user.signUp(null, {
-      success: function() {
-        user._linkWith("facebook", {
-          success: function() {
-            ok(false, "linking should fail");
-            done();
-          },
-          error: function(model, error) {
-            ok(error, "Linking should fail");
-            ok(!model._isLinked("facebook"),
-              "User should not be linked to facebook");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "signup should not have failed");
-        done();
-      }
-    });
+    await user.signUp();
+    try {
+      await user._linkWith("facebook");
+      done.fail();
+    } catch(error) {
+      ok(error, "Linking should fail");
+      ok(!user._isLinked("facebook"),
+        "User should not be linked to facebook");
+      done();
+    }
   });
 
-  it("link with provider cancelled", (done) => {
+  it("link with provider cancelled", async (done) => {
     const provider = getMockFacebookProvider();
     provider.shouldCancel = true;
     Parse.User._registerAuthenticationProvider(provider);
     const user = new Parse.User();
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
-    user.signUp(null, {
-      success: function() {
-        user._linkWith("facebook", {
-          success: function() {
-            ok(false, "linking should fail");
-            done();
-          },
-          error: function(model, error) {
-            ok(!error, "Linking should be cancelled");
-            ok(!model._isLinked("facebook"),
-              "User should not be linked to facebook");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "signup should not have failed");
-        done();
-      }
-    });
+    await user.signUp();
+    try {
+      await user._linkWith("facebook");
+      done.fail();
+    } catch(error) {
+      ok(!error, "Linking should be cancelled");
+      ok(!user._isLinked("facebook"),
+        "User should not be linked to facebook");
+      done();
+    }
   });
 
-  it("unlink with provider", (done) => {
+  it("unlink with provider", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User.");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook.");
-
-        model._unlinkFrom("facebook", {
-          success: function(model) {
-            ok(!model._isLinked("facebook"), "User should not be linked.");
-            ok(!provider.synchronizedUserId, "User id should be cleared.");
-            ok(!provider.synchronizedAuthToken,
-              "Auth token should be cleared.");
-            ok(!provider.synchronizedExpiration,
-              "Expiration should be cleared.");
-            done();
-          },
-          error: function() {
-            ok(false, "unlinking should succeed");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User.");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook.");
+    await model._unlinkFrom("facebook");
+    ok(!model._isLinked("facebook"), "User should not be linked.");
+    ok(!provider.synchronizedUserId, "User id should be cleared.");
+    ok(!provider.synchronizedAuthToken,
+      "Auth token should be cleared.");
+    ok(!provider.synchronizedExpiration,
+      "Expiration should be cleared.");
+    done();
   });
 
-  it("unlink and link", (done) => {
+  it("unlink and link", async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
 
-        model._unlinkFrom("facebook", {
-          success: function(model) {
-            ok(!model._isLinked("facebook"),
-              "User should not be linked to facebook");
-            ok(!provider.synchronizedUserId, "User id should be cleared");
-            ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
-            ok(!provider.synchronizedExpiration,
-              "Expiration should be cleared");
+    await model._unlinkFrom("facebook");
+    ok(!model._isLinked("facebook"),
+      "User should not be linked to facebook");
+    ok(!provider.synchronizedUserId, "User id should be cleared");
+    ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
+    ok(!provider.synchronizedExpiration,
+      "Expiration should be cleared");
 
-            model._linkWith("facebook", {
-              success: function(model) {
-                ok(provider.synchronizedUserId, "User id should have a value");
-                ok(provider.synchronizedAuthToken,
-                  "Auth token should have a value");
-                ok(provider.synchronizedExpiration,
-                  "Expiration should have a value");
-                ok(model._isLinked("facebook"),
-                  "User should be linked to facebook");
-                done();
-              },
-              error: function() {
-                ok(false, "linking again should succeed");
-                done();
-              }
-            });
-          },
-          error: function() {
-            ok(false, "unlinking should succeed");
-            done();
-          }
-        });
-      },
-      error: function() {
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    await model._linkWith("facebook");
+    ok(provider.synchronizedUserId, "User id should have a value");
+    ok(provider.synchronizedAuthToken,
+      "Auth token should have a value");
+    ok(provider.synchronizedExpiration,
+      "Expiration should have a value");
+    ok(model._isLinked("facebook"),
+      "User should be linked to facebook");
+    done();
   });
 
-  it("link multiple providers", (done) => {
+  it("link multiple providers", async (done) => {
     const provider = getMockFacebookProvider();
     const mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
-        Parse.User._registerAuthenticationProvider(mockProvider);
-        const objectId = model.id;
-        model._linkWith("myoauth", {
-          success: function(model) {
-            expect(model.id).toEqual(objectId);
-            ok(model._isLinked("facebook"), "User should be linked to facebook");
-            ok(model._isLinked("myoauth"), "User should be linked to myoauth");
-            done();
-          },
-          error: function(error) {
-            jfail(error);
-            fail('SHould not fail');
-            done();
-          }
-        })
-      },
-      error: function() {
-        ok(false, "linking should have worked");
-        done();
-      }
-    });
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    Parse.User._registerAuthenticationProvider(mockProvider);
+    const objectId = model.id;
+    await model._linkWith("myoauth");
+    expect(model.id).toEqual(objectId);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+    done();
   });
 
-  it("link multiple providers and updates token", (done) => {
+  it("link multiple providers and updates token", async (done) => {
     const provider = getMockFacebookProvider();
     const secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
-    const errorHandler = function(model, error) {
-      jfail(error);
-      fail('Should not fail');
+    const mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const model = await Parse.User._logInWith("facebook");
+    Parse.User._registerAuthenticationProvider(mockProvider);
+    const objectId = model.id;
+    await model._linkWith("myoauth");
+    Parse.User._registerAuthenticationProvider(secondProvider);
+    await Parse.User.logOut();
+    await Parse.User._logInWith("facebook");
+    await Parse.User.logOut();
+    const user = await Parse.User._logInWith("myoauth");
+    expect(user.id).toBe(objectId);
+    done();
+  });
+
+  it("link multiple providers and update token", async (done) => {
+    const provider = getMockFacebookProvider();
+    const mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const model = await Parse.User._logInWith("facebook");
+    ok(model instanceof Parse.User, "Model should be a Parse.User");
+    strictEqual(Parse.User.current(), model);
+    ok(model.extended(), "Should have used the subclass.");
+    strictEqual(provider.authData.id, provider.synchronizedUserId);
+    strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+    strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    Parse.User._registerAuthenticationProvider(mockProvider);
+    const objectId = model.id;
+    await model._linkWith("myoauth");
+    expect(model.id).toEqual(objectId);
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+    await model._linkWith("facebook");
+    ok(model._isLinked("facebook"), "User should be linked to facebook");
+    ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+    done();
+  });
+
+  it('should fail linking with existing', async (done) => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    await Parse.User._logInWith("facebook");
+    await Parse.User.logOut();
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('password');
+    await user.signUp();
+    // try to link here
+    try {
+      await user._linkWith('facebook');
+      done.fail();
+    } catch(e) {
       done();
     }
-    const mockProvider = getMockMyOauthProvider();
-    Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        Parse.User._registerAuthenticationProvider(mockProvider);
-        const objectId = model.id;
-        model._linkWith("myoauth", {
-          success: function() {
-            Parse.User._registerAuthenticationProvider(secondProvider);
-            Parse.User.logOut().then(() => {
-              return Parse.User._logInWith("facebook", {
-                success: () => {
-                  Parse.User.logOut().then(() => {
-                    return Parse.User._logInWith("myoauth", {
-                      success: (user) => {
-                        expect(user.id).toBe(objectId);
-                        done();
-                      }
-                    })
-                  })
-                },
-                error: errorHandler
-              });
-            })
-          },
-          error: errorHandler
-        })
-      },
-      error: errorHandler
-    });
   });
 
-  it("link multiple providers and update token", (done) => {
+  it('should fail linking with existing through REST', async (done) => {
     const provider = getMockFacebookProvider();
-    const mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        ok(model instanceof Parse.User, "Model should be a Parse.User");
-        strictEqual(Parse.User.current(), model);
-        ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.authData.id, provider.synchronizedUserId);
-        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
-        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
-        ok(model._isLinked("facebook"), "User should be linked to facebook");
-        Parse.User._registerAuthenticationProvider(mockProvider);
-        const objectId = model.id;
-        model._linkWith("myoauth", {
-          success: function(model) {
-            expect(model.id).toEqual(objectId);
-            ok(model._isLinked("facebook"), "User should be linked to facebook");
-            ok(model._isLinked("myoauth"), "User should be linked to myoauth");
-            model._linkWith("facebook", {
-              success: () => {
-                ok(model._isLinked("facebook"), "User should be linked to facebook");
-                ok(model._isLinked("myoauth"), "User should be linked to myoauth");
-                done();
-              },
-              error: () => {
-                fail('should link again');
-                done();
-              }
-            })
-          },
-          error: function(error) {
-            jfail(error);
-            fail('SHould not fail');
-            done();
-          }
-        })
-      },
-      error: function() {
-        ok(false, "linking should have worked");
+    const model = await Parse.User._logInWith("facebook");
+    const userId = model.id;
+    Parse.User.logOut().then(() => {
+      request.post({
+        url:Parse.serverURL + '/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: {authData: {facebook: provider.authData}}
+      }, (err,res, body) => {
+        // make sure the location header is properly set
+        expect(userId).not.toBeUndefined();
+        expect(body.objectId).toEqual(userId);
+        expect(res.headers.location).toEqual(Parse.serverURL + '/users/' + userId);
         done();
-      }
-    });
-  });
-
-  it('should fail linking with existing', (done) => {
-    const provider = getMockFacebookProvider();
-    Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function() {
-        Parse.User.logOut().then(() => {
-          const user = new Parse.User();
-          user.setUsername('user');
-          user.setPassword('password');
-          return user.signUp().then(() => {
-            // try to link here
-            user._linkWith('facebook', {
-              success: () => {
-                fail('should not succeed');
-                done();
-              },
-              error: () => {
-                done();
-              }
-            });
-          });
-        });
-      }
-    });
-  });
-
-  it('should fail linking with existing through REST', (done) => {
-    const provider = getMockFacebookProvider();
-    Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(model) {
-        const userId = model.id;
-        Parse.User.logOut().then(() => {
-          request.post({
-            url:Parse.serverURL + '/classes/_User',
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest'
-            },
-            json: {authData: {facebook: provider.authData}}
-          }, (err,res, body) => {
-            // make sure the location header is properly set
-            expect(userId).not.toBeUndefined();
-            expect(body.objectId).toEqual(userId);
-            expect(res.headers.location).toEqual(Parse.serverURL + '/users/' + userId);
-            done();
-          });
-        });
-      }
+      });
     });
   });
 
@@ -1999,32 +1593,29 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should properly error when password is missing', (done) => {
+  it('should properly error when password is missing', async (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function(user) {
-        user.set('username', 'myUser');
-        user.set('email', 'foo@example.com');
-        user.save().then(() => {
-          return Parse.User.logOut();
-        }).then(() => {
-          return Parse.User.logIn('myUser', 'password');
-        }).then(() => {
-          fail('should not succeed');
-          done();
-        }, (err) => {
-          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-          expect(err.message).toEqual('Invalid username/password.');
-          done();
-        })
-      }
+    const user = await Parse.User._logInWith("facebook");
+    user.set('username', 'myUser');
+    user.set('email', 'foo@example.com');
+    user.save().then(() => {
+      return Parse.User.logOut();
+    }).then(() => {
+      return Parse.User.logIn('myUser', 'password');
+    }).then(() => {
+      fail('should not succeed');
+      done();
+    }, (err) => {
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(err.message).toEqual('Invalid username/password.');
+      done();
     });
   });
 
-  it('should have authData in beforeSave and afterSave', (done) => {
+  it('should have authData in beforeSave and afterSave', async (done) => {
 
-    Parse.Cloud.beforeSave('_User', (request, response) => {
+    Parse.Cloud.beforeSave('_User', (request) => {
       const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
@@ -2033,10 +1624,9 @@ describe('Parse.User testing', () => {
       } else {
         fail('authData should be set');
       }
-      response.success();
     });
 
-    Parse.Cloud.afterSave('_User', (request, response) => {
+    Parse.Cloud.afterSave('_User', (request) => {
       const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
@@ -2045,16 +1635,12 @@ describe('Parse.User testing', () => {
       } else {
         fail('authData should be set');
       }
-      response.success();
     });
 
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith("facebook", {
-      success: function() {
-        done();
-      }
-    });
+    await Parse.User._logInWith("facebook");
+    done();
   });
 
   it('set password then change password', (done) => {
@@ -2072,25 +1658,23 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("authenticated check", (done) => {
+  it("authenticated check", async (done) => {
     const user = new Parse.User();
     user.set("username", "darkhelmet");
     user.set("password", "onetwothreefour");
     ok(!user.authenticated());
-    user.signUp(null, expectSuccess({
-      success: function() {
-        ok(user.authenticated());
-        done();
-      }
-    }));
+    await user.signUp(null);
+    ok(user.authenticated());
+    done();
   });
 
-  it("log in with explicit facebook auth data", (done) => {
-    Parse.FacebookUtils.logIn({
+  it("log in with explicit facebook auth data", async (done) => {
+    await Parse.FacebookUtils.logIn({
       id: "8675309",
       access_token: "jenny",
       expiration_date: new Date().toJSON()
-    }, expectSuccess({success: done}));
+    });
+    done();
   });
 
   it("log in async with explicit facebook auth data", (done) => {
@@ -2106,36 +1690,30 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("link with explicit facebook auth data", (done) => {
-    Parse.User.signUp("mask", "open sesame", null, expectSuccess({
-      success: function(user) {
-        Parse.FacebookUtils.link(user, {
-          id: "8675309",
-          access_token: "jenny",
-          expiration_date: new Date().toJSON()
-        }).then(done, (error) => {
-          jfail(error);
-          done();
-        });
-      }
-    }));
+  it("link with explicit facebook auth data", async (done) => {
+    const user = await Parse.User.signUp("mask", "open sesame");
+    Parse.FacebookUtils.link(user, {
+      id: "8675309",
+      access_token: "jenny",
+      expiration_date: new Date().toJSON()
+    }).then(done, (error) => {
+      jfail(error);
+      done();
+    });
   });
 
-  it("link async with explicit facebook auth data", (done) => {
-    Parse.User.signUp("mask", "open sesame", null, expectSuccess({
-      success: function(user) {
-        Parse.FacebookUtils.link(user, {
-          id: "8675309",
-          access_token: "jenny",
-          expiration_date: new Date().toJSON()
-        }).then(function() {
-          done();
-        }, function(error) {
-          ok(false, error);
-          done();
-        });
-      }
-    }));
+  it("link async with explicit facebook auth data", async (done) => {
+    const user = await Parse.User.signUp("mask", "open sesame");
+    Parse.FacebookUtils.link(user, {
+      id: "8675309",
+      access_token: "jenny",
+      expiration_date: new Date().toJSON()
+    }).then(function() {
+      done();
+    }, function(error) {
+      ok(false, error);
+      done();
+    });
   });
 
   it("async methods", (done) => {
@@ -2228,7 +1806,7 @@ describe('Parse.User testing', () => {
     user.setPassword("asdf");
     user.setUsername("zxcv");
     let currentSessionToken = "";
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return user.signUp();
     }).then(function(){
       currentSessionToken = user.getSessionToken();
@@ -2313,7 +1891,7 @@ describe('Parse.User testing', () => {
   });
 
   it('create session from user', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
     }).then((user) => {
       request.post({
@@ -2337,7 +1915,7 @@ describe('Parse.User testing', () => {
   });
 
   it('user get session from token on signup', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
     }).then((user) => {
       request.get({
@@ -2361,7 +1939,7 @@ describe('Parse.User testing', () => {
   });
 
   it('user get session from token on login', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
     }).then(() => {
       return Parse.User.logOut().then(() => {
@@ -2389,7 +1967,7 @@ describe('Parse.User testing', () => {
   });
 
   it('user update session with other field', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
     }).then((user) => {
       request.get({
@@ -2420,7 +1998,7 @@ describe('Parse.User testing', () => {
   });
 
   it('cannot update session if invalid or no session token', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
     }).then((user) => {
       request.get({
@@ -2464,7 +2042,7 @@ describe('Parse.User testing', () => {
   });
 
   it('get session only for current user', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
       return Parse.User.signUp("test2", "test", { foo: "bar" });
@@ -2492,7 +2070,7 @@ describe('Parse.User testing', () => {
   });
 
   it('delete session by object', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
       return Parse.User.signUp("test2", "test", { foo: "bar" });
@@ -2545,7 +2123,7 @@ describe('Parse.User testing', () => {
   });
 
   it('cannot delete session if no sessionToken', (done) => {
-    Parse.Promise.as().then(() => {
+    Promise.resolve().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
       return Parse.User.signUp("test2", "test", { foo: "bar" });
@@ -2600,7 +2178,7 @@ describe('Parse.User testing', () => {
   it('changing password clears sessions', (done) => {
     let sessionToken = null;
 
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return Parse.User.signUp("fosco", "parse");
     }).then(function(newUser) {
       equal(Parse.User.current(), newUser);
@@ -2622,7 +2200,7 @@ describe('Parse.User testing', () => {
 
   it('test parse user become', (done) => {
     let sessionToken = null;
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return Parse.User.signUp("flessard", "folo",{'foo':1});
     }).then(function(newUser) {
       equal(Parse.User.current(), newUser);
@@ -2645,7 +2223,7 @@ describe('Parse.User testing', () => {
     let user = null;
     let sessionToken = null;
 
-    Parse.Promise.as().then(function() {
+    Promise.resolve().then(function() {
       return Parse.User.signUp('log', 'out');
     }).then((newUser) => {
       user = newUser;
@@ -2673,41 +2251,35 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("session expiresAt correct format", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function() {
-        request.get({
-          url: 'http://localhost:8378/1/classes/_Session',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
-        }, (error, response, body) => {
-          expect(body.results[0].expiresAt.__type).toEqual('Date');
-          done();
-        })
-      }
+  it("session expiresAt correct format", async (done) => {
+    await Parse.User.signUp("asdf", "zxcv");
+    request.get({
+      url: 'http://localhost:8378/1/classes/_Session',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    }, (error, response, body) => {
+      expect(body.results[0].expiresAt.__type).toEqual('Date');
+      done();
     });
   });
 
-  it("Invalid session tokens are rejected", (done) => {
-    Parse.User.signUp("asdf", "zxcv", null, {
-      success: function() {
-        request.get({
-          url: 'http://localhost:8378/1/classes/AClass',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Rest-API-Key': 'rest',
-            'X-Parse-Session-Token': 'text'
-          },
-        }, (error, response, body) => {
-          expect(body.code).toBe(209);
-          expect(body.error).toBe('Invalid session token');
-          done();
-        })
-      }
+  it("Invalid session tokens are rejected", async (done) => {
+    await Parse.User.signUp("asdf", "zxcv");
+    request.get({
+      url: 'http://localhost:8378/1/classes/AClass',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Rest-API-Key': 'rest',
+        'X-Parse-Session-Token': 'text'
+      },
+    }, (error, response, body) => {
+      expect(body.code).toBe(209);
+      expect(body.error).toBe('Invalid session token');
+      done();
     });
   });
 
@@ -2767,9 +2339,8 @@ describe('Parse.User testing', () => {
   });
 
   it('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
-    Parse.Cloud.beforeSave('_User', (req, res) => {
+    Parse.Cloud.beforeSave('_User', (req) => {
       req.object.set('foo', 'bar');
-      res.success();
     });
 
     let originalSessionToken;
@@ -2901,7 +2472,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not send email when email is not a string', (done) => {
+  it('should not send email when email is not a string', async (done) => {
     let emailCalled = false;
     let emailOptions;
     const emailAdapter = {
@@ -2922,29 +2493,26 @@ describe('Parse.User testing', () => {
     user.set('username', 'asdf@jkl.com');
     user.set('password', 'zxcv');
     user.set('email', 'asdf@jkl.com');
-    user.signUp(null, {
-      success: (user) => {
-        return rp.post({
-          url: 'http://localhost:8378/1/requestPasswordReset',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Session-Token': user.sessionToken,
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          json: {
-            email: {"$regex":"^asd"},
-          }
-        }).then((res) => {
-          fail('no request should succeed: ' + JSON.stringify(res));
-          done();
-        }).catch((err) => {
-          expect(emailCalled).toBeTruthy();
-          expect(emailOptions).toBeDefined();
-          expect(err.statusCode).toBe(400);
-          expect(err.message).toMatch('{"code":125,"error":"you must provide a valid email string"}');
-          done();
-        });
+    await user.signUp();
+    rp.post({
+      url: 'http://localhost:8378/1/requestPasswordReset',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Session-Token': user.sessionToken,
+        'X-Parse-REST-API-Key': 'rest',
       },
+      json: {
+        email: {"$regex":"^asd"},
+      }
+    }).then((res) => {
+      fail('no request should succeed: ' + JSON.stringify(res));
+      done();
+    }).catch((err) => {
+      expect(emailCalled).toBeTruthy();
+      expect(emailOptions).toBeDefined();
+      expect(err.statusCode).toBe(400);
+      expect(err.message).toMatch('{"code":125,"error":"you must provide a valid email string"}');
+      done();
     });
   });
 
@@ -2969,9 +2537,9 @@ describe('Parse.User testing', () => {
   });
 
   it('changes to a user should update the cache', (done) => {
-    Parse.Cloud.define('testUpdatedUser', (req, res) => {
+    Parse.Cloud.define('testUpdatedUser', (req) => {
       expect(req.user.get('han')).toEqual('solo');
-      res.success({});
+      return {};
     });
     const user = new Parse.User();
     user.setUsername('harrison');
@@ -3055,37 +2623,22 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
+  it('should not overwrite username when unlinking facebook user (regression test for #1532)', async (done) => {
     Parse.Object.disableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    const user = new Parse.User();
+    let user = new Parse.User();
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
-    user.signUp()
-      .then(user => user._linkWith("facebook", {
-        success: user => {
-          expect(user.get('username')).toEqual('testLinkWithProvider');
-          expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
-          return user._unlinkFrom('facebook')
-            .then(() => user.fetch())
-            .then(user => {
-              expect(user.get('username')).toEqual('testLinkWithProvider');
-              expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
-              done();
-            });
-        },
-        error: error => {
-          fail('Unexpected failure testing linking');
-          fail(JSON.stringify(error));
-          done();
-        }
-      }))
-      .catch(error => {
-        fail('Unexpected failure testing in unlink user test');
-        jfail(error);
-        done();
-      });
+    await user.signUp();
+    await user._linkWith("facebook");
+    expect(user.get('username')).toEqual('testLinkWithProvider');
+    expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
+    await user._unlinkFrom('facebook')
+    user = await user.fetch()
+    expect(user.get('username')).toEqual('testLinkWithProvider');
+    expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
+    done();
   });
 
   it('should revoke sessions when converting anonymous user to "normal" user', done => {

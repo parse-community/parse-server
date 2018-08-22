@@ -166,7 +166,7 @@ describe('Parse Role testing', () => {
     });
   });
 
-  it("should recursively load roles", (done) => {
+  function testLoadRoles(config, done) {
     const rolesNames = ["FooRole", "BarRole", "BazRole"];
     const roleIds = {};
     createTestUser().then((user) => {
@@ -183,7 +183,7 @@ describe('Parse Role testing', () => {
         return createRole(rolesNames[2], anotherRole, null);
       }).then((lastRole) => {
         roleIds[lastRole.get("name")] = lastRole.id;
-        const auth = new Auth({ config: Config.get("test"), isMaster: true, user: user });
+        const auth = new Auth({ config, isMaster: true, user: user });
         return auth._loadRoles();
       })
     }).then((roles) => {
@@ -192,10 +192,18 @@ describe('Parse Role testing', () => {
         expect(roles.indexOf('role:' + name)).not.toBe(-1);
       });
       done();
-    }, function(){
-      fail("should succeed")
+    }, function(error){
+      fail(error)
       done();
     });
+  }
+
+  it("should recursively load roles", (done) => {
+    testLoadRoles(Config.get('test'), done);
+  });
+
+  it("should recursively load roles without config", (done) => {
+    testLoadRoles(undefined, done);
   });
 
   it("_Role object should not save without name.", (done) => {
@@ -252,7 +260,7 @@ describe('Parse Role testing', () => {
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
         let user;
-        return createUser("user-for-" + role.name)
+        return createUser("user-for-" + role.get('name'))
           .then((u) => {
             user = u;
             role.getUsers().add(user);
@@ -261,28 +269,29 @@ describe('Parse Role testing', () => {
           .then(() => {
             const auth = new Auth({ config: Config.get("test"), isMaster: false, user });
             const authRoles = auth.getAuthRoles();
-            return authRoles.findRolesOfRoles([role]);
+            return authRoles.findRolesOfRoles([role.toJSON()]);
           })
           .then((rolesMap) => {
             // find in role map all roles who's id are not our parent role (the target 'role')
             // these will be the roles fetched from/because of our parent role.
             const targetParentRoleId = role.id;
-            const roleNames = []
+            let roleNames = []
             for (const objectId in rolesMap) {
               if (rolesMap.hasOwnProperty(objectId)) {
                 if(objectId !== targetParentRoleId){
-                  roleNames.push(objectId);
+                  roleNames.push(rolesMap[objectId]);
                 }
               }
             }
-            return Parse.Promise.as({
+            roleNames = roleNames.map(object => object.name);
+            return Promise.resolve({
               id: role.id,
               name: role.get('name'),
               roleNames: roleNames
             });
           });
       });
-      return Parse.Promise.when(promises);
+      return Promise.all(promises);
     }).then((results) => {
       results.forEach((result) => {
         const id = result.id;
@@ -304,7 +313,8 @@ describe('Parse Role testing', () => {
         }
       });
       done();
-    }).fail(() => {
+    }).catch((error) => {
+      fail(error)
       done();
     })
 

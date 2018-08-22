@@ -1,6 +1,6 @@
 // Helper functions for accessing the linkedin API.
-var https = require('https');
 var Parse = require('parse/node').Parse;
+const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
@@ -30,28 +30,10 @@ function request(path, access_token, is_mobile_sdk) {
   if(is_mobile_sdk) {
     headers['x-li-src'] = 'msdk';
   }
-
-  return new Promise(function(resolve, reject) {
-    https.get({
-      host: 'api.linkedin.com',
-      path: '/v1/' + path,
-      headers: headers
-    }, function(res) {
-      var data = '';
-      res.on('data', function(chunk) {
-        data += chunk;
-      });
-      res.on('end', function() {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function() {
-      reject('Failed to validate this access token with Linkedin.');
-    });
+  return httpsRequest.get({
+    host: 'api.linkedin.com',
+    path: '/v1/' + path,
+    headers: headers
   });
 }
 

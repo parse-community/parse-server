@@ -5,7 +5,7 @@ var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
 
-const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt'];
+const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 // restOptions can include:
 //   skip
 //   limit
@@ -114,6 +114,10 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       break;
     case 'include': {
       const paths = restOptions.include.split(',');
+      if (paths.includes('*')) {
+        this.includeAll = true;
+        break;
+      }
       // Load the existing includes (from keys)
       const pathSet = paths.reduce((memo, path) => {
         // Split each paths on . (a.b.c -> [a,b,c])
