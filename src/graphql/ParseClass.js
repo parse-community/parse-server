@@ -139,9 +139,7 @@ export class ParseClass {
       name: className,
       description: `Parse Class ${className}`,
       interfaces: [ParseObjectInterface],
-      fields: () => {
-        return this.buildFields(graphQLField, false, true);
-      },
+      fields: this.buildFields(graphQLField, false, true),
       resolve: () => {
         return;
       },

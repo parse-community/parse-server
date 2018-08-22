@@ -149,7 +149,7 @@ export class GraphQLParseSchema {
         args: { input: { type: inputType }},
         name: 'create',
         resolve: (root, args, context, info) => {
-          return rest.create(context.config, context.auth, className, args).then((res) => {
+          return rest.create(context.config, context.auth, className, args.input).then((res) => {
             // Run find to match graphQL style
             return runGet(context, info, className, res.response.objectId);
           });
@@ -167,7 +167,7 @@ export class GraphQLParseSchema {
         resolve: (root, args, context, info) => {
           const objectId = args.objectId;
           const input = args.input;
-          return rest.update(context.config, context.auth, className, objectId, input).then(() => {
+          return rest.update(context.config, context.auth, className, { objectId }, input).then(() => {
             // Run find to match graphQL style
             return runGet(context, info, className, objectId);
           });

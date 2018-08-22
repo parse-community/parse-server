@@ -9,7 +9,7 @@ export const StringQuery = new GraphQLScalarType({
   Supported constraints:
 
   - key: "value"
-  - key: {$regex: "value"}
+  - key: {regex: "value"}
   `,
   serialize: () => {
     throw "StringQuery serialize not implemented"
