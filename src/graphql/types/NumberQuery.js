@@ -3,10 +3,17 @@ import {
   Kind
 } from 'graphql'
 
+import QueryConstraint from './QueryConstraint';
+
 export const NumberQuery = new GraphQLScalarType({
   name: 'NumberQuery',
   description: `Queries for number values
-  Supported constraints:
+
+  Common Constraints:
+
+  ${QueryConstraint.description()}
+  
+  Numeric constraints:
 
   - key: 1
   - key: {lt: 1} # less than
@@ -26,9 +33,11 @@ export const NumberQuery = new GraphQLScalarType({
       return fields.reduce((memo, field) => {
         const operator = field.name.value;
         const value = field.value.value;
-        memo['$' + operator] = parseFloat(value);
+        if (['lt', 'gt', 'lte', 'gte'].includes(operator)) {
+          memo['$' + operator] = parseFloat(value);
+        }
         return memo;
-      }, {});
+      }, QueryConstraint.parseFields(fields));
     } else if (ast.kind == Kind.INT || ast.kind == Kind.FLOAT) {
       return parseFloat(ast.value);
     } else {

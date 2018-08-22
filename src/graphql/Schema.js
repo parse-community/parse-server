@@ -104,7 +104,9 @@ export class GraphQLParseSchema {
       const {
         queryType, objectType
       } = loadClass(className, this.schema);
-
+      if (className.startsWith('_')) {
+        className = className.slice(1).toLowerCase() + 's';
+      }
       MainSchemaOptions.fields[className] = {
         type: new GraphQLList(objectType),
         description: `Use this endpoint to get or query ${className} objects`,

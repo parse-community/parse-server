@@ -3,10 +3,17 @@ import {
   Kind
 } from 'graphql'
 
+import QueryConstraint from './QueryConstraint';
+
 export const StringQuery = new GraphQLScalarType({
   name: 'StringQuery',
   description: `Query constraint on string parameters
-  Supported constraints:
+
+  Common Constraints:
+
+  ${QueryConstraint.description()}
+
+  String constraints:
 
   - key: "value"
   - key: {regex: "value"}
@@ -22,10 +29,11 @@ export const StringQuery = new GraphQLScalarType({
       const fields = ast.fields;
       return fields.reduce((memo, field) => {
         const operator = field.name.value;
-        const value = field.value.value;
-        memo['$' + operator] = value;
+        if (operator === 'regex') {
+          memo['$' + operator] = field.value.value;
+        }
         return memo;
-      }, {});
+      }, QueryConstraint.parseFields(fields));
     } else if (ast.kind == Kind.STRING) {
       return ast.value;
     } else {
