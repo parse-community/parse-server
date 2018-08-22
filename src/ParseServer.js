@@ -6,7 +6,8 @@ var batch = require('./batch'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
   path = require('path');
-
+const graphqlHTTP = require('express-graphql');
+const GraphQLParseSchema = require('./graphql/Schema').GraphQLParseSchema;
 import { ParseServerOptions,
   LiveQueryServerOptions }      from './Options';
 import defaults                 from './defaults';
@@ -38,6 +39,8 @@ import { AggregateRouter }      from './Routers/AggregateRouter';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
+import auth                     from './Auth';
+
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -227,6 +230,26 @@ class ParseServer {
    */
   start(options: ParseServerOptions, callback: ?()=>void) {
     const app = express();
+    app.use(options.mountPath + '/graphql', graphqlHTTP(async (req) => {
+      // TODO: use middleware please :)
+      req.config = req.config || Config.get(Parse.applicationId);
+      req.auth = req.auth || new auth.Auth({ config: req.config });
+      // TODO: only await perhaps once, and optimize perf
+      const schema = await Config.get(Parse.applicationId).database.loadSchema();
+      const allClasses = await schema.getAllClasses(true);
+      const fullSchema = allClasses.reduce((memo, classDef) => {
+        memo[classDef.className] = classDef;
+        return memo;
+      }, {});
+      const Schema = new GraphQLParseSchema(fullSchema, 'test');
+      const s = Schema.Schema();
+      const root = Schema.Root();
+      return {
+        schema: s,
+        rootValue: root,
+        graphiql: true
+      }
+    }));
     if (options.middleware) {
       let middleware;
       if (typeof options.middleware == 'string') {

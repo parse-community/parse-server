@@ -3,7 +3,7 @@ import {
   Kind
 } from 'graphql'
 
-const supportedOperators = ['$eq', '$ne', '$in', '$nin', '$exists', '$select', '$dontSelect']
+const supportedOperators = ['eq', 'ne', 'in', 'nin', 'exists', 'select', 'dontSelect']
 
 export const QueryConstraint = new GraphQLScalarType({
   name: 'QueryConstraint',
@@ -12,37 +12,37 @@ export const QueryConstraint = new GraphQLScalarType({
   
   Equal To:
   - key: "value"
-  - key: {$eq: "value"}
+  - key: {eq: "value"}
   
   Not Equal To
-  - key: {$ne: "value"}
+  - key: {ne: "value"}
   
   Contained in:
-  - key: {$in: ["value1", "value2"]}
+  - key: {in: ["value1", "value2"]}
   Not Contained in:
-  - key: {$nin: ["value1", "value2"]}
+  - key: {nin: ["value1", "value2"]}
   
   Exists: 
-  - key: {$exists: true}
+  - key: {exists: true}
   
   This matches a value for a key in the result of a different query
-  - key: {$select: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}}
+  - key: {select: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}}
 
   Requires that a key’s value not match a value for a key in the result of a different query
-  - key: {$dontSelect: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}}
+  - key: {dontSelect: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}}
   `,
   serialize: () => {
-    throw "StringQuery serialize not implemented"
+    throw "QueryConstraint serialize not implemented"
   },
   parseValue: () => {
-    throw "StringQuery parseValue not implemented"
+    throw "QueryConstraint parseValue not implemented"
   },
   parseLiteral: (ast) => {
     if (ast.kind == Kind.OBJECT) {
       const fields = ast.fields;
       return fields.reduce((memo, field) => {
         const operator = field.name.value;
-        if (supportedOperators.indexOf('$' + operator) > -1) {
+        if (supportedOperators.indexOf(operator) > -1) {
           const value = field.value.value;
           memo['$' + operator] = value;
         }
@@ -51,7 +51,7 @@ export const QueryConstraint = new GraphQLScalarType({
     } else if (ast.kind == Kind.STRING) {
       return ast.value;
     } else {
-      throw 'Invalid literal for StringQuery';
+      throw 'Invalid literal for QueryConstraint';
     }
   }
 });

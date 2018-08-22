@@ -77,6 +77,8 @@ export function type(fieldName, field) {
     return GraphQLDate;
   } else if (type == 'Pointer') {
     return GraphQLPointer;
+  } else if (type == 'Object') {
+    return GraphQLJSONObject;
   }
 }
 
