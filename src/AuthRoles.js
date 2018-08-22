@@ -1,6 +1,7 @@
 import  _ from "lodash";
 const Auth = require("./Auth").Auth;
 const RestQuery = require('./RestQuery');
+const Parse = require('parse/node');
 
 interface RoleChildParentMapItem {name: String, objectId: String, ACL: Object, parents: Set, result: OppResult}
 interface RoleChildParentMap { objectId: RoleChildParentMapItem }
@@ -32,9 +33,10 @@ export class AuthRoles {
    * @param {Auth} masterAuth the Auth object performing the request
    * @param {String} userId the id of the user performing the request
    */
-  constructor(masterAuth: Auth, userId: String){
+  constructor(masterAuth: Auth, user: Parse.User){
     this.masterAuth = masterAuth;
-    this.userId = userId;
+    this.user = user;
+    this.userId = user.id;
     // final list of accessible role names
     this.accessibleRoleNames = new Set();
     // Contains a relation between the role blocking and the roles that are blocked.
@@ -58,10 +60,9 @@ export class AuthRoles {
    * Direct roles are roles the user is in the 'users' relation.
    * @returns {Promise<Array>} Array of Role objects fetched from db.
    */
-  findDirectRoles(): Promise<Array>{
+  findDirectRoles(): Promise<Array> {
     var restWhere = { 'users': {  __type: 'Pointer', className: '_User', objectId: this.userId } };
-    var query = _getRolesQuery(restWhere, this.masterAuth);
-    return query.execute().then((response) => Promise.resolve(response.results));
+    return _performQuery(restWhere, this.masterAuth);
   }
 
   /**
@@ -294,10 +295,8 @@ export class AuthRoles {
     }
     // build query and find Roles
     const restWhere = { 'roles': {  __type: 'Pointer', className: '_Role', objectId: parentRoleId } };
-    const query = _getRolesQuery(restWhere, masterAuth);
-    return query.execute()
-      .then((response) => {
-        const roles = response.results;
+    return _performQuery(restWhere, masterAuth)
+      .then((roles) => {
         // map roles linking them to parent
         _.forEach(roles, role => {
           const childRoleId = role.objectId;
@@ -323,12 +322,29 @@ export class AuthRoles {
 }
 
 /**
- * A helper method to return the query to execute on _Role class
+ * A helper method to return and execute the appropriate query.
  * @param {Object} restWhere query constraints
  * @param {Auth} masterAuth the master auth we will be using
  */
-const _getRolesQuery = (restWhere = {}, masterAuth: Auth): RestQuery => {
-  return new RestQuery(masterAuth.config, masterAuth, '_Role', restWhere, {});
+const _performQuery = (restWhere = {}, masterAuth: Auth): RestQuery => {
+  if(masterAuth.config){
+    return new RestQuery(masterAuth.config, masterAuth, '_Role', restWhere, {})
+      .execute()
+      .then(response => response.results);
+  }else{
+    const query = new Parse.Query(Parse.Role);
+    _.forEach(restWhere, (value, key) => {
+      query.equalTo(key, Parse.Object.fromJSON({
+        className: value.className,
+        objectId: value.objectId
+      }));
+      if(key !== 'users' && key !== 'roles'){
+        throw 'Unsupported AuthRole query key: ' + key;
+      }
+    });
+    return query.find({ useMasterKey: true })
+      .then((results) => results.map((obj) => obj.toJSON()))
+  }
 }
 
 /**
