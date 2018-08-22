@@ -147,7 +147,7 @@ async function main({
 
   fs.writeFileSync(
     target_directory + '/.env',
-    `PARSE_SERVER_MASTER_KEY=${masterKey}\nPARSE_SERVER_DATABASE_URI=${databaseURI}\n`
+    `PORT=1337\nPARSE_SERVER_MASTER_KEY=${masterKey}\nPARSE_SERVER_DATABASE_URI=${databaseURI}\n`
   )
   ok('Added .env');
 
