@@ -338,6 +338,7 @@ const _performQuery = (restWhere = {}, masterAuth: Auth): RestQuery => {
         className: value.className,
         objectId: value.objectId
       }));
+      // failsafe for devs just to prevent fetching the wrong roles
       if(key !== 'users' && key !== 'roles'){
         throw 'Unsupported AuthRole query key: ' + key;
       }
@@ -350,8 +351,8 @@ const _performQuery = (restWhere = {}, masterAuth: Auth): RestQuery => {
 /**
  * Checks if ACL grants access from a Set of roles.
  * Only one role is sufficient.
- * @param {*} acl the acl to check
- * @param {*} roleNames the role names to compute accessibility on 'acl'
+ * @param {Object} acl the acl to check
+ * @param {Set} roleNames the role names to compute accessibility on 'acl'
  * @returns {Boolean}
  */
 const _isAclAccessibleFromRoleNames = (acl, roleNames: Set): Boolean => {
@@ -369,8 +370,8 @@ const _isAclAccessibleFromRoleNames = (acl, roleNames: Set): Boolean => {
 
 /**
  * Checks if ACL grants access for a specific role name.
- * @param {*} acl the acl to check
- * @param {*} roleName the role name to compute accessibility on 'acl'
+ * @param {Object} acl the acl to check
+ * @param {String} roleName the role name to compute accessibility on 'acl'
  * @returns {Boolean}
  */
 const _isAclAccessibleFromRoleName = (acl, roleName): Boolean => {
