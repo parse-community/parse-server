@@ -4,6 +4,7 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLID,
+  GraphQLList,
 } from 'graphql'
 
 import {
@@ -80,6 +81,8 @@ export function type(fieldName, field) {
     return GraphQLPointer;
   } else if (type == 'Object') {
     return GraphQLJSONObject;
+  } else if (type === 'Array') {
+    return new GraphQLList(GraphQLJSONObject);
   }
 }
 
@@ -105,6 +108,8 @@ export function inputType(fieldName, field) {
     return GraphQLDate;
   } else if (type == 'Pointer') {
     return GraphQLPointerInput;
+  } else if (type === 'Array') {
+    return new GraphQLList(GraphQLJSONObject);
   }
 }
 
