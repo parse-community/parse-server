@@ -195,7 +195,7 @@ export class ParseClass {
       name: this.displayName + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
-        return this.buildFields(graphQLQueryField, true);
+        return this.buildFields(graphQLQueryField, false, true);
       },
       resolve: this.get.bind(this),
       isTypeOf: function(input) {
