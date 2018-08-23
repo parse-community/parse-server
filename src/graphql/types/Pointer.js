@@ -1,34 +1,42 @@
 import {
-  //GraphQLObjectType,
-  //GraphQLInputObjectType,
-  GraphQLScalarType,
+  GraphQLInputObjectType,
   GraphQLID,
   GraphQLString,
+  GraphQLNonNull,
 } from 'graphql'
 
-export const GraphQLPointer = new GraphQLScalarType({
+export const GraphQLPointer = new GraphQLInputObjectType({
   name: 'Pointer',
   fields: {
     objectId: {
-      type: GraphQLID,
-      name: 'objectId',
+      type: new GraphQLNonNull(GraphQLID),
       description: 'pointer\'s objectId'
     },
     className: {
       type: GraphQLString,
-      name: 'className',
       description: 'pointer\'s className'
     }
-  },
-  serialize: () => {
-    throw "serialize not implemented"
-  },
-  parseValue: () => {
-    throw "parseValue not implemented"
-  },
-  parseLiteral: (litteral) => {
-    return { objectId: litteral.value };
   }
 });
 
-export const GraphQLPointerInput = GraphQLPointer;
+const cache = {};
+
+export const GraphQLPointerInput = (field) => {
+  if (!cache[field.targetClass]) {
+    cache[field.targetClass] = new GraphQLInputObjectType({
+      name: `${field.targetClass}PointerInput`,
+      fields: {
+        objectId: {
+          type: new GraphQLNonNull(GraphQLID),
+          description: 'pointer\'s objectId'
+        },
+        className: {
+          type: GraphQLString,
+          description: 'pointer\'s className',
+          defaultValue: field.targetClass
+        }
+      }
+    });
+  }
+  return cache[field.targetClass];
+};

@@ -5,6 +5,7 @@ import {
   GraphQLBoolean,
   GraphQLID,
   GraphQLList,
+  GraphQLUnionType,
 } from 'graphql'
 
 import {
@@ -15,7 +16,8 @@ import {
 import {
   GraphQLGeoPoint,
   GraphQLGeoPointInput,
-  GraphQLGeoPointQuery
+  GraphQLGeoPointQuery,
+  GeoPoint,
 } from './GeoPoint';
 
 import {
@@ -23,7 +25,8 @@ import {
 } from './File';
 
 import {
-  GraphQLDate
+  GraphQLDate,
+  DateQuery,
 } from './Date';
 
 import {
@@ -98,16 +101,16 @@ export function inputType(fieldName, field) {
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
-    return GraphQLGeoPointInput;
+    return GeoPoint;
   } if (type == 'File') {
     // TODO: How to set a file in an object
     // return GraphQLFile;
   } else if (type == 'ACL') {
     return GraphQLACLInput;
   } else if (type == 'Date') {
-    return GraphQLDate;
+    return DateQuery;
   } else if (type == 'Pointer') {
-    return GraphQLPointerInput;
+    return GraphQLPointerInput(field);
   } else if (type === 'Array') {
     return new GraphQLList(GraphQLJSONObject);
   }
@@ -133,8 +136,8 @@ export function queryType(fieldName, field) {
     // cannot query on ACL!
     return;
   } else if (type == 'Date') {
-    return GraphQLDate;
+    return DateQuery;
   } else if (type == 'Pointer') {
-    return GraphQLPointerInput;
+    return GraphQLPointerInput(field);
   }
 }

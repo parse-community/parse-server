@@ -115,6 +115,7 @@ export class ParseClass {
       interfaces: [ParseObjectInterface],
       fields: this.buildFields(graphQLField, false, false, true),
       resolve: () => {
+        console.log('RESOLVE');
         return;
       },
       isTypeOf: function(a) {
@@ -158,7 +159,6 @@ export class ParseClass {
       fields: () => {
         return this.buildFields(graphQLInputField, true);
       },
-      resolve: this.get.bind(this),
       isTypeOf: function(input) {
         return input.className == className;
       }
@@ -175,7 +175,6 @@ export class ParseClass {
         delete fields.objectId;
         return fields;
       },
-      resolve: this.get.bind(this),
       isTypeOf: function(input) {
         return input.className == className;
       }
@@ -190,7 +189,6 @@ export class ParseClass {
       fields: () => {
         return this.buildFields(graphQLInputField, true);
       },
-      resolve: this.get.bind(this),
       isTypeOf: function(input) {
         return input.className == className;
       }
@@ -230,14 +228,6 @@ export class ParseClass {
 
   graphQLObjectType() {
     return new GraphQLObjectType(this.graphQLConfig());
-  }
-
-  get(a,b,c) {
-    /*eslint-disable*/
-    console.log('ParseClass resolve...');
-    console.log(a,b,c);
-    /* eslint-enable */
-    return null;
   }
 }
 
