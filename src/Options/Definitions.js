@@ -286,6 +286,20 @@ module.exports.ParseServerOptions = {
     "action": parsers.numberParser("port"),
     "default": 1337
   },
+  "enableGraphQL": {
+    "env": "PARSE_SERVER_ENABLE_GRAPHQL",
+    "help": "Set to true to enable the graphql endpoint",
+    "required": true,
+    "action": parsers.booleanParser,
+    "default": false
+  },
+  "enableGraphQLI": {
+    "env": "PARSE_SERVER_ENABLE_GRAPHQLI",
+    "help": "Set to true to enable the graphqli interface\n  this will also enable graphql",
+    "required": true,
+    "action": parsers.booleanParser,
+    "default": false
+  },
   "host": {
     "env": "PARSE_SERVER_HOST",
     "help": "The host to serve ParseServer on, defaults to 0.0.0.0",

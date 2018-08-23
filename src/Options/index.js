@@ -132,6 +132,13 @@ export interface ParseServerOptions {
   /* The port to run the ParseServer, defaults to 1337.
   :ENV: PORT */
   port: ?number; // = 1337
+  /* Set to true to enable the graphql endpoint
+  :ENV: PARSE_SERVER_ENABLE_GRAPHQL */
+  enableGraphQL: boolean; // = false
+  /* Set to true to enable the graphqli interface
+  this will also enable graphql
+  :ENV: PARSE_SERVER_ENABLE_GRAPHQLI */
+  enableGraphQLI: boolean; // = false
   /* The host to serve ParseServer on, defaults to 0.0.0.0 */
   host: ?string; // = 0.0.0.0
   /* Mount path for the server, defaults to /parse */

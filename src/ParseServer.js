@@ -230,26 +230,28 @@ class ParseServer {
    */
   start(options: ParseServerOptions, callback: ?()=>void) {
     const app = express();
-    app.use(options.mountPath + '/graphql', graphqlHTTP(async (req) => {
-      // TODO: use middleware please :)
-      req.config = req.config || Config.get(Parse.applicationId);
-      req.auth = req.auth || new auth.Auth({ config: req.config });
-      // TODO: only await perhaps once, and optimize perf
-      const schema = await Config.get(Parse.applicationId).database.loadSchema();
-      const allClasses = await schema.getAllClasses(true);
-      const fullSchema = allClasses.reduce((memo, classDef) => {
-        memo[classDef.className] = classDef;
-        return memo;
-      }, {});
-      const Schema = new GraphQLParseSchema(fullSchema, 'test');
-      const s = Schema.Schema();
-      const root = Schema.Root();
-      return {
-        schema: s,
-        rootValue: root,
-        graphiql: true
-      }
-    }));
+    if (options.enableGraphQL || options.enableGraphQLI) {
+      app.use(options.mountPath + '/graphql', graphqlHTTP(async (req) => {
+        // TODO: use middleware please :)
+        req.config = req.config || Config.get(Parse.applicationId);
+        req.auth = req.auth || new auth.Auth({ config: req.config });
+        // TODO: only await perhaps once, and optimize perf
+        const schema = await Config.get(Parse.applicationId).database.loadSchema();
+        const allClasses = await schema.getAllClasses(true);
+        const fullSchema = allClasses.reduce((memo, classDef) => {
+          memo[classDef.className] = classDef;
+          return memo;
+        }, {});
+        const Schema = new GraphQLParseSchema(fullSchema, 'test');
+        const s = Schema.Schema();
+        const root = Schema.Root();
+        return {
+          schema: s,
+          rootValue: root,
+          graphiql: options.enableGraphQLI
+        }
+      }));
+    }
     if (options.middleware) {
       let middleware;
       if (typeof options.middleware == 'string') {
