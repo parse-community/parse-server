@@ -17,8 +17,11 @@ export const GraphQLGeoPoint = new GraphQLScalarType({
       description: 'latitude of the point, in degrees'
     }
   },
-  serialize: () => {
-    throw "not implemented"
+  serialize: (object) => {
+    return {
+      latitude: object.latitude,
+      longitude: object.longitude,
+    }
   },
   parseValue: () => {
     throw "not implemented"
