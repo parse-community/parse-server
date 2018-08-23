@@ -57,7 +57,7 @@ function graphQLQueryField(fieldName, field) {
   };
 }
 
-const ParseClassCache = {};
+let ParseClassCache = {};
 
 export function loadClass(className, schema) {
   if (!ParseClassCache[className]) {
@@ -69,6 +69,10 @@ export function loadClass(className, schema) {
     ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c, displayName: c.displayName }
   }
   return ParseClassCache[className];
+}
+
+export function clearCache() {
+  ParseClassCache = {};
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];

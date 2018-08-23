@@ -1,6 +1,7 @@
 import {
   ParseObject,
   loadClass,
+  clearCache,
 } from './ParseClass';
 
 import {
@@ -88,10 +89,12 @@ export class GraphQLParseSchema {
   }
 
   Schema() {
-    return new GraphQLSchema({
+    const schema = new GraphQLSchema({
       query: this.Query(),
       mutation: this.Mutation(),
     });
+    clearCache();
+    return schema;
   }
 
   Query() {
