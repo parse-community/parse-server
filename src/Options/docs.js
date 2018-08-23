@@ -55,6 +55,8 @@
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
+ * @property {Boolean} enableGraphQL Set to true to enable the graphql endpoint
+ * @property {Boolean} enableGraphiQL Set to true to enable the graphqli interfacethis will also enable graphql
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
  * @property {Union} middleware middleware for express server, can be string or function
@@ -90,3 +92,4 @@
  * @property {String} redisURL parse-server's LiveQuery redisURL
  * @property {Adapter<PubSubAdapter>} pubSubAdapter LiveQuery pubsub adapter
  */
+

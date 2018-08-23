@@ -158,6 +158,15 @@ export interface ParseServerOptions {
   /* The host to serve ParseServer on, defaults to 0.0.0.0
   :DEFAULT: 0.0.0.0 */
   host: ?string;
+  /* Set to true to enable the graphql endpoint
+  :ENV: PARSE_SERVER_ENABLE_GRAPHQL
+  :DEFAULT: false */
+  enableGraphQL: boolean;
+  /* Set to true to enable the graphqli interface
+  this will also enable graphql
+  :ENV: PARSE_SERVER_ENABLE_GRAPHIQL
+  :DEFAULT: false */
+  enableGraphiQL: boolean;
   /* Mount path for the server, defaults to /parse
   :DEFAULT: /parse */
   mountPath: ?string;
