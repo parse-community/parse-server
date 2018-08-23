@@ -13,7 +13,6 @@ import {
   queryType,
   inputType,
   type,
-  // GraphQLGeoPoint,
   GraphQLPointer,
 } from './types'
 

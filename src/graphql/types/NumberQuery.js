@@ -9,17 +9,19 @@ export const NumberQuery = new GraphQLScalarType({
   name: 'NumberQuery',
   description: `Queries for number values
 
-  Common Constraints:
+  # Common Constraints:
 
   ${QueryConstraint.description()}
   
-  Numeric constraints:
+  # Numeric constraints:
 
-  - key: 1
-  - key: {lt: 1} # less than
-  - key: {gt: 1} # greater than
-  - key: {lte: 1} # less than or equal
-  - key: {gte: 1} # greater than or equal
+  \`\`\`
+  { key: 1 }
+  { key: { lt: 1 } } # less than
+  { key: { gt: 1 } } # greater than
+  { key: { lte: 1 } } # less than or equal
+  { key: { gte: 1 } } # greater than or equal
+  \`\`\`
   `,
   serialize: () => {
     throw "NumberQuery serialize not implemented"
@@ -33,6 +35,9 @@ export const NumberQuery = new GraphQLScalarType({
       return fields.reduce((memo, field) => {
         const operator = field.name.value;
         const value = field.value.value;
+        if (field.value.kind != Kind.INT && field.value.kind != Kind.FLOAT) {
+          throw `${value} should be an int or a float`;
+        }
         if (['lt', 'gt', 'lte', 'gte'].includes(operator)) {
           memo['$' + operator] = parseFloat(value);
         }
