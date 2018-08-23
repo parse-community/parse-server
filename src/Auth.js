@@ -1,7 +1,6 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
-import { AuthRoles } from "./AuthRoles";
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -19,11 +18,6 @@ function Auth({ config, cacheController = undefined, isMaster = false, isReadOnl
   this.userRoles = [];
   this.fetchedRoles = false;
   this.rolePromise = null;
-
-  // return the auth role validator
-  this.getAuthRoles = () => {
-    return new AuthRoles(master(this.config), this.user.id);
-  }
 }
 
 // Whether this auth could possibly modify the given user id.
@@ -134,7 +128,7 @@ Auth.prototype.getUserRoles = function() {
   return this.rolePromise;
 };
 
-Auth.prototype.getRolesForUser = function() {
+Auth.prototype.getRolesForUser = async function() {
   if (this.config) {
     const restWhere = {
       'users': {
@@ -143,10 +137,14 @@ Auth.prototype.getRolesForUser = function() {
         objectId: this.user.id
       }
     };
-    const query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-    return query.execute().then(({ results }) => results);
+    this.fetchedRoles = true;
+    this.userRoles = [];
+
+    const query = new RestQuery(this.config, this, '_Role', restWhere, {});
+    return await query.execute().then(({ results }) => results);
   }
 
+  // TODO: add tests for this use case
   return new Parse.Query(Parse.Role)
     .equalTo('users', this.user)
     .find({ useMasterKey: true })
@@ -182,10 +180,7 @@ Auth.prototype._loadRoles = async function() {
   }, {ids: [], names: []});
 
   // run the recursive finding
-  const roleNames = await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
-  this.userRoles = roleNames.map((r) => {
-    return 'role:' + r;
-  });
+  await this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names);
   this.fetchedRoles = true;
   this.rolePromise = null;
   this.cacheRoles();
@@ -212,6 +207,7 @@ Auth.prototype.getRolesByIds = function(ins) {
 
   // Build an OR query across all parentRoles
   if (!this.config) {
+    // TODO: add proper tests
     return new Parse.Query(Parse.Role)
       .containedIn('roles', ins.map((id) => {
         const role = new Parse.Object(Parse.Role);
@@ -222,13 +218,16 @@ Auth.prototype.getRolesByIds = function(ins) {
       .then((results) => results.map((obj) => obj.toJSON()));
   }
 
-  return new RestQuery(this.config, master(this.config), '_Role', restWhere, {})
+  return new RestQuery(this.config, this, '_Role', restWhere, {})
     .execute()
     .then(({ results }) => results);
 }
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queriedRoles = {}) {
+Auth.prototype._getAllRolesNamesForRoleIds = async function(roleIDs, names = [], queriedRoles = {}) {
+  this.userRoles = [... new Set(this.userRoles.concat(names.map((r) => {
+    return 'role:' + r;
+  })))];
   const ins = roleIDs.filter((roleID) => {
     const wasQueried = queriedRoles[roleID] !== true;
     queriedRoles[roleID] = true;
@@ -237,27 +236,28 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queri
 
   // all roles are accounted for, return the names
   if (ins.length == 0) {
-    return Promise.resolve([...new Set(names)]);
+    return;
   }
 
-  return this.getRolesByIds(ins).then((results) => {
-    // Nothing found
-    if (!results.length) {
-      return Promise.resolve(names);
-    }
-    // Map the results with all Ids and names
-    const resultMap = results.reduce((memo, role) => {
-      memo.names.push(role.name);
-      memo.ids.push(role.objectId);
-      return memo;
-    }, {ids: [], names: []});
-    // store the new found names
-    names = names.concat(resultMap.names);
-    // find the next ones, circular roles will be cut
-    return this._getAllRolesNamesForRoleIds(resultMap.ids, names, queriedRoles)
-  }).then((names) => {
-    return Promise.resolve([...new Set(names)])
-  })
+  const results = await this.getRolesByIds(ins);
+  // Nothing found
+  if (!results.length) {
+    return;
+  }
+  // Map the results with all Ids and names
+  const resultMap = results.reduce((memo, role) => {
+    memo.names.push(role.name);
+    memo.ids.push(role.objectId);
+    return memo;
+  }, {ids: [], names: []});
+  // store the new found names
+  names = names.concat(resultMap.names);
+  this.userRoles = [... new Set(this.userRoles.concat(names.map((r) => {
+    return 'role:' + r;
+  })))];
+
+  // find the next ones, circular roles will be cut
+  await this._getAllRolesNamesForRoleIds(resultMap.ids, names, queriedRoles)
 }
 
 const createSession = function(config, {

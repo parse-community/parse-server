@@ -1305,6 +1305,7 @@ describe('schemas', () => {
     admin.setPassword('admin');
 
     const roleAcl = new Parse.ACL()
+    roleAcl.setPublicReadAccess(true);
     roleAcl.setRoleReadAccess("admin", true)
     const role = new Parse.Role('admin', roleAcl);
 
@@ -1475,6 +1476,7 @@ describe('schemas', () => {
     admin.setPassword('admin');
 
     const roleAcl = new Parse.ACL()
+    roleAcl.setPublicReadAccess(true);
     roleAcl.setRoleReadAccess("admin", true)
     const role = new Parse.Role('admin', roleAcl);
 
@@ -1721,6 +1723,7 @@ describe('schemas', () => {
     user.setPassword('user');
 
     const roleAcl = new Parse.ACL();
+    roleAcl.setPublicReadAccess(true);
     roleAcl.setRoleReadAccess("admin", true);
     const role = new Parse.Role('admin', roleAcl);
 
