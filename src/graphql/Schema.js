@@ -9,6 +9,8 @@ import {
   GraphQLNonNull,
   GraphQLInt,
   GraphQLID,
+  GraphQLObjectTypeConfig,
+  GraphQLFieldConfigMap,
 } from 'graphql'
 
 import rest from '../rest';
@@ -17,7 +19,7 @@ import rest from '../rest';
 function reduceSelections(selections, topKey) {
   return selections.reduce((memo, selection) => {
     const value = selection.name.value;
-    if (selection.selectionSet === null) {
+    if (selection.selectionSet === null || selection.selectionSet === undefined) {
       memo.push(value);
     } else {
       // Get the sub seletions and add on current key
@@ -66,8 +68,49 @@ function toGraphQLResult(className, singleResult) {
   }
 }
 
+function transform(constraintKey, currentValue) {
+  let value = currentValue;
+  if (constraintKey === 'nearSphere') {
+    value = {
+      latitude: currentValue.point.latitude,
+      longitude: currentValue.point.longitude,
+    }
+  }
+  const key = `$${constraintKey}`;
+
+  return {
+    key,
+    value,
+  }
+}
+
+function transformQuery(query) {
+  Object.keys(query).forEach((key) => {
+    Object.keys(query[key]).forEach((constraintKey) => {
+      const constraint = query[key][constraintKey];
+      delete query[key][constraintKey];
+      const result = transform(constraintKey, constraint);
+      query[key][result.key] = result.value;
+    });
+  });
+  return query;
+}
+
+function transformInput(input, schema) {
+  const { fields } = schema;
+  Object.keys(input).forEach((key) => {
+    const value = input[key];
+    if (fields[key] && fields[key].type === 'Pointer') {
+      value.__type = 'Pointer';
+    } else if (fields[key] && fields[key].type === 'GeoPoint') {
+      value.__type = 'GeoPoint';
+    }
+  });
+  return input;
+}
+
 // Runs a find against the rest API
-function runFind(context, info, className, args) {
+function runFind(context, info, className, args, schema) {
   let query = {};
   if (args.where) {
     query = Object.assign(query, args.where);
@@ -82,6 +125,7 @@ function runFind(context, info, className, args) {
   if (Object.prototype.hasOwnProperty.call(args, 'skip')) {
     options.skip = args.skip;
   }
+  query = transformQuery(query, schema);
   return rest.find(context.config, context.auth, className, query, options)
     .then(toGraphQLResult(className));
 }
@@ -114,17 +158,13 @@ export class GraphQLParseSchema {
   }
 
   Query() {
-    const MainSchemaOptions = {
-      name: 'Query',
-      description: `The full parse schema`,
-      fields: {}
-    }
+    const fields = {};
     Object.keys(this.schema).forEach((className) => {
       const {
         queryType, queryResultType
       } = loadClass(className, this.schema);
 
-      MainSchemaOptions.fields[className] = {
+      const field: GraphQLFieldConfigMap = {
         type: queryResultType,
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
@@ -135,52 +175,52 @@ export class GraphQLParseSchema {
         },
         resolve: async (root, args, context, info) => {
           // Get the selections
-          const objects = await runFind(context, info, className, args);
+          const objects = await runFind(context, info, className, args, this.schema[className]);
           return { objects };
         }
       };
+      fields[className] = field;
     });
-    return new GraphQLObjectType(MainSchemaOptions);
+    return new GraphQLObjectType({
+      name: 'Query',
+      description: `The full parse schema`,
+      fields,
+    });
   }
 
   Mutation()  {
-    const MainSchemaMutationOptions = {
-      name: 'Mutation',
-      fields: {}
-    }
     // TODO: Refactor FunctionRouter to extract (as it's a new entry)
     // TODO: Implement Functions as mutations
-
+    const fields = {};
     Object.keys(this.schema).forEach((className) => {
       const {
         inputType, objectType, updateType, mutationResultType
       } = loadClass(className, this.schema);
 
-      MainSchemaMutationOptions.fields['create' + className] = {
+      fields[`create${className}`] = {
         type: mutationResultType,
         fields: objectType.fields,
         description: `use this method to create a new ${className}`,
         args: { input: { type: inputType }},
-        name: 'create',
         resolve: async (root, args, context, info) => {
-          const res = await rest.create(context.config, context.auth, className, args.input);
+          const input = transformInput(args.input, this.schema[className]);
+          const res = await rest.create(context.config, context.auth, className, input);
           // Run get to match graphQL style
           const object = await runGet(context, info, className, res.response.objectId);
           return { object };
         }
       }
 
-      MainSchemaMutationOptions.fields['update' + className] = {
+      fields[`update${className}`] = {
         type: mutationResultType,
         description: `use this method to update an existing ${className}`,
         args: {
-          objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' },
+          objectId: { type: new GraphQLNonNull(GraphQLID) },
           input: { type: updateType }
         },
-        name: 'update',
         resolve: async (root, args, context, info) => {
           const objectId = args.objectId;
-          const input = args.input;
+          const input = transformInput(args.input, this.schema[className]);
           await rest.update(context.config, context.auth, className, { objectId }, input);
           // Run get to match graphQL style
           const object = await runGet(context, info, className, objectId);
@@ -188,13 +228,12 @@ export class GraphQLParseSchema {
         }
       }
 
-      MainSchemaMutationOptions.fields['destroy' + className] = {
+      fields[`destroy${className}`] = {
         type: mutationResultType,
         description: `use this method to update delete an existing ${className}`,
         args: {
-          objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' }
+          objectId: { type: new GraphQLNonNull(GraphQLID) }
         },
-        name: 'destroy',
         resolve: async (root, args, context, info) => {
           const object = await runGet(context, info, className, args.objectId);
           await rest.del(context.config, context.auth, className, args.objectId);
@@ -202,7 +241,10 @@ export class GraphQLParseSchema {
         }
       }
     });
-    return new GraphQLObjectType(MainSchemaMutationOptions);
+    return new GraphQLObjectType({
+      name: 'Mutation',
+      fields
+    });
   }
 
   Root() {
