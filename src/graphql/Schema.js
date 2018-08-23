@@ -67,9 +67,22 @@ function toGraphQLResult(className, singleResult) {
 }
 
 // Runs a find against the rest API
-function runFind(context, info, className, where) {
+function runFind(context, info, className, args) {
+  let query = {};
+  if (args.where) {
+    query = Object.assign(query, args.where);
+  }
+  if (args.objectId) {
+    query = Object.assign(query, { objectId: args.objectId });
+  }
   const options = getQueryOptions(info, 'objects');
-  return rest.find(context.config, context.auth, className, where, options)
+  if (Object.prototype.hasOwnProperty.call(args, 'limit')) {
+    options.limit = args.limit;
+  }
+  if (Object.prototype.hasOwnProperty.call(args, 'skip')) {
+    options.skip = args.skip;
+  }
+  return rest.find(context.config, context.auth, className, query, options)
     .then(toGraphQLResult(className));
 }
 
@@ -122,14 +135,7 @@ export class GraphQLParseSchema {
         },
         resolve: async (root, args, context, info) => {
           // Get the selections
-          let query = {};
-          if (args.where) {
-            query = Object.assign(query, args.where);
-          }
-          if (args.objectId) {
-            query = Object.assign(query, { objectId: args.objectId });
-          }
-          const objects = await runFind(context, info, className, query);
+          const objects = await runFind(context, info, className, args);
           return { objects };
         }
       };

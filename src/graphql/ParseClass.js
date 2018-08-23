@@ -15,7 +15,6 @@ import {
   type,
   // GraphQLGeoPoint,
   GraphQLPointer,
-  GraphQLJSONObject
 } from './types'
 
 function graphQLField(fieldName, field) {
@@ -115,7 +114,7 @@ export class ParseClass {
       name: this.className,
       description: `Parse Class ${className}`,
       interfaces: [ParseObjectInterface],
-      fields: this.buildFields(graphQLField, false, true),
+      fields: this.buildFields(graphQLField, false, false, true),
       resolve: () => {
         return;
       },
@@ -125,7 +124,7 @@ export class ParseClass {
     };
   }
 
-  buildFields(mapper, filterReserved = false, isQuery = false) {
+  buildFields(mapper, filterReserved = false, isQuery = false, isObject = false) {
     const fields = this.class.fields;
     return Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
@@ -133,9 +132,15 @@ export class ParseClass {
       }
       const field = fields[fieldName];
       let gQLField = mapper(fieldName, field);
-      if (field.type == 'Pointer' && isQuery) {
-        gQLField = {
-          type: loadClass(field.targetClass, this.schema).objectType
+      if (field.type == 'Pointer') {
+        if (isQuery) {
+          gQLField = {
+            type: loadClass(field.targetClass, this.schema).queryType
+          }
+        } else if (isObject) {
+          gQLField = {
+            type: loadClass(field.targetClass, this.schema).objectType
+          }
         }
       }
       if (!gQLField) {
