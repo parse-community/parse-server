@@ -96,7 +96,8 @@ export function inputType(fieldName, field) {
   } if (type == 'GeoPoint') {
     return GraphQLGeoPointInput;
   } if (type == 'File') {
-    return GraphQLFile;
+    // TODO: How to set a file in an object
+    // return GraphQLFile;
   } else if (type == 'ACL') {
     return GraphQLACLInput;
   } else if (type == 'Date') {
@@ -120,7 +121,8 @@ export function queryType(fieldName, field) {
   } if (type == 'GeoPoint') {
     return GraphQLGeoPointInput;
   } if (type == 'File') {
-    return GraphQLFile;
+    // Cannot query on files
+    return;
   } else if (type == 'ACL') {
     // cannot query on ACL!
     return;
