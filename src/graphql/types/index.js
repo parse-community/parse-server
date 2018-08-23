@@ -13,7 +13,8 @@ import {
 
 import {
   GraphQLGeoPoint,
-  GraphQLGeoPointInput
+  GraphQLGeoPointInput,
+  GraphQLGeoPointQuery
 } from './GeoPoint';
 
 import {
@@ -119,7 +120,7 @@ export function queryType(fieldName, field) {
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
-    return GraphQLGeoPointInput;
+    return GraphQLGeoPointQuery;
   } if (type == 'File') {
     // Cannot query on files
     return;
