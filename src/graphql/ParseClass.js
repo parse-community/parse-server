@@ -66,8 +66,10 @@ export function loadClass(className, schema) {
     const objectType = c.graphQLObjectType();
     const inputType = c.graphQLInputObjectType();
     const updateType = c.graphQLUpdateInputObjectType();
-    const queryType = c.graphQLQueryInputObjectType()
-    ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c }
+    const queryType = c.graphQLQueryInputObjectType();
+    const queryResultType = c.graphQLQueryResultType(objectType);
+    const mutationResultType = c.graphQLMutationResultType(objectType);
+    ParseClassCache[className] = { objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
   }
   return ParseClassCache[className];
 }
@@ -202,6 +204,25 @@ export class ParseClass {
   graphQLQueryInputObjectType() {
     return new GraphQLInputObjectType(this.graphQLQueryConfig());
   }
+
+  graphQLQueryResultType(objectType) {
+    return new GraphQLObjectType({
+      name: `${this.className}QueryResponse`,
+      fields: {
+        objects: { type: new GraphQLList(objectType) },
+      }
+    });
+  }
+
+  graphQLMutationResultType(objectType) {
+   return new GraphQLObjectType({
+      name: `${this.className}MutationCompletePayload`,
+      fields: {
+        object: { type: objectType }
+      }
+    });
+  }
+
 
   graphQLObjectType() {
     return new GraphQLObjectType(this.graphQLConfig());
