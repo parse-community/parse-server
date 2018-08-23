@@ -2,6 +2,7 @@ import {
   GraphQLInterfaceType,
   GraphQLObjectType,
   GraphQLInputObjectType,
+  GraphQLList,
   // GraphQLString,
   // GraphQLNonNull,
   // GraphQLBoolean,
@@ -66,7 +67,7 @@ export function loadClass(className, schema) {
     const inputType = c.graphQLInputObjectType();
     const updateType = c.graphQLUpdateInputObjectType();
     const queryType = c.graphQLQueryInputObjectType()
-    ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c, displayName: c.displayName }
+    ParseClassCache[className] = { objectType, inputType, updateType, queryType, class: c }
   }
   return ParseClassCache[className];
 }
@@ -78,7 +79,7 @@ export function clearCache() {
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
 
 export const ParseObjectInterface = new GraphQLInterfaceType({
-  name: 'ObjectType',
+  name: 'ParseObject',
   fields: {
     objectId: {
       type: type('objectId')
@@ -92,37 +93,6 @@ export const ParseObjectInterface = new GraphQLInterfaceType({
     ACL: {
       type: type(null, {type: 'ACL'})
     }
-  }
-});
-
-export const ParseObject = new GraphQLObjectType({
-  name: 'Object',
-  interfaces: [ParseObjectInterface],
-  fields: {
-    objectId: {
-      type: type('objectId')
-    },
-    createdAt: {
-      type: type(null, {type: 'Date'})
-    },
-    updatedAt: {
-      type: type(null, {type: 'Date'})
-    },
-    ACL: {
-      type: type(null, {type: 'ACL'})
-    },
-    data: {
-      type: GraphQLJSONObject
-    }
-  },
-  isTypeOf: (args, context, info) => {
-    // Use that type when impossible to map to a Schema type
-    return typeof info.schema._typeMap[args.className] === 'undefined';
-  },
-  resolve: () => {
-    /* eslint-disable */
-    console.log('RESOLVE CALLED!');
-    /* eslint-enable */
   }
 });
 
@@ -133,10 +103,6 @@ export class ParseClass {
 
   constructor(className, schema) {
     this.className = className;
-    this.displayName = className;
-    if (className.startsWith('_')) {
-      this.displayName = className.slice(1) + 's';
-    }
     this.schema = schema;
     this.class = this.schema[className];
   }
@@ -181,7 +147,7 @@ export class ParseClass {
   graphQLInputConfig() {
     const className = this.className;
     return {
-      name: this.displayName + 'Input',
+      name: this.className + 'Input',
       description: `Parse Class ${className} Input`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);
@@ -196,7 +162,7 @@ export class ParseClass {
   graphQLQueryConfig() {
     const className = this.className;
     return {
-      name: this.displayName + 'Query',
+      name: this.className + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
         const fields = this.buildFields(graphQLQueryField, false, true);
@@ -213,7 +179,7 @@ export class ParseClass {
   graphQLUpdateInputConfig() {
     const className = this.className;
     return {
-      name: this.displayName + 'Update',
+      name: this.className + 'Update',
       description: `Parse Class ${className} Update`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);

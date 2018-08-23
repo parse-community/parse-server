@@ -15,14 +15,14 @@ import {
 import rest from '../rest';
 
 // Flatten all graphQL selections to the dot notation.
-function reduceSelections(selections) {
+function reduceSelections(selections, topKey) {
   return selections.reduce((memo, selection) => {
     const value = selection.name.value;
     if (selection.selectionSet === null) {
       memo.push(value);
     } else {
       // Get the sub seletions and add on current key
-      const subSelections = reduceSelections(selection.selectionSet.selections);
+      const subSelections = reduceSelections(selection.selectionSet.selections, topKey);
       memo = memo.concat(subSelections.map((key) => {
         return value + '.' + key;
       }));
@@ -32,13 +32,17 @@ function reduceSelections(selections) {
 }
 
 // Get the selections for the 1st node in a array of . separated keys
-function getSelections(info) {
-  const node = info.fieldNodes[0];
-  return reduceSelections(node.selectionSet.selections);
+function getSelections(node, topKey) {
+  return reduceSelections(node.selectionSet.selections, topKey);
 }
 
-function getQueryOptions(info) {
-  const selectedKeys = getSelections(info);
+function getQueryOptions(info, listKey) {
+  const node = info.fieldNodes[0];
+  const selections = node.selectionSet.selections;
+  const results = selections.filter((selection) => {
+    return selection.name.value == listKey;
+  });
+  const selectedKeys = getSelections(results[0]);
   const keys = selectedKeys.join(',');
   return {
     keys,
@@ -64,17 +68,28 @@ function toGraphQLResult(className, singleResult) {
 }
 
 // Runs a find against the rest API
-function runFind(context, info, className, where) {
-  const options = getQueryOptions(info);
+function runFind(context, info, className, where, listKey) {
+  const options = getQueryOptions(info, listKey);
   return rest.find(context.config, context.auth, className, where, options)
     .then(toGraphQLResult(className));
 }
 
 // runs a get against the rest API
-function runGet(context, info, className, objectId) {
-  const options = getQueryOptions(info);
+function runGet(context, info, className, objectId, listKey) {
+  const options = getQueryOptions(info, listKey);
   return rest.get(context.config, context.auth, className, objectId, options)
     .then(toGraphQLResult(className, true));
+}
+
+function getResultKeyName(className, pluralize = false) {
+  let resultName = className.toLocaleLowerCase();
+  if (resultName.indexOf('_') == 0) {
+    resultName = resultName.slice(1);
+  }
+  if (pluralize && resultName[resultName.length - 1] != 's') {
+    resultName += 's';
+  }
+  return resultName;
 }
 
 export class GraphQLParseSchema {
@@ -99,25 +114,30 @@ export class GraphQLParseSchema {
 
   Query() {
     const MainSchemaOptions = {
-      name: 'ParseSchema',
+      name: 'Query',
       description: `The full parse schema`,
       fields: {}
     }
     Object.keys(this.schema).forEach((className) => {
       const {
-        queryType, objectType, displayName
+        queryType, objectType
       } = loadClass(className, this.schema);
-      if (className.startsWith('_')) {
-        className = className.slice(1) + 's';
-      }
-      MainSchemaOptions.fields[displayName] = {
-        type: new GraphQLList(objectType),
+      const listKey = getResultKeyName(className, true);
+      const queryResultType = new GraphQLObjectType({
+        name: `${className}QueryResponse`,
+        fields: {
+          [listKey]: { type: new GraphQLList(objectType) },
+        }
+      });
+
+      MainSchemaOptions.fields[className] = {
+        type: queryResultType,
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
           objectId: { type: GraphQLID, name: 'objectId' },
           where: { type: queryType }
         },
-        resolve: (root, args, context, info) => {
+        resolve: async (root, args, context, info) => {
           // Get the selections
           let query = {};
           if (args.where) {
@@ -126,17 +146,16 @@ export class GraphQLParseSchema {
           if (args.objectId) {
             query = Object.assign(query, { objectId: args.objectId });
           }
-          return runFind(context, info, className, query);
+          return { [listKey] : await runFind(context, info, className, query, listKey) };
         }
       };
     });
-    MainSchemaOptions.fields['ParseObject'] = { type: ParseObject };
     return new GraphQLObjectType(MainSchemaOptions);
   }
 
   Mutation()  {
     const MainSchemaMutationOptions = {
-      name: 'ParseSchemaMutation',
+      name: 'Mutation',
       fields: {}
     }
     // TODO: Refactor FunctionRouter to extract (as it's a new entry)
@@ -144,54 +163,71 @@ export class GraphQLParseSchema {
 
     Object.keys(this.schema).forEach((className) => {
       const {
-        inputType, objectType, updateType, displayName
+        inputType, objectType, updateType
       } = loadClass(className, this.schema);
+      const resultKey = getResultKeyName(className);
+      const createResultType = new GraphQLObjectType({
+        name: `${className}CreateCompletePayload`,
+        fields: {
+          object: { type: objectType }
+        }
+      });
 
-      MainSchemaMutationOptions.fields['create' + displayName] = {
-        type: objectType,
+      const updateResultType = new GraphQLObjectType({
+        name: `${className}UpdateCompletePayload`,
+        fields: {
+          [resultKey]: { type: objectType }
+        }
+      });
+
+      const deleteResultType = new GraphQLObjectType({
+        name: `${className}DeleteCompletePayload`,
+        fields: {
+          [resultKey]: { type: objectType }
+        }
+      });
+
+      MainSchemaMutationOptions.fields['create' + className] = {
+        type: createResultType,
         fields: objectType.fields,
         description: `use this method to create a new ${className}`,
         args: { input: { type: inputType }},
         name: 'create',
-        resolve: (root, args, context, info) => {
-          return rest.create(context.config, context.auth, className, args.input).then((res) => {
-            // Run find to match graphQL style
-            return runGet(context, info, className, res.response.objectId);
-          });
+        resolve: async (root, args, context, info) => {
+          const res = await rest.create(context.config, context.auth, className, args.input);
+          // Run find to match graphQL style
+          return { [resultKey] : await runGet(context, info, className, res.response.objectId, resultKey) };
         }
       }
 
-      MainSchemaMutationOptions.fields['update' + displayName] = {
-        type: objectType,
+      MainSchemaMutationOptions.fields['update' + className] = {
+        type: updateResultType,
         description: `use this method to update an existing ${className}`,
         args: {
           objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' },
           input: { type: updateType }
         },
         name: 'update',
-        resolve: (root, args, context, info) => {
+        resolve: async (root, args, context, info) => {
           const objectId = args.objectId;
           const input = args.input;
-          return rest.update(context.config, context.auth, className, { objectId }, input).then(() => {
-            // Run find to match graphQL style
-            return runGet(context, info, className, objectId);
-          });
+          await rest.update(context.config, context.auth, className, { objectId }, input);
+          // Run find to match graphQL styl
+          return { [resultKey] : await runGet(context, info, className, objectId, resultKey) };
         }
       }
 
-      MainSchemaMutationOptions.fields['destroy' + displayName] = {
-        type: objectType,
+      MainSchemaMutationOptions.fields['destroy' + className] = {
+        type: deleteResultType,
         description: `use this method to update delete an existing ${className}`,
         args: {
           objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' }
         },
         name: 'destroy',
-        resolve: (root, args, context, info) => {
-          return runGet(context, info, className, args.objectId).then((object) => {
-            return rest.del(context.config, context.auth, className, args.objectId).then(() => {
-              return object;
-            });
-          });
+        resolve: async (root, args, context, info) => {
+          const object = await runGet(context, info, className, args.objectId);
+          await rest.del(context.config, context.auth, className, args.objectId);
+          return { [resultKey]: object }
         }
       }
     });
