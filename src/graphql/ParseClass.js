@@ -1,4 +1,4 @@
-import { runFind } from './execute';
+import { runFind, runGet, transformResult } from './execute';
 
 import {
   GraphQLInterfaceType,
@@ -123,12 +123,24 @@ export class ParseClass {
             type: loadClass(field.targetClass, this.schema).queryType
           }
         } else if (isObject) {
+          // TODO: move pointer resolver somewhere else
           gQLField = {
-            type: loadClass(field.targetClass, this.schema).objectType
+            type: loadClass(field.targetClass, this.schema).objectType,
+            resolve: (parent, args, context, info) => {
+              const object = parent[fieldName];
+              const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+                return field.name.value;
+              });
+              if (selections.indexOf('id') < 0 || selections.length > 1) {
+                return runGet(context, info, object.className, object.objectId, this.schema);
+              }
+              return transformResult(fields[fieldName].targetClass, object, this.schema, { context, info });
+            }
           }
         }
       }
       if (field.type == 'Relation' && isObject) {
+        // TODO: Move relation resolver somewhere else
         gQLField = {
           type: loadClass(field.targetClass, this.schema).queryResultType,
           resolve: async (parent, args, context, info) => {

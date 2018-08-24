@@ -1,37 +1,22 @@
 import rest from '../rest';
 
-function transformResult(className, result, schema, { context, info }) {
+export function transformResult(className, result) {
   if (Array.isArray(result)) {
-    return result.map((res) => transformResult(className, res, schema, { context, info }));
+    return result.map((res) => transformResult(className, res));
   }
-  const { fields } = schema[className];
   if (result.objectId) {
     result.id = result.objectId;
   }
-  Object.keys(result).forEach((key) => {
-    if (fields[key] && fields[key].type === 'Pointer') {
-      const pointer = result[key];
-      result[key] = (parent, request, info) => {
-        const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
-          return field.name.value;
-        });
-        if (selections.indexOf('id') < 0 || selections.length > 0) {
-          return runGet(context, info, pointer.className, pointer.objectId, schema);
-        }
-        return transformResult(fields[key].targetClass, pointer, schema, { context, info });
-      }
-    }
-  });
   return Object.assign({className}, result);
 }
 
-function toGraphQLResult(className, schema, { context, info }) {
+function toGraphQLResult(className) {
   return (restResult) => {
     const results = restResult.results;
     if (results.length == 0) {
       return [];
     }
-    return transformResult(className, results, schema, { context, info });
+    return transformResult(className, results);
   }
 }
 
@@ -88,12 +73,12 @@ export function runFind(context, info, className, args, schema, restQuery) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;
   }
   return rest.find(context.config, context.auth, className, query, options)
-    .then(toGraphQLResult(className, schema, { context, info }));
+    .then(toGraphQLResult(className));
 }
 
 // runs a get against the rest API
-export function runGet(context, info, className, objectId, schema) {
+export function runGet(context, info, className, objectId) {
   return rest.get(context.config, context.auth, className, objectId, {})
-    .then(toGraphQLResult(className, schema, { context, info }))
+    .then(toGraphQLResult(className))
     .then(results => results[0]);
 }
