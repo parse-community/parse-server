@@ -5,7 +5,8 @@ import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
-  GraphQLString
+  GraphQLString,
+  GraphQLID,
 } from 'graphql'
 
 import {
@@ -26,11 +27,9 @@ export { clearCache };
 function graphQLField(fieldName, field) {
   const gQLType = type(fieldName, field);
   if (!gQLType) {
-    /* eslint-disable */
-    console.log('no type: ', fieldName, field);
     return;
   }
-  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
+  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` : `${field.type}`);
   return {
     name: fieldName,
     type: gQLType,
@@ -170,7 +169,7 @@ export class ParseClass {
               edges: () => results.map((node) => {
                 return { node };
               }),
-              pageInfo: () => {
+              pageInfo: () => {
                 return {
                   hasNextPage: false,
                   hasPreviousPage: false
@@ -227,6 +226,7 @@ export class ParseClass {
       fields: () => {
         const fields = this.buildFields(graphQLQueryField, false, true);
         delete fields.objectId;
+        delete fields.id;
         return fields;
       },
       isTypeOf: function(input) {
@@ -236,15 +236,17 @@ export class ParseClass {
   }
 
   graphQLUpdateInputConfig() {
-    const className = this.className;
     return {
       name: this.className + 'Update',
-      description: `Parse Class ${className} Update`,
+      description: `Parse Class ${this.className} Update`,
       fields: () => {
-        return this.buildFields(graphQLInputField, true);
+        const fields = this.buildFields(graphQLInputField, true);
+        fields.id = { type: GraphQLID };
+        fields.objectId = { type: GraphQLID };
+        return fields;
       },
       isTypeOf: function(input) {
-        return input.className == className;
+        return input.className == this.className;
       }
     };
   }
@@ -280,7 +282,7 @@ export class ParseClass {
           edges: {
             type: new GraphQLList(new GraphQLObjectType({
               name: `${this.className}Edge`,
-              fields: () => ({
+              fields: () => ({
                 node: { type: objectType },
                 cursor: { type: GraphQLString }
               })
@@ -299,7 +301,8 @@ export class ParseClass {
       this.mutationResultObjectType = new GraphQLObjectType({
         name: `${this.className}MutationCompletePayload`,
         fields: {
-          object: { type: objectType }
+          object: { type: objectType },
+          clientMutationId: { type: GraphQLString }
         }
       });
     }
