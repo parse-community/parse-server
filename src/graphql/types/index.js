@@ -62,7 +62,7 @@ export {
 }
 
 export function type(fieldName, field) {
-  if (fieldName === 'objectId') {
+  if (fieldName === 'objectId' || fieldName === 'id') {
     return new GraphQLNonNull(GraphQLID);
   }
   const type = field.type;
@@ -90,7 +90,7 @@ export function type(fieldName, field) {
 }
 
 export function inputType(fieldName, field) {
-  if (fieldName === 'objectId') {
+  if (fieldName === 'objectId' || fieldName === 'id') {
     return new GraphQLNonNull(GraphQLID);
   }
   const type = field.type;
@@ -117,7 +117,7 @@ export function inputType(fieldName, field) {
 }
 
 export function queryType(fieldName, field) {
-  if (fieldName === 'objectId') {
+  if (fieldName === 'objectId' || fieldName === 'id') {
     return new GraphQLNonNull(GraphQLID);
   }
   const type = field.type;

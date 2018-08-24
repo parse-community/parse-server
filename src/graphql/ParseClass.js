@@ -78,12 +78,18 @@ export function clearCache() {
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
 
+export const Node = new GraphQLInterfaceType({
+  name: 'Node',
+  fields: {
+    id: {
+      type: type('objectId')
+    }
+  }
+})
+
 export const ParseObjectInterface = new GraphQLInterfaceType({
   name: 'ParseObject',
   fields: {
-    objectId: {
-      type: type('objectId')
-    },
     createdAt: {
       type: type(null, {type: 'Date'})
     },
@@ -112,7 +118,7 @@ export class ParseClass {
     return {
       name: this.className,
       description: `Parse Class ${className}`,
-      interfaces: [ParseObjectInterface],
+      interfaces: [Node, ParseObjectInterface],
       fields: this.buildFields(graphQLField, false, false, true),
       isTypeOf: (a) => {
         return a.className == className;
@@ -141,6 +147,10 @@ export class ParseClass {
       }
       if (!gQLField) {
         return memo;
+      }
+      // use id instead of objectId in the object
+      if (fieldName === 'objectId' && isObject) {
+        fieldName = 'id';
       }
       memo[fieldName] = gQLField;
       return memo;
