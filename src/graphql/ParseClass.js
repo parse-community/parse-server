@@ -5,6 +5,7 @@ import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
+  GraphQLInt,
 } from 'graphql'
 
 import {
@@ -141,8 +142,14 @@ export class ParseClass {
       }
       if (field.type == 'Relation' && isObject) {
         // TODO: Move relation resolver somewhere else
+        const { queryResultType, queryType } = loadClass(field.targetClass, this.schema);
         gQLField = {
-          type: loadClass(field.targetClass, this.schema).queryResultType,
+          type: queryResultType,
+          args: {
+            where: { type: queryType },
+            limit: { type: GraphQLInt },
+            skip: { type: GraphQLInt }
+          },
           resolve: async (parent, args, context, info) => {
             const query = {
               $relatedTo: {
