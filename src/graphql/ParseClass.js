@@ -114,13 +114,9 @@ export class ParseClass {
       description: `Parse Class ${className}`,
       interfaces: [ParseObjectInterface],
       fields: this.buildFields(graphQLField, false, false, true),
-      resolve: () => {
-        console.log('RESOLVE');
-        return;
-      },
-      isTypeOf: function(a) {
+      isTypeOf: (a) => {
         return a.className == className;
-      }
+      },
     };
   }
 
@@ -209,9 +205,17 @@ export class ParseClass {
 
   graphQLQueryResultType(objectType) {
     return new GraphQLObjectType({
-      name: `${this.className}QueryResponse`,
+      name: `${this.className}QueryConnection`,
       fields: {
-        objects: { type: new GraphQLList(objectType) },
+        nodes: { type: new GraphQLList(objectType) },
+        edges: {
+          type: new GraphQLList(new GraphQLObjectType({
+            name: `${this.className}Edge`,
+            fields: () => ({
+              node: { type: objectType }
+            })
+          }))
+        }
       }
     });
   }

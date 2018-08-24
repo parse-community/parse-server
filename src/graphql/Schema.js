@@ -9,7 +9,6 @@ import {
   GraphQLNonNull,
   GraphQLInt,
   GraphQLID,
-  GraphQLObjectTypeConfig,
   GraphQLFieldConfigMap,
 } from 'graphql'
 
@@ -37,14 +36,57 @@ function getSelections(node, topKey) {
   return reduceSelections(node.selectionSet.selections, topKey);
 }
 
-function getQueryOptions(info, listKey) {
+function getFirstNode(node, matching) {
+  if (!node || !node.selectionSet || !node.selectionSet.selections) {
+    return;
+  }
+  let found;
+  for(const child of node.selectionSet.selections) {
+    found = matching(child, node);
+    getFirstNode(child, matching);
+  }
+  if (found) {
+    return;
+  }
+}
+
+function flattenSelectionSet(nodes) {
+  const allSelections = nodes.map(getSelections).reduce((memo, keys) => {
+    return memo.concat(keys);
+  }, []);
+  return [...new Set(allSelections)].join(',');
+}
+
+function getKeysForFind(info/*, schema, className*/) {
+  const node = info.fieldNodes[0];
+  const nodes = [];
+  getFirstNode(node, (child, node) => {
+    if (child.name.value === 'nodes') {
+      nodes.push(child);
+      return true;
+    }
+    if (child.name.value === 'node' && node.name.value === 'edges') {
+      nodes.push(child);
+      return true;
+    }
+  });
+  const keys = flattenSelectionSet(nodes);
+  return {
+    keys,
+    include: keys
+  }
+}
+
+function getQueryOptions(info, parentNodeName) {
   const node = info.fieldNodes[0];
   const selections = node.selectionSet.selections;
-  const results = selections.filter((selection) => {
-    return selection.name.value == listKey;
+  let nodes = selections.filter((selection) => {
+    return selection.name.value == parentNodeName;
   });
-  const selectedKeys = getSelections(results[0]);
-  const keys = selectedKeys.join(',');
+  if (nodes.length == 0) {
+    nodes = [node];
+  }
+  const keys = flattenSelectionSet(nodes);
   return {
     keys,
     include: keys
@@ -61,6 +103,9 @@ function injectClassName(className, result) {
 function toGraphQLResult(className, singleResult) {
   return (restResult) => {
     const results = restResult.results;
+    if (results.length == 0) {
+      return;
+    }
     if (singleResult) {
       return injectClassName(className, results[0]);
     }
@@ -118,7 +163,7 @@ function runFind(context, info, className, args, schema) {
   if (args.objectId) {
     query = Object.assign(query, { objectId: args.objectId });
   }
-  const options = getQueryOptions(info, 'objects');
+  const options = getKeysForFind(info, schema, className);
   if (Object.prototype.hasOwnProperty.call(args, 'limit')) {
     options.limit = args.limit;
   }
@@ -161,10 +206,23 @@ export class GraphQLParseSchema {
     const fields = {};
     Object.keys(this.schema).forEach((className) => {
       const {
-        queryType, queryResultType
+        queryType, queryResultType, objectType
       } = loadClass(className, this.schema);
 
-      const field: GraphQLFieldConfigMap = {
+      const get: GraphQLFieldConfigMap = {
+        type: objectType,
+        description: `Use this endpoint to get or query ${className} objects`,
+        args: {
+          objectId: { type: GraphQLID, name: 'objectId' },
+        },
+        resolve: async (root, args, context, info) => {
+          // Get the selections
+          return await runGet(context, info, className, args.objectId, this.schema);
+        }
+      };
+      fields[`${className}`] = get;
+
+      const findField: GraphQLFieldConfigMap = {
         type: queryResultType,
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
@@ -175,11 +233,16 @@ export class GraphQLParseSchema {
         },
         resolve: async (root, args, context, info) => {
           // Get the selections
-          const objects = await runFind(context, info, className, args, this.schema[className]);
-          return { objects };
+          const results = await runFind(context, info, className, args, this.schema);
+          return {
+            nodes: () => results,
+            edges: () => results.map((node) => {
+              return { node };
+            }),
+          };
         }
       };
-      fields[className] = field;
+      fields[`find${className}`] = findField;
     });
     return new GraphQLObjectType({
       name: 'Query',
