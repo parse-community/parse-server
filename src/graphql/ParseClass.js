@@ -1,12 +1,10 @@
+import { runFind } from './execute';
+
 import {
   GraphQLInterfaceType,
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
-  // GraphQLString,
-  // GraphQLNonNull,
-  // GraphQLBoolean,
-  // GraphQLID,
 } from 'graphql'
 
 import {
@@ -15,6 +13,13 @@ import {
   type,
   GraphQLPointer,
 } from './types'
+
+import {
+  getOrElse,
+  clearCache,
+} from './typesCache';
+
+export { clearCache };
 
 function graphQLField(fieldName, field) {
   const gQLType = type(fieldName, field);
@@ -56,24 +61,15 @@ function graphQLQueryField(fieldName, field) {
   };
 }
 
-let ParseClassCache = {};
-
 export function loadClass(className, schema) {
-  if (!ParseClassCache[className]) {
-    const c = new ParseClass(className, schema);
-    const objectType = c.graphQLObjectType();
-    const inputType = c.graphQLInputObjectType();
-    const updateType = c.graphQLUpdateInputObjectType();
-    const queryType = c.graphQLQueryInputObjectType();
-    const queryResultType = c.graphQLQueryResultType(objectType);
-    const mutationResultType = c.graphQLMutationResultType(objectType);
-    ParseClassCache[className] = { objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
-  }
-  return ParseClassCache[className];
-}
-
-export function clearCache() {
-  ParseClassCache = {};
+  const c = getOrElse(className, () => new ParseClass(className, schema));
+  const objectType = c.graphQLObjectType();
+  const inputType = c.graphQLInputObjectType();
+  const updateType = c.graphQLUpdateInputObjectType();
+  const queryType = c.graphQLQueryInputObjectType();
+  const queryResultType = c.graphQLQueryResultType(objectType);
+  const mutationResultType = c.graphQLMutationResultType(objectType);
+  return { objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
@@ -113,19 +109,6 @@ export class ParseClass {
     this.class = this.schema[className];
   }
 
-  graphQLConfig() {
-    const className = this.className;
-    return {
-      name: this.className,
-      description: `Parse Class ${className}`,
-      interfaces: [Node, ParseObjectInterface],
-      fields: this.buildFields(graphQLField, false, false, true),
-      isTypeOf: (a) => {
-        return a.className == className;
-      },
-    };
-  }
-
   buildFields(mapper, filterReserved = false, isQuery = false, isObject = false) {
     const fields = this.class.fields;
     return Object.keys(fields).reduce((memo, fieldName) => {
@@ -145,6 +128,32 @@ export class ParseClass {
           }
         }
       }
+      if (field.type == 'Relation' && isObject) {
+        gQLField = {
+          type: loadClass(field.targetClass, this.schema).queryResultType,
+          resolve: async (parent, args, context, info) => {
+            const query = {
+              $relatedTo: {
+                object: {
+                  __type: 'Pointer',
+                  className: parent.className,
+                  objectId: parent.objectId
+                },
+                key: fieldName,
+              }
+            }
+            args.redirectClassNameForKey = fieldName;
+            const results = await runFind(context, info, this.className, args, this.schema, query);
+            return {
+              nodes: () => results,
+              edges: () => results.map((node) => {
+                return { node };
+              }),
+            };
+          }
+        }
+      }
+
       if (!gQLField) {
         return memo;
       }
@@ -155,6 +164,18 @@ export class ParseClass {
       memo[fieldName] = gQLField;
       return memo;
     }, {});
+  }
+  graphQLConfig() {
+    const className = this.className;
+    return {
+      name: this.className,
+      description: `Parse Class ${className}`,
+      interfaces: [Node, ParseObjectInterface],
+      fields: () => this.buildFields(graphQLField, false, false, true),
+      isTypeOf: (a) => {
+        return a.className == className;
+      },
+    };
   }
 
   graphQLInputConfig() {
@@ -202,46 +223,66 @@ export class ParseClass {
   }
 
   graphQLUpdateInputObjectType() {
-    return new GraphQLInputObjectType(this.graphQLUpdateInputConfig());
+    if (!this.updateInputObjectType) {
+      this.updateInputObjectType = new GraphQLInputObjectType(this.graphQLUpdateInputConfig());
+    }
+    return this.updateInputObjectType;
   }
 
   graphQLInputObjectType() {
-    return new GraphQLInputObjectType(this.graphQLInputConfig());
+    if (!this.inputObjectType) {
+      this.inputObjectType = new GraphQLInputObjectType(this.graphQLInputConfig());
+    }
+    return this.inputObjectType;
   }
 
   graphQLQueryInputObjectType() {
-    return new GraphQLInputObjectType(this.graphQLQueryConfig());
+    if (!this.queryInputObjectType) {
+      this.queryInputObjectType = new GraphQLInputObjectType(this.graphQLQueryConfig());
+    }
+    return this.queryInputObjectType;
   }
 
-  graphQLQueryResultType(objectType) {
-    return new GraphQLObjectType({
-      name: `${this.className}QueryConnection`,
-      fields: {
-        nodes: { type: new GraphQLList(objectType) },
-        edges: {
-          type: new GraphQLList(new GraphQLObjectType({
-            name: `${this.className}Edge`,
-            fields: () => ({
-              node: { type: objectType }
-            })
-          }))
+  graphQLQueryResultType() {
+    if (!this.queryResultObjectType) {
+      const objectType = this.graphQLObjectType();
+      this.queryResultObjectType = new GraphQLObjectType({
+        name: `${this.className}QueryConnection`,
+        fields: {
+          nodes: { type: new GraphQLList(objectType) },
+          edges: {
+            type: new GraphQLList(new GraphQLObjectType({
+              name: `${this.className}Edge`,
+              fields: () => ({
+                node: { type: objectType }
+              })
+            }))
+          }
         }
-      }
-    });
+      });
+    }
+    return this.queryResultObjectType;
   }
 
-  graphQLMutationResultType(objectType) {
-   return new GraphQLObjectType({
-      name: `${this.className}MutationCompletePayload`,
-      fields: {
-        object: { type: objectType }
-      }
-    });
+  graphQLMutationResultType() {
+    if (!this.mutationResultObjectType) {
+      const objectType = this.graphQLObjectType();
+      this.mutationResultObjectType = new GraphQLObjectType({
+        name: `${this.className}MutationCompletePayload`,
+        fields: {
+          object: { type: objectType }
+        }
+      });
+    }
+    return this.mutationResultObjectType;
   }
 
 
   graphQLObjectType() {
-    return new GraphQLObjectType(this.graphQLConfig());
+    if (!this.objectType) {
+      this.objectType = new GraphQLObjectType(this.graphQLConfig());
+    }
+    return this.objectType;
   }
 }
 

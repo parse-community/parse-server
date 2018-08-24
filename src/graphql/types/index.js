@@ -5,7 +5,6 @@ import {
   GraphQLBoolean,
   GraphQLID,
   GraphQLList,
-  GraphQLUnionType,
 } from 'graphql'
 
 import {
