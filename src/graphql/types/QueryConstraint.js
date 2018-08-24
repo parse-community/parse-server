@@ -1,6 +1,5 @@
 import {
   Kind,
-  GraphQLInputType,
   GraphQLList,
   GraphQLBoolean
 } from 'graphql'
