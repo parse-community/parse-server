@@ -5,7 +5,8 @@ export function transformResult(className, result) {
     return result.map((res) => transformResult(className, res));
   }
   if (result.objectId) {
-    result.id = result.objectId;
+    // Make a unique identifier for relay
+    result.id = new Buffer(`${className}::${result.objectId}`).toString('base64');
   }
   return Object.assign({className}, result);
 }
@@ -62,11 +63,19 @@ export function runFind(context, info, className, args, schema, restQuery) {
     query = Object.assign({}, query, restQuery);
   }
   const options = {};
-  if (Object.prototype.hasOwnProperty.call(args, 'limit')) {
-    options.limit = args.limit;
+  if (Object.prototype.hasOwnProperty.call(args, 'first')) {
+    options.limit = args.first;
+    options.order = 'createdAt';
   }
-  if (Object.prototype.hasOwnProperty.call(args, 'skip')) {
-    options.skip = args.skip;
+  if (Object.prototype.hasOwnProperty.call(args, 'last')) {
+    options.limit = args.last;
+    options.order = '-createdAt';
+  }
+  if (Object.prototype.hasOwnProperty.call(args, 'after')) {
+    query.createdAt = { '$gt': new Date(new Buffer(args.after, 'base64').toString('utf8')) }
+  }
+  if (Object.prototype.hasOwnProperty.call(args, 'before')) {
+    query.createdAt = { '$lt': new Date(new Buffer(args.after, 'base64').toString('utf8')) }
   }
   if (Object.prototype.hasOwnProperty.call(args, 'redirectClassNameForKey')) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;

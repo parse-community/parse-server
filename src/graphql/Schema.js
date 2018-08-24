@@ -1,5 +1,6 @@
 import { runFind, runGet } from './execute';
 import {
+  Node,
   loadClass,
   clearCache,
 } from './ParseClass';
@@ -11,9 +12,14 @@ import {
   GraphQLInt,
   GraphQLID,
   GraphQLFieldConfigMap,
+  GraphQLString,
 } from 'graphql'
 
 import rest from '../rest';
+
+function base64(string) {
+  return new Buffer(string).toString('base64')
+}
 
 function transformInput(input, schema) {
   const { fields } = schema;
@@ -59,7 +65,7 @@ export class GraphQLParseSchema {
         type: objectType,
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
-          objectId: { type: GraphQLID, name: 'objectId' },
+          objectId: { type: GraphQLID },
         },
         resolve: async (root, args, context, info) => {
           // Get the selections
@@ -73,22 +79,68 @@ export class GraphQLParseSchema {
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
           where: { type: queryType },
-          limit: { type: GraphQLInt },
-          skip: { type: GraphQLInt }
+          first: { type: GraphQLInt },
+          last: { type: GraphQLInt },
+          after: { type: GraphQLString },
+          before: { type: GraphQLString }
         },
         resolve: async (root, args, context, info) => {
           // Get the selections
+          const pageSize = args.first || args.last || 100;
           const results = await runFind(context, info, className, args, this.schema);
           return {
             nodes: () => results,
             edges: () => results.map((node) => {
-              return { node };
+              return {
+                cursor: base64(node.createdAt),
+                node
+              };
             }),
+            pageInfo: () => {
+              const hasPreviousPage = () => {
+                if (args.last) {
+                  return results.length === pageSize;
+                }
+                if (args.after) {
+                  return true;
+                }
+                return false;
+              };
+              const hasNextPage = () => {
+                if (args.first) {
+                  return results.length === pageSize;
+                }
+                if (args.before) {
+                  return true;
+                }
+                return false;
+              };
+              return {
+                hasNextPage,
+                hasPreviousPage,
+              }
+            }
           };
         }
       };
       fields[`find${className}`] = findField;
     });
+
+    fields.node = {
+      type: Node,
+      description: `Commong endpoint`,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLID) },
+      },
+      resolve: async (root, args, context, info) => {
+        // Get the selections
+        const components = new Buffer(args.id, 'base64').toString('utf8').split('::');
+        if (components.length != 2) {
+          throw new Error('Invalid ID');
+        }
+        return await runGet(context, info, components[0], components[1], this.schema);
+      }
+    }
     return new GraphQLObjectType({
       name: 'Query',
       description: `The full parse schema`,

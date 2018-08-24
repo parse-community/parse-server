@@ -49,6 +49,10 @@ import {
   NumberInput,
 } from './NumberInput';
 
+import {
+  PageInfo
+} from './PageInfo';
+
 export {
   GraphQLACL,
   GraphQLACLInput,
@@ -57,7 +61,8 @@ export {
   GraphQLFile,
   GraphQLDate,
   GraphQLPointer,
-  GraphQLJSONObject
+  GraphQLJSONObject,
+  PageInfo,
 }
 
 export function type(fieldName, field) {
