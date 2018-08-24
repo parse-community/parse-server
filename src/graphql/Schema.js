@@ -93,23 +93,32 @@ function getQueryOptions(info, parentNodeName) {
   }
 }
 
-function injectClassName(className, result) {
+function transformResult(className, result, schema) {
   if (Array.isArray(result)) {
-    return result.map((res) => injectClassName(className, res));
+    return result.map((res) => transformResult(className, res, schema));
   }
+  const { fields } = schema[className];
+  if (result.objectId) {
+    result.id = result.objectId;
+  }
+  Object.keys(result).forEach((key) => {
+    if (fields[key] && fields[key].type === 'Pointer') {
+      result[key] = transformResult(fields[key].targetClass, result[key], schema);
+    }
+  });
   return Object.assign({className}, result);
 }
 
-function toGraphQLResult(className, singleResult) {
+function toGraphQLResult(className, singleResult, schema) {
   return (restResult) => {
     const results = restResult.results;
     if (results.length == 0) {
       return;
     }
     if (singleResult) {
-      return injectClassName(className, results[0]);
+      return transformResult(className, results[0], schema);
     }
-    return injectClassName(className, results);
+    return transformResult(className, results, schema);
   }
 }
 
@@ -172,14 +181,14 @@ function runFind(context, info, className, args, schema) {
   }
   query = transformQuery(query, schema);
   return rest.find(context.config, context.auth, className, query, options)
-    .then(toGraphQLResult(className));
+    .then(toGraphQLResult(className, false, schema));
 }
 
 // runs a get against the rest API
-function runGet(context, info, className, objectId) {
+function runGet(context, info, className, objectId, schema) {
   const options = getQueryOptions(info, 'object');
   return rest.get(context.config, context.auth, className, objectId, options)
-    .then(toGraphQLResult(className, true));
+    .then(toGraphQLResult(className, true, schema));
 }
 
 export class GraphQLParseSchema {
