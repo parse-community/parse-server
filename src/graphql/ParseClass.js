@@ -5,7 +5,7 @@ import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
-  GraphQLInt,
+  GraphQLString
 } from 'graphql'
 
 import {
@@ -13,6 +13,7 @@ import {
   inputType,
   type,
   GraphQLPointer,
+  PageInfo,
 } from './types'
 
 import {
@@ -87,6 +88,9 @@ export const Node = new GraphQLInterfaceType({
 export const ParseObjectInterface = new GraphQLInterfaceType({
   name: 'ParseObject',
   fields: {
+    objectId: {
+      type: type('objectId')
+    },
     createdAt: {
       type: type(null, {type: 'Date'})
     },
@@ -112,7 +116,7 @@ export class ParseClass {
 
   buildFields(mapper, filterReserved = false, isQuery = false, isObject = false) {
     const fields = this.class.fields;
-    return Object.keys(fields).reduce((memo, fieldName) => {
+    const fieldsMap = Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
         return memo;
       }
@@ -146,9 +150,7 @@ export class ParseClass {
         gQLField = {
           type: queryResultType,
           args: {
-            where: { type: queryType },
-            limit: { type: GraphQLInt },
-            skip: { type: GraphQLInt }
+            where: { type: queryType }
           },
           resolve: async (parent, args, context, info) => {
             const query = {
@@ -168,6 +170,12 @@ export class ParseClass {
               edges: () => results.map((node) => {
                 return { node };
               }),
+              pageInfo: () => {
+                return {
+                  hasNextPage: false,
+                  hasPreviousPage: false
+                }
+              }
             };
           }
         }
@@ -176,13 +184,13 @@ export class ParseClass {
       if (!gQLField) {
         return memo;
       }
-      // use id instead of objectId in the object
-      if (fieldName === 'objectId' && isObject) {
-        fieldName = 'id';
-      }
       memo[fieldName] = gQLField;
       return memo;
     }, {});
+    if (isObject) {
+      fieldsMap.id = mapper('objectId', fields['objectId']);
+    }
+    return fieldsMap;
   }
   graphQLConfig() {
     const className = this.className;
@@ -273,10 +281,12 @@ export class ParseClass {
             type: new GraphQLList(new GraphQLObjectType({
               name: `${this.className}Edge`,
               fields: () => ({
-                node: { type: objectType }
+                node: { type: objectType },
+                cursor: { type: GraphQLString }
               })
             }))
-          }
+          },
+          pageInfo: { type: PageInfo },
         }
       });
     }
