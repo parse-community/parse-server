@@ -1,91 +1,8 @@
 import rest from '../rest';
 
-// Flatten all graphQL selections to the dot notation.
-function reduceSelections(selections, topKey) {
-  return selections.reduce((memo, selection) => {
-    const value = selection.name.value;
-    if (selection.selectionSet === null || selection.selectionSet === undefined) {
-      if (value === 'id') {
-        memo.push('objectId');
-      } else {
-        memo.push(value);
-      }
-    } else {
-      // Get the sub seletions and add on current key
-      const subSelections = reduceSelections(selection.selectionSet.selections, topKey);
-      memo = memo.concat(subSelections.map((key) => {
-        return value + '.' + key;
-      }));
-    }
-    return memo;
-  }, []);
-}
-
-// Get the selections for the 1st node in a array of . separated keys
-function getSelections(node, topKey) {
-  return reduceSelections(node.selectionSet.selections, topKey);
-}
-
-function getFirstNode(node, matching) {
-  if (!node || !node.selectionSet || !node.selectionSet.selections) {
-    return;
-  }
-  let found;
-  for(const child of node.selectionSet.selections) {
-    found = matching(child, node);
-    getFirstNode(child, matching);
-  }
-  if (found) {
-    return;
-  }
-}
-
-function flattenSelectionSet(nodes) {
-  const allSelections = nodes.map(getSelections).reduce((memo, keys) => {
-    return memo.concat(keys);
-  }, []);
-  return [...new Set(allSelections)].join(',');
-}
-
-function getKeysForFind(info/*, schema, className*/) {
-  const node = info.fieldNodes[0];
-  const nodes = [];
-  getFirstNode(node, (child, node) => {
-    if (child.name.value === 'nodes') {
-      nodes.push(child);
-      return true;
-    }
-    if (child.name.value === 'node' && node.name.value === 'edges') {
-      nodes.push(child);
-      return true;
-    }
-  });
-  const keys = flattenSelectionSet(nodes);
-  return {
-    keys,
-    include: keys
-  }
-}
-
-function getQueryOptions(info, parentNodeName) {
-  const node = info.fieldNodes[0];
-  const selections = node.selectionSet.selections;
-  let nodes = selections.filter((selection) => {
-    return selection.name.value == parentNodeName;
-  });
-  if (nodes.length == 0) {
-    nodes = [node];
-  }
-  const keys = flattenSelectionSet(nodes);
-  return {
-    keys,
-    include: keys
-  }
-}
-
-function transformResult(className, result, schema) {
+function transformResult(className, result, schema, { context, info }) {
   if (Array.isArray(result)) {
-    return result.map((res) => transformResult(className, res, schema));
+    return result.map((res) => transformResult(className, res, schema, { context, info }));
   }
   const { fields } = schema[className];
   if (result.objectId) {
@@ -93,22 +10,28 @@ function transformResult(className, result, schema) {
   }
   Object.keys(result).forEach((key) => {
     if (fields[key] && fields[key].type === 'Pointer') {
-      result[key] = transformResult(fields[key].targetClass, result[key], schema);
+      const pointer = result[key];
+      result[key] = (parent, request, info) => {
+        const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+          return field.name.value;
+        });
+        if (selections.indexOf('id') < 0 || selections.length > 0) {
+          return runGet(context, info, pointer.className, pointer.objectId, schema);
+        }
+        return transformResult(fields[key].targetClass, pointer, schema, { context, info });
+      }
     }
   });
   return Object.assign({className}, result);
 }
 
-function toGraphQLResult(className, singleResult, schema) {
+function toGraphQLResult(className, schema, { context, info }) {
   return (restResult) => {
     const results = restResult.results;
     if (results.length == 0) {
       return [];
     }
-    if (singleResult) {
-      return transformResult(className, results[0], schema);
-    }
-    return transformResult(className, results, schema);
+    return transformResult(className, results, schema, { context, info });
   }
 }
 
@@ -154,7 +77,7 @@ export function runFind(context, info, className, args, schema, restQuery) {
   } else {
     query = restQuery;
   }
-  const options = getKeysForFind(info, schema, className);
+  const options = {};
   if (Object.prototype.hasOwnProperty.call(args, 'limit')) {
     options.limit = args.limit;
   }
@@ -165,12 +88,12 @@ export function runFind(context, info, className, args, schema, restQuery) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;
   }
   return rest.find(context.config, context.auth, className, query, options)
-    .then(toGraphQLResult(className, false, schema));
+    .then(toGraphQLResult(className, schema, { context, info }));
 }
 
 // runs a get against the rest API
 export function runGet(context, info, className, objectId, schema) {
-  const options = getQueryOptions(info, 'object');
-  return rest.get(context.config, context.auth, className, objectId, options)
-    .then(toGraphQLResult(className, true, schema));
+  return rest.get(context.config, context.auth, className, objectId, {})
+    .then(toGraphQLResult(className, schema, { context, info }))
+    .then(results => results[0]);
 }
