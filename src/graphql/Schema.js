@@ -72,7 +72,6 @@ export class GraphQLParseSchema {
         type: queryResultType,
         description: `Use this endpoint to get or query ${className} objects`,
         args: {
-          objectId: { type: GraphQLID, name: 'objectId' },
           where: { type: queryType },
           limit: { type: GraphQLInt },
           skip: { type: GraphQLInt }

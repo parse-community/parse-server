@@ -51,16 +51,15 @@ function transformQuery(query) {
 // Runs a find against the rest API
 export function runFind(context, info, className, args, schema, restQuery) {
   let query = {};
-  if (!restQuery) {
-    if (args.where) {
-      query = Object.assign(query, args.where);
-    }
-    if (args.objectId) {
-      query = Object.assign(query, { objectId: args.objectId });
-    }
-    query = transformQuery(query, schema);
-  } else {
-    query = restQuery;
+  if (args.where) {
+    query = Object.assign(query, args.where);
+  }
+  if (args.objectId) {
+    query = Object.assign(query, { objectId: args.objectId });
+  }
+  query = transformQuery(query, schema);
+  if (restQuery)  {
+    query = Object.assign({}, query, restQuery);
   }
   const options = {};
   if (Object.prototype.hasOwnProperty.call(args, 'limit')) {
