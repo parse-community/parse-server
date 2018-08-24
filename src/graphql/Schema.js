@@ -21,6 +21,18 @@ function base64(string) {
   return new Buffer(string).toString('base64')
 }
 
+function parseID(base64String) {
+  // Get the selections
+  const components = new Buffer(base64String, 'base64').toString('utf8').split('::');
+  if (components.length != 2) {
+    throw new Error('Invalid ID');
+  }
+  return {
+    className: components[0],
+    objectId: components[1]
+  }
+}
+
 function transformInput(input, schema) {
   const { fields } = schema;
   Object.keys(input).forEach((key) => {
@@ -133,12 +145,11 @@ export class GraphQLParseSchema {
         id: { type: new GraphQLNonNull(GraphQLID) },
       },
       resolve: async (root, args, context, info) => {
-        // Get the selections
-        const components = new Buffer(args.id, 'base64').toString('utf8').split('::');
-        if (components.length != 2) {
-          throw new Error('Invalid ID');
-        }
-        return await runGet(context, info, components[0], components[1], this.schema);
+        const {
+          className,
+          objectId
+        } = parseID(args.id);
+        return await runGet(context, info, className, objectId, this.schema);
       }
     }
     return new GraphQLObjectType({
@@ -175,11 +186,20 @@ export class GraphQLParseSchema {
         type: mutationResultType,
         description: `use this method to update an existing ${className}`,
         args: {
-          objectId: { type: new GraphQLNonNull(GraphQLID) },
           input: { type: updateType }
         },
         resolve: async (root, args, context, info) => {
-          const objectId = args.objectId;
+          if (!args.input.id && !args.input.objectId) {
+            throw 'id or objectId are required';
+          }
+          let objectId;
+          if (args.input.objectId) {
+            objectId = args.input.objectId;
+            delete args.input.objectId;
+          } else {
+            objectId = parseID(args.input.id).objectId;
+            delete args.input.id;
+          }
           const input = transformInput(args.input, this.schema[className]);
           await rest.update(context.config, context.auth, className, { objectId }, input);
           // Run get to match graphQL style
