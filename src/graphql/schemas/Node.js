@@ -1,5 +1,5 @@
-import { runGet, parseID } from './execute';
-import  { Node } from './types/Node';
+import { runGet, parseID } from '../execute';
+import  { Node } from '../types/Node';
 
 import {
   GraphQLID,
@@ -20,3 +20,11 @@ export const getNode = (schema) => ({
     return await runGet(context, info, className, objectId, schema);
   }
 });
+
+export default {
+  Query: (schema) => {
+    return {
+      node: getNode(schema)
+    }
+  }
+}

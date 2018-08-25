@@ -1,17 +1,17 @@
-import { getNode } from './node';
+
 import {
-  loadClass,
   clearCache,
-} from './ParseClass';
+} from './typesCache';
+
+import ParseClassSchema from './schemas/ParseClass';
+
+import UserAuthSchema from './schemas/UserAuth';
+import NodeSchema from './schemas/Node';
 
 import {
   GraphQLSchema,
   GraphQLObjectType,
-  GraphQLNonNull,
-  GraphQLString,
 } from 'graphql'
-
-import { logIn } from '../Controllers/UserAuthentication';
 
 export class GraphQLParseSchema {
   schema;
@@ -34,14 +34,9 @@ export class GraphQLParseSchema {
       name: 'Query',
       description: `The query root of you Parse Server's graphQL interface`,
       fields: () => {
-        const fields = { node: getNode(this.schema) };
-        this.schema.__classNames.forEach((className) => {
-          const {
-            get, find, displayName,
-          } = loadClass(className, this.schema);
-          fields[`${displayName}`] = get;
-          fields[`find${displayName}`] = find;
-        });
+        const fields = {};
+        Object.assign(fields, NodeSchema.Query(this.schema));
+        Object.assign(fields, ParseClassSchema.Query(this.schema));
         return fields;
       },
     });
@@ -50,34 +45,9 @@ export class GraphQLParseSchema {
   Mutation()  {
     // TODO: Refactor FunctionRouter to extract (as it's a new entry)
     // TODO: Implement Functions as mutations
-    const fields = this.schema
-      .__classNames
-      .reduce((fields, className) => {
-        const {
-          create, update, destroy, displayName,
-        } = loadClass(className, this.schema);
-        fields[`create${displayName}`] = create;
-        fields[`update${displayName}`] = update;
-        fields[`destroy${displayName}`] = destroy;
-        return fields;
-      }, {});
-
-    fields.login = {
-      type: new GraphQLObjectType({
-        name: 'login_payload_response',
-        fields: {
-          sessionToken: { type: GraphQLNonNull(GraphQLString) }
-        }
-      }),
-      args: {
-        username: { type: GraphQLString },
-        password: { type: GraphQLNonNull(GraphQLString) }
-      },
-      resolve: async (root, args, req) => {
-        const user = await logIn(args, req.config, req.auth, req.info && req.info.installationId);
-        return { sessionToken: user.sessionToken };
-      }
-    }
+    const fields = {};
+    Object.assign(fields, UserAuthSchema.Mutation(this.schema));
+    Object.assign(fields, ParseClassSchema.Mutation(this.schema));
 
     return new GraphQLObjectType({
       name: 'Mutation',

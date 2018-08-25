@@ -1,4 +1,4 @@
-import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID } from './execute';
+import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID } from '../execute';
 
 import {
   GraphQLObjectType,
@@ -16,20 +16,20 @@ import {
   type,
   Pointer,
   PageInfo,
-} from './types'
+} from '../types'
 
 import {
   Node
-} from './types/Node';
+} from '../types/Node';
 
 import {
   ParseObjectInterface
-} from './types/ParseObject';
+} from '../types/ParseObject';
 
 import {
   getOrElse,
   clearCache,
-} from './typesCache';
+} from '../typesCache';
 
 export { clearCache };
 
@@ -223,7 +223,7 @@ export function loadClass(className, schema) {
     }
   };
 
-  return { displayName: c.displayName, get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
+  return { displayName: c.displayName, get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, parseClass: c }
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
@@ -400,3 +400,34 @@ export class ParseClass {
   }
 }
 
+export function getParseClassQueryFields(schema) {
+  return schema.__classNames.reduce((fields, className) => {
+    const {
+      get, find, displayName,
+    } = loadClass(className, schema);
+    return Object.assign(fields, {
+      [className]: get,
+      [`find${displayName}`]: find
+    });
+  }, {});
+}
+
+export function getParseClassMutationFields(schema) {
+  return schema
+    .__classNames
+    .reduce((fields, className) => {
+      const {
+        create, update, destroy, displayName,
+      } = loadClass(className, schema);
+      return Object.assign(fields, {
+        [`create${displayName}`]: create,
+        [`update${displayName}`]: update,
+        [`destroy${displayName}`]: destroy,
+      });
+    }, {});
+}
+
+export default {
+  Query: getParseClassQueryFields,
+  Mutation: getParseClassMutationFields,
+}
