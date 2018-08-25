@@ -279,20 +279,6 @@ export class ParseClass {
     };
   }
 
-  graphQLInputConfig() {
-    const className = this.className;
-    return {
-      name: `Create${this.displayName}Input`,
-      description: `Parse Class ${className} Input`,
-      fields: () => {
-        return this.buildFields(graphQLInputField, true);
-      },
-      isTypeOf: function(input) {
-        return input.className == className;
-      }
-    };
-  }
-
   graphQLQueryConfig() {
     const className = this.className;
     return {
@@ -303,6 +289,20 @@ export class ParseClass {
         delete fields.objectId;
         delete fields.id;
         return fields;
+      },
+      isTypeOf: function(input) {
+        return input.className == className;
+      }
+    };
+  }
+
+  graphQLInputConfig() {
+    const className = this.className;
+    return {
+      name: `Add${this.displayName}Input`,
+      description: `Parse Class ${className} Input`,
+      fields: () => {
+        return this.buildFields(graphQLInputField, true);
       },
       isTypeOf: function(input) {
         return input.className == className;
@@ -334,7 +334,7 @@ export class ParseClass {
         nodes: { type: new GraphQLList(objectType) },
         edges: {
           type: new GraphQLList(new GraphQLObjectType({
-            name: `${this.className}Edge`,
+            name: `${this.displayName}Edge`,
             fields: () => ({
               node: { type: objectType },
               cursor: { type: GraphQLString }
@@ -406,7 +406,7 @@ export function getParseClassQueryFields(schema) {
       get, find, displayName,
     } = loadClass(className, schema);
     return Object.assign(fields, {
-      [className]: get,
+      [displayName]: get,
       [`find${displayName}`]: find
     });
   }, {});
@@ -420,7 +420,7 @@ export function getParseClassMutationFields(schema) {
         create, update, destroy, displayName,
       } = loadClass(className, schema);
       return Object.assign(fields, {
-        [`create${displayName}`]: create,
+        [`add${displayName}`]: create,
         [`update${displayName}`]: update,
         [`destroy${displayName}`]: destroy,
       });
