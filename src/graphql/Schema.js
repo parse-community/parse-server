@@ -1,32 +1,43 @@
 
 import {
-  clearCache,
-} from './typesCache';
-
-import ParseClassSchema from './schemas/ParseClass';
-
-import UserAuthSchema from './schemas/UserAuth';
-import NodeSchema from './schemas/Node';
-
-import {
   GraphQLSchema,
   GraphQLObjectType,
 } from 'graphql'
 
+import {
+  clearCache,
+} from './typesCache';
+import Config from '../Config';
+
+import ParseClassSchema from './schemas/ParseClass';
+import UserAuthSchema from './schemas/UserAuth';
+import NodeSchema from './schemas/Node';
+
 export class GraphQLParseSchema {
   schema;
+  applicationId;
 
-  constructor(schema) {
-    this.schema = schema;
+  constructor(applicationId) {
+    this.applicationId = applicationId;
   }
 
-  Schema() {
-    const schema = new GraphQLSchema({
+  async load() {
+    const schema = await Config.get(this.applicationId).database.loadSchema();
+    const allClasses = await schema.getAllClasses(true);
+    const classNames = [];
+    const fullSchema = allClasses.reduce((memo, classDef) => {
+      memo[classDef.className] = classDef;
+      classNames.push(classDef.className);
+      return memo;
+    }, {});
+    fullSchema.__classNames = classNames;
+    this.schema = Object.freeze(fullSchema);
+    const graphQLSchema = new GraphQLSchema({
       query: this.Query(),
       mutation: this.Mutation(),
     });
     clearCache();
-    return schema;
+    return { schema: graphQLSchema, rootValue: this.Root() };
   }
 
   Query() {
