@@ -1,5 +1,5 @@
 import rest from '../rest';
-
+export { rest };
 export function transformResult(className, result) {
   if (Array.isArray(result)) {
     return result.map((res) => transformResult(className, res));
@@ -47,6 +47,59 @@ function transformQuery(query) {
     });
   });
   return query;
+}
+
+export function base64(string) {
+  return new Buffer(string).toString('base64')
+}
+
+export function parseID(base64String) {
+  // Get the selections
+  const components = new Buffer(base64String, 'base64').toString('utf8').split('::');
+  if (components.length != 2) {
+    throw new Error('Invalid ID');
+  }
+  return {
+    className: components[0],
+    objectId: components[1]
+  }
+}
+
+export function connectionResultsArray(results, args, defaultPageSize) {
+  const pageSize = args.first || args.last || defaultPageSize;
+  return {
+    nodes: () => results,
+    edges: () => results.map((node) => {
+      return {
+        cursor: base64(node.createdAt),
+        node
+      };
+    }),
+    pageInfo: () => {
+      const hasPreviousPage = () => {
+        if (args.last) {
+          return results.length === pageSize;
+        }
+        if (args.after) {
+          return true;
+        }
+        return false;
+      };
+      const hasNextPage = () => {
+        if (args.first) {
+          return results.length === pageSize;
+        }
+        if (args.before) {
+          return true;
+        }
+        return false;
+      };
+      return {
+        hasNextPage,
+        hasPreviousPage,
+      }
+    }
+  };
 }
 
 // Runs a find against the rest API

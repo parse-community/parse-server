@@ -238,11 +238,14 @@ class ParseServer {
         // TODO: only await perhaps once, and optimize perf
         const schema = await Config.get(Parse.applicationId).database.loadSchema();
         const allClasses = await schema.getAllClasses(true);
+        const classNames = [];
         const fullSchema = allClasses.reduce((memo, classDef) => {
           memo[classDef.className] = classDef;
+          classNames.push(classDef.className);
           return memo;
         }, {});
-        const Schema = new GraphQLParseSchema(fullSchema, 'test');
+        fullSchema.__classNames = classNames;
+        const Schema = new GraphQLParseSchema(Object.freeze(fullSchema));
         const s = Schema.Schema();
         const root = Schema.Root();
         return {
