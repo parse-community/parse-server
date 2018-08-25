@@ -290,6 +290,11 @@ module.exports.ParseServerOptions = {
     "help": "The host to serve ParseServer on, defaults to 0.0.0.0",
     "default": "0.0.0.0"
   },
+  "mountPath": {
+    "env": "PARSE_SERVER_MOUNT_PATH",
+    "help": "Mount path for the server, defaults to /parse",
+    "default": "/parse"
+  },
   "enableGraphQL": {
     "env": "PARSE_SERVER_ENABLE_GRAPHQL",
     "help": "Set to true to enable the graphql endpoint",
@@ -303,11 +308,6 @@ module.exports.ParseServerOptions = {
     "required": true,
     "action": parsers.booleanParser,
     "default": false
-  },
-  "mountPath": {
-    "env": "PARSE_SERVER_MOUNT_PATH",
-    "help": "Mount path for the server, defaults to /parse",
-    "default": "/parse"
   },
   "cluster": {
     "env": "PARSE_SERVER_CLUSTER",
