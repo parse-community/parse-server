@@ -7,7 +7,11 @@ import {
 import {
   GraphQLSchema,
   GraphQLObjectType,
+  GraphQLNonNull,
+  GraphQLString,
 } from 'graphql'
+
+import { logIn } from '../Controllers/UserAuthentication';
 
 export class GraphQLParseSchema {
   schema;
@@ -46,19 +50,38 @@ export class GraphQLParseSchema {
   Mutation()  {
     // TODO: Refactor FunctionRouter to extract (as it's a new entry)
     // TODO: Implement Functions as mutations
+    const fields = this.schema
+      .__classNames
+      .reduce((fields, className) => {
+        const {
+          create, update, destroy
+        } = loadClass(className, this.schema);
+        fields[`create${className}`] = create;
+        fields[`update${className}`] = update;
+        fields[`destroy${className}`] = destroy;
+        return fields;
+      }, {});
+
+    fields.login = {
+      type: new GraphQLObjectType({
+        name: 'login_payload_response',
+        fields: {
+          sessionToken: { type: GraphQLNonNull(GraphQLString) }
+        }
+      }),
+      args: {
+        username: { type: GraphQLString },
+        password: { type: GraphQLNonNull(GraphQLString) }
+      },
+      resolve: async (root, args, req, info) => {
+        const user = await logIn(args, req.config, req.auth, req.info && req.info.installationId);
+        return { sessionToken: user.sessionToken };
+      }
+    }
+
     return new GraphQLObjectType({
       name: 'Mutation',
-      fields: () =>  this.schema
-        .__classNames
-        .reduce((fields, className) => {
-          const {
-            create, update, destroy
-          } = loadClass(className, this.schema);
-          fields[`create${className}`] = create;
-          fields[`update${className}`] = update;
-          fields[`destroy${className}`] = destroy;
-          return fields;
-        }, {})
+      fields,
     });
   }
 
