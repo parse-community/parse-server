@@ -102,19 +102,8 @@ export function connectionResultsArray(results, args, defaultPageSize) {
   };
 }
 
-// Runs a find against the rest API
-export function runFind(context, info, className, args, schema, restQuery) {
-  let query = {};
-  if (args.where) {
-    query = Object.assign(query, args.where);
-  }
-  if (args.objectId) {
-    query = Object.assign(query, { objectId: args.objectId });
-  }
-  query = transformQuery(query, schema);
-  if (restQuery)  {
-    query = Object.assign({}, query, restQuery);
-  }
+function parseArguments(args) {
+  const query = {};
   const options = {};
   if (Object.prototype.hasOwnProperty.call(args, 'first')) {
     options.limit = args.first;
@@ -133,6 +122,26 @@ export function runFind(context, info, className, args, schema, restQuery) {
   if (Object.prototype.hasOwnProperty.call(args, 'redirectClassNameForKey')) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;
   }
+  return { options, queryAdditions: query };
+}
+
+// Runs a find against the rest API
+export function runFind(context, info, className, args, schema, restQuery) {
+  const query = {};
+  if (args.where) {
+    Object.assign(query, args.where);
+  }
+  if (args.objectId) {
+    Object.assign(query, { objectId: args.objectId });
+  }
+  transformQuery(query, schema);
+  if (restQuery)  {
+    Object.assign(query, restQuery);
+  }
+
+  const { options, queryAdditions } = parseArguments(args);
+  Object.assign(query, queryAdditions);
+
   return rest.find(context.config, context.auth, className, query, options)
     .then(toGraphQLResult(className));
 }
