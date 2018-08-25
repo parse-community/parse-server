@@ -1,7 +1,7 @@
-
+// @flow
 let cache = {};
 
-export function getOrElse(key, handler) {
+export function getOrElse<T>(key: string, handler: () => T): ?T {
   if (!cache[key]) {
     cache[key] = handler();
   }
