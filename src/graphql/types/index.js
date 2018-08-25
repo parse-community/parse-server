@@ -1,40 +1,36 @@
 import {
   GraphQLString,
   GraphQLFloat,
-  GraphQLNonNull,
   GraphQLBoolean,
-  GraphQLID,
   GraphQLList,
 } from 'graphql'
 
 import {
-  GraphQLACL,
-  GraphQLACLInput
+  ACL,
 } from './ACL';
 
 import {
-  GraphQLGeoPoint,
-  GraphQLGeoPointInput,
-  GraphQLGeoPointQuery,
   GeoPoint,
+  GeoPointInput,
+  GeoPointQuery,
 } from './GeoPoint';
 
 import {
-  GraphQLFile
+  File
 } from './File';
 
 import {
-  GraphQLDate,
+  Date,
   DateQuery,
 } from './Date';
 
 import {
-  GraphQLPointer,
-  GraphQLPointerInput,
+  Pointer,
+  PointerInput,
 } from './Pointer';
 
 import {
-  GraphQLJSONObject,
+  JSONObject,
 } from './JSONObject';
 
 import {
@@ -54,22 +50,17 @@ import {
 } from './PageInfo';
 
 export {
-  GraphQLACL,
-  GraphQLACLInput,
-  GraphQLGeoPoint,
-  GraphQLGeoPointInput,
-  GraphQLFile,
-  GraphQLDate,
-  GraphQLPointer,
-  GraphQLJSONObject,
+  ACL,
+  GeoPoint,
+  GeoPointInput,
+  File,
+  Date,
+  Pointer,
+  JSONObject,
   PageInfo,
 }
 
-export function type(fieldName, field) {
-  if (fieldName === 'objectId' || fieldName === 'id') {
-    return new GraphQLNonNull(GraphQLID);
-  }
-  const type = field.type;
+export function type({ type }) {
   if (type == 'String') {
     return GraphQLString;
   } if (type == 'Number') {
@@ -77,27 +68,24 @@ export function type(fieldName, field) {
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
-    return GraphQLGeoPoint;
+    return GeoPoint;
   } if (type == 'File') {
-    return GraphQLFile;
+    return File;
   } else if (type == 'ACL') {
-    return GraphQLACL;
+    return ACL;
   } else if (type == 'Date') {
-    return GraphQLDate;
+    return Date;
   } else if (type == 'Pointer') {
-    return GraphQLPointer;
+    return Pointer;
   } else if (type == 'Object') {
-    return GraphQLJSONObject;
+    return JSONObject;
   } else if (type === 'Array') {
-    return new GraphQLList(GraphQLJSONObject);
+    return new GraphQLList(JSONObject);
   }
 }
 
-export function inputType(fieldName, field) {
-  if (fieldName === 'objectId' || fieldName === 'id') {
-    return new GraphQLNonNull(GraphQLID);
-  }
-  const type = field.type;
+export function inputType(field) {
+  const { type } = field;
   if (type == 'String') {
     return GraphQLString;
   } if (type == 'Number') {
@@ -105,26 +93,23 @@ export function inputType(fieldName, field) {
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
-    return GeoPoint;
+    return GeoPointInput;
   } if (type == 'File') {
     // TODO: How to set a file in an object
     // return GraphQLFile;
   } else if (type == 'ACL') {
-    return GraphQLACLInput;
+    return ACL;
   } else if (type == 'Date') {
-    return DateQuery;
+    return Date;
   } else if (type == 'Pointer') {
-    return GraphQLPointerInput(field);
+    return PointerInput(field);
   } else if (type === 'Array') {
-    return new GraphQLList(GraphQLJSONObject);
+    return new GraphQLList(JSONObject);
   }
 }
 
-export function queryType(fieldName, field) {
-  if (fieldName === 'objectId' || fieldName === 'id') {
-    return new GraphQLNonNull(GraphQLID);
-  }
-  const type = field.type;
+export function queryType(field) {
+  const { type } = field;
   if (type == 'String') {
     return StringQuery;
   } if (type == 'Number') {
@@ -132,7 +117,7 @@ export function queryType(fieldName, field) {
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
-    return GraphQLGeoPointQuery;
+    return GeoPointQuery;
   } if (type == 'File') {
     // Cannot query on files
     return;
@@ -142,6 +127,6 @@ export function queryType(fieldName, field) {
   } else if (type == 'Date') {
     return DateQuery;
   } else if (type == 'Pointer') {
-    return GraphQLPointerInput(field);
+    return PointerInput(field);
   }
 }

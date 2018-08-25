@@ -1,12 +1,12 @@
 import { runFind, runGet, transformResult } from './execute';
 
 import {
-  GraphQLInterfaceType,
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLString,
   GraphQLID,
+  GraphQLNonNull,
 } from 'graphql'
 
 import {
@@ -18,14 +18,28 @@ import {
 } from './types'
 
 import {
+  Node
+} from './types/Node';
+
+import {
+  ParseObjectInterface
+} from './types/ParseObject';
+
+import {
   getOrElse,
   clearCache,
 } from './typesCache';
 
 export { clearCache };
 
+function handleIdField(fieldName) {
+  if (fieldName === 'objectId' || fieldName == 'id') {
+    return new GraphQLNonNull(GraphQLID);
+  }
+}
+
 function graphQLField(fieldName, field) {
-  const gQLType = type(fieldName, field);
+  const gQLType = handleIdField(fieldName) || type(field);
   if (!gQLType) {
     return;
   }
@@ -38,7 +52,7 @@ function graphQLField(fieldName, field) {
 }
 
 function graphQLInputField(fieldName, field) {
-  const gQLType = inputType(fieldName, field);
+  const gQLType = handleIdField(fieldName) || inputType(field);
   if (!gQLType) {
     return;
   }
@@ -51,7 +65,7 @@ function graphQLInputField(fieldName, field) {
 }
 
 function graphQLQueryField(fieldName, field) {
-  const gQLType = queryType(fieldName, field);
+  const gQLType = handleIdField(fieldName) || queryType(field);
   if (!gQLType) {
     return;
   }
@@ -75,33 +89,6 @@ export function loadClass(className, schema) {
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
 
-export const Node = new GraphQLInterfaceType({
-  name: 'Node',
-  fields: {
-    id: {
-      type: type('objectId')
-    }
-  }
-})
-
-export const ParseObjectInterface = new GraphQLInterfaceType({
-  name: 'ParseObject',
-  fields: {
-    objectId: {
-      type: type('objectId')
-    },
-    createdAt: {
-      type: type(null, {type: 'Date'})
-    },
-    updatedAt: {
-      type: type(null, {type: 'Date'})
-    },
-    ACL: {
-      type: type(null, {type: 'ACL'})
-    }
-  }
-});
-
 export class ParseClass {
   schema;
   className;
@@ -115,7 +102,14 @@ export class ParseClass {
 
   buildFields(mapper, filterReserved = false, isQuery = false, isObject = false) {
     const fields = this.class.fields;
-    const fieldsMap = Object.keys(fields).reduce((memo, fieldName) => {
+    const initial = {};
+    if (isObject) {
+      initial.id = {
+        description: 'A globaly unique identifier.',
+        type: new GraphQLNonNull(GraphQLID)
+      };
+    }
+    return Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
         return memo;
       }
@@ -185,11 +179,7 @@ export class ParseClass {
       }
       memo[fieldName] = gQLField;
       return memo;
-    }, {});
-    if (isObject) {
-      fieldsMap.id = mapper('objectId', fields['objectId']);
-    }
-    return fieldsMap;
+    }, initial);
   }
   graphQLConfig() {
     const className = this.className;

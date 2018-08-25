@@ -1,9 +1,12 @@
 import { runFind, runGet } from './execute';
 import {
-  Node,
   loadClass,
   clearCache,
 } from './ParseClass';
+
+import {
+  Node
+} from './types/Node';
 
 import {
   GraphQLSchema,

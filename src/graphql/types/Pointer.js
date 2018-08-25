@@ -5,7 +5,11 @@ import {
   GraphQLNonNull,
 } from 'graphql'
 
-export const GraphQLPointer = new GraphQLInputObjectType({
+import {
+  getOrElse,
+} from '../typesCache';
+
+export const Pointer = new GraphQLInputObjectType({
   name: 'Pointer',
   fields: {
     objectId: {
@@ -19,11 +23,10 @@ export const GraphQLPointer = new GraphQLInputObjectType({
   }
 });
 
-const cache = {};
-
-export const GraphQLPointerInput = (field) => {
-  if (!cache[field.targetClass]) {
-    cache[field.targetClass] = new GraphQLInputObjectType({
+export const PointerInput = (field) => {
+  const name = `${field.targetClass}PointerInput`;
+  return getOrElse(name, () =>
+    new GraphQLInputObjectType({
       name: `${field.targetClass}PointerInput`,
       fields: {
         objectId: {
@@ -36,7 +39,5 @@ export const GraphQLPointerInput = (field) => {
           defaultValue: field.targetClass
         }
       }
-    });
-  }
-  return cache[field.targetClass];
+    }));
 };

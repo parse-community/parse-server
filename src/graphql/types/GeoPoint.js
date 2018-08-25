@@ -6,7 +6,7 @@ import {
   GraphQLList,
 } from 'graphql'
 
-import { BaseQuery } from './QueryConstraint';
+import { BaseQuery } from './BaseQuery';
 const geoPointFields = {
   latitude: {
     type: GraphQLFloat,
@@ -18,21 +18,21 @@ const geoPointFields = {
   }
 };
 
-export const GraphQLGeoPoint = new GraphQLObjectType({
+export const GeoPoint = new GraphQLObjectType({
   name: 'GeoPoint',
   fields: geoPointFields
 });
 
-export const GeoPoint = new GraphQLInputObjectType({
+export const GeoPointInput = new GraphQLInputObjectType({
   name: 'GeoPointInput',
   fields: geoPointFields
 });
 
-export const NearQueryType = new GraphQLInputObjectType({
+export const NearQuery = new GraphQLInputObjectType({
   name: 'NearQuery',
   fields: {
     point: {
-      type: new GraphQLNonNull(GeoPoint),
+      type: new GraphQLNonNull(GeoPointInput),
     },
     maxDistanceInMiles: {
       type: GraphQLFloat
@@ -46,37 +46,35 @@ export const NearQueryType = new GraphQLInputObjectType({
   }
 });
 
-export const WithinQueryType = new GraphQLInputObjectType({
+export const WithinQuery = new GraphQLInputObjectType({
   name: 'WithinQuery',
   fields: {
     box: {
-      type: new GraphQLList(GeoPoint),
+      type: new GraphQLList(GeoPointInput),
     },
   }
 });
 
-export const GeoWithinQueryType = new GraphQLInputObjectType({
+export const GeoWithinQuery = new GraphQLInputObjectType({
   name: 'GeoWithinQuery',
   fields: {
     polygon: {
-      type: new GraphQLList(GeoPoint),
+      type: new GraphQLList(GeoPointInput),
     },
   }
 });
 
-export const GraphQLGeoPointQuery = new GraphQLInputObjectType({
+export const GeoPointQuery = new GraphQLInputObjectType({
   name: "GeoQuery",
-  fields: Object.assign({}, BaseQuery(GeoPoint), {
+  fields: Object.assign({}, BaseQuery(GeoPointInput), {
     nearSphere: {
-      type: NearQueryType
+      type: NearQuery
     },
     within: {
-      type: WithinQueryType
+      type: WithinQuery
     },
     geoWithin: {
-      type: GeoWithinQueryType,
+      type: GeoWithinQuery,
     }
   })
 });
-
-export const GraphQLGeoPointInput = GraphQLGeoPoint;

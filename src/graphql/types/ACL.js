@@ -4,7 +4,7 @@ import {
   GraphQLString
 } from 'graphql'
 
-export const GraphQLACL = new GraphQLScalarType({
+export const ACL = new GraphQLScalarType({
   name: 'ACL',
   fields: {
     read: {
@@ -28,5 +28,3 @@ export const GraphQLACL = new GraphQLScalarType({
     throw "not implemented"
   }
 });
-
-export const GraphQLACLInput = GraphQLACL;

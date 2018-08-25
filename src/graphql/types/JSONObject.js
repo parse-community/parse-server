@@ -36,7 +36,7 @@ const id = (value) => value;
 
 // https://github.com/taion/graphql-type-json/blob/master/src/index.js
 // http://graphql.org/graphql-js/type/#graphqlscalartype
-export const GraphQLJSONObject = new GraphQLScalarType({
+export const JSONObject = new GraphQLScalarType({
   name: 'JSON',
   description:
   'The `JSON` scalar type represents JSON values as specified by ' +

@@ -7,11 +7,11 @@ import {
   ComparableQuery
 } from './NumberQuery';
 
-export const GraphQLDate = new GraphQLScalarType({
+export const Date = new GraphQLScalarType({
   name: 'Date',
   serialize: (obj) => {
     if (typeof obj === 'string') {
-      return new Date(obj);
+      return new global.Date(obj);
     }
     return obj;
   },
@@ -20,10 +20,10 @@ export const GraphQLDate = new GraphQLScalarType({
   },
   parseLiteral: (node) => {
     if (node.kind === Kind.STRING) {
-      return new Date(node.value);
+      return new global.Date(node.value);
     }
     throw `Cannot parse date of type ${node.kind}`;
   }
 });
 
-export const DateQuery = ComparableQuery('DateQuery', GraphQLDate);
+export const DateQuery = ComparableQuery('DateQuery', Date);

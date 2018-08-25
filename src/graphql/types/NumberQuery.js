@@ -3,7 +3,7 @@ import {
   GraphQLFloat,
 } from 'graphql'
 
-import { BaseQuery } from './QueryConstraint';
+import { BaseQuery } from './BaseQuery';
 
 export const ComparableQuery = (name, type) => {
   return new GraphQLInputObjectType({
