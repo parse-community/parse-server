@@ -3,7 +3,7 @@ import {
   GraphQLString
 } from 'graphql'
 
-export const GraphQLFile = new GraphQLObjectType({
+export const File = new GraphQLObjectType({
   name: 'File',
   fields: {
     name: {

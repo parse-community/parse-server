@@ -3,7 +3,7 @@ import {
   GraphQLString,
 } from 'graphql'
 
-import { BaseQuery } from './QueryConstraint';
+import { BaseQuery } from './BaseQuery';
 
 export const StringQuery = new GraphQLInputObjectType({
   name: 'StringQuery',

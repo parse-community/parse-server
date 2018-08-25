@@ -1,10 +1,7 @@
 import {
-  Kind,
   GraphQLList,
   GraphQLBoolean
 } from 'graphql'
-
-const supportedOperators = ['eq', 'ne', 'in', 'nin', 'exists', 'select', 'dontSelect']
 
 function description() {
   return `## Equal To:
@@ -45,27 +42,6 @@ function description() {
   `;
 }
 
-const parseFields = (fields) => {
-  return fields.reduce((memo, field) => {
-    const operator = field.name.value;
-    if (supportedOperators.indexOf(operator) > -1) {
-      const value = field.value.value;
-      memo['$' + operator] = value;
-    }
-    return memo;
-  }, {});
-}
-
-const parseLiteral = (ast) => {
-  if (ast.kind == Kind.OBJECT) {
-    return parseFields(ast.fields);
-  } else if (ast.kind == Kind.STRING) {
-    return ast.value;
-  } else {
-    throw 'Invalid literal for QueryConstraint';
-  }
-};
-
 export const BaseQuery = (type) => {
   return {
     eq: {
@@ -91,7 +67,5 @@ export const BaseQuery = (type) => {
 
 export default {
   description,
-  parseLiteral,
-  parseFields,
   BaseQuery,
 }
