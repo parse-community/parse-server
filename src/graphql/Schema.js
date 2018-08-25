@@ -32,7 +32,7 @@ export class GraphQLParseSchema {
   Query() {
     return new GraphQLObjectType({
       name: 'Query',
-      description: `The full parse schema`,
+      description: `The query root of you Parse Server's graphQL interface`,
       fields: () => {
         const fields = { node: getNode(this.schema) };
         this.schema.__classNames.forEach((className) => {
@@ -73,7 +73,7 @@ export class GraphQLParseSchema {
         username: { type: GraphQLString },
         password: { type: GraphQLNonNull(GraphQLString) }
       },
-      resolve: async (root, args, req, info) => {
+      resolve: async (root, args, req) => {
         const user = await logIn(args, req.config, req.auth, req.info && req.info.installationId);
         return { sessionToken: user.sessionToken };
       }

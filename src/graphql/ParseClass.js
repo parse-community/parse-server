@@ -39,10 +39,34 @@ function handleIdField(fieldName) {
   }
 }
 
+function getRelationField(fieldName, field, schema) {
+  if (field.type == 'Relation') {
+    const { find } = loadClass(field.targetClass, schema);
+    find.resolve = async (parent, args, context, info) => {
+      const query = {
+        $relatedTo: {
+          object: {
+            __type: 'Pointer',
+            className: parent.className,
+            objectId: parent.objectId
+          },
+          key: fieldName,
+        }
+      }
+      args.redirectClassNameForKey = fieldName;
+      const results = await runFind(context, info, parent.className, args, schema, query);
+      return connectionResultsArray(results, args, 100);
+    };
+    return find;
+  }
+}
+
 function graphQLField(fieldName, field, schema) {
   let gQLType = handleIdField(fieldName) || type(field);
   if (!gQLType) {
-    return;
+    // If it's not possible to resovle a simple type
+    // check if it's a proper relation field
+    return getRelationField(fieldName, field, schema);
   }
   const fieldType = (gQLType === Pointer ? `Pointer<${field.targetClass}>` : `${field.type}`);
   let gQLResolve;
@@ -229,44 +253,7 @@ export class ParseClass {
         return memo;
       }
       const field = fields[fieldName];
-      let gQLField = mapper(fieldName, field, this.schema);
-      if (field.type == 'Pointer' && isObject) {
-        // TODO: move pointer resolver somewhere else
-        // gQLField = {
-        //   type: loadClass(field.targetClass, this.schema).objectType,
-        //   resolve: (parent, args, context, info) => {
-        //     const object = parent[fieldName];
-        //     const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
-        //       return field.name.value;
-        //     });
-        //     if (selections.indexOf('id') < 0 || selections.length > 1) {
-        //       return runGet(context, info, object.className, object.objectId, this.schema);
-        //     }
-        //     return transformResult(fields[fieldName].targetClass, object, this.schema, { context, info });
-        //   }
-        // };
-      }
-      if (field.type == 'Relation' && isObject) {
-        // TODO: Move relation resolver somewhere else
-        const { find } = loadClass(field.targetClass, this.schema);
-        find.resolve = async (parent, args, context, info) => {
-          const query = {
-            $relatedTo: {
-              object: {
-                __type: 'Pointer',
-                className: parent.className,
-                objectId: parent.objectId
-              },
-              key: fieldName,
-            }
-          }
-          args.redirectClassNameForKey = fieldName;
-          const results = await runFind(context, info, this.className, args, this.schema, query);
-          return connectionResultsArray(results, args, 100);
-        };
-        gQLField = find;
-      }
-
+      const gQLField = mapper(fieldName, field, this.schema);
       if (!gQLField) {
         return memo;
       }
@@ -274,6 +261,7 @@ export class ParseClass {
       return memo;
     }, initial);
   }
+
   graphQLConfig() {
     const className = this.className;
     return {
@@ -290,7 +278,7 @@ export class ParseClass {
   graphQLInputConfig() {
     const className = this.className;
     return {
-      name: this.className + 'Input',
+      name: `Create${this.className}Input`,
       description: `Parse Class ${className} Input`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);
@@ -307,7 +295,7 @@ export class ParseClass {
       name: this.className + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
-        const fields = this.buildFields(graphQLQueryField, false);
+        const fields = this.buildFields(graphQLQueryField);
         delete fields.objectId;
         delete fields.id;
         return fields;
@@ -320,7 +308,7 @@ export class ParseClass {
 
   graphQLUpdateInputConfig() {
     return {
-      name: this.className + 'Update',
+      name: `Update${this.className}Input`,
       description: `Parse Class ${this.className} Update`,
       fields: () => {
         const fields = this.buildFields(graphQLInputField, true);
@@ -332,6 +320,44 @@ export class ParseClass {
         return input.className == this.className;
       }
     };
+  }
+
+  graphQLQueryResultConfig() {
+    const objectType = this.graphQLObjectType();
+    return  {
+      name: `${this.className}QueryConnection`,
+      fields: {
+        nodes: { type: new GraphQLList(objectType) },
+        edges: {
+          type: new GraphQLList(new GraphQLObjectType({
+            name: `${this.className}Edge`,
+            fields: () => ({
+              node: { type: objectType },
+              cursor: { type: GraphQLString }
+            })
+          }))
+        },
+        pageInfo: { type: PageInfo },
+      }
+    }
+  }
+
+  graphQLMutationResultConfig() {
+    const objectType = this.graphQLObjectType();
+    return {
+      name: `${this.className}MutationCompletePayload`,
+      fields: {
+        object: { type: objectType },
+        clientMutationId: { type: GraphQLString }
+      }
+    }
+  }
+
+  graphQLObjectType() {
+    if (!this.objectType) {
+      this.objectType = new GraphQLObjectType(this.graphQLConfig());
+    }
+    return this.objectType;
   }
 
   graphQLUpdateInputObjectType() {
@@ -357,47 +383,16 @@ export class ParseClass {
 
   graphQLQueryResultType() {
     if (!this.queryResultObjectType) {
-      const objectType = this.graphQLObjectType();
-      this.queryResultObjectType = new GraphQLObjectType({
-        name: `${this.className}QueryConnection`,
-        fields: {
-          nodes: { type: new GraphQLList(objectType) },
-          edges: {
-            type: new GraphQLList(new GraphQLObjectType({
-              name: `${this.className}Edge`,
-              fields: () => ({
-                node: { type: objectType },
-                cursor: { type: GraphQLString }
-              })
-            }))
-          },
-          pageInfo: { type: PageInfo },
-        }
-      });
+      this.queryResultObjectType = new GraphQLObjectType(this.graphQLQueryResultConfig());
     }
     return this.queryResultObjectType;
   }
 
   graphQLMutationResultType() {
     if (!this.mutationResultObjectType) {
-      const objectType = this.graphQLObjectType();
-      this.mutationResultObjectType = new GraphQLObjectType({
-        name: `${this.className}MutationCompletePayload`,
-        fields: {
-          object: { type: objectType },
-          clientMutationId: { type: GraphQLString }
-        }
-      });
+      this.mutationResultObjectType = new GraphQLObjectType(this.graphQLMutationResultConfig());
     }
     return this.mutationResultObjectType;
-  }
-
-
-  graphQLObjectType() {
-    if (!this.objectType) {
-      this.objectType = new GraphQLObjectType(this.graphQLConfig());
-    }
-    return this.objectType;
   }
 }
 
