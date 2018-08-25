@@ -223,7 +223,7 @@ export function loadClass(className, schema) {
     }
   };
 
-  return { get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
+  return { displayName: c.displayName, get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
@@ -235,6 +235,10 @@ export class ParseClass {
 
   constructor(className, schema) {
     this.className = className;
+    this.displayName = className;
+    if (this.className.indexOf('_') === 0) {
+      this.displayName = this.className.slice(1);
+    }
     this.schema = schema;
     this.class = this.schema[className];
   }
@@ -265,7 +269,7 @@ export class ParseClass {
   graphQLConfig() {
     const className = this.className;
     return {
-      name: this.className,
+      name: this.displayName,
       description: `Parse Class ${className}`,
       interfaces: [Node, ParseObjectInterface],
       fields: () => this.buildFields(graphQLField, false, true),
@@ -278,7 +282,7 @@ export class ParseClass {
   graphQLInputConfig() {
     const className = this.className;
     return {
-      name: `Create${this.className}Input`,
+      name: `Create${this.displayName}Input`,
       description: `Parse Class ${className} Input`,
       fields: () => {
         return this.buildFields(graphQLInputField, true);
@@ -292,7 +296,7 @@ export class ParseClass {
   graphQLQueryConfig() {
     const className = this.className;
     return {
-      name: this.className + 'Query',
+      name: this.displayName + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
         const fields = this.buildFields(graphQLQueryField);
@@ -308,7 +312,7 @@ export class ParseClass {
 
   graphQLUpdateInputConfig() {
     return {
-      name: `Update${this.className}Input`,
+      name: `Update${this.displayName}Input`,
       description: `Parse Class ${this.className} Update`,
       fields: () => {
         const fields = this.buildFields(graphQLInputField, true);
@@ -325,7 +329,7 @@ export class ParseClass {
   graphQLQueryResultConfig() {
     const objectType = this.graphQLObjectType();
     return  {
-      name: `${this.className}QueryConnection`,
+      name: `${this.displayName}QueryConnection`,
       fields: {
         nodes: { type: new GraphQLList(objectType) },
         edges: {
@@ -345,7 +349,7 @@ export class ParseClass {
   graphQLMutationResultConfig() {
     const objectType = this.graphQLObjectType();
     return {
-      name: `${this.className}MutationCompletePayload`,
+      name: `${this.displayName}MutationCompletePayload`,
       fields: {
         object: { type: objectType },
         clientMutationId: { type: GraphQLString }

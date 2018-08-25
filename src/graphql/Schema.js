@@ -37,10 +37,10 @@ export class GraphQLParseSchema {
         const fields = { node: getNode(this.schema) };
         this.schema.__classNames.forEach((className) => {
           const {
-            get, find
+            get, find, displayName,
           } = loadClass(className, this.schema);
-          fields[`${className}`] = get;
-          fields[`find${className}`] = find;
+          fields[`${displayName}`] = get;
+          fields[`find${displayName}`] = find;
         });
         return fields;
       },
@@ -54,11 +54,11 @@ export class GraphQLParseSchema {
       .__classNames
       .reduce((fields, className) => {
         const {
-          create, update, destroy
+          create, update, destroy, displayName,
         } = loadClass(className, this.schema);
-        fields[`create${className}`] = create;
-        fields[`update${className}`] = update;
-        fields[`destroy${className}`] = destroy;
+        fields[`create${displayName}`] = create;
+        fields[`update${displayName}`] = update;
+        fields[`destroy${displayName}`] = destroy;
         return fields;
       }, {});
 
