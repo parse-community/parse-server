@@ -1,9 +1,10 @@
-import { runFind, runGet, transformResult } from './execute';
+import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID } from './execute';
 
 import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   GraphQLList,
+  GraphQLInt,
   GraphQLString,
   GraphQLID,
   GraphQLNonNull,
@@ -13,7 +14,7 @@ import {
   queryType,
   inputType,
   type,
-  GraphQLPointer,
+  Pointer,
   PageInfo,
 } from './types'
 
@@ -38,15 +39,30 @@ function handleIdField(fieldName) {
   }
 }
 
-function graphQLField(fieldName, field) {
-  const gQLType = handleIdField(fieldName) || type(field);
+function graphQLField(fieldName, field, schema) {
+  let gQLType = handleIdField(fieldName) || type(field);
   if (!gQLType) {
     return;
   }
-  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` : `${field.type}`);
+  const fieldType = (gQLType === Pointer ? `Pointer<${field.targetClass}>` : `${field.type}`);
+  let gQLResolve;
+  if (field.type === 'Pointer') {
+    gQLType = loadClass(field.targetClass, schema).objectType,
+    gQLResolve = (parent, args, context, info) => {
+      const object = parent[fieldName];
+      const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+        return field.name.value;
+      });
+      if (selections.indexOf('id') < 0 || selections.length > 1) {
+        return runGet(context, info, object.className, object.objectId, schema);
+      }
+      return transformResult(field.targetClass, object, schema, { context, info });
+    }
+  }
   return {
     name: fieldName,
     type: gQLType,
+    resolve: gQLResolve,
     description: `Accessor for ${fieldName} (${fieldType})`,
   };
 }
@@ -56,7 +72,7 @@ function graphQLInputField(fieldName, field) {
   if (!gQLType) {
     return;
   }
-  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
+  const fieldType = (gQLType === Pointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
   return {
     name: fieldName,
     type: gQLType,
@@ -64,16 +80,32 @@ function graphQLInputField(fieldName, field) {
   };
 }
 
-function graphQLQueryField(fieldName, field) {
-  const gQLType = handleIdField(fieldName) || queryType(field);
+function graphQLQueryField(fieldName, field, schema) {
+  let gQLType = handleIdField(fieldName) || queryType(field);
   if (!gQLType) {
     return;
+  }
+  if (field.type == 'Pointer') {
+    gQLType = loadClass(field.targetClass, schema).queryType;
   }
   return {
     name: fieldName,
     type: gQLType,
     description: `Query for ${fieldName} (${field.type})`,
   };
+}
+
+function transformInput(input, schema) {
+  const { fields } = schema;
+  Object.keys(input).forEach((key) => {
+    const value = input[key];
+    if (fields[key] && fields[key].type === 'Pointer') {
+      value.__type = 'Pointer';
+    } else if (fields[key] && fields[key].type === 'GeoPoint') {
+      value.__type = 'GeoPoint';
+    }
+  });
+  return input;
 }
 
 export function loadClass(className, schema) {
@@ -84,7 +116,90 @@ export function loadClass(className, schema) {
   const queryType = c.graphQLQueryInputObjectType();
   const queryResultType = c.graphQLQueryResultType(objectType);
   const mutationResultType = c.graphQLMutationResultType(objectType);
-  return { objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
+
+  const get = {
+    type: objectType,
+    description: `Use this endpoint to get or query ${className} objects`,
+    args: {
+      objectId: { type: GraphQLID },
+    },
+    resolve: async (root, args, context, info) => {
+      // Get the selections
+      return await runGet(context, info, className, args.objectId, schema);
+    }
+  };
+
+  const find = {
+    type: queryResultType,
+    description: `Use this endpoint to get or query ${className} objects`,
+    args: {
+      where: { type: queryType },
+      first: { type: GraphQLInt },
+      last: { type: GraphQLInt },
+      after: { type: GraphQLString },
+      before: { type: GraphQLString }
+    },
+    resolve: async (root, args, context, info) => {
+      // Get the selections
+      const results = await runFind(context, info, className, args, schema);
+      return connectionResultsArray(results, args, 100);
+    }
+  };
+
+  const create = {
+    type: mutationResultType,
+    fields: objectType.fields,
+    description: `use this method to create a new ${className}`,
+    args: { input: { type: inputType }},
+    resolve: async (root, args, context, info) => {
+      const input = transformInput(args.input, schema[className]);
+      const res = await rest.create(context.config, context.auth, className, input);
+      // Run get to match graphQL style
+      const object = await runGet(context, info, className, res.response.objectId);
+      return { object };
+    }
+  };
+
+  const update = {
+    type: mutationResultType,
+    description: `use this method to update an existing ${className}`,
+    args: {
+      input: { type: updateType }
+    },
+    resolve: async (root, args, context, info) => {
+      if (!args.input.id && !args.input.objectId) {
+        throw 'id or objectId are required';
+      }
+      let objectId;
+      if (args.input.objectId) {
+        objectId = args.input.objectId;
+        delete args.input.objectId;
+      } else {
+        objectId = parseID(args.input.id).objectId;
+        delete args.input.id;
+      }
+      const input = transformInput(args.input, schema[className]);
+      await rest.update(context.config, context.auth, className, { objectId }, input);
+      // Run get to match graphQL style
+      const object = await runGet(context, info, className, objectId);
+      return { object };
+    }
+  };
+
+  const destroy = {
+    type: mutationResultType,
+    description: `use this method to update delete an existing ${className}`,
+    args: {
+      objectId: { type: new GraphQLNonNull(GraphQLID) }
+    },
+    resolve: async (root, args, context, info) => {
+      const object = await runGet(context, info, className, args.objectId);
+      await rest.del(context.config, context.auth, className, args.objectId);
+      return { object }
+    }
+  };
+
+  return { get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, class: c }
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
@@ -100,7 +215,7 @@ export class ParseClass {
     this.class = this.schema[className];
   }
 
-  buildFields(mapper, filterReserved = false, isQuery = false, isObject = false) {
+  buildFields(mapper, filterReserved = false, isObject = false) {
     const fields = this.class.fields;
     const initial = {};
     if (isObject) {
@@ -114,64 +229,42 @@ export class ParseClass {
         return memo;
       }
       const field = fields[fieldName];
-      let gQLField = mapper(fieldName, field);
-      if (field.type == 'Pointer') {
-        if (isQuery) {
-          gQLField = {
-            type: loadClass(field.targetClass, this.schema).queryType
-          }
-        } else if (isObject) {
-          // TODO: move pointer resolver somewhere else
-          gQLField = {
-            type: loadClass(field.targetClass, this.schema).objectType,
-            resolve: (parent, args, context, info) => {
-              const object = parent[fieldName];
-              const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
-                return field.name.value;
-              });
-              if (selections.indexOf('id') < 0 || selections.length > 1) {
-                return runGet(context, info, object.className, object.objectId, this.schema);
-              }
-              return transformResult(fields[fieldName].targetClass, object, this.schema, { context, info });
-            }
-          }
-        }
+      let gQLField = mapper(fieldName, field, this.schema);
+      if (field.type == 'Pointer' && isObject) {
+        // TODO: move pointer resolver somewhere else
+        // gQLField = {
+        //   type: loadClass(field.targetClass, this.schema).objectType,
+        //   resolve: (parent, args, context, info) => {
+        //     const object = parent[fieldName];
+        //     const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+        //       return field.name.value;
+        //     });
+        //     if (selections.indexOf('id') < 0 || selections.length > 1) {
+        //       return runGet(context, info, object.className, object.objectId, this.schema);
+        //     }
+        //     return transformResult(fields[fieldName].targetClass, object, this.schema, { context, info });
+        //   }
+        // };
       }
       if (field.type == 'Relation' && isObject) {
         // TODO: Move relation resolver somewhere else
-        const { queryResultType, queryType } = loadClass(field.targetClass, this.schema);
-        gQLField = {
-          type: queryResultType,
-          args: {
-            where: { type: queryType }
-          },
-          resolve: async (parent, args, context, info) => {
-            const query = {
-              $relatedTo: {
-                object: {
-                  __type: 'Pointer',
-                  className: parent.className,
-                  objectId: parent.objectId
-                },
-                key: fieldName,
-              }
+        const { find } = loadClass(field.targetClass, this.schema);
+        find.resolve = async (parent, args, context, info) => {
+          const query = {
+            $relatedTo: {
+              object: {
+                __type: 'Pointer',
+                className: parent.className,
+                objectId: parent.objectId
+              },
+              key: fieldName,
             }
-            args.redirectClassNameForKey = fieldName;
-            const results = await runFind(context, info, this.className, args, this.schema, query);
-            return {
-              nodes: () => results,
-              edges: () => results.map((node) => {
-                return { node };
-              }),
-              pageInfo: () => {
-                return {
-                  hasNextPage: false,
-                  hasPreviousPage: false
-                }
-              }
-            };
           }
-        }
+          args.redirectClassNameForKey = fieldName;
+          const results = await runFind(context, info, this.className, args, this.schema, query);
+          return connectionResultsArray(results, args, 100);
+        };
+        gQLField = find;
       }
 
       if (!gQLField) {
@@ -187,7 +280,7 @@ export class ParseClass {
       name: this.className,
       description: `Parse Class ${className}`,
       interfaces: [Node, ParseObjectInterface],
-      fields: () => this.buildFields(graphQLField, false, false, true),
+      fields: () => this.buildFields(graphQLField, false, true),
       isTypeOf: (a) => {
         return a.className == className;
       },
@@ -214,7 +307,7 @@ export class ParseClass {
       name: this.className + 'Query',
       description: `Parse Class ${className} Query`,
       fields: () => {
-        const fields = this.buildFields(graphQLQueryField, false, true);
+        const fields = this.buildFields(graphQLQueryField, false);
         delete fields.objectId;
         delete fields.id;
         return fields;
