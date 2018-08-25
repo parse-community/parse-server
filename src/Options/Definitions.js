@@ -293,7 +293,7 @@ module.exports.ParseServerOptions = {
     "action": parsers.booleanParser,
     "default": false
   },
-  "enableGraphQLI": {
+  "enableGraphiQL": {
     "env": "PARSE_SERVER_ENABLE_GRAPHQLI",
     "help": "Set to true to enable the graphqli interface\n  this will also enable graphql",
     "required": true,

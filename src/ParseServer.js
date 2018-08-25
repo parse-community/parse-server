@@ -138,10 +138,37 @@ class ParseServer {
    * @static
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
-  static app({maxUploadSize = '20mb', appId}) {
+  static app({maxUploadSize = '20mb', appId, enableGraphQL, enableGraphiQL}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
+
+    if (enableGraphQL || enableGraphiQL) {
+      api.use('/graphql', graphqlHTTP(async (req) => {
+        // TODO: use middleware please :)
+        req.config = req.config || Config.get(Parse.applicationId);
+        req.auth = req.auth || new auth.Auth({ config: req.config });
+        // TODO: only await perhaps once, and optimize perf
+        const schema = await Config.get(Parse.applicationId).database.loadSchema();
+        const allClasses = await schema.getAllClasses(true);
+        const classNames = [];
+        const fullSchema = allClasses.reduce((memo, classDef) => {
+          memo[classDef.className] = classDef;
+          classNames.push(classDef.className);
+          return memo;
+        }, {});
+        fullSchema.__classNames = classNames;
+        const Schema = new GraphQLParseSchema(Object.freeze(fullSchema));
+        const s = Schema.Schema();
+        const root = Schema.Root();
+        return {
+          schema: s,
+          rootValue: root,
+          graphiql: enableGraphiQL
+        }
+      }));
+    }
+
     //api.use("/apps", express.static(__dirname + "/public"));
     // File handling needs to be before default middlewares are applied
     api.use('/', middlewares.allowCrossDomain, new FilesRouter().expressRouter({
@@ -230,31 +257,6 @@ class ParseServer {
    */
   start(options: ParseServerOptions, callback: ?()=>void) {
     const app = express();
-    if (options.enableGraphQL || options.enableGraphQLI) {
-      app.use(options.mountPath + '/graphql', graphqlHTTP(async (req) => {
-        // TODO: use middleware please :)
-        req.config = req.config || Config.get(Parse.applicationId);
-        req.auth = req.auth || new auth.Auth({ config: req.config });
-        // TODO: only await perhaps once, and optimize perf
-        const schema = await Config.get(Parse.applicationId).database.loadSchema();
-        const allClasses = await schema.getAllClasses(true);
-        const classNames = [];
-        const fullSchema = allClasses.reduce((memo, classDef) => {
-          memo[classDef.className] = classDef;
-          classNames.push(classDef.className);
-          return memo;
-        }, {});
-        fullSchema.__classNames = classNames;
-        const Schema = new GraphQLParseSchema(Object.freeze(fullSchema));
-        const s = Schema.Schema();
-        const root = Schema.Root();
-        return {
-          schema: s,
-          rootValue: root,
-          graphiql: options.enableGraphQLI
-        }
-      }));
-    }
     if (options.middleware) {
       let middleware;
       if (typeof options.middleware == 'string') {
