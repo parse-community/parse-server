@@ -8,7 +8,7 @@ import {
 
 export const getNode = (schema) => ({
   type: Node,
-  description: `Commong endpoint`,
+  description: `Common endpoint`,
   args: {
     id: { type: new GraphQLNonNull(GraphQLID) },
   },
