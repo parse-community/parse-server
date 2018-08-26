@@ -22,9 +22,9 @@ import {
   Node
 } from '../types/Node';
 
-import {
+/* import {
   ParseObjectInterface
-} from '../types/ParseObject';
+} from '../types/ParseObject'; */
 
 import {
   getOrElse,
@@ -276,7 +276,8 @@ export class ParseClass {
     return {
       name: this.displayName,
       description: `Parse Class ${className}`,
-      interfaces: [Node, ParseObjectInterface],
+      // in relay, it's impossible to have 2 interfaces???
+      interfaces: [Node, /* ParseObjectInterface */],
       fields: () => this.buildFields(graphQLField, false, true),
       isTypeOf: (a) => {
         return a.className == className;
