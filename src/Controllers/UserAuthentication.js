@@ -2,6 +2,7 @@ const Parse = require('parse/node');
 import passwordCrypto from '../password';
 import AccountLockout from '../AccountLockout';
 import Auth from '../Auth';
+import rest from '../rest';
 
 export function removeHiddenProperties(obj) {
   for (var key in obj) {
@@ -128,4 +129,16 @@ export async function logIn({ username, password, email }, config, auth, install
 
   await createSession();
   return user;
+}
+
+export async function logOut(sessionToken, config, clientSDK) {
+  const master = Auth.master(config);
+  const records = await rest.find(config, master, '_Session',
+    { sessionToken: sessionToken }, undefined, clientSDK
+  );
+  if (records.results && records.results.length) {
+    await rest.del(config, master, '_Session',
+      records.results[0].objectId
+    );
+  }
 }

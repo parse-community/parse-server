@@ -5,7 +5,7 @@ import Config from '../Config';
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
-import { logIn, removeHiddenProperties, verifyCredentials } from '../Controllers/UserAuthentication';
+import { logIn, logOut, removeHiddenProperties, verifyCredentials } from '../Controllers/UserAuthentication';
 
 export class UsersRouter extends ClassesRouter {
 
@@ -79,23 +79,15 @@ export class UsersRouter extends ClassesRouter {
     return { response: user };
   }
 
-  handleLogOut(req) {
+  async handleLogOut(req) {
     const success = { response: {} };
+    const config = req.config;
     if (req.info && req.info.sessionToken) {
-      return rest.find(req.config, Auth.master(req.config), '_Session',
-        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
-      ).then((records) => {
-        if (records.results && records.results.length) {
-          return rest.del(req.config, Auth.master(req.config), '_Session',
-            records.results[0].objectId
-          ).then(() => {
-            return Promise.resolve(success);
-          });
-        }
-        return Promise.resolve(success);
-      });
+      const sessionToken = req.info.sessionToken;
+      const clientSDK = req.info.clientSDK;
+      logOut(sessionToken, config, clientSDK);
     }
-    return Promise.resolve(success);
+    return success;
   }
 
   _throwOnBadEmailConfig(req) {
