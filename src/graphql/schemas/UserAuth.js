@@ -2,6 +2,7 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLString,
+  GraphQLBoolean,
 } from 'graphql'
 
 import {
@@ -9,7 +10,7 @@ import {
   runGet,
 } from '../execute';
 
-import { logIn } from '../../Controllers/UserAuthentication';
+import { logIn, logOut } from '../../Controllers/UserAuthentication';
 import { loadClass } from './ParseClass';
 
 const getLoginCompletePayload = (schema) => loadClass('_User', schema).objectType;
@@ -34,9 +35,18 @@ const login = (schema) => ({
   }
 });
 
+const logout = {
+  type: GraphQLBoolean,
+  resolve: async (root, args, req) => {
+    await logOut(req.info.sessionToken, req.config, req.info.clientSDK);
+    return true;
+  }
+}
+
 export function getUserAuthMutationFields(schema) {
   return {
-    login: login(schema)
+    login: login(schema),
+    logout,
   };
 }
 
