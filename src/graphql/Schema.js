@@ -47,6 +47,7 @@ export class GraphQLParseSchema {
       fields: () => {
         const fields = {};
         Object.assign(fields, NodeSchema.Query(this.schema));
+        Object.assign(fields, UserAuthSchema.Query(this.schema));
         Object.assign(fields, ParseClassSchema.Query(this.schema));
         return fields;
       },

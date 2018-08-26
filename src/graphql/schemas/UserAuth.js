@@ -12,16 +12,7 @@ import {
 import { logIn } from '../../Controllers/UserAuthentication';
 import { loadClass } from './ParseClass';
 
-const getLoginCompletePayload = (schema) => new GraphQLObjectType({
-  name: 'LoginCompletePayload',
-  fields: () => {
-    const { parseClass } = loadClass('_User', schema);
-    const fields = parseClass.graphQLConfig().fields;
-    return Object.assign({}, fields(), {
-      sessionToken: { type: GraphQLNonNull(GraphQLString) }
-    });
-  }
-});
+const getLoginCompletePayload = (schema) => loadClass('_User', schema).objectType;
 
 const LoginInput = new GraphQLInputObjectType({
   name: 'LoginInput',
@@ -49,7 +40,21 @@ export function getUserAuthMutationFields(schema) {
   };
 }
 
+export function getUserAuthQueryFields(schema) {
+  return {
+    currentUser: {
+      type: getLoginCompletePayload(schema),
+      resolve: async (root, args, req) => {
+        if (!req.auth.user) {
+          throw new Error('You need to be logged in.');
+        }
+        return transformResult('_User', req.auth.user);
+      }
+    }
+  };
+}
+
 export default {
-  Query: () => ({}),
+  Query: getUserAuthQueryFields,
   Mutation: getUserAuthMutationFields,
 }

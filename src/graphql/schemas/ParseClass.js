@@ -257,6 +257,12 @@ export class ParseClass {
         type: new GraphQLNonNull(GraphQLID)
       };
     }
+    if (this.className === '_User') {
+      initial.sessionToken = {
+        description: 'The session token for the user, set only when it makes sense.',
+        type: GraphQLString,
+      }
+    }
     return Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
         return memo;
