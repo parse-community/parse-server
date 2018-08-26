@@ -5,7 +5,8 @@ import {
 } from 'graphql'
 
 import {
-  transformResult
+  transformResult,
+  runGet,
 } from '../execute';
 
 import { logIn } from '../../Controllers/UserAuthentication';
@@ -43,11 +44,12 @@ export function getUserAuthQueryFields(schema) {
   return {
     currentUser: {
       type: getLoginCompletePayload(schema),
-      resolve: async (root, args, req) => {
+      resolve: async (root, args, req, info) => {
         if (!req.auth.user) {
           throw new Error('You need to be logged in.');
         }
-        return transformResult('_User', req.auth.user);
+        const object = await runGet(req, info, '_User', req.auth.user.id);
+        return transformResult('_User', object);
       }
     }
   };
