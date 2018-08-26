@@ -158,7 +158,7 @@ class ParseServer {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
-
+    api.use(middlewares.allowCrossDomain);
     if (enableGraphQL || enableGraphiQL) {
       api.use('/graphql', ParseServer.graphqlHTTP({ graphiql: enableGraphiQL}));
     }
@@ -178,7 +178,6 @@ class ParseServer {
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
     api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
-    api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
