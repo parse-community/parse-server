@@ -214,7 +214,12 @@ export function loadClass(className, schema) {
     type: mutationResultType,
     description: `use this method to update delete an existing ${className}`,
     args: {
-      objectId: { type: new GraphQLNonNull(GraphQLID) }
+      input: { type: new GraphQLInputObjectType({
+        name: `Destroy${c.displayName}Input`,
+        fields: {
+          id: { type: new GraphQLNonNull(GraphQLID) }
+        }
+      }) }
     },
     resolve: async (root, args, context, info) => {
       const object = await runGet(context, info, className, args.objectId);
