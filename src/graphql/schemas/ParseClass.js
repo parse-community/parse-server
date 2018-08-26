@@ -177,10 +177,12 @@ export function loadClass(className, schema) {
     args: { input: { type: inputType }},
     resolve: async (root, args, context, info) => {
       const input = transformInput(args.input, schema[className]);
+      const clientMutationId = input.clientMutationId;
+      delete input.clientMutationId;
       const res = await rest.create(context.config, context.auth, className, input);
       // Run get to match graphQL style
       const object = await runGet(context, info, className, res.response.objectId);
-      return { object };
+      return { object, clientMutationId };
     }
   };
 
@@ -202,11 +204,15 @@ export function loadClass(className, schema) {
         objectId = parseID(args.input.id).objectId;
         delete args.input.id;
       }
+
       const input = transformInput(args.input, schema[className]);
+      const clientMutationId = input.clientMutationId;
+      delete input.clientMutationId;
+
       await rest.update(context.config, context.auth, className, { objectId }, input);
       // Run get to match graphQL style
       const object = await runGet(context, info, className, objectId);
-      return { object };
+      return { object, clientMutationId };
     }
   };
 
@@ -217,14 +223,16 @@ export function loadClass(className, schema) {
       input: { type: new GraphQLInputObjectType({
         name: `Destroy${c.displayName}Input`,
         fields: {
-          id: { type: new GraphQLNonNull(GraphQLID) }
+          id: { type: new GraphQLNonNull(GraphQLID) },
+          clientMutationId: { type: GraphQLString }
         }
       }) }
     },
     resolve: async (root, args, context, info) => {
-      const object = await runGet(context, info, className, args.objectId);
-      await rest.del(context.config, context.auth, className, args.objectId);
-      return { object }
+      const clientMutationId = args.input.clientMutationId;
+      const object = await runGet(context, info, className, args.input.objectId);
+      await rest.del(context.config, context.auth, className, args.input.objectId);
+      return { object, clientMutationId }
     }
   };
 
@@ -314,7 +322,9 @@ export class ParseClass {
       name: `Add${this.displayName}Input`,
       description: `Parse Class ${className} Input`,
       fields: () => {
-        return this.buildFields(graphQLInputField, true);
+        const fields = this.buildFields(graphQLInputField, true);
+        fields.clientMutationId = { type: GraphQLString };
+        return fields;
       },
       isTypeOf: function(input) {
         return input.className == className;
@@ -330,6 +340,7 @@ export class ParseClass {
         const fields = this.buildFields(graphQLInputField, true);
         fields.id = { type: GraphQLID };
         fields.objectId = { type: GraphQLID };
+        fields.clientMutationId = { type: GraphQLString };
         return fields;
       },
       isTypeOf: function(input) {
