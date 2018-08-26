@@ -138,7 +138,19 @@ class ParseServer {
     return graphqlHTTP(async (req) => {
       // TODO: use middleware please :)
       req.config = req.config || Config.get(Parse.applicationId);
-      req.auth = req.auth || new auth.Auth({ config: req.config });
+      const sessionToken = req.get('x-parse-session-token');
+      const installationId = req.get('x-parse-installation-id');
+      req.info = {
+        installationId,
+        sessionToken,
+      }
+      if (sessionToken) {
+        req.auth = await auth.getAuthForSessionToken({ config: req.config, installationId: installationId, sessionToken: sessionToken });
+      }
+      if (!req.auth) {
+        req.auth = new auth.Auth({ config: req.config });
+      }
+
       // TODO: only await perhaps once, and optimize perf
       const graphQLSchema = new GraphQLParseSchema(Parse.applicationId);
       const { schema, rootValue } = await graphQLSchema.load();
