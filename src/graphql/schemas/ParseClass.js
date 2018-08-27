@@ -223,15 +223,28 @@ export function loadClass(className, schema) {
       input: { type: new GraphQLInputObjectType({
         name: `Destroy${c.displayName}Input`,
         fields: {
-          id: { type: new GraphQLNonNull(GraphQLID) },
+          id: { type: GraphQLID, description: 'Use either the global id or objectId' },
+          objectId: { type: GraphQLID, description: 'Use either the global id or objectId' },
           clientMutationId: { type: GraphQLString }
         }
       }) }
     },
     resolve: async (root, args, context, info) => {
+      if (!args.input.id && !args.input.objectId) {
+        throw 'id or objectId are required';
+      }
+      let objectId;
+      if (args.input.objectId) {
+        objectId = args.input.objectId;
+        delete args.input.objectId;
+      } else {
+        objectId = parseID(args.input.id).objectId;
+        delete args.input.id;
+      }
+
       const clientMutationId = args.input.clientMutationId;
-      const object = await runGet(context, info, className, args.input.objectId);
-      await rest.del(context.config, context.auth, className, args.input.objectId);
+      const object = await runGet(context, info, className, objectId);
+      await rest.del(context.config, context.auth, className, objectId);
       return { object, clientMutationId }
     }
   };
