@@ -1,4 +1,4 @@
-import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID } from '../execute';
+import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID, getGloballyUniqueId } from '../execute';
 
 import {
   GraphQLObjectType,
@@ -55,6 +55,9 @@ function getRelationField(fieldName, field, schema) {
       }
       args.redirectClassNameForKey = fieldName;
       const results = await runFind(context, info, parent.className, args, schema, query);
+      results.forEach((result) => {
+        result.id = getGloballyUniqueId(result.className, result.objectId);
+      });
       return connectionResultsArray(results, args, 100);
     };
     return find;

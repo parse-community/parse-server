@@ -1,12 +1,17 @@
 import rest from '../rest';
 export { rest };
+
+export function getGloballyUniqueId(className, objectId) {
+  return new Buffer(`${className}::${objectId}`).toString('base64');
+}
+
 export function transformResult(className, result) {
   if (Array.isArray(result)) {
     return result.map((res) => transformResult(className, res));
   }
   if (result.objectId) {
     // Make a unique identifier for relay
-    result.id = new Buffer(`${className}::${result.objectId}`).toString('base64');
+    result.id = getGloballyUniqueId(className, result.objectId)
   }
   return Object.assign({className}, result);
 }
