@@ -134,6 +134,11 @@ class ParseServer {
     }
   }
 
+  static async getGraphQLSchema() {
+    const graphQLSchema = new GraphQLParseSchema(Parse.applicationId);
+    return await graphQLSchema.load();
+  }
+
   static graphqlHTTP({ graphiql }) {
     return graphqlHTTP(async (req) => {
       // TODO: use middleware please :)
@@ -152,8 +157,7 @@ class ParseServer {
       }
 
       // TODO: only await perhaps once, and optimize perf
-      const graphQLSchema = new GraphQLParseSchema(Parse.applicationId);
-      const { schema, rootValue } = await graphQLSchema.load();
+      const { schema, rootValue } = await ParseServer.getGraphQLSchema();
       return {
         schema,
         rootValue,
