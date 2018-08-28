@@ -96,7 +96,7 @@ export class HooksController {
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
     } else {
-      triggers.addFunction(hook.functionName, wrappedFunction, null, this._applicationId);
+      triggers.addFunction(hook.functionName, wrappedFunction, null, null, this._applicationId);
     }
   }
 

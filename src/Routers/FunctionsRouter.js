@@ -110,24 +110,22 @@ export class FunctionsRouter extends PromiseRouter {
     }
   }
 
-  static handleCloudFunction(req) {
-    const functionName = req.params.functionName;
-    const applicationId = req.config.applicationId;
+  static runFunction(functionName, params, { config, auth, info }, applicationId) {
+
     const theFunction = triggers.getFunction(functionName, applicationId);
-    const theValidator = triggers.getValidator(req.params.functionName, applicationId);
+    const theValidator = triggers.getValidator(functionName, applicationId);
     if (!theFunction) {
       throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
-    let params = Object.assign({}, req.body, req.query);
-    params = parseParams(params);
+
     const request = {
-      params: params,
-      master: req.auth && req.auth.isMaster,
-      user: req.auth && req.auth.user,
-      installationId: req.info.installationId,
-      log: req.config.loggerController,
-      headers: req.config.headers,
-      ip: req.config.ip,
+      params,
+      master: auth && auth.isMaster,
+      user: auth && auth.user,
+      installationId: info && info.installationId,
+      log: config.loggerController,
+      headers: config.headers,
+      ip: config.ip,
       functionName
     };
 
@@ -139,7 +137,7 @@ export class FunctionsRouter extends PromiseRouter {
     }
 
     return new Promise(function (resolve, reject) {
-      const userString = (req.auth && req.auth.user) ? req.auth.user.id : undefined;
+      const userString = (auth && auth.user) ? auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
       const { success, error, message } = FunctionsRouter.createResponseObject((result) => {
         try {
@@ -176,5 +174,13 @@ export class FunctionsRouter extends PromiseRouter {
         return theFunction(request, { message });
       }).then(success, error);
     });
+  }
+
+  static handleCloudFunction(req) {
+    const functionName = req.params.functionName;
+    const applicationId = req.config.applicationId;
+    let params = Object.assign({}, req.body, req.query);
+    params = parseParams(params);
+    return FunctionsRouter.runFunction(functionName, params, req, applicationId);
   }
 }

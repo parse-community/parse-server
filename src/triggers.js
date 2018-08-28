@@ -14,6 +14,7 @@ export const Types = {
 const baseStore = function() {
   const Validators = {};
   const Functions = {};
+  const FunctionOptions = {};
   const Jobs = {};
   const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function(base, key){
@@ -25,6 +26,7 @@ const baseStore = function() {
     Functions,
     Jobs,
     Validators,
+    FunctionOptions,
     Triggers,
     LiveQuery,
   });
@@ -49,16 +51,20 @@ const _triggerStore = {};
 const Category = {
   Functions: 'Functions',
   Validators: 'Validators',
+  FunctionOptions: 'FunctionOptions',
   Jobs: 'Jobs',
   Triggers: 'Triggers'
 }
 
-function getStore(category, name, applicationId) {
-  const path = name.split('.');
-  path.splice(-1); // remove last component
+function getStore(category, name = null, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   let store = _triggerStore[applicationId][category];
+  if (!name) {
+    return store;
+  }
+  const path = name.split('.');
+  path.splice(-1); // remove last component
   for (const component of path) {
     store = store[component];
     if (!store) {
@@ -86,9 +92,10 @@ function get(category, name, applicationId) {
   return store[lastComponent];
 }
 
-export function addFunction(functionName, handler, validationHandler, applicationId) {
+export function addFunction(functionName: string, handler: (any) => ?Promise<any>, validationHandler: (any) => ?void, options: any, applicationId: string) {
   add(Category.Functions, functionName, handler, applicationId);
   add(Category.Validators, functionName, validationHandler, applicationId);
+  add(Category.FunctionOptions, functionName, options, applicationId);
 }
 
 export function addJob(jobName, handler, applicationId) {
@@ -133,6 +140,18 @@ export function getFunction(functionName, applicationId) {
   return get(Category.Functions, functionName, applicationId);
 }
 
+export function getAllFunctions(applicationId) {
+  const functionStore = getStore(Category.Functions, null, applicationId);
+  const optionsStore = getStore(Category.FunctionOptions, null, applicationId);
+  const validatorStore = getStore(Category.Validators, null, applicationId);
+  return Object.keys(functionStore).reduce((memo, functionName) => {
+    memo[functionName] = { handler: functionStore[functionName],
+      options: optionsStore[functionName],
+      validator: validatorStore[functionName] };
+    return memo;
+  }, {});
+}
+
 export function getJob(jobName, applicationId) {
   return get(Category.Jobs, jobName, applicationId);
 }
@@ -144,7 +163,6 @@ export function getJobs(applicationId) {
   }
   return undefined;
 }
-
 
 export function getValidator(functionName, applicationId) {
   return get(Category.Validators, functionName, applicationId);

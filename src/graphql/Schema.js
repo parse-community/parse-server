@@ -4,14 +4,12 @@ import {
   GraphQLObjectType,
 } from 'graphql'
 
-import {
-  clearCache,
-} from './typesCache';
 import Config from '../Config';
 
 import ParseClassSchema from './schemas/ParseClass';
 import UserAuthSchema from './schemas/UserAuth';
 import NodeSchema from './schemas/Node';
+import FunctionsSchema from './schemas/Functions';
 
 export class GraphQLParseSchema {
   schema;
@@ -36,7 +34,6 @@ export class GraphQLParseSchema {
       query: this.Query(),
       mutation: this.Mutation(),
     });
-    clearCache();
     return { schema: graphQLSchema, rootValue: this.Root() };
   }
 
@@ -60,6 +57,7 @@ export class GraphQLParseSchema {
     const fields = {};
     Object.assign(fields, UserAuthSchema.Mutation(this.schema));
     Object.assign(fields, ParseClassSchema.Mutation(this.schema));
+    Object.assign(fields, FunctionsSchema.Mutation(this.schema));
 
     return new GraphQLObjectType({
       name: 'Mutation',

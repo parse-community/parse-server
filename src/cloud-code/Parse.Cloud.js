@@ -1,5 +1,6 @@
 import { Parse }     from 'parse/node';
 import * as triggers from '../triggers';
+import * as graphQLUtils from '../graphql/index';
 
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
@@ -32,7 +33,13 @@ var ParseCloud = {};
  * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
  */
 ParseCloud.define = function(functionName, handler, validationHandler) {
-  triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+  let options;
+  if (typeof handler === 'object') {
+    options = Object.assign({}, handler);
+    handler = options.handler;
+    delete options.handler;
+  }
+  triggers.addFunction(functionName, handler, validationHandler, options, Parse.applicationId);
 };
 
 /**
@@ -223,6 +230,8 @@ ParseCloud.useMasterKey = () => {
 }
 
 ParseCloud.httpRequest = require("./httpRequest");
+
+ParseCloud.GraphQLUtils = graphQLUtils;
 
 module.exports = ParseCloud;
 
