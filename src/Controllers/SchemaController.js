@@ -320,7 +320,7 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions, indexes}
       ...(defaultColumns[className] || {}),
       ...fields,
     },
-    classLevelPermissions,
+    classLevelPermissions
   };
   if (indexes && Object.keys(indexes).length !== 0) {
     defaultSchema.indexes = indexes;
@@ -330,26 +330,26 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions, indexes}
 
 const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
 const _GlobalConfigSchema = { className: "_GlobalConfig", fields: defaultColumns._GlobalConfig }
-const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+const _PushStatusSchema = convertSchemaToAdapterSchema({
   className: "_PushStatus",
   fields: {},
   classLevelPermissions: {}
-}));
-const _JobStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+});
+const _JobStatusSchema = convertSchemaToAdapterSchema({
   className: "_JobStatus",
   fields: {},
   classLevelPermissions: {}
-}));
-const _JobScheduleSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+});
+const _JobScheduleSchema = convertSchemaToAdapterSchema({
   className: "_JobSchedule",
   fields: {},
   classLevelPermissions: {}
-}));
-const _AudienceSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+});
+const _AudienceSchema = convertSchemaToAdapterSchema({
   className: "_Audience",
-  fields: defaultColumns._Audience,
+  fields: {},
   classLevelPermissions: {}
-}));
+});
 const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _JobScheduleSchema, _PushStatusSchema, _GlobalConfigSchema, _AudienceSchema];
 
 const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {
@@ -407,7 +407,8 @@ export default class SchemaController {
         const perms = {};
         const indexes = {};
         allSchemas.forEach(schema => {
-          data[schema.className] = injectDefaultSchema(schema).fields;
+          Object.freeze(schema.fields);
+          data[schema.className] = schema.fields;
           perms[schema.className] = schema.classLevelPermissions;
           indexes[schema.className] = schema.indexes;
         });

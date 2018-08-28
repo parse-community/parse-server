@@ -1307,4 +1307,16 @@ describe('Class Level Permissions for requiredAuth', () => {
       done.fail(e);
     });
   });
-})
+
+  it('is not possible to modify the loaded schema', (done) => {
+    config.database.loadSchema().then((schemaController) => {
+      return schemaController.getOneSchema('_User');
+    }).then((schema) => {
+      schema.fields.addedField = 'added';
+    }).then(() => {
+      done.fail('should not succeed');
+    }).catch(() => {
+      done();
+    });
+  });
+});
