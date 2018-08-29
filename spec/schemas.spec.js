@@ -1304,7 +1304,9 @@ describe('schemas', () => {
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    const role = new Parse.Role('admin', new Parse.ACL());
+    const roleAcl = new Parse.ACL()
+    roleAcl.setRoleReadAccess("admin", true)
+    const role = new Parse.Role('admin', roleAcl);
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1472,7 +1474,9 @@ describe('schemas', () => {
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    const role = new Parse.Role('admin', new Parse.ACL());
+    const roleAcl = new Parse.ACL()
+    roleAcl.setRoleReadAccess("admin", true)
+    const role = new Parse.Role('admin', roleAcl);
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1715,7 +1719,11 @@ describe('schemas', () => {
     const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    const role = new Parse.Role('admin', new Parse.ACL());
+
+    const roleAcl = new Parse.ACL();
+    roleAcl.setRoleReadAccess("admin", true);
+    const role = new Parse.Role('admin', roleAcl);
+
     const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, role]).then(() => {
       role.relation('users').add(user);
