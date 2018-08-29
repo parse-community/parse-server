@@ -1,3 +1,5 @@
+export * from 'graphql';
+
 import {
   loadClass
 } from './schemas/ParseClass';
@@ -13,5 +15,3 @@ export function getCreateInputType(name) {
 export function getUpdateInputType(name) {
   return loadClass(name).updateType;
 }
-
-export * from 'graphql';
