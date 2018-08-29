@@ -1,4 +1,8 @@
 /* eslint-disable no-console */
+try {
+  require('dotenv').config();
+} catch(e) { /**/ }
+
 import ParseServer from '../index';
 import definitions from './definitions/parse-server';
 import cluster from 'cluster';

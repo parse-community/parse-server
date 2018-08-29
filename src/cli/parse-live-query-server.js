@@ -1,3 +1,7 @@
+try {
+  require('dotenv').config();
+} catch(e) { /**/ }
+
 import definitions from './definitions/parse-live-query-server';
 import runner from './utils/runner';
 import { ParseServer } from '../index';

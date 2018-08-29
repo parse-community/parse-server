@@ -363,6 +363,10 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 
 For the full list of configurable environment variables, run `parse-server --help`.
 
+#### Using a `.env` file
+
+The parse-server CLI can use [dotenv](https://www.npmjs.com/package/dotenv) to load environment variables from a `.env` file.
+
 ### Available Adapters
 
 All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
