@@ -1,28 +1,18 @@
 import {
   GraphQLScalarType,
-  GraphQLList,
-  GraphQLString
 } from 'graphql'
+import { Parse } from 'parse/node';
+
+const id = (value) => value;
 
 export const ACL = new GraphQLScalarType({
   name: 'ACL',
-  fields: {
-    read: {
-      type: new GraphQLList(GraphQLString),
-      name: 'read',
-      description: 'Read access for the object'
-    },
-    write: {
-      type: new GraphQLList(GraphQLString),
-      name: 'write',
-      description: 'Write access for the object'
+  serialize: id,
+  parseValue: (value) => {
+    if (value && value instanceof Parse.ACL) {
+      return value.toJSON();
     }
-  },
-  serialize: () => {
-    throw "not implemented"
-  },
-  parseValue: () => {
-    throw "not implemented"
+    throw 'Invalid ACL value, should be a Parse.ACL';
   },
   parseLiteral: () => {
     throw "not implemented"

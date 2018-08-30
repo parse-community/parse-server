@@ -26,11 +26,11 @@ var ParseCloud = {};
  * Defines a Cloud Function.
  *
  * **Available in Cloud Code only.**
-
- * @static
- * @memberof Parse.Cloud
+ * @method define
+ * @name Parse.Cloud.define
  * @param {String} name The name of the Cloud Function
- * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
+ * @param {Function|Parse.Cloud.FunctionHandler} handler The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
+ * The handler can also be a {@link Parse.Cloud.FunctionHandler} object, used when exposing GraphQL mutations
  */
 ParseCloud.define = function(functionName, handler, validationHandler) {
   let options;
@@ -283,7 +283,27 @@ module.exports = ParseCloud;
  */
 
 /**
+ * @interface Parse.Cloud.FunctionHandler
+ * @property {Function} handler The function to be called. it takes a single {@link Parse.Cloud.FunctionRequest} argument.
+ * @property {external:GraphQLInputObjectType} inputType The type to expose to graphQL. This type is describing the params object passed to the function.
+ * @property {external:GraphQLObjectType} type The graphQL type returned by the function.
+ * @property {String} description The description used in the graphql schema.
+ */
+
+/**
  * @interface Parse.Cloud.JobRequest
  * @property {Object} params The params passed to the background job.
  * @property {function} message If message is called with a string argument, will update the current message to be stored in the job status.
+ */
+
+/**
+ * GraphQLInputObjectType
+ * @external GraphQLInputObjectType
+ * @see {@link https://graphql.org/graphql-js/type/#graphqlinputobjecttype}
+ */
+
+/**
+ * GraphQLObjectType
+ * @external GraphQLObjectType
+ * @see {@link https://graphql.org/graphql-js/type/#graphqlobjecttype}
  */

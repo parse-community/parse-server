@@ -19,8 +19,8 @@ export class GraphQLParseSchema {
     this.applicationId = applicationId;
   }
 
-  async load() {
-    const schema = await Config.get(this.applicationId).database.loadSchema();
+  static async loadSchemaFromDatabase(applicationId) {
+    const schema = await Config.get(applicationId).database.loadSchema();
     const allClasses = await schema.getAllClasses(true);
     const classNames = [];
     const fullSchema = allClasses.reduce((memo, classDef) => {
@@ -29,7 +29,11 @@ export class GraphQLParseSchema {
       return memo;
     }, {});
     fullSchema.__classNames = classNames;
-    this.schema = Object.freeze(fullSchema);
+    return Object.freeze(fullSchema);
+  }
+
+  async load() {
+    this.schema = await GraphQLParseSchema.loadSchemaFromDatabase(this.applicationId);
     const graphQLSchema = new GraphQLSchema({
       query: this.Query(),
       mutation: this.Mutation(),
@@ -52,8 +56,6 @@ export class GraphQLParseSchema {
   }
 
   Mutation()  {
-    // TODO: Refactor FunctionRouter to extract (as it's a new entry)
-    // TODO: Implement Functions as mutations
     const fields = {};
     Object.assign(fields, UserAuthSchema.Mutation(this.schema));
     Object.assign(fields, ParseClassSchema.Mutation(this.schema));

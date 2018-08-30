@@ -3,6 +3,8 @@ import {
   Kind
 } from 'graphql'
 
+const id = (value) => value;
+
 export const NumberInput = new GraphQLScalarType({
   name: 'NumberInput',
   description: `Input for number
@@ -11,17 +13,13 @@ export const NumberInput = new GraphQLScalarType({
   - key: 1
   - key: {increment: 1}
   `,
-  serialize: () => {
-    throw "NumberInput serialize not implemented"
-  },
-  parseValue: () => {
-    throw "NumberInput parseValue not implemented"
-  },
+  serialize: id,
+  parseValue: id,
   parseLiteral: (ast) => {
     if (ast.kind == Kind.OBJECT) {
       const fields = ast.fields;
       if (fields.length != 1) {
-        throw 'Invalid NUmberInput';
+        throw 'Invalid literal for NumberInput (too many fields)';
       }
       const field = fields[0];
       const operator = field.name.value;

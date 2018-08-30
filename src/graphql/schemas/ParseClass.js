@@ -1,4 +1,4 @@
-import { runFind, runGet, rest, transformResult, connectionResultsArray, parseID, getGloballyUniqueId } from '../execute';
+import { runFind, runGet, resolvePointer, rest, connectionResultsArray, parseID, getGloballyUniqueId } from '../execute';
 
 import {
   GraphQLObjectType,
@@ -14,17 +14,12 @@ import {
   queryType,
   inputType,
   type,
-  Pointer,
   PageInfo,
 } from '../types'
 
 import {
   Node
 } from '../types/Node';
-
-/* import {
-  ParseObjectInterface
-} from '../types/ParseObject'; */
 
 import {
   getOrElse,
@@ -40,50 +35,44 @@ function handleIdField(fieldName) {
 }
 
 function getRelationField(fieldName, field, schema) {
-  if (field.type == 'Relation') {
-    const { find } = loadClass(field.targetClass, schema);
-    find.resolve = async (parent, args, context, info) => {
-      const query = {
-        $relatedTo: {
-          object: {
-            __type: 'Pointer',
-            className: parent.className,
-            objectId: parent.objectId
-          },
-          key: fieldName,
-        }
+  const { find } = loadClass(field.targetClass, schema);
+  find.resolve = async (parent, args, context, info) => {
+    const query = {
+      $relatedTo: {
+        object: {
+          __type: 'Pointer',
+          className: parent.className,
+          objectId: parent.objectId
+        },
+        key: fieldName,
       }
-      args.redirectClassNameForKey = fieldName;
-      const results = await runFind(context, info, parent.className, args, schema, query);
-      results.forEach((result) => {
-        result.id = getGloballyUniqueId(result.className, result.objectId);
-      });
-      return connectionResultsArray(results, args, 100);
-    };
-    return find;
-  }
+    }
+    args.redirectClassNameForKey = fieldName;
+    const results = await runFind(context, info, parent.className, args, schema, query);
+    results.forEach((result) => {
+      result.id = getGloballyUniqueId(result.className, result.objectId);
+    });
+    return connectionResultsArray(results, args, 100);
+  };
+  return find;
+}
+
+function getFieldType(field) {
+  return (field.type === 'Pointer' ? `Pointer<${field.targetClass}>` : `${field.type}`);
 }
 
 function graphQLField(fieldName, field, schema) {
-  let gQLType = handleIdField(fieldName) || type(field);
-  if (!gQLType) {
-    // If it's not possible to resovle a simple type
-    // check if it's a proper relation field
+  if (field.type == 'Relation') {
     return getRelationField(fieldName, field, schema);
   }
-  const fieldType = (gQLType === Pointer ? `Pointer<${field.targetClass}>` : `${field.type}`);
+
+  let gQLType = handleIdField(fieldName) || type(field);
+  const fieldType = getFieldType(field);
   let gQLResolve;
   if (field.type === 'Pointer') {
     gQLType = loadClass(field.targetClass, schema).objectType,
     gQLResolve = (parent, args, context, info) => {
-      const object = parent[fieldName];
-      const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
-        return field.name.value;
-      });
-      if (selections.indexOf('id') < 0 || selections.length > 1) {
-        return runGet(context, info, object.className, object.objectId, schema);
-      }
-      return transformResult(field.targetClass, object, schema, { context, info });
+      return resolvePointer(field.targetClass, parent[fieldName], schema, context, info);
     }
   }
   return {
@@ -99,7 +88,7 @@ function graphQLInputField(fieldName, field) {
   if (!gQLType) {
     return;
   }
-  const fieldType = (gQLType === Pointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
+  const fieldType = getFieldType(field);
   return {
     name: fieldName,
     type: gQLType,
@@ -135,6 +124,21 @@ function transformInput(input, schema) {
   return input;
 }
 
+function getObjectId(input) {
+  if (!input.id && !input.objectId) {
+    throw 'id or objectId are required';
+  }
+  let objectId;
+  if (input.objectId) {
+    objectId = input.objectId;
+    delete input.objectId;
+  } else {
+    objectId = parseID(input.id).objectId;
+    delete input.id;
+  }
+  return objectId;
+}
+
 export function loadClass(className, schema) {
   const c = getOrElse(className, () => new ParseClass(className, schema));
   const objectType = c.graphQLObjectType();
@@ -148,7 +152,7 @@ export function loadClass(className, schema) {
     type: objectType,
     description: `Use this endpoint to get or query ${className} objects`,
     args: {
-      objectId: { type: GraphQLID },
+      objectId: { type: new GraphQLNonNull(GraphQLID) },
     },
     resolve: async (root, args, context, info) => {
       // Get the selections
@@ -196,18 +200,7 @@ export function loadClass(className, schema) {
       input: { type: updateType }
     },
     resolve: async (root, args, context, info) => {
-      if (!args.input.id && !args.input.objectId) {
-        throw 'id or objectId are required';
-      }
-      let objectId;
-      if (args.input.objectId) {
-        objectId = args.input.objectId;
-        delete args.input.objectId;
-      } else {
-        objectId = parseID(args.input.id).objectId;
-        delete args.input.id;
-      }
-
+      const objectId = getObjectId(args.input);
       const input = transformInput(args.input, schema[className]);
       const clientMutationId = input.clientMutationId;
       delete input.clientMutationId;
@@ -233,18 +226,7 @@ export function loadClass(className, schema) {
       }) }
     },
     resolve: async (root, args, context, info) => {
-      if (!args.input.id && !args.input.objectId) {
-        throw 'id or objectId are required';
-      }
-      let objectId;
-      if (args.input.objectId) {
-        objectId = args.input.objectId;
-        delete args.input.objectId;
-      } else {
-        objectId = parseID(args.input.id).objectId;
-        delete args.input.id;
-      }
-
+      const objectId = getObjectId(args.input);
       const clientMutationId = args.input.clientMutationId;
       const object = await runGet(context, info, className, objectId);
       await rest.del(context.config, context.auth, className, objectId);
@@ -301,6 +283,10 @@ export class ParseClass {
     }, initial);
   }
 
+  isTypeOf(object) {
+    return object.className === this.className;
+  }
+
   graphQLConfig() {
     const className = this.className;
     return {
@@ -309,9 +295,7 @@ export class ParseClass {
       // in relay, it's impossible to have 2 interfaces???
       interfaces: [Node, /* ParseObjectInterface */],
       fields: () => this.buildFields(graphQLField, false, true),
-      isTypeOf: (a) => {
-        return a.className == className;
-      },
+      isTypeOf: this.isTypeOf.bind(this),
     };
   }
 
@@ -326,9 +310,7 @@ export class ParseClass {
         delete fields.id;
         return fields;
       },
-      isTypeOf: function(input) {
-        return input.className == className;
-      }
+      isTypeOf: this.isTypeOf.bind(this)
     };
   }
 
@@ -342,9 +324,7 @@ export class ParseClass {
         fields.clientMutationId = { type: GraphQLString };
         return fields;
       },
-      isTypeOf: function(input) {
-        return input.className == className;
-      }
+      isTypeOf: this.isTypeOf.bind(this)
     };
   }
 
@@ -359,9 +339,7 @@ export class ParseClass {
         fields.clientMutationId = { type: GraphQLString };
         return fields;
       },
-      isTypeOf: function(input) {
-        return input.className == this.className;
-      }
+      isTypeOf: this.isTypeOf.bind(this)
     };
   }
 
