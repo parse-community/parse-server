@@ -2,7 +2,7 @@ import rest from '../rest';
 export { rest };
 
 export function getGloballyUniqueId(className, objectId) {
-  return new Buffer(`${className}::${objectId}`).toString('base64');
+  return base64(`${className}::${objectId}`);
 }
 
 export function transformResult(className, result) {
@@ -55,7 +55,7 @@ function transformQuery(query) {
 }
 
 export function base64(string) {
-  return new Buffer(string).toString('base64')
+  return new Buffer(string).toString('base64');
 }
 
 export function parseID(base64String) {

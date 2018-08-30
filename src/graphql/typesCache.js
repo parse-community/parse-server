@@ -1,5 +1,5 @@
 // @flow
-let cache = {};
+const cache = {};
 
 export function getOrElse<T>(key: string, handler: () => T): ?T {
   if (!cache[key]) {
@@ -8,6 +8,3 @@ export function getOrElse<T>(key: string, handler: () => T): ?T {
   return cache[key];
 }
 
-export function clearCache() {
-  cache = {};
-}

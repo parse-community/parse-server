@@ -23,10 +23,7 @@ import {
 
 import {
   getOrElse,
-  clearCache,
 } from '../typesCache';
-
-export { clearCache };
 
 function handleIdField(fieldName) {
   if (fieldName === 'objectId' || fieldName == 'id') {
