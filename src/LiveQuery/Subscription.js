@@ -34,7 +34,11 @@ class Subscription {
 
     const index = requestIds.indexOf(requestId);
     if (index < 0) {
-      logger.error('Can not find client %d subscription %d to delete', clientId, requestId);
+      logger.error(
+        'Can not find client %d subscription %d to delete',
+        clientId,
+        requestId
+      );
       return;
     }
     requestIds.splice(index, 1);
@@ -49,6 +53,4 @@ class Subscription {
   }
 }
 
-export {
-  Subscription
-}
+export { Subscription };

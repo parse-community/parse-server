@@ -35,9 +35,9 @@ class Consumer extends events.EventEmitter {
 
   subscribe(channel: string): void {
     unsubscribe(channel);
-    const handler = (message) => {
+    const handler = message => {
       this.emit('message', channel, message);
-    }
+    };
     subscriptions.set(channel, handler);
     this.emitter.on(channel, handler);
   }
@@ -57,9 +57,7 @@ function createSubscriber(): any {
 
 const EventEmitterMQ = {
   createPublisher,
-  createSubscriber
-}
+  createSubscriber,
+};
 
-export {
-  EventEmitterMQ
-}
+export { EventEmitterMQ };

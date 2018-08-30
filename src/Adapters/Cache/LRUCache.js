@@ -1,14 +1,11 @@
 import LRU from 'lru-cache';
-import defaults  from '../../defaults';
+import defaults from '../../defaults';
 
 export class LRUCache {
-  constructor({
-    ttl = defaults.cacheTTL,
-    maxSize = defaults.cacheMaxSize,
-  }) {
+  constructor({ ttl = defaults.cacheTTL, maxSize = defaults.cacheMaxSize }) {
     this.cache = new LRU({
       max: maxSize,
-      maxAge: ttl
+      maxAge: ttl,
     });
   }
 
@@ -27,7 +24,6 @@ export class LRUCache {
   clear() {
     this.cache.reset();
   }
-
 }
 
 export default LRUCache;

@@ -14,20 +14,22 @@ function getSessionToken(options) {
 function getAuth(options = {}, config) {
   const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Promise.resolve(new Auth.Auth({config, isMaster: true, installationId }));
+    return Promise.resolve(
+      new Auth.Auth({ config, isMaster: true, installationId })
+    );
   }
-  return getSessionToken(options).then((sessionToken) => {
+  return getSessionToken(options).then(sessionToken => {
     if (sessionToken) {
       options.sessionToken = sessionToken;
       return Auth.getAuthForSessionToken({
         config,
         sessionToken: sessionToken,
-        installationId
+        installationId,
       });
     } else {
       return Promise.resolve(new Auth.Auth({ config, installationId }));
     }
-  })
+  });
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -41,17 +43,27 @@ function ParseServerRESTController(applicationId, router) {
       path = path.slice(serverURL.path.length, path.length);
     }
 
-    if (path[0] !== "/") {
-      path = "/" + path;
+    if (path[0] !== '/') {
+      path = '/' + path;
     }
 
     if (path === '/batch') {
-      const promises = data.requests.map((request) => {
-        return handleRequest(request.method, request.path, request.body, options).then((response) => {
-          return Promise.resolve({success: response});
-        }, (error) => {
-          return Promise.resolve({error: {code: error.code, error: error.message}});
-        });
+      const promises = data.requests.map(request => {
+        return handleRequest(
+          request.method,
+          request.path,
+          request.body,
+          options
+        ).then(
+          response => {
+            return Promise.resolve({ success: response });
+          },
+          error => {
+            return Promise.resolve({
+              error: { code: error.code, error: error.message },
+            });
+          }
+        );
       });
       return Promise.all(promises);
     }
@@ -62,37 +74,44 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     return new Promise((resolve, reject) => {
-      getAuth(options, config).then((auth) => {
+      getAuth(options, config).then(auth => {
         const request = {
           body: data,
           config,
           auth,
           info: {
             applicationId: applicationId,
-            sessionToken: options.sessionToken
+            sessionToken: options.sessionToken,
           },
-          query
+          query,
         };
-        return Promise.resolve().then(() => {
-          return router.tryRouteRequest(method, path, request);
-        }).then((response) => {
-          resolve(response.response, response.status, response);
-        }, (err) => {
-          if (err instanceof Parse.Error &&
-              err.code == Parse.Error.INVALID_JSON &&
-              err.message == `cannot route ${method} ${path}`) {
-            RESTController.request.apply(null, args).then(resolve, reject);
-          } else {
-            reject(err);
-          }
-        });
+        return Promise.resolve()
+          .then(() => {
+            return router.tryRouteRequest(method, path, request);
+          })
+          .then(
+            response => {
+              resolve(response.response, response.status, response);
+            },
+            err => {
+              if (
+                err instanceof Parse.Error &&
+                err.code == Parse.Error.INVALID_JSON &&
+                err.message == `cannot route ${method} ${path}`
+              ) {
+                RESTController.request.apply(null, args).then(resolve, reject);
+              } else {
+                reject(err);
+              }
+            }
+          );
       }, reject);
     });
   }
 
-  return  {
+  return {
     request: handleRequest,
-    ajax: RESTController.ajax
+    ajax: RESTController.ajax,
   };
 }
 

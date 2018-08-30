@@ -11,10 +11,9 @@ function trackEvent(req) {
   return analyticsController.trackEvent(req);
 }
 
-
 export class AnalyticsRouter extends PromiseRouter {
   mountRoutes() {
-    this.route('POST','/events/AppOpened', appOpened);
-    this.route('POST','/events/:eventName', trackEvent);
+    this.route('POST', '/events/AppOpened', appOpened);
+    this.route('POST', '/events/:eventName', trackEvent);
   }
 }

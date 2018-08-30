@@ -1,5 +1,7 @@
-const CacheController = require('../lib/Controllers/CacheController.js').default;
-const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter').default;
+const CacheController = require('../lib/Controllers/CacheController.js')
+  .default;
+const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
+  .default;
 const SchemaCache = require('../lib/Controllers/SchemaCache').default;
 
 describe('SchemaCache', () => {
@@ -10,56 +12,65 @@ describe('SchemaCache', () => {
     cacheController = new CacheController(cacheAdapter, 'appId');
   });
 
-  it('can retrieve a single schema after all schemas stored', (done) => {
+  it('can retrieve a single schema after all schemas stored', done => {
     const schemaCache = new SchemaCache(cacheController);
-    const allSchemas = [{
-      className: 'Class1'
-    }, {
-      className: 'Class2'
-    }];
-    schemaCache.setAllClasses(allSchemas).then(() => {
-      return schemaCache.getOneSchema('Class2');
-    }).then((schema) => {
-      expect(schema).not.toBeNull();
-      done();
-    });
+    const allSchemas = [
+      {
+        className: 'Class1',
+      },
+      {
+        className: 'Class2',
+      },
+    ];
+    schemaCache
+      .setAllClasses(allSchemas)
+      .then(() => {
+        return schemaCache.getOneSchema('Class2');
+      })
+      .then(schema => {
+        expect(schema).not.toBeNull();
+        done();
+      });
   });
 
-  it('does not return all schemas after a single schema is stored', (done) => {
+  it('does not return all schemas after a single schema is stored', done => {
     const schemaCache = new SchemaCache(cacheController);
     const schema = {
-      className: 'Class1'
+      className: 'Class1',
     };
-    schemaCache.setOneSchema(schema.className, schema).then(() => {
-      return schemaCache.getAllClasses();
-    }).then((allSchemas) => {
-      expect(allSchemas).toBeNull();
-      done();
-    });
+    schemaCache
+      .setOneSchema(schema.className, schema)
+      .then(() => {
+        return schemaCache.getAllClasses();
+      })
+      .then(allSchemas => {
+        expect(allSchemas).toBeNull();
+        done();
+      });
   });
 
-  it('doesn\'t persist cached data by default', (done) => {
+  it("doesn't persist cached data by default", done => {
     const schemaCache = new SchemaCache(cacheController);
     const schema = {
-      className: 'Class1'
+      className: 'Class1',
     };
     schemaCache.setOneSchema(schema.className, schema).then(() => {
       const anotherSchemaCache = new SchemaCache(cacheController);
-      return anotherSchemaCache.getOneSchema(schema.className).then((schema) => {
+      return anotherSchemaCache.getOneSchema(schema.className).then(schema => {
         expect(schema).toBeNull();
         done();
       });
     });
   });
 
-  it('can persist cached data', (done) => {
+  it('can persist cached data', done => {
     const schemaCache = new SchemaCache(cacheController, 5000, true);
     const schema = {
-      className: 'Class1'
+      className: 'Class1',
     };
     schemaCache.setOneSchema(schema.className, schema).then(() => {
       const anotherSchemaCache = new SchemaCache(cacheController, 5000, true);
-      return anotherSchemaCache.getOneSchema(schema.className).then((schema) => {
+      return anotherSchemaCache.getOneSchema(schema.className).then(schema => {
         expect(schema).not.toBeNull();
         done();
       });

@@ -5,90 +5,113 @@ const rp = require('request-promise');
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'test',
-  'X-Parse-Master-Key': 'test'
-}
+  'X-Parse-Master-Key': 'test',
+};
 
 const masterKeyOptions = {
   headers: masterKeyHeaders,
-  json: true
-}
+  json: true,
+};
 
 const PointerObject = Parse.Object.extend({
-  className: "PointerObject"
+  className: 'PointerObject',
 });
 
 const loadTestData = () => {
-  const data1 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 900, size: ['S', 'M']};
-  const data2 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 800, size: ['M', 'L']};
-  const data3 = {score: 10, name: 'bar', sender: {group: 'B'}, views: 700, size: ['S']};
-  const data4 = {score: 20, name: 'dpl', sender: {group: 'B'}, views: 700, size: ['S']};
+  const data1 = {
+    score: 10,
+    name: 'foo',
+    sender: { group: 'A' },
+    views: 900,
+    size: ['S', 'M'],
+  };
+  const data2 = {
+    score: 10,
+    name: 'foo',
+    sender: { group: 'A' },
+    views: 800,
+    size: ['M', 'L'],
+  };
+  const data3 = {
+    score: 10,
+    name: 'bar',
+    sender: { group: 'B' },
+    views: 700,
+    size: ['S'],
+  };
+  const data4 = {
+    score: 20,
+    name: 'dpl',
+    sender: { group: 'B' },
+    views: 700,
+    size: ['S'],
+  };
   const obj1 = new TestObject(data1);
   const obj2 = new TestObject(data2);
   const obj3 = new TestObject(data3);
   const obj4 = new TestObject(data4);
   return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
-}
+};
 
 describe('Parse.Query Aggregate testing', () => {
-  beforeEach((done) => {
+  beforeEach(done => {
     loadTestData().then(done, done);
   });
 
-  it('should only query aggregate with master key', (done) => {
-    Parse._request('GET', `aggregate/someClass`, {})
-      .then(() => {}, (error) => {
+  it('should only query aggregate with master key', done => {
+    Parse._request('GET', `aggregate/someClass`, {}).then(
+      () => {},
+      error => {
         expect(error.message).toEqual('unauthorized: master key is required');
         done();
-      });
+      }
+    );
   });
 
-  it('invalid query invalid key', (done) => {
+  it('invalid query invalid key', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         unknown: {},
-      }
+      },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .catch((error) => {
-        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-        done();
-      });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
   });
 
-  it('invalid query group _id', (done) => {
+  it('invalid query group _id', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { _id: null },
-      }
+      },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .catch((error) => {
-        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-        done();
-      });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
   });
 
-  it('invalid query group objectId required', (done) => {
+  it('invalid query group objectId required', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: {},
-      }
+      },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .catch((error) => {
-        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-        done();
-      });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
   });
 
-  it('group by field', (done) => {
+  it('group by field', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: '$name' },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
@@ -97,7 +120,8 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results[1].objectId).not.toBe(undefined);
         expect(resp.results[2].objectId).not.toBe(undefined);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
   it('group by pipeline operator', async () => {
@@ -105,10 +129,13 @@ describe('Parse.Query Aggregate testing', () => {
       body: {
         pipeline: {
           group: { objectId: '$name' },
-        }
-      }
+        },
+      },
     });
-    const resp = await rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+    const resp = await rp.get(
+      Parse.serverURL + '/aggregate/TestObject',
+      options
+    );
     expect(resp.results.length).toBe(3);
     expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
     expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
@@ -118,178 +145,218 @@ describe('Parse.Query Aggregate testing', () => {
     expect(resp.results[2].objectId).not.toBe(undefined);
   });
 
-  it('group by empty object', (done) => {
+  it('group by empty object', done => {
     const obj = new TestObject();
-    const pipeline = [{
-      group: { objectId: {} }
-    }];
-    obj.save().then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results[0].objectId).toEqual(null);
-      done();
-    });
+    const pipeline = [
+      {
+        group: { objectId: {} },
+      },
+    ];
+    obj
+      .save()
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results[0].objectId).toEqual(null);
+        done();
+      });
   });
 
-  it('group by empty string', (done) => {
+  it('group by empty string', done => {
     const obj = new TestObject();
-    const pipeline = [{
-      group: { objectId: '' }
-    }];
-    obj.save().then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results[0].objectId).toEqual(null);
-      done();
-    });
+    const pipeline = [
+      {
+        group: { objectId: '' },
+      },
+    ];
+    obj
+      .save()
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results[0].objectId).toEqual(null);
+        done();
+      });
   });
 
-  it('group by empty array', (done) => {
+  it('group by empty array', done => {
     const obj = new TestObject();
-    const pipeline = [{
-      group: { objectId: [] }
-    }];
-    obj.save().then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results[0].objectId).toEqual(null);
-      done();
-    });
+    const pipeline = [
+      {
+        group: { objectId: [] },
+      },
+    ];
+    obj
+      .save()
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results[0].objectId).toEqual(null);
+        done();
+      });
   });
 
-  it('group by date object', (done) => {
+  it('group by date object', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
-    const pipeline = [{
-      group: {
-        objectId: { day: { $dayOfMonth: "$_updated_at" }, month: { $month: "$_created_at" }, year: { $year: "$_created_at" } },
-        count: { $sum: 1 }
-      }
-    }];
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      const createdAt = new Date(obj1.createdAt);
-      expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
-      expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
-      expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
-      done();
-    });
+    const pipeline = [
+      {
+        group: {
+          objectId: {
+            day: { $dayOfMonth: '$_updated_at' },
+            month: { $month: '$_created_at' },
+            year: { $year: '$_created_at' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        const createdAt = new Date(obj1.createdAt);
+        expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
+        expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+        expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
+        done();
+      });
   });
 
-  it('group by date object transform', (done) => {
+  it('group by date object transform', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
     const obj3 = new TestObject();
-    const pipeline = [{
-      group: {
-        objectId: { day: { $dayOfMonth: "$updatedAt" }, month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
-        count: { $sum: 1 }
-      }
-    }];
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      const createdAt = new Date(obj1.createdAt);
-      expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
-      expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
-      expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
-      done();
-    });
+    const pipeline = [
+      {
+        group: {
+          objectId: {
+            day: { $dayOfMonth: '$updatedAt' },
+            month: { $month: '$createdAt' },
+            year: { $year: '$createdAt' },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        const createdAt = new Date(obj1.createdAt);
+        expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
+        expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+        expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('group and multiply transform', (done) => {
-    const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
-    const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
-    const pipeline = [{
-      group: {
-        objectId: null,
-        total: { $sum: { $multiply: [ '$quantity', '$price' ] } }
-      }
-    }];
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0].total).toEqual(45);
-      done();
-    });
-  });
-
-  it_exclude_dbs(['postgres'])('project and multiply transform', (done) => {
+  it_exclude_dbs(['postgres'])('group and multiply transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
-        match: { quantity: { $exists: true } }
+        group: {
+          objectId: null,
+          total: { $sum: { $multiply: ['$quantity', '$price'] } },
+        },
+      },
+    ];
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].total).toEqual(45);
+        done();
+      });
+  });
+
+  it_exclude_dbs(['postgres'])('project and multiply transform', done => {
+    const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
+    const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
+    const pipeline = [
+      {
+        match: { quantity: { $exists: true } },
       },
       {
         project: {
           name: 1,
-          total: { $multiply: [ '$quantity', '$price' ] }
-        }
-      }
+          total: { $multiply: ['$quantity', '$price'] },
+        },
+      },
     ];
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(2);
-      if (results[0].name === 'item a') {
-        expect(results[0].total).toEqual(20);
-        expect(results[1].total).toEqual(25);
-      }
-      else {
-        expect(results[0].total).toEqual(25);
-        expect(results[1].total).toEqual(20);
-      }
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
+        if (results[0].name === 'item a') {
+          expect(results[0].total).toEqual(20);
+          expect(results[1].total).toEqual(25);
+        } else {
+          expect(results[0].total).toEqual(25);
+          expect(results[1].total).toEqual(20);
+        }
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('project without objectId transform', (done) => {
+  it_exclude_dbs(['postgres'])('project without objectId transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
       {
-        match: { quantity: { $exists: true } }
+        match: { quantity: { $exists: true } },
       },
       {
         project: {
           objectId: 0,
-          total: { $multiply: [ '$quantity', '$price' ] }
-        }
+          total: { $multiply: ['$quantity', '$price'] },
+        },
       },
       {
-        sort: { total: 1 }
-      }
+        sort: { total: 1 },
+      },
     ];
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(2);
-      expect(results[0].total).toEqual(20);
-      expect(results[0].objectId).toEqual(undefined);
-      expect(results[1].total).toEqual(25);
-      expect(results[1].objectId).toEqual(undefined);
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
+        expect(results[0].total).toEqual(20);
+        expect(results[0].objectId).toEqual(undefined);
+        expect(results[1].total).toEqual(25);
+        expect(results[1].objectId).toEqual(undefined);
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('project updatedAt only transform', (done) => {
-    const pipeline = [{
-      project: { objectId: 0, updatedAt: 1 }
-    }];
+  it_exclude_dbs(['postgres'])('project updatedAt only transform', done => {
+    const pipeline = [
+      {
+        project: { objectId: 0, updatedAt: 1 },
+      },
+    ];
     const query = new Parse.Query(TestObject);
-    query.aggregate(pipeline).then((results) => {
+    query.aggregate(pipeline).then(results => {
       expect(results.length).toEqual(4);
       for (let i = 0; i < results.length; i++) {
         const item = results[i];
@@ -300,182 +367,207 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('cannot group by date field (excluding createdAt and updatedAt)', (done) => {
-    const obj1 = new TestObject({ dateField: new Date(1990, 11, 1) });
-    const obj2 = new TestObject({ dateField: new Date(1990, 5, 1) });
-    const obj3 = new TestObject({ dateField: new Date(1990, 11, 1) });
-    const pipeline = [{
-      group: {
-        objectId: { day: { $dayOfMonth: "$dateField" }, month: { $month: "$dateField" }, year: { $year: "$dateField" } },
-        count: { $sum: 1 }
-      }
-    }];
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then(done.fail).catch((error) => {
-      expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
-      done();
-    });
-  });
+  it_exclude_dbs(['postgres'])(
+    'cannot group by date field (excluding createdAt and updatedAt)',
+    done => {
+      const obj1 = new TestObject({ dateField: new Date(1990, 11, 1) });
+      const obj2 = new TestObject({ dateField: new Date(1990, 5, 1) });
+      const obj3 = new TestObject({ dateField: new Date(1990, 11, 1) });
+      const pipeline = [
+        {
+          group: {
+            objectId: {
+              day: { $dayOfMonth: '$dateField' },
+              month: { $month: '$dateField' },
+              year: { $year: '$dateField' },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ];
+      Parse.Object.saveAll([obj1, obj2, obj3])
+        .then(() => {
+          const query = new Parse.Query(TestObject);
+          return query.aggregate(pipeline);
+        })
+        .then(done.fail)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+          done();
+        });
+    }
+  );
 
-  it('group by pointer', (done) => {
+  it('group by pointer', done => {
     const pointer1 = new TestObject();
     const pointer2 = new TestObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });
-    const pipeline = [
-      { group: { objectId: '$pointer' } }
-    ];
-    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(3);
-      expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
-      expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
-      expect(results.some(result => result.objectId === null)).toEqual(true);
-      done();
-    });
+    const pipeline = [{ group: { objectId: '$pointer' } }];
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(3);
+        expect(results.some(result => result.objectId === pointer1.id)).toEqual(
+          true
+        );
+        expect(results.some(result => result.objectId === pointer2.id)).toEqual(
+          true
+        );
+        expect(results.some(result => result.objectId === null)).toEqual(true);
+        done();
+      });
   });
 
-  it('group sum query', (done) => {
+  it('group sum query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, total: { $sum: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(50);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('group count query', (done) => {
+  it('group count query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, total: { $sum: 1 } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(4);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('group min query', (done) => {
+  it('group min query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, minScore: { $min: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].minScore).toBe(10);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('group max query', (done) => {
+  it('group max query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, maxScore: { $max: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].maxScore).toBe(20);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('group avg query', (done) => {
+  it('group avg query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, avgScore: { $avg: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].avgScore).toBe(12.5);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('limit query', (done) => {
+  it('limit query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         limit: 2,
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('sort ascending query', (done) => {
+  it('sort ascending query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         sort: { name: 1 },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('bar');
         expect(resp.results[1].name).toBe('dpl');
         expect(resp.results[2].name).toBe('foo');
         expect(resp.results[3].name).toBe('foo');
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('sort decending query', (done) => {
+  it('sort decending query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         sort: { name: -1 },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('foo');
         expect(resp.results[1].name).toBe('foo');
         expect(resp.results[2].name).toBe('dpl');
         expect(resp.results[3].name).toBe('bar');
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('skip query', (done) => {
+  it('skip query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         skip: 2,
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match comparison date query', (done) => {
+  it('match comparison date query', done => {
     const today = new Date();
     const yesterday = new Date();
     const tomorrow = new Date();
@@ -484,86 +576,95 @@ describe('Parse.Query Aggregate testing', () => {
     const obj1 = new TestObject({ dateField: yesterday });
     const obj2 = new TestObject({ dateField: today });
     const obj3 = new TestObject({ dateField: tomorrow });
-    const pipeline = [
-      { match: { dateField: { $lt: tomorrow } } }
-    ];
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toBe(2);
-      done();
-    });
+    const pipeline = [{ match: { dateField: { $lt: tomorrow } } }];
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toBe(2);
+        done();
+      });
   });
 
-  it('match comparison query', (done) => {
+  it('match comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 15 }},
-      }
+        match: { score: { $gt: 15 } },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(20);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match multiple comparison query', (done) => {
+  it('match multiple comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 }},
-      }
+        match: { score: { $gt: 5, $lt: 15 } },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].score).toBe(10);
         expect(resp.results[1].score).toBe(10);
         expect(resp.results[2].score).toBe(10);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match complex comparison query', (done) => {
+  it('match complex comparison query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 }},
-      }
+        match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 } },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
         expect(resp.results[0].views).toBe(900);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match comparison and equality query', (done) => {
+  it('match comparison and equality query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { score: { $gt: 5, $lt: 15 }, views: 900},
-      }
+        match: { score: { $gt: 5, $lt: 15 }, views: 900 },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
         expect(resp.results[0].views).toBe(900);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match $or query', (done) => {
+  it('match $or query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        match: { $or: [{ score: { $gt: 15, $lt: 25 } }, { views: { $gt: 750, $lt: 850 } }]},
-      }
+        match: {
+          $or: [
+            { score: { $gt: 15, $lt: 25 } },
+            { views: { $gt: 750, $lt: 850 } },
+          ],
+        },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
         // Match score { $gt: 15, $lt: 25 }
         expect(resp.results.some(result => result.score === 20)).toEqual(true);
@@ -573,163 +674,182 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results.some(result => result.score === 10)).toEqual(true);
         expect(resp.results.some(result => result.views === 800)).toEqual(true);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('match objectId query', (done) => {
+  it('match objectId query', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const pipeline = [
-        { match: { objectId: obj1.id } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0].objectId).toEqual(obj1.id);
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const pipeline = [{ match: { objectId: obj1.id } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(obj1.id);
+        done();
+      });
   });
 
-  it('match field query', (done) => {
-    const obj1 = new TestObject({ name: 'TestObject1'});
-    const obj2 = new TestObject({ name: 'TestObject2'});
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const pipeline = [
-        { match: { name: 'TestObject1' } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0].objectId).toEqual(obj1.id);
-      done();
-    });
+  it('match field query', done => {
+    const obj1 = new TestObject({ name: 'TestObject1' });
+    const obj2 = new TestObject({ name: 'TestObject2' });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const pipeline = [{ match: { name: 'TestObject1' } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(obj1.id);
+        done();
+      });
   });
 
-  it('match pointer query', (done) => {
+  it('match pointer query', done => {
     const pointer1 = new PointerObject();
     const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });
 
-    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
-      const pipeline = [
-        { match: { pointer: pointer1.id } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(2);
-      expect(results[0].pointer.objectId).toEqual(pointer1.id);
-      expect(results[1].pointer.objectId).toEqual(pointer1.id);
-      expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
-      expect(results.some(result => result.objectId === obj3.id)).toEqual(true);
-      done();
-    });
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3])
+      .then(() => {
+        const pipeline = [{ match: { pointer: pointer1.id } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
+        expect(results[0].pointer.objectId).toEqual(pointer1.id);
+        expect(results[1].pointer.objectId).toEqual(pointer1.id);
+        expect(results.some(result => result.objectId === obj1.id)).toEqual(
+          true
+        );
+        expect(results.some(result => result.objectId === obj3.id)).toEqual(
+          true
+        );
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('match exists query', (done) => {
-    const pipeline = [
-      { match: { score: { $exists: true } } }
-    ];
+  it_exclude_dbs(['postgres'])('match exists query', done => {
+    const pipeline = [{ match: { score: { $exists: true } } }];
     const query = new Parse.Query(TestObject);
-    query.aggregate(pipeline).then((results) => {
+    query.aggregate(pipeline).then(results => {
       expect(results.length).toEqual(4);
       done();
     });
   });
 
-  it('match date query - createdAt', (done) => {
+  it('match date query - createdAt', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const pipeline = [
-        { match: { 'createdAt': { $gte: today } } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      // Four objects were created initially, we added two more.
-      expect(results.length).toEqual(6);
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const now = new Date();
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+        const pipeline = [{ match: { createdAt: { $gte: today } } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        // Four objects were created initially, we added two more.
+        expect(results.length).toEqual(6);
+        done();
+      });
   });
 
-  it('match date query - updatedAt', (done) => {
+  it('match date query - updatedAt', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const pipeline = [
-        { match: { 'updatedAt': { $gte: today } } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      // Four objects were added initially, we added two more.
-      expect(results.length).toEqual(6);
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const now = new Date();
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+        const pipeline = [{ match: { updatedAt: { $gte: today } } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        // Four objects were added initially, we added two more.
+        expect(results.length).toEqual(6);
+        done();
+      });
   });
 
-  it('match date query - empty', (done) => {
+  it('match date query - empty', done => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
 
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
-      const now = new Date();
-      const future = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-      const pipeline = [
-        { match: { 'createdAt': future } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(0);
-      done();
-    });
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const now = new Date();
+        const future = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          now.getDate()
+        );
+        const pipeline = [{ match: { createdAt: future } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(0);
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('match pointer with operator query', (done) => {
+  it_exclude_dbs(['postgres'])('match pointer with operator query', done => {
     const pointer = new PointerObject();
 
     const obj1 = new TestObject({ pointer });
     const obj2 = new TestObject({ pointer });
     const obj3 = new TestObject();
 
-    Parse.Object.saveAll([pointer, obj1, obj2, obj3]).then(() => {
-      const pipeline = [
-        { match: { pointer: { $exists: true } } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(2);
-      expect(results[0].pointer.objectId).toEqual(pointer.id);
-      expect(results[1].pointer.objectId).toEqual(pointer.id);
-      expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
-      expect(results.some(result => result.objectId === obj2.id)).toEqual(true);
-      done();
-    });
+    Parse.Object.saveAll([pointer, obj1, obj2, obj3])
+      .then(() => {
+        const pipeline = [{ match: { pointer: { $exists: true } } }];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
+        expect(results[0].pointer.objectId).toEqual(pointer.id);
+        expect(results[1].pointer.objectId).toEqual(pointer.id);
+        expect(results.some(result => result.objectId === obj1.id)).toEqual(
+          true
+        );
+        expect(results.some(result => result.objectId === obj2.id)).toEqual(
+          true
+        );
+        done();
+      });
   });
 
-  it('project query', (done) => {
+  it('project query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         project: { name: 1 },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
-        resp.results.forEach((result) => {
+      .then(resp => {
+        resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
           expect(result.name).not.toBe(undefined);
           expect(result.sender).toBe(undefined);
@@ -737,18 +857,19 @@ describe('Parse.Query Aggregate testing', () => {
           expect(result.score).toBe(undefined);
         });
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('multiple project query', (done) => {
+  it('multiple project query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         project: { name: 1, score: 1, sender: 1 },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
-        resp.results.forEach((result) => {
+      .then(resp => {
+        resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
           expect(result.name).not.toBe(undefined);
           expect(result.score).not.toBe(undefined);
@@ -756,40 +877,44 @@ describe('Parse.Query Aggregate testing', () => {
           expect(result.size).toBe(undefined);
         });
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('project pointer query', (done) => {
+  it('project pointer query', done => {
     const pointer = new PointerObject();
     const obj = new TestObject({ pointer, name: 'hello' });
 
-    obj.save().then(() => {
-      const pipeline = [
-        { match: { objectId: obj.id } },
-        { project: { pointer: 1, name: 1, createdAt: 1 } }
-      ];
-      const query = new Parse.Query(TestObject);
-      return query.aggregate(pipeline);
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0].name).toEqual('hello');
-      expect(results[0].createdAt).not.toBe(undefined);
-      expect(results[0].pointer.objectId).toEqual(pointer.id);
-      done();
-    });
+    obj
+      .save()
+      .then(() => {
+        const pipeline = [
+          { match: { objectId: obj.id } },
+          { project: { pointer: 1, name: 1, createdAt: 1 } },
+        ];
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].name).toEqual('hello');
+        expect(results[0].createdAt).not.toBe(undefined);
+        expect(results[0].pointer.objectId).toEqual(pointer.id);
+        done();
+      });
   });
 
-  it('project with group query', (done) => {
+  it('project with group query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         project: { score: 1 },
         group: { objectId: '$score', score: { $sum: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
-        resp.results.forEach((result) => {
+        resp.results.forEach(result => {
           expect(result.hasOwnProperty('objectId')).toBe(true);
           expect(result.name).toBe(undefined);
           expect(result.sender).toBe(undefined);
@@ -803,149 +928,168 @@ describe('Parse.Query Aggregate testing', () => {
           }
         });
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('class does not exist return empty', (done) => {
+  it('class does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, total: { $sum: '$score' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('field does not exist return empty', (done) => {
+  it('field does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: null, total: { $sum: '$unknownfield' } },
-      }
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct query', (done) => {
+  it('distinct query', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'score' }
+      body: { distinct: 'score' },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes(10)).toBe(true);
         expect(resp.results.includes(20)).toBe(true);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct query with where', (done) => {
+  it('distinct query with where', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
         where: {
-          name: 'bar'
-        }
-      }
+          name: 'bar',
+        },
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct query with where string', (done) => {
+  it('distinct query with where string', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
-        where: JSON.stringify({name:'bar'}),
-      }
+        where: JSON.stringify({ name: 'bar' }),
+      },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct nested', (done) => {
+  it('distinct nested', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'sender.group' }
+      body: { distinct: 'sender.group' },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes('A')).toBe(true);
         expect(resp.results.includes('B')).toBe(true);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct pointer', (done) => {
+  it('distinct pointer', done => {
     const pointer1 = new PointerObject();
     const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });
-    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
-      const query = new Parse.Query(TestObject);
-      return query.distinct('pointer');
-    }).then((results) => {
-      expect(results.length).toEqual(2);
-      expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
-      expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
-      done();
-    });
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.distinct('pointer');
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
+        expect(results.some(result => result.objectId === pointer1.id)).toEqual(
+          true
+        );
+        expect(results.some(result => result.objectId === pointer2.id)).toEqual(
+          true
+        );
+        done();
+      });
   });
 
-  it('distinct class does not exist return empty', (done) => {
+  it('distinct class does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'unknown' }
+      body: { distinct: 'unknown' },
     });
     rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct field does not exist return empty', (done) => {
+  it('distinct field does not exist return empty', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'unknown' }
+      body: { distinct: 'unknown' },
     });
     const obj = new TestObject();
-    obj.save().then(() => {
-      return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
-    }).then((resp) => {
-      expect(resp.results.length).toBe(0);
-      done();
-    }).catch(done.fail);
+    obj
+      .save()
+      .then(() => {
+        return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+      })
+      .then(resp => {
+        expect(resp.results.length).toBe(0);
+        done();
+      })
+      .catch(done.fail);
   });
 
-  it('distinct array', (done) => {
+  it('distinct array', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'size' }
+      body: { distinct: 'size' },
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
-      .then((resp) => {
+      .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results.includes('S')).toBe(true);
         expect(resp.results.includes('M')).toBe(true);
         expect(resp.results.includes('L')).toBe(true);
         done();
-      }).catch(done.fail);
+      })
+      .catch(done.fail);
   });
 
-  it('distinct null field', (done) => {
+  it('distinct null field', done => {
     const options = Object.assign({}, masterKeyOptions, {
-      body: { distinct: 'distinctField' }
+      body: { distinct: 'distinctField' },
     });
     const user1 = new Parse.User();
     user1.setUsername('distinct_1');
@@ -956,26 +1100,31 @@ describe('Parse.Query Aggregate testing', () => {
     user2.setUsername('distinct_2');
     user2.setPassword('password');
     user2.set('distinctField', null);
-    user1.signUp().then(() => {
-      return user2.signUp();
-    }).then(() => {
-      return rp.get(Parse.serverURL + '/aggregate/_User', options);
-    }).then((resp) => {
-      expect(resp.results.length).toEqual(1);
-      expect(resp.results).toEqual(['one']);
-      done();
-    }).catch(done.fail);
+    user1
+      .signUp()
+      .then(() => {
+        return user2.signUp();
+      })
+      .then(() => {
+        return rp.get(Parse.serverURL + '/aggregate/_User', options);
+      })
+      .then(resp => {
+        expect(resp.results.length).toEqual(1);
+        expect(resp.results).toEqual(['one']);
+        done();
+      })
+      .catch(done.fail);
   });
 
-  it('does not return sensitive hidden properties', (done) => {
+  it('does not return sensitive hidden properties', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         match: {
           score: {
-            $gt: 5
-          }
+            $gt: 5,
+          },
         },
-      }
+      },
     });
 
     const username = 'leaky_user';
@@ -985,73 +1134,88 @@ describe('Parse.Query Aggregate testing', () => {
     user.setUsername(username);
     user.setPassword('password');
     user.set('score', score);
-    user.signUp().then(function() {
-      return rp.get(Parse.serverURL + '/aggregate/_User', options);
-    }).then(function(resp) {
-      expect(resp.results.length).toBe(1);
-      const result = resp.results[0];
+    user
+      .signUp()
+      .then(function() {
+        return rp.get(Parse.serverURL + '/aggregate/_User', options);
+      })
+      .then(function(resp) {
+        expect(resp.results.length).toBe(1);
+        const result = resp.results[0];
 
-      // verify server-side keys are not present...
-      expect(result._hashed_password).toBe(undefined);
-      expect(result._wperm).toBe(undefined);
-      expect(result._rperm).toBe(undefined);
-      expect(result._acl).toBe(undefined);
-      expect(result._created_at).toBe(undefined);
-      expect(result._updated_at).toBe(undefined);
+        // verify server-side keys are not present...
+        expect(result._hashed_password).toBe(undefined);
+        expect(result._wperm).toBe(undefined);
+        expect(result._rperm).toBe(undefined);
+        expect(result._acl).toBe(undefined);
+        expect(result._created_at).toBe(undefined);
+        expect(result._updated_at).toBe(undefined);
 
-      // verify createdAt, updatedAt and others are present
-      expect(result.createdAt).not.toBe(undefined);
-      expect(result.updatedAt).not.toBe(undefined);
-      expect(result.objectId).not.toBe(undefined);
-      expect(result.username).toBe(username);
-      expect(result.score).toBe(score);
+        // verify createdAt, updatedAt and others are present
+        expect(result.createdAt).not.toBe(undefined);
+        expect(result.updatedAt).not.toBe(undefined);
+        expect(result.objectId).not.toBe(undefined);
+        expect(result.username).toBe(username);
+        expect(result.score).toBe(score);
 
-      done();
-    }).catch(function(err) {
-      fail(err);
-    });
+        done();
+      })
+      .catch(function(err) {
+        fail(err);
+      });
   });
 
-  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', (done) => {
-    const pointer1 = new TestObject({ value: 1});
-    const pointer2 = new TestObject({ value: 2});
-    const pointer3 = new TestObject({ value: 3});
+  it_exclude_dbs(['postgres'])(
+    'aggregate allow multiple of same stage',
+    done => {
+      const pointer1 = new TestObject({ value: 1 });
+      const pointer2 = new TestObject({ value: 2 });
+      const pointer3 = new TestObject({ value: 3 });
 
-    const obj1 = new TestObject({ pointer: pointer1, name: 'Hello' });
-    const obj2 = new TestObject({ pointer: pointer2, name: 'Hello' });
-    const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
+      const obj1 = new TestObject({ pointer: pointer1, name: 'Hello' });
+      const obj2 = new TestObject({ pointer: pointer2, name: 'Hello' });
+      const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
 
-    const options = Object.assign({}, masterKeyOptions, {
-      body: [{
-        match: { name: "Hello" },
-      }, {
-        // Transform className$objectId to objectId and store in new field tempPointer
-        project: {
-          tempPointer: { $substr: [ "$_p_pointer", 11, -1 ] }, // Remove TestObject$
-        },
-      }, {
-        // Left Join, replace objectId stored in tempPointer with an actual object
-        lookup: {
-          from: "test_TestObject",
-          localField: "tempPointer",
-          foreignField: "_id",
-          as: "tempPointer"
-        },
-      }, {
-        // lookup returns an array, Deconstructs an array field to objects
-        unwind: {
-          path: "$tempPointer",
-        },
-      }, {
-        match : { "tempPointer.value" : 2 },
-      }]
-    });
-    Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3]).then(() => {
-      return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
-    }).then((resp) => {
-      expect(resp.results.length).toEqual(1);
-      expect(resp.results[0].tempPointer.value).toEqual(2);
-      done();
-    });
-  });
+      const options = Object.assign({}, masterKeyOptions, {
+        body: [
+          {
+            match: { name: 'Hello' },
+          },
+          {
+            // Transform className$objectId to objectId and store in new field tempPointer
+            project: {
+              tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
+            },
+          },
+          {
+            // Left Join, replace objectId stored in tempPointer with an actual object
+            lookup: {
+              from: 'test_TestObject',
+              localField: 'tempPointer',
+              foreignField: '_id',
+              as: 'tempPointer',
+            },
+          },
+          {
+            // lookup returns an array, Deconstructs an array field to objects
+            unwind: {
+              path: '$tempPointer',
+            },
+          },
+          {
+            match: { 'tempPointer.value': 2 },
+          },
+        ],
+      });
+      Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3])
+        .then(() => {
+          return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+        })
+        .then(resp => {
+          expect(resp.results.length).toEqual(1);
+          expect(resp.results[0].tempPointer.value).toEqual(2);
+          done();
+        });
+    }
+  );
 });

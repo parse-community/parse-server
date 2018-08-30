@@ -7,5 +7,5 @@ runner({
   start: function(program, options, logOptions) {
     logOptions();
     ParseServer.createLiveQueryServer(undefined, options);
-  }
-})
+  },
+});

@@ -9,12 +9,20 @@ Command.prototype.loadDefinitions = function(definitions) {
   _definitions = definitions;
 
   Object.keys(definitions).reduce((program, opt) => {
-    if (typeof definitions[opt] == "object") {
+    if (typeof definitions[opt] == 'object') {
       const additionalOptions = definitions[opt];
       if (additionalOptions.required === true) {
-        return program.option(`--${opt} <${opt}>`, additionalOptions.help, additionalOptions.action);
+        return program.option(
+          `--${opt} <${opt}>`,
+          additionalOptions.help,
+          additionalOptions.action
+        );
       } else {
-        return program.option(`--${opt} [${opt}]`, additionalOptions.help, additionalOptions.action);
+        return program.option(
+          `--${opt} [${opt}]`,
+          additionalOptions.help,
+          additionalOptions.action
+        );
       }
     }
     return program.option(`--${opt} [${opt}]`);
@@ -22,7 +30,7 @@ Command.prototype.loadDefinitions = function(definitions) {
 
   _reverseDefinitions = Object.keys(definitions).reduce((object, key) => {
     let value = definitions[key];
-    if (typeof value == "object") {
+    if (typeof value == 'object') {
       value = value.env;
     }
     if (value) {
@@ -32,17 +40,17 @@ Command.prototype.loadDefinitions = function(definitions) {
   }, {});
 
   _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if(_definitions[opt].default) {
+    if (_definitions[opt].default) {
       defs[opt] = _definitions[opt].default;
     }
     return defs;
   }, {});
 
   /* istanbul ignore next */
-  this.on('--help', function(){
+  this.on('--help', function() {
     console.log('  Configure From Environment:');
     console.log('');
-    Object.keys(_reverseDefinitions).forEach((key) => {
+    Object.keys(_reverseDefinitions).forEach(key => {
       console.log(`    $ ${key}='${_reverseDefinitions[key]}'`);
     });
     console.log('');
@@ -53,8 +61,8 @@ function parseEnvironment(env = {}) {
   return Object.keys(_reverseDefinitions).reduce((options, key) => {
     if (env[key]) {
       const originalKey = _reverseDefinitions[key];
-      let action = (option) => (option);
-      if (typeof _definitions[originalKey] === "object") {
+      let action = option => option;
+      if (typeof _definitions[originalKey] === 'object') {
         action = _definitions[originalKey].action || action;
       }
       options[_reverseDefinitions[key]] = action(env[key]);
@@ -77,7 +85,7 @@ function parseConfigFile(program) {
     } else {
       options = jsonConfig;
     }
-    Object.keys(options).forEach((key) => {
+    Object.keys(options).forEach(key => {
       const value = options[key];
       if (!_definitions[key]) {
         throw `error: unknown option ${key}`;
@@ -87,13 +95,13 @@ function parseConfigFile(program) {
         options[key] = action(value);
       }
     });
-    console.log(`Configuration loaded from ${jsonPath}`)
+    console.log(`Configuration loaded from ${jsonPath}`);
   }
   return options;
 }
 
 Command.prototype.setValuesIfNeeded = function(options) {
-  Object.keys(options).forEach((key) => {
+  Object.keys(options).forEach(key => {
     if (!this.hasOwnProperty(key)) {
       this[key] = options[key];
     }

@@ -1,8 +1,8 @@
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import * as middleware from '../middlewares';
-import Parse         from 'parse/node';
-import UsersRouter   from './UsersRouter';
+import Parse from 'parse/node';
+import UsersRouter from './UsersRouter';
 
 const BASE_KEYS = ['where', 'distinct', 'pipeline'];
 
@@ -37,9 +37,11 @@ const PIPELINE_KEYS = [
 const ALLOWED_KEYS = [...BASE_KEYS, ...PIPELINE_KEYS];
 
 export class AggregateRouter extends ClassesRouter {
-
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(
+      req.body,
+      ClassesRouter.JSONFromQuery(req.query)
+    );
     const options = {};
     if (body.distinct) {
       options.distinct = String(body.distinct);
@@ -48,14 +50,23 @@ export class AggregateRouter extends ClassesRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK).then((response) => {
-      for(const result of response.results) {
-        if(typeof result === 'object') {
-          UsersRouter.removeHiddenProperties(result);
+    return rest
+      .find(
+        req.config,
+        req.auth,
+        this.className(req),
+        body.where,
+        options,
+        req.info.clientSDK
+      )
+      .then(response => {
+        for (const result of response.results) {
+          if (typeof result === 'object') {
+            UsersRouter.removeHiddenProperties(result);
+          }
         }
-      }
-      return { response };
-    });
+        return { response };
+      });
   }
 
   /* Builds a pipeline from the body. Originally the body could be passed as a single object,
@@ -87,13 +98,17 @@ export class AggregateRouter extends ClassesRouter {
     let pipeline = body.pipeline || body;
 
     if (!Array.isArray(pipeline)) {
-      pipeline = Object.keys(pipeline).map((key) => { return { [key]: pipeline[key] } });
+      pipeline = Object.keys(pipeline).map(key => {
+        return { [key]: pipeline[key] };
+      });
     }
 
-    return pipeline.map((stage) => {
+    return pipeline.map(stage => {
       const keys = Object.keys(stage);
       if (keys.length != 1) {
-        throw new Error(`Pipeline stages should only have one key found ${keys.join(', ')}`);
+        throw new Error(
+          `Pipeline stages should only have one key found ${keys.join(', ')}`
+        );
       }
       return AggregateRouter.transformStage(keys[0], stage);
     });
@@ -126,7 +141,14 @@ export class AggregateRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route('GET','/aggregate/:className', middleware.promiseEnforceMasterKeyAccess, req => { return this.handleFind(req); });
+    this.route(
+      'GET',
+      '/aggregate/:className',
+      middleware.promiseEnforceMasterKeyAccess,
+      req => {
+        return this.handleFind(req);
+      }
+    );
   }
 }
 
