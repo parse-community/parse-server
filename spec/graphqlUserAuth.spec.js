@@ -4,7 +4,7 @@ const Auth = require('../lib/Auth').Auth;
 const { graphql }  = require('graphql');
 
 
-describe('graphQLUserAuth', () => {
+describe('graphQL UserAuth', () => {
   let schema;
   let root;
   let config;

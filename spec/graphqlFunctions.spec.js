@@ -22,7 +22,7 @@ async function setup(config) {
   });
 }
 
-describe('graphQLbridge', () => {
+describe('graphQL Functions', () => {
   let schema;
   let root;
   async function reload() {
@@ -146,5 +146,17 @@ describe('graphQLbridge', () => {
     result.data.getAllNewClasses.nodes.forEach((node) => {
       expect(node.numberValue).toBeGreaterThan(3);
     });
+  });
+
+  it('exposes to cloud code proper object and input types', () => {
+    const objType = Parse.Cloud.GraphQLUtils.getObjectType('NewClass');
+    const createType = Parse.Cloud.GraphQLUtils.getCreateInputType('NewClass');
+    const updateType = Parse.Cloud.GraphQLUtils.getUpdateInputType('NewClass');
+    expect(objType).not.toBeUndefined();
+    expect(objType instanceof GraphQLObjectType).toBeTruthy();
+    expect(createType).not.toBeUndefined();
+    expect(createType instanceof GraphQLInputObjectType).toBeTruthy();
+    expect(updateType).not.toBeUndefined();
+    expect(updateType instanceof GraphQLInputObjectType).toBeTruthy();
   });
 });

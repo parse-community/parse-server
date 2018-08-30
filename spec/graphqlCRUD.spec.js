@@ -2,7 +2,7 @@ const GraphQLParseSchema = require('../lib/graphql/Schema').GraphQLParseSchema;
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth').Auth;
 const { graphql }  = require('graphql');
-const { containsOnlyIdFields } = require('../lib/graphql/execute');
+const { containsOnlyIdFields, transformQueryConstraint, transformResult, parseID } = require('../lib/graphql/execute');
 
 let config;
 
@@ -26,7 +26,7 @@ async function setup(config) {
   return await Schema.load();
 }
 
-describe('graphQLCRUD', () => {
+describe('graphQL CRUD operations', () => {
   let schema;
   let root;
   let context;
@@ -468,15 +468,64 @@ describe('graphQLCRUD', () => {
     expect(newClassObject.data.NewClass).toBeNull();
     done();
   });
-});
 
-describe('Pointer fetching', () => {
-  it('ensures containsOnlyIdFields works', () => {
-    expect(containsOnlyIdFields(['id'])).toBeTruthy();
-    expect(containsOnlyIdFields(['objectId'])).toBeTruthy()
-    expect(containsOnlyIdFields(['id', 'objectId'])).toBeTruthy();
-    expect(containsOnlyIdFields(['objectId', 'yolo'])).toBeFalsy();
-    expect(containsOnlyIdFields(['yolo'])).toBeFalsy();
-    expect(containsOnlyIdFields(['yolo', 'id'])).toBeFalsy();
+  describe('utilities', () => {
+    it('ensures containsOnlyIdFields works', () => {
+      expect(containsOnlyIdFields(['id'])).toBeTruthy();
+      expect(containsOnlyIdFields(['objectId'])).toBeTruthy()
+      expect(containsOnlyIdFields(['id', 'objectId'])).toBeTruthy();
+      expect(containsOnlyIdFields(['objectId', 'yolo'])).toBeFalsy();
+      expect(containsOnlyIdFields(['yolo'])).toBeFalsy();
+      expect(containsOnlyIdFields(['yolo', 'id'])).toBeFalsy();
+    });
+
+    it('should transform key and not value', () => {
+      const anyObject = Object.create(null);
+      const { key, value } = transformQueryConstraint('anyKey', anyObject);
+      expect(key).toBe('$anyKey');
+      expect(value).toBe(value); // this is not a copy!
+    });
+
+    it('should transform nearSphere and not value', () => {
+      const anyObject = Object.create(
+        {
+          point: {
+            latitude: 21,
+            longitude: 42,
+          }
+        }
+      );
+      const { key, value } = transformQueryConstraint('nearSphere', anyObject);
+      expect(key).toBe('$nearSphere');
+      expect(value).toEqual({
+        latitude: 21,
+        longitude: 42,
+      }); // this is not a copy!
+    });
+
+    it('should not transform non object results', () => {
+      const result = transformResult('MyClassName', {
+        key: 'value',
+      });
+      expect(result).toEqual({
+        className: 'MyClassName',
+        key: 'value'
+      });
+    });
+
+    it('should throw on invalid IDs with no separators', () => {
+      const invalidID = new Buffer('MyThingabc').toString('base64');
+      expect(() => parseID(invalidID)).toThrowError('Invalid ID');
+    });
+
+    it('should throw on invalid IDs with bad separators', () => {
+      const invalidID = new Buffer('MyThing-abc').toString('base64');
+      expect(() => parseID(invalidID)).toThrowError('Invalid ID');
+    });
+
+    it('should throw on invalid IDs with too many separators', () => {
+      const invalidID = new Buffer('MyThing::abc::').toString('base64');
+      expect(() => parseID(invalidID)).toThrowError('Invalid ID');
+    });
   });
 });
