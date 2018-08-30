@@ -3,12 +3,6 @@ import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 import { GraphQLBoolean } from 'graphql';
 import { getGloballyUniqueId } from '../execute';
 
-function setID(object) {
-  if (object.objectId && object.className) {
-    object.id = getGloballyUniqueId(object.className, object.objectId);
-  }
-}
-
 function getFunctions() {
   const functions = getAllFunctions();
   const fields = {};
@@ -19,17 +13,11 @@ function getFunctions() {
     let useDefaultType = true;
     if (options && options.type) {
       type = options.type;
-      if (typeof type === 'function') {
-        type = type();
-      }
       useDefaultType = false;
     }
 
     if (options && options.inputType) {
       inputType = options.inputType;
-      if (typeof inputType === 'function') {
-        inputType = inputType();
-      }
     }
     let args;
     if (inputType) {
@@ -59,7 +47,7 @@ function injectIdsInResults(result) {
     result.forEach(injectIdsInResults);
   } else if (typeof result === 'object') {
     if (result.objectId && result.className) {
-      setID(result);
+      result.id = getGloballyUniqueId(result.className, result.objectId);
     }
     Object.keys(result).forEach((key) => {
       injectIdsInResults(result[key]);

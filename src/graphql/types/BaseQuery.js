@@ -3,45 +3,6 @@ import {
   GraphQLBoolean
 } from 'graphql'
 
-function description() {
-  return `## Equal To:
-  \`\`\`
-  { key: "value" }
-  { key: {eq: "value"} }
-  \`\`\`
-  
-  ## Not Equal To
-  \`\`\`
-  { key: {ne: "value"} }
-  \`\`\`
-  
-  ## Contained in:
-  \`\`\`
-  { key: {in: ["value1", "value2"]} }
-  \`\`\`
-
-  ## Not Contained in:
-  \`\`\`
-  { key: { nin: ["value1", "value2"] } }
-  \`\`\`
-  
-  ## Exists: 
-  \`\`\`
-  { key: {exists: true} }
-  \`\`\`
-  
-  ## Match results from another query
-  ### This matches a value for a key in the result of a different query
-  \`\`\`
-  { key: {select: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}} }
-  \`\`\`
-  ### Requires that a key’s value not match a value for a key in the result of a different query
-  \`\`\`
-  { key: {dontSelect: {"query": {"className":"Team","where":{"winPct":{"$gt":0.5}}},"key":"city"}}} }
-  \`\`\`
-  `;
-}
-
 export const BaseQuery = (type) => {
   return {
     eq: {
@@ -66,6 +27,5 @@ export const BaseQuery = (type) => {
 }
 
 export default {
-  description,
   BaseQuery,
 }

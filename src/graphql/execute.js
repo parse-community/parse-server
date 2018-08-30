@@ -157,3 +157,25 @@ export function runGet(context, info, className, objectId) {
     .then(toGraphQLResult(className))
     .then(results => results[0]);
 }
+
+export function resolvePointer(targetClass, object, schema, context, info) {
+  const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+    return field.name.value;
+  });
+  if (containsOnlyIdFields(selections)) {
+    return transformResult(targetClass, object, schema, { context, info });
+  }
+
+  return runGet(context, info, object.className, object.objectId, schema);
+}
+
+export function containsOnlyIdFields(selections) {
+  // id and objectId are always available
+  // In this case we avoid making a fetch
+  // as the caller doesn't need more info
+  const wantsId = selections.indexOf('id') >= 0;
+  const wantsObjectId = selections.indexOf('objectId') >= 0;
+  return wantsId && wantsObjectId && selections.length == 2
+    || wantsId && selections.length == 1
+    || wantsObjectId && selections.length == 1;
+}

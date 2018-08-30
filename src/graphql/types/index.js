@@ -60,28 +60,21 @@ export {
   PageInfo,
 }
 
+const types = {
+  String: GraphQLString,
+  Number: GraphQLFloat,
+  Boolean: GraphQLBoolean,
+  GeoPoint,
+  File,
+  ACL,
+  Date,
+  Pointer,
+  Object: JSONObject,
+  Array: new GraphQLList(JSONObject)
+}
+
 export function type({ type }) {
-  if (type == 'String') {
-    return GraphQLString;
-  } if (type == 'Number') {
-    return GraphQLFloat;
-  } if (type == 'Boolean') {
-    return GraphQLBoolean;
-  } if (type == 'GeoPoint') {
-    return GeoPoint;
-  } if (type == 'File') {
-    return File;
-  } else if (type == 'ACL') {
-    return ACL;
-  } else if (type == 'Date') {
-    return Date;
-  } else if (type == 'Pointer') {
-    return Pointer;
-  } else if (type == 'Object') {
-    return JSONObject;
-  } else if (type === 'Array') {
-    return new GraphQLList(JSONObject);
-  }
+  return types[type];
 }
 
 export function inputType(field) {
