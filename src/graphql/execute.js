@@ -122,7 +122,7 @@ function parseArguments(args) {
     query.createdAt = { '$gt': new Date(new Buffer(args.after, 'base64').toString('utf8')) }
   }
   if (Object.prototype.hasOwnProperty.call(args, 'before')) {
-    query.createdAt = { '$lt': new Date(new Buffer(args.after, 'base64').toString('utf8')) }
+    query.createdAt = { '$lt': new Date(new Buffer(args.before, 'base64').toString('utf8')) }
   }
   if (Object.prototype.hasOwnProperty.call(args, 'redirectClassNameForKey')) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;
@@ -135,9 +135,6 @@ export function runFind(context, info, className, args, schema, restQuery) {
   const query = {};
   if (args.where) {
     Object.assign(query, args.where);
-  }
-  if (args.objectId) {
-    Object.assign(query, { objectId: args.objectId });
   }
   transformQuery(query, schema);
   if (restQuery)  {

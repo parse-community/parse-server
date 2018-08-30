@@ -29,18 +29,19 @@ async function setup(config) {
 describe('graphQLCRUD', () => {
   let schema;
   let root;
+  let context;
   beforeEach(async () => {
     config = Config.get('test');
     const result = await setup(config);
     schema = result.schema;
     root = result.root;
-  });
-
-  it('Adds objects', async () => {
-    const context = {
+    context = {
       config,
       auth: new Auth({config})
     }
+  });
+
+  it('Adds objects', async () => {
     const ACL = new Parse.ACL();
     ACL.setPublicReadAccess(true);
     ACL.setPublicWriteAccess(true);
@@ -100,23 +101,18 @@ describe('graphQLCRUD', () => {
     });
   });
 
-  it('Queries objects', (done) => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
+  it('Queries objects', async () => {
     const publicACL = new Parse.ACL();
     publicACL.setPublicReadAccess(true);
     publicACL.setPublicWriteAccess(true);
-    const obj = new Parse.Object('OtherClass', {stringValue: 'baz'});
+    const obj = new Parse.Object('OtherClass', {otherString: 'baz'});
     const nc = new Parse.Object('NewClass', {stringValue: 'hello'});
     nc.setACL(publicACL);
-    return Parse.Object.saveAll([obj, nc]).then(() => {
-      nc.relation('others').add(obj);
-      obj.set('newClass', nc);
-      return Parse.Object.saveAll([obj, nc]);
-    }).then(() => {
-      return graphql(schema, `
+    await Parse.Object.saveAll([obj, nc]);
+    nc.relation('others').add(obj);
+    obj.set('newClass', nc);
+    await Parse.Object.saveAll([obj, nc]);
+    const res = await graphql(schema, `
       query {
         NewClass: findNewClass {
           nodes {
@@ -147,36 +143,219 @@ describe('graphQLCRUD', () => {
           }
         }
       }
-      `,root, context)
-    }).then((res) => {
-      expect(res.data.NewClass).toBeDefined();
-      expect(res.data.OtherClass).toBeDefined();
-      expect(Array.isArray(res.data.NewClass.nodes)).toBeTruthy();
-      expect(Array.isArray(res.data.OtherClass.nodes)).toBeTruthy();
-      const newClasses = res.data.NewClass.nodes;
-      // Should only have objectId
-      newClasses.forEach((object) => {
-        expect(Object.keys(object).length).toBe(2);
-        expect(object.objectId).toBeDefined();
-        expect(object.ACL).toEqual({
-          '*': { 'read': true, 'write': true }
-        })
-      });
+      `,root, context);
 
-      const otherClasses = res.data.OtherClass.nodes;
-      const otherObject = otherClasses[0];
-      expect(otherObject.objectId).not.toBeUndefined();
-      expect(otherObject.newClass.objectId).not.toBeUndefined();
-      expect(otherObject.objectId).toEqual(otherObject.newClass.others.nodes[0].objectId);
-      expect(otherObject.newClass.objectId).toEqual(otherObject.newClass.others.nodes[0].newClass.objectId);
-    }).then(done).catch(done.fail);
+    expect(res.data.NewClass).toBeDefined();
+    expect(res.data.OtherClass).toBeDefined();
+    expect(Array.isArray(res.data.NewClass.nodes)).toBeTruthy();
+    expect(Array.isArray(res.data.OtherClass.nodes)).toBeTruthy();
+    const newClasses = res.data.NewClass.nodes;
+    // Should only have objectId
+    newClasses.forEach((object) => {
+      expect(Object.keys(object).length).toBe(2);
+      expect(object.objectId).toBeDefined();
+      expect(object.ACL).toEqual({
+        '*': { 'read': true, 'write': true }
+      })
+    });
+
+    const otherClasses = res.data.OtherClass.nodes;
+    const otherObject = otherClasses[0];
+    expect(otherObject.objectId).not.toBeUndefined();
+    expect(otherObject.newClass.objectId).not.toBeUndefined();
+    expect(otherObject.objectId).toEqual(otherObject.newClass.others.nodes[0].objectId);
+    expect(otherObject.newClass.objectId).toEqual(otherObject.newClass.others.nodes[0].newClass.objectId);
+  });
+
+  it('finds object with queries', async () => {
+    const obj = new Parse.Object('NewClass', {stringValue: 'baz'});
+    const obj2 = new Parse.Object('NewClass', {stringValue: 'foo'});
+    const obj3 = new Parse.Object('NewClass', {stringValue: 'bar'});
+    await Parse.Object.saveAll([ obj, obj2, obj3 ]);
+    const res = await graphql(schema, `
+    query findThem {
+      findNewClass(where: { stringValue: { eq: "baz" } }) {
+        edges {
+          cursor
+          node {
+            id
+            objectId
+            stringValue
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+    }
+    `, root, context);
+    expect(res.errors).toBeUndefined();
+    const {
+      edges,
+      pageInfo
+    } = res.data.findNewClass;
+    expect(edges.length).toBe(1);
+    expect(edges[0].cursor).toBeDefined();
+    expect(edges[0].node.objectId).toBe(obj.id);
+    expect(pageInfo).toEqual({
+      hasNextPage: false,
+      hasPreviousPage: false
+    });
+  });
+
+  async function makeObjects(amount) {
+    const objects = [];
+    while (objects.length != amount) {
+      const obj = new Parse.Object('NewClass', {numberValue: objects.length});
+      await obj.save();
+      objects.push(obj);
+    }
+    return objects;
+  }
+
+  it('can query with pagninations for firsts', async () => {
+    const objects = await makeObjects(20);
+    const res = await graphql(schema, `
+    query findThem {
+      findNewClass(first: 5) {
+        edges {
+          node {
+            id
+            createdAt
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+    }
+    `, root, context);
+    expect(res.errors).toBeUndefined();
+    const {
+      edges,
+      pageInfo
+    } = res.data.findNewClass;
+    expect(edges.length).toBe(5);
+    edges.forEach((edge, index) => {
+      const { node: { createdAt }} = edge;
+      expect(createdAt).toEqual(objects[index].createdAt);
+    });
+    expect(pageInfo).toEqual({
+      hasNextPage: true,
+      hasPreviousPage: false
+    });
+  });
+
+  it('can query with pagninations for firsts', async () => {
+    const objects = await makeObjects(20);
+    const res = await graphql(schema, `
+    query findThem {
+      findNewClass(last: 5) {
+        edges {
+          node {
+            id
+            createdAt
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+    }
+    `, root, context);
+    expect(res.errors).toBeUndefined();
+    const {
+      edges,
+      pageInfo
+    } = res.data.findNewClass;
+    expect(edges.length).toBe(5);
+    edges.forEach((edge, index) => {
+      const { node: { createdAt }} = edge;
+      const idx = objects.length - 1 - index;
+      expect(createdAt).toEqual(objects[idx].createdAt);
+    });
+    expect(pageInfo).toEqual({
+      hasNextPage: false,
+      hasPreviousPage: true
+    });
+  });
+
+  it('can query with pagninations with before', async () => {
+    const objects = await makeObjects(20);
+    const cursor = new Buffer(objects[5].createdAt.toISOString()).toString('base64');
+    const res = await graphql(schema, `
+    query findThem($cursor: String) {
+      findNewClass(before: $cursor) {
+        edges {
+          node {
+            objectId
+            createdAt
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+    }
+    `, root, context, { cursor });
+    expect(res.errors).toBeUndefined();
+    const {
+      edges,
+      pageInfo
+    } = res.data.findNewClass;
+    expect(edges.length).toBe(5);
+    edges.forEach((edge, index) => {
+      const { node: { createdAt, objectId }} = edge;
+      expect(createdAt).toEqual(objects[index].createdAt);
+      expect(objectId).toEqual(objects[index].id);
+    });
+    expect(pageInfo).toEqual({
+      hasNextPage: true,
+      hasPreviousPage: false
+    });
+  });
+
+  it('can query with pagninations with after', async () => {
+    const objects = await makeObjects(20);
+    const cursor = new Buffer(objects[15].createdAt.toISOString()).toString('base64');
+    const res = await graphql(schema, `
+    query findThem($cursor: String) {
+      findNewClass(after: $cursor) {
+        edges {
+          node {
+            id
+            createdAt
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+    }
+    `, root, context, { cursor });
+    expect(res.errors).toBeUndefined();
+    const {
+      edges,
+      pageInfo
+    } = res.data.findNewClass;
+    expect(edges.length).toBe(4);
+    edges.forEach((edge, index) => {
+      const { node: { createdAt }} = edge;
+      const idx = index + 16;
+      expect(createdAt).toEqual(objects[idx].createdAt);
+    });
+    expect(pageInfo).toEqual({
+      hasNextPage: false,
+      hasPreviousPage: true
+    });
   });
 
   it('Gets object from Node', async () => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
     const obj = new Parse.Object('OtherClass', {otherString: 'aStringValue'});
     await obj.save();
     const result = await graphql(schema, `
@@ -195,10 +374,6 @@ describe('graphQLCRUD', () => {
   });
 
   it('Updates objects', async () => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
     const obj = new Parse.Object('OtherClass', {otherString: 'baz'});
     await obj.save();
     const result = await graphql(schema, `
@@ -216,10 +391,6 @@ describe('graphQLCRUD', () => {
   });
 
   it('Updates objects with uniqueID', async () => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
     const obj = new Parse.Object('OtherClass', {otherString: 'baz'});
     const nc = new Parse.Object('NewClass', {stringValue: 'aString'});
     await Parse.Object.saveAll([obj, nc]);
@@ -248,11 +419,6 @@ describe('graphQLCRUD', () => {
   });
 
   it('fails to update object without id', async () => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
-
     const result = await graphql(schema, `
     mutation myMutation($input: UpdateOtherClassInput!) {
       updateOtherClass(input: $input) {
@@ -269,10 +435,6 @@ describe('graphQLCRUD', () => {
   });
 
   it('Destroy objects', async (done) => {
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
     const obj = new Parse.Object('OtherClass', {stringValue: 'baz'});
     const nc = new Parse.Object('NewClass', {stringValue: 'hello'});
     await Parse.Object.saveAll([obj, nc])
