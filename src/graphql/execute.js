@@ -26,29 +26,26 @@ function toGraphQLResult(className) {
   }
 }
 
-function transform(constraintKey, currentValue) {
-  let value = currentValue;
-  if (constraintKey === 'nearSphere') {
+export function transformQueryConstraint(key, value) {
+  if (key === 'nearSphere') {
     value = {
-      latitude: currentValue.point.latitude,
-      longitude: currentValue.point.longitude,
+      latitude: value.point.latitude,
+      longitude: value.point.longitude,
     }
   }
-  const key = `$${constraintKey}`;
-
   return {
-    key,
+    key: `$${key}`,
     value,
   }
 }
 
 function transformQuery(query) {
-  Object.keys(query).forEach((key) => {
-    Object.keys(query[key]).forEach((constraintKey) => {
-      const constraint = query[key][constraintKey];
-      delete query[key][constraintKey];
-      const result = transform(constraintKey, constraint);
-      query[key][result.key] = result.value;
+  Object.keys(query).forEach((queryKey) => {
+    Object.keys(query[queryKey]).forEach((constraintKey) => {
+      const constraint = query[queryKey][constraintKey];
+      delete query[queryKey][constraintKey];
+      const { key, value } = transformQueryConstraint(constraintKey, constraint);
+      query[queryKey][key] = value;
     });
   });
   return query;
