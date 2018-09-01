@@ -158,10 +158,19 @@ class ParseServer {
 
       // TODO: only await perhaps once, and optimize perf
       const { schema, rootValue } = await ParseServer.getGraphQLSchema();
+
+      const formatError = (error) => ({
+        message: error.message,
+        code: error.originalError && error.originalError.code,
+        locations: error.locations,
+        path: error.path
+      })
+
       return {
         schema,
         rootValue,
-        graphiql
+        graphiql,
+        formatError
       }
     });
   }
