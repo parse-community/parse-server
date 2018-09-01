@@ -34,9 +34,7 @@ describe_only_db('mongo')('Read preference option', () => {
             .forEach(call => {
               if (call.args[0].indexOf('MyObject') >= 0) {
                 myObjectReadPreference = true;
-                expect(call.args[2].readPreference.preference).toBe(
-                  ReadPreference.PRIMARY
-                );
+                expect(call.args[2].readPreference).toBe(null);
               }
             });
 
@@ -530,15 +528,11 @@ describe_only_db('mongo')('Read preference option', () => {
           .forEach(call => {
             if (call.args[0].indexOf('MyObject0') >= 0) {
               myObjectReadPreference0 = true;
-              expect(call.args[2].readPreference.preference).toBe(
-                ReadPreference.PRIMARY
-              );
+              expect(call.args[2].readPreference).toBe(null);
             }
             if (call.args[0].indexOf('MyObject1') >= 0) {
               myObjectReadPreference1 = true;
-              expect(call.args[2].readPreference.preference).toBe(
-                ReadPreference.PRIMARY
-              );
+              expect(call.args[2].readPreference).toBe(null);
             }
             if (call.args[0].indexOf('MyObject2') >= 0) {
               myObjectReadPreference2 = call.args[2].readPreference.preference;
@@ -659,15 +653,11 @@ describe_only_db('mongo')('Read preference option', () => {
           .forEach(call => {
             if (call.args[0].indexOf('MyObject0') >= 0) {
               myObjectReadPreference0 = true;
-              expect(call.args[2].readPreference.preference).toBe(
-                ReadPreference.PRIMARY
-              );
+              expect(call.args[2].readPreference).toBe(null);
             }
             if (call.args[0].indexOf('MyObject1') >= 0) {
               myObjectReadPreference1 = true;
-              expect(call.args[2].readPreference.preference).toBe(
-                ReadPreference.PRIMARY
-              );
+              expect(call.args[2].readPreference).toBe(null);
             }
             if (call.args[0].indexOf('MyObject2') >= 0) {
               myObjectReadPreference2 = call.args[2].readPreference.preference;
