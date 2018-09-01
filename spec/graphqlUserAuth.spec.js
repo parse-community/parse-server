@@ -8,6 +8,7 @@ describe('graphQL UserAuth', () => {
   let schema;
   let root;
   let config;
+  let context;
   async function reload() {
     const Schema = new GraphQLParseSchema('test');
     const result = await Schema.load();
@@ -18,6 +19,34 @@ describe('graphQL UserAuth', () => {
   beforeEach(async () => {
     config = Config.get('test');
     await reload();
+    context = {
+      config,
+      auth: new Auth({config})
+    };
+  });
+
+  it('can create a user and returns the email', async () => {
+    const input = {
+      username: 'luke_skywalker',
+      email: 'luke@therebellion',
+      password: 'strong the force is with me'
+    };
+    const result = await graphql(schema, `
+      mutation createUser($input: AddUserInput) {
+        addUser(input: $input) {
+          object {
+            username
+            email
+            sessionToken
+            password
+          }
+        }
+      }
+      `, root, context, { input });
+    expect(result.data.addUser.object.username).toBe(input.username);
+    expect(result.data.addUser.object.email).toBe(input.email);
+    expect(result.data.addUser.object.sessionToken).toBeDefined();
+    expect(result.data.addUser.object.password).toBe(null);
   });
 
   it('can login with username', async () => {
@@ -27,10 +56,6 @@ describe('graphQL UserAuth', () => {
       email: 'luke@therebellion',
       password: 'strong the force is with me'
     });
-    const context = {
-      config,
-      auth: new Auth({config})
-    }
     const input = {
       username: 'luke_skywalker',
       password: 'strong the force is with me'
@@ -142,10 +167,6 @@ describe('graphQL UserAuth', () => {
   });
 
   it('fails to get the currentUser when logged out', async () => {
-    const context = {
-      config,
-      auth: new Auth({ config }),
-    };
     const result = await graphql(schema, `
     query me {
       currentUser {
