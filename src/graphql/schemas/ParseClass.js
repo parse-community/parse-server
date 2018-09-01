@@ -259,9 +259,22 @@ export class ParseClass {
     }
     this.schema = schema;
     this.class = this.schema[className];
+    if (!this.class) {
+      /* eslint-disable no-console */
+      console.warn(`Attempting to load a class (${this.className}) that doesn't exist...`);
+      console.trace();
+      /* eslint-enable no-console */
+    }
   }
 
   buildFields(mapper, filterReserved = false, isObject = false) {
+    if (!this.class) {
+      /* eslint-disable no-console */
+      console.warn(`Attempting to build fields a class (${this.className}) that doesn't exist...`);
+      console.trace();
+      /* eslint-enable no-console */
+      return;
+    }
     const fields = this.class.fields;
     const initial = {};
     if (isObject) {
