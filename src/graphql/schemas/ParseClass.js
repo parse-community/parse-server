@@ -1,4 +1,5 @@
 import { runFind, runGet, resolvePointer, rest, connectionResultsArray, parseID, getGloballyUniqueId } from '../execute';
+import { getAuthForSessionToken } from '../../Auth';
 
 import {
   GraphQLObjectType,
@@ -180,12 +181,21 @@ export function loadClass(className, schema) {
     description: `use this method to create a new ${className}`,
     args: { input: { type: inputType }},
     resolve: async (root, args, context, info) => {
+      let { auth } = context;
+      const { config } = context;
       const input = transformInput(args.input, schema[className]);
       const clientMutationId = input.clientMutationId;
       delete input.clientMutationId;
-      const res = await rest.create(context.config, context.auth, className, input);
+      const res = await rest.create(config, auth, className, input);
+      if (className === '_User' && res.response && res.response.sessionToken) {
+        auth = await getAuthForSessionToken({
+          config,
+          installationId: context.info && context.info.installationId,
+          sessionToken: res.response.sessionToken,
+        });
+      }
       // Run get to match graphQL style
-      const object = await runGet(context, info, className, res.response.objectId);
+      const object = await runGet({ auth, config }, info, className, res.response.objectId);
       return { object, clientMutationId };
     }
   };
