@@ -181,7 +181,10 @@ const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
 // 10 minutes timeout
-beforeAll(startDB, 10 * 60 * 1000);
+beforeAll(async () => {
+  await startDB();
+  await databaseAdapter.deleteAllClasses(false);
+}, 10 * 60 * 1000);
 
 afterAll(stopDB);
 
