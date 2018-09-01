@@ -277,11 +277,8 @@ describe('Parse.User testing', () => {
     expect(newUser).not.toBeUndefined();
   });
 
-  it('should be let masterKey lock user out with authData', done => {
-    let objectId;
-    let sessionToken;
-
-    rp.post({
+  it('should be let masterKey lock user out with authData', async () => {
+    const body = await rp.post({
       url: 'http://localhost:8378/1/classes/_User',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
@@ -291,41 +288,32 @@ describe('Parse.User testing', () => {
         key: 'value',
         authData: { anonymous: { id: '00000000-0000-0000-0000-000000000001' } },
       },
-    })
-      .then(body => {
-        objectId = body.objectId;
-        sessionToken = body.sessionToken;
-        expect(sessionToken).toBeDefined();
-        expect(objectId).toBeDefined();
-        const user = new Parse.User();
-        user.id = objectId;
-        const ACL = new Parse.ACL();
-        user.setACL(ACL);
-        return user.save(null, { useMasterKey: true });
-      })
-      .then(() => {
-        // update the user
-        const options = {
-          url: `http://localhost:8378/1/classes/_User/`,
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          json: {
-            key: 'otherValue',
-            authData: {
-              anonymous: { id: '00000000-0000-0000-0000-000000000001' },
-            },
-          },
-        };
-        return rp.post(options);
-      })
-      .then(res => {
-        // Because the user is locked out, this should behave as creating a new user
-        expect(res.objectId).not.toEqual(objectId);
-      })
-      .then(done)
-      .catch(done.fail);
+    });
+    const objectId = body.objectId;
+    const sessionToken = body.sessionToken;
+    expect(sessionToken).toBeDefined();
+    expect(objectId).toBeDefined();
+    const user = new Parse.User();
+    user.id = objectId;
+    const ACL = new Parse.ACL();
+    user.setACL(ACL);
+    await user.save(null, { useMasterKey: true });
+    // update the user
+    const options = {
+      url: `http://localhost:8378/1/classes/_User/`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: {
+        key: 'otherValue',
+        authData: {
+          anonymous: { id: '00000000-0000-0000-0000-000000000001' },
+        },
+      },
+    };
+    const res = await rp.post(options);
+    expect(res.objectId).not.toEqual(objectId);
   });
 
   it('user login with files', done => {
