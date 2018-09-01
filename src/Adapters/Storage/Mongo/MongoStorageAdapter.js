@@ -135,6 +135,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
+    this._mongoOptions.useNewUrlParser = true;
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
