@@ -48,6 +48,7 @@ before_script:
 - silent=1 mongodb-runner --start
 - greenkeeper-lockfile-update
 script:
+- npm run lint
 - npm run coverage
 after_script:
 - greenkeeper-lockfile-upload

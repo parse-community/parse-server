@@ -31,7 +31,7 @@ export class PushAdapter {
    * @returns {Array} An array of valid push types
    */
   getValidPushTypes(): string[] {
-    return []
+    return [];
   }
 }
 

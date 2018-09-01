@@ -1,4 +1,5 @@
-const EventEmitterPubSub = require('../lib/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+const EventEmitterPubSub = require('../lib/Adapters/PubSub/EventEmitterPubSub')
+  .EventEmitterPubSub;
 
 describe('EventEmitterPubSub', function() {
   it('can publish and subscribe', function() {

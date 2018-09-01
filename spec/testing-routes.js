@@ -14,20 +14,21 @@ function createApp(req, res) {
   const appId = cryptoUtils.randomHexString(32);
 
   ParseServer({
-    databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+    databaseURI:
+      'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
     appId: appId,
     masterKey: 'master',
     serverURL: Parse.serverURL,
-    collectionPrefix: appId
+    collectionPrefix: appId,
   });
   const keys = {
-    'application_id': appId,
-    'client_key'    : 'unused',
-    'windows_key'   : 'unused',
-    'javascript_key': 'unused',
-    'webhook_key'   : 'unused',
-    'rest_api_key'  : 'unused',
-    'master_key'    : 'master'
+    application_id: appId,
+    client_key: 'unused',
+    windows_key: 'unused',
+    javascript_key: 'unused',
+    webhook_key: 'unused',
+    rest_api_key: 'unused',
+    master_key: 'master',
   };
   res.status(200).send(keys);
 }
@@ -35,7 +36,7 @@ function createApp(req, res) {
 // deletes all collections that belong to the app
 function clearApp(req, res) {
   if (!req.auth.isMaster) {
-    return res.status(401).send({ "error": "unauthorized" });
+    return res.status(401).send({ error: 'unauthorized' });
   }
   return req.config.database.deleteEverything().then(() => {
     res.status(200).send({});
@@ -45,7 +46,7 @@ function clearApp(req, res) {
 // deletes all collections and drops the app from cache
 function dropApp(req, res) {
   if (!req.auth.isMaster) {
-    return res.status(401).send({ "error": "unauthorized" });
+    return res.status(401).send({ error: 'unauthorized' });
   }
   return req.config.database.deleteEverything().then(() => {
     AppCache.del(req.config.applicationId);
@@ -60,13 +61,29 @@ function notImplementedYet(req, res) {
 
 router.post('/rest_clear_app', middlewares.handleParseHeaders, clearApp);
 router.post('/rest_block', middlewares.handleParseHeaders, notImplementedYet);
-router.post('/rest_mock_v8_client', middlewares.handleParseHeaders, notImplementedYet);
-router.post('/rest_unmock_v8_client', middlewares.handleParseHeaders, notImplementedYet);
-router.post('/rest_verify_analytics', middlewares.handleParseHeaders, notImplementedYet);
+router.post(
+  '/rest_mock_v8_client',
+  middlewares.handleParseHeaders,
+  notImplementedYet
+);
+router.post(
+  '/rest_unmock_v8_client',
+  middlewares.handleParseHeaders,
+  notImplementedYet
+);
+router.post(
+  '/rest_verify_analytics',
+  middlewares.handleParseHeaders,
+  notImplementedYet
+);
 router.post('/rest_create_app', createApp);
 router.post('/rest_drop_app', middlewares.handleParseHeaders, dropApp);
-router.post('/rest_configure_app', middlewares.handleParseHeaders, notImplementedYet);
+router.post(
+  '/rest_configure_app',
+  middlewares.handleParseHeaders,
+  notImplementedYet
+);
 
 module.exports = {
-  router: router
+  router: router,
 };

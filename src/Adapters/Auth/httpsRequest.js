@@ -3,7 +3,7 @@ const https = require('https');
 function makeCallback(resolve, reject, noJSON) {
   return function(res) {
     let data = '';
-    res.on('data', (chunk) => {
+    res.on('data', chunk => {
       data += chunk;
     });
     res.on('end', () => {
@@ -12,7 +12,7 @@ function makeCallback(resolve, reject, noJSON) {
       }
       try {
         data = JSON.parse(data);
-      } catch(e) {
+      } catch (e) {
         return reject(e);
       }
       resolve(data);

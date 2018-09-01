@@ -1,14 +1,14 @@
-import { AnalyticsAdapter } from "../Adapters/Analytics/AnalyticsAdapter";
-import { FilesAdapter } from "../Adapters/Files/FilesAdapter";
-import { LoggerAdapter } from "../Adapters/Logger/LoggerAdapter";
-import { StorageAdapter } from "../Adapters/Storage/StorageAdapter";
-import { CacheAdapter } from "../Adapters/Cache/CacheAdapter";
-import { MailAdapter } from "../Adapters/Email/MailAdapter";
-import { PubSubAdapter } from "../Adapters/PubSub/PubSubAdapter";
+import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
+import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
+import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
+import { MailAdapter } from '../Adapters/Email/MailAdapter';
+import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 
 // @flow
-type Adapter<T> = string|any|T;
-type NumberOrBoolean = number|boolean;
+type Adapter<T> = string | any | T;
+type NumberOrBoolean = number | boolean;
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -20,7 +20,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
   /* Restrict masterKey to be used by only these ips, defaults to [] (allow all ips) */
-  masterKeyIps: ?string[]; // = []
+  masterKeyIps: ?(string[]); // = []
   /* Sets the app name */
   appName: ?string;
   /* Adapter module for the analytics */
@@ -76,7 +76,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PRESERVE_FILE_NAME */
   preserveFileName: ?boolean; // = false
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. */
-  userSensitiveFields: ?string[]; // = ["email"]
+  userSensitiveFields: ?(string[]); // = ["email"]
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS */
   enableAnonymousUsers: ?boolean; // = true
@@ -122,7 +122,7 @@ export interface ParseServerOptions {
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds) */
   cacheTTL: ?number; // = 5000
   /* Sets the maximum size for the in memory cache, defaults to 10000 */
-  cacheMaxSize : ?number; // = 10000
+  cacheMaxSize: ?number; // = 10000
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request. */
   enableSingleSchemaCache: ?boolean; // = false
   /* Enables the default express error handler for all errors */
@@ -139,13 +139,13 @@ export interface ParseServerOptions {
   /* Run with cluster, optionally set the number of processes default to os.cpus().length */
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
-  middleware: ?((()=>void)|string);
+  middleware: ?((() => void) | string);
   /* Starts the liveQuery server */
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
 
-  __indexBuildCompletionCallbackForTests: ?()=>void;
+  __indexBuildCompletionCallbackForTests: ?() => void;
 }
 
 export interface CustomPagesOptions {
@@ -162,32 +162,32 @@ export interface CustomPagesOptions {
 export interface LiveQueryOptions {
   /* parse-server's LiveQuery classNames
   :ENV: PARSE_SERVER_LIVEQUERY_CLASSNAMES */
-  classNames: ?string[],
+  classNames: ?(string[]);
   /* parse-server's LiveQuery redisURL */
-  redisURL: ?string,
+  redisURL: ?string;
   /* LiveQuery pubsub adapter */
-  pubSubAdapter: ?Adapter<PubSubAdapter>,
+  pubSubAdapter: ?Adapter<PubSubAdapter>;
 }
 
 export interface LiveQueryServerOptions {
   /* This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId.*/
-  appId: ?string,
+  appId: ?string;
   /* This string should match the masterKey in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same masterKey.*/
-  masterKey: ?string,
+  masterKey: ?string;
   /* This string should match the serverURL in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same serverURL.*/
-  serverURL: ?string,
+  serverURL: ?string;
   /* A JSON object that serves as a whitelist of keys. It is used for validating clients when they try to connect to the LiveQuery server. Check the following Security section and our protocol specification for details.*/
-  keyPairs: ?any,
+  keyPairs: ?any;
   /* Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).*/
-  websocketTimeout: ?number,
+  websocketTimeout: ?number;
   /* Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).*/
-  cacheTimeout: ?number,
+  cacheTimeout: ?number;
   /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE, defaults to INFO.*/
-  logLevel: ?string,
+  logLevel: ?string;
   /* The port to run the LiveQuery server, defaults to 1337.*/
-  port: ?number, // = 1337
+  port: ?number; // = 1337
   /* parse-server's LiveQuery redisURL */
-  redisURL: ?string,
+  redisURL: ?string;
   /* LiveQuery pubsub adapter */
-  pubSubAdapter: ?Adapter<PubSubAdapter>,
+  pubSubAdapter: ?Adapter<PubSubAdapter>;
 }

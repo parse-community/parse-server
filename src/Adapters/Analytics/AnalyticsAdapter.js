@@ -6,7 +6,6 @@
  * @interface AnalyticsAdapter
  */
 export class AnalyticsAdapter {
-
   /**
   @param {any} parameters: the analytics request body, analytics info will be in the dimensions property
   @param {Request} req: the original http request
