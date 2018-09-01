@@ -14,33 +14,38 @@ describe_only_db('mongo')('Read preference option', () => {
     const obj1 = new Parse.Object('MyObject');
     obj1.set('boolKey', true);
 
-    Parse.Object.saveAll([obj0, obj1]).then(() => {
-      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+    Parse.Object.saveAll([obj0, obj1])
+      .then(() => {
+        spyOn(
+          databaseAdapter.database.serverConfig,
+          'cursor'
+        ).and.callThrough();
 
-      const query = new Parse.Query('MyObject');
-      query.equalTo('boolKey', false);
+        const query = new Parse.Query('MyObject');
+        query.equalTo('boolKey', false);
 
-      query.find().then(results => {
-        expect(results.length).toBe(1);
-        expect(results[0].get('boolKey')).toBe(false);
+        return query.find().then(results => {
+          expect(results.length).toBe(1);
+          expect(results[0].get('boolKey')).toBe(false);
 
-        let myObjectReadPreference = null;
-        databaseAdapter.database.serverConfig.cursor.calls
-          .all()
-          .forEach(call => {
-            if (call.args[0].indexOf('MyObject') >= 0) {
-              myObjectReadPreference = true;
-              expect(call.args[2].readPreference.preference).toBe(
-                ReadPreference.PRIMARY
-              );
-            }
-          });
+          let myObjectReadPreference = null;
+          databaseAdapter.database.serverConfig.cursor.calls
+            .all()
+            .forEach(call => {
+              if (call.args[0].indexOf('MyObject') >= 0) {
+                myObjectReadPreference = true;
+                expect(call.args[2].readPreference.preference).toBe(
+                  ReadPreference.PRIMARY
+                );
+              }
+            });
 
-        expect(myObjectReadPreference).toBe(true);
+          expect(myObjectReadPreference).toBe(true);
 
-        done();
-      });
-    });
+          done();
+        });
+      })
+      .catch(done.fail);
   });
 
   it('should preserve the read preference set (#4831)', async () => {
@@ -453,7 +458,7 @@ describe_only_db('mongo')('Read preference option', () => {
     obj1.set('boolKey', true);
 
     Parse.Object.saveAll([obj0, obj1]).then(() => {
-      spyOn(databaseAdapter.database.serverConfig, 'command').and.callThrough();
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
       Parse.Cloud.beforeFind('MyObject', req => {
         req.readPreference = 'SECONDARY';
@@ -466,10 +471,12 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(result).toBe(1);
 
         let myObjectReadPreference = null;
-        databaseAdapter.database.serverConfig.command.calls
+        databaseAdapter.database.serverConfig.cursor.calls
           .all()
           .forEach(call => {
-            myObjectReadPreference = call.args[2].readPreference.preference;
+            if (call.args[0].indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[2].readPreference.preference;
+            }
           });
 
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
