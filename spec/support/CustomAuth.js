@@ -1,4 +1,3 @@
-
 module.exports = {
   validateAppId: function() {
     return Promise.resolve();
@@ -8,5 +7,5 @@ module.exports = {
       return Promise.resolve();
     }
     return Promise.reject();
-  }
-}
+  },
+};

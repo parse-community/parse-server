@@ -16,7 +16,7 @@ export class LoggerAdapter {
    * @param {String} message
    * @param {Object} metadata
    */
-  log(level, message, /* meta */) {}
+  log(level, message /* meta */) {}
 }
 
 export default LoggerAdapter;

@@ -16,10 +16,10 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
     }
     // Load from the default adapter when no adapter is set
     return loadAdapter(defaultAdapter, undefined, options);
-  } else if (typeof adapter === "function") {
+  } else if (typeof adapter === 'function') {
     try {
       return adapter(options);
-    } catch(e) {
+    } catch (e) {
       if (e.name === 'TypeError') {
         var Adapter = adapter;
         return new Adapter(options);
@@ -27,7 +27,7 @@ export function loadAdapter<T>(adapter, defaultAdapter, options): T {
         throw e;
       }
     }
-  } else if (typeof adapter === "string") {
+  } else if (typeof adapter === 'string') {
     /* eslint-disable */
     adapter = require(adapter);
     // If it's define as a module, get the default

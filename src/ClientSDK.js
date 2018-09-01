@@ -12,12 +12,12 @@ function compatible(compatibleSDK) {
     const clientVersion = clientSDK.version;
     const compatiblityVersion = compatibleSDK[clientSDK.sdk];
     return semver.satisfies(clientVersion, compatiblityVersion);
-  }
+  };
 }
 
 function supportsForwardDelete(clientSDK) {
   return compatible({
-    js: '>=1.9.0'
+    js: '>=1.9.0',
   })(clientSDK);
 }
 
@@ -27,8 +27,8 @@ function fromString(version) {
   if (match && match.length === 3) {
     return {
       sdk: match[1],
-      version: match[2]
-    }
+      version: match[2],
+    };
   }
   return undefined;
 }
@@ -36,5 +36,5 @@ function fromString(version) {
 module.exports = {
   compatible,
   supportsForwardDelete,
-  fromString
-}
+  fromString,
+};

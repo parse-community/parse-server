@@ -1,8 +1,10 @@
 'use strict';
 
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
+  .default;
 const { MongoClient } = require('mongodb');
-const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const databaseURI =
+  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
@@ -16,7 +18,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('auto-escapes symbols in auth information', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
-      uri: 'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse'
+      uri:
+        'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
@@ -27,7 +30,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it("doesn't double escape already URI-encoded information", () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
-      uri: 'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse'
+      uri:
+        'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
@@ -39,7 +43,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
-      uri: 'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415'
+      uri:
+        'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
@@ -49,7 +54,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('stores objectId in _id', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
-    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
+    adapter
+      .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
       .then(() => adapter._rawFind('Foo', {}))
       .then(results => {
         expect(results.length).toEqual(1);
@@ -60,35 +66,41 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('find succeeds when query is within maxTimeMS', (done) => {
+  it('find succeeds when query is within maxTimeMS', done => {
     const maxTimeMS = 250;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
-    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS / 2})` }))
+    adapter
+      .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
+      .then(() =>
+        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` })
+      )
       .then(
         () => done(),
-        (err) => {
+        err => {
           done.fail(`maxTimeMS should not affect fast queries ${err}`);
         }
       );
-  })
+  });
 
-  it('find fails when query exceeds maxTimeMS', (done) => {
+  it('find fails when query exceeds maxTimeMS', done => {
     const maxTimeMS = 250;
     const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
-    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS * 2})` }))
+    adapter
+      .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
+      .then(() =>
+        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` })
+      )
       .then(
         () => {
           done.fail('Find succeeded despite taking too long!');
         },
-        (err) => {
+        err => {
           expect(err.name).toEqual('MongoError');
           expect(err.code).toEqual(50);
           expect(err.message).toEqual('operation exceeded time limit');
@@ -97,20 +109,27 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       );
   });
 
-  it('stores pointers with a _p_ prefix', (done) => {
+  it('stores pointers with a _p_ prefix', done => {
     const obj = {
       objectId: 'bar',
       aPointer: {
         __type: 'Pointer',
         className: 'JustThePointer',
-        objectId: 'qwerty'
-      }
+        objectId: 'qwerty',
+      },
     };
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
-    adapter.createObject('APointerDarkly', { fields: {
-      objectId: { type: 'String' },
-      aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
-    }}, obj)
+    adapter
+      .createObject(
+        'APointerDarkly',
+        {
+          fields: {
+            objectId: { type: 'String' },
+            aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+          },
+        },
+        obj
+      )
       .then(() => adapter._rawFind('APointerDarkly', {}))
       .then(results => {
         expect(results.length).toEqual(1);
@@ -125,9 +144,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('handles object and subdocument', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
-    const schema = { fields : { subdoc: { type: 'Object' } } };
-    const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
-    adapter.createObject('MyClass', schema, obj)
+    const schema = { fields: { subdoc: { type: 'Object' } } };
+    const obj = { subdoc: { foo: 'bar', wu: 'tan' } };
+    adapter
+      .createObject('MyClass', schema, obj)
       .then(() => adapter._rawFind('MyClass', {}))
       .then(results => {
         expect(results.length).toEqual(1);
@@ -149,22 +169,25 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('handles creating an array, object, date', (done) => {
+  it('handles creating an array, object, date', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
     const obj = {
       array: [1, 2, 3],
-      object: {foo: 'bar'},
+      object: { foo: 'bar' },
       date: {
         __type: 'Date',
         iso: '2016-05-26T20:55:01.154Z',
       },
     };
-    const schema = { fields: {
-      array: { type: 'Array' },
-      object: { type: 'Object' },
-      date: { type: 'Date' },
-    } };
-    adapter.createObject('MyClass', schema, obj)
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
+    adapter
+      .createObject('MyClass', schema, obj)
       .then(() => adapter._rawFind('MyClass', {}))
       .then(results => {
         expect(results.length).toEqual(1);
@@ -190,30 +213,32 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it("handles updating a single object with array, object date", (done) => {
+  it('handles updating a single object with array, object date', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
-    const schema = { fields: {
-      array: { type: 'Array' },
-      object: { type: 'Object' },
-      date: { type: 'Date' },
-    } };
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
 
-
-    adapter.createObject('MyClass', schema, {})
+    adapter
+      .createObject('MyClass', schema, {})
       .then(() => adapter._rawFind('MyClass', {}))
       .then(results => {
         expect(results.length).toEqual(1);
         const update = {
           array: [1, 2, 3],
-          object: {foo: 'bar'},
+          object: { foo: 'bar' },
           date: {
             __type: 'Date',
             iso: '2016-05-26T20:55:01.154Z',
           },
         };
         const query = {};
-        return adapter.findOneAndUpdate('MyClass', schema, query, update)
+        return adapter.findOneAndUpdate('MyClass', schema, query, update);
       })
       .then(results => {
         const mob = results;
@@ -238,7 +263,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('handleShutdown, close connection', (done) => {
+  it('handleShutdown, close connection', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
     const schema = {
@@ -246,12 +271,12 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         array: { type: 'Array' },
         object: { type: 'Object' },
         date: { type: 'Date' },
-      }
+      },
     };
 
     adapter.createObject('MyClass', schema, {}).then(() => {
       expect(adapter.database.serverConfig.isConnected()).toEqual(true);
-      adapter.handleShutdown()
+      adapter.handleShutdown();
       expect(adapter.database.serverConfig.isConnected()).toEqual(false);
       done();
     });

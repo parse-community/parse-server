@@ -1,9 +1,8 @@
-import {LRUCache} from './LRUCache';
+import { LRUCache } from './LRUCache';
 
 export class InMemoryCacheAdapter {
-
   constructor(ctx) {
-    this.cache = new LRUCache(ctx)
+    this.cache = new LRUCache(ctx);
   }
 
   get(key) {

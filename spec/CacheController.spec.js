@@ -1,4 +1,5 @@
-const CacheController = require('../lib/Controllers/CacheController.js').default;
+const CacheController = require('../lib/Controllers/CacheController.js')
+  .default;
 
 describe('CacheController', function() {
   let FakeCacheAdapter;
@@ -10,14 +11,13 @@ describe('CacheController', function() {
       get: () => Promise.resolve(null),
       put: jasmine.createSpy('put'),
       del: jasmine.createSpy('del'),
-      clear: jasmine.createSpy('clear')
-    }
+      clear: jasmine.createSpy('clear'),
+    };
 
     spyOn(FakeCacheAdapter, 'get').and.callThrough();
   });
 
-
-  it('should expose role and user caches', (done) => {
+  it('should expose role and user caches', done => {
     const cache = new CacheController(FakeCacheAdapter, FakeAppID);
 
     expect(cache.role).not.toEqual(null);
@@ -28,8 +28,7 @@ describe('CacheController', function() {
     done();
   });
 
-
-  ['role', 'user'].forEach((cacheName) => {
+  ['role', 'user'].forEach(cacheName => {
     it('should prefix ' + cacheName + ' cache', () => {
       const cache = new CacheController(FakeCacheAdapter, FakeAppID)[cacheName];
 
@@ -60,8 +59,7 @@ describe('CacheController', function() {
     expect(FakeCacheAdapter.clear.calls.count()).toEqual(3);
   });
 
-  it('should handle cache rejections', (done) => {
-
+  it('should handle cache rejections', done => {
     FakeCacheAdapter.get = () => Promise.reject();
 
     const cache = new CacheController(FakeCacheAdapter, FakeAppID);
@@ -70,5 +68,4 @@ describe('CacheController', function() {
       fail('Promise should not be rejected.');
     });
   });
-
 });

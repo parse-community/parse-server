@@ -13,7 +13,7 @@
 // and for the API server to be using the DatabaseController with Mongo
 // database adapter.
 
-import type { Config } from '../../Config'
+import type { Config } from '../../Config';
 /**
  * @module Adapters
  */
@@ -21,7 +21,6 @@ import type { Config } from '../../Config'
  * @interface FilesAdapter
  */
 export class FilesAdapter {
-
   /** Responsible for storing the file in order to be retrieved later by its filename
    *
    * @param {string} filename - the filename to save
@@ -31,7 +30,7 @@ export class FilesAdapter {
    *
    * @return {Promise} a promise that should fail if the storage didn't succeed
    */
-  createFile(filename: string, data, contentType: string): Promise { }
+  createFile(filename: string, data, contentType: string): Promise {}
 
   /** Responsible for deleting the specified file
    *
@@ -39,7 +38,7 @@ export class FilesAdapter {
    *
    * @return {Promise} a promise that should fail if the deletion didn't succeed
    */
-  deleteFile(filename: string): Promise { }
+  deleteFile(filename: string): Promise {}
 
   /** Responsible for retrieving the data of the specified file
    *
@@ -47,7 +46,7 @@ export class FilesAdapter {
    *
    * @return {Promise} a promise that should pass with the file data or fail on error
    */
-  getFileData(filename: string): Promise<any> { }
+  getFileData(filename: string): Promise<any> {}
 
   /** Returns an absolute URL where the file can be accessed
    *
@@ -56,7 +55,7 @@ export class FilesAdapter {
    *
    * @return {string} Absolute URL
    */
-  getFileLocation(config: Config, filename: string): string { }
+  getFileLocation(config: Config, filename: string): string {}
 }
 
 export default FilesAdapter;

@@ -13,7 +13,9 @@ describe('parsers', () => {
     const parser = numberParser('key');
     expect(parser(2)).toEqual(2);
     expect(parser('2')).toEqual(2);
-    expect(() => {parser('string')}).toThrow();
+    expect(() => {
+      parser('string');
+    }).toThrow();
   });
 
   it('parses correctly with numberOrBoolParser', () => {
@@ -38,24 +40,28 @@ describe('parsers', () => {
 
   it('parses correctly with objectParser', () => {
     const parser = objectParser;
-    expect(parser({hello: 'world'})).toEqual({hello: 'world'});
-    expect(parser('{"hello": "world"}')).toEqual({hello: 'world'});
-    expect(() => {parser('string')}).toThrow();
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
+    expect(() => {
+      parser('string');
+    }).toThrow();
   });
 
   it('parses correctly with moduleOrObjectParser', () => {
     const parser = moduleOrObjectParser;
-    expect(parser({hello: 'world'})).toEqual({hello: 'world'});
-    expect(parser('{"hello": "world"}')).toEqual({hello: 'world'});
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
     expect(parser('string')).toEqual('string');
   });
 
   it('parses correctly with arrayParser', () => {
     const parser = arrayParser;
-    expect(parser([1,2,3])).toEqual([1,2,3]);
+    expect(parser([1, 2, 3])).toEqual([1, 2, 3]);
     expect(parser('{"hello": "world"}')).toEqual(['{"hello": "world"}']);
-    expect(parser('1,2,3')).toEqual(['1','2','3']);
-    expect(() => {parser(1)}).toThrow();
+    expect(parser('1,2,3')).toEqual(['1', '2', '3']);
+    expect(() => {
+      parser(1);
+    }).toThrow();
   });
 
   it('parses correctly with nullParser', () => {

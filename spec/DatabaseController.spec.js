@@ -2,50 +2,62 @@ const DatabaseController = require('../lib/Controllers/DatabaseController.js');
 const validateQuery = DatabaseController._validateQuery;
 
 describe('DatabaseController', function() {
-
   describe('validateQuery', function() {
-
-    it('should restructure simple cases of SERVER-13732', (done) => {
-      const query = {$or: [{a: 1}, {a: 2}], _rperm: {$in: ['a', 'b']}, foo: 3};
+    it('should restructure simple cases of SERVER-13732', done => {
+      const query = {
+        $or: [{ a: 1 }, { a: 2 }],
+        _rperm: { $in: ['a', 'b'] },
+        foo: 3,
+      };
       validateQuery(query);
-      expect(query).toEqual({$or: [{a: 1, _rperm: {$in: ['a', 'b']}, foo: 3},
-        {a: 2, _rperm: {$in: ['a', 'b']}, foo: 3}]});
+      expect(query).toEqual({
+        $or: [
+          { a: 1, _rperm: { $in: ['a', 'b'] }, foo: 3 },
+          { a: 2, _rperm: { $in: ['a', 'b'] }, foo: 3 },
+        ],
+      });
       done();
     });
 
-    it('should not restructure SERVER-13732 queries with $nears', (done) => {
-      let query = {$or: [{a: 1}, {b: 1}], c: {$nearSphere: {}}};
+    it('should not restructure SERVER-13732 queries with $nears', done => {
+      let query = { $or: [{ a: 1 }, { b: 1 }], c: { $nearSphere: {} } };
       validateQuery(query);
-      expect(query).toEqual({$or: [{a: 1}, {b: 1}], c: {$nearSphere: {}}});
+      expect(query).toEqual({
+        $or: [{ a: 1 }, { b: 1 }],
+        c: { $nearSphere: {} },
+      });
 
-      query = {$or: [{a: 1}, {b: 1}], c: {$near: {}}};
+      query = { $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } };
       validateQuery(query);
-      expect(query).toEqual({$or: [{a: 1}, {b: 1}], c: {$near: {}}});
+      expect(query).toEqual({ $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } });
 
       done();
     });
 
-
-    it('should push refactored keys down a tree for SERVER-13732', (done) => {
-      const query = {a: 1, $or: [{$or: [{b: 1}, {b: 2}]},
-        {$or: [{c: 1}, {c: 2}]}]};
+    it('should push refactored keys down a tree for SERVER-13732', done => {
+      const query = {
+        a: 1,
+        $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
+      };
       validateQuery(query);
-      expect(query).toEqual({$or: [{$or: [{b: 1, a: 1}, {b: 2, a: 1}]},
-        {$or: [{c: 1, a: 1}, {c: 2, a: 1}]}]});
+      expect(query).toEqual({
+        $or: [
+          { $or: [{ b: 1, a: 1 }, { b: 2, a: 1 }] },
+          { $or: [{ c: 1, a: 1 }, { c: 2, a: 1 }] },
+        ],
+      });
 
       done();
     });
 
-    it('should reject invalid queries', (done) => {
-      expect(() => validateQuery({$or: {'a': 1}})).toThrow();
+    it('should reject invalid queries', done => {
+      expect(() => validateQuery({ $or: { a: 1 } })).toThrow();
       done();
     });
 
-    it('should accept valid queries', (done) => {
-      expect(() => validateQuery({$or: [{'a': 1}, {'b': 2}]})).not.toThrow();
+    it('should accept valid queries', done => {
+      expect(() => validateQuery({ $or: [{ a: 1 }, { b: 2 }] })).not.toThrow();
       done();
     });
-
   });
-
 });
