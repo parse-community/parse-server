@@ -3,68 +3,76 @@ const { ACL } = require('../lib/graphql/types/ACL');
 const { JSONObject } = require('../lib/graphql/types/JSONObject');
 const DateType = require('../lib/graphql/types/Date');
 
-const {
-  Kind,
-} = require('graphql');
+const { Kind } = require('graphql');
 
 describe('graphQL types', () => {
   describe('NumberInput', () => {
     it('should parse litteral with regular values', () => {
       let result = NumberInput.parseLiteral({
         kind: Kind.OBJECT,
-        fields: [{
-          name: { value: 'increment' },
-          value: { value: 1 }
-        }]
+        fields: [
+          {
+            name: { value: 'increment' },
+            value: { value: 1 },
+          },
+        ],
       });
       expect(result).toEqual({
         __op: 'Increment',
-        amount: 1
+        amount: 1,
       });
       result = NumberInput.parseLiteral({
         kind: Kind.OBJECT,
-        fields: [{
-          name: { value: 'increment' },
-          value: { value: '10' }
-        }]
+        fields: [
+          {
+            name: { value: 'increment' },
+            value: { value: '10' },
+          },
+        ],
       });
       expect(result).toEqual({
         __op: 'Increment',
-        amount: 10
+        amount: 10,
       });
 
       result = NumberInput.parseLiteral({
         kind: Kind.OBJECT,
-        fields: [{
-          name: { value: 'increment' },
-          value: { value: -2 }
-        }]
+        fields: [
+          {
+            name: { value: 'increment' },
+            value: { value: -2 },
+          },
+        ],
       });
       expect(result).toEqual({
         __op: 'Increment',
-        amount: -2
+        amount: -2,
       });
 
       result = NumberInput.parseLiteral({
         kind: Kind.OBJECT,
-        fields: [{
-          name: { value: 'increment' },
-          value: { value: '-5' }
-        }]
+        fields: [
+          {
+            name: { value: 'increment' },
+            value: { value: '-5' },
+          },
+        ],
       });
       expect(result).toEqual({
         __op: 'Increment',
-        amount: -5
+        amount: -5,
       });
     });
 
     it('should fail to parse litteral if kind is missing', () => {
       expect(() => {
         NumberInput.parseLiteral({
-          fields: [{
-            name: { value: 'increment' },
-            value: { value: '-5' }
-          }]
+          fields: [
+            {
+              name: { value: 'increment' },
+              value: { value: '-5' },
+            },
+          ],
         });
       }).toThrow('Invalid literal for NumberInput');
     });
@@ -73,13 +81,16 @@ describe('graphQL types', () => {
       expect(() => {
         NumberInput.parseLiteral({
           kind: Kind.OBJECT,
-          fields: [{
-            name: { value: 'increment' },
-            value: { value: '-5' }
-          }, {
-            name: { value: 'other' },
-            value: { value: '-5' }
-          }]
+          fields: [
+            {
+              name: { value: 'increment' },
+              value: { value: '-5' },
+            },
+            {
+              name: { value: 'other' },
+              value: { value: '-5' },
+            },
+          ],
         });
       }).toThrow('Invalid literal for NumberInput (too many fields)');
     });
@@ -88,23 +99,29 @@ describe('graphQL types', () => {
       expect(() => {
         NumberInput.parseLiteral({
           kind: Kind.OBJECT,
-          fields: [{
-            name: { value: 'badOperator' },
-            value: { value: '-5' }
-          }]
+          fields: [
+            {
+              name: { value: 'badOperator' },
+              value: { value: '-5' },
+            },
+          ],
         });
       }).toThrow('the badOperator operator is not supported');
     });
 
     it('should parse int and floats as litteral values', () => {
-      expect(NumberInput.parseLiteral({
-        kind: Kind.FLOAT,
-        value: 10
-      })).toBe(10);
-      expect(NumberInput.parseLiteral({
-        kind: Kind.INT,
-        value: 5
-      })).toBe(5);
+      expect(
+        NumberInput.parseLiteral({
+          kind: Kind.FLOAT,
+          value: 10,
+        })
+      ).toBe(10);
+      expect(
+        NumberInput.parseLiteral({
+          kind: Kind.INT,
+          value: 5,
+        })
+      ).toBe(5);
     });
 
     it('should return values using serialize and parseValue', () => {
@@ -120,17 +137,22 @@ describe('graphQL types', () => {
 
       const publicACL = new Parse.ACL();
       publicACL.setPublicReadAccess(true);
-      expect(ACL.parseValue(publicACL)).toEqual({ '*': { 'read': true }});
+      expect(ACL.parseValue(publicACL)).toEqual({ '*': { read: true } });
 
       const userACL = new Parse.ACL();
       userACL.setReadAccess('abcdef', true);
       userACL.setWriteAccess('abcdef', true);
-      expect(ACL.parseValue(userACL)).toEqual({ 'abcdef': { 'read': true, 'write': true }});
+      expect(ACL.parseValue(userACL)).toEqual({
+        abcdef: { read: true, write: true },
+      });
 
       const roleACL = new Parse.ACL();
       roleACL.setReadAccess('abcdef', true);
       roleACL.setRoleWriteAccess('Admin', true);
-      expect(ACL.parseValue(roleACL)).toEqual({ 'abcdef': { 'read': true }, 'role:Admin': { 'write': true }});
+      expect(ACL.parseValue(roleACL)).toEqual({
+        abcdef: { read: true },
+        'role:Admin': { write: true },
+      });
     });
 
     it('should throw when passing bad values', () => {
@@ -150,51 +172,88 @@ describe('graphQL types', () => {
 
   describe('JSONObject', () => {
     it('should parse a JSONObject', () => {
-      expect(JSONObject.parseLiteral({
-        kind: Kind.STRING,
-        value: 'Hello'
-      })).toBe('Hello');
-      expect(JSONObject.parseLiteral({
-        kind: Kind.BOOLEAN,
-        value: true
-      })).toBe(true);
-      expect(JSONObject.parseLiteral({
-        kind: Kind.BOOLEAN,
-        value: false
-      })).toBe(false);
-      expect(JSONObject.parseLiteral({
-        kind: Kind.INT,
-        value: 1
-      })).toBe(parseFloat(1));
-      expect(JSONObject.parseLiteral({
-        kind: Kind.FLOAT,
-        value: 0.1 + 0.2
-      })).toBe(parseFloat(0.1 + 0.2));
-      expect(JSONObject.parseLiteral({
-        kind: Kind.LIST,
-        values: [{ value: 'a', kind: Kind.STRING }, { value: 1.0, kind: Kind.FLOAT }]
-      })).toEqual(['a', 1.0]);
-      expect(JSONObject.parseLiteral({
-        kind: Kind.OBJECT,
-        fields: [{ name: { value: 'string' }, value: { value: 'a', kind: Kind.STRING } }, { name: { value: 'floatKey' }, value: { value: 1.0, kind: Kind.FLOAT } }]
-      })).toEqual({
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.STRING,
+          value: 'Hello',
+        })
+      ).toBe('Hello');
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.BOOLEAN,
+          value: true,
+        })
+      ).toBe(true);
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.BOOLEAN,
+          value: false,
+        })
+      ).toBe(false);
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.INT,
+          value: 1,
+        })
+      ).toBe(parseFloat(1));
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.FLOAT,
+          value: 0.1 + 0.2,
+        })
+      ).toBe(parseFloat(0.1 + 0.2));
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.LIST,
+          values: [
+            { value: 'a', kind: Kind.STRING },
+            { value: 1.0, kind: Kind.FLOAT },
+          ],
+        })
+      ).toEqual(['a', 1.0]);
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.OBJECT,
+          fields: [
+            {
+              name: { value: 'string' },
+              value: { value: 'a', kind: Kind.STRING },
+            },
+            {
+              name: { value: 'floatKey' },
+              value: { value: 1.0, kind: Kind.FLOAT },
+            },
+          ],
+        })
+      ).toEqual({
         string: 'a',
-        floatKey: 1.0
+        floatKey: 1.0,
       });
-      expect(JSONObject.parseLiteral({
-        kind: Kind.VARIABLE,
-        name: { value: 'myVariable' }
-      }, { myVariable: 'myValue' })).toEqual('myValue');
-      expect(JSONObject.parseLiteral({
-        kind: Kind.VARIABLE,
-        name: { value: 'myVariable' }
-      })).toBeUndefined();
-      expect(JSONObject.parseLiteral({
-        kind: Kind.NULL
-      })).toBe(null);
-      expect(JSONObject.parseLiteral({
-        kind: 'unknown kind'
-      })).toBeUndefined();
+      expect(
+        JSONObject.parseLiteral(
+          {
+            kind: Kind.VARIABLE,
+            name: { value: 'myVariable' },
+          },
+          { myVariable: 'myValue' }
+        )
+      ).toEqual('myValue');
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.VARIABLE,
+          name: { value: 'myVariable' },
+        })
+      ).toBeUndefined();
+      expect(
+        JSONObject.parseLiteral({
+          kind: Kind.NULL,
+        })
+      ).toBe(null);
+      expect(
+        JSONObject.parseLiteral({
+          kind: 'unknown kind',
+        })
+      ).toBeUndefined();
     });
 
     it('should use identity for parseValue and serialize', () => {
@@ -207,51 +266,58 @@ describe('graphQL types', () => {
   describe('Date', () => {
     it('should parse date from parse style object', () => {
       const isoDate = new Date().toISOString();
-      expect(DateType.Date.serialize({
-        __type: 'Date',
-        iso: isoDate
-      })).toEqual(new Date(isoDate));
+      expect(
+        DateType.Date.serialize({
+          __type: 'Date',
+          iso: isoDate,
+        })
+      ).toEqual(new Date(isoDate));
     });
 
     it('should parse date from iso string', () => {
       const isoDate = new Date().toISOString();
-      expect(DateType.Date.serialize(isoDate))
-        .toEqual(new Date(isoDate));
+      expect(DateType.Date.serialize(isoDate)).toEqual(new Date(isoDate));
     });
 
     it('should parse date from timestamp', () => {
       const ts = new Date().getTime();
-      expect(DateType.Date.serialize(ts))
-        .toEqual(new Date(ts));
+      expect(DateType.Date.serialize(ts)).toEqual(new Date(ts));
     });
 
     it('should throw an error when passing an invalid value', () => {
-      expect(() => DateType.Date.serialize(false))
-        .toThrow('Cannot serialize date');
+      expect(() => DateType.Date.serialize(false)).toThrow(
+        'Cannot serialize date'
+      );
     });
 
     it('should parse the date value from ISO string', () => {
       const isoDate = new Date().toISOString();
-      expect(DateType.Date.parseValue(isoDate))
-        .toEqual({ __type: 'Date', iso: isoDate });
+      expect(DateType.Date.parseValue(isoDate)).toEqual({
+        __type: 'Date',
+        iso: isoDate,
+      });
     });
 
     it('should parse the date value from timestamp', () => {
       const date = new Date();
       const ts = date.getTime();
-      expect(DateType.Date.parseValue(ts))
-        .toEqual({ __type: 'Date', iso: date.toISOString() });
+      expect(DateType.Date.parseValue(ts)).toEqual({
+        __type: 'Date',
+        iso: date.toISOString(),
+      });
     });
 
     it('should parse from string litteral', () => {
       const isoDate = new Date().toISOString();
-      expect(DateType.Date.parseLiteral({ kind: Kind.STRING, value: isoDate }))
-        .toEqual({ __type: 'Date', iso: isoDate });
+      expect(
+        DateType.Date.parseLiteral({ kind: Kind.STRING, value: isoDate })
+      ).toEqual({ __type: 'Date', iso: isoDate });
     });
 
     it('should fail to parse from invalid litteral', () => {
-      expect(() => DateType.Date.parseLiteral({ kind: 'invalid type' }))
-        .toThrow('Cannot parse date of type invalid type')
+      expect(() =>
+        DateType.Date.parseLiteral({ kind: 'invalid type' })
+      ).toThrow('Cannot parse date of type invalid type');
     });
   });
 });

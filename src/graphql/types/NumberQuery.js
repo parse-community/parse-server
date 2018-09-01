@@ -1,7 +1,4 @@
-import {
-  GraphQLInputObjectType,
-  GraphQLFloat,
-} from 'graphql'
+import { GraphQLInputObjectType, GraphQLFloat } from 'graphql';
 
 import { BaseQuery } from './BaseQuery';
 
@@ -10,17 +7,17 @@ export const ComparableQuery = (name, type) => {
     name: name,
     fields: Object.assign({}, BaseQuery(type), {
       lt: {
-        type: type
+        type: type,
       },
       gt: {
-        type: type
+        type: type,
       },
       lte: {
-        type: type
+        type: type,
       },
       gte: {
-        type: type
-      }
+        type: type,
+      },
     }),
   });
 };

@@ -1,9 +1,6 @@
-import {
-  GraphQLScalarType,
-  Kind
-} from 'graphql'
+import { GraphQLScalarType, Kind } from 'graphql';
 
-const id = (value) => value;
+const id = value => value;
 
 export const NumberInput = new GraphQLScalarType({
   name: 'NumberInput',
@@ -15,7 +12,7 @@ export const NumberInput = new GraphQLScalarType({
   `,
   serialize: id,
   parseValue: id,
-  parseLiteral: (ast) => {
+  parseLiteral: ast => {
     if (ast.kind == Kind.OBJECT) {
       const fields = ast.fields;
       if (fields.length != 1) {
@@ -23,15 +20,15 @@ export const NumberInput = new GraphQLScalarType({
       }
       const field = fields[0];
       const operator = field.name.value;
-      if (operator != "increment") {
+      if (operator != 'increment') {
         throw `the ${operator} operator is not supported`;
       }
       const value = field.value.value;
-      return {"__op":"Increment","amount": parseFloat(value)};
+      return { __op: 'Increment', amount: parseFloat(value) };
     } else if (ast.kind == Kind.INT || ast.kind == Kind.FLOAT) {
       return parseFloat(ast.value);
     } else {
       throw 'Invalid literal for NumberInput';
     }
-  }
+  },
 });

@@ -1,7 +1,13 @@
 const GraphQLParseSchema = require('../lib/graphql/Schema').GraphQLParseSchema;
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth').Auth;
-const { graphql, GraphQLInt, GraphQLInputObjectType, GraphQLObjectType, GraphQLList }  = require('graphql');
+const {
+  graphql,
+  GraphQLInt,
+  GraphQLInputObjectType,
+  GraphQLObjectType,
+  GraphQLList,
+} = require('graphql');
 let config;
 
 async function setup(config) {
@@ -14,11 +20,11 @@ async function setup(config) {
     file: { type: 'File' },
     geoPointValue: { type: 'GeoPoint' },
     dateValue: { type: 'Date' },
-    others: { type: 'Relation', targetClass: 'OtherClass' }
+    others: { type: 'Relation', targetClass: 'OtherClass' },
   });
   await schema.addClassIfNotExists('OtherClass', {
     otherString: { type: 'String' },
-    newClass: { type: 'Pointer', targetClass: 'NewClass' }
+    newClass: { type: 'Pointer', targetClass: 'NewClass' },
   });
 }
 
@@ -43,13 +49,18 @@ describe('graphQL Functions', () => {
     await reload();
     const context = {
       config,
-      auth: new Auth({config})
-    }
-    const result = await graphql(schema, `
-      mutation callFunction {
-        health
-      }
-      `, root, context);
+      auth: new Auth({ config }),
+    };
+    const result = await graphql(
+      schema,
+      `
+        mutation callFunction {
+          health
+        }
+      `,
+      root,
+      context
+    );
     expect(result.errors).toBeUndefined();
     expect(result.data.health).toBe(true);
   });
@@ -61,34 +72,39 @@ describe('graphQL Functions', () => {
         name: 'CustomType',
         fields: {
           result: { type: GraphQLInt },
-        }
+        },
       }),
       inputType: new GraphQLInputObjectType({
         name: 'CustomInputType',
         fields: {
-          request: { type: GraphQLInt }
-        }
+          request: { type: GraphQLInt },
+        },
       }),
-      handler: (req) => {
+      handler: req => {
         const { params } = req;
-        return  {
-          result: params.request * params.request
-        }
-      }
+        return {
+          result: params.request * params.request,
+        };
+      },
     });
     await reload();
 
     const context = {
       config,
-      auth: new Auth({config})
-    }
-    const result = await graphql(schema, `
-      mutation callFunction {
-        squareUp(input: { request: 15 }) {
-          result
+      auth: new Auth({ config }),
+    };
+    const result = await graphql(
+      schema,
+      `
+        mutation callFunction {
+          squareUp(input: { request: 15 }) {
+            result
+          }
         }
-      }
-      `, root, context);
+      `,
+      root,
+      context
+    );
     expect(result.errors).toBeUndefined();
     expect(result.data.squareUp.result).toBe(225);
   });
@@ -99,29 +115,33 @@ describe('graphQL Functions', () => {
       type: new GraphQLObjectType({
         name: 'CustomType',
         fields: () => ({
-          nodes: { type: new GraphQLList(Parse.Cloud.GraphQLUtils.getObjectType('NewClass'))  },
-        })
+          nodes: {
+            type: new GraphQLList(
+              Parse.Cloud.GraphQLUtils.getObjectType('NewClass')
+            ),
+          },
+        }),
       }),
       inputType: new GraphQLInputObjectType({
         name: 'CustomInputType',
         fields: {
-          min: { type: GraphQLInt }
-        }
+          min: { type: GraphQLInt },
+        },
       }),
-      handler: async (req) => {
+      handler: async req => {
         const query = new Parse.Query('NewClass');
         query.greaterThan('numberValue', req.params.min);
-        return  {
-          nodes: await query.find()
-        }
-      }
+        return {
+          nodes: await query.find(),
+        };
+      },
     });
     await reload();
 
     const context = {
       config,
-      auth: new Auth({config})
-    }
+      auth: new Auth({ config }),
+    };
     const objects = [];
     while (objects.length < 10) {
       const obj = new Parse.Object('NewClass');
@@ -130,20 +150,25 @@ describe('graphQL Functions', () => {
     }
 
     await Parse.Object.saveAll(objects);
-    const result = await graphql(schema, `
-      mutation callFunction {
-        getAllNewClasses(input: { min: 3 }) {
-          nodes {
-            id
-            objectId
-            numberValue
+    const result = await graphql(
+      schema,
+      `
+        mutation callFunction {
+          getAllNewClasses(input: { min: 3 }) {
+            nodes {
+              id
+              objectId
+              numberValue
+            }
           }
         }
-      }
-      `, root, context);
+      `,
+      root,
+      context
+    );
     expect(result.errors).toBeUndefined();
     expect(result.data.getAllNewClasses.nodes.length).toBe(6);
-    result.data.getAllNewClasses.nodes.forEach((node) => {
+    result.data.getAllNewClasses.nodes.forEach(node => {
       expect(node.numberValue).toBeGreaterThan(3);
     });
   });

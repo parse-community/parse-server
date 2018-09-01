@@ -6,7 +6,7 @@ import { getGloballyUniqueId } from '../execute';
 function getFunctions() {
   const functions = getAllFunctions();
   const fields = {};
-  Object.keys(functions).forEach((name) => {
+  Object.keys(functions).forEach(name => {
     const options = functions[name].options || {};
     let type = GraphQLBoolean;
     let inputType;
@@ -21,23 +21,29 @@ function getFunctions() {
     }
     let args;
     if (inputType) {
-      args = { input: { type: inputType }};
+      args = { input: { type: inputType } };
     }
-    const description = options.description || 'Calling this mutation will run the cloud function';
-    fields[name] =  {
+    const description =
+      options.description ||
+      'Calling this mutation will run the cloud function';
+    fields[name] = {
       type,
       description,
       args,
       resolve: async (root, args, req) => {
-        const results = await FunctionsRouter.runFunction(name, args.input, req);
+        const results = await FunctionsRouter.runFunction(
+          name,
+          args.input,
+          req
+        );
         const result = results.response.result;
         injectIdsInResults(result);
         if (useDefaultType) {
           return true;
         }
         return result;
-      }
-    }
+      },
+    };
   });
   return fields;
 }
@@ -49,13 +55,12 @@ function injectIdsInResults(result) {
     if (result.objectId && result.className) {
       result.id = getGloballyUniqueId(result.className, result.objectId);
     }
-    Object.keys(result).forEach((key) => {
+    Object.keys(result).forEach(key => {
       injectIdsInResults(result[key]);
     });
   }
-
 }
 
 export default {
-  Mutation: getFunctions
-}
+  Mutation: getFunctions,
+};

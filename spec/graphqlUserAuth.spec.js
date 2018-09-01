@@ -1,8 +1,7 @@
 const GraphQLParseSchema = require('../lib/graphql/Schema').GraphQLParseSchema;
 const Config = require('../lib/Config');
 const Auth = require('../lib/Auth').Auth;
-const { graphql }  = require('graphql');
-
+const { graphql } = require('graphql');
 
 describe('graphQL UserAuth', () => {
   let schema;
@@ -21,7 +20,7 @@ describe('graphQL UserAuth', () => {
     await reload();
     context = {
       config,
-      auth: new Auth({config})
+      auth: new Auth({ config }),
     };
   });
 
@@ -29,20 +28,26 @@ describe('graphQL UserAuth', () => {
     const input = {
       username: 'luke_skywalker',
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
+      password: 'strong the force is with me',
     };
-    const result = await graphql(schema, `
-      mutation createUser($input: AddUserInput) {
-        addUser(input: $input) {
-          object {
-            username
-            email
-            sessionToken
-            password
+    const result = await graphql(
+      schema,
+      `
+        mutation createUser($input: AddUserInput) {
+          addUser(input: $input) {
+            object {
+              username
+              email
+              sessionToken
+              password
+            }
           }
         }
-      }
-      `, root, context, { input });
+      `,
+      root,
+      context,
+      { input }
+    );
     expect(result.data.addUser.object.username).toBe(input.username);
     expect(result.data.addUser.object.email).toBe(input.email);
     expect(result.data.addUser.object.sessionToken).toBeDefined();
@@ -54,20 +59,26 @@ describe('graphQL UserAuth', () => {
     await user.save({
       username: 'luke_skywalker',
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
+      password: 'strong the force is with me',
     });
     const input = {
       username: 'luke_skywalker',
-      password: 'strong the force is with me'
-    }
-    const result = await graphql(schema, `
-      mutation logUserIn($input: LoginInput) {
-        login(input: $input) {
-          username
-          sessionToken
+      password: 'strong the force is with me',
+    };
+    const result = await graphql(
+      schema,
+      `
+        mutation logUserIn($input: LoginInput) {
+          login(input: $input) {
+            username
+            sessionToken
+          }
         }
-      }
-      `, root, context, { input });
+      `,
+      root,
+      context,
+      { input }
+    );
     expect(result.data.login.username).toBe('luke_skywalker');
     expect(result.data.login.sessionToken).toBeDefined();
   });
@@ -77,27 +88,33 @@ describe('graphQL UserAuth', () => {
     await user.save({
       username: 'luke_skywalker',
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
+      password: 'strong the force is with me',
     });
     const context = {
       config,
-      auth: new Auth({config}),
+      auth: new Auth({ config }),
       info: {
-        installationId: 'my-installation-id'
-      }
-    }
+        installationId: 'my-installation-id',
+      },
+    };
     const input = {
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
-    }
-    const result = await graphql(schema, `
-      mutation logUserIn($input: LoginInput) {
-        login(input: $input) {
-          username
-          sessionToken
+      password: 'strong the force is with me',
+    };
+    const result = await graphql(
+      schema,
+      `
+        mutation logUserIn($input: LoginInput) {
+          login(input: $input) {
+            username
+            sessionToken
+          }
         }
-      }
-      `, root, context, { input });
+      `,
+      root,
+      context,
+      { input }
+    );
     expect(result.data.login.username).toBe('luke_skywalker');
     expect(result.data.login.sessionToken).toBeDefined();
     const sessions = await new Parse.Query(Parse.Session)
@@ -112,27 +129,39 @@ describe('graphQL UserAuth', () => {
     await user.save({
       username: 'luke_skywalker',
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
+      password: 'strong the force is with me',
     });
-    const loggedInUser = await Parse.User.logIn('luke_skywalker', 'strong the force is with me');
+    const loggedInUser = await Parse.User.logIn(
+      'luke_skywalker',
+      'strong the force is with me'
+    );
     const sessionToken = loggedInUser.getSessionToken();
-    let sessions = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
+    let sessions = await new Parse.Query(Parse.Session).find({
+      useMasterKey: true,
+    });
     expect(sessions.length).toBe(1);
     expect(sessionToken).toBeDefined();
     const context = {
       config,
-      auth: new Auth({config, user: loggedInUser}),
+      auth: new Auth({ config, user: loggedInUser }),
       info: {
-        sessionToken
-      }
+        sessionToken,
+      },
     };
-    const result = await graphql(schema, `
-      mutation logMeOut {
-        logout
-      }
-      `, root, context);
+    const result = await graphql(
+      schema,
+      `
+        mutation logMeOut {
+          logout
+        }
+      `,
+      root,
+      context
+    );
     expect(result.data.logout).toBeTruthy();
-    sessions = await new Parse.Query(Parse.Session).find({ useMasterKey: true });
+    sessions = await new Parse.Query(Parse.Session).find({
+      useMasterKey: true,
+    });
     expect(sessions.length).toBe(0);
   });
 
@@ -141,41 +170,54 @@ describe('graphQL UserAuth', () => {
     await user.save({
       username: 'luke_skywalker',
       email: 'luke@therebellion',
-      password: 'strong the force is with me'
+      password: 'strong the force is with me',
     });
-    const loggedInUser = await Parse.User.logIn('luke_skywalker', 'strong the force is with me');
+    const loggedInUser = await Parse.User.logIn(
+      'luke_skywalker',
+      'strong the force is with me'
+    );
     const sessionToken = loggedInUser.getSessionToken();
     const context = {
       config,
-      auth: new Auth({config, user: loggedInUser}),
+      auth: new Auth({ config, user: loggedInUser }),
       info: {
-        sessionToken
-      }
+        sessionToken,
+      },
     };
-    const result = await graphql(schema, `
-    query me {
-      currentUser {
-        username
-        password
-        email
-      }
-    }
-    `, root, context);
+    const result = await graphql(
+      schema,
+      `
+        query me {
+          currentUser {
+            username
+            password
+            email
+          }
+        }
+      `,
+      root,
+      context
+    );
     expect(result.data.currentUser.username).toBe('luke_skywalker');
     expect(result.data.currentUser.password).toBe(null);
-    expect(result.data.currentUser.email).toBe('luke@therebellion')
+    expect(result.data.currentUser.email).toBe('luke@therebellion');
   });
 
   it('fails to get the currentUser when logged out', async () => {
-    const result = await graphql(schema, `
-    query me {
-      currentUser {
-        username
-        password
-        email
-      }
-    }
-    `, root, context);
+    const result = await graphql(
+      schema,
+      `
+        query me {
+          currentUser {
+            username
+            password
+            email
+          }
+        }
+      `,
+      root,
+      context
+    );
     expect(result.data.currentUser).toBe(null);
     expect(result.errors).not.toBeUndefined();
     expect(result.errors[0].message).toBe('You need to be logged in.');

@@ -7,4 +7,3 @@ export function getOrElse<T>(key: string, handler: () => T): ?T {
   }
   return cache[key];
 }
-

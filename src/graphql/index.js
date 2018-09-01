@@ -1,8 +1,6 @@
 export * from 'graphql';
 
-import {
-  loadClass
-} from './schemas/ParseClass';
+import { loadClass } from './schemas/ParseClass';
 
 export function getObjectType(name) {
   return loadClass(name).objectType;

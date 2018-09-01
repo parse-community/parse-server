@@ -13,5 +13,5 @@ export const PageInfo = new GraphQLObjectType({
     hasPreviousPage: { type: new GraphQLNonNull(GraphQLBoolean) },
     startCursor: { type: GraphQLString },
     endCursor: { type: GraphQLString },
-  }
+  },
 });

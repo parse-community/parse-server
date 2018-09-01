@@ -1,4 +1,12 @@
-import { runFind, runGet, resolvePointer, rest, connectionResultsArray, parseID, getGloballyUniqueId } from '../execute';
+import {
+  runFind,
+  runGet,
+  resolvePointer,
+  rest,
+  connectionResultsArray,
+  parseID,
+  getGloballyUniqueId,
+} from '../execute';
 import { getAuthForSessionToken } from '../../Auth';
 
 import {
@@ -9,22 +17,13 @@ import {
   GraphQLString,
   GraphQLID,
   GraphQLNonNull,
-} from 'graphql'
+} from 'graphql';
 
-import {
-  queryType,
-  inputType,
-  type,
-  PageInfo,
-} from '../types'
+import { queryType, inputType, type, PageInfo } from '../types';
 
-import {
-  Node
-} from '../types/Node';
+import { Node } from '../types/Node';
 
-import {
-  getOrElse,
-} from '../typesCache';
+import { getOrElse } from '../typesCache';
 
 function handleIdField(fieldName) {
   if (fieldName === 'objectId' || fieldName == 'id') {
@@ -40,14 +39,21 @@ function getRelationField(fieldName, field, schema) {
         object: {
           __type: 'Pointer',
           className: parent.className,
-          objectId: parent.objectId
+          objectId: parent.objectId,
         },
         key: fieldName,
-      }
-    }
+      },
+    };
     args.redirectClassNameForKey = fieldName;
-    const results = await runFind(context, info, parent.className, args, schema, query);
-    results.forEach((result) => {
+    const results = await runFind(
+      context,
+      info,
+      parent.className,
+      args,
+      schema,
+      query
+    );
+    results.forEach(result => {
       result.id = getGloballyUniqueId(result.className, result.objectId);
     });
     return connectionResultsArray(results, args, 100);
@@ -56,7 +62,9 @@ function getRelationField(fieldName, field, schema) {
 }
 
 function getFieldType(field) {
-  return (field.type === 'Pointer' ? `Pointer<${field.targetClass}>` : `${field.type}`);
+  return field.type === 'Pointer'
+    ? `Pointer<${field.targetClass}>`
+    : `${field.type}`;
 }
 
 function graphQLField(fieldName, field, schema) {
@@ -68,10 +76,16 @@ function graphQLField(fieldName, field, schema) {
   const fieldType = getFieldType(field);
   let gQLResolve;
   if (field.type === 'Pointer') {
-    gQLType = loadClass(field.targetClass, schema).objectType,
+    gQLType = loadClass(field.targetClass, schema).objectType;
     gQLResolve = (parent, args, context, info) => {
-      return resolvePointer(field.targetClass, parent[fieldName], schema, context, info);
-    }
+      return resolvePointer(
+        field.targetClass,
+        parent[fieldName],
+        schema,
+        context,
+        info
+      );
+    };
   }
   return {
     name: fieldName,
@@ -111,7 +125,7 @@ function graphQLQueryField(fieldName, field, schema) {
 
 function transformInput(input, schema) {
   const { fields } = schema;
-  Object.keys(input).forEach((key) => {
+  Object.keys(input).forEach(key => {
     const value = input[key];
     if (fields[key] && fields[key].type === 'Pointer') {
       value.__type = 'Pointer';
@@ -155,7 +169,7 @@ export function loadClass(className, schema) {
     resolve: async (root, args, context, info) => {
       // Get the selections
       return await runGet(context, info, className, args.objectId, schema);
-    }
+    },
   };
 
   const find = {
@@ -166,20 +180,20 @@ export function loadClass(className, schema) {
       first: { type: GraphQLInt },
       last: { type: GraphQLInt },
       after: { type: GraphQLString },
-      before: { type: GraphQLString }
+      before: { type: GraphQLString },
     },
     resolve: async (root, args, context, info) => {
       // Get the selections
       const results = await runFind(context, info, className, args, schema);
       return connectionResultsArray(results, args, 100);
-    }
+    },
   };
 
   const create = {
     type: mutationResultType,
     fields: objectType.fields,
     description: `use this method to create a new ${className}`,
-    args: { input: { type: inputType }},
+    args: { input: { type: inputType } },
     resolve: async (root, args, context, info) => {
       let { auth } = context;
       const { config } = context;
@@ -195,16 +209,21 @@ export function loadClass(className, schema) {
         });
       }
       // Run get to match graphQL style
-      const object = await runGet({ auth, config }, info, className, res.response.objectId);
+      const object = await runGet(
+        { auth, config },
+        info,
+        className,
+        res.response.objectId
+      );
       return { object, clientMutationId };
-    }
+    },
   };
 
   const update = {
     type: mutationResultType,
     description: `use this method to update an existing ${className}`,
     args: {
-      input: { type: updateType }
+      input: { type: updateType },
     },
     resolve: async (root, args, context, info) => {
       const objectId = getObjectId(args.input);
@@ -212,36 +231,64 @@ export function loadClass(className, schema) {
       const clientMutationId = input.clientMutationId;
       delete input.clientMutationId;
 
-      await rest.update(context.config, context.auth, className, { objectId }, input);
+      await rest.update(
+        context.config,
+        context.auth,
+        className,
+        { objectId },
+        input
+      );
       // Run get to match graphQL style
       const object = await runGet(context, info, className, objectId);
       return { object, clientMutationId };
-    }
+    },
   };
 
   const destroy = {
     type: mutationResultType,
     description: `use this method to update delete an existing ${className}`,
     args: {
-      input: { type: new GraphQLInputObjectType({
-        name: `Destroy${c.displayName}Input`,
-        fields: {
-          id: { type: GraphQLID, description: 'Use either the global id or objectId' },
-          objectId: { type: GraphQLID, description: 'Use either the global id or objectId' },
-          clientMutationId: { type: GraphQLString }
-        }
-      }) }
+      input: {
+        type: new GraphQLInputObjectType({
+          name: `Destroy${c.displayName}Input`,
+          fields: {
+            id: {
+              type: GraphQLID,
+              description: 'Use either the global id or objectId',
+            },
+            objectId: {
+              type: GraphQLID,
+              description: 'Use either the global id or objectId',
+            },
+            clientMutationId: { type: GraphQLString },
+          },
+        }),
+      },
     },
     resolve: async (root, args, context, info) => {
       const objectId = getObjectId(args.input);
       const clientMutationId = args.input.clientMutationId;
       const object = await runGet(context, info, className, objectId);
       await rest.del(context.config, context.auth, className, objectId);
-      return { object, clientMutationId }
-    }
+      return { object, clientMutationId };
+    },
   };
 
-  return { displayName: c.displayName, get, find, create, update, destroy, objectType, inputType, updateType, queryType, queryResultType, mutationResultType, parseClass: c }
+  return {
+    displayName: c.displayName,
+    get,
+    find,
+    create,
+    update,
+    destroy,
+    objectType,
+    inputType,
+    updateType,
+    queryType,
+    queryResultType,
+    mutationResultType,
+    parseClass: c,
+  };
 }
 
 const reservedFieldNames = ['objectId', 'createdAt', 'updatedAt'];
@@ -261,7 +308,9 @@ export class ParseClass {
     this.class = this.schema[className];
     if (!this.class) {
       /* eslint-disable no-console */
-      console.warn(`Attempting to load a class (${this.className}) that doesn't exist...`);
+      console.warn(
+        `Attempting to load a class (${this.className}) that doesn't exist...`
+      );
       console.trace();
       /* eslint-enable no-console */
     }
@@ -270,7 +319,11 @@ export class ParseClass {
   buildFields(mapper, filterReserved = false, isObject = false) {
     if (!this.class) {
       /* eslint-disable no-console */
-      console.warn(`Attempting to build fields a class (${this.className}) that doesn't exist...`);
+      console.warn(
+        `Attempting to build fields a class (${
+          this.className
+        }) that doesn't exist...`
+      );
       console.trace();
       /* eslint-enable no-console */
       return;
@@ -280,14 +333,15 @@ export class ParseClass {
     if (isObject) {
       initial.id = {
         description: 'A globaly unique identifier.',
-        type: new GraphQLNonNull(GraphQLID)
+        type: new GraphQLNonNull(GraphQLID),
       };
     }
     if (this.className === '_User') {
       initial.sessionToken = {
-        description: 'The session token for the user, set only when it makes sense.',
+        description:
+          'The session token for the user, set only when it makes sense.',
         type: GraphQLString,
-      }
+      };
     }
     return Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
@@ -313,7 +367,7 @@ export class ParseClass {
       name: this.displayName,
       description: `Parse Class ${className}`,
       // in relay, it's impossible to have 2 interfaces???
-      interfaces: [Node, /* ParseObjectInterface */],
+      interfaces: [Node /* ParseObjectInterface */],
       fields: () => this.buildFields(graphQLField, false, true),
       isTypeOf: this.isTypeOf.bind(this),
     };
@@ -330,7 +384,7 @@ export class ParseClass {
         delete fields.id;
         return fields;
       },
-      isTypeOf: this.isTypeOf.bind(this)
+      isTypeOf: this.isTypeOf.bind(this),
     };
   }
 
@@ -344,7 +398,7 @@ export class ParseClass {
         fields.clientMutationId = { type: GraphQLString };
         return fields;
       },
-      isTypeOf: this.isTypeOf.bind(this)
+      isTypeOf: this.isTypeOf.bind(this),
     };
   }
 
@@ -359,28 +413,30 @@ export class ParseClass {
         fields.clientMutationId = { type: GraphQLString };
         return fields;
       },
-      isTypeOf: this.isTypeOf.bind(this)
+      isTypeOf: this.isTypeOf.bind(this),
     };
   }
 
   graphQLQueryResultConfig() {
     const objectType = this.graphQLObjectType();
-    return  {
+    return {
       name: `${this.displayName}QueryConnection`,
       fields: {
         nodes: { type: new GraphQLList(objectType) },
         edges: {
-          type: new GraphQLList(new GraphQLObjectType({
-            name: `${this.displayName}Edge`,
-            fields: () => ({
-              node: { type: objectType },
-              cursor: { type: GraphQLString }
+          type: new GraphQLList(
+            new GraphQLObjectType({
+              name: `${this.displayName}Edge`,
+              fields: () => ({
+                node: { type: objectType },
+                cursor: { type: GraphQLString },
+              }),
             })
-          }))
+          ),
         },
         pageInfo: { type: PageInfo },
-      }
-    }
+      },
+    };
   }
 
   graphQLMutationResultConfig() {
@@ -389,9 +445,9 @@ export class ParseClass {
       name: `${this.displayName}MutationCompletePayload`,
       fields: {
         object: { type: objectType },
-        clientMutationId: { type: GraphQLString }
-      }
-    }
+        clientMutationId: { type: GraphQLString },
+      },
+    };
   }
 
   graphQLObjectType() {
@@ -403,35 +459,45 @@ export class ParseClass {
 
   graphQLUpdateInputObjectType() {
     if (!this.updateInputObjectType) {
-      this.updateInputObjectType = new GraphQLInputObjectType(this.graphQLUpdateInputConfig());
+      this.updateInputObjectType = new GraphQLInputObjectType(
+        this.graphQLUpdateInputConfig()
+      );
     }
     return this.updateInputObjectType;
   }
 
   graphQLInputObjectType() {
     if (!this.inputObjectType) {
-      this.inputObjectType = new GraphQLInputObjectType(this.graphQLInputConfig());
+      this.inputObjectType = new GraphQLInputObjectType(
+        this.graphQLInputConfig()
+      );
     }
     return this.inputObjectType;
   }
 
   graphQLQueryInputObjectType() {
     if (!this.queryInputObjectType) {
-      this.queryInputObjectType = new GraphQLInputObjectType(this.graphQLQueryConfig());
+      this.queryInputObjectType = new GraphQLInputObjectType(
+        this.graphQLQueryConfig()
+      );
     }
     return this.queryInputObjectType;
   }
 
   graphQLQueryResultType() {
     if (!this.queryResultObjectType) {
-      this.queryResultObjectType = new GraphQLObjectType(this.graphQLQueryResultConfig());
+      this.queryResultObjectType = new GraphQLObjectType(
+        this.graphQLQueryResultConfig()
+      );
     }
     return this.queryResultObjectType;
   }
 
   graphQLMutationResultType() {
     if (!this.mutationResultObjectType) {
-      this.mutationResultObjectType = new GraphQLObjectType(this.graphQLMutationResultConfig());
+      this.mutationResultObjectType = new GraphQLObjectType(
+        this.graphQLMutationResultConfig()
+      );
     }
     return this.mutationResultObjectType;
   }
@@ -439,32 +505,29 @@ export class ParseClass {
 
 export function getParseClassQueryFields(schema) {
   return schema.__classNames.reduce((fields, className) => {
-    const {
-      get, find, displayName,
-    } = loadClass(className, schema);
+    const { get, find, displayName } = loadClass(className, schema);
     return Object.assign(fields, {
       [displayName]: get,
-      [`find${displayName}`]: find
+      [`find${displayName}`]: find,
     });
   }, {});
 }
 
 export function getParseClassMutationFields(schema) {
-  return schema
-    .__classNames
-    .reduce((fields, className) => {
-      const {
-        create, update, destroy, displayName,
-      } = loadClass(className, schema);
-      return Object.assign(fields, {
-        [`add${displayName}`]: create,
-        [`update${displayName}`]: update,
-        [`destroy${displayName}`]: destroy,
-      });
-    }, {});
+  return schema.__classNames.reduce((fields, className) => {
+    const { create, update, destroy, displayName } = loadClass(
+      className,
+      schema
+    );
+    return Object.assign(fields, {
+      [`add${displayName}`]: create,
+      [`update${displayName}`]: update,
+      [`destroy${displayName}`]: destroy,
+    });
+  }, {});
 }
 
 export default {
   Query: getParseClassQueryFields,
   Mutation: getParseClassMutationFields,
-}
+};

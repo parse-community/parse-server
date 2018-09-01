@@ -8,25 +8,40 @@ export function removeHiddenProperties(obj) {
   for (var key in obj) {
     if (obj.hasOwnProperty(key)) {
       // Regexp comes from Parse.Object.prototype.validate
-      if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+      if (key !== '__type' && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
         delete obj[key];
       }
     }
   }
 }
 
-export async function verifyCredentials({ username, password, email }, config, auth) {
+export async function verifyCredentials(
+  { username, password, email },
+  config,
+  auth
+) {
   // TODO: use the right error codes / descriptions.
   if (!username && !email) {
-    throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
+    throw new Parse.Error(
+      Parse.Error.USERNAME_MISSING,
+      'username/email is required.'
+    );
   }
   if (!password) {
-    throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
+    throw new Parse.Error(
+      Parse.Error.PASSWORD_MISSING,
+      'password is required.'
+    );
   }
-  if (typeof password !== 'string'
-    || email && typeof email !== 'string'
-    || username && typeof username !== 'string') {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+  if (
+    typeof password !== 'string' ||
+    (email && typeof email !== 'string') ||
+    (username && typeof username !== 'string')
+  ) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Invalid username/password.'
+    );
   }
 
   let user;
@@ -41,12 +56,18 @@ export async function verifyCredentials({ username, password, email }, config, a
   }
   const results = await config.database.find('_User', query);
   if (!results.length) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Invalid username/password.'
+    );
   }
 
-  if (results.length > 1) { // corner case where user1 has username == user2 email
-    config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
-    user = results.filter((user) => user.username === username)[0];
+  if (results.length > 1) {
+    // corner case where user1 has username == user2 email
+    config.loggerController.warn(
+      "There is a user which email is the same as another user's username, logging in based on username"
+    );
+    user = results.filter(user => user.username === username)[0];
   } else {
     user = results[0];
   }
@@ -55,17 +76,30 @@ export async function verifyCredentials({ username, password, email }, config, a
   const accountLockoutPolicy = new AccountLockout(user, config);
   await accountLockoutPolicy.handleLoginAttempt(isValidPassword);
   if (!isValidPassword) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Invalid username/password.'
+    );
   }
   // Ensure the user isn't locked out
   // A locked out user won't be able to login
   // To lock a user out, just set the ACL to `masterKey` only  ({}).
   // Empty ACL is OK
   if (!auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Invalid username/password.'
+    );
   }
-  if (config.verifyUserEmails && config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
-    throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+  if (
+    config.verifyUserEmails &&
+    config.preventLoginWithUnverifiedEmail &&
+    !user.emailVerified
+  ) {
+    throw new Parse.Error(
+      Parse.Error.EMAIL_NOT_FOUND,
+      'User email is not verified.'
+    );
   }
 
   delete user.password;
@@ -73,7 +107,7 @@ export async function verifyCredentials({ username, password, email }, config, a
   // Sometimes the authData still has null on that keys
   // https://github.com/parse-community/parse-server/issues/935
   if (user.authData) {
-    Object.keys(user.authData).forEach((provider) => {
+    Object.keys(user.authData).forEach(provider => {
       if (user.authData[provider] === null) {
         delete user.authData[provider];
       }
@@ -86,8 +120,17 @@ export async function verifyCredentials({ username, password, email }, config, a
   return user;
 }
 
-export async function logIn({ username, password, email }, config, auth, installationId) {
-  const user = await verifyCredentials({ username, password, email }, config, auth);
+export async function logIn(
+  { username, password, email },
+  config,
+  auth,
+  installationId
+) {
+  const user = await verifyCredentials(
+    { username, password, email },
+    config,
+    auth
+  );
   // handle password expiry policy
   if (config.passwordPolicy && config.passwordPolicy.maxPasswordAge) {
     let changedAt = user._password_changed_at;
@@ -96,31 +139,39 @@ export async function logIn({ username, password, email }, config, auth, install
       // password was created before expiry policy was enabled.
       // simply update _User object so that it will start enforcing from now
       changedAt = new Date();
-      config.database.update('_User', { username: user.username },
-        { _password_changed_at: Parse._encode(changedAt) });
+      config.database.update(
+        '_User',
+        { username: user.username },
+        { _password_changed_at: Parse._encode(changedAt) }
+      );
     } else {
       // check whether the password has expired
       if (changedAt.__type == 'Date') {
         changedAt = new Date(changedAt.iso);
       }
       // Calculate the expiry time.
-      const expiresAt = new Date(changedAt.getTime() + 86400000 * config.passwordPolicy.maxPasswordAge);
-      if (expiresAt < new Date()) // fail of current time is past password expiry time
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
+      const expiresAt = new Date(
+        changedAt.getTime() + 86400000 * config.passwordPolicy.maxPasswordAge
+      );
+      if (expiresAt < new Date())
+        // fail of current time is past password expiry time
+        throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          'Your password has expired. Please reset your password.'
+        );
     }
   }
 
   // Remove hidden properties.
   removeHiddenProperties(user);
 
-  const {
-    sessionData,
-    createSession
-  } = Auth.createSession(config, {
-    userId: user.objectId, createdWith: {
-      'action': 'login',
-      'authProvider': 'password'
-    }, installationId: installationId
+  const { sessionData, createSession } = Auth.createSession(config, {
+    userId: user.objectId,
+    createdWith: {
+      action: 'login',
+      authProvider: 'password',
+    },
+    installationId: installationId,
   });
 
   user.sessionToken = sessionData.sessionToken;
@@ -133,12 +184,15 @@ export async function logIn({ username, password, email }, config, auth, install
 
 export async function logOut(sessionToken, config, clientSDK) {
   const master = Auth.master(config);
-  const records = await rest.find(config, master, '_Session',
-    { sessionToken: sessionToken }, undefined, clientSDK
+  const records = await rest.find(
+    config,
+    master,
+    '_Session',
+    { sessionToken: sessionToken },
+    undefined,
+    clientSDK
   );
   if (records.results && records.results.length) {
-    await rest.del(config, master, '_Session',
-      records.results[0].objectId
-    );
+    await rest.del(config, master, '_Session', records.results[0].objectId);
   }
 }

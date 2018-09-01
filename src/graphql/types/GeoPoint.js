@@ -4,28 +4,28 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLList,
-} from 'graphql'
+} from 'graphql';
 
 import { BaseQuery } from './BaseQuery';
 const geoPointFields = {
   latitude: {
     type: GraphQLFloat,
-    description: 'laititude of the point, in degrees'
+    description: 'laititude of the point, in degrees',
   },
   longitude: {
     type: GraphQLFloat,
-    description: 'latitude of the point, in degrees'
-  }
+    description: 'latitude of the point, in degrees',
+  },
 };
 
 export const GeoPoint = new GraphQLObjectType({
   name: 'GeoPoint',
-  fields: geoPointFields
+  fields: geoPointFields,
 });
 
 export const GeoPointInput = new GraphQLInputObjectType({
   name: 'GeoPointInput',
-  fields: geoPointFields
+  fields: geoPointFields,
 });
 
 export const NearQuery = new GraphQLInputObjectType({
@@ -35,15 +35,15 @@ export const NearQuery = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GeoPointInput),
     },
     maxDistanceInMiles: {
-      type: GraphQLFloat
+      type: GraphQLFloat,
     },
     maxDistanceInKilometers: {
-      type: GraphQLFloat
+      type: GraphQLFloat,
     },
     maxDistanceInRadians: {
-      type: GraphQLFloat
-    }
-  }
+      type: GraphQLFloat,
+    },
+  },
 });
 
 export const WithinQuery = new GraphQLInputObjectType({
@@ -52,7 +52,7 @@ export const WithinQuery = new GraphQLInputObjectType({
     box: {
       type: new GraphQLList(GeoPointInput),
     },
-  }
+  },
 });
 
 export const GeoWithinQuery = new GraphQLInputObjectType({
@@ -61,20 +61,20 @@ export const GeoWithinQuery = new GraphQLInputObjectType({
     polygon: {
       type: new GraphQLList(GeoPointInput),
     },
-  }
+  },
 });
 
 export const GeoPointQuery = new GraphQLInputObjectType({
-  name: "GeoQuery",
+  name: 'GeoQuery',
   fields: Object.assign({}, BaseQuery(GeoPointInput), {
     nearSphere: {
-      type: NearQuery
+      type: NearQuery,
     },
     within: {
-      type: WithinQuery
+      type: WithinQuery,
     },
     geoWithin: {
       type: GeoWithinQuery,
-    }
-  })
+    },
+  }),
 });

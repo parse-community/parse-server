@@ -1,9 +1,6 @@
-import {
-  GraphQLList,
-  GraphQLBoolean
-} from 'graphql'
+import { GraphQLList, GraphQLBoolean } from 'graphql';
 
-export const BaseQuery = (type) => {
+export const BaseQuery = type => {
   return {
     eq: {
       type,
@@ -22,10 +19,10 @@ export const BaseQuery = (type) => {
     },
     exists: {
       type: GraphQLBoolean,
-    }
+    },
   };
-}
+};
 
 export default {
   BaseQuery,
-}
+};

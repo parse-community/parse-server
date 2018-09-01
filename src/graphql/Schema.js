@@ -1,8 +1,4 @@
-
-import {
-  GraphQLSchema,
-  GraphQLObjectType,
-} from 'graphql'
+import { GraphQLSchema, GraphQLObjectType } from 'graphql';
 
 import Config from '../Config';
 
@@ -33,7 +29,9 @@ export class GraphQLParseSchema {
   }
 
   async load() {
-    this.schema = await GraphQLParseSchema.loadSchemaFromDatabase(this.applicationId);
+    this.schema = await GraphQLParseSchema.loadSchemaFromDatabase(
+      this.applicationId
+    );
     const graphQLSchema = new GraphQLSchema({
       query: this.Query(),
       mutation: this.Mutation(),
@@ -55,7 +53,7 @@ export class GraphQLParseSchema {
     });
   }
 
-  Mutation()  {
+  Mutation() {
     const fields = {};
     Object.assign(fields, UserAuthSchema.Mutation(this.schema));
     Object.assign(fields, ParseClassSchema.Mutation(this.schema));
@@ -69,7 +67,7 @@ export class GraphQLParseSchema {
 
   Root() {
     return this.schema.__classNames.reduce((memo, className) => {
-      memo[className] = {}
+      memo[className] = {};
       return memo;
     }, {});
   }

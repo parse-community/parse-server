@@ -7,23 +7,23 @@ export function getGloballyUniqueId(className, objectId) {
 
 export function transformResult(className, result) {
   if (Array.isArray(result)) {
-    return result.map((res) => transformResult(className, res));
+    return result.map(res => transformResult(className, res));
   }
   if (result.objectId) {
     // Make a unique identifier for relay
-    result.id = getGloballyUniqueId(className, result.objectId)
+    result.id = getGloballyUniqueId(className, result.objectId);
   }
-  return Object.assign({className}, result);
+  return Object.assign({ className }, result);
 }
 
 function toGraphQLResult(className) {
-  return (restResult) => {
+  return restResult => {
     const results = restResult.results;
     if (results.length == 0) {
       return [];
     }
     return transformResult(className, results);
-  }
+  };
 }
 
 export function transformQueryConstraint(key, value) {
@@ -31,20 +31,23 @@ export function transformQueryConstraint(key, value) {
     value = {
       latitude: value.point.latitude,
       longitude: value.point.longitude,
-    }
+    };
   }
   return {
     key: `$${key}`,
     value,
-  }
+  };
 }
 
 function transformQuery(query) {
-  Object.keys(query).forEach((queryKey) => {
-    Object.keys(query[queryKey]).forEach((constraintKey) => {
+  Object.keys(query).forEach(queryKey => {
+    Object.keys(query[queryKey]).forEach(constraintKey => {
       const constraint = query[queryKey][constraintKey];
       delete query[queryKey][constraintKey];
-      const { key, value } = transformQueryConstraint(constraintKey, constraint);
+      const { key, value } = transformQueryConstraint(
+        constraintKey,
+        constraint
+      );
       query[queryKey][key] = value;
     });
   });
@@ -57,26 +60,29 @@ export function base64(string) {
 
 export function parseID(base64String) {
   // Get the selections
-  const components = new Buffer(base64String, 'base64').toString('utf8').split('::');
+  const components = new Buffer(base64String, 'base64')
+    .toString('utf8')
+    .split('::');
   if (components.length != 2) {
     throw new Error('Invalid ID');
   }
   return {
     className: components[0],
-    objectId: components[1]
-  }
+    objectId: components[1],
+  };
 }
 
 export function connectionResultsArray(results, args, defaultPageSize) {
   const pageSize = args.first || args.last || defaultPageSize;
   return {
     nodes: () => results,
-    edges: () => results.map((node) => {
-      return {
-        cursor: base64(node.createdAt),
-        node
-      };
-    }),
+    edges: () =>
+      results.map(node => {
+        return {
+          cursor: base64(node.createdAt),
+          node,
+        };
+      }),
     pageInfo: () => {
       const hasPreviousPage = () => {
         if (args.last) {
@@ -99,8 +105,8 @@ export function connectionResultsArray(results, args, defaultPageSize) {
       return {
         hasNextPage,
         hasPreviousPage,
-      }
-    }
+      };
+    },
   };
 }
 
@@ -116,10 +122,14 @@ function parseArguments(args) {
     options.order = '-createdAt';
   }
   if (Object.prototype.hasOwnProperty.call(args, 'after')) {
-    query.createdAt = { '$gt': new Date(new Buffer(args.after, 'base64').toString('utf8')) }
+    query.createdAt = {
+      $gt: new Date(new Buffer(args.after, 'base64').toString('utf8')),
+    };
   }
   if (Object.prototype.hasOwnProperty.call(args, 'before')) {
-    query.createdAt = { '$lt': new Date(new Buffer(args.before, 'base64').toString('utf8')) }
+    query.createdAt = {
+      $lt: new Date(new Buffer(args.before, 'base64').toString('utf8')),
+    };
   }
   if (Object.prototype.hasOwnProperty.call(args, 'redirectClassNameForKey')) {
     options.redirectClassNameForKey = args.redirectClassNameForKey;
@@ -134,26 +144,28 @@ export function runFind(context, info, className, args, schema, restQuery) {
     Object.assign(query, args.where);
   }
   transformQuery(query, schema);
-  if (restQuery)  {
+  if (restQuery) {
     Object.assign(query, restQuery);
   }
 
   const { options, queryAdditions } = parseArguments(args);
   Object.assign(query, queryAdditions);
 
-  return rest.find(context.config, context.auth, className, query, options)
+  return rest
+    .find(context.config, context.auth, className, query, options)
     .then(toGraphQLResult(className));
 }
 
 // runs a get against the rest API
 export function runGet(context, info, className, objectId) {
-  return rest.get(context.config, context.auth, className, objectId, {})
+  return rest
+    .get(context.config, context.auth, className, objectId, {})
     .then(toGraphQLResult(className))
     .then(results => results[0]);
 }
 
 export function resolvePointer(targetClass, object, schema, context, info) {
-  const selections = info.fieldNodes[0].selectionSet.selections.map((field) => {
+  const selections = info.fieldNodes[0].selectionSet.selections.map(field => {
     return field.name.value;
   });
   if (containsOnlyIdFields(selections)) {
@@ -169,7 +181,9 @@ export function containsOnlyIdFields(selections) {
   // as the caller doesn't need more info
   const wantsId = selections.indexOf('id') >= 0;
   const wantsObjectId = selections.indexOf('objectId') >= 0;
-  return wantsId && wantsObjectId && selections.length == 2
-    || wantsId && selections.length == 1
-    || wantsObjectId && selections.length == 1;
+  return (
+    (wantsId && wantsObjectId && selections.length == 2) ||
+    (wantsId && selections.length == 1) ||
+    (wantsObjectId && selections.length == 1)
+  );
 }

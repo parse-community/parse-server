@@ -3,51 +3,27 @@ import {
   GraphQLFloat,
   GraphQLBoolean,
   GraphQLList,
-} from 'graphql'
+} from 'graphql';
 
-import {
-  ACL,
-} from './ACL';
+import { ACL } from './ACL';
 
-import {
-  GeoPoint,
-  GeoPointInput,
-  GeoPointQuery,
-} from './GeoPoint';
+import { GeoPoint, GeoPointInput, GeoPointQuery } from './GeoPoint';
 
-import {
-  File
-} from './File';
+import { File } from './File';
 
-import {
-  Date,
-  DateQuery,
-} from './Date';
+import { Date, DateQuery } from './Date';
 
-import {
-  Pointer,
-  PointerInput,
-} from './Pointer';
+import { Pointer, PointerInput } from './Pointer';
 
-import {
-  JSONObject,
-} from './JSONObject';
+import { JSONObject } from './JSONObject';
 
-import {
-  StringQuery,
-} from './StringQuery';
+import { StringQuery } from './StringQuery';
 
-import {
-  NumberQuery,
-} from './NumberQuery';
+import { NumberQuery } from './NumberQuery';
 
-import {
-  NumberInput,
-} from './NumberInput';
+import { NumberInput } from './NumberInput';
 
-import {
-  PageInfo
-} from './PageInfo';
+import { PageInfo } from './PageInfo';
 
 export {
   ACL,
@@ -58,7 +34,7 @@ export {
   Pointer,
   JSONObject,
   PageInfo,
-}
+};
 
 const types = {
   String: GraphQLString,
@@ -70,8 +46,8 @@ const types = {
   Date,
   Pointer,
   Object: JSONObject,
-  Array: new GraphQLList(JSONObject)
-}
+  Array: new GraphQLList(JSONObject),
+};
 
 export function type({ type }) {
   return types[type];
@@ -81,13 +57,17 @@ export function inputType(field) {
   const { type } = field;
   if (type == 'String') {
     return GraphQLString;
-  } if (type == 'Number') {
+  }
+  if (type == 'Number') {
     return NumberInput;
-  } if (type == 'Boolean') {
+  }
+  if (type == 'Boolean') {
     return GraphQLBoolean;
-  } if (type == 'GeoPoint') {
+  }
+  if (type == 'GeoPoint') {
     return GeoPointInput;
-  } if (type == 'File') {
+  }
+  if (type == 'File') {
     // TODO: How to set a file in an object
     // return GraphQLFile;
   } else if (type == 'ACL') {
@@ -105,13 +85,17 @@ export function queryType(field) {
   const { type } = field;
   if (type == 'String') {
     return StringQuery;
-  } if (type == 'Number') {
+  }
+  if (type == 'Number') {
     return NumberQuery;
-  } if (type == 'Boolean') {
+  }
+  if (type == 'Boolean') {
     return GraphQLBoolean;
-  } if (type == 'GeoPoint') {
+  }
+  if (type == 'GeoPoint') {
     return GeoPointQuery;
-  } if (type == 'File') {
+  }
+  if (type == 'File') {
     // Cannot query on files
     return;
   } else if (type == 'ACL') {
