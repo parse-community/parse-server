@@ -33,8 +33,8 @@ const cache = require('../lib/cache').default;
 const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter')
-  .GridStoreAdapter;
+const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
+  .GridFSBucketAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
   .default;
@@ -77,7 +77,7 @@ let filesAdapter;
 on_db(
   'mongo',
   () => {
-    filesAdapter = new GridStoreAdapter(mongoURI);
+    filesAdapter = new GridFSBucketAdapter(mongoURI);
   },
   () => {
     filesAdapter = new FSAdapter();
