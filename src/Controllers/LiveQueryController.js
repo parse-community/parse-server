@@ -11,7 +11,7 @@ export class LiveQueryController {
     } else if (config.classNames instanceof Array) {
       this.classNames = new Set(config.classNames);
     } else {
-      throw 'liveQuery.classes should be an array of string'
+      throw 'liveQuery.classes should be an array of string';
     }
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
   }
@@ -38,7 +38,7 @@ export class LiveQueryController {
 
   _makePublisherRequest(currentObject: any, originalObject: any): any {
     const req = {
-      object: currentObject
+      object: currentObject,
     };
     if (currentObject) {
       req.original = originalObject;

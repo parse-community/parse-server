@@ -3,8 +3,11 @@ var https = require('https'),
 var Parse = require('parse/node').Parse;
 
 var OAuth = function(options) {
-  if(!options) {
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'No options passed to OAuth');
+  if (!options) {
+    throw new Parse.Error(
+      Parse.Error.INTERNAL_SERVER_ERROR,
+      'No options passed to OAuth'
+    );
   }
   this.consumer_key = options.consumer_key;
   this.consumer_secret = options.consumer_secret;
@@ -14,23 +17,24 @@ var OAuth = function(options) {
   this.oauth_params = options.oauth_params || {};
 };
 
-OAuth.prototype.send = function(method, path, params, body){
-
+OAuth.prototype.send = function(method, path, params, body) {
   var request = this.buildRequest(method, path, params, body);
   // Encode the body properly, the current Parse Implementation don't do it properly
   return new Promise(function(resolve, reject) {
-    var httpRequest = https.request(request, function(res) {
-      var data = '';
-      res.on('data', function(chunk) {
-        data += chunk;
+    var httpRequest = https
+      .request(request, function(res) {
+        var data = '';
+        res.on('data', function(chunk) {
+          data += chunk;
+        });
+        res.on('end', function() {
+          data = JSON.parse(data);
+          resolve(data);
+        });
+      })
+      .on('error', function() {
+        reject('Failed to make an OAuth request');
       });
-      res.on('end', function() {
-        data = JSON.parse(data);
-        resolve(data);
-      });
-    }).on('error', function() {
-      reject('Failed to make an OAuth request');
-    });
     if (request.body) {
       httpRequest.write(request.body);
     }
@@ -39,40 +43,45 @@ OAuth.prototype.send = function(method, path, params, body){
 };
 
 OAuth.prototype.buildRequest = function(method, path, params, body) {
-  if (path.indexOf("/") != 0) {
-    path = "/" + path;
+  if (path.indexOf('/') != 0) {
+    path = '/' + path;
   }
   if (params && Object.keys(params).length > 0) {
-    path += "?" + OAuth.buildParameterString(params);
+    path += '?' + OAuth.buildParameterString(params);
   }
 
   var request = {
-    host:   this.host,
-    path: 	path,
-    method: method.toUpperCase()
+    host: this.host,
+    path: path,
+    method: method.toUpperCase(),
   };
 
   var oauth_params = this.oauth_params || {};
   oauth_params.oauth_consumer_key = this.consumer_key;
-  if(this.auth_token){
-    oauth_params["oauth_token"] = this.auth_token;
+  if (this.auth_token) {
+    oauth_params['oauth_token'] = this.auth_token;
   }
 
-  request = OAuth.signRequest(request, oauth_params, this.consumer_secret,  this.auth_token_secret);
+  request = OAuth.signRequest(
+    request,
+    oauth_params,
+    this.consumer_secret,
+    this.auth_token_secret
+  );
 
   if (body && Object.keys(body).length > 0) {
     request.body = OAuth.buildParameterString(body);
   }
   return request;
-}
+};
 
 OAuth.prototype.get = function(path, params) {
-  return this.send("GET", path, params);
-}
+  return this.send('GET', path, params);
+};
 
 OAuth.prototype.post = function(path, params, body) {
-  return this.send("POST", path, params, body);
-}
+  return this.send('POST', path, params, body);
+};
 
 /*
 	Proper string %escape encoding
@@ -99,8 +108,7 @@ OAuth.encode = function(str) {
   //        example 3: rawurlencode('http://www.google.nl/search?q=php.js&ie=utf-8&oe=utf-8&aq=t&rls=com.ubuntu:en-US:unofficial&client=firefox-a');
   //        returns 3: 'http%3A%2F%2Fwww.google.nl%2Fsearch%3Fq%3Dphp.js%26ie%3Dutf-8%26oe%3Dutf-8%26aq%3Dt%26rls%3Dcom.ubuntu%3Aen-US%3Aunofficial%26client%3Dfirefox-a'
 
-  str = (str + '')
-    .toString();
+  str = (str + '').toString();
 
   // Tilde should be allowed unescaped in future versions of PHP (as reflected below), but if you want to reflect current
   // PHP behavior, you would need to add ".replace(/~/g, '%7E');" to the following.
@@ -110,55 +118,72 @@ OAuth.encode = function(str) {
     .replace(/\(/g, '%28')
     .replace(/\)/g, '%29')
     .replace(/\*/g, '%2A');
-}
+};
 
-OAuth.signatureMethod = "HMAC-SHA1";
-OAuth.version = "1.0";
+OAuth.signatureMethod = 'HMAC-SHA1';
+OAuth.version = '1.0';
 
 /*
 	Generate a nonce
 */
-OAuth.nonce = function(){
-  var text = "";
-  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+OAuth.nonce = function() {
+  var text = '';
+  var possible =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  for(var i = 0; i < 30; i++)
+  for (var i = 0; i < 30; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return text;
-}
+};
 
-OAuth.buildParameterString = function(obj){
+OAuth.buildParameterString = function(obj) {
   // Sort keys and encode values
   if (obj) {
     var keys = Object.keys(obj).sort();
 
     // Map key=value, join them by &
-    return keys.map(function(key){
-      return key + "=" + OAuth.encode(obj[key]);
-    }).join("&");
+    return keys
+      .map(function(key) {
+        return key + '=' + OAuth.encode(obj[key]);
+      })
+      .join('&');
   }
 
-  return "";
-}
+  return '';
+};
 
 /*
 	Build the signature string from the object
 */
 
-OAuth.buildSignatureString = function(method, url, parameters){
-  return [method.toUpperCase(), OAuth.encode(url), OAuth.encode(parameters)].join("&");
-}
+OAuth.buildSignatureString = function(method, url, parameters) {
+  return [
+    method.toUpperCase(),
+    OAuth.encode(url),
+    OAuth.encode(parameters),
+  ].join('&');
+};
 
 /*
 	Retuns encoded HMAC-SHA1 from key and text
 */
-OAuth.signature = function(text, key){
-  crypto = require("crypto");
-  return OAuth.encode(crypto.createHmac('sha1', key).update(text).digest('base64'));
-}
+OAuth.signature = function(text, key) {
+  crypto = require('crypto');
+  return OAuth.encode(
+    crypto
+      .createHmac('sha1', key)
+      .update(text)
+      .digest('base64')
+  );
+};
 
-OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_token_secret){
+OAuth.signRequest = function(
+  request,
+  oauth_parameters,
+  consumer_secret,
+  auth_token_secret
+) {
   oauth_parameters = oauth_parameters || {};
 
   // Set default values
@@ -175,20 +200,20 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
     oauth_parameters.oauth_version = OAuth.version;
   }
 
-  if(!auth_token_secret){
-    auth_token_secret = "";
+  if (!auth_token_secret) {
+    auth_token_secret = '';
   }
   // Force GET method if unset
   if (!request.method) {
-    request.method = "GET"
+    request.method = 'GET';
   }
 
   // Collect  all the parameters in one signatureParameters object
   var signatureParams = {};
   var parametersToMerge = [request.params, request.body, oauth_parameters];
-  for(var i in parametersToMerge) {
+  for (var i in parametersToMerge) {
     var parameters = parametersToMerge[i];
-    for(var k in parameters) {
+    for (var k in parameters) {
       signatureParams[k] = parameters[k];
     }
   }
@@ -197,32 +222,41 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
   var parameterString = OAuth.buildParameterString(signatureParams);
 
   // Build the signature string
-  var url = "https://" + request.host + "" + request.path;
+  var url = 'https://' + request.host + '' + request.path;
 
-  var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
+  var signatureString = OAuth.buildSignatureString(
+    request.method,
+    url,
+    parameterString
+  );
   // Hash the signature string
-  var signatureKey = [OAuth.encode(consumer_secret), OAuth.encode(auth_token_secret)].join("&");
+  var signatureKey = [
+    OAuth.encode(consumer_secret),
+    OAuth.encode(auth_token_secret),
+  ].join('&');
 
   var signature = OAuth.signature(signatureString, signatureKey);
 
   // Set the signature in the params
   oauth_parameters.oauth_signature = signature;
-  if(!request.headers){
+  if (!request.headers) {
     request.headers = {};
   }
 
   // Set the authorization header
-  var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
-    var value = oauth_parameters[key];
-    return key + '="' + value + '"';
-  }).join(", ")
+  var authHeader = Object.keys(oauth_parameters)
+    .sort()
+    .map(function(key) {
+      var value = oauth_parameters[key];
+      return key + '="' + value + '"';
+    })
+    .join(', ');
 
   request.headers.Authorization = 'OAuth ' + authHeader;
 
   // Set the content type header
-  request.headers["Content-Type"] = "application/x-www-form-urlencoded";
+  request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
   return request;
-
-}
+};
 
 module.exports = OAuth;

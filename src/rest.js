@@ -14,112 +14,193 @@ var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 
 function checkTriggers(className, config, types) {
-  return types.some((triggerType) => {
-    return triggers.getTrigger(className, triggers.Types[triggerType], config.applicationId);
+  return types.some(triggerType => {
+    return triggers.getTrigger(
+      className,
+      triggers.Types[triggerType],
+      config.applicationId
+    );
   });
 }
 
 function checkLiveQuery(className, config) {
-  return config.liveQueryController && config.liveQueryController.hasLiveQuery(className)
+  return (
+    config.liveQueryController &&
+    config.liveQueryController.hasLiveQuery(className)
+  );
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions, clientSDK) {
   enforceRoleSecurity('find', className, auth);
-  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth).then((result) => {
-    restWhere = result.restWhere || restWhere;
-    restOptions = result.restOptions || restOptions;
-    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
-    return query.execute();
-  });
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth
+    )
+    .then(result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK
+      );
+      return query.execute();
+    });
 }
 
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
-  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth, true).then((result) => {
-    restWhere = result.restWhere || restWhere;
-    restOptions = result.restOptions || restOptions;
-    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
-    return query.execute();
-  });
-}
+  return triggers
+    .maybeRunQueryTrigger(
+      triggers.Types.beforeFind,
+      className,
+      restWhere,
+      restOptions,
+      config,
+      auth,
+      true
+    )
+    .then(result => {
+      restWhere = result.restWhere || restWhere;
+      restOptions = result.restOptions || restOptions;
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK
+      );
+      return query.execute();
+    });
+};
 
 // Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId) {
   if (typeof objectId !== 'string') {
-    throw new Parse.Error(Parse.Error.INVALID_JSON,
-      'bad objectId');
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
   }
 
   if (className === '_User' && auth.isUnauthenticated()) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING,
-      'Insufficient auth to delete user');
+    throw new Parse.Error(
+      Parse.Error.SESSION_MISSING,
+      'Insufficient auth to delete user'
+    );
   }
 
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;
 
-  return Promise.resolve().then(() => {
-    const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
-    const hasLiveQuery = checkLiveQuery(className, config);
-    if (hasTriggers || hasLiveQuery || className == '_Session') {
-      return new RestQuery(config, auth, className, { objectId })
-        .forWrite()
-        .execute()
-        .then((response) => {
-          if (response && response.results && response.results.length) {
-            const firstResult = response.results[0];
-            firstResult.className = className;
-            if (className === '_Session' && !auth.isMaster) {
-              if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+  return Promise.resolve()
+    .then(() => {
+      const hasTriggers = checkTriggers(className, config, [
+        'beforeDelete',
+        'afterDelete',
+      ]);
+      const hasLiveQuery = checkLiveQuery(className, config);
+      if (hasTriggers || hasLiveQuery || className == '_Session') {
+        return new RestQuery(config, auth, className, { objectId })
+          .forWrite()
+          .execute()
+          .then(response => {
+            if (response && response.results && response.results.length) {
+              const firstResult = response.results[0];
+              firstResult.className = className;
+              if (className === '_Session' && !auth.isMaster) {
+                if (!auth.user || firstResult.user.objectId !== auth.user.id) {
+                  throw new Parse.Error(
+                    Parse.Error.INVALID_SESSION_TOKEN,
+                    'Invalid session token'
+                  );
+                }
               }
+              var cacheAdapter = config.cacheController;
+              cacheAdapter.user.del(firstResult.sessionToken);
+              inflatedObject = Parse.Object.fromJSON(firstResult);
+              // Notify LiveQuery server if possible
+              config.liveQueryController.onAfterDelete(
+                inflatedObject.className,
+                inflatedObject
+              );
+              return triggers.maybeRunTrigger(
+                triggers.Types.beforeDelete,
+                auth,
+                inflatedObject,
+                null,
+                config
+              );
             }
-            var cacheAdapter = config.cacheController;
-            cacheAdapter.user.del(firstResult.sessionToken);
-            inflatedObject = Parse.Object.fromJSON(firstResult);
-            // Notify LiveQuery server if possible
-            config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-            return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
-          }
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found for delete.');
-        });
-    }
-    return Promise.resolve({});
-  }).then(() => {
-    if (!auth.isMaster) {
-      return auth.getUserRoles();
-    } else {
-      return;
-    }
-  }).then(() => {
-    var options = {};
-    if (!auth.isMaster) {
-      options.acl = ['*'];
-      if (auth.user) {
-        options.acl.push(auth.user.id);
-        options.acl = options.acl.concat(auth.userRoles);
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Object not found for delete.'
+            );
+          });
       }
-    }
+      return Promise.resolve({});
+    })
+    .then(() => {
+      if (!auth.isMaster) {
+        return auth.getUserRoles();
+      } else {
+        return;
+      }
+    })
+    .then(() => {
+      var options = {};
+      if (!auth.isMaster) {
+        options.acl = ['*'];
+        if (auth.user) {
+          options.acl.push(auth.user.id);
+          options.acl = options.acl.concat(auth.userRoles);
+        }
+      }
 
-    return config.database.destroy(className, {
-      objectId: objectId
-    }, options);
-  }).then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
-  }).catch((error) => {
-    handleSessionMissingError(error, className, auth);
-  });
+      return config.database.destroy(
+        className,
+        {
+          objectId: objectId,
+        },
+        options
+      );
+    })
+    .then(() => {
+      return triggers.maybeRunTrigger(
+        triggers.Types.afterDelete,
+        auth,
+        inflatedObject,
+        null,
+        config
+      );
+    })
+    .catch(error => {
+      handleSessionMissingError(error, className, auth);
+    });
 }
 
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject, clientSDK) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK);
+  var write = new RestWrite(
+    config,
+    auth,
+    className,
+    null,
+    restObject,
+    null,
+    clientSDK
+  );
   return write.execute();
 }
 
@@ -129,56 +210,77 @@ function create(config, auth, className, restObject, clientSDK) {
 function update(config, auth, className, restWhere, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
 
-  return Promise.resolve().then(() => {
-    const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
-    const hasLiveQuery = checkLiveQuery(className, config);
-    if (hasTriggers || hasLiveQuery) {
-      // Do not use find, as it runs the before finds
-      return new RestQuery(config, auth, className, restWhere)
-        .forWrite()
-        .execute();
-    }
-    return Promise.resolve({});
-  }).then(({ results }) => {
-    var originalRestObject;
-    if (results && results.length) {
-      originalRestObject = results[0];
-    }
-    return new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK)
-      .execute();
-  }).catch((error) => {
-    handleSessionMissingError(error, className, auth);
-  });
+  return Promise.resolve()
+    .then(() => {
+      const hasTriggers = checkTriggers(className, config, [
+        'beforeSave',
+        'afterSave',
+      ]);
+      const hasLiveQuery = checkLiveQuery(className, config);
+      if (hasTriggers || hasLiveQuery) {
+        // Do not use find, as it runs the before finds
+        return new RestQuery(config, auth, className, restWhere)
+          .forWrite()
+          .execute();
+      }
+      return Promise.resolve({});
+    })
+    .then(({ results }) => {
+      var originalRestObject;
+      if (results && results.length) {
+        originalRestObject = results[0];
+      }
+      return new RestWrite(
+        config,
+        auth,
+        className,
+        restWhere,
+        restObject,
+        originalRestObject,
+        clientSDK
+      ).execute();
+    })
+    .catch(error => {
+      handleSessionMissingError(error, className, auth);
+    });
 }
 
 function handleSessionMissingError(error, className) {
   // If we're trying to update a user without / with bad session token
-  if (className === '_User'
-      && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+  if (className === '_User' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }
 
-const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];
+const classesWithMasterOnlyAccess = [
+  '_JobStatus',
+  '_PushStatus',
+  '_Hooks',
+  '_GlobalConfig',
+  '_JobSchedule',
+];
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
-      const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+      const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`;
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
     }
   }
 
   //all volatileClasses are masterKey only
-  if(classesWithMasterOnlyAccess.indexOf(className) >= 0 && !auth.isMaster){
-    const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
+  if (classesWithMasterOnlyAccess.indexOf(className) >= 0 && !auth.isMaster) {
+    const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 
   // readOnly masterKey is not allowed
-  if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
-    const error = `read-only masterKey isn't allowed to perform the ${method} operation.`
+  if (
+    auth.isReadOnly &&
+    (method === 'delete' || method === 'create' || method === 'update')
+  ) {
+    const error = `read-only masterKey isn't allowed to perform the ${method} operation.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 }
@@ -188,5 +290,5 @@ module.exports = {
   del,
   find,
   get,
-  update
+  update,
 };

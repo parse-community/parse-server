@@ -1,14 +1,19 @@
 // Helper functions for accessing the qq Graph API.
-var https = require('https');
+const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest('me?access_token=' + authData.access_token).then(function (data) {
+  return graphRequest('me?access_token=' + authData.access_token).then(function(
+    data
+  ) {
     if (data && data.openid == authData.id) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'qq auth is invalid for this user.'
+    );
   });
 }
 
@@ -19,33 +24,28 @@ function validateAppId() {
 
 // A promisey wrapper for qq graph requests.
 function graphRequest(path) {
-  return new Promise(function (resolve, reject) {
-    https.get('https://graph.qq.com/oauth2.0/' + path, function (res) {
-      var data = '';
-      res.on('data', function (chunk) {
-        data += chunk;
-      });
-      res.on('end', function () {
-        var starPos = data.indexOf("(");
-        var endPos = data.indexOf(")");
-        if(starPos == -1 || endPos == -1){
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
-        }
-        data = data.substring(starPos + 1,endPos - 1);
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function () {
-      reject('Failed to validate this access token with qq.');
+  return httpsRequest
+    .get('https://graph.qq.com/oauth2.0/' + path, true)
+    .then(data => {
+      return parseResponseData(data);
     });
-  });
+}
+
+function parseResponseData(data) {
+  const starPos = data.indexOf('(');
+  const endPos = data.indexOf(')');
+  if (starPos == -1 || endPos == -1) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'qq auth is invalid for this user.'
+    );
+  }
+  data = data.substring(starPos + 1, endPos - 1);
+  return JSON.parse(data);
 }
 
 module.exports = {
   validateAppId,
-  validateAuthData
+  validateAuthData,
+  parseResponseData,
 };

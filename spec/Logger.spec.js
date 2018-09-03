@@ -9,8 +9,8 @@ class TestTransport extends winston.Transport {
 
 describe('Logger', () => {
   it('should add transport', () => {
-    const testTransport = new (TestTransport)({
-      name: 'test'
+    const testTransport = new TestTransport({
+      name: 'test',
     });
     spyOn(testTransport, 'log');
     logging.addTransport(testTransport);
@@ -21,7 +21,7 @@ describe('Logger', () => {
     expect(Object.keys(logging.logger.transports).length).toBe(3);
   });
 
-  it('should have files transports', (done) => {
+  it('should have files transports', done => {
     reconfigureServer().then(() => {
       const transports = logging.logger.transports;
       const transportKeys = Object.keys(transports);
@@ -30,9 +30,9 @@ describe('Logger', () => {
     });
   });
 
-  it('should disable files logs', (done) => {
+  it('should disable files logs', done => {
     reconfigureServer({
-      logsFolder: null
+      logsFolder: null,
     }).then(() => {
       const transports = logging.logger.transports;
       const transportKeys = Object.keys(transports);
@@ -41,23 +41,27 @@ describe('Logger', () => {
     });
   });
 
-  it('should enable JSON logs', (done) => {
+  it('should enable JSON logs', done => {
     // Force console transport
     reconfigureServer({
       logsFolder: null,
       jsonLogs: true,
-      silent: false
-    }).then(() => {
-      spyOn(process.stdout, 'write');
-      logging.logger.info('hi', {key: 'value'});
-      expect(process.stdout.write).toHaveBeenCalled();
-      const firstLog = process.stdout.write.calls.first().args[0];
-      expect(firstLog).toEqual(JSON.stringify({key: 'value', level: 'info', message: 'hi' }) + '\n');
-      return reconfigureServer({
-        jsonLogs: false
+      silent: false,
+    })
+      .then(() => {
+        spyOn(process.stdout, 'write');
+        logging.logger.info('hi', { key: 'value' });
+        expect(process.stdout.write).toHaveBeenCalled();
+        const firstLog = process.stdout.write.calls.first().args[0];
+        expect(firstLog).toEqual(
+          JSON.stringify({ key: 'value', level: 'info', message: 'hi' }) + '\n'
+        );
+        return reconfigureServer({
+          jsonLogs: false,
+        });
+      })
+      .then(() => {
+        done();
       });
-    }).then(() => {
-      done();
-    });
   });
 });
