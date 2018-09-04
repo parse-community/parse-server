@@ -80,7 +80,7 @@ export default class MongoCollection {
   }
 
   count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
-    const countOperation = this._mongoCollection.count(query, {
+    const countOperation = this._mongoCollection.countDocuments(query, {
       skip,
       limit,
       sort,
@@ -109,7 +109,7 @@ export default class MongoCollection {
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
   upsertOne(query, update) {
-    return this._mongoCollection.update(query, update, { upsert: true });
+    return this._mongoCollection.updateOne(query, update, { upsert: true });
   }
 
   updateOne(query, update) {
@@ -126,7 +126,7 @@ export default class MongoCollection {
 
   _ensureSparseUniqueIndexInBackground(indexRequest) {
     return new Promise((resolve, reject) => {
-      this._mongoCollection.ensureIndex(
+      this._mongoCollection.createIndex(
         indexRequest,
         { unique: true, background: true, sparse: true },
         error => {
