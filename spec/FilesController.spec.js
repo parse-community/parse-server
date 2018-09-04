@@ -2,8 +2,8 @@ const LoggerController = require('../lib/Controllers/LoggerController')
   .LoggerController;
 const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
   .WinstonLoggerAdapter;
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter')
-  .GridStoreAdapter;
+const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
+  .GridFSBucketAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
 
@@ -20,7 +20,7 @@ const mockAdapter = {
 describe('FilesController', () => {
   it('should properly expand objects', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridStoreAdapter(
+    const gridStoreAdapter = new GridFSBucketAdapter(
       'mongodb://localhost:27017/parse'
     );
     const filesController = new FilesController(gridStoreAdapter);
@@ -72,7 +72,7 @@ describe('FilesController', () => {
 
   it('should add a unique hash to the file name when the preserveFileName option is false', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridStoreAdapter(
+    const gridStoreAdapter = new GridFSBucketAdapter(
       'mongodb://localhost:27017/parse'
     );
     spyOn(gridStoreAdapter, 'createFile');
@@ -95,7 +95,7 @@ describe('FilesController', () => {
 
   it('should not add a unique hash to the file name when the preserveFileName option is true', done => {
     const config = Config.get(Parse.applicationId);
-    const gridStoreAdapter = new GridStoreAdapter(
+    const gridStoreAdapter = new GridFSBucketAdapter(
       'mongodb://localhost:27017/parse'
     );
     spyOn(gridStoreAdapter, 'createFile');

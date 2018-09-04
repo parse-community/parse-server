@@ -43,7 +43,7 @@ addParseCloud();
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
 // "analyticsAdapter": an adapter class for analytics
-// "filesAdapter": a class like GridStoreAdapter providing create, get,
+// "filesAdapter": a class like GridFSBucketAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like WinstonLoggerAdapter providing info, error,
 //                 and query

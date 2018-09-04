@@ -18,7 +18,7 @@ import DatabaseController from './DatabaseController';
 import SchemaCache from './SchemaCache';
 
 // Adapters
-import { GridStoreAdapter } from '../Adapters/Files/GridStoreAdapter';
+import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
 import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
@@ -96,7 +96,7 @@ export function getFilesController(
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridStoreAdapter(databaseURI);
+    return new GridFSBucketAdapter(databaseURI);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,

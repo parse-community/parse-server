@@ -9,7 +9,7 @@
 // * getFileData(filename)
 // * getFileLocation(config, filename)
 //
-// Default is GridStoreAdapter, which requires mongo
+// Default is GridFSBucketAdapter, which requires mongo
 // and for the API server to be using the DatabaseController with Mongo
 // database adapter.
 

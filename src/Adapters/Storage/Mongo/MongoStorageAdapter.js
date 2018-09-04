@@ -135,6 +135,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
+    this._mongoOptions.useNewUrlParser = true;
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -385,7 +386,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return storageAdapterAllCollections(this).then(collections =>
       Promise.all(
         collections.map(
-          collection => (fast ? collection.remove({}) : collection.drop())
+          collection => (fast ? collection.deleteMany({}) : collection.drop())
         )
       )
     );
@@ -557,8 +558,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, {
-          new: true,
+        collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
+          returnOriginal: false,
         })
       )
       .then(result => mongoObjectToParseObject(className, result.value, schema))

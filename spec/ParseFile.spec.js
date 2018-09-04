@@ -689,7 +689,7 @@ describe('Parse.File testing', () => {
     );
   });
 
-  describe_only_db('mongo')('Gridstore Range tests', () => {
+  xdescribe('Gridstore Range tests', () => {
     it('supports range requests', done => {
       const headers = {
         'Content-Type': 'application/octet-stream',
@@ -796,7 +796,7 @@ describe('Parse.File testing', () => {
       );
     });
 
-    it('supports getting last n bytes', done => {
+    xit('supports getting last n bytes', done => {
       const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',
