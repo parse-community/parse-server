@@ -172,10 +172,7 @@ function del(config, auth, className, objectId) {
     })
     .then(() => {
       // Notify LiveQuery server if possible
-      config.liveQueryController.onAfterDelete(
-        inflatedObject.className,
-        inflatedObject
-      );
+      config.liveQueryController.onAfterDelete(className, inflatedObject);
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
