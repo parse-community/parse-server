@@ -107,8 +107,7 @@
   "lint-staged": {
     "{src,spec}/**/*.js": [
       "prettier --write",
-      "flow",
-      "eslint --cache ./",
+      "eslint --cache",
       "git add"
     ]
   }
