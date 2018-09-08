@@ -88,22 +88,18 @@ describe('SchemaController', () => {
           aRelation: { __type: 'Relation', className: 'Stuff' },
         });
       })
-      .then(
-        schema => {
-          return schema
-            .validateObject('Stuff', {
-              aRelation: { __type: 'Pointer', className: 'Stuff' },
-            })
-            .then(() => {
-              fail('expected invalidity');
-              done();
-            }, done);
-        },
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      .then(schema => {
+        return schema
+          .validateObject('Stuff', {
+            aRelation: { __type: 'Pointer', className: 'Stuff' },
+          })
+          .then(
+            () => {
+              done.fail('expected invalidity');
+            },
+            () => done()
+          );
+      }, done.fail);
   });
 
   it('rejects inconsistent types', done => {
@@ -115,10 +111,13 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema.validateObject('Stuff', { bacon: 'z' });
       })
-      .then(() => {
-        fail('expected invalidity');
-        done();
-      }, done);
+      .then(
+        () => {
+          fail('expected invalidity');
+          done();
+        },
+        () => done()
+      );
   });
 
   it('updates when new fields are added', done => {
@@ -133,10 +132,13 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema.validateObject('Stuff', { sausage: 'ate' });
       })
-      .then(() => {
-        fail('expected invalidity');
-        done();
-      }, done);
+      .then(
+        () => {
+          fail('expected invalidity');
+          done();
+        },
+        () => done()
+      );
   });
 
   it('class-level permissions test find', done => {

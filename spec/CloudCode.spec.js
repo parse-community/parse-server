@@ -727,7 +727,7 @@ describe('Cloud Code', () => {
       .then(
         function() {
           const objAgain = new Parse.Object('BeforeDeleteTest', obj.id);
-          return objAgain.fetch().then(fail, done);
+          return objAgain.fetch().then(fail, () => done());
         },
         function(error) {
           fail(error);

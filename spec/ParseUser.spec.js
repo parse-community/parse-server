@@ -1225,10 +1225,10 @@ describe('Parse.User testing', () => {
   });
 
   it('user authData should be available in cloudcode (#2342)', async done => {
-    Parse.Cloud.define('checkLogin', (req, res) => {
+    Parse.Cloud.define('checkLogin', req => {
       expect(req.user).not.toBeUndefined();
       expect(Parse.FacebookUtils.isLinked(req.user)).toBe(true);
-      res.success();
+      return 'ok';
     });
 
     const provider = getMockFacebookProvider();

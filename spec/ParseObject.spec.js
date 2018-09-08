@@ -91,7 +91,7 @@ describe('Parse.Object testing', () => {
     t.save().then(function() {
       t.destroy().then(function() {
         const t2 = new TestObject({ objectId: t.id });
-        t2.fetch().then(fail, done);
+        t2.fetch().then(fail, () => done());
       });
     });
   });
@@ -298,7 +298,7 @@ describe('Parse.Object testing', () => {
       !item.set({ 'foo^bar': 'baz' }),
       'Item should not be updated with invalid key.'
     );
-    item.save({ 'foo^bar': 'baz' }).then(fail, done);
+    item.save({ 'foo^bar': 'baz' }).then(fail, () => done());
   });
 
   it('invalid __type', function(done) {
@@ -1189,7 +1189,7 @@ describe('Parse.Object testing', () => {
         ok(!obj.dirty(), 'The object should not be dirty');
         ok(obj.get('aDate'));
       })
-      .finally(function() {
+      .then(function() {
         restController.request = r;
         done();
       });
@@ -1216,7 +1216,7 @@ describe('Parse.Object testing', () => {
         ok(obj.dirty(), 'The object should be dirty');
         equal(now, obj.get('aDate'));
       })
-      .finally(function() {
+      .then(function() {
         restController.request = r;
         done();
       });
