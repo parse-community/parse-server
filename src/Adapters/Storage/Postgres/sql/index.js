@@ -10,20 +10,19 @@ module.exports = {
     contains: sql('array/contains.sql'),
     containsAll: sql('array/contains-all.sql'),
     containsAllRegex: sql('array/contains-all-regex.sql'),
-    remove: sql('array/remove.sql')
+    remove: sql('array/remove.sql'),
   },
   misc: {
-    jsonObjectSetKeys: sql('misc/json-object-set-keys.sql')
-  }
+    jsonObjectSetKeys: sql('misc/json-object-set-keys.sql'),
+  },
 };
 
 ///////////////////////////////////////////////
 // Helper for linking to external query files;
 function sql(file) {
-
   var fullPath = path.join(__dirname, file); // generating full path;
 
-  var qf = new QueryFile(fullPath, {minify: true});
+  var qf = new QueryFile(fullPath, { minify: true });
 
   if (qf.error) {
     throw qf.error;

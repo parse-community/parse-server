@@ -25,7 +25,7 @@ interface Publisher {
    * @param {String} channel the channel in which to publish
    * @param {String} message the message to publish
    */
-  publish(channel: string, message: string):void;
+  publish(channel: string, message: string): void;
 }
 
 /**

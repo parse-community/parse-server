@@ -90,4 +90,3 @@
  * @property {String} redisURL parse-server's LiveQuery redisURL
  * @property {Adapter<PubSubAdapter>} pubSubAdapter LiveQuery pubsub adapter
  */
-

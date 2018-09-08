@@ -25,9 +25,9 @@ class Subscriber extends events.EventEmitter {
   }
 
   subscribe(channel: string): void {
-    const handler = (message) => {
+    const handler = message => {
       this.emit('message', channel, message);
-    }
+    };
     this.subscriptions.set(channel, handler);
     this.emitter.on(channel, handler);
   }
@@ -51,9 +51,7 @@ function createSubscriber(): any {
 
 const EventEmitterPubSub = {
   createPublisher,
-  createSubscriber
-}
+  createSubscriber,
+};
 
-export {
-  EventEmitterPubSub
-}
+export { EventEmitterPubSub };

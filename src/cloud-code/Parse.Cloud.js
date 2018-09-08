@@ -1,4 +1,4 @@
-import { Parse }     from 'parse/node';
+import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 
 function getClassName(parseClass) {
@@ -32,7 +32,12 @@ var ParseCloud = {};
  * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
  */
 ParseCloud.define = function(functionName, handler, validationHandler) {
-  triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+  triggers.addFunction(
+    functionName,
+    handler,
+    validationHandler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -75,7 +80,12 @@ ParseCloud.job = function(functionName, handler) {
  */
 ParseCloud.beforeSave = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.beforeSave, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.beforeSave,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -101,7 +111,12 @@ ParseCloud.beforeSave = function(parseClass, handler) {
  */
 ParseCloud.beforeDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.beforeDelete, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.beforeDelete,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -128,7 +143,12 @@ ParseCloud.beforeDelete = function(parseClass, handler) {
  */
 ParseCloud.afterSave = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.afterSave, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.afterSave,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -154,7 +174,12 @@ ParseCloud.afterSave = function(parseClass, handler) {
  */
 ParseCloud.afterDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.afterDelete, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.afterDelete,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -180,7 +205,12 @@ ParseCloud.afterDelete = function(parseClass, handler) {
  */
 ParseCloud.beforeFind = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.beforeFind, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.beforeFind,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 /**
@@ -206,7 +236,12 @@ ParseCloud.beforeFind = function(parseClass, handler) {
  */
 ParseCloud.afterFind = function(parseClass, handler) {
   const className = getClassName(parseClass);
-  triggers.addTrigger(triggers.Types.afterFind, className, handler, Parse.applicationId);
+  triggers.addTrigger(
+    triggers.Types.afterFind,
+    className,
+    handler,
+    Parse.applicationId
+  );
 };
 
 ParseCloud.onLiveQueryEvent = function(handler) {
@@ -215,14 +250,16 @@ ParseCloud.onLiveQueryEvent = function(handler) {
 
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
-}
+};
 
 ParseCloud.useMasterKey = () => {
   // eslint-disable-next-line
-  console.warn("Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly")
-}
+  console.warn(
+    'Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly'
+  );
+};
 
-ParseCloud.httpRequest = require("./httpRequest");
+ParseCloud.httpRequest = require('./httpRequest');
 
 module.exports = ParseCloud;
 
