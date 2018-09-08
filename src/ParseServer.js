@@ -161,12 +161,20 @@ class ParseServer {
         req.auth = new auth.Auth({ config: req.config });
       }
 
+      const formatError = error => ({
+        message: error.message,
+        code: error.originalError && error.originalError.code,
+        locations: error.locations,
+        path: error.path,
+      });
+
       // TODO: only await perhaps once, and optimize perf
       const { schema, rootValue } = await ParseServer.getGraphQLSchema();
       return {
         schema,
         rootValue,
         graphiql,
+        formatError,
       };
     });
   }
