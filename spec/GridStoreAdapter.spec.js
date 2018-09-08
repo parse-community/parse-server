@@ -8,11 +8,17 @@ const FilesController = require('../lib/Controllers/FilesController').default;
 
 // Small additional tests to improve overall coverage
 describe_only_db('mongo')('GridStoreAdapter', () => {
-  it('should properly instanciate the GridStore when deleting a file', done => {
+  it('should properly instanciate the GridStore when deleting a file', async done => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const config = Config.get(Parse.applicationId);
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
-    const filesController = new FilesController(gridStoreAdapter);
+    const db = await gridStoreAdapter._connect();
+    db.dropDatabase();
+    const filesController = new FilesController(
+      gridStoreAdapter,
+      Parse.applicationId,
+      {}
+    );
 
     // save original unlink before redefinition
     const originalUnlink = GridStore.prototype.unlink;
@@ -33,24 +39,25 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
       .createFile(config, 'myFilename.txt', 'my file content', 'text/plain')
       .then(myFile => {
         return MongoClient.connect(databaseURI)
-          .then(database => {
+          .then(client => {
+            const database = client.db(client.s.options.dbName);
             // Verify the existance of the fs.files document
             return database
               .collection('fs.files')
               .count()
               .then(count => {
                 expect(count).toEqual(1);
-                return database;
+                return { database, client };
               });
           })
-          .then(database => {
+          .then(({ database, client }) => {
             // Verify the existance of the fs.files document
             return database
               .collection('fs.chunks')
               .count()
               .then(count => {
                 expect(count).toEqual(1);
-                return database.close();
+                return client.close();
               });
           })
           .then(() => {
@@ -59,24 +66,25 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
       })
       .then(() => {
         return MongoClient.connect(databaseURI)
-          .then(database => {
+          .then(client => {
+            const database = client.db(client.s.options.dbName);
             // Verify the existance of the fs.files document
             return database
               .collection('fs.files')
               .count()
               .then(count => {
                 expect(count).toEqual(0);
-                return database;
+                return { database, client };
               });
           })
-          .then(database => {
+          .then(({ database, client }) => {
             // Verify the existance of the fs.files document
             return database
               .collection('fs.chunks')
               .count()
               .then(count => {
                 expect(count).toEqual(0);
-                return database.close();
+                return client.close();
               });
           });
       })
