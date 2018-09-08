@@ -182,7 +182,7 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 
 // 10 minutes timeout
 beforeAll(async () => {
-  await startDB();
+  await new Promise(done => startDB(done));
   await databaseAdapter.deleteAllClasses(false);
 }, 10 * 60 * 1000);
 
