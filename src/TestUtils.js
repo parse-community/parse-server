@@ -12,6 +12,20 @@ export function destroyAllDataPermanently(fast) {
     Object.keys(AppCache.cache).map(appId => {
       const app = AppCache.get(appId);
       if (app.databaseController) {
+        if (
+          app.loggerController &&
+          app.loggerController.options &&
+          app.loggerController.options.logsFolder
+        ) {
+          const folder = app.loggerController.options.logsFolder;
+          try {
+            require('child_process').execSync('rm ' + folder + '*', {
+              stdio: 'ignore',
+            });
+          } catch (e) {
+            /**/
+          }
+        }
         return app.databaseController.deleteEverything(fast);
       } else {
         return Promise.resolve();
