@@ -1,5 +1,5 @@
 const { NumberInput } = require('../lib/graphql/types/NumberInput');
-const { ACL } = require('../lib/graphql/types/ACL');
+const { toParseACL, toGraphQLACL } = require('../lib/graphql/types/ACL');
 const { JSONObject } = require('../lib/graphql/types/JSONObject');
 const DateType = require('../lib/graphql/types/Date');
 
@@ -132,41 +132,46 @@ describe('graphQL types', () => {
   });
 
   describe('ACL', () => {
+    const ACLPairs = [
+      [
+        {
+          read: ['*', 'user_id', 'role:my-role'],
+        },
+        {
+          '*': { read: true },
+          user_id: { read: true },
+          'role:my-role': { read: true },
+        },
+      ],
+      [
+        {
+          write: ['*', 'user_id', 'role:my-role'],
+        },
+        {
+          '*': { write: true },
+          user_id: { write: true },
+          'role:my-role': { write: true },
+        },
+      ],
+      [
+        {
+          read: ['*'],
+          write: ['*', 'user_id', 'role:my-role'],
+        },
+        {
+          '*': { read: true, write: true },
+          user_id: { write: true },
+          'role:my-role': { write: true },
+        },
+      ],
+    ];
     it('should parse Parse.ACL', () => {
-      expect(ACL.parseValue(new Parse.ACL())).toEqual({});
-
-      const publicACL = new Parse.ACL();
-      publicACL.setPublicReadAccess(true);
-      expect(ACL.parseValue(publicACL)).toEqual({ '*': { read: true } });
-
-      const userACL = new Parse.ACL();
-      userACL.setReadAccess('abcdef', true);
-      userACL.setWriteAccess('abcdef', true);
-      expect(ACL.parseValue(userACL)).toEqual({
-        abcdef: { read: true, write: true },
+      ACLPairs.forEach(pair => {
+        expect(toParseACL(pair[0])).toEqual(pair[1]);
       });
-
-      const roleACL = new Parse.ACL();
-      roleACL.setReadAccess('abcdef', true);
-      roleACL.setRoleWriteAccess('Admin', true);
-      expect(ACL.parseValue(roleACL)).toEqual({
-        abcdef: { read: true },
-        'role:Admin': { write: true },
+      ACLPairs.forEach(pair => {
+        expect(toGraphQLACL(pair[1])).toEqual(pair[0]);
       });
-    });
-
-    it('should throw when passing bad values', () => {
-      expect(() => {
-        console.log(ACL.parseValue(null));
-      }).toThrow('Invalid ACL value, should be a Parse.ACL');
-
-      expect(() => {
-        ACL.parseValue('hello world');
-      }).toThrow('Invalid ACL value, should be a Parse.ACL');
-
-      expect(() => {
-        ACL.parseLiteral();
-      }).toThrow('not implemented');
     });
   });
 

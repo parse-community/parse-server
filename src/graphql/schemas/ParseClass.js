@@ -24,6 +24,7 @@ import { queryType, inputType, type, PageInfo } from '../types';
 import { Node } from '../types/Node';
 
 import { getOrElse } from '../typesCache';
+import { toParseACL } from '../types/ACL';
 
 function handleIdField(fieldName) {
   if (fieldName === 'objectId' || fieldName == 'id') {
@@ -131,6 +132,8 @@ function transformInput(input, schema) {
       value.__type = 'Pointer';
     } else if (fields[key] && fields[key].type === 'GeoPoint') {
       value.__type = 'GeoPoint';
+    } else if (key === 'ACL') {
+      input[key] = toParseACL(value);
     }
   });
   return input;

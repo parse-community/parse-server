@@ -1,4 +1,5 @@
 import rest from '../rest';
+import { toGraphQLACL } from './types/ACL';
 export { rest };
 
 export function getGloballyUniqueId(className, objectId) {
@@ -12,6 +13,9 @@ export function transformResult(className, result) {
   if (result.objectId) {
     // Make a unique identifier for relay
     result.id = getGloballyUniqueId(className, result.objectId);
+  }
+  if (result.ACL) {
+    result.ACL = toGraphQLACL(result.ACL);
   }
   return Object.assign({ className }, result);
 }

@@ -47,9 +47,6 @@ describe('graphQL CRUD operations', () => {
   });
 
   it('Adds objects', async () => {
-    const ACL = new Parse.ACL();
-    ACL.setPublicReadAccess(true);
-    ACL.setPublicWriteAccess(true);
     const dateValue = new Date('2018-09-01');
     const input = {
       newClass: {
@@ -57,7 +54,10 @@ describe('graphQL CRUD operations', () => {
         booleanValue: true,
         numberValue: -1,
         dateValue,
-        ACL,
+        ACL: {
+          read: ['*'],
+          write: ['*'],
+        },
         geoPointValue: { latitude: 20.0, longitude: 10.0 },
       },
     };
@@ -74,7 +74,10 @@ describe('graphQL CRUD operations', () => {
               numberValue
               booleanValue
               dateValue
-              ACL
+              ACL {
+                read
+                write
+              }
               geoPointValue {
                 latitude
                 longitude
@@ -102,7 +105,7 @@ describe('graphQL CRUD operations', () => {
       booleanValue: true,
       numberValue: -1,
       dateValue: dateValue,
-      ACL: { '*': { read: true, write: true } },
+      ACL: { read: ['*'], write: ['*'] },
       createdAt: object.createdAt,
       updatedAt: object.updatedAt,
       geoPointValue: {
@@ -130,7 +133,10 @@ describe('graphQL CRUD operations', () => {
           NewClass: findNewClass {
             nodes {
               objectId
-              ACL
+              ACL {
+                read
+                write
+              }
             }
           }
           OtherClass: findOtherClass {
@@ -171,7 +177,8 @@ describe('graphQL CRUD operations', () => {
       expect(Object.keys(object).length).toBe(2);
       expect(object.objectId).toBeDefined();
       expect(object.ACL).toEqual({
-        '*': { read: true, write: true },
+        read: ['*'],
+        write: ['*'],
       });
     });
 
