@@ -9,7 +9,7 @@ import { ACL, ACLInput } from './ACL';
 
 import { GeoPoint, GeoPointInput, GeoPointQuery } from './GeoPoint';
 
-import { File } from './File';
+import { File, FileInput } from './File';
 
 import { Date, DateQuery } from './Date';
 
@@ -31,6 +31,7 @@ export {
   GeoPoint,
   GeoPointInput,
   File,
+  FileInput,
   Date,
   Pointer,
   JSONObject,
@@ -69,8 +70,7 @@ export function inputType(field) {
     return GeoPointInput;
   }
   if (type == 'File') {
-    // TODO: How to set a file in an object
-    // return GraphQLFile;
+    return FileInput;
   } else if (type == 'ACL') {
     return ACLInput;
   } else if (type == 'Date') {

@@ -191,3 +191,23 @@ export function containsOnlyIdFields(selections) {
     (wantsObjectId && selections.length == 1)
   );
 }
+
+export function handleFileUpload(config, auth, className, input, schema) {
+  const objectSchema = schema[className];
+  const promises = Object.keys(objectSchema.fields)
+    .filter(field => objectSchema.fields[field].type === 'File')
+    .reduce((memo, field) => {
+      if (input[field]) {
+        memo.push({ fieldName: field, contents: input[field] });
+      }
+      return memo;
+    }, [])
+    .map(({ fieldName, contents: { name, base64, contentType } }) => {
+      return config.filesController
+        .createFile(config, name, new Buffer(base64, 'base64'), contentType)
+        .then(({ url, name }) => {
+          input[fieldName] = { url, name, __type: 'File' };
+        });
+    });
+  return Promise.all(promises);
+}

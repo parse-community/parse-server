@@ -5,6 +5,12 @@ import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 
+export function getMount(req) {
+  const mountPathLength = req.originalUrl.length - req.url.length;
+  const mountPath = req.originalUrl.slice(0, mountPathLength);
+  return req.protocol + '://' + req.get('host') + mountPath;
+}
+
 // Checks that the request is authorized for this app and checks user
 // auth too.
 // The bodyparser should run before this middleware.
@@ -12,9 +18,7 @@ import defaultLogger from './logger';
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
-  var mountPathLength = req.originalUrl.length - req.url.length;
-  var mountPath = req.originalUrl.slice(0, mountPathLength);
-  var mount = req.protocol + '://' + req.get('host') + mountPath;
+  const mount = getMount(req);
 
   var info = {
     appId: req.get('X-Parse-Application-Id'),

@@ -6,6 +6,7 @@ import {
   connectionResultsArray,
   parseID,
   getGloballyUniqueId,
+  handleFileUpload,
 } from '../execute';
 import { getAuthForSessionToken } from '../../Auth';
 
@@ -203,6 +204,7 @@ export function loadClass(className, schema) {
       const input = transformInput(args.input, schema[className]);
       const clientMutationId = input.clientMutationId;
       delete input.clientMutationId;
+      await handleFileUpload(config, auth, className, input, schema);
       const res = await rest.create(config, auth, className, input);
       if (className === '_User' && res.response && res.response.sessionToken) {
         auth = await getAuthForSessionToken({
@@ -233,6 +235,13 @@ export function loadClass(className, schema) {
       const input = transformInput(args.input, schema[className]);
       const clientMutationId = input.clientMutationId;
       delete input.clientMutationId;
+      await handleFileUpload(
+        context.config,
+        context.auth,
+        className,
+        input,
+        schema
+      );
 
       await rest.update(
         context.config,

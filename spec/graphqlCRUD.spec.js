@@ -1,5 +1,6 @@
 const GraphQLParseSchema = require('../lib/graphql/Schema').GraphQLParseSchema;
 const Config = require('../lib/Config');
+const rp = require('request-promise');
 const Auth = require('../lib/Auth').Auth;
 const { graphql } = require('graphql');
 const {
@@ -27,6 +28,11 @@ async function setup(config) {
     otherString: { type: 'String' },
     newClass: { type: 'Pointer', targetClass: 'NewClass' },
   });
+  await schema.addClassIfNotExists('MultiFiles', {
+    file: { type: 'File' },
+    otherFile: { type: 'File' },
+    lastFile: { type: 'File' },
+  });
   const Schema = new GraphQLParseSchema('test');
   return await Schema.load();
 }
@@ -36,7 +42,7 @@ describe('graphQL CRUD operations', () => {
   let root;
   let context;
   beforeEach(async () => {
-    config = Config.get('test');
+    config = Config.get('test', Parse.serverURL);
     const result = await setup(config);
     schema = result.schema;
     root = result.root;
@@ -54,6 +60,10 @@ describe('graphQL CRUD operations', () => {
         booleanValue: true,
         numberValue: -1,
         dateValue,
+        file: {
+          name: 'myFile.txt',
+          base64: new Buffer('hello').toString('base64'),
+        },
         ACL: {
           read: ['*'],
           write: ['*'],
@@ -74,6 +84,10 @@ describe('graphQL CRUD operations', () => {
               numberValue
               booleanValue
               dateValue
+              file {
+                name
+                url
+              }
               ACL {
                 read
                 write
@@ -99,6 +113,10 @@ describe('graphQL CRUD operations', () => {
     expect(object.createdAt instanceof Date).toBeTruthy();
     expect(object.updatedAt).toBeDefined();
     expect(object.updatedAt instanceof Date).toBeTruthy();
+    expect(object.file.name.indexOf('myFile.txt'));
+    const contents = await rp.get(object.file.url);
+    expect(contents).toBe('hello');
+    delete object.file; // delete the file to check equality
     expect(object).toEqual({
       objectId: object.objectId,
       stringValue: 'Hello World!',
@@ -560,6 +578,127 @@ describe('graphQL CRUD operations', () => {
     );
     expect(newClassObject.data.NewClass).toBeNull();
     done();
+  });
+
+  describe('files', () => {
+    it('uploads multiple files at once', async () => {
+      const input = {
+        file: {
+          name: 'myFile.txt',
+          base64: new Buffer('hello').toString('base64'),
+        },
+        otherFile: {
+          name: 'myFile1.txt',
+          base64: new Buffer('helloOther').toString('base64'),
+        },
+        lastFile: {
+          name: 'myFile2.txt',
+          base64: new Buffer('helloLast').toString('base64'),
+        },
+      };
+      const createResult = await graphql(
+        schema,
+        `
+          mutation myMutation($input: AddMultiFilesInput!) {
+            addMultiFiles(input: $input) {
+              object {
+                file {
+                  name
+                  url
+                }
+                otherFile {
+                  name
+                  url
+                }
+                lastFile {
+                  name
+                  url
+                }
+              }
+            }
+          }
+        `,
+        root,
+        context,
+        { input }
+      );
+      const {
+        addMultiFiles: {
+          object: { file, otherFile, lastFile },
+        },
+      } = createResult.data;
+      let contents = await rp.get(file.url);
+      expect(contents).toBe('hello');
+      contents = await rp.get(otherFile.url);
+      expect(contents).toBe('helloOther');
+      contents = await rp.get(lastFile.url);
+      expect(contents).toBe('helloLast');
+    });
+
+    it('can update files on exising objects', async () => {
+      const object = new Parse.Object('MultiFiles');
+      const file1 = new Parse.File('myFirstfile.txt', {
+        base64: new Buffer('Hello Origial', 'utf8').toString('base64'),
+      });
+      await file1.save();
+      object.set({ file: file1 });
+      await object.save();
+
+      expect(await rp.get(object.get('file').url())).toEqual('Hello Origial');
+
+      const input = {
+        objectId: object.id,
+        file: {
+          name: 'myFile.txt',
+          base64: new Buffer('hello').toString('base64'),
+        },
+        otherFile: {
+          name: 'myFile1.txt',
+          base64: new Buffer('helloOther').toString('base64'),
+        },
+        lastFile: {
+          name: 'myFile2.txt',
+          base64: new Buffer('helloLast').toString('base64'),
+        },
+      };
+      const createResult = await graphql(
+        schema,
+        `
+          mutation myMutation($input: UpdateMultiFilesInput!) {
+            updateMultiFiles(input: $input) {
+              object {
+                file {
+                  name
+                  url
+                }
+                otherFile {
+                  name
+                  url
+                }
+                lastFile {
+                  name
+                  url
+                }
+              }
+            }
+          }
+        `,
+        root,
+        context,
+        { input }
+      );
+      const {
+        updateMultiFiles: {
+          object: { file, otherFile, lastFile },
+        },
+      } = createResult.data;
+      let contents = await rp.get(file.url);
+      expect(contents).toBe('hello');
+      contents = await rp.get(otherFile.url);
+      expect(contents).toBe('helloOther');
+      contents = await rp.get(lastFile.url);
+      expect(contents).toBe('helloLast');
+    });
   });
 
   describe('utilities', () => {

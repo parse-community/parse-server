@@ -141,7 +141,9 @@ class ParseServer {
   static graphqlHTTP({ graphiql }) {
     return graphqlHTTP(async req => {
       // TODO: use middleware please :)
-      req.config = req.config || Config.get(Parse.applicationId);
+      req.config =
+        req.config ||
+        Config.get(Parse.applicationId, middlewares.getMount(req));
       const sessionToken = req.get('x-parse-session-token');
       const installationId = req.get('x-parse-installation-id');
       req.info = {
