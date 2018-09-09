@@ -114,7 +114,7 @@ export class UsersRouter extends ClassesRouter {
     if (req.info && req.info.sessionToken) {
       const sessionToken = req.info.sessionToken;
       const clientSDK = req.info.clientSDK;
-      logOut(sessionToken, config, clientSDK);
+      await logOut(sessionToken, config, clientSDK);
     }
     return success;
   }
