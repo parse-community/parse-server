@@ -50,8 +50,8 @@ const postgresURI =
 let databaseAdapter;
 // need to bind for mocking mocha
 
-let startDB = () => {};
-let stopDB = () => {};
+let startDB = done => done();
+let stopDB = done => done();
 
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseAdapter = new PostgresStorageAdapter({
