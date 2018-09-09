@@ -209,6 +209,8 @@ describe('Cloud Code Logger', () => {
         expect(log[1]).toMatch(
           /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error:/
         );
+        const errorString = JSON.stringify(new Parse.Error(141, 'it failed!'));
+        expect(log[1].indexOf(errorString)).toBeGreaterThan(0);
         done();
       })
       .catch(done.fail);

@@ -1360,7 +1360,7 @@ describe('Parse.Query testing', () => {
       .find()
       .then(done.fail)
       .catch(error => expect(error.code).toBe(Parse.Error.INVALID_KEY_NAME))
-      .finally(done);
+      .then(done);
   });
 
   it('get', function(done) {
@@ -1387,7 +1387,7 @@ describe('Parse.Query testing', () => {
     ) {
       ok(items[0]);
       const query = new Parse.Query(TestObject);
-      query.get(undefined).then(fail, done);
+      query.get(undefined).then(fail, () => done());
     });
   });
 
@@ -1453,7 +1453,7 @@ describe('Parse.Query testing', () => {
       .first()
       .then(done.fail)
       .catch(e => expect(e.code).toBe(Parse.Error.INVALID_KEY_NAME))
-      .finally(done);
+      .then(done);
   });
 
   const Container = Parse.Object.extend({
@@ -1821,7 +1821,7 @@ describe('Parse.Query testing', () => {
         .find()
         .then(done.fail)
         .catch(e => expect(e.code).toBe(Parse.Error.INVALID_KEY_NAME))
-        .finally(done);
+        .then(done);
     });
   });
 
@@ -2044,7 +2044,7 @@ describe('Parse.Query testing', () => {
       .find()
       .then(done.fail)
       .catch(e => expect(e.code).toBe(Parse.Error.INVALID_QUERY))
-      .finally(done);
+      .then(done);
   });
 
   it('Use a regex that requires all modifiers', function(done) {
@@ -4235,7 +4235,7 @@ describe('Parse.Query testing', () => {
     obj1
       .save({ useMasterKey: true })
       .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, done);
+      .then(done.fail, () => done());
   });
 
   it_only_db('mongo')(
@@ -4252,7 +4252,7 @@ describe('Parse.Query testing', () => {
       obj1
         .save({ useMasterKey: true })
         .then(() => q.find({ useMasterKey: true }))
-        .then(done.fail, done);
+        .then(done.fail, () => done());
     }
   );
 
@@ -4399,7 +4399,7 @@ describe('Parse.Query testing', () => {
     q.find()
       .then(done.fail)
       .catch(e => expect(e.code).toBe(Parse.Error.INVALID_JSON))
-      .finally(done);
+      .then(done);
   });
 
   it('withJSON with geoWithin.centerSphere fails with invalid distance', done => {
@@ -4414,7 +4414,7 @@ describe('Parse.Query testing', () => {
     q.find()
       .then(done.fail)
       .catch(e => expect(e.code).toBe(Parse.Error.INVALID_JSON))
-      .finally(() => done());
+      .then(done);
   });
 
   it('withJSON with geoWithin.centerSphere fails with invalid coordinate', done => {
@@ -4428,7 +4428,7 @@ describe('Parse.Query testing', () => {
     q.withJSON(jsonQ);
     q.find()
       .then(done.fail)
-      .catch(done);
+      .catch(() => done());
   });
 
   it('withJSON with geoWithin.centerSphere fails with invalid geo point', done => {
@@ -4442,6 +4442,6 @@ describe('Parse.Query testing', () => {
     q.withJSON(jsonQ);
     q.find()
       .then(done.fail)
-      .catch(done);
+      .catch(() => done());
   });
 });
