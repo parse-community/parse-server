@@ -17,6 +17,21 @@ import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
 import SchemaCache from './SchemaCache';
 
+export {
+  LoggerController,
+  FilesController,
+  HooksController,
+  UserController,
+  CacheController,
+  LiveQueryController,
+  AnalyticsController,
+  PushController,
+  PushQueue,
+  PushWorker,
+  DatabaseController,
+  SchemaCache,
+};
+
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';

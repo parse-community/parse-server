@@ -1,6 +1,7 @@
 import rest from '../rest';
 import { toGraphQLACL } from './types/ACL';
 export { rest };
+import { Config } from '../Config';
 
 export function getGloballyUniqueId(className, objectId) {
   return base64(`${className}::${objectId}`);
@@ -141,8 +142,17 @@ function parseArguments(args) {
   return { options, queryAdditions: query };
 }
 
+type Context = { auth: any, config: Config };
+
 // Runs a find against the rest API
-export function runFind(context, info, className, args, schema, restQuery) {
+export function runFind(
+  context: Config,
+  info,
+  className,
+  args,
+  schema,
+  restQuery
+) {
   const query = {};
   if (args.where) {
     Object.assign(query, args.where);
@@ -161,7 +171,12 @@ export function runFind(context, info, className, args, schema, restQuery) {
 }
 
 // runs a get against the rest API
-export function runGet(context, info, className, objectId) {
+export function runGet(
+  context: Context,
+  info,
+  className: string,
+  objectId: string
+) {
   return rest
     .get(context.config, context.auth, className, objectId, {})
     .then(toGraphQLResult(className))
@@ -192,7 +207,13 @@ export function containsOnlyIdFields(selections) {
   );
 }
 
-export function handleFileUpload(config, auth, className, input, schema) {
+export function handleFileUpload(
+  config: Config,
+  auth,
+  className,
+  input: any,
+  schema
+) {
   const objectSchema = schema[className];
   const promises = Object.keys(objectSchema.fields)
     .filter(field => objectSchema.fields[field].type === 'File')

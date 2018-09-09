@@ -3,9 +3,21 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
-import SchemaCache from './Controllers/SchemaCache';
-import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
+import {
+  LoggerController,
+  FilesController,
+  UserController,
+  PushController,
+  PushWorker,
+  PushQueue,
+  AnalyticsController,
+  CacheController,
+  LiveQueryController,
+  HooksController,
+  DatabaseController,
+  SchemaCache,
+} from './Controllers';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -18,7 +30,21 @@ function removeTrailingSlash(str) {
 }
 
 export class Config {
-  static get(applicationId: string, mount: string) {
+  loggerController: LoggerController;
+  filesController: FilesController;
+  userController: UserController;
+  pushController: PushController;
+  hasPushScheduledSupport: boolean;
+  hasPushSupport: boolean;
+  pushWorker: PushWorker;
+  pushControllerQueue: PushQueue;
+  analyticsController: AnalyticsController;
+  cacheController: CacheController;
+  liveQueryController: LiveQueryController;
+  databaseController: DatabaseController;
+  hooksController: HooksController;
+
+  static get(applicationId: string, mount: string): Config {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
