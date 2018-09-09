@@ -15,13 +15,18 @@ describe('graphQL UserAuth', () => {
     root = result.root;
   }
 
-  beforeEach(async () => {
+  function reloadContext() {
     config = Config.get('test');
-    await reload();
     context = {
       config,
       auth: new Auth({ config }),
     };
+  }
+
+  beforeEach(async () => {
+    config = Config.get('test');
+    await reload();
+    reloadContext();
   });
 
   it('can create a user and returns the email', async () => {
@@ -163,6 +168,47 @@ describe('graphQL UserAuth', () => {
       useMasterKey: true,
     });
     expect(sessions.length).toBe(0);
+  });
+
+  it('can request a password reset', async () => {
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve(),
+    };
+    await reconfigureServer({
+      emailAdapter,
+      publicServerURL: Parse.serverURL,
+    });
+    reloadContext();
+    const spy = spyOn(emailAdapter, 'sendPasswordResetEmail');
+    const user = new Parse.User();
+    await user.save({
+      username: 'luke_skywalker',
+      email: 'luke@therebellion',
+      password: 'strong the force is with me',
+    });
+    const input = {
+      email: 'luke@therebellion',
+    };
+    const result = await graphql(
+      schema,
+      `
+        mutation requestEmailReset($input: RequestPasswordResetInput) {
+          requestPasswordReset(input: $input)
+        }
+      `,
+      root,
+      context,
+      { input }
+    );
+    expect(result.errors).not.toBeDefined();
+    expect(result.data.requestPasswordReset).toBe(true);
+    expect(spy).toHaveBeenCalled();
+    const args = spy.calls.mostRecent().args;
+    expect(args.length).toBeGreaterThan(0);
+    expect(args[0].user).toBeDefined();
+    expect(args[0].user.get('email')).toBe('luke@therebellion');
   });
 
   it('can get currentUser when logged in', async () => {
