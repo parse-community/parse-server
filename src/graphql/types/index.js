@@ -1,3 +1,5 @@
+// @flow
+
 import {
   GraphQLString,
   GraphQLFloat,
@@ -24,6 +26,8 @@ import { NumberQuery } from './NumberQuery';
 import { NumberInput } from './NumberInput';
 
 import { PageInfo } from './PageInfo';
+
+import { ArrayQuery } from './Array';
 
 export {
   ACL,
@@ -106,5 +110,7 @@ export function queryType(field) {
     return DateQuery;
   } else if (type == 'Pointer') {
     return PointerInput(field);
+  } else if (type == 'Array') {
+    return ArrayQuery;
   }
 }

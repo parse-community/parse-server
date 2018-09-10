@@ -251,6 +251,127 @@ describe('graphQL CRUD operations', () => {
     });
   });
 
+  it('finds object with array queries equaliy', async () => {
+    const obj = new Parse.Object('NewClass', {
+      stringValue: 'baz',
+      arrayValue: [1, 2, 3],
+    });
+    const obj2 = new Parse.Object('NewClass', {
+      stringValue: 'foo',
+      arrayValue: ['a', 'b', 'c'],
+    });
+    const obj3 = new Parse.Object('NewClass', {
+      stringValue: 'bar',
+      arrayValue: [1, 'a'],
+    });
+    await Parse.Object.saveAll([obj, obj2, obj3]);
+    const res = await graphql(
+      schema,
+      `
+        query findThem {
+          findNewClass(where: { arrayValue: { eq: 1 } }) {
+            edges {
+              cursor
+              node {
+                id
+                objectId
+                stringValue
+              }
+            }
+          }
+        }
+      `,
+      root,
+      context
+    );
+    expect(res.errors).toBeUndefined();
+    const { edges } = res.data.findNewClass;
+    expect(edges.length).toBe(2);
+    edges.forEach(edge => {
+      expect(['baz', 'bar'].includes(edge.node.stringValue)).toBeTruthy();
+    });
+  });
+
+  it('finds object with array queries equality with strings', async () => {
+    const obj = new Parse.Object('NewClass', {
+      stringValue: 'baz',
+      arrayValue: [1, 2, 3],
+    });
+    const obj2 = new Parse.Object('NewClass', {
+      stringValue: 'foo',
+      arrayValue: ['a', 'b', 'c'],
+    });
+    const obj3 = new Parse.Object('NewClass', {
+      stringValue: 'bar',
+      arrayValue: [1, 'a'],
+    });
+    await Parse.Object.saveAll([obj, obj2, obj3]);
+    const res = await graphql(
+      schema,
+      `
+        query findThem {
+          findNewClass(where: { arrayValue: { eq: "a" } }) {
+            edges {
+              cursor
+              node {
+                id
+                objectId
+                stringValue
+              }
+            }
+          }
+        }
+      `,
+      root,
+      context
+    );
+    expect(res.errors).toBeUndefined();
+    const { edges } = res.data.findNewClass;
+    expect(edges.length).toBe(2);
+    edges.forEach(edge => {
+      expect(['foo', 'bar'].includes(edge.node.stringValue)).toBeTruthy();
+    });
+  });
+
+  it('finds object with array queries equality with all', async () => {
+    const obj = new Parse.Object('NewClass', {
+      stringValue: 'baz',
+      arrayValue: [1, 2, 3],
+    });
+    const obj2 = new Parse.Object('NewClass', {
+      stringValue: 'foo',
+      arrayValue: ['a', 'b', 'c'],
+    });
+    const obj3 = new Parse.Object('NewClass', {
+      stringValue: 'bar',
+      arrayValue: [1, 'a'],
+    });
+    await Parse.Object.saveAll([obj, obj2, obj3]);
+    const res = await graphql(
+      schema,
+      `
+        query findThem {
+          findNewClass(where: { arrayValue: { all: ["a", "b", "c"] } }) {
+            edges {
+              cursor
+              node {
+                id
+                objectId
+                stringValue
+              }
+            }
+          }
+        }
+      `,
+      root,
+      context
+    );
+    expect(res.errors).toBeUndefined();
+    const { edges } = res.data.findNewClass;
+    expect(edges.length).toBe(1);
+    expect(edges[0].node.stringValue).toBe('foo');
+  });
+
   async function makeObjects(amount) {
     const objects = [];
     while (objects.length != amount) {
