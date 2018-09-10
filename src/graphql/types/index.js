@@ -5,6 +5,7 @@ import {
   GraphQLFloat,
   GraphQLBoolean,
   GraphQLList,
+  GraphQLInputObjectType,
 } from 'graphql';
 
 import { ACL, ACLInput } from './ACL';
@@ -28,6 +29,8 @@ import { NumberInput } from './NumberInput';
 import { PageInfo } from './PageInfo';
 
 import { ArrayQuery } from './Array';
+
+import { BaseQuery } from './BaseQuery';
 
 export {
   ACL,
@@ -54,6 +57,11 @@ const types = {
   Object: JSONObject,
   Array: new GraphQLList(JSONObject),
 };
+
+export const BooleanQuery = new GraphQLInputObjectType({
+  name: 'BooleanQuery',
+  fields: BaseQuery(GraphQLBoolean),
+});
 
 export function type({ type }) {
   return types[type];
@@ -95,7 +103,7 @@ export function queryType(field) {
     return NumberQuery;
   }
   if (type == 'Boolean') {
-    return GraphQLBoolean;
+    return BooleanQuery;
   }
   if (type == 'GeoPoint') {
     return GeoPointQuery;

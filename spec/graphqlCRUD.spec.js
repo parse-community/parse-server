@@ -372,6 +372,108 @@ describe('graphQL CRUD operations', () => {
     expect(edges[0].node.stringValue).toBe('foo');
   });
 
+  it('finds object with select', async () => {
+    const obj = new Parse.Object('NewClass', {
+      stringValue: 'baz',
+      arrayValue: [1, 2, 3],
+    });
+    const obj2 = new Parse.Object('OtherClass', {
+      otherString: 'baz',
+    });
+    const obj3 = new Parse.Object('NewClass', {
+      stringValue: 'bar',
+      arrayValue: [1, 'a'],
+    });
+    await Parse.Object.saveAll([obj, obj2, obj3]);
+    const res = await graphql(
+      schema,
+      `
+        query findThem {
+          findNewClass(
+            where: {
+              stringValue: {
+                select: {
+                  query: {
+                    className: "OtherClass"
+                    where: { otherString: "baz" }
+                  }
+                  key: "otherString"
+                }
+              }
+            }
+          ) {
+            edges {
+              cursor
+              node {
+                id
+                objectId
+                stringValue
+              }
+            }
+          }
+        }
+      `,
+      root,
+      context
+    );
+    expect(res.errors).toBeUndefined();
+    const { edges } = res.data.findNewClass;
+    expect(edges.length).toBe(1);
+    expect(edges[0].node.objectId).toBe(obj.id);
+    expect(edges[0].node.stringValue).toBe('baz');
+  });
+
+  it('finds object with dontSelect', async () => {
+    const obj = new Parse.Object('NewClass', {
+      stringValue: 'baz',
+      arrayValue: [1, 2, 3],
+    });
+    const obj2 = new Parse.Object('OtherClass', {
+      otherString: 'baz',
+    });
+    const obj3 = new Parse.Object('NewClass', {
+      stringValue: 'bar',
+      arrayValue: [1, 'a'],
+    });
+    await Parse.Object.saveAll([obj, obj2, obj3]);
+    const res = await graphql(
+      schema,
+      `
+        query findThem {
+          findNewClass(
+            where: {
+              stringValue: {
+                dontSelect: {
+                  query: {
+                    className: "OtherClass"
+                    where: { otherString: "baz" }
+                  }
+                  key: "otherString"
+                }
+              }
+            }
+          ) {
+            edges {
+              cursor
+              node {
+                id
+                objectId
+                stringValue
+              }
+            }
+          }
+        }
+      `,
+      root,
+      context
+    );
+    expect(res.errors).toBeUndefined();
+    const { edges } = res.data.findNewClass;
+    expect(edges.length).toBe(1);
+    expect(edges[0].node.objectId).toBe(obj3.id);
+    expect(edges[0].node.stringValue).toBe('bar');
+  });
+
   async function makeObjects(amount) {
     const objects = [];
     while (objects.length != amount) {
