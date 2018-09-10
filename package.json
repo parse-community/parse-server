@@ -104,7 +104,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged"
+      "pre-commit": "flow && lint-staged"
     }
   },
   "lint-staged": {

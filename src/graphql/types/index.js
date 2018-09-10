@@ -6,6 +6,7 @@ import {
   GraphQLBoolean,
   GraphQLList,
   GraphQLInputObjectType,
+  // @flow-disable-next
 } from 'graphql';
 
 import { ACL, ACLInput } from './ACL';
@@ -63,11 +64,13 @@ export const BooleanQuery = new GraphQLInputObjectType({
   fields: BaseQuery(GraphQLBoolean),
 });
 
-export function type({ type }) {
+type ParseFieldType = { type: string };
+
+export function type({ type }: ParseFieldType) {
   return types[type];
 }
 
-export function inputType(field) {
+export function inputType(field: ParseFieldType) {
   const { type } = field;
   if (type == 'String') {
     return GraphQLString;
@@ -96,7 +99,7 @@ export function inputType(field) {
   }
 }
 
-export function queryType(field) {
+export function queryType(field: ParseFieldType) {
   const { type } = field;
   if (type == 'String') {
     return StringQuery;
