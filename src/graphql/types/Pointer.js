@@ -5,6 +5,8 @@ import {
   GraphQLNonNull,
 } from 'graphql';
 
+import { JSONParseQuery } from './JSONParseQuery';
+
 import { getOrElse } from '../typesCache';
 
 export const Pointer = new GraphQLInputObjectType({
@@ -27,7 +29,7 @@ export const PointerInput = field => {
     name,
     () =>
       new GraphQLInputObjectType({
-        name: `${field.targetClass}PointerInput`,
+        name,
         fields: {
           objectId: {
             type: new GraphQLNonNull(GraphQLID),
@@ -37,6 +39,28 @@ export const PointerInput = field => {
             type: GraphQLString,
             description: "pointer's className",
             defaultValue: field.targetClass,
+          },
+        },
+      })
+  );
+};
+
+export const PointerQuery = field => {
+  const name = `${field.targetClass}PointerQuery`;
+  return getOrElse(
+    name,
+    () =>
+      new GraphQLInputObjectType({
+        name,
+        fields: {
+          eq: {
+            type: PointerInput(field),
+          },
+          inQuery: {
+            type: JSONParseQuery,
+          },
+          notInQuery: {
+            type: JSONParseQuery,
           },
         },
       })

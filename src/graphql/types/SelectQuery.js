@@ -1,23 +1,11 @@
 import { GraphQLString, GraphQLInputObjectType, GraphQLNonNull } from 'graphql';
-import { JSONObject } from './JSONObject';
+import { JSONParseQuery } from './JSONParseQuery';
 
 export const SelectQuery = new GraphQLInputObjectType({
   name: 'SelectQuery',
   fields: {
     query: {
-      type: new GraphQLNonNull(
-        new GraphQLInputObjectType({
-          name: 'JSONQuery',
-          fields: {
-            where: {
-              type: new GraphQLNonNull(JSONObject),
-            },
-            className: {
-              type: new GraphQLNonNull(GraphQLString),
-            },
-          },
-        })
-      ),
+      type: new GraphQLNonNull(JSONParseQuery),
     },
     key: {
       type: new GraphQLNonNull(GraphQLString),

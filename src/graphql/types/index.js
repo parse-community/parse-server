@@ -16,7 +16,7 @@ import { File, FileInput } from './File';
 
 import { Date, DateQuery } from './Date';
 
-import { Pointer, PointerInput } from './Pointer';
+import { Pointer, PointerInput, PointerQuery } from './Pointer';
 
 import { JSONObject } from './JSONObject';
 
@@ -117,7 +117,7 @@ export function queryType(field) {
   } else if (type == 'Date') {
     return DateQuery;
   } else if (type == 'Pointer') {
-    return PointerInput(field);
+    return PointerQuery(field);
   } else if (type == 'Array') {
     return ArrayQuery;
   }
