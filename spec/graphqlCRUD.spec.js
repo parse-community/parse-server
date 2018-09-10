@@ -22,6 +22,7 @@ async function setup(config) {
     file: { type: 'File' },
     geoPointValue: { type: 'GeoPoint' },
     dateValue: { type: 'Date' },
+    anObject: { type: 'Object' },
     others: { type: 'Relation', targetClass: 'OtherClass' },
   });
   await schema.addClassIfNotExists('OtherClass', {
@@ -98,6 +99,17 @@ describe('graphQL CRUD operations', () => {
               }
             }
           }
+          addOtherNewClass: addNewClass(
+            input: {
+              stringValue: "I'm happy!"
+              anObject: { key: "value", amount: 10 }
+            }
+          ) {
+            object {
+              id
+              anObject
+            }
+          }
         }
       `,
       root,
@@ -106,6 +118,11 @@ describe('graphQL CRUD operations', () => {
     );
     expect(createResult.errors).not.toBeDefined();
     expect(createResult.data).not.toBeNull();
+    expect(createResult.data.addOtherNewClass).toBeDefined();
+    expect(createResult.data.addOtherNewClass.object.anObject).toEqual({
+      key: 'value',
+      amount: 10,
+    });
     const { object } = createResult.data.addNewClass;
     expect(object).toBeDefined();
     expect(object.objectId).toBeDefined();

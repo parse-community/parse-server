@@ -91,6 +91,8 @@ export function inputType(field) {
     return PointerInput(field);
   } else if (type === 'Array') {
     return new GraphQLList(JSONObject);
+  } else if (type === 'Object') {
+    return JSONObject;
   }
 }
 
