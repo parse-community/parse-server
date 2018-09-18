@@ -45,11 +45,11 @@
     "ws": "6.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.0.0",
-    "@babel/core": "7.0.1",
+    "@babel/cli": "7.1.0",
+    "@babel/core": "7.1.0",
     "@babel/plugin-transform-flow-strip-types": "7.0.0",
     "@babel/plugin-proposal-object-rest-spread": "7.0.0",
-    "@babel/preset-env": "7.0.0",
+    "@babel/preset-env": "7.1.0",
     "@parse/minami": "^1.0.0",
     "babel-eslint": "^9.0.0",
     "bcrypt-nodejs": "0.0.3",
