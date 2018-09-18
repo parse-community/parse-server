@@ -63,7 +63,7 @@ export class PushController {
       } else if (Number(badge)) {
         restUpdate = { badge: badge };
       } else {
-        throw "Invalid value for badge, expected number or 'Increment' or {increment: number}";
+        throw "Invalid value for badge, expected number or 'Increment' or {__op: 'Increment', amount: number}";
       }
 
       // Force filtering on only valid device tokens
