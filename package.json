@@ -68,7 +68,7 @@
     "mongodb-runner": "4.1.0",
     "nodemon": "1.18.4",
     "nyc": "^12.0.2",
-    "prettier": "1.14.2",
+    "prettier": "1.14.3",
     "request-promise": "4.2.2",
     "supports-color": "^5.4.0"
   },
