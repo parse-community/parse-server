@@ -35,7 +35,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-3.0.0)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started
