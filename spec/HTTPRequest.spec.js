@@ -50,91 +50,48 @@ describe('httpRequest', () => {
   it('should do /hello', done => {
     httpRequest({
       url: httpRequestServer + '/hello',
-    }).then(
-      function(httpResponse) {
-        expect(httpResponse.status).toBe(200);
-        expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
-        expect(httpResponse.text).toEqual('{"response":"OK"}');
-        expect(httpResponse.data.response).toEqual('OK');
-        done();
-      },
-      function() {
-        fail('should not fail');
-        done();
-      }
-    );
-  });
-
-  it('should do /hello with callback and promises', done => {
-    let calls = 0;
-    httpRequest({
-      url: httpRequestServer + '/hello',
-      success: function() {
-        calls++;
-      },
-      error: function() {
-        calls++;
-      },
-    }).then(
-      function(httpResponse) {
-        expect(calls).toBe(1);
-        expect(httpResponse.status).toBe(200);
-        expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
-        expect(httpResponse.text).toEqual('{"response":"OK"}');
-        expect(httpResponse.data.response).toEqual('OK');
-        done();
-      },
-      function() {
-        fail('should not fail');
-        done();
-      }
-    );
+    }).then(function(httpResponse) {
+      expect(httpResponse.status).toBe(200);
+      expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
+      expect(httpResponse.text).toEqual('{"response":"OK"}');
+      expect(httpResponse.data.response).toEqual('OK');
+      done();
+    }, done.fail);
   });
 
   it('should do not follow redirects by default', done => {
     httpRequest({
       url: httpRequestServer + '/301',
-    }).then(
-      function(httpResponse) {
-        expect(httpResponse.status).toBe(301);
-        done();
-      },
-      function() {
-        fail('should not fail');
-        done();
-      }
-    );
+    }).then(function(httpResponse) {
+      expect(httpResponse.status).toBe(301);
+      done();
+    }, done.fail);
   });
 
   it('should follow redirects when set', done => {
     httpRequest({
       url: httpRequestServer + '/301',
       followRedirects: true,
-    }).then(
-      function(httpResponse) {
-        expect(httpResponse.status).toBe(200);
-        expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
-        expect(httpResponse.text).toEqual('{"response":"OK"}');
-        expect(httpResponse.data.response).toEqual('OK');
-        done();
-      },
-      function() {
-        fail('should not fail');
-        done();
-      }
-    );
+    }).then(function(httpResponse) {
+      expect(httpResponse.status).toBe(200);
+      expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
+      expect(httpResponse.text).toEqual('{"response":"OK"}');
+      expect(httpResponse.data.response).toEqual('OK');
+      done();
+    }, done.fail);
   });
 
   it('should fail on 404', done => {
     let calls = 0;
     httpRequest({
       url: httpRequestServer + '/404',
-      success: function() {
+    }).then(
+      function() {
         calls++;
         fail('should not succeed');
         done();
       },
-      error: function(httpResponse) {
+      function(httpResponse) {
         calls++;
         expect(calls).toBe(1);
         expect(httpResponse.status).toBe(404);
@@ -142,12 +99,11 @@ describe('httpRequest', () => {
         expect(httpResponse.text).toEqual('NO');
         expect(httpResponse.data).toBe(undefined);
         done();
-      },
-    });
+      }
+    );
   });
 
   it('should post on echo', done => {
-    let calls = 0;
     httpRequest({
       method: 'POST',
       url: httpRequestServer + '/echo',
@@ -157,15 +113,8 @@ describe('httpRequest', () => {
       headers: {
         'Content-Type': 'application/json',
       },
-      success: function() {
-        calls++;
-      },
-      error: function() {
-        calls++;
-      },
     }).then(
       function(httpResponse) {
-        expect(calls).toBe(1);
         expect(httpResponse.status).toBe(200);
         expect(httpResponse.data).toEqual({ foo: 'bar' });
         done();
@@ -220,15 +169,10 @@ describe('httpRequest', () => {
   it('should fail gracefully', done => {
     httpRequest({
       url: 'http://not a good url',
-      success: function() {
-        fail('should not succeed');
-        done();
-      },
-      error: function(error) {
-        expect(error).not.toBeUndefined();
-        expect(error).not.toBeNull();
-        done();
-      },
+    }).then(done.fail, function(error) {
+      expect(error).not.toBeUndefined();
+      expect(error).not.toBeNull();
+      done();
     });
   });
 
