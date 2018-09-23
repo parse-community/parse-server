@@ -4,7 +4,7 @@ import * as triggers from '../triggers';
 // @flow-disable-next
 import * as Parse from 'parse/node';
 // @flow-disable-next
-import * as request from 'request';
+import request from '../request';
 import { logger } from '../logger';
 import http from 'http';
 import https from 'https';
@@ -225,10 +225,12 @@ function wrapToHTTPRequest(hook, key) {
       jsonBody.original.className = req.original.className;
     }
     const jsonRequest: any = {
+      url: hook.url,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(jsonBody),
+      body: jsonBody,
+      method: 'POST',
     };
 
     const agent = hook.url.startsWith('https')
@@ -243,39 +245,38 @@ function wrapToHTTPRequest(hook, key) {
         'Making outgoing webhook request without webhookKey being set!'
       );
     }
-
-    return new Promise((resolve, reject) => {
-      request.post(hook.url, jsonRequest, function(err, httpResponse, body) {
-        var result;
-        if (body) {
-          if (typeof body === 'string') {
-            try {
-              body = JSON.parse(body);
-            } catch (e) {
-              err = {
-                error: 'Malformed response',
-                code: -1,
-                partialResponse: body.substring(0, 100),
-              };
-            }
-          }
-          if (!err) {
-            result = body.success;
-            err = body.error;
+    return request(jsonRequest).then(response => {
+      let err;
+      let result;
+      let body = response.data;
+      if (body) {
+        if (typeof body === 'string') {
+          try {
+            body = JSON.parse(body);
+          } catch (e) {
+            err = {
+              error: 'Malformed response',
+              code: -1,
+              partialResponse: body.substring(0, 100),
+            };
           }
         }
-        if (err) {
-          return reject(err);
-        } else if (hook.triggerName === 'beforeSave') {
-          if (typeof result === 'object') {
-            delete result.createdAt;
-            delete result.updatedAt;
-          }
-          return resolve({ object: result });
-        } else {
-          return resolve(result);
+        if (!err) {
+          result = body.success;
+          err = body.error;
         }
-      });
+      }
+      if (err) {
+        throw err;
+      } else if (hook.triggerName === 'beforeSave') {
+        if (typeof result === 'object') {
+          delete result.createdAt;
+          delete result.updatedAt;
+        }
+        return { object: result };
+      } else {
+        return result;
+      }
     });
   };
 }

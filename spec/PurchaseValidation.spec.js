@@ -1,4 +1,4 @@
-const request = require('request');
+const request = require('../lib/request');
 
 function createProduct() {
   const file = new Parse.File(
@@ -26,165 +26,136 @@ describe('test validate_receipt endpoint', () => {
   beforeEach(done => {
     createProduct()
       .then(done)
-      .catch(function() {
+      .catch(function(err) {
+        console.error({ err });
         done();
       });
   });
 
-  it('should bypass appstore validation', done => {
-    request.post(
-      {
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        url: 'http://localhost:8378/1/validate_purchase',
-        json: true,
-        body: {
-          productIdentifier: 'a-product',
-          receipt: {
-            __type: 'Bytes',
-            base64: new Buffer('receipt', 'utf-8').toString('base64'),
-          },
-          bypassAppStoreValidation: true,
-        },
+  it('should bypass appstore validation', async () => {
+    const httpResponse = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
-      function(err, res, body) {
-        if (typeof body != 'object') {
-          fail('Body is not an object');
-          done();
-        } else {
-          expect(body.__type).toEqual('File');
-          const url = body.url;
-          request.get(
-            {
-              url: url,
-            },
-            function(err, res, body) {
-              expect(body).toEqual('download_file');
-              done();
-            }
-          );
-        }
-      }
-    );
+      method: 'POST',
+      url: 'http://localhost:8378/1/validate_purchase',
+      body: {
+        productIdentifier: 'a-product',
+        receipt: {
+          __type: 'Bytes',
+          base64: new Buffer('receipt', 'utf-8').toString('base64'),
+        },
+        bypassAppStoreValidation: true,
+      },
+    });
+    const body = httpResponse.data;
+    if (typeof body != 'object') {
+      fail('Body is not an object');
+    } else {
+      console.log(body);
+      expect(body.__type).toEqual('File');
+      const url = body.url;
+      const otherResponse = await request({
+        url: url,
+      });
+      expect(otherResponse.text).toBe('download_file');
+    }
   });
 
-  it('should fail for missing receipt', done => {
-    request.post(
-      {
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        url: 'http://localhost:8378/1/validate_purchase',
-        json: true,
-        body: {
-          productIdentifier: 'a-product',
-          bypassAppStoreValidation: true,
-        },
+  it('should fail for missing receipt', async () => {
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
-      function(err, res, body) {
-        if (typeof body != 'object') {
-          fail('Body is not an object');
-          done();
-        } else {
-          expect(body.code).toEqual(Parse.Error.INVALID_JSON);
-          done();
-        }
-      }
-    );
+      url: 'http://localhost:8378/1/validate_purchase',
+      method: 'POST',
+      body: {
+        productIdentifier: 'a-product',
+        bypassAppStoreValidation: true,
+      },
+    }).then(fail, res => res);
+    const body = response.data;
+    expect(body.code).toEqual(Parse.Error.INVALID_JSON);
   });
 
-  it('should fail for missing product identifier', done => {
-    request.post(
-      {
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        url: 'http://localhost:8378/1/validate_purchase',
-        json: true,
-        body: {
-          receipt: {
-            __type: 'Bytes',
-            base64: new Buffer('receipt', 'utf-8').toString('base64'),
-          },
-          bypassAppStoreValidation: true,
-        },
+  it('should fail for missing product identifier', async () => {
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
-      function(err, res, body) {
-        if (typeof body != 'object') {
-          fail('Body is not an object');
-          done();
-        } else {
-          expect(body.code).toEqual(Parse.Error.INVALID_JSON);
-          done();
-        }
-      }
-    );
+      url: 'http://localhost:8378/1/validate_purchase',
+      method: 'POST',
+      body: {
+        receipt: {
+          __type: 'Bytes',
+          base64: new Buffer('receipt', 'utf-8').toString('base64'),
+        },
+        bypassAppStoreValidation: true,
+      },
+    }).then(fail, res => res);
+    const body = response.data;
+    expect(body.code).toEqual(Parse.Error.INVALID_JSON);
   });
 
-  it('should bypass appstore validation and not find product', done => {
-    request.post(
-      {
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        url: 'http://localhost:8378/1/validate_purchase',
-        json: true,
-        body: {
-          productIdentifier: 'another-product',
-          receipt: {
-            __type: 'Bytes',
-            base64: new Buffer('receipt', 'utf-8').toString('base64'),
-          },
-          bypassAppStoreValidation: true,
-        },
+  it('should bypass appstore validation and not find product', async () => {
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
       },
-      function(err, res, body) {
-        if (typeof body != 'object') {
-          fail('Body is not an object');
-          done();
-        } else {
-          expect(body.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-          expect(body.error).toEqual('Object not found.');
-          done();
-        }
-      }
-    );
+      url: 'http://localhost:8378/1/validate_purchase',
+      method: 'POST',
+      body: {
+        productIdentifier: 'another-product',
+        receipt: {
+          __type: 'Bytes',
+          base64: new Buffer('receipt', 'utf8').toString('base64'),
+        },
+        bypassAppStoreValidation: true,
+      },
+    }).catch(error => error);
+    const body = response.data;
+    if (typeof body != 'object') {
+      fail('Body is not an object');
+    } else {
+      expect(body.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+      expect(body.error).toEqual('Object not found.');
+    }
   });
 
-  it('should fail at appstore validation', done => {
-    request.post(
-      {
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        url: 'http://localhost:8378/1/validate_purchase',
-        json: true,
-        body: {
-          productIdentifier: 'a-product',
-          receipt: {
-            __type: 'Bytes',
-            base64: new Buffer('receipt', 'utf-8').toString('base64'),
-          },
+  it('should fail at appstore validation', async () => {
+    const response = await request({
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+      url: 'http://localhost:8378/1/validate_purchase',
+      method: 'POST',
+      body: {
+        productIdentifier: 'a-product',
+        receipt: {
+          __type: 'Bytes',
+          base64: new Buffer('receipt', 'utf-8').toString('base64'),
         },
       },
-      function(err, res, body) {
-        if (typeof body != 'object') {
-          fail('Body is not an object');
-        } else {
-          expect(body.status).toBe(21002);
-          expect(body.error).toBe(
-            'The data in the receipt-data property was malformed or missing.'
-          );
-        }
-        done();
-      }
-    );
+    });
+    const body = response.data;
+    if (typeof body != 'object') {
+      fail('Body is not an object');
+    } else {
+      expect(body.status).toBe(21002);
+      expect(body.error).toBe(
+        'The data in the receipt-data property was malformed or missing.'
+      );
+    }
   });
 
   it('should not create a _Product', done => {

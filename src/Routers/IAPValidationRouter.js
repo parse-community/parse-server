@@ -1,6 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
-var request = require('request');
-var rest = require('../rest');
+const request = require('../request');
+const rest = require('../rest');
 import Parse from 'parse/node';
 
 // TODO move validation logic in IAPValidationController
@@ -25,23 +25,21 @@ function appStoreError(status) {
 }
 
 function validateWithAppStore(url, receipt) {
-  return new Promise(function(fulfill, reject) {
-    request.post(
-      {
-        url: url,
-        body: { 'receipt-data': receipt },
-        json: true,
-      },
-      function(err, res, body) {
-        var status = body.status;
-        if (status == 0) {
-          // No need to pass anything, status is OK
-          return fulfill();
-        }
-        // receipt is from test and should go to test
-        return reject(body);
-      }
-    );
+  return request({
+    url: url,
+    method: 'POST',
+    body: { 'receipt-data': receipt },
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).then(httpResponse => {
+    const body = httpResponse.data;
+    if (body && body.status === 0) {
+      // No need to pass anything, status is OK
+      return;
+    }
+    // receipt is from test and should go to test
+    throw body;
   });
 }
 
