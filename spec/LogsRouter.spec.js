@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require('request');
+const request = require('../lib/request');
 const LogsRouter = require('../lib/Routers/LogsRouter').LogsRouter;
 const LoggerController = require('../lib/Controllers/LoggerController')
   .LoggerController;
@@ -51,21 +51,18 @@ describe('LogsRouter', () => {
   });
 
   it('can check invalid master key of request', done => {
-    request.get(
-      {
-        url: 'http://localhost:8378/1/scriptlog',
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
+    request({
+      url: 'http://localhost:8378/1/scriptlog',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
       },
-      (error, response, body) => {
-        expect(response.statusCode).toEqual(403);
-        expect(body.error).toEqual('unauthorized: master key is required');
-        done();
-      }
-    );
+    }).then(fail, response => {
+      const body = response.data;
+      expect(response.status).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
+      done();
+    });
   });
 
   const headers = {
@@ -81,33 +78,29 @@ describe('LogsRouter', () => {
     reconfigureServer({
       verbose: true,
     }).then(function() {
-      request.get(
-        {
-          headers: headers,
-          url:
-            'http://localhost:8378/1/login?username=test&password=simplepass.com',
-        },
-        () => {
-          request.get(
-            {
-              url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
-              json: true,
-              headers: headers,
-            },
-            (error, response, body) => {
-              expect(response.statusCode).toEqual(200);
-              // 4th entry is our actual GET request
-              expect(body[2].url).toEqual(
-                '/1/login?username=test&password=********'
-              );
-              expect(body[2].message).toEqual(
-                'REQUEST for [GET] /1/login?username=test&password=********: {}'
-              );
-              done();
-            }
-          );
-        }
-      );
+      request({
+        headers: headers,
+        url:
+          'http://localhost:8378/1/login?username=test&password=simplepass.com',
+      })
+        .catch(() => {})
+        .then(() => {
+          request({
+            url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+            headers: headers,
+          }).then(response => {
+            const body = response.data;
+            expect(response.status).toEqual(200);
+            // 4th entry is our actual GET request
+            expect(body[2].url).toEqual(
+              '/1/login?username=test&password=********'
+            );
+            expect(body[2].message).toEqual(
+              'REQUEST for [GET] /1/login?username=test&password=********: {}'
+            );
+            done();
+          });
+        });
     });
   });
 
@@ -117,23 +110,22 @@ describe('LogsRouter', () => {
   it('does scrub complex passwords on GET login', done => {
     reconfigureServer({
       verbose: true,
-    }).then(function() {
-      request.get(
-        {
+    })
+      .then(function() {
+        return request({
           headers: headers,
           // using urlencoded password, 'simple @,/?:&=+$#pass.com'
           url:
             'http://localhost:8378/1/login?username=test&password=simple%20%40%2C%2F%3F%3A%26%3D%2B%24%23pass.com',
-        },
-        () => {
-          request.get(
-            {
+        })
+          .catch(() => {})
+          .then(() => {
+            return request({
               url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
-              json: true,
               headers: headers,
-            },
-            (error, response, body) => {
-              expect(response.statusCode).toEqual(200);
+            }).then(response => {
+              const body = response.data;
+              expect(response.status).toEqual(200);
               // 4th entry is our actual GET request
               expect(body[2].url).toEqual(
                 '/1/login?username=test&password=********'
@@ -142,11 +134,10 @@ describe('LogsRouter', () => {
                 'REQUEST for [GET] /1/login?username=test&password=********: {}'
               );
               done();
-            }
-          );
-        }
-      );
-    });
+            });
+          });
+      })
+      .catch(done.fail);
   });
 
   /**
@@ -156,34 +147,31 @@ describe('LogsRouter', () => {
     reconfigureServer({
       verbose: true,
     }).then(function() {
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/login',
-          data: {
-            username: 'test',
-            password: 'simplepass.com',
-          },
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/login',
+        body: {
+          username: 'test',
+          password: 'simplepass.com',
         },
-        () => {
-          request.get(
-            {
-              url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
-              json: true,
-              headers: headers,
-            },
-            (error, response, body) => {
-              expect(response.statusCode).toEqual(200);
-              // 4th entry is our actual GET request
-              expect(body[2].url).toEqual('/1/login');
-              expect(body[2].message).toEqual(
-                'REQUEST for [POST] /1/login: {}'
-              );
-              done();
-            }
-          );
-        }
-      );
+      })
+        .catch(() => {})
+        .then(() => {
+          request({
+            url: 'http://localhost:8378/1/scriptlog?size=4&level=verbose',
+            headers: headers,
+          }).then(response => {
+            const body = response.data;
+            expect(response.status).toEqual(200);
+            // 4th entry is our actual GET request
+            expect(body[2].url).toEqual('/1/login');
+            expect(body[2].message).toEqual(
+              'REQUEST for [POST] /1/login: {\n  "username": "test",\n  "password": "********"\n}'
+            );
+            done();
+          });
+        });
     });
   });
 });
