@@ -1,8 +1,7 @@
 'use strict';
 
-const request = require('request');
-const requestp = require('request-promise');
 const Config = require('../lib/Config');
+const request = require('../lib/request');
 
 describe('Email Verification Token Expiration: ', () => {
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
@@ -32,20 +31,18 @@ describe('Email Verification Token Expiration: ', () => {
         // wait for 1 second - simulate user behavior to some extent
         setTimeout(() => {
           expect(sendEmailOptions).not.toBeUndefined();
+          console.log(sendEmailOptions.link);
 
-          request.get(
-            sendEmailOptions.link,
-            {
-              followRedirect: false,
-            },
-            (error, response) => {
-              expect(response.statusCode).toEqual(302);
-              expect(response.body).toEqual(
-                'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
-              );
-              done();
-            }
-          );
+          request({
+            url: sendEmailOptions.link,
+            followRedirects: false,
+          }).then(response => {
+            expect(response.status).toEqual(302);
+            expect(response.text).toEqual(
+              'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+            );
+            done();
+          });
         }, 1000);
       })
       .catch(err => {
@@ -82,25 +79,22 @@ describe('Email Verification Token Expiration: ', () => {
         setTimeout(() => {
           expect(sendEmailOptions).not.toBeUndefined();
 
-          request.get(
-            sendEmailOptions.link,
-            {
-              followRedirect: false,
-            },
-            (error, response) => {
-              expect(response.statusCode).toEqual(302);
-              user
-                .fetch()
-                .then(() => {
-                  expect(user.get('emailVerified')).toEqual(false);
-                  done();
-                })
-                .catch(() => {
-                  jfail(error);
-                  done();
-                });
-            }
-          );
+          request({
+            url: sendEmailOptions.link,
+            followRedirects: false,
+          }).then(response => {
+            expect(response.status).toEqual(302);
+            user
+              .fetch()
+              .then(() => {
+                expect(user.get('emailVerified')).toEqual(false);
+                done();
+              })
+              .catch(error => {
+                jfail(error);
+                done();
+              });
+          });
         }, 1000);
       })
       .catch(error => {
@@ -133,19 +127,16 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
-            );
-            done();
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+          );
+          done();
+        });
       })
       .catch(error => {
         jfail(error);
@@ -177,25 +168,22 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            user
-              .fetch()
-              .then(() => {
-                expect(user.get('emailVerified')).toEqual(true);
-                done();
-              })
-              .catch(error => {
-                jfail(error);
-                done();
-              });
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          user
+            .fetch()
+            .then(() => {
+              expect(user.get('emailVerified')).toEqual(true);
+              done();
+            })
+            .catch(error => {
+              jfail(error);
+              done();
+            });
+        });
       })
       .catch(error => {
         jfail(error);
@@ -227,25 +215,22 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
-              .then(user => {
-                expect(typeof user).toBe('object');
-                expect(user.get('emailVerified')).toBe(true);
-                done();
-              })
-              .catch(error => {
-                jfail(error);
-                done();
-              });
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('emailVerified')).toBe(true);
+              done();
+            })
+            .catch(error => {
+              jfail(error);
+              done();
+            });
+        });
       })
       .catch(error => {
         jfail(error);
@@ -322,37 +307,34 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            const config = Config.get('test');
-            return config.database
-              .find('_User', {
-                username: 'unsets_email_verify_token_expires_at',
-              })
-              .then(results => {
-                expect(results.length).toBe(1);
-                return results[0];
-              })
-              .then(user => {
-                expect(typeof user).toBe('object');
-                expect(user.emailVerified).toEqual(true);
-                expect(typeof user._email_verify_token).toBe('undefined');
-                expect(typeof user._email_verify_token_expires_at).toBe(
-                  'undefined'
-                );
-                done();
-              })
-              .catch(error => {
-                jfail(error);
-                done();
-              });
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          const config = Config.get('test');
+          return config.database
+            .find('_User', {
+              username: 'unsets_email_verify_token_expires_at',
+            })
+            .then(results => {
+              expect(results.length).toBe(1);
+              return results[0];
+            })
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.emailVerified).toEqual(true);
+              expect(typeof user._email_verify_token).toBe('undefined');
+              expect(typeof user._email_verify_token_expires_at).toBe(
+                'undefined'
+              );
+              done();
+            })
+            .catch(error => {
+              jfail(error);
+              done();
+            });
+        });
       })
       .catch(error => {
         jfail(error);
@@ -386,14 +368,12 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        return new Promise((resolve, reject) => {
-          request
-            .get(sendEmailOptions.link, { followRedirect: false })
-            .on('error', error => reject(error))
-            .on('response', response => {
-              expect(response.statusCode).toEqual(302);
-              resolve(user.fetch());
-            });
+        return request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          return user.fetch();
         });
       })
       .then(() => {
@@ -403,19 +383,16 @@ describe('Email Verification Token Expiration: ', () => {
         return reconfigureServer(serverConfig);
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
-            );
-            done();
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+          );
+          done();
+        });
       })
       .catch(error => {
         jfail(error);
@@ -459,19 +436,16 @@ describe('Email Verification Token Expiration: ', () => {
         return reconfigureServer(serverConfig);
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
-            );
-            done();
-          }
-        );
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+          );
+          done();
+        });
       })
       .catch(error => {
         jfail(error);
@@ -590,22 +564,21 @@ describe('Email Verification Token Expiration: ', () => {
 
         expect(sendVerificationEmailCallCount).toBe(1);
 
-        return requestp.post({
-          uri: 'http://localhost:8378/1/verificationEmailRequest',
+        return request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
           body: {
             email: 'user@parse.com',
           },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
           },
-          json: true,
-          resolveWithFullResponse: true,
-          simple: false, // this promise is only rejected if the call itself failed
         });
       })
       .then(response => {
-        expect(response.statusCode).toBe(200);
+        expect(response.status).toBe(200);
         expect(sendVerificationEmailCallCount).toBe(2);
         expect(sendEmailOptions).toBeDefined();
 
@@ -660,36 +633,31 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        return requestp
-          .get({
-            url: sendEmailOptions.link,
-            followRedirect: false,
-            resolveWithFullResponse: true,
-            simple: false,
-          })
-          .then(response => {
-            expect(response.statusCode).toEqual(302);
-          });
+        return request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+        });
       })
       .then(() => {
         expect(sendVerificationEmailCallCount).toBe(1);
 
-        return requestp
-          .post({
-            uri: 'http://localhost:8378/1/verificationEmailRequest',
-            body: {
-              email: 'user@parse.com',
-            },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            json: true,
-            resolveWithFullResponse: true,
-            simple: false, // this promise is only rejected if the call itself failed
-          })
+        return request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
+          body: {
+            email: 'user@parse.com',
+          },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+        })
+          .then(fail, res => res)
           .then(response => {
-            expect(response.statusCode).toBe(400);
+            expect(response.status).toBe(400);
             expect(sendVerificationEmailCallCount).toBe(1);
             done();
           });
@@ -719,22 +687,22 @@ describe('Email Verification Token Expiration: ', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
-        return requestp
-          .post({
-            uri: 'http://localhost:8378/1/verificationEmailRequest',
-            body: {
-              email: 'user@parse.com',
-            },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            json: true,
-            resolveWithFullResponse: true,
-            simple: false,
-          })
+        return request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
+          body: {
+            email: 'user@parse.com',
+          },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+        })
+          .then(fail)
+          .catch(response => response)
           .then(response => {
-            expect(response.statusCode).toBe(400);
+            expect(response.status).toBe(400);
             expect(sendVerificationEmailCallCount).toBe(0);
             expect(sendEmailOptions).not.toBeDefined();
             done();
@@ -765,27 +733,25 @@ describe('Email Verification Token Expiration: ', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
-        request.post(
-          {
-            uri: 'http://localhost:8378/1/verificationEmailRequest',
-            body: {},
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            json: true,
-            resolveWithFullResponse: true,
-            simple: false,
+        request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
+          body: {},
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
           },
-          (err, response) => {
-            expect(response.statusCode).toBe(400);
-            expect(response.body.code).toBe(Parse.Error.EMAIL_MISSING);
-            expect(response.body.error).toBe('you must provide an email');
+        })
+          .then(fail, response => response)
+          .then(response => {
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe(Parse.Error.EMAIL_MISSING);
+            expect(response.data.error).toBe('you must provide an email');
             expect(sendVerificationEmailCallCount).toBe(0);
             expect(sendEmailOptions).not.toBeDefined();
             done();
-          }
-        );
+          });
       })
       .catch(error => {
         jfail(error);
@@ -812,29 +778,27 @@ describe('Email Verification Token Expiration: ', () => {
       publicServerURL: 'http://localhost:8378/1',
     })
       .then(() => {
-        request.post(
-          {
-            uri: 'http://localhost:8378/1/verificationEmailRequest',
-            body: { email: 3 },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            json: true,
-            resolveWithFullResponse: true,
-            simple: false,
+        request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
+          body: { email: 3 },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
           },
-          (err, response) => {
-            expect(response.statusCode).toBe(400);
-            expect(response.body.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
-            expect(response.body.error).toBe(
+        })
+          .then(fail, res => res)
+          .then(response => {
+            expect(response.status).toBe(400);
+            expect(response.data.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+            expect(response.data.error).toBe(
               'you must provide a valid email string'
             );
             expect(sendVerificationEmailCallCount).toBe(0);
             expect(sendEmailOptions).not.toBeDefined();
             done();
-          }
-        );
+          });
       })
       .catch(error => {
         jfail(error);
@@ -911,44 +875,38 @@ describe('Email Verification Token Expiration: ', () => {
         return user.signUp();
       })
       .then(() => {
-        request.get(
-          sendEmailOptions.link,
-          {
-            followRedirect: false,
-          },
-          (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
-              .then(user => {
-                expect(typeof user).toBe('object');
-                expect(user.get('emailVerified')).toBe(true);
+        request({
+          url: sendEmailOptions.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('emailVerified')).toBe(true);
 
-                user.set('email', 'newEmail@parse.com');
-                return user.save();
-              })
-              .then(() => user.fetch())
-              .then(user => {
-                expect(typeof user).toBe('object');
-                expect(user.get('email')).toBe('newEmail@parse.com');
-                expect(user.get('emailVerified')).toBe(false);
+              user.set('email', 'newEmail@parse.com');
+              return user.save();
+            })
+            .then(() => user.fetch())
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('email')).toBe('newEmail@parse.com');
+              expect(user.get('emailVerified')).toBe(false);
 
-                request.get(
-                  sendEmailOptions.link,
-                  {
-                    followRedirect: false,
-                  },
-                  (error, response) => {
-                    expect(response.statusCode).toEqual(302);
-                    done();
-                  }
-                );
-              })
-              .catch(error => {
-                jfail(error);
+              request({
+                url: sendEmailOptions.link,
+                followRedirects: false,
+              }).then(response => {
+                expect(response.status).toEqual(302);
                 done();
               });
-          }
-        );
+            })
+            .catch(error => {
+              jfail(error);
+              done();
+            });
+        });
       })
       .catch(error => {
         jfail(error);
