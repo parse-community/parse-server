@@ -127,6 +127,9 @@ module.exports = function httpRequest(options) {
   if (url.search) {
     options.qs = Object.assign({}, options.qs, querystring.parse(url.query));
   }
+  if (url.auth) {
+    requestOptions.auth = url.auth;
+  }
   if (options.qs) {
     requestOptions.path += `?${querystring.stringify(options.qs)}`;
   }
