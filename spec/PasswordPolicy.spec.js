@@ -1,6 +1,6 @@
 'use strict';
 
-const requestp = require('request-promise');
+const request = require('../lib/request');
 
 describe('Password Policy: ', () => {
   it('should show the invalid link page if the user clicks on the password reset link after the token expires', done => {
@@ -39,16 +39,15 @@ describe('Password Policy: ', () => {
         setTimeout(() => {
           expect(sendEmailOptions).not.toBeUndefined();
 
-          requestp
-            .get({
-              uri: sendEmailOptions.link,
-              followRedirect: false,
-              simple: false,
-              resolveWithFullResponse: true,
-            })
+          request({
+            url: sendEmailOptions.link,
+            followRedirects: false,
+            simple: false,
+            resolveWithFullResponse: true,
+          })
             .then(response => {
-              expect(response.statusCode).toEqual(302);
-              expect(response.body).toEqual(
+              expect(response.status).toEqual(302);
+              expect(response.text).toEqual(
                 'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
               );
               done();
@@ -100,17 +99,16 @@ describe('Password Policy: ', () => {
         setTimeout(() => {
           expect(sendEmailOptions).not.toBeUndefined();
 
-          requestp
-            .get({
-              uri: sendEmailOptions.link,
-              simple: false,
-              resolveWithFullResponse: true,
-              followRedirect: false,
-            })
+          request({
+            url: sendEmailOptions.link,
+            simple: false,
+            resolveWithFullResponse: true,
+            followRedirects: false,
+          })
             .then(response => {
-              expect(response.statusCode).toEqual(302);
+              expect(response.status).toEqual(302);
               const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=testResetTokenValidity/;
-              expect(response.body.match(re)).not.toBe(null);
+              expect(response.text.match(re)).not.toBe(null);
               done();
             })
             .catch(error => {
@@ -546,17 +544,16 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+          simple: false,
+          resolveWithFullResponse: true,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               done();
@@ -564,20 +561,20 @@ describe('Password Policy: ', () => {
             }
             const token = match[1];
 
-            requestp
-              .post({
-                uri: 'http://localhost:8378/1/apps/test/request_password_reset',
-                body: `new_password=has2init&token=${token}&username=user1`,
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                followRedirect: false,
-                simple: false,
-                resolveWithFullResponse: true,
-              })
+            request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=has2init&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            })
               .then(response => {
-                expect(response.statusCode).toEqual(302);
-                expect(response.body).toEqual(
+                expect(response.status).toEqual(302);
+                expect(response.text).toEqual(
                   'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
@@ -639,17 +636,16 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+          simple: false,
+          resolveWithFullResponse: true,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               done();
@@ -657,20 +653,20 @@ describe('Password Policy: ', () => {
             }
             const token = match[1];
 
-            requestp
-              .post({
-                uri: 'http://localhost:8378/1/apps/test/request_password_reset',
-                body: `new_password=hasnodigit&token=${token}&username=user1`,
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                followRedirect: false,
-                simple: false,
-                resolveWithFullResponse: true,
-              })
+            request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=hasnodigit&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            })
               .then(response => {
-                expect(response.statusCode).toEqual(302);
-                expect(response.body).toEqual(
+                expect(response.status).toEqual(302);
+                expect(response.text).toEqual(
                   `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`
                 );
 
@@ -826,17 +822,16 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+          simple: false,
+          resolveWithFullResponse: true,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               done();
@@ -844,20 +839,20 @@ describe('Password Policy: ', () => {
             }
             const token = match[1];
 
-            requestp
-              .post({
-                uri: 'http://localhost:8378/1/apps/test/request_password_reset',
-                body: `new_password=xuser12&token=${token}&username=user1`,
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                followRedirect: false,
-                simple: false,
-                resolveWithFullResponse: true,
-              })
+            request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=xuser12&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            })
               .then(response => {
-                expect(response.statusCode).toEqual(302);
-                expect(response.body).toEqual(
+                expect(response.status).toEqual(302);
+                expect(response.text).toEqual(
                   `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`
                 );
 
@@ -919,17 +914,16 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+          simple: false,
+          resolveWithFullResponse: true,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               done();
@@ -937,20 +931,20 @@ describe('Password Policy: ', () => {
             }
             const token = match[1];
 
-            requestp
-              .post({
-                uri: 'http://localhost:8378/1/apps/test/request_password_reset',
-                body: `new_password=uuser11&token=${token}&username=user1`,
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                followRedirect: false,
-                simple: false,
-                resolveWithFullResponse: true,
-              })
+            request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=uuser11&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            })
               .then(response => {
-                expect(response.statusCode).toEqual(302);
-                expect(response.body).toEqual(
+                expect(response.status).toEqual(302);
+                expect(response.text).toEqual(
                   'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
@@ -1192,17 +1186,16 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+          simple: false,
+          resolveWithFullResponse: true,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               done();
@@ -1210,20 +1203,20 @@ describe('Password Policy: ', () => {
             }
             const token = match[1];
 
-            requestp
-              .post({
-                uri: 'http://localhost:8378/1/apps/test/request_password_reset',
-                body: `new_password=uuser11&token=${token}&username=user1`,
-                headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                followRedirect: false,
-                simple: false,
-                resolveWithFullResponse: true,
-              })
+            request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=uuser11&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            })
               .then(response => {
-                expect(response.statusCode).toEqual(302);
-                expect(response.body).toEqual(
+                expect(response.status).toEqual(302);
+                expect(response.text).toEqual(
                   'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1'
                 );
 
@@ -1358,17 +1351,14 @@ describe('Password Policy: ', () => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
-        requestp
-          .get({
-            uri: options.link,
-            followRedirect: false,
-            simple: false,
-            resolveWithFullResponse: true,
-          })
+        request({
+          url: options.link,
+          followRedirects: false,
+        })
           .then(response => {
-            expect(response.statusCode).toEqual(302);
+            expect(response.status).toEqual(302);
             const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.body.match(re);
+            const match = response.text.match(re);
             if (!match) {
               fail('should have a token');
               return Promise.reject('Invalid password link');
@@ -1376,39 +1366,32 @@ describe('Password Policy: ', () => {
             return Promise.resolve(match[1]); // token
           })
           .then(token => {
-            return new Promise((resolve, reject) => {
-              requestp
-                .post({
-                  uri:
-                    'http://localhost:8378/1/apps/test/request_password_reset',
-                  body: `new_password=user1&token=${token}&username=user1`,
-                  headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                  },
-                  followRedirect: false,
-                  simple: false,
-                  resolveWithFullResponse: true,
-                })
-                .then(response => {
-                  resolve([response, token]);
-                })
-                .catch(error => {
-                  reject(error);
-                });
+            return request({
+              method: 'POST',
+              url: 'http://localhost:8378/1/apps/test/request_password_reset',
+              body: `new_password=user1&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+              followRedirects: false,
+              simple: false,
+              resolveWithFullResponse: true,
+            }).then(response => {
+              return [response, token];
             });
           })
           .then(data => {
             const response = data[0];
             const token = data[1];
-            expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(
+            expect(response.status).toEqual(302);
+            expect(response.text).toEqual(
               `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`
             );
             done();
             return Promise.resolve();
           })
           .catch(error => {
-            jfail(error);
+            fail(error);
             fail('Repeat password test failed');
             done();
           });
