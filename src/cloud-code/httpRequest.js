@@ -2,7 +2,7 @@ import HTTPResponse from './HTTPResponse';
 import querystring from 'querystring';
 import log from '../logger';
 import { http, https } from 'follow-redirects';
-import { URL } from 'url';
+import { parse } from 'url';
 
 const clients = {
   'http:': http,
@@ -93,7 +93,7 @@ const encodeBody = function({ body, headers = {} }) {
 module.exports = function httpRequest(options) {
   let url;
   try {
-    url = new URL(options.url);
+    url = parse(options.url);
   } catch (e) {
     return Promise.reject(e);
   }
@@ -117,6 +117,19 @@ module.exports = function httpRequest(options) {
     encoding: null,
     followRedirects: options.followRedirects === true,
   };
+  if (requestOptions.headers) {
+    Object.keys(requestOptions.headers).forEach(key => {
+      if (typeof requestOptions.headers[key] === 'undefined') {
+        delete requestOptions.headers[key];
+      }
+    });
+  }
+  if (url.search) {
+    options.qs = Object.assign({}, options.qs, querystring.parse(url.query));
+  }
+  if (url.auth) {
+    requestOptions.auth = url.auth;
+  }
   if (options.qs) {
     requestOptions.path += `?${querystring.stringify(options.qs)}`;
   }
@@ -131,6 +144,9 @@ module.exports = function httpRequest(options) {
     if (options.body) {
       req.write(options.body);
     }
+    req.on('error', error => {
+      reject(error);
+    });
     req.end();
   });
 };

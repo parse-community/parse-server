@@ -3,7 +3,7 @@
 
 'use strict';
 
-const request = require('request');
+const request = require('../lib/request');
 
 const str = 'Hello World!';
 const data = [];
@@ -19,58 +19,52 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          expect(b.name).toMatch(/_file.txt$/);
-          expect(b.url).toMatch(
-            /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
-          );
-          request.get(b.url, (error, response, body) => {
-            expect(error).toBe(null);
-            expect(body).toEqual('argle bargle');
-            done();
-          });
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        expect(b.name).toMatch(/_file.txt$/);
+        expect(b.url).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
+        );
+        request({ url: b.url }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('argle bargle');
+          done();
+        });
+      });
     });
 
     it('works with _ContentType', done => {
-      request.post(
-        {
-          url: 'http://localhost:8378/1/files/file',
-          body: JSON.stringify({
-            _ApplicationId: 'test',
-            _JavaScriptKey: 'test',
-            _ContentType: 'text/html',
-            base64: 'PGh0bWw+PC9odG1sPgo=',
-          }),
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          expect(b.name).toMatch(/_file.html/);
-          expect(b.url).toMatch(
-            /^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/
-          );
-          request.get(b.url, (error, response, body) => {
-            try {
-              expect(response.headers['content-type']).toMatch('^text/html');
-              expect(error).toBe(null);
-              expect(body).toEqual('<html></html>\n');
-            } catch (e) {
-              jfail(e);
-            }
-            done();
-          });
-        }
-      );
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/files/file',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/html',
+          base64: 'PGh0bWw+PC9odG1sPgo=',
+        }),
+      }).then(response => {
+        const b = response.data;
+        expect(b.name).toMatch(/_file.html/);
+        expect(b.url).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/
+        );
+        request({ url: b.url }).then(response => {
+          const body = response.text;
+          try {
+            expect(response.headers['content-type']).toMatch('^text/html');
+            expect(body).toEqual('<html></html>\n');
+          } catch (e) {
+            jfail(e);
+          }
+          done();
+        });
+      });
     });
 
     it('works without Content-Type', done => {
@@ -78,26 +72,22 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          expect(b.name).toMatch(/_file.txt$/);
-          expect(b.url).toMatch(
-            /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
-          );
-          request.get(b.url, (error, response, body) => {
-            expect(error).toBe(null);
-            expect(body).toEqual('argle bargle');
-            done();
-          });
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        expect(b.name).toMatch(/_file.txt$/);
+        expect(b.url).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
+        );
+        request({ url: b.url }).then(response => {
+          expect(response.text).toEqual('argle bargle');
+          done();
+        });
+      });
     });
   });
 
@@ -107,57 +97,43 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/testfile.txt',
-        body: 'check one two',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.name).toMatch(/_testfile.txt$/);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/
-        );
-        request.get(b.url, (error, response, body) => {
-          expect(error).toBe(null);
-          expect(body).toEqual('check one two');
-          request.del(
-            {
-              headers: {
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                'X-Parse-Master-Key': 'test',
-              },
-              url: 'http://localhost:8378/1/files/' + b.name,
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/testfile.txt',
+      body: 'check one two',
+    }).then(response => {
+      const b = response.data;
+      expect(b.name).toMatch(/_testfile.txt$/);
+      expect(b.url).toMatch(
+        /^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/
+      );
+      request({ url: b.url }).then(response => {
+        const body = response.text;
+        expect(body).toEqual('check one two');
+        request({
+          method: 'DELETE',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Master-Key': 'test',
+          },
+          url: 'http://localhost:8378/1/files/' + b.name,
+        }).then(response => {
+          expect(response.status).toEqual(200);
+          request({
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
             },
-            (error, response) => {
-              expect(error).toBe(null);
-              expect(response.statusCode).toEqual(200);
-              request.get(
-                {
-                  headers: {
-                    'X-Parse-Application-Id': 'test',
-                    'X-Parse-REST-API-Key': 'rest',
-                  },
-                  url: b.url,
-                },
-                (error, response) => {
-                  expect(error).toBe(null);
-                  try {
-                    expect(response.statusCode).toEqual(404);
-                  } catch (e) {
-                    jfail(e);
-                  }
-                  done();
-                }
-              );
-            }
-          );
+            url: b.url,
+          }).then(fail, response => {
+            expect(response.status).toEqual(404);
+            done();
+          });
         });
-      }
-    );
+      });
+    });
   });
 
   it('blocks file deletions with missing or incorrect master-key header', done => {
@@ -166,54 +142,45 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/thefile.jpg',
-        body: 'the file body',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/
-        );
-        // missing X-Parse-Master-Key header
-        request.del(
-          {
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            url: 'http://localhost:8378/1/files/' + b.name,
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/thefile.jpg',
+      body: 'the file body',
+    }).then(response => {
+      const b = response.data;
+      expect(b.url).toMatch(
+        /^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/
+      );
+      // missing X-Parse-Master-Key header
+      request({
+        method: 'DELETE',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        url: 'http://localhost:8378/1/files/' + b.name,
+      }).then(fail, response => {
+        const del_b = response.data;
+        expect(response.status).toEqual(403);
+        expect(del_b.error).toMatch(/unauthorized/);
+        // incorrect X-Parse-Master-Key header
+        request({
+          method: 'DELETE',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            'X-Parse-Master-Key': 'tryagain',
           },
-          (error, response, body) => {
-            expect(error).toBe(null);
-            const del_b = JSON.parse(body);
-            expect(response.statusCode).toEqual(403);
-            expect(del_b.error).toMatch(/unauthorized/);
-            // incorrect X-Parse-Master-Key header
-            request.del(
-              {
-                headers: {
-                  'X-Parse-Application-Id': 'test',
-                  'X-Parse-REST-API-Key': 'rest',
-                  'X-Parse-Master-Key': 'tryagain',
-                },
-                url: 'http://localhost:8378/1/files/' + b.name,
-              },
-              (error, response, body) => {
-                expect(error).toBe(null);
-                const del_b2 = JSON.parse(body);
-                expect(response.statusCode).toEqual(403);
-                expect(del_b2.error).toMatch(/unauthorized/);
-                done();
-              }
-            );
-          }
-        );
-      }
-    );
+          url: 'http://localhost:8378/1/files/' + b.name,
+        }).then(fail, response => {
+          const del_b2 = response.data;
+          expect(response.status).toEqual(403);
+          expect(del_b2.error).toMatch(/unauthorized/);
+          done();
+        });
+      });
+    });
   });
 
   it('handles other filetypes', done => {
@@ -222,26 +189,21 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/file.jpg',
-        body: 'argle bargle',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.name).toMatch(/_file.jpg$/);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/.*file.jpg$/
-        );
-        request.get(b.url, (error, response, body) => {
-          expect(error).toBe(null);
-          expect(body).toEqual('argle bargle');
-          done();
-        });
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.jpg',
+      body: 'argle bargle',
+    }).then(response => {
+      const b = response.data;
+      expect(b.name).toMatch(/_file.jpg$/);
+      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/.*file.jpg$/);
+      request({ url: b.url }).then(response => {
+        const body = response.text;
+        expect(body).toEqual('argle bargle');
+        done();
+      });
+    });
   });
 
   it('save file', async () => {
@@ -377,26 +339,19 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/file',
-        body: 'fee fi fo',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.name).toMatch(/\.html$/);
-        request.get(b.url, (error, response) => {
-          if (!response) {
-            fail('response should be set');
-            return done();
-          }
-          expect(response.headers['content-type']).toMatch(/^text\/html/);
-          done();
-        });
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file',
+      body: 'fee fi fo',
+    }).then(response => {
+      const b = response.data;
+      expect(b.name).toMatch(/\.html$/);
+      request({ url: b.url }).then(response => {
+        expect(response.headers['content-type']).toMatch(/^text\/html/);
+        done();
+      });
+    });
   });
 
   it('filename is url encoded', done => {
@@ -405,19 +360,16 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/hello world.txt',
-        body: 'oh emm gee',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.url).toMatch(/hello%20world/);
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/hello world.txt',
+      body: 'oh emm gee',
+    }).then(response => {
+      const b = response.data;
+      expect(b.url).toMatch(/hello%20world/);
+      done();
+    });
   });
 
   it('supports array of files', done => {
@@ -450,18 +402,16 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/di$avowed.txt',
-        body: 'will fail',
-      },
-      (error, response, body) => {
-        const b = JSON.parse(body);
-        expect(b.code).toEqual(122);
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/di$avowed.txt',
+      body: 'will fail',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.code).toEqual(122);
+      done();
+    });
   });
 
   it('validates filename length', done => {
@@ -475,18 +425,16 @@ describe('Parse.File testing', () => {
       'andwearyOveramanyquaintandcuriousvolumeof' +
       'forgottenloreWhileinoddednearlynappingsud' +
       'denlytherecameatapping';
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/' + fileName,
-        body: 'will fail',
-      },
-      (error, response, body) => {
-        const b = JSON.parse(body);
-        expect(b.code).toEqual(122);
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/' + fileName,
+      body: 'will fail',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.code).toEqual(122);
+      done();
+    });
   });
 
   it('supports a dictionary with file', done => {
@@ -632,19 +580,17 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
-        body: '',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        expect(response.statusCode).toBe(400);
-        expect(body).toEqual('{"code":130,"error":"Invalid file upload."}');
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+      body: '',
+    }).then(fail, response => {
+      expect(response.status).toBe(400);
+      const body = response.text;
+      expect(body).toEqual('{"code":130,"error":"Invalid file upload."}');
+      done();
+    });
   });
 
   it('fails to upload without a file name', done => {
@@ -653,19 +599,17 @@ describe('Parse.File testing', () => {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/',
-        body: 'yolo',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        expect(response.statusCode).toBe(400);
-        expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/',
+      body: 'yolo',
+    }).then(fail, response => {
+      expect(response.status).toBe(400);
+      const body = response.text;
+      expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
+      done();
+    });
   });
 
   it('fails to delete an unkown file', done => {
@@ -675,18 +619,16 @@ describe('Parse.File testing', () => {
       'X-Parse-REST-API-Key': 'rest',
       'X-Parse-Master-Key': 'test',
     };
-    request.delete(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/files/file.txt',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        expect(response.statusCode).toBe(400);
-        expect(body).toEqual('{"code":153,"error":"Could not delete file."}');
-        done();
-      }
-    );
+    request({
+      method: 'DELETE',
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+    }).then(fail, response => {
+      expect(response.status).toBe(400);
+      const body = response.text;
+      expect(body).toEqual('{"code":153,"error":"Could not delete file."}');
+      done();
+    });
   });
 
   xdescribe('Gridstore Range tests', () => {
@@ -696,33 +638,27 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=0-5',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body).toEqual('argle ');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=0-5',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('argle ');
+          done();
+        });
+      });
     });
 
     it('supports small range requests', done => {
@@ -731,33 +667,27 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=0-2',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body).toEqual('arg');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=0-2',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('arg');
+          done();
+        });
+      });
     });
 
     // See specs https://www.greenbytes.de/tech/webdav/draft-ietf-httpbis-p5-range-latest.html#byte.ranges
@@ -767,33 +697,27 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=2-2',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body).toEqual('g');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=2-2',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('g');
+          done();
+        });
+      });
     });
 
     xit('supports getting last n bytes', done => {
@@ -802,34 +726,28 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'something different',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=-4',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body.length).toBe(4);
-              expect(body).toEqual('rent');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'something different',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=-4',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body.length).toBe(4);
+          expect(body).toEqual('rent');
+          done();
+        });
+      });
     });
 
     it('supports getting first n bytes', done => {
@@ -838,33 +756,27 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'something different',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=10-',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body).toEqual('different');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'something different',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=10-',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('different');
+          done();
+        });
+      });
     });
 
     function repeat(string, count) {
@@ -882,54 +794,45 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: repeat('argle bargle', 100),
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=13-240',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body.length).toEqual(228);
-              expect(body.indexOf('rgle barglea')).toBe(0);
-              done();
-            }
-          );
-        }
-      );
-    });
-
-    it('fails to stream unknown file', done => {
-      request.get(
-        {
-          url: 'http://localhost:8378/1/files/test/file.txt',
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: repeat('argle bargle', 100),
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
           headers: {
             'Content-Type': 'application/octet-stream',
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
             Range: 'bytes=13-240',
           },
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          expect(response.statusCode).toBe(404);
-          expect(body).toEqual('File not found.');
+        }).then(response => {
+          const body = response.text;
+          expect(body.length).toEqual(228);
+          expect(body.indexOf('rgle barglea')).toBe(0);
           done();
-        }
-      );
+        });
+      });
+    });
+
+    it('fails to stream unknown file', done => {
+      request({
+        url: 'http://localhost:8378/1/files/test/file.txt',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          Range: 'bytes=13-240',
+        },
+      }).then(response => {
+        expect(response.status).toBe(404);
+        const body = response.text;
+        expect(body).toEqual('File not found.');
+        done();
+      });
     });
   });
 
@@ -942,33 +845,27 @@ describe('Parse.File testing', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
       };
-      request.post(
-        {
-          headers: headers,
-          url: 'http://localhost:8378/1/files/file.txt',
-          body: 'argle bargle',
-        },
-        (error, response, body) => {
-          expect(error).toBe(null);
-          const b = JSON.parse(body);
-          request.get(
-            {
-              url: b.url,
-              headers: {
-                'Content-Type': 'application/octet-stream',
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-REST-API-Key': 'rest',
-                Range: 'bytes=0-5',
-              },
-            },
-            (error, response, body) => {
-              expect(error).toBe(null);
-              expect(body).toEqual('argle bargle');
-              done();
-            }
-          );
-        }
-      );
+      request({
+        method: 'POST',
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }).then(response => {
+        const b = response.data;
+        request({
+          url: b.url,
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+            Range: 'bytes=0-5',
+          },
+        }).then(response => {
+          const body = response.text;
+          expect(body).toEqual('argle bargle');
+          done();
+        });
+      });
     });
   });
 });

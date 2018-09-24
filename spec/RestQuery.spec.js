@@ -3,9 +3,9 @@
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
+const request = require('../lib/request');
 
 const querystring = require('querystring');
-const rp = require('request-promise');
 
 let config;
 let database;
@@ -221,40 +221,34 @@ describe('rest query', () => {
           'X-Parse-REST-API-Key': 'rest',
         };
 
-        const p0 = rp
-          .get({
-            headers: headers,
-            url:
-              'http://localhost:8378/1/classes/TestParameterEncode?' +
-              querystring
-                .stringify({
-                  where: '{"foo":{"$ne": "baz"}}',
-                  limit: 1,
-                })
-                .replace('=', '%3D'),
-          })
-          .then(fail, response => {
-            const error = response.error;
-            const b = JSON.parse(error);
-            expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-          });
+        const p0 = request({
+          headers: headers,
+          url:
+            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            querystring
+              .stringify({
+                where: '{"foo":{"$ne": "baz"}}',
+                limit: 1,
+              })
+              .replace('=', '%3D'),
+        }).then(fail, response => {
+          const error = response.data;
+          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
 
-        const p1 = rp
-          .get({
-            headers: headers,
-            url:
-              'http://localhost:8378/1/classes/TestParameterEncode?' +
-              querystring
-                .stringify({
-                  limit: 1,
-                })
-                .replace('=', '%3D'),
-          })
-          .then(fail, response => {
-            const error = response.error;
-            const b = JSON.parse(error);
-            expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-          });
+        const p1 = request({
+          headers: headers,
+          url:
+            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            querystring
+              .stringify({
+                limit: 1,
+              })
+              .replace('=', '%3D'),
+        }).then(fail, response => {
+          const error = response.data;
+          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
         return Promise.all([p0, p1]);
       })
       .then(done)

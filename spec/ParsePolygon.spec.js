@@ -3,10 +3,11 @@ const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageA
   .default;
 const mongoURI =
   'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const rp = require('request-promise');
+const request = require('../lib/request');
 const defaultHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
+  'Content-Type': 'application/json',
 };
 
 describe('Parse.Polygon testing', () => {
@@ -174,17 +175,19 @@ describe('Parse.Polygon testing', () => {
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: Parse.serverURL + '/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toBe(2);
+          expect(resp.data.results.length).toBe(2);
           done();
         }, done.fail);
     });
@@ -208,17 +211,19 @@ describe('Parse.Polygon testing', () => {
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: Parse.serverURL + '/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toBe(2);
+          expect(resp.data.results.length).toBe(2);
           done();
         }, done.fail);
     });
@@ -247,17 +252,19 @@ describe('Parse.Polygon testing', () => {
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: Parse.serverURL + '/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toBe(1);
+          expect(resp.data.results.length).toBe(1);
           done();
         }, done.fail);
     });
@@ -276,9 +283,10 @@ describe('Parse.Polygon testing', () => {
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: Parse.serverURL + '/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
@@ -302,9 +310,10 @@ describe('Parse.Polygon testing', () => {
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: Parse.serverURL + '/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-Javascript-Key': Parse.javaScriptKey,
@@ -339,9 +348,10 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
         });
       })
       .then(() => {
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: {
+          body: {
             _method: 'POST',
             location,
             polygon,
@@ -351,16 +361,19 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
         });
       })
       .then(resp => {
-        return rp.post({
-          url: `http://localhost:8378/1/classes/TestObject/${resp.objectId}`,
-          json: { _method: 'GET' },
+        return request({
+          method: 'POST',
+          url: `http://localhost:8378/1/classes/TestObject/${
+            resp.data.objectId
+          }`,
+          body: { _method: 'GET' },
           headers: defaultHeaders,
         });
       })
       .then(resp => {
-        equal(resp.location, location);
-        equal(resp.polygon, polygon);
-        equal(resp.polygon2, polygon);
+        equal(resp.data.location, location);
+        equal(resp.data.polygon, polygon);
+        equal(resp.data.polygon2, polygon);
         return databaseAdapter.getIndexes('TestObject');
       })
       .then(indexes => {
