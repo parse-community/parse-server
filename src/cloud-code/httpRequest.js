@@ -144,6 +144,9 @@ module.exports = function httpRequest(options) {
     if (options.body) {
       req.write(options.body);
     }
+    req.on('error', error => {
+      reject(error);
+    });
     req.end();
   });
 };
