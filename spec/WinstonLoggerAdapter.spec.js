@@ -2,7 +2,7 @@
 
 const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
   .WinstonLoggerAdapter;
-const request = require('request');
+const request = require('../lib/request');
 
 describe('info logs', () => {
   it('Verify INFO logs', done => {
@@ -84,27 +84,24 @@ describe('verbose logs', () => {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         };
-        request.get(
-          {
-            headers: headers,
-            url: 'http://localhost:8378/1/login?username=test&password=moon-y',
-          },
-          () => {
-            const winstonLoggerAdapter = new WinstonLoggerAdapter();
-            return winstonLoggerAdapter
-              .query({
-                from: new Date(Date.now() - 500),
-                size: 100,
-                level: 'verbose',
-              })
-              .then(results => {
-                const logString = JSON.stringify(results);
-                expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
-                expect(logString.match(/moon-y/g)).toBe(null);
-                done();
-              });
-          }
-        );
+        request({
+          headers: headers,
+          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+        }).then(() => {
+          const winstonLoggerAdapter = new WinstonLoggerAdapter();
+          return winstonLoggerAdapter
+            .query({
+              from: new Date(Date.now() - 500),
+              size: 100,
+              level: 'verbose',
+            })
+            .then(results => {
+              const logString = JSON.stringify(results);
+              expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+              expect(logString.match(/moon-y/g)).toBe(null);
+              done();
+            });
+        });
       })
       .catch(err => {
         fail(JSON.stringify(err));

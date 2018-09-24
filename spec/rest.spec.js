@@ -5,8 +5,7 @@ const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
 const RestWrite = require('../lib/RestWrite');
-const request = require('request');
-const rp = require('request-promise');
+const request = require('../lib/request');
 
 let config;
 let database;
@@ -152,11 +151,7 @@ describe('rest create', () => {
         expect(mob.subdoc.wu).toBe('clan');
         done();
       })
-      .catch(error => {
-        console.log(error);
-        fail();
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('handles create on non-existent class when disabled client class creation', done => {
@@ -436,26 +431,24 @@ describe('rest create', () => {
 
   it('cannot set objectId', done => {
     const headers = {
-      'Content-Type': 'application/octet-stream',
+      'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
-        body: JSON.stringify({
-          foo: 'bar',
-          objectId: 'hello',
-        }),
-      },
-      (error, response, body) => {
-        const b = JSON.parse(body);
-        expect(b.code).toEqual(105);
-        expect(b.error).toEqual('objectId is an invalid field name.');
-        done();
-      }
-    );
+    request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      body: JSON.stringify({
+        foo: 'bar',
+        objectId: 'hello',
+      }),
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.code).toEqual(105);
+      expect(b.error).toEqual('objectId is an invalid field name.');
+      done();
+    });
   });
 
   it('test default session length', done => {
@@ -589,9 +582,6 @@ describe('rest create', () => {
       .then(() => {
         return rest.create(config, auth.nobody(config), '_PushStatus', {});
       })
-      .then(r => {
-        console.log(r);
-      })
       .catch(error => {
         expect(error.code).toEqual(119);
         done();
@@ -605,64 +595,66 @@ describe('rest create', () => {
         currentUser = user;
         const sessionToken = user.getSessionToken();
         const headers = {
-          'Content-Type': 'application/octet-stream',
+          'Content-Type': 'application/json',
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
           'X-Parse-Session-Token': sessionToken,
         };
         let sessionId;
-        return rp
-          .get({
-            headers: headers,
-            url: 'http://localhost:8378/1/sessions/me',
-            json: true,
-          })
-          .then(body => {
-            sessionId = body.objectId;
-            return rp.put({
+        return request({
+          headers: headers,
+          url: 'http://localhost:8378/1/sessions/me',
+        })
+          .then(response => {
+            sessionId = response.data.objectId;
+            return request({
               headers,
+              method: 'PUT',
               url: 'http://localhost:8378/1/sessions/' + sessionId,
-              json: {
+              body: {
                 installationId: 'yolo',
               },
             });
           })
           .then(done.fail, res => {
-            expect(res.statusCode).toBe(400);
-            expect(res.error.code).toBe(105);
-            return rp.put({
+            expect(res.status).toBe(400);
+            expect(res.data.code).toBe(105);
+            return request({
               headers,
+              method: 'PUT',
               url: 'http://localhost:8378/1/sessions/' + sessionId,
-              json: {
+              body: {
                 sessionToken: 'yolo',
               },
             });
           })
           .then(done.fail, res => {
-            expect(res.statusCode).toBe(400);
-            expect(res.error.code).toBe(105);
+            expect(res.status).toBe(400);
+            expect(res.data.code).toBe(105);
             return Parse.User.signUp('other', 'user');
           })
           .then(otherUser => {
             const user = new Parse.User();
             user.id = otherUser.id;
-            return rp.put({
+            return request({
               headers,
+              method: 'PUT',
               url: 'http://localhost:8378/1/sessions/' + sessionId,
-              json: {
+              body: {
                 user: Parse._encode(user),
               },
             });
           })
           .then(done.fail, res => {
-            expect(res.statusCode).toBe(400);
-            expect(res.error.code).toBe(105);
+            expect(res.status).toBe(400);
+            expect(res.data.code).toBe(105);
             const user = new Parse.User();
             user.id = currentUser.id;
-            return rp.put({
+            return request({
               headers,
+              method: 'PUT',
               url: 'http://localhost:8378/1/sessions/' + sessionId,
-              json: {
+              body: {
                 user: Parse._encode(user),
               },
             });
@@ -683,18 +675,19 @@ describe('rest create', () => {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
           'X-Parse-Session-Token': sessionToken,
+          'Content-Type': 'application/json',
         };
-        return rp.post({
+        return request({
           headers,
+          method: 'POST',
           url: 'http://localhost:8378/1/sessions',
-          json: true,
           body: {
             user: { __type: 'Pointer', className: '_User', objectId: 'fakeId' },
           },
         });
       })
-      .then(body => {
-        if (body.user.objectId === currentUser.id) {
+      .then(response => {
+        if (response.data.user.objectId === currentUser.id) {
           return done();
         } else {
           return done.fail();
@@ -763,18 +756,21 @@ describe('read-only masterKey', () => {
       readOnlyMasterKey: 'yolo-read-only',
     })
       .then(() => {
-        return rp.post(`${Parse.serverURL}/classes/MyYolo`, {
+        return request({
+          url: `${Parse.serverURL}/classes/MyYolo`,
+          method: 'POST',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Master-Key': 'yolo-read-only',
+            'Content-Type': 'application/json',
           },
-          json: { foo: 'bar' },
+          body: { foo: 'bar' },
         });
       })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to perform the create operation."
         );
         done();
@@ -808,18 +804,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema', done => {
-    return rp
-      .post(`${Parse.serverURL}/schemas`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      method: 'POST',
+      url: `${Parse.serverURL}/schemas`,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to create a schema."
         );
         done();
@@ -827,18 +825,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to create schema with a name', done => {
-    return rp
-      .post(`${Parse.serverURL}/schemas/MyClass`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      url: `${Parse.serverURL}/schemas/MyClass`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to create a schema."
         );
         done();
@@ -846,18 +846,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update schema', done => {
-    return rp
-      .put(`${Parse.serverURL}/schemas/MyClass`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      url: `${Parse.serverURL}/schemas/MyClass`,
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to update a schema."
         );
         done();
@@ -865,18 +867,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to delete schema', done => {
-    return rp
-      .del(`${Parse.serverURL}/schemas/MyClass`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      url: `${Parse.serverURL}/schemas/MyClass`,
+      method: 'DELETE',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to delete a schema."
         );
         done();
@@ -884,18 +888,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to update the global config', done => {
-    return rp
-      .put(`${Parse.serverURL}/config`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      url: `${Parse.serverURL}/config`,
+      method: 'PUT',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to update the config."
         );
         done();
@@ -903,18 +909,20 @@ describe('read-only masterKey', () => {
   });
 
   it('should throw when trying to send push', done => {
-    return rp
-      .post(`${Parse.serverURL}/push`, {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': 'read-only-test',
-        },
-        json: {},
-      })
+    return request({
+      url: `${Parse.serverURL}/push`,
+      method: 'POST',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+        'Content-Type': 'application/json',
+      },
+      json: {},
+    })
       .then(done.fail)
       .catch(res => {
-        expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
-        expect(res.error.error).toBe(
+        expect(res.data.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+        expect(res.data.error).toBe(
           "read-only masterKey isn't allowed to send push notifications."
         );
         done();

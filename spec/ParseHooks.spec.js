@@ -1,6 +1,6 @@
 'use strict';
 /* global describe, it, expect, fail, Parse */
-const request = require('request');
+const request = require('../lib/request');
 const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require('express');
@@ -177,24 +177,21 @@ describe('Hooks', () => {
   });
 
   it('should fail to register hooks without Master Key', done => {
-    request.post(
-      Parse.serverURL + '/hooks/functions',
-      {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-REST-API-Key': Parse.restKey,
-        },
-        body: JSON.stringify({
-          url: 'http://hello.word',
-          functionName: 'SomeFunction',
-        }),
+    request({
+      method: 'POST',
+      url: Parse.serverURL + '/hooks/functions',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
       },
-      (err, res, body) => {
-        body = JSON.parse(body);
-        expect(body.error).toBe('unauthorized');
-        done();
-      }
-    );
+      body: JSON.stringify({
+        url: 'http://hello.word',
+        functionName: 'SomeFunction',
+      }),
+    }).then(fail, response => {
+      const body = response.data;
+      expect(body.error).toBe('unauthorized');
+      done();
+    });
   });
 
   it('should fail trying to create two times the same function', done => {
@@ -367,22 +364,20 @@ describe('Hooks', () => {
   });
 
   it('should fail trying to create a malformed function (REST)', done => {
-    request.post(
-      Parse.serverURL + '/hooks/functions',
-      {
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': Parse.masterKey,
-        },
-        body: JSON.stringify({ functionName: 'SomeFunction' }),
+    request({
+      method: 'POST',
+      url: Parse.serverURL + '/hooks/functions',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
       },
-      (err, res, body) => {
-        body = JSON.parse(body);
-        expect(body.error).toBe('invalid hook declaration');
-        expect(body.code).toBe(143);
-        done();
-      }
-    );
+      body: JSON.stringify({ functionName: 'SomeFunction' }),
+    }).then(fail, response => {
+      const body = response.data;
+      expect(body.error).toBe('invalid hook declaration');
+      expect(body.code).toBe(143);
+      done();
+    });
   });
 
   it('should create hooks and properly preload them', done => {

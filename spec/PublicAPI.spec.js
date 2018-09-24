@@ -1,11 +1,17 @@
-const request = require('request');
+const req = require('../lib/request');
+
+const request = function(url, callback) {
+  return req({
+    url,
+  }).then(response => callback(null, response), err => callback(err, err));
+};
 
 describe('public API', () => {
   it('should get invalid_link.html', done => {
     request(
       'http://localhost:8378/1/apps/invalid_link.html',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(200);
+        expect(httpResponse.status).toBe(200);
         done();
       }
     );
@@ -19,7 +25,7 @@ describe('public API', () => {
       request(
         'http://localhost:8378/1/apps/choose_password?id=test',
         (err, httpResponse) => {
-          expect(httpResponse.statusCode).toBe(200);
+          expect(httpResponse.status).toBe(200);
           done();
         }
       );
@@ -30,7 +36,7 @@ describe('public API', () => {
     request(
       'http://localhost:8378/1/apps/verify_email_success.html',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(200);
+        expect(httpResponse.status).toBe(200);
         done();
       }
     );
@@ -40,7 +46,7 @@ describe('public API', () => {
     request(
       'http://localhost:8378/1/apps/password_reset_success.html',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(200);
+        expect(httpResponse.status).toBe(200);
         done();
       }
     );
@@ -55,7 +61,7 @@ describe('public API without publicServerURL', () => {
     request(
       'http://localhost:8378/1/apps/test/verify_email',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(404);
+        expect(httpResponse.status).toBe(404);
         done();
       }
     );
@@ -65,7 +71,7 @@ describe('public API without publicServerURL', () => {
     request(
       'http://localhost:8378/1/apps/choose_password?id=test',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(404);
+        expect(httpResponse.status).toBe(404);
         done();
       }
     );
@@ -75,7 +81,7 @@ describe('public API without publicServerURL', () => {
     request(
       'http://localhost:8378/1/apps/test/request_password_reset',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(404);
+        expect(httpResponse.status).toBe(404);
         done();
       }
     );
@@ -91,7 +97,7 @@ describe('public API supplied with invalid application id', () => {
     request(
       'http://localhost:8378/1/apps/invalid/verify_email',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(403);
+        expect(httpResponse.status).toBe(403);
         done();
       }
     );
@@ -101,7 +107,7 @@ describe('public API supplied with invalid application id', () => {
     request(
       'http://localhost:8378/1/apps/choose_password?id=invalid',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(403);
+        expect(httpResponse.status).toBe(403);
         done();
       }
     );
@@ -111,27 +117,27 @@ describe('public API supplied with invalid application id', () => {
     request(
       'http://localhost:8378/1/apps/invalid/request_password_reset',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(403);
+        expect(httpResponse.status).toBe(403);
         done();
       }
     );
   });
 
   it('should get 403 on post of request_password_reset', done => {
-    request.post(
-      'http://localhost:8378/1/apps/invalid/request_password_reset',
-      (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(403);
-        done();
-      }
-    );
+    req({
+      url: 'http://localhost:8378/1/apps/invalid/request_password_reset',
+      method: 'POST',
+    }).then(done.fail, httpResponse => {
+      expect(httpResponse.status).toBe(403);
+      done();
+    });
   });
 
   it('should get 403 on resendVerificationEmail', done => {
     request(
       'http://localhost:8378/1/apps/invalid/resend_verification_email',
       (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(403);
+        expect(httpResponse.status).toBe(403);
         done();
       }
     );

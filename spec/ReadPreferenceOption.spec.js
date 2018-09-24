@@ -2,7 +2,7 @@
 
 const Parse = require('parse/node');
 const ReadPreference = require('mongodb').ReadPreference;
-const rp = require('request-promise');
+const request = require('../lib/request');
 const Config = require('../lib/Config');
 
 describe_only_db('mongo')('Read preference option', () => {
@@ -420,15 +420,16 @@ describe_only_db('mongo')('Read preference option', () => {
         req.readPreference = 'SECONDARY';
       });
 
-      rp({
+      request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+        url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
-      }).then(body => {
+      }).then(response => {
+        const body = response.data;
         expect(body.boolKey).toBe(false);
 
         let myObjectReadPreference = null;
