@@ -117,6 +117,13 @@ module.exports = function httpRequest(options) {
     encoding: null,
     followRedirects: options.followRedirects === true,
   };
+  if (requestOptions.headers) {
+    Object.keys(requestOptions.headers).forEach(key => {
+      if (typeof requestOptions.headers[key] === 'undefined') {
+        delete requestOptions.headers[key];
+      }
+    });
+  }
   if (url.search) {
     options.qs = Object.assign({}, options.qs, querystring.parse(url.query));
   }
