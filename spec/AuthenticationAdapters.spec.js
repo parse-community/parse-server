@@ -1,4 +1,4 @@
-const request = require('request');
+const request = require('../lib/request');
 const Config = require('../lib/Config');
 const defaultColumns = require('../lib/Controllers/SchemaController')
   .defaultColumns;
@@ -143,6 +143,7 @@ describe('AuthenticationProviders', function() {
     };
 
     const options = {
+      method: 'POST',
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
@@ -152,17 +153,23 @@ describe('AuthenticationProviders', function() {
       },
       url: 'http://localhost:8378/1/users',
       body: jsonBody,
-      json: true,
     };
-
-    return new Promise(resolve => {
-      request.post(options, (err, res, body) => {
-        resolve({ err, res, body });
+    return request(options)
+      .then(response => {
         if (callback) {
-          callback(err, res, body);
+          callback(null, response, response.data);
         }
+        return {
+          res: response,
+          body: response.data,
+        };
+      })
+      .catch(error => {
+        if (callback) {
+          callback(error);
+        }
+        throw error;
       });
-    });
   };
 
   it('should create user with REST API', done => {
@@ -226,9 +233,9 @@ describe('AuthenticationProviders', function() {
       .then(user => {
         return createOAuthUserWithSessionToken(user.getSessionToken());
       })
-      .then(({ body }) => {
-        expect(body.code).toBe(208);
-        expect(body.error).toBe('this auth is already used');
+      .then(fail, ({ data }) => {
+        expect(data.code).toBe(208);
+        expect(data.error).toBe('this auth is already used');
         done();
       })
       .catch(done.fail);
