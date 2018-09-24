@@ -1,6 +1,6 @@
 const Config = require('../lib/Config');
 const sessionToken = 'legacySessionToken';
-const rp = require('request-promise');
+const request = require('../lib/request');
 const Parse = require('parse/node');
 
 function createUser() {
@@ -92,24 +92,24 @@ describe_only_db('mongo')('revocable sessions', () => {
   });
 
   it('should not upgrade bad legacy session token', done => {
-    rp.post({
+    request({
+      method: 'POST',
       url: Parse.serverURL + '/upgradeToRevocableSession',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Rest-API-Key': 'rest',
         'X-Parse-Session-Token': 'badSessionToken',
       },
-      json: true,
     })
       .then(
         () => {
           fail('should not be able to upgrade a bad token');
         },
         response => {
-          expect(response.statusCode).toBe(400);
-          expect(response.error).not.toBeUndefined();
-          expect(response.error.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
-          expect(response.error.error).toEqual('invalid legacy session token');
+          expect(response.status).toBe(400);
+          expect(response.data).not.toBeUndefined();
+          expect(response.data.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+          expect(response.data.error).toEqual('invalid legacy session token');
         }
       )
       .then(() => {
@@ -118,23 +118,23 @@ describe_only_db('mongo')('revocable sessions', () => {
   });
 
   it('should not crash without session token #2720', done => {
-    rp.post({
+    request({
+      method: 'POST',
       url: Parse.serverURL + '/upgradeToRevocableSession',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Rest-API-Key': 'rest',
       },
-      json: true,
     })
       .then(
         () => {
           fail('should not be able to upgrade a bad token');
         },
         response => {
-          expect(response.statusCode).toBe(404);
-          expect(response.error).not.toBeUndefined();
-          expect(response.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-          expect(response.error.error).toEqual('invalid session');
+          expect(response.status).toBe(404);
+          expect(response.data).not.toBeUndefined();
+          expect(response.data.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+          expect(response.data.error).toEqual('invalid session');
         }
       )
       .then(() => {
