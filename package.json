@@ -51,7 +51,7 @@
     "@babel/plugin-proposal-object-rest-spread": "7.0.0",
     "@babel/preset-env": "7.1.0",
     "@parse/minami": "^1.0.0",
-    "babel-eslint": "^9.0.0",
+    "babel-eslint": "^10.0.0",
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "5.2.0",
     "deep-diff": "1.0.2",
