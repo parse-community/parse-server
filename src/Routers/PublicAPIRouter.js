@@ -174,11 +174,16 @@ export class PublicAPIRouter extends PromiseRouter {
           });
         },
         err => {
+          const whitelistError = Object.getOwnPropertyNames(err).filter(
+            key => key !== 'stack'
+          );
+          const errString = JSON.stringify(err, whitelistError);
+
           const params = qs.stringify({
             username: username,
             token: token,
             id: config.applicationId,
-            error: err,
+            error: encodeURI(errString),
             app: config.appName,
           });
           return Promise.resolve({
