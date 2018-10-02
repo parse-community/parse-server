@@ -498,7 +498,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are prodvided', done => {
+  it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are provided', done => {
     const adapter = MockEmailAdapterWithOptions({
       fromAddress: 'parse@example.com',
       apiKey: 'k',
@@ -647,7 +647,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('redirects you to invalid link if you try to verify email incorrecly', done => {
+  it('redirects you to invalid link if you try to verify email incorrectly', done => {
     reconfigureServer({
       appName: 'emailing app',
       verifyUserEmails: true,
@@ -828,7 +828,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('should programatically reset password', done => {
+  it('should programmatically reset password', done => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
