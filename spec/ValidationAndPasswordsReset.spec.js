@@ -909,4 +909,56 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
     });
   });
+
+  it('deletes password reset token', done => {
+    reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+      .then(() => {
+        const config = Config.get('test');
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        user.set('email', 'test@parse.com');
+        return user
+          .signUp(null)
+          .then(() => Parse.User.requestPasswordReset('test@parse.com'))
+          .then(() => config.database.adapter
+            .find(
+              '_User',
+              { fields: {} },
+              { username: 'zxcv' },
+              { limit: 1 }
+            ))
+          .then(results => {
+            // validate that there is a token
+            expect(results.length).toEqual(1);
+            expect(results[0]['_perishable_token']).not.toBeNull();
+            user.set('email', 'test2@parse.com');
+            return user.save();
+          })
+          .then(() => config.database.adapter
+            .find(
+              '_User',
+              { fields: {} },
+              { username: 'zxcv' },
+              { limit: 1 })
+          )
+          .then(results => {
+            expect(results.length).toEqual(1);
+            expect(results[0]['_perishable_token']).toBeNull();
+            done();
+          })
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
+        done();
+      });
+  });
 });
