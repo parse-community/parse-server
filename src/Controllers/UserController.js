@@ -242,21 +242,26 @@ export class UserController extends AdaptableController {
     });
   }
 
+  clearPasswordResetToken(objectId) {
+    return this.config.database.update(
+      '_User',
+      { objectId },
+      {
+        _perishable_token: { __op: 'Delete' },
+        _perishable_token_expires_at: { __op: 'Delete' },
+      }
+    )
+  }
+
   updatePassword(username, token, password) {
     return (
       this.checkResetTokenValidity(username, token)
-        .then(user => updateUserPassword(user.objectId, password, this.config))
-        // clear reset password token
-        .then(() =>
-          this.config.database.update(
-            '_User',
-            { username },
-            {
-              _perishable_token: { __op: 'Delete' },
-              _perishable_token_expires_at: { __op: 'Delete' },
-            }
-          )
-        )
+        .then(user =>
+          Promise.all([
+            updateUserPassword(user.objectId, password, this.config),
+            this.clearPasswordResetToken(user.objectId)
+          ]))
+        .then(results => results[0])
         .catch(error => {
           if (error.message) {
             // in case of Parse.Error, fail with the error message only

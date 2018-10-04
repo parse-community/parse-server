@@ -105,6 +105,17 @@ export class ClassesRouter extends PromiseRouter {
     );
   }
 
+  afterUpdate(req, response) {
+    if (this.className(req) === '_User' && ('email' in req.body)) {
+      const userController = req.config.userController;
+      return userController.clearPasswordResetToken(req.params.objectId)
+        .then(() =>
+          response
+        );
+    }
+    return Promise.resolve(response);
+  }
+
   handleUpdate(req) {
     const where = { objectId: req.params.objectId };
     return rest.update(
@@ -114,7 +125,7 @@ export class ClassesRouter extends PromiseRouter {
       where,
       req.body,
       req.info.clientSDK
-    );
+    ).then(this.afterUpdate.bind(this, req));
   }
 
   handleDelete(req) {
