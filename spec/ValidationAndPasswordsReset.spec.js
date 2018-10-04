@@ -952,7 +952,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           )
           .then(results => {
             expect(results.length).toEqual(1);
-            expect(results[0]['_perishable_token']).toBeNull();
+            expect(results[0]['_perishable_token']).toBeUndefined();
             done();
           })
       })
