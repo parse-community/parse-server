@@ -7,34 +7,33 @@ var batch = require('./batch'),
   Parse = require('parse/node').Parse,
   path = require('path');
 
-import { ParseServerOptions,
-  LiveQueryServerOptions }      from './Options';
-import defaults                 from './defaults';
-import * as logging             from './logger';
-import Config                   from './Config';
-import PromiseRouter            from './PromiseRouter';
-import requiredParameter        from './requiredParameter';
-import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
-import { ClassesRouter }        from './Routers/ClassesRouter';
-import { FeaturesRouter }       from './Routers/FeaturesRouter';
-import { FilesRouter }          from './Routers/FilesRouter';
-import { FunctionsRouter }      from './Routers/FunctionsRouter';
-import { GlobalConfigRouter }   from './Routers/GlobalConfigRouter';
-import { HooksRouter }          from './Routers/HooksRouter';
-import { IAPValidationRouter }  from './Routers/IAPValidationRouter';
-import { InstallationsRouter }  from './Routers/InstallationsRouter';
-import { LogsRouter }           from './Routers/LogsRouter';
+import { ParseServerOptions, LiveQueryServerOptions } from './Options';
+import defaults from './defaults';
+import * as logging from './logger';
+import Config from './Config';
+import PromiseRouter from './PromiseRouter';
+import requiredParameter from './requiredParameter';
+import { AnalyticsRouter } from './Routers/AnalyticsRouter';
+import { ClassesRouter } from './Routers/ClassesRouter';
+import { FeaturesRouter } from './Routers/FeaturesRouter';
+import { FilesRouter } from './Routers/FilesRouter';
+import { FunctionsRouter } from './Routers/FunctionsRouter';
+import { GlobalConfigRouter } from './Routers/GlobalConfigRouter';
+import { HooksRouter } from './Routers/HooksRouter';
+import { IAPValidationRouter } from './Routers/IAPValidationRouter';
+import { InstallationsRouter } from './Routers/InstallationsRouter';
+import { LogsRouter } from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
-import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
-import { PushRouter }           from './Routers/PushRouter';
-import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
-import { RolesRouter }          from './Routers/RolesRouter';
-import { SchemasRouter }        from './Routers/SchemasRouter';
-import { SessionsRouter }       from './Routers/SessionsRouter';
-import { UsersRouter }          from './Routers/UsersRouter';
-import { PurgeRouter }          from './Routers/PurgeRouter';
-import { AudiencesRouter }      from './Routers/AudiencesRouter';
-import { AggregateRouter }      from './Routers/AggregateRouter';
+import { PublicAPIRouter } from './Routers/PublicAPIRouter';
+import { PushRouter } from './Routers/PushRouter';
+import { CloudCodeRouter } from './Routers/CloudCodeRouter';
+import { RolesRouter } from './Routers/RolesRouter';
+import { SchemasRouter } from './Routers/SchemasRouter';
+import { SessionsRouter } from './Routers/SessionsRouter';
+import { UsersRouter } from './Routers/UsersRouter';
+import { PurgeRouter } from './Routers/PurgeRouter';
+import { AudiencesRouter } from './Routers/AudiencesRouter';
+import { AggregateRouter } from './Routers/AggregateRouter';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
@@ -44,7 +43,7 @@ addParseCloud();
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
 // "analyticsAdapter": an adapter class for analytics
-// "filesAdapter": a class like GridStoreAdapter providing create, get,
+// "filesAdapter": a class like GridFSBucketAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like WinstonLoggerAdapter providing info, error,
 //                 and query
@@ -69,7 +68,10 @@ addParseCloud();
 // "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
 
 class ParseServer {
-
+  /**
+   * @constructor
+   * @param {ParseServerOptions} options the parse server initialization options
+   */
   constructor(options: ParseServerOptions) {
     injectDefaults(options);
     const {
@@ -105,7 +107,7 @@ class ParseServer {
     if (cloud) {
       addParseCloud();
       if (typeof cloud === 'function') {
-        cloud(Parse)
+        cloud(Parse);
       } else if (typeof cloud === 'string') {
         require(path.resolve(process.cwd(), cloud));
       } else {
@@ -128,25 +130,37 @@ class ParseServer {
     }
   }
 
-  static app({maxUploadSize = '20mb', appId}) {
+  /**
+   * @static
+   * Create an express app for the parse server
+   * @param {Object} options let you specify the maxUploadSize when creating the express app  */
+  static app({ maxUploadSize = '20mb', appId }) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     // File handling needs to be before default middlewares are applied
-    api.use('/', middlewares.allowCrossDomain, new FilesRouter().expressRouter({
-      maxUploadSize: maxUploadSize
-    }));
+    api.use(
+      '/',
+      middlewares.allowCrossDomain,
+      new FilesRouter().expressRouter({
+        maxUploadSize: maxUploadSize,
+      })
+    );
 
-    api.use('/health', (function(req, res) {
+    api.use('/health', function(req, res) {
       res.json({
-        status: 'ok'
+        status: 'ok',
       });
-    }));
+    });
 
-    api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
+    api.use(
+      '/',
+      bodyParser.urlencoded({ extended: false }),
+      new PublicAPIRouter().expressRouter()
+    );
 
-    api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
+    api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
@@ -160,9 +174,12 @@ class ParseServer {
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
       /* istanbul ignore next */
-      process.on('uncaughtException', (err) => {
-        if (err.code === "EADDRINUSE") { // user-friendly message for this common error
-          process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
+      process.on('uncaughtException', err => {
+        if (err.code === 'EADDRINUSE') {
+          // user-friendly message for this common error
+          process.stderr.write(
+            `Unable to listen on port ${err.port}. The port is already in use.`
+          );
           process.exit(0);
         } else {
           throw err;
@@ -175,12 +192,14 @@ class ParseServer {
       });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
-      Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
+      Parse.CoreManager.setRESTController(
+        ParseServerRESTController(appId, appRouter)
+      );
     }
     return api;
   }
 
-  static promiseRouter({appId}) {
+  static promiseRouter({ appId }) {
     const routers = [
       new ClassesRouter(),
       new UsersRouter(),
@@ -199,7 +218,7 @@ class ParseServer {
       new HooksRouter(),
       new CloudCodeRouter(),
       new AudiencesRouter(),
-      new AggregateRouter()
+      new AggregateRouter(),
     ];
 
     const routes = routers.reduce((memo, router) => {
@@ -212,7 +231,13 @@ class ParseServer {
     return appRouter;
   }
 
-  start(options: ParseServerOptions, callback: ?()=>void) {
+  /**
+   * starts the parse server's express app
+   * @param {ParseServerOptions} options to use to start the server
+   * @param {Function} callback called when the server has started
+   * @returns {ParseServer} the parse server instance
+   */
+  start(options: ParseServerOptions, callback: ?() => void) {
     const app = express();
     if (options.middleware) {
       let middleware;
@@ -229,7 +254,10 @@ class ParseServer {
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-      this.liveQueryServer = ParseServer.createLiveQueryServer(server, options.liveQueryServerOptions);
+      this.liveQueryServer = ParseServer.createLiveQueryServer(
+        server,
+        options.liveQueryServerOptions
+      );
     }
     /* istanbul ignore next */
     if (!process.env.TESTING) {
@@ -239,11 +267,24 @@ class ParseServer {
     return this;
   }
 
-  static start(options: ParseServerOptions, callback: ?()=>void) {
+  /**
+   * Creates a new ParseServer and starts it.
+   * @param {ParseServerOptions} options used to start the server
+   * @param {Function} callback called when the server has started
+   * @returns {ParseServer} the parse server instance
+   */
+  static start(options: ParseServerOptions, callback: ?() => void) {
     const parseServer = new ParseServer(options);
     return parseServer.start(options, callback);
   }
 
+  /**
+   * Helper method to create a liveQuery server
+   * @static
+   * @param {Server} httpServer an optional http server to pass
+   * @param {LiveQueryServerOptions} config options fot he liveQueryServer
+   * @returns {ParseLiveQueryServer} the live query server instance
+   */
   static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
     if (!httpServer || (config && config.port)) {
       var app = express();
@@ -255,41 +296,44 @@ class ParseServer {
 
   static verifyServerUrl(callback) {
     // perform a health check on the serverURL value
-    if(Parse.serverURL) {
-      const request = require('request');
-      request(Parse.serverURL.replace(/\/$/, "") + "/health", function (error, response, body) {
-        let json;
-        try {
-          json = JSON.parse(body);
-        } catch(e) {
-          json = null;
-        }
-        if (error || response.statusCode !== 200 || !json || json && json.status !== 'ok') {
-          /* eslint-disable no-console */
-          console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
-            ` Cloud code and push notifications may be unavailable!\n`);
-          /* eslint-enable no-console */
-          if(callback) {
-            callback(false);
+    if (Parse.serverURL) {
+      const request = require('./request');
+      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
+        .catch(response => response)
+        .then(response => {
+          const json = response.data || null;
+          if (
+            response.status !== 200 ||
+            !json ||
+            (json && json.status !== 'ok')
+          ) {
+            /* eslint-disable no-console */
+            console.warn(
+              `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+                ` Cloud code and push notifications may be unavailable!\n`
+            );
+            /* eslint-enable no-console */
+            if (callback) {
+              callback(false);
+            }
+          } else {
+            if (callback) {
+              callback(true);
+            }
           }
-        } else {
-          if(callback) {
-            callback(true);
-          }
-        }
-      });
+        });
     }
   }
 }
 
 function addParseCloud() {
-  const ParseCloud = require("./cloud-code/Parse.Cloud");
+  const ParseCloud = require('./cloud-code/Parse.Cloud');
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }
 
 function injectDefaults(options: ParseServerOptions) {
-  Object.keys(defaults).forEach((key) => {
+  Object.keys(defaults).forEach(key => {
     if (!options.hasOwnProperty(key)) {
       options[key] = defaults[key];
     }
@@ -299,15 +343,20 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
-  options.userSensitiveFields = Array.from(new Set(options.userSensitiveFields.concat(
-    defaults.userSensitiveFields,
-    options.userSensitiveFields
-  )));
+  options.userSensitiveFields = Array.from(
+    new Set(
+      options.userSensitiveFields.concat(
+        defaults.userSensitiveFields,
+        options.userSensitiveFields
+      )
+    )
+  );
 
-  options.masterKeyIps = Array.from(new Set(options.masterKeyIps.concat(
-    defaults.masterKeyIps,
-    options.masterKeyIps
-  )));
+  options.masterKeyIps = Array.from(
+    new Set(
+      options.masterKeyIps.concat(defaults.masterKeyIps, options.masterKeyIps)
+    )
+  );
 }
 
 // Those can't be tested as it requires a subprocess
@@ -317,7 +366,7 @@ function configureListeners(parseServer) {
   const sockets = {};
   /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
     This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-  server.on('connection', (socket) => {
+  server.on('connection', socket => {
     const socketId = socket.remoteAddress + ':' + socket.remotePort;
     sockets[socketId] = socket;
     socket.on('close', () => {
@@ -329,9 +378,11 @@ function configureListeners(parseServer) {
     for (const socketId in sockets) {
       try {
         sockets[socketId].destroy();
-      } catch (e) { /* */ }
+      } catch (e) {
+        /* */
+      }
     }
-  }
+  };
 
   const handleShutdown = function() {
     process.stdout.write('Termination signal received. Shutting down.');

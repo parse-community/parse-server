@@ -1,6 +1,5 @@
 /*eslint no-unused-vars: "off"*/
 export class AuthAdapter {
-
   /*
   @param appIds: the specified app ids in the configuration
   @param authData: the client provided authData

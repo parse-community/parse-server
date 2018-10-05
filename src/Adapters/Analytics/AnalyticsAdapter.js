@@ -1,18 +1,23 @@
 /*eslint no-unused-vars: "off"*/
+/**
+ * @module Adapters
+ */
+/**
+ * @interface AnalyticsAdapter
+ */
 export class AnalyticsAdapter {
-
-  /*
-  @param parameters: the analytics request body, analytics info will be in the dimensions property
-  @param req: the original http request
+  /**
+  @param {any} parameters: the analytics request body, analytics info will be in the dimensions property
+  @param {Request} req: the original http request
    */
   appOpened(parameters, req) {
     return Promise.resolve({});
   }
 
-  /*
-  @param eventName: the name of the custom eventName
-  @param parameters: the analytics request body, analytics info will be in the dimensions property
-  @param req: the original http request
+  /**
+  @param {String} eventName: the name of the custom eventName
+  @param {any} parameters: the analytics request body, analytics info will be in the dimensions property
+  @param {Request} req: the original http request
    */
   trackEvent(eventName, parameters, req) {
     return Promise.resolve({});

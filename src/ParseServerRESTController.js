@@ -6,28 +6,30 @@ const Parse = require('parse/node');
 
 function getSessionToken(options) {
   if (options && typeof options.sessionToken === 'string') {
-    return Parse.Promise.as(options.sessionToken);
+    return Promise.resolve(options.sessionToken);
   }
-  return Parse.Promise.as(null);
+  return Promise.resolve(null);
 }
 
 function getAuth(options = {}, config) {
   const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId }));
+    return Promise.resolve(
+      new Auth.Auth({ config, isMaster: true, installationId })
+    );
   }
-  return getSessionToken(options).then((sessionToken) => {
+  return getSessionToken(options).then(sessionToken => {
     if (sessionToken) {
       options.sessionToken = sessionToken;
       return Auth.getAuthForSessionToken({
         config,
         sessionToken: sessionToken,
-        installationId
+        installationId,
       });
     } else {
-      return Parse.Promise.as(new Auth.Auth({ config, installationId }));
+      return Promise.resolve(new Auth.Auth({ config, installationId }));
     }
-  })
+  });
 }
 
 function ParseServerRESTController(applicationId, router) {
@@ -41,19 +43,29 @@ function ParseServerRESTController(applicationId, router) {
       path = path.slice(serverURL.path.length, path.length);
     }
 
-    if (path[0] !== "/") {
-      path = "/" + path;
+    if (path[0] !== '/') {
+      path = '/' + path;
     }
 
     if (path === '/batch') {
-      const promises = data.requests.map((request) => {
-        return handleRequest(request.method, request.path, request.body, options).then((response) => {
-          return Parse.Promise.as({success: response});
-        }, (error) => {
-          return Parse.Promise.as({error: {code: error.code, error: error.message}});
-        });
+      const promises = data.requests.map(request => {
+        return handleRequest(
+          request.method,
+          request.path,
+          request.body,
+          options
+        ).then(
+          response => {
+            return Promise.resolve({ success: response });
+          },
+          error => {
+            return Promise.resolve({
+              error: { code: error.code, error: error.message },
+            });
+          }
+        );
       });
-      return Parse.Promise.all(promises);
+      return Promise.all(promises);
     }
 
     let query;
@@ -61,38 +73,45 @@ function ParseServerRESTController(applicationId, router) {
       query = data;
     }
 
-    return new Parse.Promise((resolve, reject) => {
-      getAuth(options, config).then((auth) => {
+    return new Promise((resolve, reject) => {
+      getAuth(options, config).then(auth => {
         const request = {
           body: data,
           config,
           auth,
           info: {
             applicationId: applicationId,
-            sessionToken: options.sessionToken
+            sessionToken: options.sessionToken,
           },
-          query
+          query,
         };
-        return Promise.resolve().then(() => {
-          return router.tryRouteRequest(method, path, request);
-        }).then((response) => {
-          resolve(response.response, response.status, response);
-        }, (err) => {
-          if (err instanceof Parse.Error &&
-              err.code == Parse.Error.INVALID_JSON &&
-              err.message == `cannot route ${method} ${path}`) {
-            RESTController.request.apply(null, args).then(resolve, reject);
-          } else {
-            reject(err);
-          }
-        });
+        return Promise.resolve()
+          .then(() => {
+            return router.tryRouteRequest(method, path, request);
+          })
+          .then(
+            response => {
+              resolve(response.response, response.status, response);
+            },
+            err => {
+              if (
+                err instanceof Parse.Error &&
+                err.code == Parse.Error.INVALID_JSON &&
+                err.message == `cannot route ${method} ${path}`
+              ) {
+                RESTController.request.apply(null, args).then(resolve, reject);
+              } else {
+                reject(err);
+              }
+            }
+          );
       }, reject);
     });
   }
 
-  return  {
+  return {
     request: handleRequest,
-    ajax: RESTController.ajax
+    ajax: RESTController.ajax,
   };
 }
 

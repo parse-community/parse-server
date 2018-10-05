@@ -1,2 +1,3 @@
-const ParseServerDefinitions = require('../../Options/Definitions').ParseServerOptions;
+const ParseServerDefinitions = require('../../Options/Definitions')
+  .ParseServerOptions;
 export default ParseServerDefinitions;

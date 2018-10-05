@@ -1,4 +1,4 @@
-![Parse Server logo](.github/parse-server-logo.png?raw=true)
+![Parse Server logo](https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png)
 
 [![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)](#sponsors)
 [![Build Status](https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat)](https://travis-ci.org/parse-community/parse-server)
@@ -35,6 +35,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started
@@ -153,7 +154,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
-* [Gomix](https://gomix.com/#!/project/parse-server)
+* [Glitch](https://glitch.com/edit/#!/parse-server)
 * [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
 ### Parse Server + Express
@@ -374,11 +375,19 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridStoreAdapter`, which is backed by MongoDB;
+* `GridFSBucketAdapter`, which is backed by MongoDB;
 * `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
-`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+# Upgrading to 3.0.0
+
+Starting 3.0.0, parse-server uses the JS SDK version 2.0. 
+In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
+All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
+
+We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
 
 # Support
 

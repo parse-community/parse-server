@@ -1,4 +1,4 @@
-import Parse    from 'parse/node';
+import Parse from 'parse/node';
 import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {
@@ -7,12 +7,16 @@ export function isPushIncrementing(body) {
   }
 
   const badge = body.data.badge;
-  if (typeof badge == 'string' && badge.toLowerCase() == "increment") {
+  if (typeof badge == 'string' && badge.toLowerCase() == 'increment') {
     return true;
   }
 
-  return typeof badge == 'object' && typeof badge.__op == 'string' &&
-         badge.__op.toLowerCase() == "increment" && Number(badge.amount);
+  return (
+    typeof badge == 'object' &&
+    typeof badge.__op == 'string' &&
+    badge.__op.toLowerCase() == 'increment' &&
+    Number(badge.amount)
+  );
 }
 
 const localizableKeys = ['alert', 'title'];
@@ -22,14 +26,18 @@ export function getLocalesFromPush(body) {
   if (!data) {
     return [];
   }
-  return [...new Set(Object.keys(data).reduce((memo, key) => {
-    localizableKeys.forEach((localizableKey) => {
-      if (key.indexOf(`${localizableKey}-`) == 0) {
-        memo.push(key.slice(localizableKey.length + 1));
-      }
-    });
-    return memo;
-  }, []))];
+  return [
+    ...new Set(
+      Object.keys(data).reduce((memo, key) => {
+        localizableKeys.forEach(localizableKey => {
+          if (key.indexOf(`${localizableKey}-`) == 0) {
+            memo.push(key.slice(localizableKey.length + 1));
+          }
+        });
+        return memo;
+      }, [])
+    ),
+  ];
 }
 
 export function transformPushBodyForLocale(body, locale) {
@@ -38,7 +46,7 @@ export function transformPushBodyForLocale(body, locale) {
     return body;
   }
   body = deepcopy(body);
-  localizableKeys.forEach((key) => {
+  localizableKeys.forEach(key => {
     const localeValue = body.data[`${key}-${locale}`];
     if (localeValue) {
       body.data[key] = localeValue;
@@ -48,9 +56,11 @@ export function transformPushBodyForLocale(body, locale) {
 }
 
 export function stripLocalesFromBody(body) {
-  if (!body.data) { return body; }
-  Object.keys(body.data).forEach((key) => {
-    localizableKeys.forEach((localizableKey) => {
+  if (!body.data) {
+    return body;
+  }
+  Object.keys(body.data).forEach(key => {
+    localizableKeys.forEach(localizableKey => {
       if (key.indexOf(`${localizableKey}-`) == 0) {
         delete body.data[key];
       }
@@ -71,23 +81,29 @@ export function bodiesPerLocales(body, locales = []) {
 }
 
 export function groupByLocaleIdentifier(installations, locales = []) {
-  return installations.reduce((map, installation) => {
-    let added = false;
-    locales.forEach((locale) => {
-      if (added) {
-        return;
+  return installations.reduce(
+    (map, installation) => {
+      let added = false;
+      locales.forEach(locale => {
+        if (added) {
+          return;
+        }
+        if (
+          installation.localeIdentifier &&
+          installation.localeIdentifier.indexOf(locale) === 0
+        ) {
+          added = true;
+          map[locale] = map[locale] || [];
+          map[locale].push(installation);
+        }
+      });
+      if (!added) {
+        map.default.push(installation);
       }
-      if (installation.localeIdentifier && installation.localeIdentifier.indexOf(locale) === 0) {
-        added = true;
-        map[locale] = map[locale] || [];
-        map[locale].push(installation);
-      }
-    });
-    if (!added) {
-      map.default.push(installation);
-    }
-    return map;
-  }, {default: []});
+      return map;
+    },
+    { default: [] }
+  );
 }
 
 /**
@@ -106,8 +122,10 @@ export function validatePushType(where = {}, validPushTypes = []) {
   for (var i = 0; i < deviceTypes.length; i++) {
     var deviceType = deviceTypes[i];
     if (validPushTypes.indexOf(deviceType) < 0) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        deviceType + ' is not supported push type.');
+      throw new Parse.Error(
+        Parse.Error.PUSH_MISCONFIGURED,
+        deviceType + ' is not supported push type.'
+      );
     }
   }
 }
@@ -115,7 +133,7 @@ export function validatePushType(where = {}, validPushTypes = []) {
 export function applyDeviceTokenExists(where) {
   where = deepcopy(where);
   if (!where.hasOwnProperty('deviceToken')) {
-    where['deviceToken'] = {'$exists': true};
+    where['deviceToken'] = { $exists: true };
   }
   return where;
 }

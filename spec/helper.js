@@ -1,11 +1,17 @@
-"use strict"
+'use strict';
 // Sets up a Parse API server for testing.
 const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
 const supportsColor = require('supports-color');
-jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL =
+  process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }, spec: { displayDuration: true }}));
+jasmine.getEnv().addReporter(
+  new SpecReporter({
+    colors: { enabled: supportsColor.stdout },
+    spec: { displayDuration: true },
+  })
+);
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -16,7 +22,7 @@ global.on_db = (db, callback, elseCallback) => {
   if (elseCallback) {
     return elseCallback();
   }
-}
+};
 
 if (global._babelPolyfill) {
   console.error('We should not use polyfilled tests');
@@ -27,14 +33,20 @@ const cache = require('../lib/cache').default;
 const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
+  .GridFSBucketAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
-const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
+  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
+  .default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
+  .default;
 
-const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const mongoURI =
+  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI =
+  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 // need to bind for mocking mocha
 
@@ -49,8 +61,8 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
 } else {
   startDB = require('mongodb-runner/mocha/before').bind({
     timeout: () => {},
-    slow: () => {}
-  })
+    slow: () => {},
+  });
   stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
@@ -62,11 +74,15 @@ const port = 8378;
 
 let filesAdapter;
 
-on_db('mongo', () => {
-  filesAdapter = new GridStoreAdapter(mongoURI);
-}, () => {
-  filesAdapter = new FSAdapter();
-});
+on_db(
+  'mongo',
+  () => {
+    filesAdapter = new GridFSBucketAdapter(mongoURI);
+  },
+  () => {
+    filesAdapter = new FSAdapter();
+  }
+);
 
 let logLevel;
 let silent = true;
@@ -98,15 +114,16 @@ const defaultConfiguration = {
     android: {
       senderId: 'yolo',
       apiKey: 'yolo',
-    }
+    },
   },
-  auth: { // Override the facebook provider
+  auth: {
+    // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
-      module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
+      module: path.resolve(__dirname, 'myoauth'), // relative path as it's run from src
     },
-    shortLivedAuth: mockShortLivedAuth()
-  }
+    shortLivedAuth: mockShortLivedAuth(),
+  },
 };
 
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
@@ -127,15 +144,21 @@ const reconfigureServer = changedConfiguration => {
       });
     }
     try {
-      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject),
-        mountPath: '/1',
-        port,
-      });
+      const newConfiguration = Object.assign(
+        {},
+        defaultConfiguration,
+        changedConfiguration,
+        {
+          __indexBuildCompletionCallbackForTests: indexBuildPromise =>
+            indexBuildPromise.then(resolve, reject),
+          mountPath: '/1',
+          port,
+        }
+      );
       cache.clear();
       const parseServer = ParseServer.start(newConfiguration);
       parseServer.app.use(require('./testing-routes').router);
-      parseServer.expressApp.use('/1', (err) => {
+      parseServer.expressApp.use('/1', err => {
         console.error(err);
         fail('should not call next');
       });
@@ -143,21 +166,19 @@ const reconfigureServer = changedConfiguration => {
       server.on('connection', connection => {
         const key = `${connection.remoteAddress}:${connection.remotePort}`;
         openConnections[key] = connection;
-        connection.on('close', () => { delete openConnections[key] });
+        connection.on('close', () => {
+          delete openConnections[key];
+        });
       });
-    } catch(error) {
+    } catch (error) {
       reject(error);
     }
   });
-}
+};
 
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
-
-// This is needed because we ported a bunch of tests from the non-A+ way.
-// TODO: update tests to work in an A+ way
-Parse.Promise.disableAPlusCompliant();
 
 // 10 minutes timeout
 beforeAll(startDB, 10 * 60 * 1000);
@@ -174,8 +195,11 @@ beforeEach(done => {
   }
   TestUtils.destroyAllDataPermanently(true)
     .catch(error => {
-    // For tests that connect to their own mongo, there won't be any data to delete.
-      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
+      // For tests that connect to their own mongo, there won't be any data to delete.
+      if (
+        error.message === 'ns not found' ||
+        error.message.startsWith('connect ECONNREFUSED')
+      ) {
         return;
       } else {
         fail(error);
@@ -187,79 +211,85 @@ beforeEach(done => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
       done();
-    }).catch(done.fail);
+    })
+    .catch(done.fail);
 });
 
 afterEach(function(done) {
   const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
+      fail(
+        'There were open connections to the server left after the test finished'
+      );
     }
-    on_db('postgres', () => {
-      TestUtils.destroyAllDataPermanently(true).then(done, done);
-    }, done);
+    on_db(
+      'postgres',
+      () => {
+        TestUtils.destroyAllDataPermanently(true).then(done, done);
+      },
+      done
+    );
   };
   Parse.Cloud._removeAllHooks();
-  databaseAdapter.getAllClasses()
+  databaseAdapter
+    .getAllClasses()
     .then(allSchemas => {
-      allSchemas.forEach((schema) => {
+      allSchemas.forEach(schema => {
         const className = schema.className;
-        expect(className).toEqual({ asymmetricMatch: className => {
-          if (!className.startsWith('_')) {
-            return true;
-          } else {
-          // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
-          // break it.
-            return ['_User', '_Installation', '_Role', '_Session', '_Product', '_Audience'].indexOf(className) >= 0;
-          }
-        }});
+        expect(className).toEqual({
+          asymmetricMatch: className => {
+            if (!className.startsWith('_')) {
+              return true;
+            } else {
+              // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
+              // break it.
+              return (
+                [
+                  '_User',
+                  '_Installation',
+                  '_Role',
+                  '_Session',
+                  '_Product',
+                  '_Audience',
+                ].indexOf(className) >= 0
+              );
+            }
+          },
+        });
       });
     })
     .then(() => Parse.User.logOut())
     .then(() => {}, () => {}) // swallow errors
     .then(() => {
       // Connection close events are not immediate on node 10+... wait a bit
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         setTimeout(resolve, 0);
       });
     })
-    .then(afterLogOut)
+    .then(afterLogOut);
 });
 
 const TestObject = Parse.Object.extend({
-  className: "TestObject"
+  className: 'TestObject',
 });
 const Item = Parse.Object.extend({
-  className: "Item"
+  className: 'Item',
 });
 const Container = Parse.Object.extend({
-  className: "Container"
+  className: 'Container',
 });
 
 // Convenience method to create a new TestObject with a callback
 function create(options, callback) {
   const t = new TestObject(options);
-  t.save(null, { success: callback });
+  return t.save().then(callback);
 }
 
-function createTestUser(success, error) {
+function createTestUser() {
   const user = new Parse.User();
   user.set('username', 'test');
   user.set('password', 'moon-y');
-  const promise = user.signUp();
-  if (success || error) {
-    promise.then(function(user) {
-      if (success) {
-        success(user);
-      }
-    }, function(err) {
-      if (error) {
-        error(err);
-      }
-    });
-  } else {
-    return promise;
-  }
+  return user.signUp();
 }
 
 // Shims for compatibility with the old qunit tests.
@@ -274,37 +304,6 @@ function strictEqual(a, b, message) {
 }
 function notEqual(a, b, message) {
   expect(a).not.toEqual(b, message);
-}
-function expectSuccess(params, done) {
-  return {
-    success: params.success,
-    error: function() {
-      fail('failure happened in expectSuccess');
-      done ? done() : null;
-    },
-  }
-}
-function expectError(errorCode, callback) {
-  return {
-    success: function(result) {
-      console.log('got result', result);
-      fail('expected error but got success');
-    },
-    error: function(obj, e) {
-      // Some methods provide 2 parameters.
-      e = e || obj;
-      if (errorCode !== undefined) {
-        if (!e) {
-          fail('expected a specific error but got a blank error');
-          return;
-        }
-        expect(e.code).toEqual(errorCode, e.message);
-      }
-      if (callback) {
-        callback(e);
-      }
-    },
-  }
 }
 
 // Because node doesn't have Parse._.contains
@@ -371,7 +370,7 @@ function mockShortLivedAuth() {
   let accessToken;
   auth.setValidAccessToken = function(validAccessToken) {
     accessToken = validAccessToken;
-  }
+  };
   auth.validateAuthData = function(authData) {
     if (authData.access_token == accessToken) {
       return Promise.resolve();
@@ -385,7 +384,6 @@ function mockShortLivedAuth() {
   return auth;
 }
 
-
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -397,8 +395,6 @@ global.ok = ok;
 global.equal = equal;
 global.strictEqual = strictEqual;
 global.notEqual = notEqual;
-global.expectSuccess = expectSuccess;
-global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
@@ -407,7 +403,7 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.jfail = function(err) {
   fail(JSON.stringify(err));
-}
+};
 
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
@@ -415,10 +411,13 @@ global.it_exclude_dbs = excluded => {
   } else {
     return it;
   }
-}
+};
 
 global.it_only_db = db => {
-  if (process.env.PARSE_SERVER_TEST_DB === db || !process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+  if (
+    process.env.PARSE_SERVER_TEST_DB === db ||
+    (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
+  ) {
     return it;
   } else {
     return xit;
@@ -431,7 +430,7 @@ global.fit_exclude_dbs = excluded => {
   } else {
     return fit;
   }
-}
+};
 
 global.describe_only_db = db => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -441,16 +440,15 @@ global.describe_only_db = db => {
   } else {
     return xdescribe;
   }
-}
+};
 
-global.describe_only = (validator) =>{
+global.describe_only = validator => {
   if (validator()) {
     return describe;
   } else {
     return xdescribe;
   }
 };
-
 
 const libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
@@ -460,11 +458,11 @@ jasmine.mockLibrary = function(library, name, mock) {
   }
   require(library)[name] = mock;
   libraryCache[library][name] = original;
-}
+};
 
 jasmine.restoreLibrary = function(library, name) {
   if (!libraryCache[library] || !libraryCache[library][name]) {
     throw 'Can not find library ' + library + ' ' + name;
   }
   require(library)[name] = libraryCache[library][name];
-}
+};
