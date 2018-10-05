@@ -42,7 +42,7 @@
     "uuid": "^3.1.0",
     "winston": "2.4.1",
     "winston-daily-rotate-file": "1.7.2",
-    "ws": "6.0.0"
+    "ws": "6.1.0"
   },
   "devDependencies": {
     "@babel/cli": "7.1.2",
