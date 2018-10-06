@@ -92,6 +92,10 @@ function loadAuthAdapter(provider, authOptions) {
     }
   }
 
+  // TODO: create a new module from validateAdapter() in
+  // src/Controllers/AdaptableController.js so we can use it here for adapter
+  // validation based on the src/Adapters/Auth/AuthAdapter.js expected class
+  // signature.
   if (!adapter.validateAuthData || !adapter.validateAppId) {
     return;
   }
