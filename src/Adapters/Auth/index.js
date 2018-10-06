@@ -61,11 +61,15 @@ function authDataValidator(adapter, appIds, options) {
 function loadAuthAdapter(provider, authOptions) {
   let defaultAdapter = providers[provider];
   const providerOptions = authOptions[provider];
-  if (providerOptions && providerOptions.hasOwnProperty('oauth2') && providerOptions['oauth2'] === true) {
+  if (
+    providerOptions &&
+    providerOptions.hasOwnProperty('oauth2') &&
+    providerOptions['oauth2'] === true
+  ) {
     defaultAdapter = oauth2;
   }
 
-  if (!defaultAdapter) {
+  if (!defaultAdapter && !providerOptions) {
     return;
   }
 
