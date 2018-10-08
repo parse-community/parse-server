@@ -1032,9 +1032,12 @@ describe('SchemaController', () => {
             createdAt: { type: 'Date' },
             ACL: { type: 'ACL' },
           };
-          expect(dd(schema.data.NewClass, expectedSchema)).toEqual(undefined);
-          done();
-        });
+          expect(dd(schema.schemaData.NewClass.fields, expectedSchema)).toEqual(
+            undefined
+          );
+        })
+        .then(done)
+        .catch(done.fail);
     });
   });
 
@@ -1268,14 +1271,15 @@ describe('SchemaController', () => {
       })
       .then(userSchema => {
         validateSchemaStructure(userSchema);
-        validateSchemaDataStructure(schema.data);
+        validateSchemaDataStructure(schema.schemaData);
         return schema.getOneSchema('_PushStatus', true);
       })
       .then(pushStatusSchema => {
         validateSchemaStructure(pushStatusSchema);
-        validateSchemaDataStructure(schema.data);
-        done();
-      });
+        validateSchemaDataStructure(schema.schemaData);
+      })
+      .then(done)
+      .catch(done.fail);
   });
 });
 
