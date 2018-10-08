@@ -848,12 +848,12 @@ class DatabaseController {
     object: any,
     aclGroup: string[]
   ): Promise<void> {
-    const classSchema = schema.data[className];
+    const classSchema = schema.schemaData[className];
     if (!classSchema) {
       return Promise.resolve();
     }
     const fields = Object.keys(object);
-    const schemaFields = Object.keys(classSchema);
+    const schemaFields = Object.keys(classSchema.fields);
     const newKeys = fields.filter(field => {
       // Skip fields that are unset
       if (
@@ -1346,7 +1346,7 @@ class DatabaseController {
     if (schema.testBaseCLP(className, aclGroup, operation)) {
       return query;
     }
-    const perms = schema.perms[className];
+    const perms = schema.schemaData[className].classLevelPermissions;
     const field =
       ['get', 'find'].indexOf(operation) > -1
         ? 'readUserFields'
