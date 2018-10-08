@@ -25,7 +25,7 @@
     "@parse/simple-mailgun-adapter": "1.1.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.18.3",
-    "commander": "2.18.0",
+    "commander": "2.19.0",
     "deepcopy": "1.0.0",
     "express": "4.16.2",
     "follow-redirects": "1.5.8",
