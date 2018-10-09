@@ -6,14 +6,14 @@ const batchPath = '/batch';
 
 // Mounts a batch-handler onto a PromiseRouter.
 function mountOnto(router) {
-  router.route('POST', batchPath, (req) => {
+  router.route('POST', batchPath, req => {
     return handleBatch(router, req);
   });
 }
 
 function parseURL(URL) {
   if (typeof URL === 'string') {
-    return url.parse(URL)
+    return url.parse(URL);
   }
   return undefined;
 }
@@ -30,13 +30,13 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
-        'cannot route batch path ' + requestPath);
+        'cannot route batch path ' + requestPath
+      );
     }
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
-  }
+  };
 
-  if (serverURL && publicServerURL
-        && (serverURL.path != publicServerURL.path)) {
+  if (serverURL && publicServerURL && serverURL.path != publicServerURL.path) {
     const localPath = serverURL.path;
     const publicPath = publicServerURL.path;
     // Override the api prefix
@@ -44,10 +44,15 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     return function(requestPath) {
       // Build the new path by removing the public path
       // and joining with the local path
-      const newPath = path.posix.join('/', localPath, '/' , requestPath.slice(publicPath.length));
+      const newPath = path.posix.join(
+        '/',
+        localPath,
+        '/',
+        requestPath.slice(publicPath.length)
+      );
       // Use the method for local routing
       return makeRoutablePath(newPath);
-    }
+    };
   }
 
   return makeRoutablePath;
@@ -57,8 +62,10 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 // TODO: pass along auth correctly
 function handleBatch(router, req) {
   if (!Array.isArray(req.body.requests)) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON,
-      'requests must be an array');
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      'requests must be an array'
+    );
   }
 
   // The batch paths are all from the root of our domain.
@@ -70,31 +77,40 @@ function handleBatch(router, req) {
     throw 'internal routing problem - expected url to end with batch';
   }
 
-  const makeRoutablePath = makeBatchRoutingPathFunction(req.originalUrl, req.config.serverURL, req.config.publicServerURL);
+  const makeRoutablePath = makeBatchRoutingPathFunction(
+    req.originalUrl,
+    req.config.serverURL,
+    req.config.publicServerURL
+  );
 
-  const promises = req.body.requests.map((restRequest) => {
+  const promises = req.body.requests.map(restRequest => {
     const routablePath = makeRoutablePath(restRequest.path);
     // Construct a request that we can send to a handler
     const request = {
       body: restRequest.body,
       config: req.config,
       auth: req.auth,
-      info: req.info
+      info: req.info,
     };
 
-    return router.tryRouteRequest(restRequest.method, routablePath, request).then((response) => {
-      return {success: response.response};
-    }, (error) => {
-      return {error: {code: error.code, error: error.message}};
-    });
+    return router
+      .tryRouteRequest(restRequest.method, routablePath, request)
+      .then(
+        response => {
+          return { success: response.response };
+        },
+        error => {
+          return { error: { code: error.code, error: error.message } };
+        }
+      );
   });
 
-  return Promise.all(promises).then((results) => {
-    return {response: results};
+  return Promise.all(promises).then(results => {
+    return { response: results };
   });
 }
 
 module.exports = {
   mountOnto,
-  makeBatchRoutingPathFunction
+  makeBatchRoutingPathFunction,
 };

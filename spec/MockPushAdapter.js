@@ -4,6 +4,6 @@ module.exports = function(options) {
     send: function() {},
     getValidPushTypes: function() {
       return Object.keys(options.options);
-    }
+    },
   };
 };

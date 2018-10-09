@@ -1,10 +1,7 @@
 const DEFAULT_CACHE_TTL = 5 * 1000;
 
-
 export class InMemoryCache {
-  constructor({
-    ttl = DEFAULT_CACHE_TTL
-  }) {
+  constructor({ ttl = DEFAULT_CACHE_TTL }) {
     this.ttl = ttl;
     this.cache = Object.create(null);
   }
@@ -32,8 +29,8 @@ export class InMemoryCache {
 
     var record = {
       value: value,
-      expire: ttl + Date.now()
-    }
+      expire: ttl + Date.now(),
+    };
 
     if (!isNaN(record.expire)) {
       record.timeout = setTimeout(() => {
@@ -59,7 +56,6 @@ export class InMemoryCache {
   clear() {
     this.cache = Object.create(null);
   }
-
 }
 
 export default InMemoryCache;

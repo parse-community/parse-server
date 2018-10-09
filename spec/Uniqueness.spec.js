@@ -1,45 +1,62 @@
 'use strict';
 
-const Parse = require("parse/node");
+const Parse = require('parse/node');
 const Config = require('../lib/Config');
 
 describe('Uniqueness', function() {
   it('fail when create duplicate value in unique field', done => {
     const obj = new Parse.Object('UniqueField');
     obj.set('unique', 'value');
-    obj.save().then(() => {
-      expect(obj.id).not.toBeUndefined();
-      const config = Config.get('test');
-      return config.database.adapter.ensureUniqueness('UniqueField', { fields: { unique: { __type: 'String' } } }, ['unique'])
-    })
+    obj
+      .save()
+      .then(() => {
+        expect(obj.id).not.toBeUndefined();
+        const config = Config.get('test');
+        return config.database.adapter.ensureUniqueness(
+          'UniqueField',
+          { fields: { unique: { __type: 'String' } } },
+          ['unique']
+        );
+      })
       .then(() => {
         const obj = new Parse.Object('UniqueField');
         obj.set('unique', 'value');
-        return obj.save()
-      }).then(() => {
-        fail('Saving duplicate field should have failed');
-        done();
-      }, error => {
-        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-        done();
-      });
+        return obj.save();
+      })
+      .then(
+        () => {
+          fail('Saving duplicate field should have failed');
+          done();
+        },
+        error => {
+          expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+          done();
+        }
+      );
   });
 
   it('unique indexing works on pointer fields', done => {
     const obj = new Parse.Object('UniquePointer');
-    obj.save({ string: 'who cares' })
+    obj
+      .save({ string: 'who cares' })
       .then(() => obj.save({ ptr: obj }))
       .then(() => {
         const config = Config.get('test');
-        return config.database.adapter.ensureUniqueness('UniquePointer', { fields: {
-          string: { __type: 'String' },
-          ptr: { __type: 'Pointer', targetClass: 'UniquePointer' }
-        } }, ['ptr']);
+        return config.database.adapter.ensureUniqueness(
+          'UniquePointer',
+          {
+            fields: {
+              string: { __type: 'String' },
+              ptr: { __type: 'Pointer', targetClass: 'UniquePointer' },
+            },
+          },
+          ['ptr']
+        );
       })
       .then(() => {
-        const newObj = new Parse.Object('UniquePointer')
-        newObj.set('ptr', obj)
-        return newObj.save()
+        const newObj = new Parse.Object('UniquePointer');
+        newObj.set('ptr', obj);
+        return newObj.save();
       })
       .then(() => {
         fail('save should have failed due to duplicate value');
@@ -59,7 +76,11 @@ describe('Uniqueness', function() {
     Parse.Object.saveAll([o1, o2])
       .then(() => {
         const config = Config.get('test');
-        return config.database.adapter.ensureUniqueness('UniqueFail', { fields: { key: { __type: 'String' } } }, ['key']);
+        return config.database.adapter.ensureUniqueness(
+          'UniqueFail',
+          { fields: { key: { __type: 'String' } } },
+          ['key']
+        );
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
@@ -69,7 +90,12 @@ describe('Uniqueness', function() {
 
   it_exclude_dbs(['postgres'])('can do compound uniqueness', done => {
     const config = Config.get('test');
-    config.database.adapter.ensureUniqueness('CompoundUnique', { fields: { k1: { __type: 'String' }, k2: { __type: 'String' } } }, ['k1', 'k2'])
+    config.database.adapter
+      .ensureUniqueness(
+        'CompoundUnique',
+        { fields: { k1: { __type: 'String' }, k2: { __type: 'String' } } },
+        ['k1', 'k2']
+      )
       .then(() => {
         const o1 = new Parse.Object('CompoundUnique');
         o1.set('k1', 'v1');

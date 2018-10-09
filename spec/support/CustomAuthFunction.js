@@ -1,4 +1,3 @@
-
 module.exports = function(validAuthData) {
   return {
     validateAppId: function() {
@@ -9,6 +8,6 @@ module.exports = function(validAuthData) {
         return Promise.resolve();
       }
       return Promise.reject();
-    }
-  }
-}
+    },
+  };
+};

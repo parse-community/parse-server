@@ -1,5 +1,6 @@
 const Client = require('../lib/LiveQuery/Client').Client;
-const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
+const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer')
+  .ParseWebSocket;
 
 describe('Client', function() {
   it('can be initialized', function() {
@@ -13,7 +14,7 @@ describe('Client', function() {
 
   it('can push response', function() {
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     Client.pushResponse(parseWebSocket, 'message');
 
@@ -22,7 +23,7 @@ describe('Client', function() {
 
   it('can push error', function() {
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     Client.pushError(parseWebSocket, 1, 'error', true);
 
@@ -37,10 +38,10 @@ describe('Client', function() {
   it('can add subscription information', function() {
     const subscription = {};
     const fields = ['test'];
-    const subscriptionInfo =  {
+    const subscriptionInfo = {
       subscription: subscription,
-      fields: fields
-    }
+      fields: fields,
+    };
     const client = new Client(1, {});
     client.addSubscriptionInfo(1, subscriptionInfo);
 
@@ -51,10 +52,10 @@ describe('Client', function() {
   it('can get subscription information', function() {
     const subscription = {};
     const fields = ['test'];
-    const subscriptionInfo =  {
+    const subscriptionInfo = {
       subscription: subscription,
-      fields: fields
-    }
+      fields: fields,
+    };
     const client = new Client(1, {});
     client.addSubscriptionInfo(1, subscriptionInfo);
     const subscriptionInfoAgain = client.getSubscriptionInfo(1);
@@ -65,10 +66,10 @@ describe('Client', function() {
   it('can delete subscription information', function() {
     const subscription = {};
     const fields = ['test'];
-    const subscriptionInfo =  {
+    const subscriptionInfo = {
       subscription: subscription,
-      fields: fields
-    }
+      fields: fields,
+    };
     const client = new Client(1, {});
     client.addSubscriptionInfo(1, subscriptionInfo);
     client.deleteSubscriptionInfo(1);
@@ -76,10 +77,9 @@ describe('Client', function() {
     expect(client.subscriptionInfos.size).toBe(0);
   });
 
-
   it('can generate ParseObject JSON with null selected field', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
@@ -88,12 +88,14 @@ describe('Client', function() {
     };
     const client = new Client(1, {});
 
-    expect(client._toJSONWithFields(parseObjectJSON, null)).toBe(parseObjectJSON);
+    expect(client._toJSONWithFields(parseObjectJSON, null)).toBe(
+      parseObjectJSON
+    );
   });
 
   it('can generate ParseObject JSON with undefined selected field', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
@@ -102,18 +104,20 @@ describe('Client', function() {
     };
     const client = new Client(1, {});
 
-    expect(client._toJSONWithFields(parseObjectJSON, undefined)).toBe(parseObjectJSON);
+    expect(client._toJSONWithFields(parseObjectJSON, undefined)).toBe(
+      parseObjectJSON
+    );
   });
 
   it('can generate ParseObject JSON with selected fields', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const client = new Client(1, {});
 
@@ -123,22 +127,24 @@ describe('Client', function() {
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     });
   });
 
   it('can generate ParseObject JSON with nonexistent selected fields', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const client = new Client(1, {});
-    const limitedParseObject = client._toJSONWithFields(parseObjectJSON, ['name']);
+    const limitedParseObject = client._toJSONWithFields(parseObjectJSON, [
+      'name',
+    ]);
 
     expect(limitedParseObject).toEqual({
       className: 'test',
@@ -152,7 +158,7 @@ describe('Client', function() {
 
   it('can push connect response', function() {
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushConnect();
@@ -165,7 +171,7 @@ describe('Client', function() {
 
   it('can push subscribe response', function() {
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushSubscribe(2);
@@ -179,7 +185,7 @@ describe('Client', function() {
 
   it('can push unsubscribe response', function() {
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushUnsubscribe(2);
@@ -193,16 +199,16 @@ describe('Client', function() {
 
   it('can push create response', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushCreate(2, parseObjectJSON);
@@ -217,16 +223,16 @@ describe('Client', function() {
 
   it('can push enter response', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushEnter(2, parseObjectJSON);
@@ -241,16 +247,16 @@ describe('Client', function() {
 
   it('can push update response', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushUpdate(2, parseObjectJSON);
@@ -265,16 +271,16 @@ describe('Client', function() {
 
   it('can push leave response', function() {
     const parseObjectJSON = {
-      key : 'value',
+      key: 'value',
       className: 'test',
       objectId: 'test',
       updatedAt: '2015-12-07T21:27:13.746Z',
       createdAt: '2015-12-07T21:27:13.746Z',
       ACL: 'test',
-      test: 'test'
+      test: 'test',
     };
     const parseWebSocket = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const client = new Client(1, parseWebSocket);
     client.pushLeave(2, parseObjectJSON);
