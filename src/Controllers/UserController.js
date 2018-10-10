@@ -9,15 +9,6 @@ var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
-  // Add token delete operations to a rest update object
-  static addClearPasswordResetTokenToRestObject(restObject) {
-    const addOps = {
-      _perishable_token: { __op: 'Delete' },
-      _perishable_token_expires_at: { __op: 'Delete' },
-    };
-    return Object.assign({}, restObject, addOps);
-  }
-
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
   }
@@ -305,7 +296,7 @@ function updateUserPassword(userId, password, config) {
     Auth.master(config),
     '_User',
     { objectId: userId },
-    UserController.addClearPasswordResetTokenToRestObject({ password })
+    { password: password }
   );
 }
 

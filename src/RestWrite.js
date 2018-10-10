@@ -96,6 +96,9 @@ RestWrite.prototype.execute = function() {
       return this.runBeforeTrigger();
     })
     .then(() => {
+      return this.deleteEmailRestTokenIfNeeded();
+    })
+    .then(() => {
       return this.validateSchema();
     })
     .then(() => {
@@ -743,6 +746,22 @@ RestWrite.prototype.createSessionToken = function() {
   }
 
   return createSession();
+};
+
+// Delete email reset tokens if user is changing password or email.
+RestWrite.prototype.deleteEmailRestTokenIfNeeded = function() {
+  if (this.className !== '_User' || this.query === null) {
+    // null query means create
+    return;
+  }
+
+  if ('password' in this.data || 'email' in this.data) {
+    const addOps = {
+      _perishable_token: { __op: 'Delete' },
+      _perishable_token_expires_at: { __op: 'Delete' },
+    };
+    this.data = Object.assign(this.data, addOps);
+  }
 };
 
 RestWrite.prototype.destroyDuplicatedSessions = function() {
