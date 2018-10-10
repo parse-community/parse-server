@@ -9,6 +9,15 @@ var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
+  // Add token delete operations to a rest update object
+  static addClearPasswordResetTokenToRestObject(restObject) {
+    const addOps = {
+      _perishable_token: { __op: 'Delete' },
+      _perishable_token_expires_at: { __op: 'Delete' },
+    };
+    return Object.assign({}, restObject, addOps);
+  }
+
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
   }
@@ -242,35 +251,17 @@ export class UserController extends AdaptableController {
     });
   }
 
-  clearPasswordResetToken(objectId) {
-    return this.config.database.update(
-      '_User',
-      { objectId },
-      {
-        _perishable_token: { __op: 'Delete' },
-        _perishable_token_expires_at: { __op: 'Delete' },
-      }
-    )
-  }
-
   updatePassword(username, token, password) {
-    return (
-      this.checkResetTokenValidity(username, token)
-        .then(user =>
-          Promise.all([
-            updateUserPassword(user.objectId, password, this.config),
-            this.clearPasswordResetToken(user.objectId)
-          ]))
-        .then(results => results[0])
-        .catch(error => {
-          if (error.message) {
-            // in case of Parse.Error, fail with the error message only
-            return Promise.reject(error.message);
-          } else {
-            return Promise.reject(error);
-          }
-        })
-    );
+    return this.checkResetTokenValidity(username, token)
+      .then(user => updateUserPassword(user.objectId, password, this.config))
+      .catch(error => {
+        if (error.message) {
+          // in case of Parse.Error, fail with the error message only
+          return Promise.reject(error.message);
+        } else {
+          return Promise.reject(error);
+        }
+      });
   }
 
   defaultVerificationEmail({ link, user, appName }) {
@@ -314,9 +305,7 @@ function updateUserPassword(userId, password, config) {
     Auth.master(config),
     '_User',
     { objectId: userId },
-    {
-      password: password,
-    }
+    UserController.addClearPasswordResetTokenToRestObject({ password })
   );
 }
 
