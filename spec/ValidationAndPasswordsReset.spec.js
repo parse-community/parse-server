@@ -910,7 +910,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('deletes password reset token', done => {
+  it('deletes password reset token on email address change', done => {
     reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
@@ -929,13 +929,14 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         return user
           .signUp(null)
           .then(() => Parse.User.requestPasswordReset('test@parse.com'))
-          .then(() => config.database.adapter
-            .find(
+          .then(() =>
+            config.database.adapter.find(
               '_User',
               { fields: {} },
               { username: 'zxcv' },
               { limit: 1 }
-            ))
+            )
+          )
           .then(results => {
             // validate that there is a token
             expect(results.length).toEqual(1);
@@ -943,18 +944,19 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             user.set('email', 'test2@parse.com');
             return user.save();
           })
-          .then(() => config.database.adapter
-            .find(
+          .then(() =>
+            config.database.adapter.find(
               '_User',
               { fields: {} },
               { username: 'zxcv' },
-              { limit: 1 })
+              { limit: 1 }
+            )
           )
           .then(results => {
             expect(results.length).toEqual(1);
             expect(results[0]['_perishable_token']).toBeUndefined();
             done();
-          })
+          });
       })
       .catch(error => {
         fail(JSON.stringify(error));

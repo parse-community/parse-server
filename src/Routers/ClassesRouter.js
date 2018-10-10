@@ -105,27 +105,29 @@ export class ClassesRouter extends PromiseRouter {
     );
   }
 
-  afterUpdate(req, response) {
-    if (this.className(req) === '_User' && ('email' in req.body)) {
-      const userController = req.config.userController;
-      return userController.clearPasswordResetToken(req.params.objectId)
-        .then(() =>
-          response
-        );
+  // always clear password reset token on email address change
+  beforeUpdate(req) {
+    const { body } = req;
+    if (this.className(req) === '_User' && 'email' in body) {
+      const { userController } = req.config;
+      return userController.constructor.addClearPasswordResetTokenToRestObject(
+        body
+      );
     }
-    return Promise.resolve(response);
+    return body;
   }
 
   handleUpdate(req) {
+    const body = this.beforeUpdate(req);
     const where = { objectId: req.params.objectId };
     return rest.update(
       req.config,
       req.auth,
       this.className(req),
       where,
-      req.body,
+      body,
       req.info.clientSDK
-    ).then(this.afterUpdate.bind(this, req));
+    );
   }
 
   handleDelete(req) {
