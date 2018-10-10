@@ -296,7 +296,9 @@ function updateUserPassword(userId, password, config) {
     Auth.master(config),
     '_User',
     { objectId: userId },
-    { password: password }
+    {
+      password: password,
+    }
   );
 }
 
