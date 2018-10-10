@@ -96,7 +96,7 @@ RestWrite.prototype.execute = function() {
       return this.runBeforeTrigger();
     })
     .then(() => {
-      return this.deleteEmailRestTokenIfNeeded();
+      return this.deleteEmailResetTokenIfNeeded();
     })
     .then(() => {
       return this.validateSchema();
@@ -749,7 +749,7 @@ RestWrite.prototype.createSessionToken = function() {
 };
 
 // Delete email reset tokens if user is changing password or email.
-RestWrite.prototype.deleteEmailRestTokenIfNeeded = function() {
+RestWrite.prototype.deleteEmailResetTokenIfNeeded = function() {
   if (this.className !== '_User' || this.query === null) {
     // null query means create
     return;
