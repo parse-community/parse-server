@@ -5,11 +5,14 @@ var querystring = require('querystring');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest(authData.access_token).then(function (data) {
+  return graphRequest(authData.access_token).then(function(data) {
     if (data && data.uid == authData.id) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'weibo auth is invalid for this user.');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'weibo auth is invalid for this user.'
+    );
   });
 }
 
@@ -21,7 +24,7 @@ function validateAppId() {
 // A promisey wrapper for weibo graph requests.
 function graphRequest(access_token) {
   var postData = querystring.stringify({
-    "access_token": access_token
+    access_token: access_token,
   });
   var options = {
     hostname: 'api.weibo.com',
@@ -29,13 +32,13 @@ function graphRequest(access_token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(postData)
-    }
+      'Content-Length': Buffer.byteLength(postData),
+    },
   };
   return httpsRequest.request(options, postData);
 }
 
 module.exports = {
   validateAppId,
-  validateAuthData
+  validateAuthData,
 };

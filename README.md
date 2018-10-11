@@ -34,7 +34,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-3.0.0)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started
@@ -398,11 +398,11 @@ You can also find more adapters maintained by the community by searching on [npm
 
 Parse Server allows developers to choose from several options when hosting files:
 
-* `GridStoreAdapter`, which is backed by MongoDB;
+* `GridFSBucketAdapter`, which is backed by MongoDB;
 * `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
-`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+`GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 # Upgrading to 3.0.0
 

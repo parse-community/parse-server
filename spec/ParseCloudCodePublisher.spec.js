@@ -1,4 +1,5 @@
-const ParseCloudCodePublisher = require('../lib/LiveQuery/ParseCloudCodePublisher').ParseCloudCodePublisher;
+const ParseCloudCodePublisher = require('../lib/LiveQuery/ParseCloudCodePublisher')
+  .ParseCloudCodePublisher;
 const Parse = require('parse/node');
 
 describe('ParseCloudCodePublisher', function() {
@@ -7,19 +8,23 @@ describe('ParseCloudCodePublisher', function() {
     const mockParsePubSub = {
       createPublisher: jasmine.createSpy('publish').and.returnValue({
         publish: jasmine.createSpy('publish'),
-        on: jasmine.createSpy('on')
+        on: jasmine.createSpy('on'),
       }),
       createSubscriber: jasmine.createSpy('publish').and.returnValue({
         subscribe: jasmine.createSpy('subscribe'),
-        on: jasmine.createSpy('on')
-      })
+        on: jasmine.createSpy('on'),
+      }),
     };
-    jasmine.mockLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
+    jasmine.mockLibrary(
+      '../lib/LiveQuery/ParsePubSub',
+      'ParsePubSub',
+      mockParsePubSub
+    );
     done();
   });
 
   it('can initialize', function() {
-    const config = {}
+    const config = {};
     new ParseCloudCodePublisher(config);
 
     const ParsePubSub = require('../lib/LiveQuery/ParsePubSub').ParsePubSub;
@@ -32,7 +37,10 @@ describe('ParseCloudCodePublisher', function() {
     const request = {};
     publisher.onCloudCodeAfterSave(request);
 
-    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(Parse.applicationId + 'afterSave', request);
+    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(
+      Parse.applicationId + 'afterSave',
+      request
+    );
   });
 
   it('can handle cloud code afterDelete request', function() {
@@ -41,7 +49,10 @@ describe('ParseCloudCodePublisher', function() {
     const request = {};
     publisher.onCloudCodeAfterDelete(request);
 
-    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(Parse.applicationId + 'afterDelete', request);
+    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(
+      Parse.applicationId + 'afterDelete',
+      request
+    );
   });
 
   it('can handle cloud code request', function() {
@@ -52,7 +63,7 @@ describe('ParseCloudCodePublisher', function() {
     originalParseObject.set('key', 'originalValue');
     const request = {
       object: currentParseObject,
-      original: originalParseObject
+      original: originalParseObject,
     };
     publisher._onCloudCodeMessage('afterSave', request);
 
@@ -63,7 +74,7 @@ describe('ParseCloudCodePublisher', function() {
     expect(message.originalParseObject).toEqual(request.original._toFullJSON());
   });
 
-  afterEach(function(){
+  afterEach(function() {
     jasmine.restoreLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub');
   });
 });

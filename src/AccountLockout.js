@@ -12,11 +12,11 @@ export class AccountLockout {
    */
   _setFailedLoginCount(value) {
     const query = {
-      username: this._user.username
+      username: this._user.username,
     };
 
     const updateFields = {
-      _failed_login_count: value
+      _failed_login_count: value,
     };
 
     return this._config.database.update('_User', query, updateFields);
@@ -28,17 +28,16 @@ export class AccountLockout {
   _isFailedLoginCountSet() {
     const query = {
       username: this._user.username,
-      _failed_login_count: { $exists: true }
+      _failed_login_count: { $exists: true },
     };
 
-    return this._config.database.find('_User', query)
-      .then(users => {
-        if (Array.isArray(users) && users.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      });
+    return this._config.database.find('_User', query).then(users => {
+      if (Array.isArray(users) && users.length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 
   /**
@@ -46,12 +45,11 @@ export class AccountLockout {
    * else do nothing
    */
   _initFailedLoginCount() {
-    return this._isFailedLoginCountSet()
-      .then(failedLoginCountIsSet => {
-        if (!failedLoginCountIsSet) {
-          return this._setFailedLoginCount(0);
-        }
-      });
+    return this._isFailedLoginCountSet().then(failedLoginCountIsSet => {
+      if (!failedLoginCountIsSet) {
+        return this._setFailedLoginCount(0);
+      }
+    });
   }
 
   /**
@@ -59,10 +57,12 @@ export class AccountLockout {
    */
   _incrementFailedLoginCount() {
     const query = {
-      username: this._user.username
+      username: this._user.username,
     };
 
-    const updateFields = {_failed_login_count: {__op: 'Increment', amount: 1}};
+    const updateFields = {
+      _failed_login_count: { __op: 'Increment', amount: 1 },
+    };
 
     return this._config.database.update('_User', query, updateFields);
   }
@@ -75,18 +75,29 @@ export class AccountLockout {
   _setLockoutExpiration() {
     const query = {
       username: this._user.username,
-      _failed_login_count: { $gte: this._config.accountLockout.threshold }
+      _failed_login_count: { $gte: this._config.accountLockout.threshold },
     };
 
     const now = new Date();
 
     const updateFields = {
-      _account_lockout_expires_at: Parse._encode(new Date(now.getTime() + this._config.accountLockout.duration * 60 * 1000))
+      _account_lockout_expires_at: Parse._encode(
+        new Date(
+          now.getTime() + this._config.accountLockout.duration * 60 * 1000
+        )
+      ),
     };
 
-    return this._config.database.update('_User', query, updateFields)
+    return this._config.database
+      .update('_User', query, updateFields)
       .catch(err => {
-        if (err && err.code && err.message && err.code === 101 && err.message === 'Object not found.') {
+        if (
+          err &&
+          err.code &&
+          err.message &&
+          err.code === 101 &&
+          err.message === 'Object not found.'
+        ) {
           return; // nothing to update so we are good
         } else {
           throw err; // unknown error
@@ -104,15 +115,19 @@ export class AccountLockout {
     const query = {
       username: this._user.username,
       _account_lockout_expires_at: { $gt: Parse._encode(new Date()) },
-      _failed_login_count: {$gte: this._config.accountLockout.threshold}
+      _failed_login_count: { $gte: this._config.accountLockout.threshold },
     };
 
-    return this._config.database.find('_User', query)
-      .then(users => {
-        if (Array.isArray(users) && users.length > 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your account is locked due to multiple failed login attempts. Please try again after ' + this._config.accountLockout.duration + ' minute(s)');
-        }
-      });
+    return this._config.database.find('_User', query).then(users => {
+      if (Array.isArray(users) && users.length > 0) {
+        throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          'Your account is locked due to multiple failed login attempts. Please try again after ' +
+            this._config.accountLockout.duration +
+            ' minute(s)'
+        );
+      }
+    });
   }
 
   /**
@@ -139,16 +154,14 @@ export class AccountLockout {
     if (!this._config.accountLockout) {
       return Promise.resolve();
     }
-    return this._notLocked()
-      .then(() => {
-        if (loginSuccessful) {
-          return this._setFailedLoginCount(0);
-        } else {
-          return this._handleFailedLoginAttempt();
-        }
-      });
+    return this._notLocked().then(() => {
+      if (loginSuccessful) {
+        return this._setFailedLoginCount(0);
+      } else {
+        return this._handleFailedLoginAttempt();
+      }
+    });
   }
-
 }
 
 export default AccountLockout;

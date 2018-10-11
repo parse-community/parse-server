@@ -1,7 +1,7 @@
-const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
+const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer')
+  .ParseWebSocket;
 
 describe('ParseWebSocket', function() {
-
   it('can be initialized', function() {
     const ws = {};
     const parseWebSocket = new ParseWebSocket(ws);
@@ -11,7 +11,7 @@ describe('ParseWebSocket', function() {
 
   it('can handle events defined in typeMap', function() {
     const ws = {
-      on: jasmine.createSpy('on')
+      on: jasmine.createSpy('on'),
     };
     const callback = {};
     const parseWebSocket = new ParseWebSocket(ws);
@@ -22,7 +22,7 @@ describe('ParseWebSocket', function() {
 
   it('can handle events which are not defined in typeMap', function() {
     const ws = {
-      on: jasmine.createSpy('on')
+      on: jasmine.createSpy('on'),
     };
     const callback = {};
     const parseWebSocket = new ParseWebSocket(ws);
@@ -33,10 +33,10 @@ describe('ParseWebSocket', function() {
 
   it('can send a message', function() {
     const ws = {
-      send: jasmine.createSpy('send')
+      send: jasmine.createSpy('send'),
     };
     const parseWebSocket = new ParseWebSocket(ws);
-    parseWebSocket.send('message')
+    parseWebSocket.send('message');
 
     expect(parseWebSocket.ws.send).toHaveBeenCalledWith('message');
   });

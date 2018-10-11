@@ -4,15 +4,19 @@ const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request('people/~:(id)', authData.access_token, authData.is_mobile_sdk)
-    .then((data) => {
-      if (data && data.id == authData.id) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Linkedin auth is invalid for this user.');
-    });
+  return request(
+    'people/~:(id)',
+    authData.access_token,
+    authData.is_mobile_sdk
+  ).then(data => {
+    if (data && data.id == authData.id) {
+      return;
+    }
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Linkedin auth is invalid for this user.'
+    );
+  });
 }
 
 // Returns a promise that fulfills iff this app id is valid.
@@ -23,21 +27,21 @@ function validateAppId() {
 // A promisey wrapper for api requests
 function request(path, access_token, is_mobile_sdk) {
   var headers = {
-    'Authorization': 'Bearer ' + access_token,
+    Authorization: 'Bearer ' + access_token,
     'x-li-format': 'json',
-  }
+  };
 
-  if(is_mobile_sdk) {
+  if (is_mobile_sdk) {
     headers['x-li-src'] = 'msdk';
   }
   return httpsRequest.get({
     host: 'api.linkedin.com',
     path: '/v1/' + path,
-    headers: headers
+    headers: headers,
   });
 }
 
 module.exports = {
   validateAppId: validateAppId,
-  validateAuthData: validateAuthData
+  validateAuthData: validateAuthData,
 };

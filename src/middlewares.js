@@ -25,7 +25,7 @@ export function handleParseHeaders(req, res, next) {
     javascriptKey: req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
-    clientVersion: req.get('X-Parse-Client-Version')
+    clientVersion: req.get('X-Parse-Client-Version'),
   };
 
   var basicAuth = httpAuth(req);
@@ -60,10 +60,12 @@ export function handleParseHeaders(req, res, next) {
       delete req.body._RevocableSession;
     }
 
-    if (req.body &&
+    if (
+      req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey ||
+        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -114,32 +116,50 @@ export function handleParseHeaders(req, res, next) {
   req.config.ip = clientIp;
   req.info = info;
 
-  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(clientIp) === -1) {
+  if (
+    info.masterKey &&
+    req.config.masterKeyIps &&
+    req.config.masterKeyIps.length !== 0 &&
+    req.config.masterKeyIps.indexOf(clientIp) === -1
+  ) {
     return invalidRequest(req, res);
   }
 
-  var isMaster = (info.masterKey === req.config.masterKey);
+  var isMaster = info.masterKey === req.config.masterKey;
 
   if (isMaster) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: true,
+    });
     next();
     return;
   }
 
-  var isReadOnlyMaster = (info.masterKey === req.config.readOnlyMasterKey);
-  if (typeof req.config.readOnlyMasterKey != 'undefined' && req.config.readOnlyMasterKey && isReadOnlyMaster) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true, isReadOnly: true });
+  var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
+  if (
+    typeof req.config.readOnlyMasterKey != 'undefined' &&
+    req.config.readOnlyMasterKey &&
+    isReadOnlyMaster
+  ) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: true,
+      isReadOnly: true,
+    });
     next();
     return;
   }
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
-  const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
+  const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
   const oneKeyConfigured = keys.some(function(key) {
     return req.config[key] !== undefined;
   });
-  const oneKeyMatches = keys.some(function(key){
+  const oneKeyMatches = keys.some(function(key) {
     return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
@@ -147,45 +167,63 @@ export function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.url == "/login") {
+  if (req.url == '/login') {
     delete info.sessionToken;
   }
 
   if (!info.sessionToken) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+    });
     next();
     return;
   }
 
-  return Promise.resolve().then(() => {
-    // handle the upgradeToRevocableSession path on it's own
-    if (info.sessionToken &&
+  return Promise.resolve()
+    .then(() => {
+      // handle the upgradeToRevocableSession path on it's own
+      if (
+        info.sessionToken &&
         req.url === '/upgradeToRevocableSession' &&
-        info.sessionToken.indexOf('r:') != 0) {
-      return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    } else {
-      return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    }
-  }).then((auth) => {
-    if (auth) {
-      req.auth = auth;
-      next();
-    }
-  })
-    .catch((error) => {
-      if(error instanceof Parse.Error) {
+        info.sessionToken.indexOf('r:') != 0
+      ) {
+        return auth.getAuthForLegacySessionToken({
+          config: req.config,
+          installationId: info.installationId,
+          sessionToken: info.sessionToken,
+        });
+      } else {
+        return auth.getAuthForSessionToken({
+          config: req.config,
+          installationId: info.installationId,
+          sessionToken: info.sessionToken,
+        });
+      }
+    })
+    .then(auth => {
+      if (auth) {
+        req.auth = auth;
+        next();
+      }
+    })
+    .catch(error => {
+      if (error instanceof Parse.Error) {
         next(error);
         return;
-      }
-      else {
+      } else {
         // TODO: Determine the correct error scenario.
-        req.config.loggerController.error('error getting auth for sessionToken', error);
+        req.config.loggerController.error(
+          'error getting auth for sessionToken',
+          error
+        );
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
 }
 
-function getClientIp(req){
+function getClientIp(req) {
   if (req.headers['x-forwarded-for']) {
     // try to get from x-forwared-for if it set (behind reverse proxy)
     return req.headers['x-forwarded-for'].split(',')[0];
@@ -205,8 +243,7 @@ function getClientIp(req){
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization)
-    return ;
+  if (!(req.req || req).headers.authorization) return;
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -226,33 +263,37 @@ function httpAuth(req) {
 
       var jsKeyPrefix = 'javascript-key=';
 
-      var matchKey = key.indexOf(jsKeyPrefix)
+      var matchKey = key.indexOf(jsKeyPrefix);
       if (matchKey == 0) {
         javascriptKey = key.substring(jsKeyPrefix.length, key.length);
-      }
-      else {
+      } else {
         masterKey = key;
       }
     }
   }
 
-  return {appId: appId, masterKey: masterKey, javascriptKey: javascriptKey};
+  return { appId: appId, masterKey: masterKey, javascriptKey: javascriptKey };
 }
 
 function decodeBase64(str) {
-  return new Buffer(str, 'base64').toString()
+  return new Buffer(str, 'base64').toString();
 }
 
 export function allowCrossDomain(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
-  res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type'
+  );
+  res.header(
+    'Access-Control-Expose-Headers',
+    'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
+  );
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
     res.sendStatus(200);
-  }
-  else {
+  } else {
     next();
   }
 }
@@ -272,14 +313,14 @@ export function handleParseErrors(err, req, res, next) {
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
-    case Parse.Error.INTERNAL_SERVER_ERROR:
-      httpStatus = 500;
-      break;
-    case Parse.Error.OBJECT_NOT_FOUND:
-      httpStatus = 404;
-      break;
-    default:
-      httpStatus = 400;
+      case Parse.Error.INTERNAL_SERVER_ERROR:
+        httpStatus = 500;
+        break;
+      case Parse.Error.OBJECT_NOT_FOUND:
+        httpStatus = 404;
+        break;
+      default:
+        httpStatus = 400;
     }
 
     res.status(httpStatus);
@@ -297,11 +338,10 @@ export function handleParseErrors(err, req, res, next) {
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error.'
+      message: 'Internal server error.',
     });
     next(err);
   }
-
 }
 
 export function enforceMasterKeyAccess(req, res, next) {
@@ -317,7 +357,7 @@ export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
     const error = new Error();
     error.status = 403;
-    error.message = "unauthorized: master key is required";
+    error.message = 'unauthorized: master key is required';
     throw error;
   }
   return Promise.resolve();

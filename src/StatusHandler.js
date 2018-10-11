@@ -1,24 +1,24 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
-import { logger }               from './logger';
-import rest                     from './rest';
-import Auth                     from './Auth';
+import { logger } from './logger';
+import rest from './rest';
+import Auth from './Auth';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
 const incrementOp = function(object = {}, key, amount = 1) {
   if (!object[key]) {
-    object[key] = {__op: 'Increment', amount: amount}
+    object[key] = { __op: 'Increment', amount: amount };
   } else {
     object[key].amount += amount;
   }
   return object[key];
-}
+};
 
 export function flatten(array) {
   var flattened = [];
-  for(var i = 0; i < array.length; i++) {
-    if(Array.isArray(array[i])) {
+  for (var i = 0; i < array.length; i++) {
+    if (Array.isArray(array[i])) {
       flattened = flattened.concat(flatten(array[i]));
     } else {
       flattened.push(array[i]);
@@ -48,8 +48,8 @@ function statusHandler(className, database) {
 
   return Object.freeze({
     create,
-    update
-  })
+    update,
+  });
 }
 
 function restStatusHandler(className, config) {
@@ -57,7 +57,8 @@ function restStatusHandler(className, config) {
   const auth = Auth.master(config);
   function create(object) {
     lastPromise = lastPromise.then(() => {
-      return rest.create(config, auth, className, object)
+      return rest
+        .create(config, auth, className, object)
         .then(({ response }) => {
           // merge the objects
           return Promise.resolve(Object.assign({}, object, response));
@@ -69,7 +70,8 @@ function restStatusHandler(className, config) {
   function update(where, object) {
     // TODO: when we have updateWhere, use that for proper interfacing
     lastPromise = lastPromise.then(() => {
-      return rest.update(config, auth, className, { objectId: where.objectId }, object)
+      return rest
+        .update(config, auth, className, { objectId: where.objectId }, object)
         .then(({ response }) => {
           // merge the objects
           return Promise.resolve(Object.assign({}, object, response));
@@ -80,8 +82,8 @@ function restStatusHandler(className, config) {
 
   return Object.freeze({
     create,
-    update
-  })
+    update,
+  });
 }
 
 export function jobStatusHandler(config) {
@@ -99,26 +101,26 @@ export function jobStatusHandler(config) {
       source: 'api',
       createdAt: now,
       // lockdown!
-      ACL: {}
-    }
+      ACL: {},
+    };
 
     return handler.create(jobStatus);
-  }
+  };
 
   const setMessage = function(message) {
     if (!message || typeof message !== 'string') {
       return Promise.resolve();
     }
     return handler.update({ objectId }, { message });
-  }
+  };
 
   const setSucceeded = function(message) {
     return setFinalStatus('succeeded', message);
-  }
+  };
 
   const setFailed = function(message) {
     return setFinalStatus('failed', message);
-  }
+  };
 
   const setFinalStatus = function(status, message = undefined) {
     const finishedAt = new Date();
@@ -127,23 +129,22 @@ export function jobStatusHandler(config) {
       update.message = message;
     }
     return handler.update({ objectId }, update);
-  }
+  };
 
   return Object.freeze({
     setRunning,
     setSucceeded,
     setMessage,
-    setFailed
+    setFailed,
   });
 }
 
 export function pushStatusHandler(config, existingObjectId) {
-
   let pushStatus;
   const database = config.database;
   const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
   let objectId = existingObjectId;
-  const setInitial = function(body = {}, where, options = {source: 'rest'}) {
+  const setInitial = function(body = {}, where, options = { source: 'rest' }) {
     const now = new Date();
     let pushTime = now.toISOString();
     let status = 'pending';
@@ -152,12 +153,14 @@ export function pushStatusHandler(config, existingObjectId) {
         pushTime = body.push_time;
         status = 'scheduled';
       } else {
-        logger.warn('Trying to schedule a push while server is not configured.');
+        logger.warn(
+          'Trying to schedule a push while server is not configured.'
+        );
         logger.warn('Push will be sent immediately');
       }
     }
 
-    const data =  body.data || {};
+    const data = body.data || {};
     const payloadString = JSON.stringify(data);
     let pushHash;
     if (typeof data.alert === 'string') {
@@ -179,35 +182,43 @@ export function pushStatusHandler(config, existingObjectId) {
       numSent: 0,
       pushHash,
       // lockdown!
-      ACL: {}
-    }
-    return handler.create(object).then((result) => {
+      ACL: {},
+    };
+    return handler.create(object).then(result => {
       objectId = result.objectId;
       pushStatus = {
-        objectId
+        objectId,
       };
       return Promise.resolve(pushStatus);
     });
-  }
+  };
 
   const setRunning = function(batches) {
-    logger.verbose(`_PushStatus ${objectId}: sending push to installations with %d batches`, batches);
+    logger.verbose(
+      `_PushStatus ${objectId}: sending push to installations with %d batches`,
+      batches
+    );
     return handler.update(
       {
-        status:"pending",
-        objectId: objectId
+        status: 'pending',
+        objectId: objectId,
       },
       {
-        status: "running",
-        count: batches
+        status: 'running',
+        count: batches,
       }
     );
-  }
+  };
 
-  const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+  const trackSent = function(
+    results,
+    UTCOffset,
+    cleanupInstallations = process.env
+      .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+  ) {
     const update = {
       numSent: 0,
-      numFailed: 0
+      numFailed: 0,
     };
     const devicesToRemove = [];
     if (Array.isArray(results)) {
@@ -218,16 +229,26 @@ export function pushStatusHandler(config, existingObjectId) {
           return memo;
         }
         const deviceType = result.device.deviceType;
-        const key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
+        const key = result.transmitted
+          ? `sentPerType.${deviceType}`
+          : `failedPerType.${deviceType}`;
         memo[key] = incrementOp(memo, key);
         if (typeof UTCOffset !== 'undefined') {
-          const offsetKey = result.transmitted ? `sentPerUTCOffset.${UTCOffset}` : `failedPerUTCOffset.${UTCOffset}`;
+          const offsetKey = result.transmitted
+            ? `sentPerUTCOffset.${UTCOffset}`
+            : `failedPerUTCOffset.${UTCOffset}`;
           memo[offsetKey] = incrementOp(memo, offsetKey);
         }
         if (result.transmitted) {
           memo.numSent++;
         } else {
-          if (result && result.response && result.response.error && result.device && result.device.deviceToken) {
+          if (
+            result &&
+            result.response &&
+            result.response.error &&
+            result.device &&
+            result.device.deviceToken
+          ) {
             const token = result.device.deviceToken;
             const error = result.response.error;
             // GCM errors
@@ -245,13 +266,19 @@ export function pushStatusHandler(config, existingObjectId) {
       }, update);
     }
 
-    logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
-    logger.verbose(`_PushStatus ${objectId}: needs cleanup`, { devicesToRemove });
-    ['numSent', 'numFailed'].forEach((key) => {
+    logger.verbose(
+      `_PushStatus ${objectId}: sent push! %d success, %d failures`,
+      update.numSent,
+      update.numFailed
+    );
+    logger.verbose(`_PushStatus ${objectId}: needs cleanup`, {
+      devicesToRemove,
+    });
+    ['numSent', 'numFailed'].forEach(key => {
       if (update[key] > 0) {
         update[key] = {
           __op: 'Increment',
-          amount: update[key]
+          amount: update[key],
         };
       } else {
         delete update[key];
@@ -259,29 +286,39 @@ export function pushStatusHandler(config, existingObjectId) {
     });
 
     if (devicesToRemove.length > 0 && cleanupInstallations) {
-      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
-      database.update('_Installation', { deviceToken: { '$in': devicesToRemove }}, { deviceToken: {"__op": "Delete"} }, {
-        acl: undefined,
-        many: true
-      });
+      logger.info(
+        `Removing device tokens on ${devicesToRemove.length} _Installations`
+      );
+      database.update(
+        '_Installation',
+        { deviceToken: { $in: devicesToRemove } },
+        { deviceToken: { __op: 'Delete' } },
+        {
+          acl: undefined,
+          many: true,
+        }
+      );
     }
 
     // indicate this batch is complete
     incrementOp(update, 'count', -1);
 
-    return handler.update({ objectId }, update).then((res) => {
+    return handler.update({ objectId }, update).then(res => {
       if (res && res.count === 0) {
         return this.complete();
       }
-    })
-  }
+    });
+  };
 
   const complete = function() {
-    return handler.update({ objectId }, {
-      status: 'succeeded',
-      count: {__op: 'Delete'}
-    });
-  }
+    return handler.update(
+      { objectId },
+      {
+        status: 'succeeded',
+        count: { __op: 'Delete' },
+      }
+    );
+  };
 
   const fail = function(err) {
     if (typeof err === 'string') {
@@ -289,22 +326,22 @@ export function pushStatusHandler(config, existingObjectId) {
     }
     const update = {
       errorMessage: err,
-      status: 'failed'
-    }
+      status: 'failed',
+    };
     return handler.update({ objectId }, update);
-  }
+  };
 
   const rval = {
     setInitial,
     setRunning,
     trackSent,
     complete,
-    fail
+    fail,
   };
 
   // define objectId to be dynamic
-  Object.defineProperty(rval, "objectId", {
-    get: () => objectId
+  Object.defineProperty(rval, 'objectId', {
+    get: () => objectId,
   });
 
   return Object.freeze(rval);

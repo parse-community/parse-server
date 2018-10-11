@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import _ from 'lodash';
-import defaults  from '../../defaults';
+import defaults from '../../defaults';
 
 const logger = new winston.Logger();
 const additionalTransports = [];
@@ -17,31 +17,47 @@ function updateTransports(options) {
       delete transports['parse-server'];
       delete transports['parse-server-error'];
     } else if (!_.isUndefined(options.dirname)) {
-      transports['parse-server'] = new (DailyRotateFile)(
-        Object.assign({}, {
-          filename: 'parse-server.info',
-          name: 'parse-server',
-        }, options, { timestamp: true }));
-      transports['parse-server-error'] = new (DailyRotateFile)(
-        Object.assign({}, {
-          filename: 'parse-server.err',
-          name: 'parse-server-error',
-        }, options, { level: 'error', timestamp: true  }));
+      transports['parse-server'] = new DailyRotateFile(
+        Object.assign(
+          {},
+          {
+            filename: 'parse-server.info',
+            name: 'parse-server',
+          },
+          options,
+          { timestamp: true }
+        )
+      );
+      transports['parse-server-error'] = new DailyRotateFile(
+        Object.assign(
+          {},
+          {
+            filename: 'parse-server.err',
+            name: 'parse-server-error',
+          },
+          options,
+          { level: 'error', timestamp: true }
+        )
+      );
     }
 
-    transports.console = new (winston.transports.Console)(
-      Object.assign({
-        colorize: true,
-        name: 'console',
-        silent
-      }, options));
+    transports.console = new winston.transports.Console(
+      Object.assign(
+        {
+          colorize: true,
+          name: 'console',
+          silent,
+        },
+        options
+      )
+    );
   }
   // Mount the additional transports
-  additionalTransports.forEach((transport) => {
+  additionalTransports.forEach(transport => {
     transports[transport.name] = transport;
   });
   logger.configure({
-    transports: _.values(transports)
+    transports: _.values(transports),
   });
 }
 
@@ -50,8 +66,8 @@ export function configureLogger({
   jsonLogs = defaults.jsonLogs,
   logLevel = winston.level,
   verbose = defaults.verbose,
-  silent = defaults.silent } = {}) {
-
+  silent = defaults.silent,
+} = {}) {
   if (verbose) {
     logLevel = 'verbose';
   }
@@ -65,7 +81,9 @@ export function configureLogger({
     }
     try {
       fs.mkdirSync(logsFolder);
-    } catch (e) { /* */ }
+    } catch (e) {
+      /* */
+    }
   }
   options.dirname = logsFolder;
   options.level = logLevel;
@@ -84,13 +102,14 @@ export function addTransport(transport) {
 }
 
 export function removeTransport(transport) {
-  const transportName = typeof transport == 'string' ? transport : transport.name;
+  const transportName =
+    typeof transport == 'string' ? transport : transport.name;
   const transports = Object.assign({}, logger.transports);
   delete transports[transportName];
   logger.configure({
-    transports: _.values(transports)
+    transports: _.values(transports),
   });
-  _.remove(additionalTransports, (transport) => {
+  _.remove(additionalTransports, transport => {
     return transport.name === transportName;
   });
 }

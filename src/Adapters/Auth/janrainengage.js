@@ -5,15 +5,17 @@ var querystring = require('querystring');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
-  return apiRequest(options.api_key, authData.auth_token)
-    .then((data) => {
-      //successful response will have a "stat" (status) of 'ok' and a profile node with an identifier
-      //see: http://developers.janrain.com/overview/social-login/identity-providers/user-profile-data/#normalized-user-profile-data
-      if (data && data.stat == 'ok' && data.profile.identifier == authData.id) {
-        return;
-      }
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Janrain engage auth is invalid for this user.');
-    });
+  return apiRequest(options.api_key, authData.auth_token).then(data => {
+    //successful response will have a "stat" (status) of 'ok' and a profile node with an identifier
+    //see: http://developers.janrain.com/overview/social-login/identity-providers/user-profile-data/#normalized-user-profile-data
+    if (data && data.stat == 'ok' && data.profile.identifier == authData.id) {
+      return;
+    }
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Janrain engage auth is invalid for this user.'
+    );
+  });
 }
 
 // Returns a promise that fulfills iff this app id is valid.
@@ -24,11 +26,10 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function apiRequest(api_key, auth_token) {
-
   var post_data = querystring.stringify({
-    'token': auth_token,
-    'apiKey': api_key,
-    'format': 'json'
+    token: auth_token,
+    apiKey: api_key,
+    format: 'json',
   });
 
   var post_options = {
@@ -37,8 +38,8 @@ function apiRequest(api_key, auth_token) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': post_data.length
-    }
+      'Content-Length': post_data.length,
+    },
   };
 
   return httpsRequest.request(post_options, post_data);
@@ -46,5 +47,5 @@ function apiRequest(api_key, auth_token) {
 
 module.exports = {
   validateAppId: validateAppId,
-  validateAuthData: validateAuthData
+  validateAuthData: validateAuthData,
 };
