@@ -2,6 +2,11 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...master)
+
+#### Breaking Changes:
+* Return success on sendPasswordResetEmail even if email not found. See #7fe4030
+#### Security Fix:
+* Expire password reset tokens on email change. See #5104
 #### Bug fixes:
 * Fixes issue with vkontatke authentication
 
