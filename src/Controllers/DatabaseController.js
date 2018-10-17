@@ -1335,7 +1335,7 @@ class DatabaseController {
   }
 
   addPointerPermissions(
-    schema: any,
+    schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
@@ -1343,10 +1343,10 @@ class DatabaseController {
   ) {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
-    if (schema.testBaseCLP(className, aclGroup, operation)) {
+    if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
-    const perms = schema.schemaData[className].classLevelPermissions;
+    const perms = schema.getClassLevelPermissions(className);
     const field =
       ['get', 'find'].indexOf(operation) > -1
         ? 'readUserFields'
