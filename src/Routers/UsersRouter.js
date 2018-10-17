@@ -361,7 +361,7 @@ export class UsersRouter extends ClassesRouter {
           // be used to enumerate valid emails
           return Promise.resolve({
             response: {},
-          })
+          });
         } else {
           throw err;
         }

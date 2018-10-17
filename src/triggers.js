@@ -269,7 +269,7 @@ export function getResponseObject(request, resolve, reject) {
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error.message))
+        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error.message));
       } else {
         reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
       }
