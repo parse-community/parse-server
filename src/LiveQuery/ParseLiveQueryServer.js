@@ -420,11 +420,21 @@ class ParseLiveQueryServer {
       .then(auth => {
         return { auth, userId: auth && auth.user && auth.user.id };
       })
-      .catch(() => {
-        // If you can't continue, let's just wrap it up and delete it.
-        // Next time, one will try again
-        this.authCache.del(sessionToken);
-        return {};
+      .catch(error => {
+        // There was an error with the session token
+        const result = {};
+        if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
+          // Store a resolved promise with the error for 10 minutes
+          result.error = error;
+          this.authCache.set(
+            sessionToken,
+            Promise.resolve(result),
+            60 * 10 * 1000
+          );
+        } else {
+          this.authCache.del(sessionToken);
+        }
+        return result;
       });
     this.authCache.set(sessionToken, authPromise);
     return authPromise;
@@ -482,24 +492,12 @@ class ParseLiveQueryServer {
       : 'find';
   }
 
-  async _matchesACL(
-    acl: any,
-    client: any,
-    requestId: number
-  ): Promise<boolean> {
-    // Return true directly if ACL isn't present, ACL is public read, or client has master key
-    if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
-      return true;
-    }
-    // Check subscription sessionToken matches ACL first
-    const subscriptionInfo = client.getSubscriptionInfo(requestId);
-    if (typeof subscriptionInfo === 'undefined') {
+  async _verifyACL(acl: any, token: string) {
+    if (!token) {
       return false;
     }
 
-    const { auth, userId } = await this.getAuthForSessionToken(
-      subscriptionInfo.sessionToken
-    );
+    const { auth, userId } = await this.getAuthForSessionToken(token);
 
     // Getting the session token failed
     // This means that no additional auth is available
@@ -533,25 +531,38 @@ class ParseLiveQueryServer {
         }
         return false;
       })
-      .then(async isRoleMatched => {
-        if (isRoleMatched) {
-          return Promise.resolve(true);
-        }
-
-        // Check client sessionToken matches ACL
-        const clientSessionToken = client.sessionToken;
-        if (clientSessionToken) {
-          const { userId } = await this.getAuthForSessionToken(
-            clientSessionToken
-          );
-          return acl.getReadAccess(userId);
-        } else {
-          return isRoleMatched;
-        }
-      })
       .catch(() => {
         return false;
       });
+  }
+
+  async _matchesACL(
+    acl: any,
+    client: any,
+    requestId: number
+  ): Promise<boolean> {
+    // Return true directly if ACL isn't present, ACL is public read, or client has master key
+    if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
+      return true;
+    }
+    // Check subscription sessionToken matches ACL first
+    const subscriptionInfo = client.getSubscriptionInfo(requestId);
+    if (typeof subscriptionInfo === 'undefined') {
+      return false;
+    }
+
+    const subscriptionToken = subscriptionInfo.sessionToken;
+    const clientSessionToken = client.sessionToken;
+
+    if (await this._verifyACL(acl, subscriptionToken)) {
+      return true;
+    }
+
+    if (await this._verifyACL(acl, clientSessionToken)) {
+      return true;
+    }
+
+    return false;
   }
 
   _handleConnect(parseWebsocket: any, request: any): any {
