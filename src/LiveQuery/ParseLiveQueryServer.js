@@ -497,10 +497,16 @@ class ParseLiveQueryServer {
       return false;
     }
 
-    // TODO: get auth there and de-duplicate code below to work with the same Auth obj.
     const { auth, userId } = await this.getAuthForSessionToken(
       subscriptionInfo.sessionToken
     );
+
+    // Getting the session token failed
+    // This means that no additional auth is available
+    // At this point, just bail out as no additional visibility can be inferred.
+    if (!auth || !userId) {
+      return false;
+    }
     const isSubscriptionSessionTokenMatched = acl.getReadAccess(userId);
     if (isSubscriptionSessionTokenMatched) {
       return true;
