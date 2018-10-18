@@ -484,6 +484,14 @@ RestWrite.prototype.transformUser = function() {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 
+  // TODO: block manually email changing
+  /*
+  if (!this.auth.isMaster && 'email' in this.data && !('createdAt' in this.data)) {
+    const error = `Clients aren't allowed to manually update email. Please, use "requestEmailChange" function`;
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
+  */
+
   // Do not cleanup session if objectId is not set
   if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
@@ -595,9 +603,11 @@ RestWrite.prototype._validateEmail = function() {
         (Object.keys(this.data.authData).length === 1 &&
           Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
-        // We updated the email, send a new validation
-        this.storage['sendVerificationEmail'] = true;
-        this.config.userController.setEmailVerifyToken(this.data);
+        if (!this.data._changing_email) {
+          // We updated the email, send a new validation
+          this.storage['sendVerificationEmail'] = true;
+          this.config.userController.setEmailVerifyToken(this.data);
+        }
       }
     });
 };

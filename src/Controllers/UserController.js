@@ -29,10 +29,11 @@ export class UserController extends AdaptableController {
     return this.options.verifyUserEmails;
   }
 
-  setEmailVerifyToken(user) {
+  setEmailVerifyToken(user, verified) {
     if (this.shouldVerifyEmails) {
       user._email_verify_token = randomString(25);
-      user.emailVerified = false;
+      if (!verified)
+        user.emailVerified = false;
 
       if (this.config.emailVerifyTokenValidityDuration) {
         user._email_verify_token_expires_at = Parse._encode(
@@ -58,23 +59,35 @@ export class UserController extends AdaptableController {
     // if the email verify token needs to be validated then
     // add additional query params and additional fields that need to be updated
     if (this.config.emailVerifyTokenValidityDuration) {
-      query.emailVerified = false;
+    //query.emailVerified = false;
       query._email_verify_token_expires_at = { $gt: Parse._encode(new Date()) };
 
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const masterAuth = Auth.master(this.config);
-    var checkIfAlreadyVerified = new RestQuery(
+    const getUser = new RestQuery(
       this.config,
       Auth.master(this.config),
       '_User',
-      { username: username, emailVerified: true }
+      query
     );
-    return checkIfAlreadyVerified.execute().then(result => {
-      if (result.results.length) {
-        return Promise.resolve(result.results.length[0]);
+    return getUser.execute().then(result => {
+      if (!result.results.length) {
+        throw undefined;
       }
-      return rest.update(this.config, masterAuth, '_User', query, updateFields);
+
+      const user = result.results[0];
+      if (user.emailVerified) {
+        if (!user._changing_email) {
+          return Promise.resolve(result.results.length[0]);
+        }
+
+        updateFields.email = user.emailNew;
+        updateFields.emailNew = '';
+        updateFields._changing_email = { __op: 'Delete' };
+      }
+
+      return rest.update(this.config, masterAuth, '_User', {username: username}, updateFields);
     });
   }
 
@@ -143,6 +156,9 @@ export class UserController extends AdaptableController {
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then(user => {
       const username = encodeURIComponent(user.username);
+
+      if (user._changing_email)
+        user = {...user, email: user.emailNew};
 
       const link = buildEmailLink(
         this.config.verifyEmailURL,

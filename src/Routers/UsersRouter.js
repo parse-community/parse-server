@@ -369,6 +369,82 @@ export class UsersRouter extends ClassesRouter {
     );
   }
 
+  handleEmailChange(req) {
+    const { email } = req.body;
+    let user;
+
+    if (!req.info || !req.info.sessionToken) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        'Invalid session token'
+      );
+    }
+    const sessionToken = req.info.sessionToken;
+
+    return rest
+      .find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken },
+        { include: 'user' },
+        req.info.clientSDK
+      )
+      .then(response => {
+        if (
+          !response.results ||
+          response.results.length === 0 ||
+          !response.results[0].user
+        ) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token'
+          );
+        }
+
+        user = response.results[0].user;
+        // Send token back on the login, because SDKs expect that.
+        user.sessionToken = sessionToken;
+
+        if (!email || typeof email !== 'string' || !email.match(/^.+@.+$/)) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_EMAIL_ADDRESS,
+            'New email address is invalid.'
+          );
+        }
+
+        return req.config.database.find('_User', { email: email });
+      })
+
+      .then(results => {
+        if (results.length) {
+          throw new Parse.Error(
+            Parse.Error.EMAIL_TAKEN,
+            'Account already exists for new email address.'
+          );
+        }
+
+        user.emailNew = email;
+        user._changing_email = true;
+
+        return req.config.database.update(
+          '_User',
+          { username: user.username },
+          { emailNew: email, '_changing_email': true });
+      })
+
+      .then(() => req.config.userController.setEmailVerifyToken(user, true))
+
+      .then(() => {
+        req.config.userController.sendVerificationEmail(user);
+        return { response: {} };
+      })
+
+      .catch(error => {
+        throw error;
+      });
+  }
+
   handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
@@ -449,6 +525,9 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('GET', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
+    });
+    this.route('POST', '/requestEmailChange', req => {
+      return this.handleEmailChange(req);
     });
   }
 }
