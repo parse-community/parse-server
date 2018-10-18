@@ -203,10 +203,13 @@ Auth.prototype.getRolesForUser = function() {
     return query.execute().then(({ results }) => results);
   }
 
+  //Stack all Parse.Role
+  var _tmpUserRoles = [];
+
   return new Parse.Query(Parse.Role)
     .equalTo('users', this.user)
-    .find({ useMasterKey: true })
-    .then(results => results.map(obj => obj.toJSON()));
+    .each(result => _tmpUserRoles.push(result),{useMasterKey:true})
+    .then(() => _tmpUserRoles.map(obj => obj.toJSON()));
 };
 
 // Iterates through the role tree and compiles a user's roles
