@@ -18,6 +18,8 @@
 * Fixes issue with vkontatke authentication (#4977)
 * Use the correct function when validating google auth tokens (#5018)
 * fix unexpected 'delete' trigger issue on LiveQuery (#5031)
+* Improves performance for roles and ACL's in live query server (#5126)
+
 
 ### 3.0.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...3.0.0)

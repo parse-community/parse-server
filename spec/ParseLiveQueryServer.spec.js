@@ -98,6 +98,14 @@ describe('ParseLiveQueryServer', function() {
         if (sessionToken === 'pleaseThrow') {
           return Promise.reject();
         }
+        if (sessionToken === 'invalid') {
+          return Promise.reject(
+            new Parse.Error(
+              Parse.Error.INVALID_SESSION_TOKEN,
+              'invalid session token'
+            )
+          );
+        }
         return Promise.resolve(
           new auth.Auth({ cacheController, user: { id: testUserId } })
         );
@@ -1627,6 +1635,17 @@ describe('ParseLiveQueryServer', function() {
     // after the promise finishes, it should have removed it from the cache
     expect(await promise).toEqual({});
     expect(parseLiveQueryServer.authCache.get('pleaseThrow')).toBe(undefined);
+  });
+
+  it('should keep a cache of invalid sessions', async () => {
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    const promise = parseLiveQueryServer.getAuthForSessionToken('invalid');
+    expect(parseLiveQueryServer.authCache.get('invalid')).toBe(promise);
+    // after the promise finishes, it should have removed it from the cache
+    await promise;
+    const finalResult = await parseLiveQueryServer.authCache.get('invalid');
+    expect(finalResult.error).not.toBeUndefined();
+    expect(parseLiveQueryServer.authCache.get('invalid')).not.toBe(undefined);
   });
 
   afterEach(function() {
