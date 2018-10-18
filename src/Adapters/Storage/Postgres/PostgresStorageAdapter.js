@@ -938,6 +938,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (className === '_User') {
       fields._email_verify_token_expires_at = { type: 'Date' };
       fields._email_verify_token = { type: 'String' };
+      fields._changing_email = { type: 'Boolean' };
       fields._account_lockout_expires_at = { type: 'Date' };
       fields._failed_login_count = { type: 'Number' };
       fields._perishable_token = { type: 'String' };
@@ -1238,6 +1239,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (!schema.fields[fieldName] && className === '_User') {
         if (
           fieldName === '_email_verify_token' ||
+          fieldName === '_changing_email' ||
           fieldName === '_failed_login_count' ||
           fieldName === '_perishable_token' ||
           fieldName === '_password_history'
