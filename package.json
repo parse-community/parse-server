@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -90,7 +90,7 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "3.0.1",
+    "bcrypt": "3.0.2",
     "uws": "10.148.1"
   },
   "collective": {

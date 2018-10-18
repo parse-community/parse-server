@@ -1450,12 +1450,18 @@ RestWrite.prototype.runAfterTrigger = function() {
     this.response.status || 200
   );
 
-  // Notifiy LiveQueryServer if possible
-  this.config.liveQueryController.onAfterSave(
-    updatedObject.className,
-    updatedObject,
-    originalObject
-  );
+  this.config.database.loadSchema().then(schemaController => {
+    // Notifiy LiveQueryServer if possible
+    const perms = schemaController.getClassLevelPermissions(
+      updatedObject.className
+    );
+    this.config.liveQueryController.onAfterSave(
+      updatedObject.className,
+      updatedObject,
+      originalObject,
+      perms
+    );
+  });
 
   // Run afterSave trigger
   return triggers
