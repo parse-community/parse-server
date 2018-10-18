@@ -9,6 +9,7 @@
 * Expire password reset tokens on email change. See #5104
 #### Bug fixes:
 * Fixes issue with vkontatke authentication
+* Improves performance for roles and ACL's in live query server
 
 
 ### 3.0.0
