@@ -3688,21 +3688,32 @@ describe('Parse.User testing', () => {
       .then(done, done.fail);
   });
 
-  it('should throw OBJECT_NOT_FOUND instead of SESSION_MISSING when using masterKey', async done => {
+  it('should throw OBJECT_NOT_FOUND instead of SESSION_MISSING when using masterKey', async () => {
     // create a fake user (just so we simulate an object not found)
     const non_existent_user = Parse.User.createWithoutData('fake_id');
     try {
       await non_existent_user.destroy({ useMasterKey: true });
-      done.fail();
+      throw '';
     } catch (e) {
       expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
     try {
-      await non_existent_user.destroy();
-      done.fail();
+      await non_existent_user.save({}, { useMasterKey: true });
+      throw '';
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+    try {
+      await non_existent_user.save();
+      throw '';
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SESSION_MISSING);
-      done();
+    }
+    try {
+      await non_existent_user.destroy();
+      throw '';
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
     }
   });
 
