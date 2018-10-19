@@ -190,6 +190,13 @@ Auth.prototype.getUserRoles = function() {
 Auth.prototype.getRolesForUser = async function() {
   if (this.config) {
     const masterConfig = master(this.config);
+    const restWhere = {
+      users: {
+        __type: 'Pointer',
+        className: '_User',
+        objectId: this.user.id,
+      },
+    };
     const queryOptions = {
       limit: 100,
       order: 'objectId'
