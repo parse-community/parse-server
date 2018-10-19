@@ -90,6 +90,23 @@ describe('Auth', () => {
         });
       });
     });
+
+    it('should load all roles', async () => {
+      const user = new Parse.User();
+      user.id = currentUserId;
+      const roles = [];
+      for(let i = 0; i < 200;i++){
+        const acl = new Parse.ACL();
+        const role = new Parse.Role("roleloadtest" + i, acl);
+        role.getUsers().add([user]);
+        roles.push(role.save())
+      }
+      const savedRoles = await Promise.all(roles);
+      //Additionnal length check
+      expect(savedRoles).to.have.lengthOf(200);
+      const cloudRoles = auth.getUserRoles();
+      expect(cloudRoles).to.have.lengthOf(200);
+    });
   });
 
   it('should load auth without a config', async () => {
@@ -148,22 +165,5 @@ describe('Auth', () => {
     });
     expect(userAuth.user instanceof Parse.User).toBe(true);
     expect(userAuth.user.id).toBe(user.id);
-  });
-
-  it('should load all roles', async () => {
-    const user = new Parse.User();
-    user.id = currentUserId
-    const roles = [];
-    for(var i=0; i < 200;i++){
-      const acl = new Parse.ACL();
-      const role = new Parse.Role("roleloadtest"+i, acl);
-      role.getUsers().add([user]);
-      roles.push(role.save())
-    }
-    const savedRoles = await Promise.all(roles)
-    //Additionnal length check
-    expect(savedRoles).to.have.lengthOf(200)
-    const cloudRoles = auth.getUserRoles()
-    expect(cloudRoles).to.have.lengthOf(200)
   });
 });
