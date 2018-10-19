@@ -1,8 +1,6 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
-
-//Needed for getRolesForUser()
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 
 // An Auth object tells you who is requesting something and whether
@@ -220,11 +218,11 @@ Auth.prototype.getRolesForUser = async function() {
       const currentResults = await query.execute().then(({ results }) => results);
       finished = currentResults.length < queryOptions.limit;
       if (!finished) {
-        restWhere.objectId = { '$gt': currentResults[currentResults.length - 1].id}
+        restWhere.objectId = { '$gt': currentResults[currentResults.length - 1].objectId}
       }
       results = results.concat(currentResults);
     });
-    return results.map(obj => obj.toJSON());
+    return results;
   }
 
   //Stack all Parse.Role
@@ -232,8 +230,8 @@ Auth.prototype.getRolesForUser = async function() {
 
   await new Parse.Query(Parse.Role)
     .equalTo('users', this.user)
-    .each(result => results.push(result),{useMasterKey:true})
-  return results.map(obj => obj.toJSON());
+    .each(result => results.push(result.toJSON()),{useMasterKey:true})
+  return results;
 };
 
 // Iterates through the role tree and compiles a user's roles
