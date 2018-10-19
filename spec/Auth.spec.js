@@ -152,10 +152,7 @@ describe('Auth', () => {
 
   it('should load all roles', async () => {
     const user = new Parse.User();
-    await user.signUp({
-      username: 'hello',
-      password: 'password',
-    });
+    user.id = currentUserId
     const roles = [];
     for(var i=0; i < 200;i++){
       const acl = new Parse.ACL();
