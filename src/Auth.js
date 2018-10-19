@@ -187,7 +187,7 @@ Auth.prototype.getUserRoles = function() {
   return this.rolePromise;
 };
 
-Auth.prototype.getRolesForUser = function() {
+Auth.prototype.getRolesForUser = async function() {
   if (this.config) {
     const masterConfig = master(this.config);
     const queryOptions = {
@@ -199,7 +199,7 @@ Auth.prototype.getRolesForUser = function() {
     //Stack all Parse.Role
     let results = [];
 
-    //Get All Parse.Role from the User
+    //Get All Parse.Role for User
     await continueWhile(() => {
       return !finished;
     }, async () => {
@@ -217,16 +217,16 @@ Auth.prototype.getRolesForUser = function() {
       }
       results = results.concat(currentResults);
     });
-    return results;
+    return results.map(obj => obj.toJSON());
   }
 
   //Stack all Parse.Role
   const results = [];
 
-  return new Parse.Query(Parse.Role)
+  await new Parse.Query(Parse.Role)
     .equalTo('users', this.user)
     .each(result => results.push(result),{useMasterKey:true})
-    .then(() => results.map(obj => obj.toJSON()));
+  return results.map(obj => obj.toJSON());
 };
 
 // Iterates through the role tree and compiles a user's roles
