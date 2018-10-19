@@ -2,6 +2,9 @@ const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
 
+//Needed for getRolesForUser()
+const { continueWhile } = require('parse/lib/node/promiseUtils');
+
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
 // userObject is a Parse.User and can be null if there's no user.
@@ -186,21 +189,35 @@ Auth.prototype.getUserRoles = function() {
 
 Auth.prototype.getRolesForUser = function() {
   if (this.config) {
-    const restWhere = {
-      users: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: this.user.id,
-      },
+    const masterConfig = master(this.config);
+    const queryOptions = {
+      limit: 100,
+      order: 'objectId'
     };
-    const query = new RestQuery(
-      this.config,
-      master(this.config),
-      '_Role',
-      restWhere,
-      {}
-    );
-    return query.execute().then(({ results }) => results);
+    let finished = false;
+
+    //Stack all Parse.Role
+    let results = [];
+
+    //Get All Parse.Role from the User
+    await continueWhile(() => {
+      return !finished;
+    }, async () => {
+      const query = new RestQuery(
+        this.config,
+        masterConfig,
+        '_Role',
+        restWhere,
+        queryOptions
+      );
+      const currentResults = await query.execute().then(({ results }) => results);
+      finished = currentResults.length < queryOptions.limit;
+      if (!finished) {
+        restWhere.objectId = { '$gt': currentResults[currentResults.length - 1].id}
+      }
+      results = results.concat(currentResults);
+    });
+    return results;
   }
 
   //Stack all Parse.Role
