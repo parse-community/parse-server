@@ -3690,17 +3690,15 @@ describe('Parse.User testing', () => {
 
   it('should throw OBJECT_NOT_FOUND instead of SESSION_MISSING when using masterKey', async done => {
     // create a fake user (just so we simulate an object not found)
+    const non_existent_user = Parse.User.createWithoutData('fake_id');
     try {
-      const non_existent_user = Parse.User.createWithoutData('fake_id');
       await non_existent_user.destroy({ useMasterKey: true });
       done.fail();
     } catch (e) {
       expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
-    // simulate object not found without master key
     try {
-      const existent_user = await Parse.User.signUp('asdf', 'zxcv');
-      await existent_user.destroy({ sessionToken: undefined });
+      await non_existent_user.destroy();
       done.fail();
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SESSION_MISSING);
