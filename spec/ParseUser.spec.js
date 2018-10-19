@@ -3314,7 +3314,9 @@ describe('Parse.User testing', () => {
         done();
       });
     });
-  }).pend('this test fails.  See: https://github.com/parse-community/parse-server/issues/5097');
+  }).pend(
+    'this test fails.  See: https://github.com/parse-community/parse-server/issues/5097'
+  );
 
   it('should be able to update user with authData passed', done => {
     let objectId;
@@ -3684,6 +3686,26 @@ describe('Parse.User testing', () => {
         expect(results.length).toBe(1);
       })
       .then(done, done.fail);
+  });
+
+  it('should throw OBJECT_NOT_FOUND instead of SESSION_MISSING when using masterKey', async done => {
+    // create a fake user (just so we simulate an object not found)
+    try {
+      const non_existent_user = Parse.User.createWithoutData('fake_id');
+      await non_existent_user.destroy({ useMasterKey: true });
+      done.fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+    // simulate object not found without master key
+    try {
+      const existent_user = await Parse.User.signUp('asdf', 'zxcv');
+      await existent_user.destroy({ sessionToken: undefined });
+      done.fail();
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+      done();
+    }
   });
 
   describe('issue #4897', () => {
