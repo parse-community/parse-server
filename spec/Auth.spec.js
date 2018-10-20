@@ -152,7 +152,7 @@ describe('Auth', () => {
 
   describe('getRolesForUser', () => {
 
-    let rolesNumber = 300;
+    const rolesNumber = 300;
 
     it('should load all roles without config', async () => {
       const user = new Parse.User();
