@@ -1,7 +1,6 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
-const { continueWhile } = require('parse/lib/node/promiseUtils');
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -186,8 +185,9 @@ Auth.prototype.getUserRoles = function() {
 };
 
 Auth.prototype.getRolesForUser = async function() {
+  //Stack all Parse.Role
+  const results = [];
   if (this.config) {
-    const masterConfig = master(this.config);
     const restWhere = {
       users: {
         __type: 'Pointer',
@@ -195,42 +195,18 @@ Auth.prototype.getRolesForUser = async function() {
         objectId: this.user.id,
       },
     };
-    const queryOptions = {
-      limit: 100,
-      order: 'objectId'
-    };
-    let finished = false;
-
-    //Stack all Parse.Role
-    let results = [];
-
-    //Get All Parse.Role for User
-    await continueWhile(() => {
-      return !finished;
-    }, async () => {
-      const query = new RestQuery(
-        this.config,
-        masterConfig,
-        '_Role',
-        restWhere,
-        queryOptions
-      );
-      const currentResults = await query.execute().then(({ results }) => results);
-      finished = currentResults.length < queryOptions.limit;
-      if (!finished) {
-        restWhere.objectId = { '$gt': currentResults[currentResults.length - 1].objectId}
-      }
-      results = results.concat(currentResults);
-    });
-    return results;
+    await new RestQuery(
+      this.config,
+      master(this.config),
+      '_Role',
+      restWhere,
+      {}
+    ).each(result => results.push(result));
+  } else {
+    await new Parse.Query(Parse.Role)
+      .equalTo('users', this.user)
+      .each(result => results.push(result.toJSON()), { useMasterKey: true });
   }
-
-  //Stack all Parse.Role
-  const results = [];
-
-  await new Parse.Query(Parse.Role)
-    .equalTo('users', this.user)
-    .each(result => results.push(result.toJSON()),{useMasterKey:true})
   return results;
 };
 
@@ -287,19 +263,11 @@ Auth.prototype.cacheRoles = function() {
   return true;
 };
 
-Auth.prototype.getRolesByIds = function(ins) {
-  const roles = ins.map(id => {
-    return {
-      __type: 'Pointer',
-      className: '_Role',
-      objectId: id,
-    };
-  });
-  const restWhere = { roles: { $in: roles } };
-
+Auth.prototype.getRolesByIds = async function(ins) {
+  const results = [];
   // Build an OR query across all parentRoles
   if (!this.config) {
-    return new Parse.Query(Parse.Role)
+    await new Parse.Query(Parse.Role)
       .containedIn(
         'roles',
         ins.map(id => {
@@ -308,13 +276,30 @@ Auth.prototype.getRolesByIds = function(ins) {
           return role;
         })
       )
-      .find({ useMasterKey: true })
-      .then(results => results.map(obj => obj.toJSON()));
+      .each(
+        result => {
+          results.push(result.toJSON());
+        },
+        { useMasterKey: true }
+      );
+  } else {
+    const roles = ins.map(id => {
+      return {
+        __type: 'Pointer',
+        className: '_Role',
+        objectId: id,
+      };
+    });
+    const restWhere = { roles: { $in: roles } };
+    await new RestQuery(
+      this.config,
+      master(this.config),
+      '_Role',
+      restWhere,
+      {}
+    ).each(result => results.push(result));
   }
-
-  return new RestQuery(this.config, master(this.config), '_Role', restWhere, {})
-    .execute()
-    .then(({ results }) => results);
+  return results;
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
