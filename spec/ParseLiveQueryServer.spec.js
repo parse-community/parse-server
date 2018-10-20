@@ -1296,9 +1296,6 @@ describe('ParseLiveQueryServer', function() {
           return this;
         },
         each(callback) {
-          if (!shouldReturn) {
-            return Promise.resolve();
-          }
           //Return a role with the name "liveQueryRead" as that is what was set on the ACL
           const liveQueryRole = new Parse.Role(
             'liveQueryRead',
@@ -1310,13 +1307,6 @@ describe('ParseLiveQueryServer', function() {
         },
       };
     });
-
-    parseLiveQueryServer
-      ._matchesACL(acl, client, requestId)
-      .then(function(isMatched) {
-        expect(isMatched).toBe(true);
-        done();
-      });
 
     parseLiveQueryServer
       ._matchesACL(acl, client, requestId)
