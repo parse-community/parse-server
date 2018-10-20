@@ -1295,9 +1295,9 @@ describe('ParseLiveQueryServer', function() {
           shouldReturn = false;
           return this;
         },
-        find() {
+        each(callback) {
           if (!shouldReturn) {
-            return Promise.resolve([]);
+            return Promise.resolve();
           }
           //Return a role with the name "liveQueryRead" as that is what was set on the ACL
           const liveQueryRole = new Parse.Role(
@@ -1305,7 +1305,8 @@ describe('ParseLiveQueryServer', function() {
             new Parse.ACL()
           );
           liveQueryRole.id = 'abcdef1234';
-          return Promise.resolve([liveQueryRole]);
+          callback(liveQueryRole)
+          return Promise.resolve();
         },
       };
     });
