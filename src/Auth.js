@@ -276,12 +276,7 @@ Auth.prototype.getRolesByIds = async function(ins) {
           return role;
         })
       )
-      .each(
-        result => {
-          results.push(result.toJSON());
-        },
-        { useMasterKey: true }
-      );
+      .each(result => results.push(result.toJSON()), { useMasterKey: true });
   } else {
     const roles = ins.map(id => {
       return {
