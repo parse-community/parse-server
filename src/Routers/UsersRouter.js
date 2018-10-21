@@ -461,30 +461,40 @@ export class UsersRouter extends ClassesRouter {
     }
 
     return req.config.database.find('_User', { email: email }).then(results => {
-      if (!results.length || results.length < 1) {
+      if (results.length) {
+        return results;
+      }
+
+      return req.config.database.find('_User', { emailNew: email }).then(results => {
+        if (results.length) {
+          return results;
+        }
+
         throw new Parse.Error(
           Parse.Error.EMAIL_NOT_FOUND,
           `No user found with email ${email}`
         );
-      }
-      const user = results[0];
-
-      // remove password field, messes with saving on postgres
-      delete user.password;
-
-      if (user.emailVerified) {
-        throw new Parse.Error(
-          Parse.Error.OTHER_CAUSE,
-          `Email ${email} is already verified.`
-        );
-      }
-
-      const userController = req.config.userController;
-      return userController.regenerateEmailVerifyToken(user).then(() => {
-        userController.sendVerificationEmail(user);
-        return { response: {} };
       });
-    });
+    })
+      .then(results => {
+        const user = results[0];
+
+        // remove password field, messes with saving on postgres
+        delete user.password;
+
+        if (user.emailVerified && !user.emailNew) {
+          throw new Parse.Error(
+            Parse.Error.OTHER_CAUSE,
+            `Email ${email} is already verified.`
+          );
+        }
+
+        const userController = req.config.userController;
+        return userController.regenerateEmailVerifyToken(user, !!user.emailNew).then(() => {
+          userController.sendVerificationEmail(user);
+          return { response: {} };
+        });
+      });
   }
 
   mountRoutes() {
