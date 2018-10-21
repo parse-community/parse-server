@@ -286,7 +286,6 @@ function transformQueryKeyValue(className, key, value, schema) {
     case '_wperm':
     case '_perishable_token':
     case '_email_verify_token':
-    case '_changing_email':
       return { key, value };
     case '$or':
     case '$and':
@@ -424,7 +423,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
     case '_rperm':
     case '_wperm':
     case '_email_verify_token':
-    case '_changing_email':
     case '_hashed_password':
     case '_perishable_token':
       return { key: restKey, value: restValue };
@@ -1352,7 +1350,6 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
           case '_acl':
             break;
           case '_email_verify_token':
-          case '_changing_email':
           case '_perishable_token':
           case '_perishable_token_expires_at':
           case '_password_changed_at':

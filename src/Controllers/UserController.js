@@ -78,13 +78,12 @@ export class UserController extends AdaptableController {
 
       const user = result.results[0];
       if (user.emailVerified) {
-        if (!user._changing_email) {
+        if (!user.emailNew) {
           return Promise.resolve(result.results.length[0]);
         }
 
         updateFields.email = user.emailNew;
         updateFields.emailNew = '';
-        updateFields._changing_email = { __op: 'Delete' };
       }
 
       return rest.update(this.config, masterAuth, '_User', {username: username}, updateFields);
@@ -157,7 +156,7 @@ export class UserController extends AdaptableController {
     this.getUserIfNeeded(user).then(user => {
       const username = encodeURIComponent(user.username);
 
-      if (user._changing_email)
+      if (user.emailNew)
         user = {...user, email: user.emailNew};
 
       const link = buildEmailLink(

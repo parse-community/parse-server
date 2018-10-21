@@ -425,12 +425,10 @@ export class UsersRouter extends ClassesRouter {
         }
 
         user.emailNew = email;
-        user._changing_email = true;
-
         return req.config.database.update(
           '_User',
           { username: user.username },
-          { emailNew: email, '_changing_email': true });
+          { emailNew: email});
       })
 
       .then(() => req.config.userController.setEmailVerifyToken(user, true))

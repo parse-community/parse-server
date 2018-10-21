@@ -61,7 +61,6 @@ const specialQuerykeys = [
   '_perishable_token',
   '_email_verify_token',
   '_email_verify_token_expires_at',
-  '_changing_email',
   '_account_lockout_expires_at',
   '_failed_login_count',
 ];
@@ -185,7 +184,6 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   delete object._account_lockout_expires_at;
   delete object._password_changed_at;
   delete object._password_history;
-  delete object._changing_email;
 
   if (aclGroup.indexOf(object.objectId) > -1) {
     return object;
@@ -209,7 +207,6 @@ const specialKeysForUpdate = [
   '_perishable_token',
   '_email_verify_token',
   '_email_verify_token_expires_at',
-  '_changing_email',
   '_account_lockout_expires_at',
   '_failed_login_count',
   '_perishable_token_expires_at',

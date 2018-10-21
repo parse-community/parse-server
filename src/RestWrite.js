@@ -603,7 +603,7 @@ RestWrite.prototype._validateEmail = function() {
         (Object.keys(this.data.authData).length === 1 &&
           Object.keys(this.data.authData)[0] === 'anonymous')
       ) {
-        if (!this.data._changing_email) {
+        if (!this.data.emailVerified) {
           // We updated the email, send a new validation
           this.storage['sendVerificationEmail'] = true;
           this.config.userController.setEmailVerifyToken(this.data);
