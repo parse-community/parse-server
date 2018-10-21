@@ -431,7 +431,7 @@ export class UsersRouter extends ClassesRouter {
           { emailNew: email});
       })
 
-      .then(() => req.config.userController.setEmailVerifyToken(user, true))
+      .then(() => req.config.userController.regenerateEmailVerifyToken(user, true))
 
       .then(() => {
         req.config.userController.sendVerificationEmail(user);

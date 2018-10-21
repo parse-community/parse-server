@@ -184,12 +184,18 @@ export class UserController extends AdaptableController {
    * @param user
    * @returns {*}
    */
-  regenerateEmailVerifyToken(user) {
-    this.setEmailVerifyToken(user);
+  regenerateEmailVerifyToken(user, verified) {
+    this.setEmailVerifyToken(user, verified);
+    const updatedData = {
+      _email_verify_token: user._email_verify_token,
+      emailVerified: user.emailVerified,
+    };
+    if (user._email_verify_token_expires_at)
+      updatedData._email_verify_token_expires_at = user._email_verify_token_expires_at;
     return this.config.database.update(
       '_User',
       { username: user.username },
-      user
+      updatedData
     );
   }
 
