@@ -250,9 +250,13 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
     });
 }
 
-function handleSessionMissingError(error, className) {
+function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
-  if (className === '_User' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+  if (
+    className === '_User' &&
+    error.code === Parse.Error.OBJECT_NOT_FOUND &&
+    !auth.isMaster
+  ) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
