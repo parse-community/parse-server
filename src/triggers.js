@@ -11,6 +11,12 @@ export const Types = {
   afterFind: 'afterFind',
 };
 
+/** classes where readonly trigger is enforced */
+const ReadonlyTriggerClasses = Object.freeze(['SomeUltraSecureClass']);
+const isTriggerReadonlyForClass = function(className) {
+  return ReadonlyTriggerClasses.indexOf(className) > -1;
+};
+
 const baseStore = function() {
   const Validators = {};
   const Functions = {};
@@ -40,6 +46,12 @@ function validateClassNameForTriggers(className, type) {
     // allowing beforeSave would mess up the objects big time
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
+  }
+  if (type == Types.beforeFind && className === 'SomeUltraSecureClass') {
+    throw 'beforeFind is not allowed on SomeUltraSecureClass';
+  }
+  if (type == Types.afterFind && className === 'SomeUltraSecureClass') {
+    throw 'afterFind is not allowed on SomeUltraSecureClass';
   }
   return className;
 }
@@ -251,6 +263,13 @@ export function getResponseObject(request, resolve, reject) {
         });
         return resolve(response);
       }
+      // if readonly, resolve ignoring edits
+      if (
+        isTriggerReadonlyForClass(request.object.className) &&
+        request.triggerName === Types.beforeSave
+      ) {
+        return resolve();
+      }
       // Use the JSON response
       if (
         response &&
@@ -266,6 +285,13 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
+      // if readonly and beforeDelete. Ignore error.
+      if (
+        isTriggerReadonlyForClass(request.object.className) &&
+        request.triggerName === Types.beforeDelete
+      ) {
+        return resolve();
+      }
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
@@ -515,7 +541,9 @@ export function maybeRunTrigger(
       triggerType,
       config.applicationId
     );
+    // resolving with no object means no change (or no trigger)
     if (!trigger) return resolve();
+    // build our cloud request
     var request = getRequestObject(
       triggerType,
       auth,
@@ -553,7 +581,6 @@ export function maybeRunTrigger(
         reject(error);
       }
     );
-
     // AfterSave and afterDelete triggers can return a promise, which if they
     // do, needs to be resolved before this promise is resolved,
     // so trigger execution is synced with RestWrite.execute() call.
