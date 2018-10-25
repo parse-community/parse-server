@@ -12,10 +12,10 @@ export const Types = {
 };
 
 /** classes where readonly trigger is enforced */
-const ReadonlyTriggerClasses = Object.freeze(['SomeUltraSecureClass']);
-const isTriggerReadonlyForClass = function(className) {
-  return ReadonlyTriggerClasses.indexOf(className) != -1;
-};
+// const ReadonlyTriggerClasses = Object.freeze(['SomeUltraSecureClass']);
+// const isTriggerReadonlyForClass = function(className) {
+//   return ReadonlyTriggerClasses.indexOf(className) != -1;
+// };
 
 const baseStore = function() {
   const Validators = {};
@@ -264,12 +264,12 @@ export function getResponseObject(request, resolve, reject) {
         return resolve(response);
       }
       // if readonly, resolve ignoring edits
-      if (
-        isTriggerReadonlyForClass(request.object.className) &&
-        request.triggerName === Types.beforeSave
-      ) {
-        return resolve();
-      }
+      // if (
+      //   isTriggerReadonlyForClass(request.object.className) &&
+      //   request.triggerName === Types.beforeSave
+      // ) {
+      //   return resolve();
+      // }
       // Use the JSON response
       if (
         response &&
@@ -286,12 +286,12 @@ export function getResponseObject(request, resolve, reject) {
     },
     error: function(error) {
       // if readonly and beforeDelete. Ignore error.
-      if (
-        isTriggerReadonlyForClass(request.object.className) &&
-        request.triggerName === Types.beforeDelete
-      ) {
-        return Promise.resolve(resolve());
-      }
+      // if (
+      //   isTriggerReadonlyForClass(request.object.className) &&
+      //   request.triggerName === Types.beforeDelete
+      // ) {
+      //   return Promise.resolve(resolve());
+      // }
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
