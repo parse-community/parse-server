@@ -14,7 +14,7 @@ export const Types = {
 /** classes where readonly trigger is enforced */
 const ReadonlyTriggerClasses = Object.freeze(['SomeUltraSecureClass']);
 const isTriggerReadonlyForClass = function(className) {
-  return ReadonlyTriggerClasses.indexOf(className) > -1;
+  return ReadonlyTriggerClasses.indexOf(className) != -1;
 };
 
 const baseStore = function() {
@@ -290,7 +290,7 @@ export function getResponseObject(request, resolve, reject) {
         isTriggerReadonlyForClass(request.object.className) &&
         request.triggerName === Types.beforeDelete
       ) {
-        return resolve();
+        return Promise.resolve(resolve());
       }
       if (error instanceof Parse.Error) {
         reject(error);
