@@ -1116,11 +1116,16 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('distinct updatedAt', async () => {
+    const object1 = new TestObject({ updatedAt_test: true });
+    await object1.save();
+    const object2 = new TestObject();
+    await object2.save();
+    object2.set('updatedAt_test', true);
+    await object2.save();
     const query = new Parse.Query(TestObject);
+    query.equalTo('updatedAt_test', true);
     const results = await query.distinct('updatedAt');
-
-    // loadTestData() all have the same updatedAt
-    expect(results.length).toBe(1);
+    expect(results.length).toBe(2);
   });
 
   it('distinct null field', done => {
