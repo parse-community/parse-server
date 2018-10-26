@@ -587,7 +587,7 @@ RestWrite.prototype._validateEmail = function() {
   return this.config.database
     .find(
       this.className,
-      { $or: [{ email: this.data.email }, { emailNew: this.data.email }], objectId: { $ne: this.objectId() } },
+      { email: this.data.email, objectId: { $ne: this.objectId() } },
       { limit: 1 }
     )
     .then(results => {
