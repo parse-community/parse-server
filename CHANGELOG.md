@@ -1,7 +1,7 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...master)
 
 
 ### 3.1.1
