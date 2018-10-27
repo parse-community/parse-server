@@ -1,11 +1,16 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...master)
+
+
+### 3.1.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...3.1.1)
 
 #### Improvements:
-* Fixes issue that would prevent users with large number of roles to resolve all of them [@Moumouls]() (#5131, #5132)
+* Fixes issue that would prevent users with large number of roles to resolve all of them [Antoine Cormouls](https://github.com/Moumouls) (#5131, #5132)
 * Fixes distinct query on special fields ([#5144](https://github.com/parse-community/parse-server/pull/5144))
+
 
 ### 3.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...3.1.0)
