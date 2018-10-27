@@ -1098,6 +1098,36 @@ describe('Parse.Query Aggregate testing', () => {
       .catch(done.fail);
   });
 
+  it('distinct objectId', async () => {
+    const query = new Parse.Query(TestObject);
+    const results = await query.distinct('objectId');
+    expect(results.length).toBe(4);
+  });
+
+  it('distinct createdAt', async () => {
+    const object1 = new TestObject({ createdAt_test: true });
+    await object1.save();
+    const object2 = new TestObject({ createdAt_test: true });
+    await object2.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('createdAt_test', true);
+    const results = await query.distinct('createdAt');
+    expect(results.length).toBe(2);
+  });
+
+  it('distinct updatedAt', async () => {
+    const object1 = new TestObject({ updatedAt_test: true });
+    await object1.save();
+    const object2 = new TestObject();
+    await object2.save();
+    object2.set('updatedAt_test', true);
+    await object2.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('updatedAt_test', true);
+    const results = await query.distinct('updatedAt');
+    expect(results.length).toBe(2);
+  });
+
   it('distinct null field', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'distinctField' },
