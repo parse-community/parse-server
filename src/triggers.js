@@ -284,19 +284,18 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
-      // handle special readOnlyTriggers
+      // handle special readOnlyTriggers cases
       if (isReadOnlyTrigger) {
         // Ignore thrown errors in beforeDelete & during login.
-        // We should prevent login from breaking if an error is thrown during login process,
+        // We should prevent login from breaking if an error is thrown during the process,
         // developers should rely on beforeSave with users class to do so.
-        if (request.triggerName === Types.beforeDelete) {
+        if (
+          request.triggerName === Types.beforeDelete ||
+          (request.triggerName === Types.beforeSave &&
+            request.object.className === '_Session' &&
+            request.object.get('createdWith').action === 'signup')
+        ) {
           return resolve();
-        } else if (request.triggerName === Types.beforeSave) {
-          if (request.object.className === '_Session') {
-            if (request.object.get('createdWith').action === 'signup') {
-              return resolve();
-            }
-          }
         }
       }
       if (error instanceof Parse.Error) {
