@@ -29,15 +29,8 @@ describe('CloudCode ReadonlyTrigger tests', () => {
   it('readonly-beforeSave should ignore any thrown errors during signup', async () => {
     const name = 'some username we dont like';
     let user;
-    Parse.Cloud.beforeSave('_Session', async req => {
-      const sessionObject = req.object;
-      // fetch the user object
-      const sessionUser = sessionObject.get('user');
-      await sessionUser.fetch({ useMasterKey: true });
-      // this obviously not the proper way to check a username, its just for testing purposes
-      if (sessionUser.get('username') === name) {
-        throw new Parse.Error(12345678, 'We dont like this username');
-      }
+    Parse.Cloud.beforeSave('_Session', async () => {
+      throw new Parse.Error(12345678, 'Sorry, we dont like this username');
     });
     try {
       user = new Parse.User();
@@ -102,6 +95,12 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       await user.destroy({ useMasterKey: true });
     } catch (error) {
       throw error;
+    }
+    try {
+      await user.fetch({ useMasterKey: true });
+      throw 'User should have been deleted.';
+    } catch (error) {
+      expect(error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
   });
   it('readonly-afterDelete should work normally', async () => {
