@@ -8,8 +8,12 @@ jasmine.DEFAULT_TIMEOUT_INTERVAL =
 jasmine.getEnv().clearReporters();
 jasmine.getEnv().addReporter(
   new SpecReporter({
-    colors: { enabled: supportsColor.stdout },
-    spec: { displayDuration: true },
+    colors: {
+      enabled: supportsColor.stdout,
+    },
+    spec: {
+      displayDuration: true,
+    },
   })
 );
 
@@ -299,12 +303,15 @@ function createTestUser() {
 function ok(bool, message) {
   expect(bool).toBeTruthy(message);
 }
+
 function equal(a, b, message) {
   expect(a).toEqual(b, message);
 }
+
 function strictEqual(a, b, message) {
   expect(a).toBe(b, message);
 }
+
 function notEqual(a, b, message) {
   expect(a).not.toEqual(b, message);
 }
@@ -387,6 +394,7 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+// delay
 function delay(millis) {
   return new Promise(r => setTimeout(r, millis));
 }
