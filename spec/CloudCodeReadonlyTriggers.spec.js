@@ -84,7 +84,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     expect(sessionObject).toBeUndefined();
   });
   it('readonly-beforeDelete should ignore thrown errors', async () => {
-    Parse.Cloud.beforeDelete('_Session', function() {
+    Parse.Cloud.beforeDelete('_Session', async () => {
       throw new Parse.Error(12345678, 'Nop');
     });
     const user = new Parse.User();
