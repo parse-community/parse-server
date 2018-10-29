@@ -1482,7 +1482,7 @@ RestWrite.prototype.objectId = function() {
 };
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
-RestWrite.prototype.sanitizedData = function() {
+RestWrite.prototype.sanitizedData = function(decodeData = true) {
   const data = Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
@@ -1490,12 +1490,17 @@ RestWrite.prototype.sanitizedData = function() {
     }
     return data;
   }, deepcopy(this.data));
-  return Parse._decode(undefined, data);
+  if (decodeData) {
+    // decoded data might contain instances of ParseObject, ParseRelation, ParseACl...
+    return Parse._decode(undefined, data);
+  }
+  // data is kept in json format. Not decoded
+  return data;
 };
 
 // Returns an updated copy of the object
 RestWrite.prototype.buildUpdatedObject = function(extraData) {
-  const updatedObject = triggers.inflate(extraData, this.originalData);
+  let updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function(data, key) {
     if (key.indexOf('.') > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
@@ -1511,8 +1516,18 @@ RestWrite.prototype.buildUpdatedObject = function(extraData) {
     }
     return data;
   }, deepcopy(this.data));
-
-  updatedObject.set(this.sanitizedData());
+  if (this.className === '_Session') {
+    // on Session, 'updatedObject' will be an instance of 'ParseSession'.
+    // 'ParseSession' prevents setting readOnlyKeys and in turn '.set' fails.
+    // So, 'beforeSave' on session will show the full object in req.object with
+    // req.object.dirtyKeys being empty [].
+    // This is okay, since sessions are mostly never updated, only created or destroyed.
+    // Additionally sanitizedData should be kept in json, not decoded.
+    // because '.inflate' internally uses '.fromJSON' so it expects data to be JSON to work properly.
+    updatedObject = triggers.inflate(extraData, this.sanitizedData(false));
+  } else {
+    updatedObject.set(this.sanitizedData());
+  }
   return updatedObject;
 };
 

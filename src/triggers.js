@@ -11,6 +11,12 @@ export const Types = {
   afterFind: 'afterFind',
 };
 
+const ReadOnlyTriggers = Object.freeze(['_Session']);
+
+function isReadonlyTrigger(className) {
+  return ReadOnlyTriggers.indexOf(className) > -1;
+}
+
 const baseStore = function() {
   const Validators = {};
   const Functions = {};
@@ -31,7 +37,7 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = ['_Session'];
+  const restrictedClassNames = [];
   if (restrictedClassNames.indexOf(className) != -1) {
     throw `Triggers are not supported for ${className} class.`;
   }
@@ -40,6 +46,12 @@ function validateClassNameForTriggers(className, type) {
     // allowing beforeSave would mess up the objects big time
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
+  }
+  if (
+    (type == Types.beforeFind || type == Types.afterFind) &&
+    className === '_Session'
+  ) {
+    throw 'beforeFind/afterFind is not allowed on _Session class.';
   }
   return className;
 }
@@ -240,6 +252,8 @@ export function getRequestQueryObject(
 // transform them to Parse.Object instances expected by Cloud Code.
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
+  const className = request.object ? request.object.className : null;
+  const isReadOnlyTrigger = isReadonlyTrigger(className);
   return {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
@@ -250,6 +264,10 @@ export function getResponseObject(request, resolve, reject) {
           return object.toJSON();
         });
         return resolve(response);
+      }
+      // ignore edited object in readonly triggers
+      if (isReadOnlyTrigger) {
+        return resolve();
       }
       // Use the JSON response
       if (
@@ -266,6 +284,21 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
+      // handle special readOnlyTriggers
+      if (isReadOnlyTrigger) {
+        // Ignore thrown errors in beforeDelete & during login.
+        // We should prevent login from breaking if an error is thrown during login process,
+        // developers should rely on beforeSave with users class to do so.
+        if (request.triggerName === Types.beforeDelete) {
+          return resolve();
+        } else if (request.triggerName === Types.beforeSave) {
+          if (request.object.className === '_Session') {
+            if (request.object.get('createdWith').action === 'signup') {
+              return resolve();
+            }
+          }
+        }
+      }
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
