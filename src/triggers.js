@@ -288,7 +288,7 @@ export function getResponseObject(request, resolve, reject) {
       if (isReadOnlyTrigger) {
         // Ignore thrown errors in beforeDelete & during login.
         // We should prevent login from breaking if an error is thrown during the process,
-        // developers should rely on beforeSave with users class to do so.
+        // this can be accomplished with beforeSave on users.
         if (
           request.triggerName === Types.beforeDelete ||
           (request.triggerName === Types.beforeSave &&
