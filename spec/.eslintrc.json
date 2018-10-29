@@ -1,33 +1,33 @@
 {
-  "env": {
-    "jasmine": true
-  },
-  "globals": {
-    "Parse": true,
-    "reconfigureServer": true,
-    "createTestUser": true,
-    "jfail": true,
-    "ok": true,
-    "strictEqual": true,
-    "TestObject": true,
-    "Item": true,
-    "Container": true,
-    "equal": true,
-    "notEqual": true,
-    "it_only_db": true,
-    "it_exclude_dbs": true,
-    "describe_only_db": true,
-    "describe_only": true,
-    "on_db": true,
-    "defaultConfiguration": true,
-    "range": true,
-    "jequal": true,
-    "create": true,
-    "arrayContains": true,
-    "delay": true
-  },
-  "rules": {
-    "no-console": [0],
-    "no-var": "error"
-  }
+    "env": {
+        "jasmine": true
+    },
+    "globals": {
+      "Parse": true,
+      "reconfigureServer": true,
+      "createTestUser": true,
+      "jfail": true,
+      "ok": true,
+      "strictEqual": true,
+      "TestObject": true,
+      "Item": true,
+      "Container": true,
+      "equal": true,
+      "notEqual": true,
+      "it_only_db": true,
+      "it_exclude_dbs": true,
+      "describe_only_db": true,
+      "describe_only": true,
+      "on_db": true,
+      "defaultConfiguration": true,
+      "range": true,
+      "jequal": true,
+      "create": true,
+      "arrayContains": true,
+      "delay": true
+    },
+    "rules": {
+      "no-console": [0],
+      "no-var": "error"
+    }
 }
