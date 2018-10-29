@@ -387,6 +387,10 @@ function mockShortLivedAuth() {
   return auth;
 }
 
+function delay(millis) {
+  return new Promise(r => setTimeout(r, millis));
+}
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -404,6 +408,7 @@ global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
+global.delay = delay;
 global.jfail = function(err) {
   fail(JSON.stringify(err));
 };
