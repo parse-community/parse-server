@@ -2,6 +2,25 @@
 const Parse = require('parse/node');
 
 describe('CloudCode ReadonlyTrigger tests', () => {
+  it('readonly-beforeSave on _Session should be okay', async () => {
+    Parse.Cloud.beforeSave('_Session', async req => {
+      const sessionObject = req.object;
+      expect(sessionObject).toBeDefined();
+      expect(sessionObject.get('sessionToken')).toBeDefined();
+      expect(sessionObject.get('createdWith')).toBeDefined();
+      expect(sessionObject.get('user')).toBeDefined();
+      expect(sessionObject.get('user').toEqual(jasmine.any(Parse.User)));
+    });
+    try {
+      // signup a user (internally creates a session)
+      const user = new Parse.User();
+      user.setUsername('some-user-name');
+      user.setPassword('password');
+      await user.signUp();
+    } catch (error) {
+      throw 'Should not have failed';
+    }
+  });
   it('readonly-beforeSave should disregard any changes', async () => {
     Parse.Cloud.beforeSave('_Session', function(req) {
       // perform some changes
