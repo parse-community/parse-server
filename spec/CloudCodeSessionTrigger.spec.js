@@ -1,8 +1,8 @@
 'use strict';
 const Parse = require('parse/node');
 
-describe('CloudCode ReadonlyTrigger tests', () => {
-  it('readonly-beforeSave on _Session should be okay', async () => {
+describe('CloudCode _Session Trigger tests', () => {
+  it('beforeSave should be okay', async () => {
     Parse.Cloud.beforeSave('_Session', async req => {
       const sessionObject = req.object;
       expect(sessionObject).toBeDefined();
@@ -21,7 +21,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       throw error;
     }
   });
-  it('readonly-beforeSave should disregard any changes', async () => {
+  it('beforeSave should discard any changes', async () => {
     Parse.Cloud.beforeSave('_Session', function(req) {
       // perform some changes
       req.object.set('KeyA', 'EDITED_VALUE');
@@ -45,7 +45,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     expect(sessionObject.get('user').id).toBe(user.id);
     expect(sessionObject.get('sessionToken')).toBeDefined();
   });
-  it('readonly-beforeSave should not affect user creation flow during signup', async () => {
+  it('beforeSave should not affect user creation flow during signup', async () => {
     let user;
     Parse.Cloud.beforeSave('_Session', async () => {
       // reject the session
@@ -68,6 +68,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       user.setUsername('user-name');
       user.setPassword('user-password');
       await user.signUp();
+      throw 'Signup should have failed';
     } catch (error) {
       expect(error.code).toBe(12345678);
       expect(error.message).toBe('Sorry, we dont like this username');
@@ -85,7 +86,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     });
     expect(sessionObject).toBeUndefined();
   });
-  it('readonly-beforeSave should fail and prevent login on throw', async () => {
+  it('beforeSave should fail and prevent login on throw', async () => {
     Parse.Cloud.beforeSave('_Session', async req => {
       const sessionObject = req.object;
       if (sessionObject.get('createdWith').action === 'login') {
@@ -111,15 +112,15 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     });
     expect(sessionObject).toBeUndefined();
   });
-  it('readonly-beforeDelete should ignore thrown errors', async () => {
+  it('beforeDelete should ignore thrown errors', async () => {
     Parse.Cloud.beforeDelete('_Session', async () => {
       throw new Parse.Error(12345678, 'Nop');
     });
     const user = new Parse.User();
     user.setUsername('some-user-name');
     user.setPassword('password');
-    await user.signUp();
     try {
+      await user.signUp();
       await user.destroy({ useMasterKey: true });
     } catch (error) {
       throw error;
@@ -131,7 +132,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       expect(error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
     }
   });
-  it('readonly-afterDelete should work normally', async () => {
+  it('afterDelete should work normally', async () => {
     Parse.Cloud.afterDelete('_Session', function() {
       const someObject = new Parse.Object('Test');
       someObject.set('key', 'value');
@@ -150,7 +151,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     expect(object).toBeDefined();
     expect(object.get('key')).toBe('value');
   });
-  it('readonly-afterSave should work normally', async () => {
+  it('afterSave should work normally', async () => {
     Parse.Cloud.afterSave('_Session', function() {
       const someObject = new Parse.Object('Test');
       someObject.set('key', 'value');
