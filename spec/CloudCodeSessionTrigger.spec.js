@@ -45,11 +45,11 @@ describe('CloudCode _Session Trigger tests', () => {
     expect(sessionObject.get('user').id).toBe(user.id);
     expect(sessionObject.get('sessionToken')).toBeDefined();
   });
-  it('beforeSave should not affect user creation flow during signup', async () => {
+  it('beforeSave rejection should not affect user creation flow during signup', async () => {
     let user;
     Parse.Cloud.beforeSave('_Session', async () => {
       // reject the session
-      throw new Parse.Error(12345678, 'Sorry, we dont like this username');
+      throw new Parse.Error(12345678, 'Sorry, more steps are required');
     });
     Parse.Cloud.beforeSave('_User', async req => {
       // make sure this runs correctly
@@ -68,11 +68,10 @@ describe('CloudCode _Session Trigger tests', () => {
       user.setUsername('user-name');
       user.setPassword('user-password');
       await user.signUp();
-      throw 'Signup should have failed';
     } catch (error) {
-      expect(error.code).toBe(12345678);
-      expect(error.message).toBe('Sorry, we dont like this username');
+      throw error;
     }
+    expect(user.getSessionToken()).toBeUndefined();
     await delay(200); // just so that afterSave has time to run
     await user.fetch({ useMasterKey: true });
     expect(user.get('username')).toBe('user-name');

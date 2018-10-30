@@ -741,20 +741,23 @@ RestWrite.prototype.createSessionToken = function() {
     installationId: this.auth.installationId,
   });
 
-  if (this.response && this.response.response) {
-    this.response.response.sessionToken = sessionData.sessionToken;
-  }
-
-  return createSession().catch(e => {
-    // we need to swallow the error during a signup
-    // this is to make sure the .execute() chain continues normally for the user.
-    // we dont need to kwow about any errors when signing a user up.
-    if (!this.storage['authProvider']) {
-      return Promise.resolve();
-    }
-    // on login proppagate errors
-    throw e;
-  });
+  return createSession()
+    .then(() => {
+      // session was created, populate the sessionToken
+      if (this.response && this.response.response) {
+        this.response.response.sessionToken = sessionData.sessionToken;
+      }
+    })
+    .catch(e => {
+      // we need to swallow the error during a Signup
+      // this is to make sure the .execute() chain continues normally for the user.
+      // we dont need to kwow about any errors when signing a user up.
+      if (!this.storage['authProvider']) {
+        return Promise.resolve();
+      }
+      // on login proppagate errors
+      throw e;
+    });
 };
 
 // Delete email reset tokens if user is changing password or email.
