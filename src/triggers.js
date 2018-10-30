@@ -11,12 +11,6 @@ export const Types = {
   afterFind: 'afterFind',
 };
 
-const ReadOnlyTriggers = Object.freeze(['_Session']);
-
-function isReadonlyTrigger(className) {
-  return ReadOnlyTriggers.indexOf(className) > -1;
-}
-
 const baseStore = function() {
   const Validators = {};
   const Functions = {};
@@ -37,10 +31,6 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = [];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
@@ -253,7 +243,7 @@ export function getRequestQueryObject(
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
   const className = request.object ? request.object.className : null;
-  const isReadOnlyTrigger = isReadonlyTrigger(className);
+  const isSessionTrigger = className === '_Session';
   return {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
@@ -265,8 +255,8 @@ export function getResponseObject(request, resolve, reject) {
         });
         return resolve(response);
       }
-      // ignore edited object in readonly triggers
-      if (isReadOnlyTrigger) {
+      // ignore edited object in session triggers
+      if (isSessionTrigger) {
         return resolve();
       }
       // Use the JSON response
@@ -284,19 +274,9 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
-      // handle special readOnlyTriggers cases
-      if (isReadOnlyTrigger) {
-        // Ignore thrown errors in beforeDelete & during login.
-        // We should prevent login from breaking if an error is thrown during the process,
-        // this can be accomplished with beforeSave on users.
-        if (
-          request.triggerName === Types.beforeDelete ||
-          (request.triggerName === Types.beforeSave &&
-            request.object.className === '_Session' &&
-            request.object.get('createdWith').action === 'signup')
-        ) {
-          return resolve();
-        }
+      // ignore errors thrown in before-delete (during logout for example)
+      if (isSessionTrigger && request.triggerName === Types.beforeDelete) {
+        return resolve();
       }
       if (error instanceof Parse.Error) {
         reject(error);

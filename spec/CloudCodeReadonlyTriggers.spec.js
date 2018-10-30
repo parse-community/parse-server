@@ -9,7 +9,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       expect(sessionObject.get('sessionToken')).toBeDefined();
       expect(sessionObject.get('createdWith')).toBeDefined();
       expect(sessionObject.get('user')).toBeDefined();
-      expect(sessionObject.get('user').toEqual(jasmine.any(Parse.User)));
+      expect(sessionObject.get('user')).toEqual(jasmine.any(Parse.User));
     });
     try {
       // signup a user (internally creates a session)
@@ -18,7 +18,7 @@ describe('CloudCode ReadonlyTrigger tests', () => {
       user.setPassword('password');
       await user.signUp();
     } catch (error) {
-      throw 'Should not have failed';
+      throw error;
     }
   });
   it('readonly-beforeSave should disregard any changes', async () => {
@@ -45,36 +45,45 @@ describe('CloudCode ReadonlyTrigger tests', () => {
     expect(sessionObject.get('user').id).toBe(user.id);
     expect(sessionObject.get('sessionToken')).toBeDefined();
   });
-  it('readonly-beforeSave should ignore any thrown errors during signup', async () => {
-    const name = 'some username we dont like';
+  it('readonly-beforeSave should not affect user creation flow during signup', async () => {
     let user;
     Parse.Cloud.beforeSave('_Session', async () => {
+      // reject the session
       throw new Parse.Error(12345678, 'Sorry, we dont like this username');
+    });
+    Parse.Cloud.beforeSave('_User', async req => {
+      // make sure this runs correctly
+      req.object.set('firstName', 'abcd');
+    });
+    Parse.Cloud.afterSave('_User', async req => {
+      if (req.object.has('lastName')) {
+        return;
+      }
+      // make sure this runs correctly
+      req.object.set('lastName', '1234');
+      await req.object.save({}, { useMasterKey: true });
     });
     try {
       user = new Parse.User();
-      user.setUsername(name);
-      user.setPassword('password');
+      user.setUsername('user-name');
+      user.setPassword('user-password');
       await user.signUp();
     } catch (error) {
-      throw 'Should not have failed';
+      expect(error.code).toBe(12345678);
+      expect(error.message).toBe('Sorry, we dont like this username');
     }
-    // get the user
-    const query = new Parse.Query('_User');
-    query.equalTo('username', name);
-    const createdUser = await query.first({
-      useMasterKey: true,
-    });
-    expect(createdUser).toBeDefined();
+    await delay(200); // just so that afterSave has time to run
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('username')).toBe('user-name');
+    expect(user.get('firstName')).toBe('abcd');
+    expect(user.get('lastName')).toBe('1234');
     // get the session
     const query2 = new Parse.Query('_Session');
-    query2.equalTo('user', createdUser);
+    query2.equalTo('user', user);
     const sessionObject = await query2.first({
       useMasterKey: true,
     });
-    expect(sessionObject).toBeDefined();
-    expect(sessionObject.get('sessionToken')).toBeDefined();
-    expect(sessionObject.get('sessionToken')).toBe(user.getSessionToken());
+    expect(sessionObject).toBeUndefined();
   });
   it('readonly-beforeSave should fail and prevent login on throw', async () => {
     Parse.Cloud.beforeSave('_Session', async req => {
