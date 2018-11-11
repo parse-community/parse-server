@@ -1428,6 +1428,24 @@ describe('afterSave hooks', () => {
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
+
+  it('should have original original object (#5167)', async () => {
+    let calls = 0;
+    Parse.Cloud.afterSave('MyObject', req => {
+      calls++;
+      if (calls == 1) {
+        expect(req.original).toBeUndefined();
+      } else if (calls == 2) {
+        expect(req.original).not.toBeUndefined();
+      } else {
+        fail('should be called only twice');
+      }
+    });
+    const object = new Parse.Object('MyObject');
+    await object.save();
+    await object.save();
+    expect(calls).toBe(2);
+  });
 });
 
 describe('beforeDelete hooks', () => {
