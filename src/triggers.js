@@ -278,8 +278,7 @@ export function getResponseObject(request, resolve, reject) {
     error: function (error) {
       // ignore errors thrown in before-delete (during logout for example)
       if (isSessionTrigger && request.triggerName === Types.beforeDelete) {
-        logWarningWhenErrorIsIgnored(request.triggerName, className, error);
-        return resolve();
+        return resolve(undefined, error);
       }
       if (error instanceof Parse.Error) {
         reject(error);
@@ -344,12 +343,15 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   );
 }
 
-function logWarningWhenErrorIsIgnored(triggerType, className, error) {
+function logWarningWhenErrorIsIgnored(triggerType, className, auth, error) {
   logger.warn(
-    `Thrown Error ignored in ${triggerType} trigger for ${className}}\n  Error: ${JSON.stringify(error)}`, {
+    `Error ignored in ${triggerType} for ${className} for user ${userIdForLog(
+      auth
+    )}:\n Error: ${JSON.stringify(error)}`, {
       className,
       triggerType,
-      error
+      error,
+      user: userIdForLog(auth),
     }
   );
 }
@@ -555,7 +557,10 @@ export function maybeRunTrigger(
       error
     } = getResponseObject(
       request,
-      object => {
+      (object, error) => {
+        if (error) {
+          logWarningWhenErrorIsIgnored(triggerType, parseObject.className, auth, error);
+        }
         logTriggerSuccessBeforeHook(
           triggerType,
           parseObject.className,
