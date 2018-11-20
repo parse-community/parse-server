@@ -2,18 +2,12 @@
 
 const request = require('../lib/request');
 
-const delayPromise = delay => {
-  return new Promise(resolve => {
-    setTimeout(resolve, delay);
-  });
-};
-
 describe('Parse.Push', () => {
-  const setup = function() {
+  const setup = function () {
     const sendToInstallationSpy = jasmine.createSpy();
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const badge = body.data.badge;
         const promises = installations.map(installation => {
           sendToInstallationSpy(installation);
@@ -32,7 +26,7 @@ describe('Parse.Push', () => {
         });
         return Promise.all(promises);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios', 'android'];
       },
     };
@@ -78,21 +72,22 @@ describe('Parse.Push', () => {
 
   it('should properly send push', done => {
     return setup()
-      .then(({ sendToInstallationSpy }) => {
-        return Parse.Push.send(
-          {
-            where: {
-              deviceType: 'ios',
-            },
-            data: {
-              badge: 'Increment',
-              alert: 'Hello world!',
-            },
+      .then(({
+        sendToInstallationSpy
+      }) => {
+        return Parse.Push.send({
+          where: {
+            deviceType: 'ios',
           },
-          { useMasterKey: true }
-        )
+          data: {
+            badge: 'Increment',
+            alert: 'Hello world!',
+          },
+        }, {
+          useMasterKey: true
+        })
           .then(() => {
-            return delayPromise(500);
+            return delay(500);
           })
           .then(() => {
             expect(sendToInstallationSpy.calls.count()).toEqual(10);
@@ -110,21 +105,20 @@ describe('Parse.Push', () => {
   it('should properly send push with lowercaseIncrement', done => {
     return setup()
       .then(() => {
-        return Parse.Push.send(
-          {
-            where: {
-              deviceType: 'ios',
-            },
-            data: {
-              badge: 'increment',
-              alert: 'Hello world!',
-            },
+        return Parse.Push.send({
+          where: {
+            deviceType: 'ios',
           },
-          { useMasterKey: true }
-        );
+          data: {
+            badge: 'increment',
+            alert: 'Hello world!',
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(() => {
-        return delayPromise(500);
+        return delay(500);
       })
       .then(() => {
         done();
@@ -138,20 +132,19 @@ describe('Parse.Push', () => {
   it('should not allow clients to query _PushStatus', done => {
     setup()
       .then(() =>
-        Parse.Push.send(
-          {
-            where: {
-              deviceType: 'ios',
-            },
-            data: {
-              badge: 'increment',
-              alert: 'Hello world!',
-            },
+        Parse.Push.send({
+          where: {
+            deviceType: 'ios',
           },
-          { useMasterKey: true }
-        )
+          data: {
+            badge: 'increment',
+            alert: 'Hello world!',
+          },
+        }, {
+          useMasterKey: true
+        })
       )
-      .then(() => delayPromise(500))
+      .then(() => delay(500))
       .then(() => {
         request({
           url: 'http://localhost:8378/1/classes/_PushStatus',
@@ -173,20 +166,19 @@ describe('Parse.Push', () => {
   it('should allow master key to query _PushStatus', done => {
     setup()
       .then(() =>
-        Parse.Push.send(
-          {
-            where: {
-              deviceType: 'ios',
-            },
-            data: {
-              badge: 'increment',
-              alert: 'Hello world!',
-            },
+        Parse.Push.send({
+          where: {
+            deviceType: 'ios',
           },
-          { useMasterKey: true }
-        )
+          data: {
+            badge: 'increment',
+            alert: 'Hello world!',
+          },
+        }, {
+          useMasterKey: true
+        })
       )
-      .then(() => delayPromise(500)) // put a delay as we keep writing
+      .then(() => delay(500)) // put a delay as we keep writing
       .then(() => {
         request({
           url: 'http://localhost:8378/1/classes/_PushStatus',
@@ -216,20 +208,21 @@ describe('Parse.Push', () => {
   });
 
   it('should throw error if missing push configuration', done => {
-    reconfigureServer({ push: null })
+    reconfigureServer({
+      push: null
+    })
       .then(() => {
-        return Parse.Push.send(
-          {
-            where: {
-              deviceType: 'ios',
-            },
-            data: {
-              badge: 'increment',
-              alert: 'Hello world!',
-            },
+        return Parse.Push.send({
+          where: {
+            deviceType: 'ios',
           },
-          { useMasterKey: true }
-        );
+          data: {
+            badge: 'increment',
+            alert: 'Hello world!',
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(
         () => {
@@ -246,7 +239,7 @@ describe('Parse.Push', () => {
       });
   });
 
-  const successfulAny = function(body, installations) {
+  const successfulAny = function (body, installations) {
     const promises = installations.map(device => {
       return Promise.resolve({
         transmitted: true,
@@ -257,7 +250,7 @@ describe('Parse.Push', () => {
     return Promise.all(promises);
   };
 
-  const provideInstallations = function(num) {
+  const provideInstallations = function (num) {
     if (!num) {
       num = 2;
     }
@@ -279,14 +272,14 @@ describe('Parse.Push', () => {
   };
 
   const losingAdapter = {
-    send: function(body, installations) {
+    send: function (body, installations) {
       // simulate having lost an installation before this was called
       // thus invalidating our 'count' in _PushStatus
       installations.pop();
 
       return successfulAny(body, installations);
     },
-    getValidPushTypes: function() {
+    getValidPushTypes: function () {
       return ['android'];
     },
   };
@@ -298,19 +291,24 @@ describe('Parse.Push', () => {
    */
   it("does not get stuck with _PushStatus 'running' on 1 installation lost", done => {
     reconfigureServer({
-      push: { adapter: losingAdapter },
+      push: {
+        adapter: losingAdapter
+      },
     })
       .then(() => {
         return Parse.Object.saveAll(provideInstallations());
       })
       .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: 'android' },
+        return Parse.Push.send({
+          data: {
+            alert: 'We fixed our status!'
           },
-          { useMasterKey: true }
-        );
+          where: {
+            deviceType: 'android'
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(() => {
         // it is enqueued so it can take time
@@ -323,7 +321,9 @@ describe('Parse.Push', () => {
       .then(() => {
         // query for push status
         const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
+        return query.find({
+          useMasterKey: true
+        });
       })
       .then(results => {
         // verify status is NOT broken
@@ -357,14 +357,14 @@ describe('Parse.Push', () => {
     reconfigureServer({
       push: {
         adapter: {
-          send: function(body, installations) {
+          send: function (body, installations) {
             // simulate having added an installation before this was called
             // thus invalidating our 'count' in _PushStatus
             installations.push(iOSInstallation);
 
             return successfulAny(body, installations);
           },
-          getValidPushTypes: function() {
+          getValidPushTypes: function () {
             return ['android'];
           },
         },
@@ -374,13 +374,18 @@ describe('Parse.Push', () => {
         return Parse.Object.saveAll(installations);
       })
       .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: { $ne: 'random' } },
+        return Parse.Push.send({
+          data: {
+            alert: 'We fixed our status!'
           },
-          { useMasterKey: true }
-        );
+          where: {
+            deviceType: {
+              $ne: 'random'
+            }
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(() => {
         // it is enqueued so it can take time
@@ -393,7 +398,9 @@ describe('Parse.Push', () => {
       .then(() => {
         // query for push status
         const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
+        return query.find({
+          useMasterKey: true
+        });
       })
       .then(results => {
         // verify status is NOT broken
@@ -416,19 +423,24 @@ describe('Parse.Push', () => {
     const installations = provideInstallations(devices);
 
     reconfigureServer({
-      push: { adapter: losingAdapter },
+      push: {
+        adapter: losingAdapter
+      },
     })
       .then(() => {
         return Parse.Object.saveAll(installations);
       })
       .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: 'android' },
+        return Parse.Push.send({
+          data: {
+            alert: 'We fixed our status!'
           },
-          { useMasterKey: true }
-        );
+          where: {
+            deviceType: 'android'
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(() => {
         // it is enqueued so it can take time
@@ -441,7 +453,9 @@ describe('Parse.Push', () => {
       .then(() => {
         // query for push status
         const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
+        return query.find({
+          useMasterKey: true
+        });
       })
       .then(results => {
         // verify status is NOT broken
@@ -485,14 +499,14 @@ describe('Parse.Push', () => {
     reconfigureServer({
       push: {
         adapter: {
-          send: function(body, installations) {
+          send: function (body, installations) {
             // simulate having added an installation before this was called
             // thus invalidating our 'count' in _PushStatus
             installations.push(iOSInstallations.pop());
 
             return successfulAny(body, installations);
           },
-          getValidPushTypes: function() {
+          getValidPushTypes: function () {
             return ['android'];
           },
         },
@@ -502,13 +516,18 @@ describe('Parse.Push', () => {
         return Parse.Object.saveAll(installations);
       })
       .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: { $ne: 'random' } },
+        return Parse.Push.send({
+          data: {
+            alert: 'We fixed our status!'
           },
-          { useMasterKey: true }
-        );
+          where: {
+            deviceType: {
+              $ne: 'random'
+            }
+          },
+        }, {
+          useMasterKey: true
+        });
       })
       .then(() => {
         // it is enqueued so it can take time
@@ -521,7 +540,9 @@ describe('Parse.Push', () => {
       .then(() => {
         // query for push status
         const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
+        return query.find({
+          useMasterKey: true
+        });
       })
       .then(results => {
         // verify status is NOT broken

@@ -13,13 +13,8 @@ let database;
 const defaultColumns = require('../lib/Controllers/SchemaController')
   .defaultColumns;
 
-const delay = function delay(delay) {
-  return new Promise(resolve => setTimeout(resolve, delay));
-};
-
 const installationSchema = {
-  fields: Object.assign(
-    {},
+  fields: Object.assign({},
     defaultColumns._Default,
     defaultColumns._Installation
   ),
@@ -210,7 +205,9 @@ describe('Installations', () => {
       .create(config, auth.nobody(config), '_Installation', input)
       .then(() => {
         const query = new Parse.Query(Parse.Installation);
-        return query.find({ useMasterKey: true });
+        return query.find({
+          useMasterKey: true
+        });
       })
       .then(results => {
         expect(results.length).toEqual(1);
@@ -416,28 +413,28 @@ describe('Installations', () => {
       })
       .then(() =>
         database.adapter.find(
-          '_Installation',
-          { installationId: installId1 },
-          installationSchema,
-          {}
+          '_Installation', {
+            installationId: installId1
+          },
+          installationSchema, {}
         )
       )
       .then(results => {
         expect(results.length).toEqual(1);
         return database.adapter.find(
-          '_Installation',
-          { installationId: installId2 },
-          installationSchema,
-          {}
+          '_Installation', {
+            installationId: installId2
+          },
+          installationSchema, {}
         );
       })
       .then(results => {
         expect(results.length).toEqual(1);
         return database.adapter.find(
-          '_Installation',
-          { installationId: installId3 },
-          installationSchema,
-          {}
+          '_Installation', {
+            installationId: installId3
+          },
+          installationSchema, {}
         );
       })
       .then(results => {
@@ -469,8 +466,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId },
+          '_Installation', {
+            objectId
+          },
           update
         );
       })
@@ -504,12 +502,15 @@ describe('Installations', () => {
       )
       .then(results => {
         expect(results.length).toEqual(1);
-        input = { installationId: installId2 };
+        input = {
+          installationId: installId2
+        };
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -540,12 +541,15 @@ describe('Installations', () => {
       )
       .then(results => {
         expect(results.length).toEqual(1);
-        input = { deviceToken: b };
+        input = {
+          deviceToken: b
+        };
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -585,8 +589,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -624,8 +629,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -659,8 +665,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -698,9 +705,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { installationId: installId1 },
-          {}
+          installationSchema, {
+            installationId: installId1
+          }, {}
         )
       )
       .then(results => {
@@ -708,9 +715,9 @@ describe('Installations', () => {
         expect(results.length).toEqual(1);
         return database.adapter.find(
           '_Installation',
-          installationSchema,
-          { installationId: installId2 },
-          {}
+          installationSchema, {
+            installationId: installId2
+          }, {}
         );
       })
       .then(results => {
@@ -724,17 +731,18 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: secondObject.objectId },
+          '_Installation', {
+            objectId: secondObject.objectId
+          },
           input
         );
       })
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { objectId: firstObject.objectId },
-          {}
+          installationSchema, {
+            objectId: firstObject.objectId
+          }, {}
         )
       )
       .then(results => {
@@ -773,9 +781,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { installationId: installId1 },
-          {}
+          installationSchema, {
+            installationId: installId1
+          }, {}
         )
       )
       .then(results => {
@@ -786,9 +794,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { installationId: installId2 },
-          {}
+          installationSchema, {
+            installationId: installId2
+          }, {}
         )
       )
       .then(results => {
@@ -802,8 +810,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: secondObject.objectId },
+          '_Installation', {
+            objectId: secondObject.objectId
+          },
           input
         );
       })
@@ -811,9 +820,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { objectId: firstObject.objectId },
-          {}
+          installationSchema, {
+            objectId: firstObject.objectId
+          }, {}
         )
       )
       .then(results => {
@@ -882,8 +891,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -923,9 +933,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
+          installationSchema, {
+            deviceToken: t
+          }, {}
         )
       )
       .then(results => {
@@ -938,8 +948,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -979,9 +990,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
+          installationSchema, {
+            deviceToken: t
+          }, {}
         )
       )
       .then(results => {
@@ -998,8 +1009,9 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: results[0].objectId },
+          '_Installation', {
+            objectId: results[0].objectId
+          },
           input
         );
       })
@@ -1047,9 +1059,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
+          installationSchema, {
+            deviceToken: t
+          }, {}
         )
       )
       .then(results => {
@@ -1063,17 +1075,18 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: installObj.objectId },
+          '_Installation', {
+            objectId: installObj.objectId
+          },
           input
         );
       })
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { objectId: tokenObj.objectId },
-          {}
+          installationSchema, {
+            objectId: tokenObj.objectId
+          }, {}
         )
       )
       .then(results => {
@@ -1115,9 +1128,9 @@ describe('Installations', () => {
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { deviceToken: t },
-          {}
+          installationSchema, {
+            deviceToken: t
+          }, {}
         )
       )
       .then(results => {
@@ -1135,17 +1148,18 @@ describe('Installations', () => {
         return rest.update(
           config,
           auth.nobody(config),
-          '_Installation',
-          { objectId: installObj.objectId },
+          '_Installation', {
+            objectId: installObj.objectId
+          },
           input
         );
       })
       .then(() =>
         database.adapter.find(
           '_Installation',
-          installationSchema,
-          { objectId: tokenObj.objectId },
-          {}
+          installationSchema, {
+            objectId: tokenObj.objectId
+          }, {}
         )
       )
       .then(results => {
@@ -1225,8 +1239,7 @@ describe('Installations', () => {
         };
         return request({
           headers: headers,
-          url:
-            'http://localhost:8378/1/installations/' +
+          url: 'http://localhost:8378/1/installations/' +
             createResult.response.objectId,
         }).then(response => {
           const body = response.data;
@@ -1292,7 +1305,9 @@ describe('Installations', () => {
           createResult.response.objectId
         );
         installationObj.set('customField', 'custom value');
-        return installationObj.save(null, { useMasterKey: true });
+        return installationObj.save(null, {
+          useMasterKey: true
+        });
       })
       .then(updateResult => {
         expect(updateResult).not.toBeUndefined();
@@ -1319,14 +1334,15 @@ describe('Installations', () => {
         const query = new Parse.Query(Parse.Installation);
         query.equalTo('installationId', installId);
         query
-          .first({ useMasterKey: true })
+          .first({
+            useMasterKey: true
+          })
           .then(installation => {
-            return installation.save(
-              {
-                key: 'value',
-              },
-              { useMasterKey: true }
-            );
+            return installation.save({
+              key: 'value',
+            }, {
+              useMasterKey: true
+            });
           })
           .then(
             () => {
@@ -1353,15 +1369,16 @@ describe('Installations', () => {
         const query = new Parse.Query(Parse.Installation);
         query.equalTo('installationId', installId);
         query
-          .first({ useMasterKey: true })
+          .first({
+            useMasterKey: true
+          })
           .then(installation => {
-            return installation.save(
-              {
-                key: 'value',
-                installationId: '22222222-abcd-abcd-abcd-123456789abc',
-              },
-              { useMasterKey: true }
-            );
+            return installation.save({
+              key: 'value',
+              installationId: '22222222-abcd-abcd-abcd-123456789abc',
+            }, {
+              useMasterKey: true
+            });
           })
           .then(
             () => {
