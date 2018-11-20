@@ -20,7 +20,7 @@ describe('CloudCode _Session Trigger tests', () => {
     });
 
     it('should discard any changes', async () => {
-      Parse.Cloud.beforeSave('_Session', function(req) {
+      Parse.Cloud.beforeSave('_Session', function (req) {
         // perform some changes
         req.object.set('KeyA', 'EDITED_VALUE');
         req.object.set('KeyB', 'EDITED_VALUE');
@@ -59,7 +59,9 @@ describe('CloudCode _Session Trigger tests', () => {
         }
         // make sure this runs correctly
         req.object.set('lastName', '1234');
-        await req.object.save({}, { useMasterKey: true });
+        await req.object.save({}, {
+          useMasterKey: true
+        });
       });
 
       const user = new Parse.User();
@@ -69,7 +71,9 @@ describe('CloudCode _Session Trigger tests', () => {
 
       expect(user.getSessionToken()).toBeUndefined();
       await delay(200); // just so that afterSave has time to run
-      await user.fetch({ useMasterKey: true });
+      await user.fetch({
+        useMasterKey: true
+      });
       expect(user.get('username')).toBe('user-name');
       expect(user.get('firstName')).toBe('abcd');
       expect(user.get('lastName')).toBe('1234');
@@ -120,9 +124,13 @@ describe('CloudCode _Session Trigger tests', () => {
       user.setUsername('some-user-name');
       user.setPassword('password');
       await user.signUp();
-      await user.destroy({ useMasterKey: true });
+      await user.destroy({
+        useMasterKey: true
+      });
       try {
-        await user.fetch({ useMasterKey: true });
+        await user.fetch({
+          useMasterKey: true
+        });
         throw 'User should have been deleted.';
       } catch (error) {
         expect(error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
@@ -132,10 +140,9 @@ describe('CloudCode _Session Trigger tests', () => {
 
   describe('afterDelete', () => {
     it('should work normally', async () => {
-      Parse.Cloud.afterDelete('_Session', function() {
-        const someObject = new Parse.Object('Test');
-        someObject.set('key', 'value');
-        someObject.save();
+      let callCount = 0;
+      Parse.Cloud.afterDelete('_Session', function () {
+        callCount++;
       });
       const user = new Parse.User();
       user.setUsername('some-user-name');
@@ -143,33 +150,22 @@ describe('CloudCode _Session Trigger tests', () => {
       await user.signUp();
       await Parse.User.logOut();
       await delay(200);
-      const query = new Parse.Query('Test');
-      const object = await query.first({
-        useMasterKey: true,
-      });
-      expect(object).toBeDefined();
-      expect(object.get('key')).toBe('value');
+      expect(callCount).toEqual(1)
     });
   });
 
   describe('afterSave', () => {
     it('should work normally', async () => {
-      Parse.Cloud.afterSave('_Session', function() {
-        const someObject = new Parse.Object('Test');
-        someObject.set('key', 'value');
-        someObject.save();
+      let callCount = 0
+      Parse.Cloud.afterSave('_Session', function () {
+        callCount++;
       });
       const user = new Parse.User();
       user.setUsername('some-user-name');
       user.setPassword('password');
       await user.signUp();
       await delay(200);
-      const query = new Parse.Query('Test');
-      const object = await query.first({
-        useMasterKey: true,
-      });
-      expect(object).toBeDefined();
-      expect(object.get('key')).toBe('value');
+      expect(callCount).toEqual(1)
     });
   });
 });
