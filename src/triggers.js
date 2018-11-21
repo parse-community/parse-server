@@ -552,7 +552,7 @@ export function maybeRunTrigger(
       config,
       context
     );
-    var {
+    const {
       success,
       error
     } = getResponseObject(
@@ -616,7 +616,7 @@ export function maybeRunTrigger(
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
 export function inflate(data, restObject) {
-  var copy = typeof data == 'object' ? data : {
+  const copy = typeof data == 'object' ? data : {
     className: data
   };
   for (var key in restObject) {
