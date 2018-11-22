@@ -1,9 +1,33 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...master)
+
+
+### 3.1.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...3.1.1)
+
+#### Improvements:
+* Fixes issue that would prevent users with large number of roles to resolve all of them [Antoine Cormouls](https://github.com/Moumouls) (#5131, #5132)
+* Fixes distinct query on special fields ([#5144](https://github.com/parse-community/parse-server/pull/5144))
+
+
+### 3.1.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...3.1.0)
+
+#### Breaking Changes:
+* Return success on sendPasswordResetEmail even if email not found. (#7fe4030)
+#### Security Fix:
+* Expire password reset tokens on email change (#5104)
+#### Improvements:
+* Live Query CLPs (#4387)
+* Reduces number of calls to injectDefaultSchema (#5107)
+* Remove runtime dependency on request (#5076)
 #### Bug fixes:
-* Fixes issue with vkontatke authentication
+* Fixes issue with vkontatke authentication (#4977)
+* Use the correct function when validating google auth tokens (#5018)
+* fix unexpected 'delete' trigger issue on LiveQuery (#5031)
+* Improves performance for roles and ACL's in live query server (#5126)
 
 
 ### 3.0.0

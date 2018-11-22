@@ -96,6 +96,9 @@ RestWrite.prototype.execute = function() {
       return this.runBeforeTrigger();
     })
     .then(() => {
+      return this.deleteEmailResetTokenIfNeeded();
+    })
+    .then(() => {
       return this.validateSchema();
     })
     .then(() => {
@@ -743,6 +746,22 @@ RestWrite.prototype.createSessionToken = function() {
   }
 
   return createSession();
+};
+
+// Delete email reset tokens if user is changing password or email.
+RestWrite.prototype.deleteEmailResetTokenIfNeeded = function() {
+  if (this.className !== '_User' || this.query === null) {
+    // null query means create
+    return;
+  }
+
+  if ('password' in this.data || 'email' in this.data) {
+    const addOps = {
+      _perishable_token: { __op: 'Delete' },
+      _perishable_token_expires_at: { __op: 'Delete' },
+    };
+    this.data = Object.assign(this.data, addOps);
+  }
 };
 
 RestWrite.prototype.destroyDuplicatedSessions = function() {
@@ -1421,12 +1440,18 @@ RestWrite.prototype.runAfterTrigger = function() {
     this.response.status || 200
   );
 
-  // Notifiy LiveQueryServer if possible
-  this.config.liveQueryController.onAfterSave(
-    updatedObject.className,
-    updatedObject,
-    originalObject
-  );
+  this.config.database.loadSchema().then(schemaController => {
+    // Notifiy LiveQueryServer if possible
+    const perms = schemaController.getClassLevelPermissions(
+      updatedObject.className
+    );
+    this.config.liveQueryController.onAfterSave(
+      updatedObject.className,
+      updatedObject,
+      originalObject,
+      perms
+    );
+  });
 
   // Run afterSave trigger
   return triggers

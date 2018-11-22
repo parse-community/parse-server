@@ -498,7 +498,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are prodvided', done => {
+  it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are provided', done => {
     const adapter = MockEmailAdapterWithOptions({
       fromAddress: 'parse@example.com',
       apiKey: 'k',
@@ -647,7 +647,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('redirects you to invalid link if you try to verify email incorrecly', done => {
+  it('redirects you to invalid link if you try to verify email incorrectly', done => {
     reconfigureServer({
       appName: 'emailing app',
       verifyUserEmails: true,
@@ -828,7 +828,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('should programatically reset password', done => {
+  it('should programmatically reset password', done => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -908,5 +908,59 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         });
       });
     });
+  });
+
+  it('deletes password reset token on email address change', done => {
+    reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+      .then(() => {
+        const config = Config.get('test');
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        user.set('email', 'test@parse.com');
+        return user
+          .signUp(null)
+          .then(() => Parse.User.requestPasswordReset('test@parse.com'))
+          .then(() =>
+            config.database.adapter.find(
+              '_User',
+              { fields: {} },
+              { username: 'zxcv' },
+              { limit: 1 }
+            )
+          )
+          .then(results => {
+            // validate that there is a token
+            expect(results.length).toEqual(1);
+            expect(results[0]['_perishable_token']).not.toBeNull();
+            user.set('email', 'test2@parse.com');
+            return user.save();
+          })
+          .then(() =>
+            config.database.adapter.find(
+              '_User',
+              { fields: {} },
+              { username: 'zxcv' },
+              { limit: 1 }
+            )
+          )
+          .then(results => {
+            expect(results.length).toEqual(1);
+            expect(results[0]['_perishable_token']).toBeUndefined();
+            done();
+          });
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
+        done();
+      });
   });
 });

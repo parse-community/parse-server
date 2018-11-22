@@ -3,6 +3,7 @@
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
+const RestQuery = require('../lib/RestQuery');
 const request = require('../lib/request');
 
 const querystring = require('querystring');
@@ -333,5 +334,33 @@ describe('rest query', () => {
           done();
         }
       );
+  });
+});
+
+describe('RestQuery.each', () => {
+  it('should run each', async () => {
+    const objects = [];
+    while (objects.length != 10) {
+      objects.push(new Parse.Object('Object', { value: objects.length }));
+    }
+    const config = Config.get('test');
+    await Parse.Object.saveAll(objects);
+    const query = new RestQuery(
+      config,
+      auth.master(config),
+      'Object',
+      { value: { $gt: 2 } },
+      { limit: 2 }
+    );
+    const spy = spyOn(query, 'execute').and.callThrough();
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const results = [];
+    await query.each(result => {
+      expect(result.value).toBeGreaterThan(2);
+      results.push(result);
+    });
+    expect(spy.calls.count()).toBe(0);
+    expect(classSpy.calls.count()).toBe(4);
+    expect(results.length).toBe(7);
   });
 });

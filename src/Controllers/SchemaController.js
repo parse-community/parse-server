@@ -1122,18 +1122,28 @@ export default class SchemaController {
     return Promise.resolve(this);
   }
 
-  // Validates the base CLP for an operation
-  testBaseCLP(className: string, aclGroup: string[], operation: string) {
-    const classSchema = this.schemaData[className];
-    if (
-      !classSchema ||
-      !classSchema.classLevelPermissions ||
-      !classSchema.classLevelPermissions[operation]
-    ) {
+  testPermissionsForClassName(
+    className: string,
+    aclGroup: string[],
+    operation: string
+  ) {
+    return SchemaController.testPermissions(
+      this.getClassLevelPermissions(className),
+      aclGroup,
+      operation
+    );
+  }
+
+  // Tests that the class level permission let pass the operation for a given aclGroup
+  static testPermissions(
+    classPermissions: ?any,
+    aclGroup: string[],
+    operation: string
+  ): boolean {
+    if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
-    const perms = classSchema.classLevelPermissions[operation];
-    // Handle the public scenario quickly
+    const perms = classPermissions[operation];
     if (perms['*']) {
       return true;
     }
@@ -1149,21 +1159,22 @@ export default class SchemaController {
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className: string, aclGroup: string[], operation: string) {
-    if (this.testBaseCLP(className, aclGroup, operation)) {
+  static validatePermission(
+    classPermissions: ?any,
+    className: string,
+    aclGroup: string[],
+    operation: string
+  ) {
+    if (
+      SchemaController.testPermissions(classPermissions, aclGroup, operation)
+    ) {
       return Promise.resolve();
     }
-    const classSchema = this.schemaData[className];
-    if (
-      !classSchema ||
-      !classSchema.classLevelPermissions ||
-      !classSchema.classLevelPermissions[operation]
-    ) {
+
+    if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
-    const classPerms = classSchema.classLevelPermissions;
-    const perms = classSchema.classLevelPermissions[operation];
-
+    const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
     if (perms['requiresAuthentication']) {
@@ -1201,14 +1212,31 @@ export default class SchemaController {
 
     // Process the readUserFields later
     if (
-      Array.isArray(classPerms[permissionField]) &&
-      classPerms[permissionField].length > 0
+      Array.isArray(classPermissions[permissionField]) &&
+      classPermissions[permissionField].length > 0
     ) {
       return Promise.resolve();
     }
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       `Permission denied for action ${operation} on class ${className}.`
+    );
+  }
+
+  // Validates an operation passes class-level-permissions set in the schema
+  validatePermission(className: string, aclGroup: string[], operation: string) {
+    return SchemaController.validatePermission(
+      this.getClassLevelPermissions(className),
+      className,
+      aclGroup,
+      operation
+    );
+  }
+
+  getClassLevelPermissions(className: string): any {
+    return (
+      this.schemaData[className] &&
+      this.schemaData[className].classLevelPermissions
     );
   }
 
