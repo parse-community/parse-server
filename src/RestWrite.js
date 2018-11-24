@@ -1272,7 +1272,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
           //n-1 passwords go into history including last password
           while (
             oldPasswords.length >
-            this.config.passwordPolicy.maxPasswordHistory - 2
+            Math.max(0, this.config.passwordPolicy.maxPasswordHistory - 2)
           ) {
             oldPasswords.shift();
           }
