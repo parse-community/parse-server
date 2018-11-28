@@ -297,39 +297,31 @@ class ParseServer {
   static verifyServerUrl(callback) {
     // perform a health check on the serverURL value
     if (Parse.serverURL) {
-      const request = require('request');
-      request(Parse.serverURL.replace(/\/$/, '') + '/health', function(
-        error,
-        response,
-        body
-      ) {
-        let json;
-        try {
-          json = JSON.parse(body);
-        } catch (e) {
-          json = null;
-        }
-        if (
-          error ||
-          response.statusCode !== 200 ||
-          !json ||
-          (json && json.status !== 'ok')
-        ) {
-          /* eslint-disable no-console */
-          console.warn(
-            `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
-              ` Cloud code and push notifications may be unavailable!\n`
-          );
-          /* eslint-enable no-console */
-          if (callback) {
-            callback(false);
+      const request = require('./request');
+      request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
+        .catch(response => response)
+        .then(response => {
+          const json = response.data || null;
+          if (
+            response.status !== 200 ||
+            !json ||
+            (json && json.status !== 'ok')
+          ) {
+            /* eslint-disable no-console */
+            console.warn(
+              `\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+                ` Cloud code and push notifications may be unavailable!\n`
+            );
+            /* eslint-enable no-console */
+            if (callback) {
+              callback(false);
+            }
+          } else {
+            if (callback) {
+              callback(true);
+            }
           }
-        } else {
-          if (callback) {
-            callback(true);
-          }
-        }
-      });
+        });
     }
   }
 }

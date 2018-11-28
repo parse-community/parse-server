@@ -1,7 +1,7 @@
 'use strict';
 
 const Parse = require('parse/node');
-const request = require('request-promise');
+const request = require('../lib/request');
 
 // const Config = require('../lib/Config');
 
@@ -143,132 +143,130 @@ describe('Personally Identifiable Information', () => {
   });
 
   it('should not get PII via REST', done => {
-    request
-      .get({
-        url: 'http://localhost:8378/1/classes/_User',
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-        },
-      })
+    request({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      },
+    })
       .then(
-        result => {
+        response => {
+          const result = response.data;
           const fetchedUser = result.results[0];
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(undefined);
         },
         e => console.error('error', e.message)
       )
-      .done(() => done());
+      .then(done)
+      .catch(done.fail);
   });
 
   it('should get PII via REST with self credentials', done => {
-    request
-      .get({
-        url: 'http://localhost:8378/1/classes/_User',
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-          'X-Parse-Session-Token': user.getSessionToken(),
-        },
-      })
+    request({
+      url: 'http://localhost:8378/1/classes/_User',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    })
       .then(
-        result => {
+        response => {
+          const result = response.data;
           const fetchedUser = result.results[0];
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(EMAIL);
         },
         e => console.error('error', e.message)
       )
-      .done(() => done());
+      .then(done);
   });
 
   it('should get PII via REST using master key', done => {
-    request
-      .get({
-        url: 'http://localhost:8378/1/classes/_User',
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
-      })
+    request({
+      url: 'http://localhost:8378/1/classes/_User',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    })
       .then(
-        result => {
+        response => {
+          const result = response.data;
           const fetchedUser = result.results[0];
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(EMAIL);
         },
         e => console.error('error', e.message)
       )
-      .done(() => done());
+      .then(() => done());
   });
 
   it('should not get PII via REST by ID', done => {
-    request
-      .get({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-        },
-      })
+    request({
+      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      },
+    })
       .then(
-        result => {
-          const fetchedUser = result;
+        response => {
+          const fetchedUser = response.data;
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(undefined);
         },
-        e => console.error('error', e.message)
+        e => done.fail(e)
       )
-      .done(() => done());
+      .then(() => done());
   });
 
   it('should get PII via REST by ID  with self credentials', done => {
-    request
-      .get({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-          'X-Parse-Session-Token': user.getSessionToken(),
-        },
-      })
+    request({
+      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+        'X-Parse-Session-Token': user.getSessionToken(),
+      },
+    })
       .then(
-        result => {
+        response => {
+          const result = response.data;
           const fetchedUser = result;
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(EMAIL);
         },
         e => console.error('error', e.message)
       )
-      .done(() => done());
+      .then(() => done());
   });
 
   it('should get PII via REST by ID  with master key', done => {
-    request
-      .get({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
-      })
+    request({
+      url: `http://localhost:8378/1/classes/_User/${user.id}`,
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    })
       .then(
-        result => {
+        response => {
+          const result = response.data;
           const fetchedUser = result;
           expect(fetchedUser.zip).toBe(ZIP);
           expect(fetchedUser.email).toBe(EMAIL);
         },
         e => console.error('error', e.message)
       )
-      .done(() => done());
+      .then(() => done());
   });
 
   describe('with configured sensitive fields', () => {
@@ -317,14 +315,11 @@ describe('Personally Identifiable Information', () => {
         userObj.id = user.id;
         userObj
           .fetch({ useMasterKey: true })
-          .then(
-            fetchedUser => {
-              expect(fetchedUser.get('email')).toBe(EMAIL);
-              expect(fetchedUser.get('zip')).toBe(ZIP);
-              expect(fetchedUser.get('ssn')).toBe(SSN);
-            },
-            e => console.error('error', e)
-          )
+          .then(fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(EMAIL);
+            expect(fetchedUser.get('zip')).toBe(ZIP);
+            expect(fetchedUser.get('ssn')).toBe(SSN);
+          }, done.fail)
           .then(done)
           .catch(done.fail);
       });
@@ -397,138 +392,131 @@ describe('Personally Identifiable Information', () => {
     });
 
     it('should not get PII via REST', done => {
-      request
-        .get({
-          url: 'http://localhost:8378/1/classes/_User',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Javascript-Key': 'test',
-          },
-        })
-        .then(
-          result => {
-            const fetchedUser = result.results[0];
-            expect(fetchedUser.zip).toBe(undefined);
-            expect(fetchedUser.ssn).toBe(undefined);
-            expect(fetchedUser.email).toBe(undefined);
-          },
-          e => console.error('error', e.message)
-        )
+      request({
+        url: 'http://localhost:8378/1/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+      })
+        .then(response => {
+          const result = response.data;
+          const fetchedUser = result.results[0];
+          expect(fetchedUser.zip).toBe(undefined);
+          expect(fetchedUser.ssn).toBe(undefined);
+          expect(fetchedUser.email).toBe(undefined);
+        }, done.fail)
         .then(done)
         .catch(done.fail);
     });
 
     it('should get PII via REST with self credentials', done => {
-      request
-        .get({
-          url: 'http://localhost:8378/1/classes/_User',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Javascript-Key': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-          },
-        })
+      request({
+        url: 'http://localhost:8378/1/classes/_User',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      })
         .then(
-          result => {
+          response => {
+            const result = response.data;
             const fetchedUser = result.results[0];
             expect(fetchedUser.zip).toBe(ZIP);
             expect(fetchedUser.email).toBe(EMAIL);
             expect(fetchedUser.ssn).toBe(SSN);
           },
-          e => console.error('error', e.message)
+          () => {}
         )
         .then(done)
         .catch(done.fail);
     });
 
     it('should get PII via REST using master key', done => {
-      request
-        .get({
-          url: 'http://localhost:8378/1/classes/_User',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
-        })
+      request({
+        url: 'http://localhost:8378/1/classes/_User',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      })
         .then(
-          result => {
+          response => {
+            const result = response.data;
             const fetchedUser = result.results[0];
             expect(fetchedUser.zip).toBe(ZIP);
             expect(fetchedUser.email).toBe(EMAIL);
             expect(fetchedUser.ssn).toBe(SSN);
           },
-          e => console.error('error', e.message)
+          e => done.fail(e.data)
         )
         .then(done)
         .catch(done.fail);
     });
 
     it('should not get PII via REST by ID', done => {
-      request
-        .get({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Javascript-Key': 'test',
-          },
-        })
+      request({
+        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+        },
+      })
         .then(
-          result => {
-            const fetchedUser = result;
+          response => {
+            const fetchedUser = response.data;
             expect(fetchedUser.zip).toBe(undefined);
             expect(fetchedUser.email).toBe(undefined);
           },
-          e => console.error('error', e.message)
+          e => done.fail(e.data)
         )
         .then(done)
         .catch(done.fail);
     });
 
     it('should get PII via REST by ID  with self credentials', done => {
-      request
-        .get({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Javascript-Key': 'test',
-            'X-Parse-Session-Token': user.getSessionToken(),
-          },
-        })
+      request({
+        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+        },
+      })
         .then(
-          result => {
-            const fetchedUser = result;
+          response => {
+            const fetchedUser = response.data;
             expect(fetchedUser.zip).toBe(ZIP);
             expect(fetchedUser.email).toBe(EMAIL);
           },
-          e => console.error('error', e.message)
+          () => {}
         )
         .then(done)
         .catch(done.fail);
     });
 
     it('should get PII via REST by ID  with master key', done => {
-      request
-        .get({
-          url: `http://localhost:8378/1/classes/_User/${user.id}`,
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Javascript-Key': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
-        })
+      request({
+        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      })
         .then(
-          result => {
+          response => {
+            const result = response.data;
             const fetchedUser = result;
             expect(fetchedUser.zip).toBe(ZIP);
             expect(fetchedUser.email).toBe(EMAIL);
           },
-          e => console.error('error', e.message)
+          e => done.fail(e.data)
         )
         .then(done)
         .catch(done.fail);

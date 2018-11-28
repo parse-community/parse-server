@@ -4,7 +4,7 @@
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
-
+const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 // restOptions can include:
 //   skip
@@ -197,6 +197,36 @@ RestQuery.prototype.execute = function(executeOptions) {
     .then(() => {
       return this.response;
     });
+};
+
+RestQuery.prototype.each = function(callback) {
+  const { config, auth, className, restWhere, restOptions, clientSDK } = this;
+  // if the limit is set, use it
+  restOptions.limit = restOptions.limit || 100;
+  restOptions.order = 'objectId';
+  let finished = false;
+
+  return continueWhile(
+    () => {
+      return !finished;
+    },
+    async () => {
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK
+      );
+      const { results } = await query.execute();
+      results.forEach(callback);
+      finished = results.length < restOptions.limit;
+      if (!finished) {
+        restWhere.objectId = { $gt: results[results.length - 1].objectId };
+      }
+    }
+  );
 };
 
 RestQuery.prototype.buildRestWhere = function() {

@@ -6,7 +6,7 @@ const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const Parse = require('parse/node').Parse;
 const rest = require('../lib/rest');
-const request = require('request');
+const request = require('../lib/request');
 
 let config;
 let database;
@@ -1223,19 +1223,16 @@ describe('Installations', () => {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         };
-        request.get(
-          {
-            headers: headers,
-            url:
-              'http://localhost:8378/1/installations/' +
-              createResult.response.objectId,
-            json: true,
-          },
-          (error, response, body) => {
-            expect(body.objectId).toEqual(createResult.response.objectId);
-            done();
-          }
-        );
+        return request({
+          headers: headers,
+          url:
+            'http://localhost:8378/1/installations/' +
+            createResult.response.objectId,
+        }).then(response => {
+          const body = response.data;
+          expect(body.objectId).toEqual(createResult.response.objectId);
+          done();
+        });
       })
       .catch(error => {
         console.log(error);
@@ -1259,21 +1256,20 @@ describe('Installations', () => {
           'X-Parse-REST-API-Key': 'rest',
           'X-Parse-Installation-Id': installId,
         };
-        request.post(
-          {
-            headers: headers,
-            url: 'http://localhost:8378/1/classes/_Installation',
-            json: true,
-            body: {
-              date: new Date(),
-            },
+        request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/classes/_Installation',
+          json: true,
+          body: {
+            date: new Date(),
           },
-          (error, response, body) => {
-            expect(response.statusCode).toBe(200);
-            expect(body.updatedAt).not.toBeUndefined();
-            done();
-          }
-        );
+        }).then(response => {
+          const body = response.data;
+          expect(response.status).toBe(200);
+          expect(body.updatedAt).not.toBeUndefined();
+          done();
+        });
       })
       .catch(error => {
         console.log(error);

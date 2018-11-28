@@ -184,7 +184,9 @@ Auth.prototype.getUserRoles = function() {
   return this.rolePromise;
 };
 
-Auth.prototype.getRolesForUser = function() {
+Auth.prototype.getRolesForUser = async function() {
+  //Stack all Parse.Role
+  const results = [];
   if (this.config) {
     const restWhere = {
       users: {
@@ -193,20 +195,19 @@ Auth.prototype.getRolesForUser = function() {
         objectId: this.user.id,
       },
     };
-    const query = new RestQuery(
+    await new RestQuery(
       this.config,
       master(this.config),
       '_Role',
       restWhere,
       {}
-    );
-    return query.execute().then(({ results }) => results);
+    ).each(result => results.push(result));
+  } else {
+    await new Parse.Query(Parse.Role)
+      .equalTo('users', this.user)
+      .each(result => results.push(result.toJSON()), { useMasterKey: true });
   }
-
-  return new Parse.Query(Parse.Role)
-    .equalTo('users', this.user)
-    .find({ useMasterKey: true })
-    .then(results => results.map(obj => obj.toJSON()));
+  return results;
 };
 
 // Iterates through the role tree and compiles a user's roles
@@ -262,19 +263,11 @@ Auth.prototype.cacheRoles = function() {
   return true;
 };
 
-Auth.prototype.getRolesByIds = function(ins) {
-  const roles = ins.map(id => {
-    return {
-      __type: 'Pointer',
-      className: '_Role',
-      objectId: id,
-    };
-  });
-  const restWhere = { roles: { $in: roles } };
-
+Auth.prototype.getRolesByIds = async function(ins) {
+  const results = [];
   // Build an OR query across all parentRoles
   if (!this.config) {
-    return new Parse.Query(Parse.Role)
+    await new Parse.Query(Parse.Role)
       .containedIn(
         'roles',
         ins.map(id => {
@@ -283,13 +276,25 @@ Auth.prototype.getRolesByIds = function(ins) {
           return role;
         })
       )
-      .find({ useMasterKey: true })
-      .then(results => results.map(obj => obj.toJSON()));
+      .each(result => results.push(result.toJSON()), { useMasterKey: true });
+  } else {
+    const roles = ins.map(id => {
+      return {
+        __type: 'Pointer',
+        className: '_Role',
+        objectId: id,
+      };
+    });
+    const restWhere = { roles: { $in: roles } };
+    await new RestQuery(
+      this.config,
+      master(this.config),
+      '_Role',
+      restWhere,
+      {}
+    ).each(result => results.push(result));
   }
-
-  return new RestQuery(this.config, master(this.config), '_Role', restWhere, {})
-    .execute()
-    .then(({ results }) => results);
+  return results;
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names

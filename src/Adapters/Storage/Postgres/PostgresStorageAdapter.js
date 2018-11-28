@@ -1442,7 +1442,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     for (const fieldName in update) {
       const fieldValue = update[fieldName];
-      if (fieldValue === null) {
+      // Drop any undefined values.
+      if (typeof fieldValue === 'undefined') {
+        delete update[fieldName];
+      } else if (fieldValue === null) {
         updatePatterns.push(`$${index}:name = NULL`);
         values.push(fieldName);
         index += 1;

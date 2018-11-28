@@ -381,6 +381,48 @@ const convertAdapterSchemaToParseSchema = ({ ...schema }) => {
   return schema;
 };
 
+class SchemaData {
+  __data: any;
+  constructor(allSchemas = []) {
+    this.__data = {};
+    allSchemas.forEach(schema => {
+      Object.defineProperty(this, schema.className, {
+        get: () => {
+          if (!this.__data[schema.className]) {
+            const data = {};
+            data.fields = injectDefaultSchema(schema).fields;
+            data.classLevelPermissions = schema.classLevelPermissions;
+            data.indexes = schema.indexes;
+            this.__data[schema.className] = data;
+          }
+          return this.__data[schema.className];
+        },
+      });
+    });
+
+    // Inject the in-memory classes
+    volatileClasses.forEach(className => {
+      Object.defineProperty(this, className, {
+        get: () => {
+          if (!this.__data[className]) {
+            const schema = injectDefaultSchema({
+              className,
+              fields: {},
+              classLevelPermissions: {},
+            });
+            const data = {};
+            data.fields = schema.fields;
+            data.classLevelPermissions = schema.classLevelPermissions;
+            data.indexes = schema.indexes;
+            this.__data[className] = data;
+          }
+          return this.__data[className];
+        },
+      });
+    });
+  }
+}
+
 const injectDefaultSchema = ({
   className,
   fields,
@@ -469,21 +511,14 @@ const typeToString = (type: SchemaField | string): string => {
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
   _dbAdapter: StorageAdapter;
-  data: any;
-  perms: any;
-  indexes: any;
+  schemaData: { [string]: Schema };
   _cache: any;
   reloadDataPromise: Promise<any>;
 
   constructor(databaseAdapter: StorageAdapter, schemaCache: any) {
     this._dbAdapter = databaseAdapter;
     this._cache = schemaCache;
-    // this.data[className][fieldName] tells you the type of that field, in mongo format
-    this.data = {};
-    // this.perms[className][operation] tells you the acl-style permissions
-    this.perms = {};
-    // this.indexes[className][operation] tells you the indexes
-    this.indexes = {};
+    this.schemaData = new SchemaData();
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -500,35 +535,11 @@ export default class SchemaController {
       .then(() => {
         return this.getAllClasses(options).then(
           allSchemas => {
-            const data = {};
-            const perms = {};
-            const indexes = {};
-            allSchemas.forEach(schema => {
-              data[schema.className] = injectDefaultSchema(schema).fields;
-              perms[schema.className] = schema.classLevelPermissions;
-              indexes[schema.className] = schema.indexes;
-            });
-
-            // Inject the in-memory classes
-            volatileClasses.forEach(className => {
-              const schema = injectDefaultSchema({
-                className,
-                fields: {},
-                classLevelPermissions: {},
-              });
-              data[className] = schema.fields;
-              perms[className] = schema.classLevelPermissions;
-              indexes[className] = schema.indexes;
-            });
-            this.data = data;
-            this.perms = perms;
-            this.indexes = indexes;
+            this.schemaData = new SchemaData(allSchemas);
             delete this.reloadDataPromise;
           },
           err => {
-            this.data = {};
-            this.perms = {};
-            this.indexes = {};
+            this.schemaData = new SchemaData();
             delete this.reloadDataPromise;
             throw err;
           }
@@ -575,11 +586,12 @@ export default class SchemaController {
     }
     return promise.then(() => {
       if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+        const data = this.schemaData[className];
         return Promise.resolve({
           className,
-          fields: this.data[className],
-          classLevelPermissions: this.perms[className],
-          indexes: this.indexes[className],
+          fields: data.fields,
+          classLevelPermissions: data.classLevelPermissions,
+          indexes: data.indexes,
         });
       }
       return this._cache.getOneSchema(className).then(cached => {
@@ -730,16 +742,14 @@ export default class SchemaController {
             .then(() => this.reloadData({ clearCache: true }))
             //TODO: Move this logic into the database adapter
             .then(() => {
+              const schema = this.schemaData[className];
               const reloadedSchema: Schema = {
                 className: className,
-                fields: this.data[className],
-                classLevelPermissions: this.perms[className],
+                fields: schema.fields,
+                classLevelPermissions: schema.classLevelPermissions,
               };
-              if (
-                this.indexes[className] &&
-                Object.keys(this.indexes[className]).length !== 0
-              ) {
-                reloadedSchema.indexes = this.indexes[className];
+              if (schema.indexes && Object.keys(schema.indexes).length !== 0) {
+                reloadedSchema.indexes = schema.indexes;
               }
               return reloadedSchema;
             })
@@ -760,7 +770,7 @@ export default class SchemaController {
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
   enforceClassExists(className: string): Promise<SchemaController> {
-    if (this.data[className]) {
+    if (this.schemaData[className]) {
       return Promise.resolve(this);
     }
     // We don't have this class. Update the schema
@@ -777,7 +787,7 @@ export default class SchemaController {
         })
         .then(() => {
           // Ensure that the schema now validates
-          if (this.data[className]) {
+          if (this.schemaData[className]) {
             return this;
           } else {
             throw new Parse.Error(
@@ -801,7 +811,7 @@ export default class SchemaController {
     fields: SchemaFields = {},
     classLevelPermissions: any
   ): any {
-    if (this.data[className]) {
+    if (this.schemaData[className]) {
       throw new Parse.Error(
         Parse.Error.INVALID_CLASS_NAME,
         `Class ${className} already exists.`
@@ -1112,14 +1122,28 @@ export default class SchemaController {
     return Promise.resolve(this);
   }
 
-  // Validates the base CLP for an operation
-  testBaseCLP(className: string, aclGroup: string[], operation: string) {
-    if (!this.perms[className] || !this.perms[className][operation]) {
+  testPermissionsForClassName(
+    className: string,
+    aclGroup: string[],
+    operation: string
+  ) {
+    return SchemaController.testPermissions(
+      this.getClassLevelPermissions(className),
+      aclGroup,
+      operation
+    );
+  }
+
+  // Tests that the class level permission let pass the operation for a given aclGroup
+  static testPermissions(
+    classPermissions: ?any,
+    aclGroup: string[],
+    operation: string
+  ): boolean {
+    if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
-    const classPerms = this.perms[className];
-    const perms = classPerms[operation];
-    // Handle the public scenario quickly
+    const perms = classPermissions[operation];
     if (perms['*']) {
       return true;
     }
@@ -1135,17 +1159,22 @@ export default class SchemaController {
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className: string, aclGroup: string[], operation: string) {
-    if (this.testBaseCLP(className, aclGroup, operation)) {
+  static validatePermission(
+    classPermissions: ?any,
+    className: string,
+    aclGroup: string[],
+    operation: string
+  ) {
+    if (
+      SchemaController.testPermissions(classPermissions, aclGroup, operation)
+    ) {
       return Promise.resolve();
     }
 
-    if (!this.perms[className] || !this.perms[className][operation]) {
+    if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
-    const classPerms = this.perms[className];
-    const perms = classPerms[operation];
-
+    const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
     if (perms['requiresAuthentication']) {
@@ -1183,8 +1212,8 @@ export default class SchemaController {
 
     // Process the readUserFields later
     if (
-      Array.isArray(classPerms[permissionField]) &&
-      classPerms[permissionField].length > 0
+      Array.isArray(classPermissions[permissionField]) &&
+      classPermissions[permissionField].length > 0
     ) {
       return Promise.resolve();
     }
@@ -1194,14 +1223,31 @@ export default class SchemaController {
     );
   }
 
+  // Validates an operation passes class-level-permissions set in the schema
+  validatePermission(className: string, aclGroup: string[], operation: string) {
+    return SchemaController.validatePermission(
+      this.getClassLevelPermissions(className),
+      className,
+      aclGroup,
+      operation
+    );
+  }
+
+  getClassLevelPermissions(className: string): any {
+    return (
+      this.schemaData[className] &&
+      this.schemaData[className].classLevelPermissions
+    );
+  }
+
   // Returns the expected type for a className+key combination
   // or undefined if the schema is not set
   getExpectedType(
     className: string,
     fieldName: string
   ): ?(SchemaField | string) {
-    if (this.data && this.data[className]) {
-      const expectedType = this.data[className][fieldName];
+    if (this.schemaData[className]) {
+      const expectedType = this.schemaData[className].fields[fieldName];
       return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
@@ -1209,7 +1255,7 @@ export default class SchemaController {
 
   // Checks if a given class is in the schema.
   hasClass(className: string) {
-    return this.reloadData().then(() => !!this.data[className]);
+    return this.reloadData().then(() => !!this.schemaData[className]);
   }
 }
 

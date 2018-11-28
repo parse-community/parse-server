@@ -266,10 +266,13 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
-      if (typeof error === 'string') {
-        return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
+      if (error instanceof Parse.Error) {
+        reject(error);
+      } else if (error instanceof Error) {
+        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error.message));
+      } else {
+        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
       }
-      return reject(error);
     },
   };
 }

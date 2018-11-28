@@ -357,10 +357,11 @@ export class UsersRouter extends ClassesRouter {
       },
       err => {
         if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-          throw new Parse.Error(
-            Parse.Error.EMAIL_NOT_FOUND,
-            `No user found with email ${email}.`
-          );
+          // Return success so that this endpoint can't
+          // be used to enumerate valid emails
+          return Promise.resolve({
+            response: {},
+          });
         } else {
           throw err;
         }
