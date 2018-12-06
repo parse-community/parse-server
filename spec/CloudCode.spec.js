@@ -179,6 +179,24 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('test beforeSave returns value on create and update when beforeSave returns true', done => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
+      req.object.set('foo', 'baz');
+      return true;
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bing');
+    obj.save().then(() => {
+      expect(obj.get('foo')).toEqual('baz');
+      obj.set('foo', 'bar');
+      return obj.save().then(() => {
+        expect(obj.get('foo')).toEqual('baz');
+        done();
+      });
+    });
+  });
+
   it('test afterSave ran and created an object', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest', function(req) {
       const obj = new Parse.Object('AfterSaveProof');
