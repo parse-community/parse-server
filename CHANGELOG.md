@@ -1,8 +1,14 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...master)
 
+### 3.1.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...3.1.2)
+
+- Removes dev script, use TDD instead of server.
+- Removes nodemon and problematic dependencies.
+- Addressed event-stream security debacle.
 
 ### 3.1.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...3.1.1)
