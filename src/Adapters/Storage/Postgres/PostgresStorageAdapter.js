@@ -969,6 +969,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
 
+    debug(qs, values);
     return conn.task('create-table', function*(t) {
       try {
         yield self._ensureSchemaCollectionExists(t);
@@ -1426,6 +1427,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
     schema = toPostgresSchema(schema);
 
     const originalUpdate = { ...update };
+
+    // Set flag for dot notation fields
+    const dotNotationOptions = {};
+    Object.keys(update).forEach(fieldName => {
+      if (fieldName.indexOf('.') > -1) {
+        const components = fieldName.split('.');
+        const first = components.shift();
+        dotNotationOptions[first] = true;
+      } else {
+        dotNotationOptions[fieldName] = false;
+      }
+    });
     update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
@@ -1615,13 +1628,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
           },
           ''
         );
-
-        updatePatterns.push(
-          `$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index +
-            1 +
-            keysToDelete.length}::jsonb )`
-        );
-
+        if (dotNotationOptions[fieldName]) {
+          // Merge Object
+          updatePatterns.push(
+            `$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index +
+              1 +
+              keysToDelete.length}::jsonb )`
+          );
+        } else {
+          // Override Object
+          updatePatterns.push(
+            `$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index +
+              1 +
+              keysToDelete.length}::jsonb )`
+          );
+        }
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
       } else if (
