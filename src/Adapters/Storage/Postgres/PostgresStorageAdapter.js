@@ -1628,21 +1628,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
           },
           ''
         );
+        // Override Object
+        let updateObject = "'{}'::jsonb";
+
         if (dotNotationOptions[fieldName]) {
           // Merge Object
-          updatePatterns.push(
-            `$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index +
-              1 +
-              keysToDelete.length}::jsonb )`
-          );
-        } else {
-          // Override Object
-          updatePatterns.push(
-            `$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index +
-              1 +
-              keysToDelete.length}::jsonb )`
-          );
+          updateObject = `COALESCE($${index}:name, '{}'::jsonb)`;
         }
+        updatePatterns.push(
+          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index +
+            1 +
+            keysToDelete.length}::jsonb )`
+        );
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
       } else if (
