@@ -179,20 +179,41 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('test beforeSave returns value on create and update when beforeSave returns true', done => {
-    Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
-      req.object.set('foo', 'baz');
+  it('test beforeSave applies changes when beforeSave returns true', done => {
+    Parse.Cloud.beforeSave('Insurance', function(req) {
+      req.object.set('rate', '$49.99/Month');
       return true;
     });
 
-    const obj = new Parse.Object('BeforeSaveChanged');
-    obj.set('foo', 'bing');
-    obj.save().then(() => {
-      expect(obj.get('foo')).toEqual('baz');
-      obj.set('foo', 'bar');
-      return obj.save().then(() => {
-        expect(obj.get('foo')).toEqual('baz');
-        done();
+    const insurance = new Parse.Object('Insurance');
+    insurance.set('rate', '$5.00/Month');
+    insurance.save().then(insurance => {
+      expect(insurance.get('rate')).toEqual('$49.99/Month');
+      done();
+    });
+  });
+
+  it('test beforeSave applies changes and resolves returned promise', done => {
+    Parse.Cloud.beforeSave('Insurance', function(req) {
+      req.object.set('rate', '$49.99/Month');
+      return new Parse.Query('Pet').get(req.object.get('pet').id).then(pet => {
+        pet.set('healthy', true);
+        return pet.save();
+      });
+    });
+
+    const pet = new Parse.Object('Pet');
+    pet.set('healthy', false);
+    pet.save().then(pet => {
+      const insurance = new Parse.Object('Insurance');
+      insurance.set('pet', pet);
+      insurance.set('rate', '$5.00/Month');
+      insurance.save().then(insurance => {
+        expect(insurance.get('rate')).toEqual('$49.99/Month');
+        new Parse.Query('Pet').get(insurance.get('pet').id).then(pet => {
+          expect(pet.get('healthy')).toEqual(true);
+          done();
+        });
       });
     });
   });

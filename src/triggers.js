@@ -573,6 +573,16 @@ export function maybeRunTrigger(
             auth
           );
         }
+
+        // beforeSave is expected to return null (nothing)
+        if (triggerType === Types.beforeSave) {
+          // if the beforeSave returned a promise, return null after the promise is resolved
+          if (promise && typeof promise.then === 'function') {
+            return promise.then(() => null);
+          }
+          return null;
+        }
+
         return promise;
       })
       .then(success, error);
