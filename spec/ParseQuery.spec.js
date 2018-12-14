@@ -4553,17 +4553,17 @@ describe('Parse.Query testing', () => {
   it('can set object type key', async () => {
     const data = { bar: true, baz: 100 };
     const object = new TestObject();
-    object.set('foo', data);
+    object.set('objectField', data);
     await object.save();
 
     const query = new Parse.Query(TestObject);
     let result = await query.get(object.id);
-    equal(result.get('foo'), data);
+    equal(result.get('objectField'), data);
 
-    object.set('foo.baz', 50, { ignoreValidation: true });
+    object.set('objectField.baz', 50, { ignoreValidation: true });
     await object.save();
 
     result = await query.get(object.id);
-    equal(result.get('foo'), { bar: true, baz: 50 });
+    equal(result.get('objectField'), { bar: true, baz: 50 });
   });
 });
