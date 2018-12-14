@@ -4517,4 +4517,53 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(() => done());
   });
+
+  it('can add new config to existing config', async () => {
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: {
+        params: {
+          files: [{ __type: 'File', name: 'name', url: 'http://url' }],
+        },
+      },
+      headers: masterKeyHeaders,
+    });
+
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: {
+        params: { newConfig: 'good' },
+      },
+      headers: masterKeyHeaders,
+    });
+
+    const result = await Parse.Config.get();
+    equal(result.get('files')[0].toJSON(), {
+      __type: 'File',
+      name: 'name',
+      url: 'http://url',
+    });
+    equal(result.get('newConfig'), 'good');
+  });
+
+  it('can set object type key', async () => {
+    const data = { bar: true, baz: 100 };
+    const object = new TestObject();
+    object.set('objectField', data);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    let result = await query.get(object.id);
+    equal(result.get('objectField'), data);
+
+    object.set('objectField.baz', 50, { ignoreValidation: true });
+    await object.save();
+
+    result = await query.get(object.id);
+    equal(result.get('objectField'), { bar: true, baz: 50 });
+  });
 });
