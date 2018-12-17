@@ -44,13 +44,10 @@ RUN npm run prepare && npm run postinstall
 # list all dir/files  - for debugging purposes
 # RUN ls -al
 
-#  ---- UNIT TESTS AND FLOW LINT in stage 3------
+# UNIT TESTS
+# if you want to perform unit testing, do it in the build stage (tests won't be cached, since the build stage cache is invalidated when files change)
 # do not run flow through npm - https://github.com/facebook/flow/issues/3649
-# RUN apk add --no-cache --repository https://nl.alpinelinux.org/alpine/edge/testing flow
-# run unit tests after COPY - any file change will invalidated cached layer and guarantees a new test run
-# make sure flow is removed from pretest in package.json 
 # RUN npm test
-
 
 # ------- Stage 4 - Release ---------
 FROM dependencies AS release
@@ -66,8 +63,9 @@ COPY /views ./views
 # RUN ls -al
 
 # capture git_commit in label
-ARG GIT_COMMIT
-LABEL git_commit=$GIT_COMMIT
+# This is used in the script in /hooks/build.sh which is a trigger used in dockerhub builds
+# ARG SOURCE_COMMIT
+# LABEL SOURCE_COMMIT=$SOURCE_COMMIT
 
 # run as non-root. USER node is provided with node images
 # https://github.com/nodejs/docker-node/blob/master/docs/BestPractices.md#non-root-user
@@ -80,7 +78,8 @@ EXPOSE 1337
 # start with node, not npm
 ENTRYPOINT ["node", "./bin/parse-server", "--"]
 
-# BUILD: docker build -t parse-platform/parse-server:test --build-arg GIT_COMMIT=$(git log -1 --format=%H) .
+# BUILD: docker build -t parse-platform/parse-server:test --build-arg SOURCE_COMMIT=$(git log -1 --format=%H) .
+# docker build -t local/parse-server:local --build-arg GIT_COMMIT=$(git log -1 --format=%H) .
 # RUN (entrypoint sh): sudo docker run --name parse-server --rm -it --entrypoint sh barakbd/parse-server:test
 # to stop at a specific steps add --target flag
 # sudo docker build --target release -t barakbd/parse-server:test .
