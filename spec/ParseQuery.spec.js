@@ -4566,7 +4566,7 @@ describe('Parse.Query testing', () => {
     result = await query.get(object.id);
     equal(result.get('objectField'), { bar: true, baz: 50 });
   });
-  
+
   it('can update numeric array', async () => {
     const data1 = [0, 1.1, 1, -2, 3];
     const data2 = [0, 1.1, 1, -2, 3, 4];
