@@ -4517,4 +4517,27 @@ describe('Parse.Query testing', () => {
       .then(done.fail)
       .catch(() => done());
   });
+
+  it('can update numeric array', async () => {
+    const data1 = [0, 1.1, 1, -2, 3];
+    const data2 = [0, 1.1, 1, -2, 3, 4];
+    const obj1 = new TestObject();
+    obj1.set('array', data1);
+    await obj1.save();
+    equal(obj1.get('array'), data1);
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', obj1.id);
+
+    const result = await query.first();
+    equal(result.get('array'), data1);
+
+    result.set('array', data2);
+    equal(result.get('array'), data2);
+    await result.save();
+    equal(result.get('array'), data2);
+
+    const results = await query.find();
+    equal(results[0].get('array'), data2);
+  });
 });

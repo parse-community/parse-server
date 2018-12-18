@@ -1639,6 +1639,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
               type = 'json';
               break;
             }
+            if (typeof elt == 'number') {
+              type = 'numeric';
+              break;
+            }
           }
           updatePatterns.push(
             `$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`
