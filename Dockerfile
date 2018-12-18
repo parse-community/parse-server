@@ -1,21 +1,36 @@
-FROM node:carbon
+FROM node:lts-alpine as build
 
-RUN mkdir -p /parse-server
-COPY ./ /parse-server/
+RUN apk update; \
+  apk add git;
 
-RUN mkdir -p /parse-server/config
-VOLUME /parse-server/config
+WORKDIR /tmp
+COPY package*.json ./
+RUN npm ci
 
-RUN mkdir -p /parse-server/cloud
-VOLUME /parse-server/cloud
+COPY . .
+RUN npm run build
+
+FROM node:lts-alpine as release
 
 WORKDIR /parse-server
+VOLUME ['/parse-server/cloud', '/parse-server/config']
 
-RUN npm install && \
-    npm run build
+COPY package*.json ./
+RUN npm ci --production
+
+COPY bin bin
+COPY public_html public_html
+COPY views views
+COPY --from=build /tmp/lib lib
 
 ENV PORT=1337
 
+RUN mkdir -p logs
+RUN chown -R node: logs
+
+USER node
+
 EXPOSE $PORT
 
-ENTRYPOINT ["npm", "start", "--"]
+ENTRYPOINT ["node", "./bin/parse-server"]
+
