@@ -76,8 +76,8 @@
     "lint": "flow && eslint --cache ./",
     "build": "babel src/ -d lib/ --copy-files",
     "watch": "babel --watch src/ -d lib/ --copy-files",
-    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
-    "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 nyc jasmine",
+    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
+    "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
     "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'"
