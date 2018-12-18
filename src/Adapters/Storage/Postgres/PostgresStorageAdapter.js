@@ -1647,27 +1647,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
         schema.fields[fieldName] &&
         schema.fields[fieldName].type === 'Array'
       ) {
-        const expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
-        if (expectedType === 'text[]') {
-          updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
-        } else {
-          let type = 'text';
-          for (const elt of fieldValue) {
-            if (typeof elt == 'object') {
-              type = 'json';
-              break;
-            }
-            if (typeof elt == 'number') {
-              type = 'numeric';
-              break;
-            }
+        let sql = `$${index}:name = json_build_array(`;
+        for (let i = 1; i <= fieldValue.length; i += 1) {
+          const element = fieldValue[i - 1];
+          let type = '';
+          if (typeof element == 'object') {
+            type = '::json';
           }
-          updatePatterns.push(
-            `$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`
-          );
+          sql += `$${index + i}${type},`;
         }
-        values.push(fieldName, fieldValue);
-        index += 2;
+        // remove last comma
+        sql = sql.slice(0, -1) + ')';
+
+        updatePatterns.push(sql);
+        values.push(fieldName, ...fieldValue);
+        index += 1 + fieldValue.length;
       } else {
         debug('Not supported update', fieldName, fieldValue);
         return Promise.reject(

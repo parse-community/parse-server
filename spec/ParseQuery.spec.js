@@ -4592,7 +4592,7 @@ describe('Parse.Query testing', () => {
 
   it('can update mixed array', async () => {
     const data1 = [0, 1.1, 'hello world', { foo: 'bar' }];
-    const data2 = [0, 1.1, 'hello world', { foo: 'bar' }, -2];
+    const data2 = [0, 'hello world', 1, { foo: 'bar' }];
     const obj1 = new TestObject();
     obj1.set('array', data1);
     await obj1.save();
@@ -4606,6 +4606,7 @@ describe('Parse.Query testing', () => {
 
     result.set('array', data2);
     equal(result.get('array'), data2);
+
     await result.save();
     equal(result.get('array'), data2);
 
