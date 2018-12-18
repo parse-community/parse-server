@@ -1650,24 +1650,37 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
+          values.push(fieldName, fieldValue);
+          index += 2;
         } else {
-          let type = 'text';
-          for (const elt of fieldValue) {
-            if (typeof elt == 'object') {
-              type = 'json';
-              break;
+          values.push(fieldName);
+          const buildSQLArray = fieldValue => {
+            let pattern = 'json_build_array(';
+            for (let i = 0; i < fieldValue.length; i += 1) {
+              const element = fieldValue[i];
+              let type = '';
+              if (Array.isArray(element)) {
+                pattern += buildSQLArray(element) + ',';
+                continue;
+              } else if (typeof element == 'object') {
+                type = '::json';
+              }
+              values.push(element);
+              pattern += `$${index + 1}${type},`;
+              index += 1;
             }
-            if (typeof elt == 'number') {
-              type = 'numeric';
-              break;
+            // remove last comma
+            if (fieldValue.length > 0) {
+              pattern = pattern.slice(0, -1);
             }
-          }
-          updatePatterns.push(
-            `$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`
-          );
+            pattern += ')';
+            return pattern;
+          };
+          const sql = `$${index}:name = ${buildSQLArray(fieldValue)}`;
+
+          updatePatterns.push(sql);
+          index += 1;
         }
-        values.push(fieldName, fieldValue);
-        index += 2;
       } else {
         debug('Not supported update', fieldName, fieldValue);
         return Promise.reject(
