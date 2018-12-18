@@ -4592,7 +4592,7 @@ describe('Parse.Query testing', () => {
 
   it('can update mixed array', async () => {
     const data1 = [0, 1.1, 'hello world', { foo: 'bar' }];
-    const data2 = [0, 'hello world', 1, { foo: 'bar' }];
+    const data2 = [0, 1, { foo: 'bar' }, [], [1, 2, 'bar']];
     const obj1 = new TestObject();
     obj1.set('array', data1);
     await obj1.save();
