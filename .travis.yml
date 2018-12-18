@@ -28,8 +28,8 @@ env:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
   - NODE_VERSION=8.11.2
   matrix:
-  - MONGODB_VERSION=3.2.13
-  - MONGODB_VERSION=3.4.4
+  - MONGODB_VERSION=4.0.4
+  - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
   - NODE_VERSION=stable
