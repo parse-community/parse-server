@@ -431,9 +431,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           patterns.push(`$${index}:name IS NULL`);
           index = index + 1;
         } else {
-          patterns.push(`$${index}:name ${not} IN (null)`);
-          values.push(fieldName);
-          index += 1;
+          // Handle empty array
+          if (notIn) {
+            patterns.push('1 = 1'); // Return all values
+          } else {
+            patterns.push('1 = 2'); // Return no values
+          }
         }
       };
       if (fieldValue.$in) {

@@ -247,7 +247,7 @@ describe('Parse.Query testing', () => {
     query.notContainedIn('value', []);
 
     const results = await query.find();
-    equal(results.length, 0);
+    equal(results.length, 1);
   });
 
   it('query containedIn on empty array', async () => {
