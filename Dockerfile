@@ -11,12 +11,12 @@ RUN npm run build
 
 # Release stage
 FROM node:lts-alpine as release
+VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server
-VOLUME ['/parse-server/cloud', '/parse-server/config']
 
 COPY package*.json ./
-RUN npm ci --production 
+RUN npm ci --production
 
 COPY bin bin
 COPY public_html public_html
@@ -29,4 +29,3 @@ USER node
 EXPOSE $PORT
 
 ENTRYPOINT ["node", "./bin/parse-server"]
-
