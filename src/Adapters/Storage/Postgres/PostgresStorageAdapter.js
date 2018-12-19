@@ -402,8 +402,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index = index + 1 + inPatterns.length;
     } else if (isInOrNin) {
       var createConstraint = (baseArray, notIn) => {
+        const not = notIn ? ' NOT ' : '';
         if (baseArray.length > 0) {
-          const not = notIn ? ' NOT ' : '';
           if (isArrayField) {
             patterns.push(
               `${not} array_contains($${index}:name, $${index + 1})`
@@ -430,6 +430,13 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           values.push(fieldName);
           patterns.push(`$${index}:name IS NULL`);
           index = index + 1;
+        } else {
+          // Handle empty array
+          if (notIn) {
+            patterns.push('1 = 1'); // Return all values
+          } else {
+            patterns.push('1 = 2'); // Return no values
+          }
         }
       };
       if (fieldValue.$in) {
