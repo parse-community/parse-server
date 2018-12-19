@@ -238,6 +238,30 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it('query notContainedIn on empty array', async () => {
+    const object = new TestObject();
+    object.set('value', 100);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.notContainedIn('value', []);
+
+    const results = await query.find();
+    equal(results.length, 0);
+  });
+
+  it('query containedIn on empty array', async () => {
+    const object = new TestObject();
+    object.set('value', 100);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.containedIn('value', []);
+
+    const results = await query.find();
+    equal(results.length, 0);
+  });
+
   it('query with limit', function(done) {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
