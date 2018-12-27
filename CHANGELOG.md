@@ -46,7 +46,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * Cloud Code handlers have a new interface based on promises.
 * response.success / response.error are removed in Cloud Code
 * Cloud Code runs with Parse-SDK 2.0
-* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}`
+* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}` (REST Only)
 
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router.
