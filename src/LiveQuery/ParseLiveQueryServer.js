@@ -292,7 +292,11 @@ class ParseLiveQueryServer {
                   return null;
                 }
                 const functionName = 'push' + type;
-                client[functionName](requestId, currentParseObject);
+                client[functionName](
+                  requestId,
+                  currentParseObject,
+                  originalParseObject
+                );
               },
               error => {
                 logger.error('Matching ACL error : ', error);
