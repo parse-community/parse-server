@@ -84,7 +84,7 @@ export default class MongoCollection {
     // This is due to countDocuments performing a scan,
     // which greatly increases execution time when being run on large collections.
     // See https://github.com/Automattic/mongoose/issues/6713 for more info regarding this problem.
-    if (typeof (query) !== 'object' || Object.keys(query).length) {
+    if (typeof query !== 'object' || !Object.keys(query).length) {
       return this._mongoCollection.estimatedDocumentCount({
         maxTimeMS,
       });
