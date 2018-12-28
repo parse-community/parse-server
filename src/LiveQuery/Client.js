@@ -78,7 +78,11 @@ class Client {
   }
 
   _pushEvent(type: string): Function {
-    return function(subscriptionId: number, parseObjectJSON: any): void {
+    return function(
+      subscriptionId: number,
+      parseObjectJSON: any,
+      parseOriginalObjectJSON: any
+    ): void {
       const response: Message = {
         op: type,
         clientId: this.id,
@@ -92,6 +96,12 @@ class Client {
           fields = this.subscriptionInfos.get(subscriptionId).fields;
         }
         response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
+        if (typeof parseOriginalObjectJSON !== 'undefined') {
+          response['original'] = this._toJSONWithFields(
+            parseOriginalObjectJSON,
+            fields
+          );
+        }
       }
       Client.pushResponse(this.parseWebSocket, JSON.stringify(response));
     };
