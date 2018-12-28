@@ -97,7 +97,7 @@ class Client {
         }
         response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
         if (typeof parseOriginalObjectJSON !== 'undefined') {
-          response['originalParseObject'] = this._toJSONWithFields(
+          response['original'] = this._toJSONWithFields(
             parseOriginalObjectJSON,
             fields
           );

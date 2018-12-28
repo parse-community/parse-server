@@ -943,8 +943,8 @@ describe('ParseLiveQueryServer', function() {
       const args = parseWebSocket.send.calls.mostRecent().args;
       const toSend = JSON.parse(args[0]);
 
-      expect(toSend.object);
-      expect(toSend.originalParseObject);
+      expect(toSend.object).toBeDefined();
+      expect(toSend.original).toBeDefined();
       done();
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
