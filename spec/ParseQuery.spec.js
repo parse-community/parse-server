@@ -238,6 +238,30 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it('query notContainedIn on empty array', async () => {
+    const object = new TestObject();
+    object.set('value', 100);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.notContainedIn('value', []);
+
+    const results = await query.find();
+    equal(results.length, 1);
+  });
+
+  it('query containedIn on empty array', async () => {
+    const object = new TestObject();
+    object.set('value', 100);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.containedIn('value', []);
+
+    const results = await query.find();
+    equal(results.length, 0);
+  });
+
   it('query with limit', function(done) {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
@@ -4516,5 +4540,101 @@ describe('Parse.Query testing', () => {
     q.find()
       .then(done.fail)
       .catch(() => done());
+  });
+
+  it('can add new config to existing config', async () => {
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: {
+        params: {
+          files: [{ __type: 'File', name: 'name', url: 'http://url' }],
+        },
+      },
+      headers: masterKeyHeaders,
+    });
+
+    await request({
+      method: 'PUT',
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      body: {
+        params: { newConfig: 'good' },
+      },
+      headers: masterKeyHeaders,
+    });
+
+    const result = await Parse.Config.get();
+    equal(result.get('files')[0].toJSON(), {
+      __type: 'File',
+      name: 'name',
+      url: 'http://url',
+    });
+    equal(result.get('newConfig'), 'good');
+  });
+
+  it('can set object type key', async () => {
+    const data = { bar: true, baz: 100 };
+    const object = new TestObject();
+    object.set('objectField', data);
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    let result = await query.get(object.id);
+    equal(result.get('objectField'), data);
+
+    object.set('objectField.baz', 50, { ignoreValidation: true });
+    await object.save();
+
+    result = await query.get(object.id);
+    equal(result.get('objectField'), { bar: true, baz: 50 });
+  });
+
+  it('can update numeric array', async () => {
+    const data1 = [0, 1.1, 1, -2, 3];
+    const data2 = [0, 1.1, 1, -2, 3, 4];
+    const obj1 = new TestObject();
+    obj1.set('array', data1);
+    await obj1.save();
+    equal(obj1.get('array'), data1);
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', obj1.id);
+
+    const result = await query.first();
+    equal(result.get('array'), data1);
+
+    result.set('array', data2);
+    equal(result.get('array'), data2);
+    await result.save();
+    equal(result.get('array'), data2);
+
+    const results = await query.find();
+    equal(results[0].get('array'), data2);
+  });
+
+  it('can update mixed array', async () => {
+    const data1 = [0, 1.1, 'hello world', { foo: 'bar' }];
+    const data2 = [0, 1, { foo: 'bar' }, [], [1, 2, 'bar']];
+    const obj1 = new TestObject();
+    obj1.set('array', data1);
+    await obj1.save();
+    equal(obj1.get('array'), data1);
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', obj1.id);
+
+    const result = await query.first();
+    equal(result.get('array'), data1);
+
+    result.set('array', data2);
+    equal(result.get('array'), data2);
+
+    await result.save();
+    equal(result.get('array'), data2);
+
+    const results = await query.find();
+    equal(results[0].get('array'), data2);
   });
 });

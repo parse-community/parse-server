@@ -26,16 +26,15 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - NODE_VERSION=8.11.2
   matrix:
-  - MONGODB_VERSION=3.2.13
-  - MONGODB_VERSION=3.4.4
+  - MONGODB_VERSION=4.0.4
+  - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=stable
+  - NODE_VERSION=11.4.0
 matrix:
   allow_failures:
-    - env: NODE_VERSION=stable
+    - env: NODE_VERSION=11.4.0
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
