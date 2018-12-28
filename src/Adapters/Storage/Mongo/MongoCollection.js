@@ -80,6 +80,11 @@ export default class MongoCollection {
   }
 
   count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+    // If query is empty, then use estimatedDocumentCount instead.
+    if (typeof (query) !== 'object' || Object.keys(query).length) {
+      return this._mongoCollection.estimatedDocumentCount();
+    }
+
     const countOperation = this._mongoCollection.countDocuments(query, {
       skip,
       limit,
