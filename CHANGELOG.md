@@ -1,7 +1,18 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...master)
+
+### 3.1.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
+
+- Postgres: Fixes support for global configuration
+- Postgres: Fixes support for numeric arrays
+- Postgres: Fixes issue affecting queries on emtpy arrays
+- LiveQuery: Adds support for transmitting the original object
+- Queries: Use estimated count if queyr is empty 
+- Docker: Reduces the size of the docker image to 154Mb
+
 
 ### 3.1.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...3.1.2)
