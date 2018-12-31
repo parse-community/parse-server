@@ -103,7 +103,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         err => {
           expect(err.name).toEqual('MongoError');
           expect(err.code).toEqual(50);
-          expect(err.message).toEqual('operation exceeded time limit');
+          expect(err.message).toMatch('operation exceeded time limit');
           done();
         }
       );
