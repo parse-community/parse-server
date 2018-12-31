@@ -30,7 +30,6 @@ function RestQuery(
   this.clientSDK = clientSDK;
   this.response = null;
   this.findOptions = {};
-  this.isWrite = false;
 
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
@@ -255,12 +254,6 @@ RestQuery.prototype.buildRestWhere = function() {
     .then(() => {
       return this.replaceEquality();
     });
-};
-
-// Marks the query for a write attempt, so we read the proper ACL (write instead of read)
-RestQuery.prototype.forWrite = function() {
-  this.isWrite = true;
-  return this;
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
@@ -644,9 +637,6 @@ RestQuery.prototype.runFind = function(options = {}) {
   }
   if (options.op) {
     findOptions.op = options.op;
-  }
-  if (this.isWrite) {
-    findOptions.isWrite = true;
   }
   return this.config.database
     .find(this.className, this.restWhere, findOptions)

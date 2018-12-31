@@ -2043,6 +2043,22 @@ describe('schemas', () => {
       .catch(done.fail);
   });
 
+  it('regression test for #5177', async () => {
+    Parse.Cloud.beforeSave('AClass', () => {});
+    await setPermissionsOnClass(
+      'AClass',
+      {
+        update: { '*': true },
+      },
+      false
+    );
+    const obj = new Parse.Object('AClass');
+    await obj.save({ key: 1 }, { useMasterKey: true });
+    obj.increment('key', 10);
+    await obj.save();
+    expect(obj.get('key')).toBe(11);
+  });
+
   it('regression test for #2246', done => {
     const profile = new Parse.Object('UserProfile');
     const user = new Parse.User();
