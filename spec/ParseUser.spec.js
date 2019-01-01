@@ -834,7 +834,6 @@ describe('Parse.User testing', () => {
       query.get(user.id).then(freshUser => {
         equal(freshUser.id, user.id);
         equal(freshUser.get('username'), 'alice');
-        Parse.Object.enableSingleInstance();
         done();
       });
     });
@@ -860,7 +859,6 @@ describe('Parse.User testing', () => {
         equal(freshUser.id, user.id);
         // Should be alice, but it depends on batch support.
         equal(freshUser.get('username'), 'bob');
-        Parse.Object.enableSingleInstance();
         done();
       });
     });
@@ -1275,14 +1273,12 @@ describe('Parse.User testing', () => {
   });
 
   it('returns authData when authed and logged in with provider (regression test for #1498)', async done => {
-    Parse.Object.enableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = await Parse.User._logInWith('facebook');
     const userQuery = new Parse.Query(Parse.User);
     userQuery.get(user.id).then(user => {
       expect(user.get('authData')).not.toBeUndefined();
-      Parse.Object.disableSingleInstance();
       done();
     });
   });

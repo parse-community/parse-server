@@ -2044,6 +2044,7 @@ describe('schemas', () => {
   });
 
   it('regression test for #5177', async () => {
+    Parse.Object.disableSingleInstance();
     Parse.Cloud.beforeSave('AClass', () => {});
     await setPermissionsOnClass(
       'AClass',
@@ -2055,8 +2056,8 @@ describe('schemas', () => {
     const obj = new Parse.Object('AClass');
     await obj.save({ key: 1 }, { useMasterKey: true });
     obj.increment('key', 10);
-    await obj.save();
-    expect(obj.get('key')).toBe(11);
+    const objectAgain = await obj.save();
+    expect(objectAgain.get('key')).toBe(11);
   });
 
   it('regression test for #2246', done => {
