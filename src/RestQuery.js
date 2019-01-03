@@ -223,7 +223,9 @@ RestQuery.prototype.each = function(callback) {
       results.forEach(callback);
       finished = results.length < restOptions.limit;
       if (!finished) {
-        restWhere.objectId = { $gt: results[results.length - 1].objectId };
+        restWhere.objectId = Object.assign({}, restWhere.objectId, {
+          $gt: results[results.length - 1].objectId,
+        });
       }
     }
   );
