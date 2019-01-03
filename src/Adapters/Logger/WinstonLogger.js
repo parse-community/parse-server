@@ -8,13 +8,6 @@ import defaults from '../../defaults';
 const logger = winston.createLogger();
 
 function configureTransports(options) {
-  logger.transports.forEach(transport => {
-    if (transport.name === DailyRotateFile.name) {
-      transport.close();
-    }
-    logger.remove(transport);
-  });
-
   const transports = [];
   if (options) {
     const silent = options.silent;
