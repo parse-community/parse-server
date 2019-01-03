@@ -13,28 +13,31 @@ function configureTransports(options) {
     const silent = options.silent;
     delete options.silent;
     if (!_.isUndefined(options.dirname) && !_.isNull(options.dirname)) {
-      transports.push(
-        new DailyRotateFile(
-          Object.assign(
-            {
-              filename: 'parse-server.info',
-            },
-            options,
-            { timestamp: true }
-          )
+      const parseServer = new DailyRotateFile(
+        Object.assign(
+          {
+            filename: 'parse-server.info',
+            json: true,
+          },
+          options,
+          { timestamp: true }
         )
       );
-      transports.push(
-        new DailyRotateFile(
-          Object.assign(
-            {
-              filename: 'parse-server.err',
-            },
-            options,
-            { level: 'error', timestamp: true }
-          )
+      parseServer.name = 'parse-server';
+      transports.push(parseServer);
+
+      const parseServerError = new DailyRotateFile(
+        Object.assign(
+          {
+            filename: 'parse-server.err',
+            json: true,
+          },
+          options,
+          { level: 'error', timestamp: true }
         )
       );
+      parseServerError.name = 'parse-server-error';
+      transports.push(parseServerError);
     }
 
     transports.push(
@@ -42,6 +45,7 @@ function configureTransports(options) {
         Object.assign(
           {
             colorize: true,
+            name: 'console',
             silent,
           },
           options
