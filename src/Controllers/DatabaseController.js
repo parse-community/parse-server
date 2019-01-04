@@ -1141,7 +1141,6 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
-      isWrite,
     }: any = {}
   ): Promise<any> {
     const isMaster = acl === undefined;
@@ -1217,7 +1216,7 @@ class DatabaseController {
                 );
               }
               if (!query) {
-                if (op == 'get') {
+                if (op === 'get') {
                   throw new Parse.Error(
                     Parse.Error.OBJECT_NOT_FOUND,
                     'Object not found.'
@@ -1227,7 +1226,7 @@ class DatabaseController {
                 }
               }
               if (!isMaster) {
-                if (isWrite) {
+                if (op === 'update' || op === 'delete') {
                   query = addWriteACL(query, aclGroup);
                 } else {
                   query = addReadACL(query, aclGroup);

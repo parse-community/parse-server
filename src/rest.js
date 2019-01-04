@@ -112,7 +112,6 @@ function del(config, auth, className, objectId) {
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
-          .forWrite()
           .execute({ op: 'delete' })
           .then(response => {
             if (response && response.results && response.results.length) {
@@ -224,9 +223,9 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
-        return new RestQuery(config, auth, className, restWhere)
-          .forWrite()
-          .execute();
+        return new RestQuery(config, auth, className, restWhere).execute({
+          op: 'update',
+        });
       }
       return Promise.resolve({});
     })
