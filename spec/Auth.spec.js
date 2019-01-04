@@ -200,7 +200,7 @@ describe('Auth', () => {
       expect(cloudRoles.length).toBe(rolesNumber);
     });
 
-    fit('should load all roles for different users with config', async () => {
+    it('should load all roles for different users with config', async () => {
       const rolesNumber = 100;
       const user = new Parse.User();
       await user.signUp({
