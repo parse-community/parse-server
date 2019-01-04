@@ -380,8 +380,10 @@ describe('RestQuery.each', () => {
 
     const config = Config.get('test');
 
-    // Two queries needed since objectId are sorted and we can't know which one
-    // going to be the first and then skip by the $gt added by each
+    /**
+     * Two queries needed since objectId are sorted and we can't know which one
+     * going to be the first and then skip by the $gt added by each
+     */
     const queryOne = new RestQuery(
       config,
       auth.master(config),
