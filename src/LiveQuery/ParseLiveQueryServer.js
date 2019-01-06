@@ -342,6 +342,9 @@ class ParseLiveQueryServer {
         case 'unsubscribe':
           this._handleUnsubscribe(parseWebsocket, request);
           break;
+        case 'request':
+          this._handleRequest(parseWebsocket, request);
+          break;
         default:
           Client.pushError(parseWebsocket, 3, 'Get unknown operation');
           logger.error('Get unknown operation', request.op);
@@ -778,6 +781,63 @@ class ParseLiveQueryServer {
         request.requestId
       }`
     );
+  }
+
+  _handleRequest(parseWebsocket: any, request: any): any {
+    // If we can not find this client, return error to client
+    if (!parseWebsocket.hasOwnProperty('clientId')) {
+      Client.pushError(
+        parseWebsocket,
+        2,
+        'Can not find this client, make sure you connect to server before request'
+      );
+      logger.error(
+        'Can not find this client, make sure you connect to server before request'
+      );
+      return;
+    }
+
+    const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
+    const className = request.query.className;
+    const classObject = request.query.object;
+    const ParseObject = Parse.Object.extend(className);
+    const newInstance = new ParseObject();
+    newInstance
+      .save(
+        classObject,
+        hasMasterKey
+          ? { useMasterKey: true }
+          : { sessionToken: request.sessionToken }
+      )
+      .then(
+        instance => {
+          // The object was saved successfully.
+          Client.pushResponse(
+            parseWebsocket,
+            JSON.stringify({ op: 'requested' })
+          );
+          logger.verbose(
+            `${
+              classObject.objectId !== undefined ? 'Updated' : 'Created'
+            } a ${className} with ObjectID ${instance.objectId}`
+          );
+        },
+        error => {
+          // The save failed.
+          Client.pushError(
+            parseWebsocket,
+            5,
+            `Failed to ${
+              classObject.objectId !== undefined ? 'update' : 'create'
+            } a ${className} Object with Error ${error.message}`
+          );
+          logger.verbose(
+            `Failed to ${
+              classObject.objectId !== undefined ? 'update' : 'create'
+            } a ${className} Object with Error ${error.message}`
+          );
+        }
+      );
   }
 }
 

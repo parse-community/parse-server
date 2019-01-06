@@ -4,7 +4,7 @@ const general = {
   properties: {
     op: {
       type: 'string',
-      enum: ['connect', 'subscribe', 'unsubscribe', 'update'],
+      enum: ['connect', 'subscribe', 'unsubscribe', 'update', 'request'],
     },
   },
   required: ['op'],
@@ -130,12 +130,43 @@ const unsubscribe = {
   additionalProperties: false,
 };
 
+const request = {
+  title: 'Request operation schema',
+  type: 'object',
+  properties: {
+    op: 'request',
+    query: {
+      title: 'Query field schema',
+      type: 'object',
+      properties: {
+        className: {
+          type: 'string',
+        },
+        object: {
+          type: 'object',
+        },
+      },
+      required: ['object', 'className'],
+      additionalProperties: false,
+    },
+    masterKey: {
+      type: 'string',
+    },
+    sessionToken: {
+      type: 'string',
+    },
+  },
+  required: ['op', 'query'],
+  additionalProperties: false,
+};
+
 const RequestSchema = {
   general: general,
   connect: connect,
   subscribe: subscribe,
   update: update,
   unsubscribe: unsubscribe,
+  request: request,
 };
 
 export default RequestSchema;
