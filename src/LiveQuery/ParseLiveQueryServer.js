@@ -14,6 +14,7 @@ import { runLiveQueryEventHandlers } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
+import UserRouter from '../Routers/UsersRouter';
 
 class ParseLiveQueryServer {
   clients: Map;
@@ -98,6 +99,7 @@ class ParseLiveQueryServer {
   _inflateParseObject(message: any): void {
     // Inflate merged object
     const currentParseObject = message.currentParseObject;
+    UserRouter.removeHiddenProperties(currentParseObject);
     let className = currentParseObject.className;
     let parseObject = new Parse.Object(className);
     parseObject._finishFetch(currentParseObject);
@@ -105,6 +107,7 @@ class ParseLiveQueryServer {
     // Inflate original object
     const originalParseObject = message.originalParseObject;
     if (originalParseObject) {
+      UserRouter.removeHiddenProperties(originalParseObject);
       className = originalParseObject.className;
       parseObject = new Parse.Object(className);
       parseObject._finishFetch(originalParseObject);
@@ -289,7 +292,11 @@ class ParseLiveQueryServer {
                   return null;
                 }
                 const functionName = 'push' + type;
-                client[functionName](requestId, currentParseObject);
+                client[functionName](
+                  requestId,
+                  currentParseObject,
+                  originalParseObject
+                );
               },
               error => {
                 logger.error('Matching ACL error : ', error);

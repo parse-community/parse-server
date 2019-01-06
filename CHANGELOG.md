@@ -1,7 +1,18 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...master)
+
+### 3.1.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
+
+- Postgres: Fixes support for global configuration
+- Postgres: Fixes support for numeric arrays
+- Postgres: Fixes issue affecting queries on emtpy arrays
+- LiveQuery: Adds support for transmitting the original object
+- Queries: Use estimated count if queyr is empty 
+- Docker: Reduces the size of the docker image to 154Mb
+
 
 ### 3.1.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...3.1.2)
@@ -46,7 +57,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * Cloud Code handlers have a new interface based on promises.
 * response.success / response.error are removed in Cloud Code
 * Cloud Code runs with Parse-SDK 2.0
-* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}`
+* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}` (REST Only)
 
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router.

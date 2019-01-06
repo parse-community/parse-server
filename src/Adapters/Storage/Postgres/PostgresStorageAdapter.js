@@ -402,8 +402,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index = index + 1 + inPatterns.length;
     } else if (isInOrNin) {
       var createConstraint = (baseArray, notIn) => {
+        const not = notIn ? ' NOT ' : '';
         if (baseArray.length > 0) {
-          const not = notIn ? ' NOT ' : '';
           if (isArrayField) {
             patterns.push(
               `${not} array_contains($${index}:name, $${index + 1})`
@@ -430,6 +430,13 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           values.push(fieldName);
           patterns.push(`$${index}:name IS NULL`);
           index = index + 1;
+        } else {
+          // Handle empty array
+          if (notIn) {
+            patterns.push('1 = 1'); // Return all values
+          } else {
+            patterns.push('1 = 2'); // Return no values
+          }
         }
       };
       if (fieldValue.$in) {
@@ -969,6 +976,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
 
+    debug(qs, values);
     return conn.task('create-table', function*(t) {
       try {
         yield self._ensureSchemaCollectionExists(t);
@@ -1426,6 +1434,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
     schema = toPostgresSchema(schema);
 
     const originalUpdate = { ...update };
+
+    // Set flag for dot notation fields
+    const dotNotationOptions = {};
+    Object.keys(update).forEach(fieldName => {
+      if (fieldName.indexOf('.') > -1) {
+        const components = fieldName.split('.');
+        const first = components.shift();
+        dotNotationOptions[first] = true;
+      } else {
+        dotNotationOptions[fieldName] = false;
+      }
+    });
     update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
@@ -1615,13 +1635,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
           },
           ''
         );
+        // Override Object
+        let updateObject = "'{}'::jsonb";
 
+        if (dotNotationOptions[fieldName]) {
+          // Merge Object
+          updateObject = `COALESCE($${index}:name, '{}'::jsonb)`;
+        }
         updatePatterns.push(
-          `$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index +
+          `$${index}:name = (${updateObject} ${deletePatterns} ${incrementPatterns} || $${index +
             1 +
             keysToDelete.length}::jsonb )`
         );
-
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
       } else if (
@@ -1632,20 +1657,37 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
+          values.push(fieldName, fieldValue);
+          index += 2;
         } else {
-          let type = 'text';
-          for (const elt of fieldValue) {
-            if (typeof elt == 'object') {
-              type = 'json';
-              break;
+          values.push(fieldName);
+          const buildSQLArray = fieldValue => {
+            let pattern = 'json_build_array(';
+            for (let i = 0; i < fieldValue.length; i += 1) {
+              const element = fieldValue[i];
+              let type = '';
+              if (Array.isArray(element)) {
+                pattern += buildSQLArray(element) + ',';
+                continue;
+              } else if (typeof element == 'object') {
+                type = '::json';
+              }
+              values.push(element);
+              pattern += `$${index + 1}${type},`;
+              index += 1;
             }
-          }
-          updatePatterns.push(
-            `$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`
-          );
+            // remove last comma
+            if (fieldValue.length > 0) {
+              pattern = pattern.slice(0, -1);
+            }
+            pattern += ')';
+            return pattern;
+          };
+          const sql = `$${index}:name = ${buildSQLArray(fieldValue)}`;
+
+          updatePatterns.push(sql);
+          index += 1;
         }
-        values.push(fieldName, fieldValue);
-        index += 2;
       } else {
         debug('Not supported update', fieldName, fieldValue);
         return Promise.reject(
