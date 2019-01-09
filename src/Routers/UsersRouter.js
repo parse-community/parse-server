@@ -369,6 +369,45 @@ export class UsersRouter extends ClassesRouter {
     );
   }
 
+  handleResetPasswordSetNew(req) {
+    const config = req.config;
+    if (!config) {
+      this.invalidRequest();
+    }
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+
+    const {
+      username,
+      token,
+      new_password
+    } = req.body;
+
+    if (!username || !token || !new_password) {
+      return this.invalidLink(req);
+    }
+
+    return config.userController.checkResetTokenValidity(username, token)
+        .then(() => {
+              return config.userController.updatePassword(username, token, new_password);
+          },
+          () => {
+            throw new Parse.Error(
+              Parse.Error.OPERATION_FORBIDDEN,
+              'invalid token'
+            );
+          }
+        )
+        .then(() => {
+          return Promise.resolve({
+            response: {}
+          });
+        }, err => {
+          throw err;
+        });
+  }
+
   handleVerificationEmailRequest(req) {
     this._throwOnBadEmailConfig(req);
 
@@ -443,6 +482,9 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
+    });
+    this.route('POST', '/resetPasswordSetNew', req => {
+      return this.handleResetPasswordSetNew(req)
     });
     this.route('POST', '/verificationEmailRequest', req => {
       return this.handleVerificationEmailRequest(req);
