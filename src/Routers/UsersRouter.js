@@ -398,14 +398,14 @@ export class UsersRouter extends ClassesRouter {
           'invalid token'
         );
       }
-    )
-    .then(() => {
-      return Promise.resolve({
-        response: {}
+      )
+      .then(() => {
+        return Promise.resolve({
+          response: {}
+        });
+      }, err => {
+        throw err;
       });
-    }, err => {
-      throw err;
-    });
   }
 
   handleVerificationEmailRequest(req) {
