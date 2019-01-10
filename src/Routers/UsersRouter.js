@@ -390,22 +390,22 @@ export class UsersRouter extends ClassesRouter {
 
     return config.userController.checkResetTokenValidity(username, token)
       .then(() => {
-          return config.userController.updatePassword(username, token, new_password);
-        },
-        () => {
-          throw new Parse.Error(
-            Parse.Error.OPERATION_FORBIDDEN,
-            'invalid token'
-          );
-        }
-      )
-      .then(() => {
-        return Promise.resolve({
-          response: {}
-        });
-      }, err => {
-        throw err;
+        return config.userController.updatePassword(username, token, new_password);
+      },
+      () => {
+        throw new Parse.Error(
+          Parse.Error.OPERATION_FORBIDDEN,
+          'invalid token'
+        );
+      }
+    )
+    .then(() => {
+      return Promise.resolve({
+        response: {}
       });
+    }, err => {
+      throw err;
+    });
   }
 
   handleVerificationEmailRequest(req) {
