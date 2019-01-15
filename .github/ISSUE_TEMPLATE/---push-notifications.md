@@ -8,9 +8,7 @@ about: Issues with setting up or delivering push notifications
 
 **We use GitHub Issues for reporting bugs with parse-server.**
 
-If you have a *question*, you should join the gitter chat where a community of more than 200 parse users gather.
-
-- https://gitter.im/ParsePlatform/Chat
+If you have a *question*, you should join the [Parse Community's Discourse forum](https://community.parseplatform.org/c/parse-server)
 
 If you have a non-bug question, ask on Stack Overflow or Server Fault: 
 - https://stackoverflow.com/questions/tagged/parse.com 
