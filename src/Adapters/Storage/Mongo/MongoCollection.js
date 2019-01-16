@@ -80,6 +80,20 @@ export default class MongoCollection {
   }
 
   count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+    // We have to replace $nearSphere in query by $geoWithin with $centerSphere
+    // see MongoDB doc: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#countDocuments
+    // This is tied to issue #5285 https://github.com/parse-community/parse-server/issues/5285
+    for (const key in query) {
+      if (query[key].$nearSphere) {
+        const geoQuery = {
+          $geoWithin: {
+            $centerSphere: [query[key].$nearSphere, query[key].$maxDistance],
+          },
+        };
+        query[key] = geoQuery;
+      }
+    }
+
     // If query is empty, then use estimatedDocumentCount instead.
     // This is due to countDocuments performing a scan,
     // which greatly increases execution time when being run on large collections.
