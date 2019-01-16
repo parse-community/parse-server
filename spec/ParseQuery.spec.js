@@ -4542,26 +4542,23 @@ describe('Parse.Query testing', () => {
       .catch(() => done());
   });
 
-  it('geo query supports count', done => {
+  it('geo query supports count', async () => {
     const inside = new Parse.GeoPoint(0, 0);
     const outside = new Parse.GeoPoint(20, 20);
+
     const obj1 = new Parse.Object('TestObject', { location: inside });
     const obj2 = new Parse.Object('TestObject', { location: outside });
 
-    const center = new Parse.GeoPoint(0, 0);
-    Parse.Object.saveAll([obj1, obj2])
-      .then(() => {
-        const q = new Parse.Query(TestObject).withinKilometers("location", new Parse.GeoPoint(0,0), 20);
-        return q.count();
-      })
-      .then(count => {
-        equal(count, 1);
-        done();
-      })
-      .catch(error => {
-        fail(error);
-        done();
-      });
+    await Parse.Object.saveAll([obj1, obj2]);
+
+    const q = new Parse.Query(TestObject).withinKilometers(
+      'location',
+      inside,
+      20
+    );
+    const count = await q.count();
+
+    equal(count, 1);
   });
 
   it('can add new config to existing config', async () => {
