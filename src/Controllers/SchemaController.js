@@ -72,6 +72,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     sessionToken: { type: 'String' },
     expiresAt: { type: 'Date' },
     createdWith: { type: 'Object' },
+    twoFactorHash: { type: 'String' },
   },
   _Product: {
     productIdentifier: { type: 'String' },

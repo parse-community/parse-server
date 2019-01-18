@@ -1,10 +1,12 @@
 /**
  * @interface ParseServerOptions
  * @property {String} appId Your Parse Application ID
+ *
  * @property {String} masterKey Your Parse Master Key
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
  * @property {String} appName Sets the app name
+ * @property {Object} twoFactorAuthentication Object to enable two factor authentication
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications

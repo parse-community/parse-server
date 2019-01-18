@@ -60,10 +60,22 @@ const getAuthForSessionToken = async function({
   cacheController,
   sessionToken,
   installationId,
+  sessionTwoFactorToken,
 }) {
+  const {
+    twoFactorAuthentication: { token, mustUsed },
+  } = config;
+
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
-    const userJSON = await cacheController.user.get(sessionToken);
+    let redisUserKey = sessionToken;
+    if (token && sessionTwoFactorToken) {
+      redisUserKey = `${sessionToken}-${cryptoUtils.createHashHmac(
+        token,
+        sessionTwoFactorToken
+      )}`;
+    }
+    const userJSON = await cacheController.user.get(redisUserKey);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
       return Promise.resolve(
@@ -107,6 +119,7 @@ const getAuthForSessionToken = async function({
       'Invalid session token'
     );
   }
+
   const now = new Date(),
     expiresAt = results[0].expiresAt
       ? new Date(results[0].expiresAt.iso)
@@ -118,12 +131,55 @@ const getAuthForSessionToken = async function({
     );
   }
   const obj = results[0]['user'];
+  let encryptTwoFactorToken = '';
+  if (config) {
+    //check if 2FA is enabled
+    if (token) {
+      //check if 2FA is optional or must be used. default false
+      if ((mustUsed || obj.twoFactorActive) && !sessionTwoFactorToken) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_SESSION_TOKEN,
+          '2FA hash not found.'
+        );
+      }
+
+      const { twoFactorHash } = results[0];
+      if (!twoFactorHash) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_SESSION_TOKEN,
+          '2FA hash not found on session.'
+        );
+      }
+      // encrypt two factor token with the two factor config token
+      encryptTwoFactorToken = cryptoUtils.createHashHmac(
+        token,
+        sessionTwoFactorToken
+      );
+
+      // invalid session if it not match with token saved on session
+
+      if (encryptTwoFactorToken !== twoFactorHash) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_SESSION_TOKEN,
+          '2FA hash not match.'
+        );
+      }
+    }
+  }
   delete obj.password;
   obj['className'] = '_User';
   obj['sessionToken'] = sessionToken;
+
+  // if two factor Auth is enabled set user on cache
+  // with key generated merging sessionToken and encryptTwoFactorToken
+  const redisUserKey = encryptTwoFactorToken
+    ? `${sessionToken}-${encryptTwoFactorToken}`
+    : sessionToken;
+
   if (cacheController) {
-    cacheController.user.put(sessionToken, obj);
+    cacheController.user.put(redisUserKey, obj);
   }
+
   const userObject = Parse.Object.fromJSON(obj);
   return new Auth({
     config,
@@ -345,10 +401,17 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(
 
 const createSession = function(
   config,
-  { userId, createdWith, installationId, additionalSessionData }
+  {
+    userId,
+    createdWith,
+    installationId,
+    additionalSessionData,
+    twoFactorActive,
+  }
 ) {
   const token = 'r:' + cryptoUtils.newToken();
   const expiresAt = config.generateSessionExpiresAt();
+
   const sessionData = {
     sessionToken: token,
     user: {
@@ -360,6 +423,18 @@ const createSession = function(
     restricted: false,
     expiresAt: Parse._encode(expiresAt),
   };
+
+  if (config) {
+    const {
+      twoFactorAuthentication: { mustUsed, token, firstSessionExpireTime },
+    } = config;
+    if (mustUsed || (twoFactorActive && token)) {
+      const now = new Date();
+      sessionData.expiresAt = Parse._encode(
+        new Date(now.getTime() + firstSessionExpireTime * 60000)
+      );
+    }
+  }
 
   if (installationId) {
     sessionData.installationId = installationId;

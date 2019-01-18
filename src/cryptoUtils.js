@@ -1,6 +1,6 @@
 /* @flow */
 
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, createHmac } from 'crypto';
 
 // Returns a new random hex string of the given even size.
 export function randomHexString(size: number): string {
@@ -47,4 +47,10 @@ export function md5Hash(string: string): string {
   return createHash('md5')
     .update(string)
     .digest('hex');
+}
+
+export function createHashHmac(token: string, string: string): string {
+  return createHmac('sha256', token)
+    .update(string, 'utf8', 'hex')
+    .digest('base64');
 }

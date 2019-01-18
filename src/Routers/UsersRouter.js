@@ -7,6 +7,8 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
+import * as cryptoUtils from '../cryptoUtils';
+import RestWrite from '../RestWrite';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -163,13 +165,26 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleMe(req) {
+    const {
+      twoFactorAuthentication: { mustUsed },
+    } = req.config;
+
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(
         Parse.Error.INVALID_SESSION_TOKEN,
         'Invalid session token'
       );
     }
+
+    if (mustUsed && !req.info.sessionTwoFactorToken) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        'Invalid session token'
+      );
+    }
+
     const sessionToken = req.info.sessionToken;
+    const sessionTwoFactorToken = req.info.sessionTwoFactorToken || '';
     return rest
       .find(
         req.config,
@@ -193,6 +208,9 @@ export class UsersRouter extends ClassesRouter {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
           user.sessionToken = sessionToken;
+          if (sessionTwoFactorToken) {
+            user.sessionTwoFactorToken = sessionTwoFactorToken;
+          }
 
           // Remove hidden properties.
           UsersRouter.removeHiddenProperties(user);
@@ -202,12 +220,80 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
+  handleTwoFactorValidation(req) {
+    if (!req.info || !req.info.sessionToken) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        'Invalid session token'
+      );
+    }
+    const sessionToken = req.info.sessionToken;
+    if (!req.auth.isMaster) {
+      throw new Parse.Error(
+        Parse.Error.INTERNAL_SERVER_ERROR,
+        'Need masterKey'
+      );
+    }
+
+    return rest
+      .find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken },
+        { include: 'user' },
+        req.info.clientSDK
+      )
+      .then(response => {
+        const { results } = response;
+        const {
+          twoFactorAuthentication: { mustUsed, token },
+        } = req.config;
+
+        if (!results || results.length == 0 || !results[0].user) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token'
+          );
+        }
+
+        if (!mustUsed && !results[0].user.twoFactorActive) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            '2FA not active'
+          );
+        }
+
+        const hashToEncrypt = 'tf:' + cryptoUtils.newToken();
+
+        const expiresAt = req.config.generateSessionExpiresAt();
+        const sessionData = {
+          expiresAt: Parse._encode(expiresAt),
+          twoFactorHash: cryptoUtils.createHashHmac(token, hashToEncrypt),
+        };
+        const session = { sessionToken: results[0].sessionToken };
+
+        return new RestWrite(
+          req.config,
+          Auth.master(req.config),
+          '_Session',
+          session,
+          sessionData
+        )
+          .execute()
+          .then(() => {
+            //send back hashToEncrypt to parse server
+            return { response: hashToEncrypt };
+            //it will be attach on user request like session token
+          });
+      });
+  }
+
   handleLogIn(req) {
     let user;
     return this._authenticateUserFromRequest(req)
       .then(res => {
         user = res;
-
         // handle password expiry policy
         if (
           req.config.passwordPolicy &&
@@ -248,6 +334,7 @@ export class UsersRouter extends ClassesRouter {
 
         const { sessionData, createSession } = Auth.createSession(req.config, {
           userId: user.objectId,
+          twoFactorActive: user.twoFactorActive,
           createdWith: {
             action: 'login',
             authProvider: 'password',
@@ -258,7 +345,6 @@ export class UsersRouter extends ClassesRouter {
         user.sessionToken = sessionData.sessionToken;
 
         req.config.filesController.expandFilesInObject(req.config, user);
-
         return createSession();
       })
       .then(() => {
@@ -438,6 +524,14 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/login', req => {
       return this.handleLogIn(req);
     });
+
+    this.route('GET', '/login/two-factor-validation', req => {
+      return this.handleTwoFactorValidation(req);
+    });
+    this.route('POST', '/login/two-factor-validation', req => {
+      return this.handleTwoFactorValidation(req);
+    });
+
     this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
     });

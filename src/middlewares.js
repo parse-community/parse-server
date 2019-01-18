@@ -19,6 +19,7 @@ export function handleParseHeaders(req, res, next) {
   var info = {
     appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
+    sessionTwoFactorToken: req.get('X-Parse-Session-Two-Factor-Token'),
     masterKey: req.get('X-Parse-Master-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
@@ -84,6 +85,10 @@ export function handleParseHeaders(req, res, next) {
       if (req.body._SessionToken) {
         info.sessionToken = req.body._SessionToken;
         delete req.body._SessionToken;
+      }
+      if (req.body._SessionTwoFactorToken) {
+        info.sessionTwoFactorToken = req.body._SessionTwoFactorToken;
+        delete req.body._SessionTwoFactorToken;
       }
       if (req.body._MasterKey) {
         info.masterKey = req.body._MasterKey;
@@ -166,6 +171,27 @@ export function handleParseHeaders(req, res, next) {
   if (oneKeyConfigured && !oneKeyMatches) {
     return invalidRequest(req, res);
   }
+  if (
+    req.url === '/login/two-factor-validation' &&
+    (!info.sessionToken || info.masterKey !== req.config.masterKey)
+  ) {
+    return invalidRequest(req, res);
+  }
+
+  if (
+    req.url === '/login/two-factor-validation' &&
+    info.sessionToken &&
+    info.masterKey !== req.config.masterKey
+  ) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      sessionToken: info.sessionToken,
+      isMaster: true,
+    });
+    next();
+    return;
+  }
 
   if (req.url == '/login') {
     delete info.sessionToken;
@@ -199,12 +225,14 @@ export function handleParseHeaders(req, res, next) {
           config: req.config,
           installationId: info.installationId,
           sessionToken: info.sessionToken,
+          sessionTwoFactorToken: info.sessionTwoFactorToken,
         });
       }
     })
     .then(auth => {
       if (auth) {
         req.auth = auth;
+
         next();
       }
     })

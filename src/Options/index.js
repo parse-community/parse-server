@@ -24,6 +24,8 @@ export interface ParseServerOptions {
   masterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
+  /* Set two factor authentication options */
+  twoFactorAuthentication: TwoFactorAuthentication;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
@@ -182,6 +184,17 @@ export interface CustomPagesOptions {
   choosePassword: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+}
+
+export interface TwoFactorAuthentication {
+  /* token to encrypt two factor hash on session */
+  token: ?(string[]);
+  /* if true all user have to be authenticated with 2FA. default false */
+  mustUsed: boolean;
+  /* minutes between creation and expiration of
+  session generated on first authentication step.
+  default 4 */
+  firstSessionExpireTime: number;
 }
 
 export interface LiveQueryOptions {
