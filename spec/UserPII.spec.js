@@ -522,4 +522,93 @@ describe('Personally Identifiable Information', () => {
         .catch(done.fail);
     });
   });
+
+  describe('with privilaged user', () => {
+    let adminUser;
+
+    beforeEach(async done => {
+      const adminRole = await new Parse.Role(
+        'Administrator',
+        new Parse.ACL()
+      ).save(null, { useMasterKey: true });
+
+      const managementRole = new Parse.Role(
+        'managementOf_user' + user.id,
+        new Parse.ACL(user)
+      );
+      managementRole.getRoles().add(adminRole);
+      await managementRole.save(null, { useMasterKey: true });
+
+      const userACL = new Parse.ACL();
+      userACL.setReadAccess(managementRole, true);
+      await user.setACL(userACL).save(null, { useMasterKey: true });
+
+      adminUser = await Parse.User.signUp('administrator', 'secure');
+      adminUser = await Parse.User.logIn(adminUser.get('username'), 'secure');
+      await adminRole
+        .getUsers()
+        .add(adminUser)
+        .save(null, { useMasterKey: true });
+
+      done();
+    });
+
+    it('privilaged user should be able to get user PII via API with object', done => {
+      const userObj = new (Parse.Object.extend(Parse.User))();
+      userObj.id = user.id;
+      userObj
+        .fetch()
+        .then(
+          fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(EMAIL);
+          },
+          e => console.error('error', e)
+        )
+        .then(done)
+        .catch(done.fail);
+    });
+
+    it('privilaged user should be able to get user PII via API with Find', done => {
+      new Parse.Query(Parse.User)
+        .equalTo('objectId', user.id)
+        .find()
+        .then(fetchedUser => {
+          expect(fetchedUser.get('email')).toBe(EMAIL);
+          expect(fetchedUser.get('zip')).toBe(ZIP);
+          expect(fetchedUser.get('ssn')).toBe(SSN);
+          done();
+        });
+    });
+
+    it('privilaged user should be able to get user PII via API with Get', done => {
+      new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
+        expect(fetchedUser.get('email')).toBe(EMAIL);
+        expect(fetchedUser.get('zip')).toBe(ZIP);
+        expect(fetchedUser.get('ssn')).toBe(SSN);
+        done();
+      });
+    });
+
+    it('privilaged user should get user PII via REST by ID', done => {
+      request({
+        url: `http://localhost:8378/1/classes/_User/${user.id}`,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Javascript-Key': 'test',
+          'X-Parse-Session-Token': adminUser.getSessionToken(),
+        },
+      })
+        .then(
+          response => {
+            const result = response.data;
+            const fetchedUser = result;
+            expect(fetchedUser.zip).toBe(ZIP);
+            expect(fetchedUser.email).toBe(EMAIL);
+          },
+          e => console.error('error', e.message)
+        )
+        .then(() => done());
+    });
+  });
 });
