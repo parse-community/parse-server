@@ -521,94 +521,216 @@ describe('Personally Identifiable Information', () => {
         .then(done)
         .catch(done.fail);
     });
-  });
 
-  describe('with privilaged user', () => {
-    let adminUser;
+    // Explict ACL should be able to read sensitive information
+    describe('with privilaged user', () => {
+      let adminUser;
 
-    beforeEach(async done => {
-      const adminRole = await new Parse.Role(
-        'Administrator',
-        new Parse.ACL()
-      ).save(null, { useMasterKey: true });
+      beforeEach(async done => {
+        const adminRole = await new Parse.Role(
+          'Administrator',
+          new Parse.ACL()
+        ).save(null, { useMasterKey: true });
 
-      const managementRole = new Parse.Role(
-        'managementOf_user' + user.id,
-        new Parse.ACL(user)
-      );
-      managementRole.getRoles().add(adminRole);
-      await managementRole.save(null, { useMasterKey: true });
+        const managementRole = new Parse.Role(
+          'managementOf_user' + user.id,
+          new Parse.ACL(user)
+        );
+        managementRole.getRoles().add(adminRole);
+        await managementRole.save(null, { useMasterKey: true });
 
-      const userACL = new Parse.ACL();
-      userACL.setReadAccess(managementRole, true);
-      await user.setACL(userACL).save(null, { useMasterKey: true });
+        const userACL = new Parse.ACL();
+        userACL.setReadAccess(managementRole, true);
+        await user.setACL(userACL).save(null, { useMasterKey: true });
 
-      adminUser = await Parse.User.signUp('administrator', 'secure');
-      adminUser = await Parse.User.logIn(adminUser.get('username'), 'secure');
-      await adminRole
-        .getUsers()
-        .add(adminUser)
-        .save(null, { useMasterKey: true });
+        adminUser = await Parse.User.signUp('administrator', 'secure');
+        adminUser = await Parse.User.logIn(adminUser.get('username'), 'secure');
+        await adminRole
+          .getUsers()
+          .add(adminUser)
+          .save(null, { useMasterKey: true });
 
-      done();
-    });
+        done();
+      });
 
-    it('privilaged user should be able to get user PII via API with object', done => {
-      const userObj = new (Parse.Object.extend(Parse.User))();
-      userObj.id = user.id;
-      userObj
-        .fetch()
-        .then(
-          fetchedUser => {
+      it('privilaged user should be able to get user PII via API with object', done => {
+        const userObj = new (Parse.Object.extend(Parse.User))();
+        userObj.id = user.id;
+        userObj
+          .fetch()
+          .then(
+            fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(EMAIL);
+            },
+            e => console.error('error', e)
+          )
+          .then(done)
+          .catch(done.fail);
+      });
+
+      it('privilaged user should be able to get user PII via API with Find', done => {
+        new Parse.Query(Parse.User)
+          .equalTo('objectId', user.id)
+          .find()
+          .then(fetchedUser => {
             expect(fetchedUser.get('email')).toBe(EMAIL);
-          },
-          e => console.error('error', e)
-        )
-        .then(done)
-        .catch(done.fail);
-    });
+            expect(fetchedUser.get('zip')).toBe(ZIP);
+            expect(fetchedUser.get('ssn')).toBe(SSN);
+            done();
+          });
+      });
 
-    it('privilaged user should be able to get user PII via API with Find', done => {
-      new Parse.Query(Parse.User)
-        .equalTo('objectId', user.id)
-        .find()
-        .then(fetchedUser => {
+      it('privilaged user should be able to get user PII via API with Get', done => {
+        new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
           expect(fetchedUser.get('email')).toBe(EMAIL);
           expect(fetchedUser.get('zip')).toBe(ZIP);
           expect(fetchedUser.get('ssn')).toBe(SSN);
           done();
         });
-    });
+      });
 
-    it('privilaged user should be able to get user PII via API with Get', done => {
-      new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
-        expect(fetchedUser.get('email')).toBe(EMAIL);
-        expect(fetchedUser.get('zip')).toBe(ZIP);
-        expect(fetchedUser.get('ssn')).toBe(SSN);
-        done();
+      it('privilaged user should get user PII via REST by ID', done => {
+        request({
+          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Javascript-Key': 'test',
+            'X-Parse-Session-Token': adminUser.getSessionToken(),
+          },
+        })
+          .then(
+            response => {
+              const result = response.data;
+              const fetchedUser = result;
+              expect(fetchedUser.zip).toBe(ZIP);
+              expect(fetchedUser.email).toBe(EMAIL);
+            },
+            e => console.error('error', e.message)
+          )
+          .then(() => done());
       });
     });
 
-    it('privilaged user should get user PII via REST by ID', done => {
-      request({
-        url: `http://localhost:8378/1/classes/_User/${user.id}`,
-        json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-          'X-Parse-Session-Token': adminUser.getSessionToken(),
-        },
-      })
-        .then(
-          response => {
-            const result = response.data;
-            const fetchedUser = result;
-            expect(fetchedUser.zip).toBe(ZIP);
-            expect(fetchedUser.email).toBe(EMAIL);
+    // Public access ACL should always hide sensitive information
+    describe('with public read ACL', () => {
+      beforeEach(async done => {
+        const userACL = new Parse.ACL();
+        userACL.setPublicReadAccess();
+        await user.setACL(userACL).save(null, { useMasterKey: true });
+        done();
+      });
+
+      it('should not be able to get user PII via API with object', done => {
+        Parse.User.logOut().then(() => {
+          const userObj = new (Parse.Object.extend(Parse.User))();
+          userObj.id = user.id;
+          userObj
+            .fetch()
+            .then(
+              fetchedUser => {
+                expect(fetchedUser.get('email')).toBe(undefined);
+              },
+              e => console.error('error', e)
+            )
+            .then(done)
+            .catch(done.fail);
+        });
+      });
+
+      it('should not be able to get user PII via API with Find', done => {
+        Parse.User.logOut().then(() =>
+          new Parse.Query(Parse.User)
+            .equalTo('objectId', user.id)
+            .find()
+            .then(fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(undefined);
+              expect(fetchedUser.get('zip')).toBe(undefined);
+              expect(fetchedUser.get('ssn')).toBe(undefined);
+              done();
+            })
+        );
+      });
+
+      it('should not be able to get user PII via API with Get', done => {
+        Parse.User.logOut().then(() =>
+          new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(undefined);
+            expect(fetchedUser.get('zip')).toBe(undefined);
+            expect(fetchedUser.get('ssn')).toBe(undefined);
+            done();
+          })
+        );
+      });
+
+      it('should not get user PII via REST by ID', done => {
+        request({
+          url: `http://localhost:8378/1/classes/_User/${user.id}`,
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Javascript-Key': 'test',
           },
-          e => console.error('error', e.message)
-        )
-        .then(() => done());
+        })
+          .then(
+            response => {
+              const result = response.data;
+              const fetchedUser = result;
+              expect(fetchedUser.zip).toBe(undefined);
+              expect(fetchedUser.email).toBe(undefined);
+            },
+            e => console.error('error', e.message)
+          )
+          .then(() => done());
+      });
+
+      // Even with an authenticated user, Public read ACL should never expose sensitive data.
+      describe('with another authenticated user', () => {
+        let anotherUser;
+
+        beforeEach(async done => {
+          return Parse.User.signUp('another', 'abc')
+            .then(loggedInUser => (anotherUser = loggedInUser))
+            .then(() => Parse.User.logIn(anotherUser.get('username'), 'abc'))
+            .then(() => done());
+        });
+
+        it('should not be able to get user PII via API with object', done => {
+          const userObj = new (Parse.Object.extend(Parse.User))();
+          userObj.id = user.id;
+          userObj
+            .fetch()
+            .then(
+              fetchedUser => {
+                expect(fetchedUser.get('email')).toBe(undefined);
+              },
+              e => console.error('error', e)
+            )
+            .then(done)
+            .catch(done.fail);
+        });
+
+        it('should not be able to get user PII via API with Find', done => {
+          new Parse.Query(Parse.User)
+            .equalTo('objectId', user.id)
+            .find()
+            .then(fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(undefined);
+              expect(fetchedUser.get('zip')).toBe(undefined);
+              expect(fetchedUser.get('ssn')).toBe(undefined);
+              done();
+            });
+        });
+
+        it('should not be able to get user PII via API with Get', done => {
+          new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(undefined);
+            expect(fetchedUser.get('zip')).toBe(undefined);
+            expect(fetchedUser.get('ssn')).toBe(undefined);
+            done();
+          });
+        });
+      });
     });
   });
 });
