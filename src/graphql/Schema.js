@@ -35,7 +35,6 @@ export class GraphQLParseSchema {
     const graphQLSchema = new GraphQLSchema({
       query: this.Query(),
       mutation: this.Mutation(),
-      subscription: this.Subscription(),
     });
     return { schema: graphQLSchema, rootValue: this.Root() };
   }
@@ -62,15 +61,6 @@ export class GraphQLParseSchema {
 
     return new GraphQLObjectType({
       name: 'Mutation',
-      fields,
-    });
-  }
-
-  Subscription() {
-    const fields = {};
-    Object.assign(fields, ParseClassSchema.Subscription(this.schema));
-    return new GraphQLObjectType({
-      name: 'Subscription',
       fields,
     });
   }
