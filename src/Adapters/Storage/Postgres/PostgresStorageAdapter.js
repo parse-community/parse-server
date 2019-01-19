@@ -2095,32 +2095,34 @@ export class PostgresStorageAdapter implements StorageAdapter {
             index += 1;
             continue;
           }
-          if (value.$sum) {
-            if (typeof value.$sum === 'string') {
-              columns.push(`SUM($${index}:name) AS $${index + 1}:name`);
-              values.push(transformAggregateField(value.$sum), field);
-              index += 2;
-            } else {
-              countField = field;
-              columns.push(`COUNT(*) AS $${index}:name`);
-              values.push(field);
-              index += 1;
+          if (typeof value === 'object') {
+            if (value.$sum) {
+              if (typeof value.$sum === 'string') {
+                columns.push(`SUM($${index}:name) AS $${index + 1}:name`);
+                values.push(transformAggregateField(value.$sum), field);
+                index += 2;
+              } else {
+                countField = field;
+                columns.push(`COUNT(*) AS $${index}:name`);
+                values.push(field);
+                index += 1;
+              }
             }
-          }
-          if (value.$max) {
-            columns.push(`MAX($${index}:name) AS $${index + 1}:name`);
-            values.push(transformAggregateField(value.$max), field);
-            index += 2;
-          }
-          if (value.$min) {
-            columns.push(`MIN($${index}:name) AS $${index + 1}:name`);
-            values.push(transformAggregateField(value.$min), field);
-            index += 2;
-          }
-          if (value.$avg) {
-            columns.push(`AVG($${index}:name) AS $${index + 1}:name`);
-            values.push(transformAggregateField(value.$avg), field);
-            index += 2;
+            if (value.$max) {
+              columns.push(`MAX($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$max), field);
+              index += 2;
+            }
+            if (value.$min) {
+              columns.push(`MIN($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$min), field);
+              index += 2;
+            }
+            if (value.$avg) {
+              columns.push(`AVG($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$avg), field);
+              index += 2;
+            }
           }
         }
       } else {
