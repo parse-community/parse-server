@@ -7,6 +7,12 @@
 [![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
 [![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
 
+
+[![](https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat)]()
+
 Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
@@ -35,7 +41,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-3.0.0)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started

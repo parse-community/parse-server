@@ -1,5 +1,5 @@
 const PushRouter = require('../lib/Routers/PushRouter').PushRouter;
-const request = require('request');
+const request = require('../lib/request');
 
 describe('PushRouter', () => {
   it('can get query condition when channels is set', done => {
@@ -68,27 +68,24 @@ describe('PushRouter', () => {
   });
 
   it('sends a push through REST', done => {
-    request.post(
-      {
-        url: Parse.serverURL + '/push',
-        json: true,
-        body: {
-          channels: {
-            $in: ['Giants', 'Mets'],
-          },
-        },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Master-Key': Parse.masterKey,
+    request({
+      method: 'POST',
+      url: Parse.serverURL + '/push',
+      body: {
+        channels: {
+          $in: ['Giants', 'Mets'],
         },
       },
-      function(err, res, body) {
-        expect(res.headers['x-parse-push-status-id']).not.toBe(undefined);
-        expect(res.headers['x-parse-push-status-id'].length).toBe(10);
-        expect(res.headers['']);
-        expect(body.result).toBe(true);
-        done();
-      }
-    );
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'Content-Type': 'application/json',
+      },
+    }).then(res => {
+      expect(res.headers['x-parse-push-status-id']).not.toBe(undefined);
+      expect(res.headers['x-parse-push-status-id'].length).toBe(10);
+      expect(res.data.result).toBe(true);
+      done();
+    });
   });
 });

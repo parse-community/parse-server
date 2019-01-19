@@ -1,7 +1,7 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_geo_point_test.js
 
-const rp = require('request-promise');
+const request = require('../lib/request');
 const TestObject = Parse.Object.extend('TestObject');
 
 describe('Parse.GeoPoint testing', () => {
@@ -381,17 +381,19 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
       .then(resp => {
-        expect(resp.results.length).toBe(2);
+        expect(resp.data.results.length).toBe(2);
         done();
       }, done.fail);
   });
@@ -418,17 +420,19 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
       .then(resp => {
-        expect(resp.results.length).toBe(2);
+        expect(resp.data.results.length).toBe(2);
         done();
       }, done.fail);
   });
@@ -453,17 +457,19 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
       .then(resp => {
-        expect(resp.results.length).toBe(2);
+        expect(resp.data.results.length).toBe(2);
         done();
       }, done.fail);
   });
@@ -485,12 +491,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -499,7 +507,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -521,12 +529,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -535,7 +545,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(1);
+        expect(err.data.code).toEqual(1);
         done();
       });
   });
@@ -553,12 +563,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -567,7 +579,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -585,12 +597,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -599,7 +613,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -621,12 +635,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -635,7 +651,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(1);
+        expect(err.data.code).toEqual(1);
         done();
       });
   });
@@ -657,12 +673,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -671,7 +689,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(1);
+        expect(err.data.code).toEqual(1);
         done();
       });
   });
@@ -689,12 +707,14 @@ describe('Parse.GeoPoint testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: Parse.serverURL + '/classes/Polygon',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
             'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -703,7 +723,7 @@ describe('Parse.GeoPoint testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(107);
+        expect(err.data.code).toEqual(107);
         done();
       });
   });

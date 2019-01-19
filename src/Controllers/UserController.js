@@ -243,29 +243,16 @@ export class UserController extends AdaptableController {
   }
 
   updatePassword(username, token, password) {
-    return (
-      this.checkResetTokenValidity(username, token)
-        .then(user => updateUserPassword(user.objectId, password, this.config))
-        // clear reset password token
-        .then(() =>
-          this.config.database.update(
-            '_User',
-            { username },
-            {
-              _perishable_token: { __op: 'Delete' },
-              _perishable_token_expires_at: { __op: 'Delete' },
-            }
-          )
-        )
-        .catch(error => {
-          if (error.message) {
-            // in case of Parse.Error, fail with the error message only
-            return Promise.reject(error.message);
-          } else {
-            return Promise.reject(error);
-          }
-        })
-    );
+    return this.checkResetTokenValidity(username, token)
+      .then(user => updateUserPassword(user.objectId, password, this.config))
+      .catch(error => {
+        if (error.message) {
+          // in case of Parse.Error, fail with the error message only
+          return Promise.reject(error.message);
+        } else {
+          return Promise.reject(error);
+        }
+      });
   }
 
   defaultVerificationEmail({ link, user, appName }) {

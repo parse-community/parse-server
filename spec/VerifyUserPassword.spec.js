@@ -1,22 +1,20 @@
 'use strict';
 
-const rp = require('request-promise');
+const request = require('../lib/request');
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 
 const verifyPassword = function(login, password, isEmail = false) {
   const body = !isEmail
     ? { username: login, password }
     : { email: login, password };
-  return rp
-    .get({
-      url: Parse.serverURL + '/verifyPassword',
-      headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-REST-API-Key': 'rest',
-      },
-      body,
-      json: true,
-    })
+  return request({
+    url: Parse.serverURL + '/verifyPassword',
+    headers: {
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+    },
+    qs: body,
+  })
     .then(res => res)
     .catch(err => err);
 };
@@ -65,7 +63,7 @@ describe('Verify User Password', () => {
       })
       .then(() => {
         expect(user.getACL().getPublicReadAccess()).toBe(false);
-        return rp.get({
+        return request({
           url: Parse.serverURL + '/verifyPassword',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -82,8 +80,8 @@ describe('Verify User Password', () => {
         done();
       })
       .catch(err => {
-        expect(err.statusCode).toBe(404);
-        expect(err.error).toMatch(
+        expect(err.status).toBe(404);
+        expect(err.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -98,7 +96,7 @@ describe('Verify User Password', () => {
         email: 'my@user.com',
       })
       .then(() => {
-        return rp.get({
+        return request({
           url: Parse.serverURL + '/verifyPassword',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -115,8 +113,8 @@ describe('Verify User Password', () => {
         done();
       })
       .catch(err => {
-        expect(err.statusCode).toBe(400);
-        expect(err.error).toMatch(
+        expect(err.status).toBe(400);
+        expect(err.text).toMatch(
           '{"code":200,"error":"username/email is required."}'
         );
         done();
@@ -131,7 +129,7 @@ describe('Verify User Password', () => {
         email: 'my@user.com',
       })
       .then(() => {
-        return rp.get({
+        return request({
           url: Parse.serverURL + '/verifyPassword',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -148,8 +146,8 @@ describe('Verify User Password', () => {
         done();
       })
       .catch(err => {
-        expect(err.statusCode).toBe(400);
-        expect(err.error).toMatch(
+        expect(err.status).toBe(400);
+        expect(err.text).toMatch(
           '{"code":200,"error":"username/email is required."}'
         );
         done();
@@ -167,8 +165,8 @@ describe('Verify User Password', () => {
         return verifyPassword('', 'mypass');
       })
       .then(res => {
-        expect(res.statusCode).toBe(400);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(400);
+        expect(res.text).toMatch(
           '{"code":200,"error":"username/email is required."}'
         );
         done();
@@ -190,8 +188,8 @@ describe('Verify User Password', () => {
         return verifyPassword('', 'mypass', true);
       })
       .then(res => {
-        expect(res.statusCode).toBe(400);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(400);
+        expect(res.text).toMatch(
           '{"code":200,"error":"username/email is required."}'
         );
         done();
@@ -213,8 +211,8 @@ describe('Verify User Password', () => {
         return verifyPassword('testuser', '');
       })
       .then(res => {
-        expect(res.statusCode).toBe(400);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(400);
+        expect(res.text).toMatch(
           '{"code":201,"error":"password is required."}'
         );
         done();
@@ -236,8 +234,8 @@ describe('Verify User Password', () => {
         return verifyPassword('testuser', 'wrong password');
       })
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -259,8 +257,8 @@ describe('Verify User Password', () => {
         return verifyPassword('my@user.com', 'wrong password', true);
       })
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -282,8 +280,8 @@ describe('Verify User Password', () => {
         return verifyPassword(123, 'mypass');
       })
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -305,8 +303,8 @@ describe('Verify User Password', () => {
         return verifyPassword(123, 'mypass', true);
       })
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -328,8 +326,8 @@ describe('Verify User Password', () => {
         return verifyPassword('my@user.com', 123, true);
       })
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -342,8 +340,8 @@ describe('Verify User Password', () => {
   it('fails to verify password when username cannot be found REST API', done => {
     verifyPassword('mytestuser', 'mypass')
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -356,8 +354,8 @@ describe('Verify User Password', () => {
   it('fails to verify password when email cannot be found REST API', done => {
     verifyPassword('my@user.com', 'mypass', true)
       .then(res => {
-        expect(res.statusCode).toBe(404);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(404);
+        expect(res.text).toMatch(
           '{"code":101,"error":"Invalid username/password."}'
         );
         done();
@@ -391,8 +389,8 @@ describe('Verify User Password', () => {
         return verifyPassword('unverified-email@user.com', 'mypass', true);
       })
       .then(res => {
-        expect(res.statusCode).toBe(400);
-        expect(JSON.stringify(res.error)).toMatch(
+        expect(res.status).toBe(400);
+        expect(res.text).toMatch(
           '{"code":205,"error":"User email is not verified."}'
         );
         done();
@@ -451,24 +449,24 @@ describe('Verify User Password', () => {
         email: 'my@user.com',
       })
       .then(() => {
-        return rp
-          .get({
-            url: Parse.serverURL + '/verifyPassword',
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-REST-API-Key': 'rest',
-            },
-            body: {
-              username: 'testuser',
-              email: 'my@user.com',
-              password: 'mypass',
-            },
-            json: true,
-          })
+        return request({
+          url: Parse.serverURL + '/verifyPassword',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          qs: {
+            username: 'testuser',
+            email: 'my@user.com',
+            password: 'mypass',
+          },
+          json: true,
+        })
           .then(res => res)
           .catch(err => err);
       })
-      .then(res => {
+      .then(response => {
+        const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
         expect(res.hasOwnProperty('sessionToken')).toEqual(false);
@@ -491,7 +489,8 @@ describe('Verify User Password', () => {
       .then(() => {
         return verifyPassword('testuser', 'mypass');
       })
-      .then(res => {
+      .then(response => {
+        const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
         expect(res.hasOwnProperty('sessionToken')).toEqual(false);
@@ -510,7 +509,8 @@ describe('Verify User Password', () => {
       .then(() => {
         return verifyPassword('my@user.com', 'mypass', true);
       })
-      .then(res => {
+      .then(response => {
+        const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
         expect(res.hasOwnProperty('sessionToken')).toEqual(false);
@@ -527,7 +527,7 @@ describe('Verify User Password', () => {
         email: 'my@user.com',
       })
       .then(() => {
-        return rp.get({
+        return request({
           url: Parse.serverURL + '/verifyPassword',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -539,7 +539,8 @@ describe('Verify User Password', () => {
           },
         });
       })
-      .then(res => {
+      .then(response => {
+        const res = response.text;
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
@@ -557,7 +558,7 @@ describe('Verify User Password', () => {
         email: 'my@user.com',
       })
       .then(() => {
-        return rp.get({
+        return request({
           url: Parse.serverURL + '/verifyPassword',
           headers: {
             'X-Parse-Application-Id': Parse.applicationId,
@@ -569,7 +570,8 @@ describe('Verify User Password', () => {
           },
         });
       })
-      .then(res => {
+      .then(response => {
+        const res = response.text;
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
@@ -597,7 +599,8 @@ describe('Verify User Password', () => {
       .then(() => {
         return verifyPassword('email@user.com', 'mypass1');
       })
-      .then(res => {
+      .then(response => {
+        const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
         expect(res.hasOwnProperty('sessionToken')).toEqual(false);

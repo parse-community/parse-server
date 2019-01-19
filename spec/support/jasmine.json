@@ -1,10 +1,6 @@
 {
   "spec_dir": "spec",
-  "spec_files": [
-    "*spec.js"
-  ],
-  "helpers": [
-    "helper.js"
-  ],
+  "spec_files": ["*spec.js"],
+  "helpers": ["helper.js"],
   "random": false
 }

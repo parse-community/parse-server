@@ -1,9 +1,36 @@
-import request from 'request';
 import HTTPResponse from './HTTPResponse';
 import querystring from 'querystring';
 import log from '../logger';
+import { http, https } from 'follow-redirects';
+import { parse } from 'url';
 
-var encodeBody = function({ body, headers = {} }) {
+const clients = {
+  'http:': http,
+  'https:': https,
+};
+
+function makeCallback(resolve, reject) {
+  return function(response) {
+    const chunks = [];
+    response.on('data', chunk => {
+      chunks.push(chunk);
+    });
+    response.on('end', () => {
+      const body = Buffer.concat(chunks);
+      const httpResponse = new HTTPResponse(response, body);
+
+      // Consider <200 && >= 400 as errors
+      if (httpResponse.status < 200 || httpResponse.status >= 400) {
+        return reject(httpResponse);
+      } else {
+        return resolve(httpResponse);
+      }
+    });
+    response.on('error', reject);
+  };
+}
+
+const encodeBody = function({ body, headers = {} }) {
   if (typeof body !== 'object') {
     return { body, headers };
   }
@@ -63,48 +90,64 @@ var encodeBody = function({ body, headers = {} }) {
  * @param {Parse.Cloud.HTTPOptions} options The Parse.Cloud.HTTPOptions object that makes the request.
  * @return {Promise<Parse.Cloud.HTTPResponse>} A promise that will be resolved with a {@link Parse.Cloud.HTTPResponse} object when the request completes.
  */
-module.exports = function(options) {
-  var callbacks = {
-    success: options.success,
-    error: options.error,
-  };
-  delete options.success;
-  delete options.error;
-  delete options.uri; // not supported
+module.exports = function httpRequest(options) {
+  let url;
+  try {
+    url = parse(options.url);
+  } catch (e) {
+    return Promise.reject(e);
+  }
   options = Object.assign(options, encodeBody(options));
-  // set follow redirects to false by default
-  options.followRedirect = options.followRedirects == true;
   // support params options
   if (typeof options.params === 'object') {
     options.qs = options.params;
   } else if (typeof options.params === 'string') {
     options.qs = querystring.parse(options.params);
   }
-  // force the response as a buffer
-  options.encoding = null;
-  return new Promise((resolve, reject) => {
-    request(options, (error, response, body) => {
-      if (error) {
-        if (callbacks.error) {
-          callbacks.error(error);
-        }
-        return reject(error);
-      }
-      const httpResponse = new HTTPResponse(response, body);
-
-      // Consider <200 && >= 400 as errors
-      if (httpResponse.status < 200 || httpResponse.status >= 400) {
-        if (callbacks.error) {
-          callbacks.error(httpResponse);
-        }
-        return reject(httpResponse);
-      } else {
-        if (callbacks.success) {
-          callbacks.success(httpResponse);
-        }
-        return resolve(httpResponse);
+  const client = clients[url.protocol];
+  if (!client) {
+    return Promise.reject(`Unsupported protocol ${url.protocol}`);
+  }
+  const requestOptions = {
+    method: options.method,
+    port: Number(url.port),
+    path: url.pathname,
+    hostname: url.hostname,
+    headers: options.headers,
+    encoding: null,
+    followRedirects: options.followRedirects === true,
+  };
+  if (requestOptions.headers) {
+    Object.keys(requestOptions.headers).forEach(key => {
+      if (typeof requestOptions.headers[key] === 'undefined') {
+        delete requestOptions.headers[key];
       }
     });
+  }
+  if (url.search) {
+    options.qs = Object.assign({}, options.qs, querystring.parse(url.query));
+  }
+  if (url.auth) {
+    requestOptions.auth = url.auth;
+  }
+  if (options.qs) {
+    requestOptions.path += `?${querystring.stringify(options.qs)}`;
+  }
+  if (options.agent) {
+    requestOptions.agent = options.agent;
+  }
+  return new Promise((resolve, reject) => {
+    const req = client.request(
+      requestOptions,
+      makeCallback(resolve, reject, options)
+    );
+    if (options.body) {
+      req.write(options.body);
+    }
+    req.on('error', error => {
+      reject(error);
+    });
+    req.end();
   });
 };
 

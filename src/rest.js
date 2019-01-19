@@ -101,7 +101,7 @@ function del(config, auth, className, objectId) {
 
   enforceRoleSecurity('delete', className, auth);
 
-  var inflatedObject;
+  let inflatedObject;
 
   return Promise.resolve()
     .then(() => {
@@ -113,7 +113,7 @@ function del(config, auth, className, objectId) {
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
           .forWrite()
-          .execute()
+          .execute({ op: 'delete' })
           .then(response => {
             if (response && response.results && response.results.length) {
               const firstResult = response.results[0];
@@ -172,7 +172,15 @@ function del(config, auth, className, objectId) {
     })
     .then(() => {
       // Notify LiveQuery server if possible
-      config.liveQueryController.onAfterDelete(className, inflatedObject);
+      config.database.loadSchema().then(schemaController => {
+        const perms = schemaController.getClassLevelPermissions(className);
+        config.liveQueryController.onAfterDelete(
+          className,
+          inflatedObject,
+          null,
+          perms
+        );
+      });
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
@@ -242,9 +250,13 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
     });
 }
 
-function handleSessionMissingError(error, className) {
+function handleSessionMissingError(error, className, auth) {
   // If we're trying to update a user without / with bad session token
-  if (className === '_User' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+  if (
+    className === '_User' &&
+    error.code === Parse.Error.OBJECT_NOT_FOUND &&
+    !auth.isMaster
+  ) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;

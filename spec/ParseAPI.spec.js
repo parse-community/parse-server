@@ -2,8 +2,7 @@
 // It would probably be better to refactor them into different files.
 'use strict';
 
-const request = require('request');
-const rp = require('request-promise');
+const request = require('../lib/request');
 const Parse = require('parse/node');
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
@@ -92,44 +91,44 @@ describe('miscellaneous', function() {
   it('fail to create a duplicate username', async () => {
     let numFailed = 0;
     let numCreated = 0;
-    const p1 = rp
-      .post(Parse.serverURL + '/users', {
-        json: {
-          password: 'asdf',
-          username: 'u1',
-          email: 'dupe@dupe.dupe',
-        },
-        headers,
-      })
-      .then(
-        () => {
-          numCreated++;
-          expect(numCreated).toEqual(1);
-        },
-        ({ error }) => {
-          numFailed++;
-          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-        }
-      );
+    const p1 = request({
+      method: 'POST',
+      url: Parse.serverURL + '/users',
+      body: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe',
+      },
+      headers,
+    }).then(
+      () => {
+        numCreated++;
+        expect(numCreated).toEqual(1);
+      },
+      response => {
+        numFailed++;
+        expect(response.data.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      }
+    );
 
-    const p2 = rp
-      .post(Parse.serverURL + '/users', {
-        json: {
-          password: 'otherpassword',
-          username: 'u1',
-          email: 'email@other.email',
-        },
-        headers,
-      })
-      .then(
-        () => {
-          numCreated++;
-        },
-        ({ error }) => {
-          numFailed++;
-          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-        }
-      );
+    const p2 = request({
+      method: 'POST',
+      url: Parse.serverURL + '/users',
+      body: {
+        password: 'otherpassword',
+        username: 'u1',
+        email: 'email@other.email',
+      },
+      headers,
+    }).then(
+      () => {
+        numCreated++;
+      },
+      ({ data }) => {
+        numFailed++;
+        expect(data.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      }
+    );
 
     await Promise.all([p1, p2]);
     expect(numFailed).toEqual(1);
@@ -139,45 +138,45 @@ describe('miscellaneous', function() {
   it('ensure that email is uniquely indexed', async () => {
     let numFailed = 0;
     let numCreated = 0;
-    const p1 = rp
-      .post(Parse.serverURL + '/users', {
-        json: {
-          password: 'asdf',
-          username: 'u1',
-          email: 'dupe@dupe.dupe',
-        },
-        headers,
-      })
-      .then(
-        () => {
-          numCreated++;
-          expect(numCreated).toEqual(1);
-        },
-        ({ error }) => {
-          numFailed++;
-          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-        }
-      );
+    const p1 = request({
+      method: 'POST',
+      url: Parse.serverURL + '/users',
+      body: {
+        password: 'asdf',
+        username: 'u1',
+        email: 'dupe@dupe.dupe',
+      },
+      headers,
+    }).then(
+      () => {
+        numCreated++;
+        expect(numCreated).toEqual(1);
+      },
+      ({ data }) => {
+        numFailed++;
+        expect(data.code).toEqual(Parse.Error.EMAIL_TAKEN);
+      }
+    );
 
-    const p2 = rp
-      .post(Parse.serverURL + '/users', {
-        json: {
-          password: 'asdf',
-          username: 'u2',
-          email: 'dupe@dupe.dupe',
-        },
-        headers,
-      })
-      .then(
-        () => {
-          numCreated++;
-          expect(numCreated).toEqual(1);
-        },
-        ({ error }) => {
-          numFailed++;
-          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-        }
-      );
+    const p2 = request({
+      url: Parse.serverURL + '/users',
+      method: 'POST',
+      body: {
+        password: 'asdf',
+        username: 'u2',
+        email: 'dupe@dupe.dupe',
+      },
+      headers,
+    }).then(
+      () => {
+        numCreated++;
+        expect(numCreated).toEqual(1);
+      },
+      ({ data }) => {
+        numFailed++;
+        expect(data.code).toEqual(Parse.Error.EMAIL_TAKEN);
+      }
+    );
 
     await Promise.all([p1, p2]);
     expect(numFailed).toEqual(1);
@@ -962,51 +961,46 @@ describe('miscellaneous', function() {
           'X-Parse-REST-API-Key': 'rest',
           'X-Parse-Installation-Id': 'yolo',
         };
-        request.put(
-          {
-            headers: headers,
-            url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
-            body: JSON.stringify({
-              a: 'b',
-              c: { __op: 'Increment', amount: 2 },
-              d: { __op: 'Add', objects: ['2'] },
-              e: { __op: 'AddUnique', objects: ['1', '2'] },
-              f: { __op: 'Remove', objects: ['2'] },
-              selfThing: {
-                __type: 'Pointer',
-                className: 'GameScore',
-                objectId: obj.id,
-              },
-            }),
-          },
-          (error, response, body) => {
-            try {
-              body = JSON.parse(body);
-              expect(body.a).toBeUndefined();
-              expect(body.c).toEqual(3); // 2+1
-              expect(body.d.length).toBe(2);
-              expect(body.d.indexOf('1') > -1).toBe(true);
-              expect(body.d.indexOf('2') > -1).toBe(true);
-              expect(body.e.length).toBe(2);
-              expect(body.e.indexOf('1') > -1).toBe(true);
-              expect(body.e.indexOf('2') > -1).toBe(true);
-              expect(body.f.length).toBe(1);
-              expect(body.f.indexOf('1') > -1).toBe(true);
-              // return nothing on other self
-              expect(body.selfThing).toBeUndefined();
-              // updatedAt is always set
-              expect(body.updatedAt).not.toBeUndefined();
-            } catch (e) {
-              jfail(e);
-            }
-            done();
+        request({
+          method: 'PUT',
+          headers: headers,
+          url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
+          body: JSON.stringify({
+            a: 'b',
+            c: { __op: 'Increment', amount: 2 },
+            d: { __op: 'Add', objects: ['2'] },
+            e: { __op: 'AddUnique', objects: ['1', '2'] },
+            f: { __op: 'Remove', objects: ['2'] },
+            selfThing: {
+              __type: 'Pointer',
+              className: 'GameScore',
+              objectId: obj.id,
+            },
+          }),
+        }).then(response => {
+          try {
+            const body = response.data;
+            expect(body.a).toBeUndefined();
+            expect(body.c).toEqual(3); // 2+1
+            expect(body.d.length).toBe(2);
+            expect(body.d.indexOf('1') > -1).toBe(true);
+            expect(body.d.indexOf('2') > -1).toBe(true);
+            expect(body.e.length).toBe(2);
+            expect(body.e.indexOf('1') > -1).toBe(true);
+            expect(body.e.indexOf('2') > -1).toBe(true);
+            expect(body.f.length).toBe(1);
+            expect(body.f.indexOf('1') > -1).toBe(true);
+            // return nothing on other self
+            expect(body.selfThing).toBeUndefined();
+            // updatedAt is always set
+            expect(body.updatedAt).not.toBeUndefined();
+          } catch (e) {
+            fail(e);
           }
-        );
+          done();
+        });
       })
-      .catch(() => {
-        fail('Should not fail');
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('test cloud function error handling', done => {
@@ -1082,18 +1076,15 @@ describe('miscellaneous', function() {
       'X-Parse-REST-API-Key': 'rest',
       'X-Parse-Installation-Id': 'yolo',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore',
-        body: JSON.stringify({ a: 'b' }),
-      },
-      error => {
-        expect(error).toBe(null);
-        expect(triggerTime).toEqual(2);
-        done();
-      }
-    );
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({ a: 'b' }),
+    }).then(() => {
+      expect(triggerTime).toEqual(2);
+      done();
+    });
   });
 
   it('test beforeDelete/afterDelete get installationId', function(done) {
@@ -1115,29 +1106,22 @@ describe('miscellaneous', function() {
       'X-Parse-REST-API-Key': 'rest',
       'X-Parse-Installation-Id': 'yolo',
     };
-    request.post(
-      {
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({ a: 'b' }),
+    }).then(response => {
+      request({
+        method: 'DELETE',
         headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore',
-        body: JSON.stringify({ a: 'b' }),
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        request.del(
-          {
-            headers: headers,
-            url:
-              'http://localhost:8378/1/classes/GameScore/' +
-              JSON.parse(body).objectId,
-          },
-          error => {
-            expect(error).toBe(null);
-            expect(triggerTime).toEqual(2);
-            done();
-          }
-        );
-      }
-    );
+        url:
+          'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
+      }).then(() => {
+        expect(triggerTime).toEqual(2);
+        done();
+      });
+    });
   });
 
   it('test beforeDelete with locked down ACL', async () => {
@@ -1167,26 +1151,23 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
     };
-    request.post(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
-        qs: {
-          option: 1,
-          other: 2,
-        },
-        body: '{"foo":"bar", "other": 1}',
+    request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
+      qs: {
+        option: 1,
+        other: 2,
       },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const res = JSON.parse(body).result;
-        expect(res.option).toEqual('1');
-        // Make sure query string params override body params
-        expect(res.other).toEqual('2');
-        expect(res.foo).toEqual('bar');
-        done();
-      }
-    );
+      body: '{"foo":"bar", "other": 1}',
+    }).then(response => {
+      const res = response.data.result;
+      expect(res.option).toEqual('1');
+      // Make sure query string params override body params
+      expect(res.other).toEqual('2');
+      expect(res.foo).toEqual('bar');
+      done();
+    });
   });
 
   it('test cloud function parameter validation', done => {
@@ -1258,18 +1239,14 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Client-Key': 'notclient',
     };
-    request.get(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.error).toEqual('unauthorized');
-        done();
-      }
-    );
+    request({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
   });
 
   it('fails on invalid windows key', done => {
@@ -1278,18 +1255,14 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Windows-Key': 'notwindows',
     };
-    request.get(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.error).toEqual('unauthorized');
-        done();
-      }
-    );
+    request({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
   });
 
   it('fails on invalid javascript key', done => {
@@ -1298,18 +1271,14 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'notjavascript',
     };
-    request.get(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.error).toEqual('unauthorized');
-        done();
-      }
-    );
+    request({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
   });
 
   it('fails on invalid rest api key', done => {
@@ -1318,18 +1287,14 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'notrest',
     };
-    request.get(
-      {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
-      },
-      (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(b.error).toEqual('unauthorized');
-        done();
-      }
-    );
+    request({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
   });
 
   it('fails on invalid function', done => {
@@ -1360,16 +1325,15 @@ describe('miscellaneous', function() {
     };
     const requestOptions = {
       headers: headers,
+      method: 'POST',
       url: 'http://localhost:8378/1/installations',
       body: JSON.stringify(data),
     };
-    request.post(requestOptions, (error, response, body) => {
-      expect(error).toBe(null);
-      const b = JSON.parse(body);
+    request(requestOptions).then(response => {
+      const b = response.data;
       expect(typeof b.objectId).toEqual('string');
-      request.post(requestOptions, (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
+      request(requestOptions).then(response => {
+        const b = response.data;
         expect(typeof b.updatedAt).toEqual('string');
         done();
       });
@@ -1388,16 +1352,15 @@ describe('miscellaneous', function() {
       authData: {},
     };
     const requestOptions = {
+      method: 'POST',
       headers: headers,
       url: 'http://localhost:8378/1/users',
       body: JSON.stringify(data),
     };
-    request.post(requestOptions, error => {
-      expect(error).toBe(null);
+    request(requestOptions).then(() => {
       requestOptions.url = 'http://localhost:8378/1/login';
-      request.get(requestOptions, (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
+      request(requestOptions).then(response => {
+        const b = response.data;
         expect(typeof b['sessionToken']).toEqual('string');
         done();
       });
@@ -1423,7 +1386,8 @@ describe('miscellaneous', function() {
           url: 'http://localhost:8378/1/classes/AnObject',
           json: true,
         };
-        request.get(requestOptions, (err, res, body) => {
+        request(requestOptions).then(res => {
+          const body = res.data;
           expect(body.results.length).toBe(1);
           const result = body.results[0];
           expect(result.related).toEqual({
@@ -1461,16 +1425,9 @@ describe('miscellaneous', function() {
           },
         },
         url: 'http://localhost:8378/1/classes/AnObject/' + object.id,
+        method: 'PUT',
       });
-      return new Promise((resolve, reject) => {
-        request.put(options, (err, res, body) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(body);
-          }
-        });
-      });
+      return request(options).then(res => res.data);
     }
 
     object
@@ -1492,29 +1449,27 @@ describe('miscellaneous', function() {
     const object = new Parse.Object('AnObject');
     object.set('a', 'b');
     object.save().then(() => {
-      request.post(
-        {
-          headers: { 'Content-Type': 'application/json' },
-          url: 'http://localhost:8378/1/classes/AnObject',
-          body: {
-            _method: 'GET',
-            _ApplicationId: 'test',
-            _JavaScriptKey: 'test',
-            _ClientVersion: 'js1.8.3',
-            _InstallationId: 'iid',
-            _RevocableSession: '1',
-          },
-          json: true,
+      request({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        url: 'http://localhost:8378/1/classes/AnObject',
+        body: {
+          _method: 'GET',
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ClientVersion: 'js1.8.3',
+          _InstallationId: 'iid',
+          _RevocableSession: '1',
         },
-        (err, res, body) => {
-          expect(body.error).toBeUndefined();
-          expect(body.results).not.toBeUndefined();
-          expect(body.results.length).toBe(1);
-          const result = body.results[0];
-          expect(result.a).toBe('b');
-          done();
-        }
-      );
+      }).then(res => {
+        const body = res.data;
+        expect(body.error).toBeUndefined();
+        expect(body.results).not.toBeUndefined();
+        expect(body.results.length).toBe(1);
+        const result = body.results[0];
+        expect(result.a).toBe('b');
+        done();
+      });
     });
   });
 
@@ -1654,21 +1609,17 @@ describe('miscellaneous', function() {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Master-Key': 'test',
         };
-        request.del(
-          {
-            headers: headers,
-            url: 'http://localhost:8378/1/purge/TestObject',
-            json: true,
-          },
-          err => {
-            expect(err).toBe(null);
-            const query = new Parse.Query(TestObject);
-            return query.count().then(count => {
-              expect(count).toBe(0);
-              done();
-            });
-          }
-        );
+        request({
+          method: 'DELETE',
+          headers: headers,
+          url: 'http://localhost:8378/1/purge/TestObject',
+        }).then(() => {
+          const query = new Parse.Query(TestObject);
+          return query.count().then(count => {
+            expect(count).toBe(0);
+            done();
+          });
+        });
       });
   });
 
@@ -1678,17 +1629,18 @@ describe('miscellaneous', function() {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
     };
-    rp({
+    request({
       method: 'DELETE',
       headers: headers,
-      uri: 'http://localhost:8378/1/purge/TestObject',
-      json: true,
+      url: 'http://localhost:8378/1/purge/TestObject',
     })
       .then(() => {
         fail('Should not succeed');
       })
-      .catch(err => {
-        expect(err.error.error).toEqual('unauthorized: master key is required');
+      .catch(response => {
+        expect(response.data.error).toEqual(
+          'unauthorized: master key is required'
+        );
         done();
       });
   });
@@ -1739,10 +1691,10 @@ describe('miscellaneous', function() {
       })
       .then(x => {
         expect(x.length).toEqual(1);
-        return rp({
+        return request({
           method: 'DELETE',
           headers: headers,
-          uri: 'http://localhost:8378/1/purge/_Role',
+          url: 'http://localhost:8378/1/purge/_Role',
           json: true,
         });
       })
@@ -1789,20 +1741,20 @@ describe('miscellaneous', function() {
           done();
         },
         () => {
-          return rp({
+          return request({
             method: 'GET',
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-Master-Key': 'test',
             },
-            uri: 'http://localhost:8378/1/schemas/MyObject',
+            url: 'http://localhost:8378/1/schemas/MyObject',
             json: true,
           });
         }
       )
       .then(
         res => {
-          const fields = res.fields;
+          const fields = res.data.fields;
           expect(fields.secret).toBeUndefined();
           done();
         },
@@ -1819,11 +1771,12 @@ describe_only_db('mongo')('legacy _acl', () => {
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
     };
-    rp({
+    request({
       method: 'POST',
       headers: headers,
-      uri: 'http://localhost:8378/1/classes/Report',
+      url: 'http://localhost:8378/1/classes/Report',
       body: {
         ACL: {},
         name: 'My Report',

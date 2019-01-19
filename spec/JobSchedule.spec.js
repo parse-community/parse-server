@@ -1,12 +1,15 @@
-const rp = require('request-promise');
+const request = require('../lib/request');
+
 const defaultHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
+  'Content-Type': 'application/json',
 };
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
   'X-Parse-Master-Key': 'test',
+  'Content-Type': 'application/json',
 };
 const defaultOptions = {
   headers: defaultHeaders,
@@ -43,58 +46,75 @@ describe('JobSchedule', () => {
   });
 
   it('should reject access when not using masterKey (/jobs)', done => {
-    rp.get(Parse.serverURL + '/cloud_code/jobs', defaultOptions).then(
-      done.fail,
-      () => done()
-    );
+    request(
+      Object.assign(
+        { url: Parse.serverURL + '/cloud_code/jobs' },
+        defaultOptions
+      )
+    ).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (/jobs/data)', done => {
-    rp.get(Parse.serverURL + '/cloud_code/jobs/data', defaultOptions).then(
-      done.fail,
-      () => done()
-    );
+    request(
+      Object.assign(
+        { url: Parse.serverURL + '/cloud_code/jobs/data' },
+        defaultOptions
+      )
+    ).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (PUT /jobs/id)', done => {
-    rp.put(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(
-      done.fail,
-      () => done()
-    );
+    request(
+      Object.assign(
+        { method: 'PUT', url: Parse.serverURL + '/cloud_code/jobs/jobId' },
+        defaultOptions
+      )
+    ).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (DELETE /jobs/id)', done => {
-    rp.del(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(
-      done.fail,
-      () => done()
-    );
+    request(
+      Object.assign(
+        { method: 'DELETE', url: Parse.serverURL + '/cloud_code/jobs/jobId' },
+        defaultOptions
+      )
+    ).then(done.fail, () => done());
   });
 
   it('should allow access when using masterKey (GET /jobs)', done => {
-    rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions).then(
-      done,
-      done.fail
-    );
+    request(
+      Object.assign(
+        { url: Parse.serverURL + '/cloud_code/jobs' },
+        masterKeyOptions
+      )
+    ).then(done, done.fail);
   });
 
   it('should create a job schedule', done => {
     Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
+      method: 'POST',
+      url: Parse.serverURL + '/cloud_code/jobs',
       body: {
         job_schedule: {
           jobName: 'job',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    request(options)
       .then(res => {
-        expect(res.objectId).not.toBeUndefined();
+        expect(res.data.objectId).not.toBeUndefined();
       })
       .then(() => {
-        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+        return request(
+          Object.assign(
+            { url: Parse.serverURL + '/cloud_code/jobs' },
+            masterKeyOptions
+          )
+        );
       })
       .then(res => {
-        expect(res.length).toBe(1);
+        expect(res.data.length).toBe(1);
       })
       .then(done)
       .catch(done.fail);
@@ -102,13 +122,15 @@ describe('JobSchedule', () => {
 
   it('should fail creating a job with an invalid name', done => {
     const options = Object.assign({}, masterKeyOptions, {
+      url: Parse.serverURL + '/cloud_code/jobs',
+      method: 'POST',
       body: {
         job_schedule: {
           jobName: 'job',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    request(options)
       .then(done.fail)
       .catch(() => done());
   });
@@ -117,18 +139,21 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job1', () => {});
     Parse.Cloud.job('job2', () => {});
     const options = Object.assign({}, masterKeyOptions, {
+      method: 'POST',
+      url: Parse.serverURL + '/cloud_code/jobs',
       body: {
         job_schedule: {
           jobName: 'job1',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    request(options)
       .then(res => {
-        expect(res.objectId).not.toBeUndefined();
-        return rp.put(
-          Parse.serverURL + '/cloud_code/jobs/' + res.objectId,
+        expect(res.data.objectId).not.toBeUndefined();
+        return request(
           Object.assign(options, {
+            url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
+            method: 'PUT',
             body: {
               job_schedule: {
                 jobName: 'job2',
@@ -138,11 +163,15 @@ describe('JobSchedule', () => {
         );
       })
       .then(() => {
-        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+        return request(
+          Object.assign({}, masterKeyOptions, {
+            url: Parse.serverURL + '/cloud_code/jobs',
+          })
+        );
       })
       .then(res => {
-        expect(res.length).toBe(1);
-        expect(res[0].jobName).toBe('job2');
+        expect(res.data.length).toBe(1);
+        expect(res.data[0].jobName).toBe('job2');
       })
       .then(done)
       .catch(done.fail);
@@ -151,18 +180,21 @@ describe('JobSchedule', () => {
   it('should fail updating a job with an invalid name', done => {
     Parse.Cloud.job('job1', () => {});
     const options = Object.assign({}, masterKeyOptions, {
+      method: 'POST',
+      url: Parse.serverURL + '/cloud_code/jobs',
       body: {
         job_schedule: {
           jobName: 'job1',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    request(options)
       .then(res => {
-        expect(res.objectId).not.toBeUndefined();
-        return rp.put(
-          Parse.serverURL + '/cloud_code/jobs/' + res.objectId,
+        expect(res.data.objectId).not.toBeUndefined();
+        return request(
           Object.assign(options, {
+            method: 'PUT',
+            url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
             body: {
               job_schedule: {
                 jobName: 'job2',
@@ -178,25 +210,39 @@ describe('JobSchedule', () => {
   it('should destroy a job', done => {
     Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
+      method: 'POST',
+      url: Parse.serverURL + '/cloud_code/jobs',
       body: {
         job_schedule: {
           jobName: 'job',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    request(options)
       .then(res => {
-        expect(res.objectId).not.toBeUndefined();
-        return rp.del(
-          Parse.serverURL + '/cloud_code/jobs/' + res.objectId,
-          masterKeyOptions
+        expect(res.data.objectId).not.toBeUndefined();
+        return request(
+          Object.assign(
+            {
+              method: 'DELETE',
+              url: Parse.serverURL + '/cloud_code/jobs/' + res.data.objectId,
+            },
+            masterKeyOptions
+          )
         );
       })
       .then(() => {
-        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+        return request(
+          Object.assign(
+            {
+              url: Parse.serverURL + '/cloud_code/jobs',
+            },
+            masterKeyOptions
+          )
+        );
       })
       .then(res => {
-        expect(res.length).toBe(0);
+        expect(res.data.length).toBe(0);
       })
       .then(done)
       .catch(done.fail);
@@ -206,29 +252,35 @@ describe('JobSchedule', () => {
     Parse.Cloud.job('job1', () => {});
     Parse.Cloud.job('job2', () => {});
     const options = Object.assign({}, masterKeyOptions, {
+      method: 'POST',
+      url: Parse.serverURL + '/cloud_code/jobs',
       body: {
         job_schedule: {
           jobName: 'job1',
         },
       },
     });
-    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
-      .then(res => {
+    request(options)
+      .then(response => {
+        const res = response.data;
         expect(res.objectId).not.toBeUndefined();
       })
       .then(() => {
-        return rp.get(
-          Parse.serverURL + '/cloud_code/jobs/data',
-          masterKeyOptions
+        return request(
+          Object.assign(
+            { url: Parse.serverURL + '/cloud_code/jobs/data' },
+            masterKeyOptions
+          )
         );
       })
-      .then(res => {
+      .then(response => {
+        const res = response.data;
         expect(res.in_use).toEqual(['job1']);
         expect(res.jobs).toContain('job1');
         expect(res.jobs).toContain('job2');
         expect(res.jobs.length).toBe(2);
       })
       .then(done)
-      .catch(done.fail);
+      .catch(e => done.fail(e.data));
   });
 });
