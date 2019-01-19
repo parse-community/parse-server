@@ -848,12 +848,12 @@ class DatabaseController {
     object: any,
     aclGroup: string[]
   ): Promise<void> {
-    const classSchema = schema.data[className];
+    const classSchema = schema.schemaData[className];
     if (!classSchema) {
       return Promise.resolve();
     }
     const fields = Object.keys(object);
-    const schemaFields = Object.keys(classSchema);
+    const schemaFields = Object.keys(classSchema.fields);
     const newKeys = fields.filter(field => {
       // Skip fields that are unset
       if (
@@ -1141,7 +1141,6 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
-      isWrite,
     }: any = {}
   ): Promise<any> {
     const isMaster = acl === undefined;
@@ -1217,7 +1216,7 @@ class DatabaseController {
                 );
               }
               if (!query) {
-                if (op == 'get') {
+                if (op === 'get') {
                   throw new Parse.Error(
                     Parse.Error.OBJECT_NOT_FOUND,
                     'Object not found.'
@@ -1227,7 +1226,7 @@ class DatabaseController {
                 }
               }
               if (!isMaster) {
-                if (isWrite) {
+                if (op === 'update' || op === 'delete') {
                   query = addWriteACL(query, aclGroup);
                 } else {
                   query = addReadACL(query, aclGroup);
@@ -1335,7 +1334,7 @@ class DatabaseController {
   }
 
   addPointerPermissions(
-    schema: any,
+    schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
@@ -1343,10 +1342,10 @@ class DatabaseController {
   ) {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
-    if (schema.testBaseCLP(className, aclGroup, operation)) {
+    if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
-    const perms = schema.perms[className];
+    const perms = schema.getClassLevelPermissions(className);
     const field =
       ['get', 'find'].indexOf(operation) > -1
         ? 'readUserFields'

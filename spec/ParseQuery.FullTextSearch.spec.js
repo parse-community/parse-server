@@ -9,7 +9,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
 const postgresURI =
   'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 const Parse = require('parse/node');
-const rp = require('request-promise');
+const request = require('../lib/request');
 let databaseAdapter;
 
 const fullTextHelper = () => {
@@ -48,15 +48,16 @@ const fullTextHelper = () => {
     publicServerURL: 'http://localhost:8378/1',
     databaseAdapter,
   }).then(() => {
-    return rp.post({
+    return request({
+      method: 'POST',
       url: 'http://localhost:8378/1/batch',
       body: {
         requests,
       },
-      json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'test',
+        'Content-Type': 'application/json',
       },
     });
   });
@@ -75,19 +76,24 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
-      .then(resp => {
-        expect(resp.results.length).toBe(3);
-        done();
-      }, done.fail);
+      .then(
+        resp => {
+          expect(resp.data.results.length).toBe(3);
+          done();
+        },
+        e => done.fail(e)
+      );
   });
 
   it('fullTextSearch: $search, sort', done => {
@@ -104,16 +110,19 @@ describe('Parse.Query Full Text Search testing', () => {
         };
         const order = '$score';
         const keys = '$score';
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, order, keys, _method: 'GET' },
+          body: { where, order, keys, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
-      .then(resp => {
+      .then(response => {
+        const resp = response.data;
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].score);
         expect(resp.results[1].score);
@@ -135,17 +144,19 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
       .then(resp => {
-        expect(resp.results.length).toBe(2);
+        expect(resp.data.results.length).toBe(2);
         done();
       }, done.fail);
   });
@@ -163,17 +174,19 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
       .then(resp => {
-        expect(resp.results.length).toBe(1);
+        expect(resp.data.results.length).toBe(1);
         done();
       }, done.fail);
   });
@@ -188,12 +201,14 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -202,7 +217,7 @@ describe('Parse.Query Full Text Search testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -220,12 +235,14 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -234,7 +251,7 @@ describe('Parse.Query Full Text Search testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -252,12 +269,14 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -266,7 +285,7 @@ describe('Parse.Query Full Text Search testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -284,12 +303,14 @@ describe('Parse.Query Full Text Search testing', () => {
             },
           },
         };
-        return rp.post({
+        return request({
+          method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          json: { where, _method: 'GET' },
+          body: { where, _method: 'GET' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
           },
         });
       })
@@ -298,7 +319,7 @@ describe('Parse.Query Full Text Search testing', () => {
         done();
       })
       .catch(err => {
-        expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
         done();
       });
   });
@@ -336,43 +357,43 @@ describe_only_db('mongo')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toEqual(3);
+          expect(resp.data.results.length).toEqual(3);
           return databaseAdapter.getIndexes('TestObject');
         })
         .then(indexes => {
           expect(indexes.length).toEqual(2);
-          rp.get(
-            {
-              url: 'http://localhost:8378/1/schemas/TestObject',
-              headers: {
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-Master-Key': 'test',
-              },
-              json: true,
+          request({
+            url: 'http://localhost:8378/1/schemas/TestObject',
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Master-Key': 'test',
+              'Content-Type': 'application/json',
             },
-            (error, response, body) => {
-              expect(body.indexes._id_).toBeDefined();
-              expect(body.indexes._id_._id).toEqual(1);
-              expect(body.indexes.subject_text_comment_text).toBeDefined();
-              expect(body.indexes.subject_text_comment_text.subject).toEqual(
-                'text'
-              );
-              expect(body.indexes.subject_text_comment_text.comment).toEqual(
-                'text'
-              );
-              done();
-            }
-          );
+          }).then(response => {
+            const body = response.data;
+            expect(body.indexes._id_).toBeDefined();
+            expect(body.indexes._id_._id).toEqual(1);
+            expect(body.indexes.subject_text_comment_text).toBeDefined();
+            expect(body.indexes.subject_text_comment_text.subject).toEqual(
+              'text'
+            );
+            expect(body.indexes.subject_text_comment_text.comment).toEqual(
+              'text'
+            );
+            done();
+          });
         })
         .catch(done.fail);
     });
@@ -387,13 +408,14 @@ describe_only_db('mongo')(
         })
         .then(indexes => {
           expect(indexes.length).toEqual(1);
-          return rp.put({
+          return request({
+            method: 'PUT',
             url: 'http://localhost:8378/1/schemas/TestObject',
-            json: true,
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
               'X-Parse-Master-Key': 'test',
+              'Content-Type': 'application/json',
             },
             body: {
               indexes: {
@@ -416,39 +438,39 @@ describe_only_db('mongo')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toEqual(3);
+          expect(resp.data.results.length).toEqual(3);
           return databaseAdapter.getIndexes('TestObject');
         })
         .then(indexes => {
           expect(indexes.length).toEqual(2);
-          rp.get(
-            {
-              url: 'http://localhost:8378/1/schemas/TestObject',
-              headers: {
-                'X-Parse-Application-Id': 'test',
-                'X-Parse-Master-Key': 'test',
-              },
-              json: true,
+          request({
+            url: 'http://localhost:8378/1/schemas/TestObject',
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Master-Key': 'test',
+              'Content-Type': 'application/json',
             },
-            (error, response, body) => {
-              expect(body.indexes._id_).toBeDefined();
-              expect(body.indexes._id_._id).toEqual(1);
-              expect(body.indexes.text_test).toBeDefined();
-              expect(body.indexes.text_test.subject).toEqual('text');
-              expect(body.indexes.text_test.comment).toEqual('text');
-              done();
-            }
-          );
+          }).then(response => {
+            const body = response.data;
+            expect(body.indexes._id_).toBeDefined();
+            expect(body.indexes._id_._id).toEqual(1);
+            expect(body.indexes.text_test).toBeDefined();
+            expect(body.indexes.text_test.subject).toEqual('text');
+            expect(body.indexes.text_test.comment).toEqual('text');
+            done();
+          });
         })
         .catch(done.fail);
     });
@@ -466,17 +488,19 @@ describe_only_db('mongo')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toBe(2);
+          expect(resp.data.results.length).toBe(2);
           done();
         }, done.fail);
     });
@@ -494,17 +518,19 @@ describe_only_db('mongo')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
         .then(resp => {
-          expect(resp.results.length).toBe(1);
+          expect(resp.data.results.length).toBe(1);
           done();
         }, done.fail);
     });
@@ -527,12 +553,14 @@ describe_only_db('postgres')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
@@ -545,7 +573,7 @@ describe_only_db('postgres')(
           done();
         })
         .catch(err => {
-          expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
           done();
         });
     });
@@ -563,12 +591,14 @@ describe_only_db('postgres')(
               },
             },
           };
-          return rp.post({
+          return request({
+            method: 'POST',
             url: 'http://localhost:8378/1/classes/TestObject',
-            json: { where, _method: 'GET' },
+            body: { where, _method: 'GET' },
             headers: {
               'X-Parse-Application-Id': 'test',
               'X-Parse-REST-API-Key': 'test',
+              'Content-Type': 'application/json',
             },
           });
         })
@@ -577,7 +607,7 @@ describe_only_db('postgres')(
           done();
         })
         .catch(err => {
-          expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+          expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
           done();
         });
     });

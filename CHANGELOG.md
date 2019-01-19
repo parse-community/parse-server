@@ -1,9 +1,50 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...master)
+
+### 3.1.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
+
+- Postgres: Fixes support for global configuration
+- Postgres: Fixes support for numeric arrays
+- Postgres: Fixes issue affecting queries on emtpy arrays
+- LiveQuery: Adds support for transmitting the original object
+- Queries: Use estimated count if queyr is empty 
+- Docker: Reduces the size of the docker image to 154Mb
+
+
+### 3.1.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...3.1.2)
+
+- Removes dev script, use TDD instead of server.
+- Removes nodemon and problematic dependencies.
+- Addressed event-stream security debacle.
+
+### 3.1.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...3.1.1)
+
+#### Improvements:
+* Fixes issue that would prevent users with large number of roles to resolve all of them [Antoine Cormouls](https://github.com/Moumouls) (#5131, #5132)
+* Fixes distinct query on special fields ([#5144](https://github.com/parse-community/parse-server/pull/5144))
+
+
+### 3.1.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...3.1.0)
+
+#### Breaking Changes:
+* Return success on sendPasswordResetEmail even if email not found. (#7fe4030)
+#### Security Fix:
+* Expire password reset tokens on email change (#5104)
+#### Improvements:
+* Live Query CLPs (#4387)
+* Reduces number of calls to injectDefaultSchema (#5107)
+* Remove runtime dependency on request (#5076)
 #### Bug fixes:
-* Fixes issue with vkontatke authentication
+* Fixes issue with vkontatke authentication (#4977)
+* Use the correct function when validating google auth tokens (#5018)
+* fix unexpected 'delete' trigger issue on LiveQuery (#5031)
+* Improves performance for roles and ACL's in live query server (#5126)
 
 
 ### 3.0.0
@@ -16,7 +57,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * Cloud Code handlers have a new interface based on promises.
 * response.success / response.error are removed in Cloud Code
 * Cloud Code runs with Parse-SDK 2.0
-* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}`
+* The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}` (REST Only)
 
 #### Improvements:
 * Adds Pipeline Operator to Aggregate Router.

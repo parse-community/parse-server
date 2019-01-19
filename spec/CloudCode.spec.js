@@ -1,6 +1,6 @@
 'use strict';
 const Parse = require('parse/node');
-const rp = require('request-promise');
+const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
 
@@ -880,26 +880,23 @@ describe('Cloud Code', () => {
       })
       .then(user => {
         session1 = user.getSessionToken();
-        return rp({
-          uri: 'http://localhost:8378/1/login?username=test&password=moon-y',
-          json: true,
+        return request({
+          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
           },
         });
       })
-      .then(body => {
-        session2 = body.sessionToken;
-
+      .then(response => {
+        session2 = response.data.sessionToken;
         //Ensure both session tokens are in the cache
-        return Parse.Cloud.run('checkStaleUser');
+        return Parse.Cloud.run('checkStaleUser', { sessionToken: session2 });
       })
       .then(() =>
-        rp({
+        request({
           method: 'POST',
-          uri: 'http://localhost:8378/1/functions/checkStaleUser',
-          json: true,
+          url: 'http://localhost:8378/1/functions/checkStaleUser',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
@@ -922,10 +919,9 @@ describe('Cloud Code', () => {
         return user.save();
       })
       .then(() =>
-        rp({
+        request({
           method: 'POST',
-          uri: 'http://localhost:8378/1/functions/checkStaleUser',
-          json: true,
+          url: 'http://localhost:8378/1/functions/checkStaleUser',
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'rest',
@@ -933,8 +929,8 @@ describe('Cloud Code', () => {
           },
         })
       )
-      .then(body => {
-        expect(body.result).toEqual('second data');
+      .then(response => {
+        expect(response.data.result).toEqual('second data');
         done();
       })
       .catch(done.fail);
@@ -1196,7 +1192,8 @@ describe('Cloud Code', () => {
         Parse.Cloud.job('myJob', () => {});
       }).not.toThrow();
 
-      rp.post({
+      request({
+        method: 'POST',
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -1218,7 +1215,8 @@ describe('Cloud Code', () => {
         Parse.Cloud.job('myJob', () => {});
       }).not.toThrow();
 
-      rp.post({
+      request({
+        method: 'POST',
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -1230,7 +1228,7 @@ describe('Cloud Code', () => {
           done();
         },
         err => {
-          expect(err.statusCode).toBe(403);
+          expect(err.status).toBe(403);
           done();
         }
       );
@@ -1248,7 +1246,8 @@ describe('Cloud Code', () => {
         });
       }).not.toThrow();
 
-      rp.post({
+      request({
+        method: 'POST',
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -1275,7 +1274,8 @@ describe('Cloud Code', () => {
         });
       }).not.toThrow();
 
-      rp.post({
+      request({
+        method: 'POST',
         url: `http://${Parse.applicationId}:${
           Parse.masterKey
         }@localhost:8378/1/jobs/myJob`,
@@ -1317,7 +1317,8 @@ describe('Cloud Code', () => {
         return promise;
       });
 
-      rp.post({
+      request({
+        method: 'POST',
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -1351,7 +1352,8 @@ describe('Cloud Code', () => {
         return promise;
       });
 
-      rp.post({
+      request({
+        method: 'POST',
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -1580,7 +1582,7 @@ describe('beforeFind hooks', () => {
       return Parse.Query.or(req.query, otherQuery);
     });
 
-    rp.get({
+    request({
       url: 'http://localhost:8378/1/classes/MyObject',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
@@ -1639,15 +1641,16 @@ describe('beforeFind hooks', () => {
     const obj = new Parse.Object('MyObject');
     obj.set('secretField', 'SSID');
     obj.save().then(function() {
-      rp({
+      request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
+        url: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
-      }).then(body => {
+      }).then(response => {
+        const body = response.data;
         expect(body.secretField).toEqual('SSID');
         expect(hook.method).toHaveBeenCalled();
         done();

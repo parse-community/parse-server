@@ -1,5 +1,5 @@
 'use strict';
-const request = require('request');
+const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
@@ -28,38 +28,32 @@ describe('server', () => {
 
   it('support http basic authentication with masterkey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
-      request.get(
-        {
-          url: 'http://localhost:8378/1/classes/TestObject',
-          headers: {
-            Authorization:
-              'Basic ' + new Buffer('test:' + 'test').toString('base64'),
-          },
+      request({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        headers: {
+          Authorization:
+            'Basic ' + new Buffer('test:' + 'test').toString('base64'),
         },
-        (error, response) => {
-          expect(response.statusCode).toEqual(200);
-          done();
-        }
-      );
+      }).then(response => {
+        expect(response.status).toEqual(200);
+        done();
+      });
     });
   });
 
   it('support http basic authentication with javascriptKey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
-      request.get(
-        {
-          url: 'http://localhost:8378/1/classes/TestObject',
-          headers: {
-            Authorization:
-              'Basic ' +
-              new Buffer('test:javascript-key=' + 'test').toString('base64'),
-          },
+      request({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        headers: {
+          Authorization:
+            'Basic ' +
+            new Buffer('test:javascript-key=' + 'test').toString('base64'),
         },
-        (error, response) => {
-          expect(response.statusCode).toEqual(200);
-          done();
-        }
-      );
+      }).then(response => {
+        expect(response.status).toEqual(200);
+        done();
+      });
     });
   });
 
@@ -70,23 +64,21 @@ describe('server', () => {
       }),
     }).catch(() => {
       //Need to use rest api because saving via JS SDK results in fail() not getting called
-      request.post(
-        {
-          url: 'http://localhost:8378/1/classes/NewClass',
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-REST-API-Key': 'rest',
-          },
-          body: {},
-          json: true,
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/NewClass',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
         },
-        (error, response, body) => {
-          expect(response.statusCode).toEqual(500);
-          expect(body.code).toEqual(1);
-          expect(body.message).toEqual('Internal server error.');
-          reconfigureServer().then(done, done);
-        }
-      );
+        body: {},
+      }).then(fail, response => {
+        expect(response.status).toEqual(500);
+        const body = response.data;
+        expect(body.code).toEqual(1);
+        expect(body.message).toEqual('Internal server error.');
+        reconfigureServer().then(done, done);
+      });
     });
   });
 
@@ -169,20 +161,17 @@ describe('server', () => {
   });
 
   it('can report the server version', done => {
-    request.get(
-      {
-        url: 'http://localhost:8378/1/serverInfo',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
-        json: true,
+    request({
+      url: 'http://localhost:8378/1/serverInfo',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
       },
-      (error, response, body) => {
-        expect(body.parseServerVersion).toEqual(parseServerPackage.version);
-        done();
-      }
-    );
+    }).then(response => {
+      const body = response.data;
+      expect(body.parseServerVersion).toEqual(parseServerPackage.version);
+      done();
+    });
   });
 
   it('can properly sets the push support', done => {
@@ -190,21 +179,19 @@ describe('server', () => {
     const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
     expect(config.hasPushScheduledSupport).toEqual(false);
-    request.get(
-      {
-        url: 'http://localhost:8378/1/serverInfo',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
-        json: true,
+    request({
+      url: 'http://localhost:8378/1/serverInfo',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
       },
-      (error, response, body) => {
-        expect(body.features.push.immediatePush).toEqual(true);
-        expect(body.features.push.scheduledPush).toEqual(false);
-        done();
-      }
-    );
+      json: true,
+    }).then(response => {
+      const body = response.data;
+      expect(body.features.push.immediatePush).toEqual(true);
+      expect(body.features.push.scheduledPush).toEqual(false);
+      done();
+    });
   });
 
   it('can properly sets the push support when not configured', done => {
@@ -215,21 +202,19 @@ describe('server', () => {
         const config = Config.get('test');
         expect(config.hasPushSupport).toEqual(false);
         expect(config.hasPushScheduledSupport).toEqual(false);
-        request.get(
-          {
-            url: 'http://localhost:8378/1/serverInfo',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-            },
-            json: true,
+        request({
+          url: 'http://localhost:8378/1/serverInfo',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
           },
-          (error, response, body) => {
-            expect(body.features.push.immediatePush).toEqual(false);
-            expect(body.features.push.scheduledPush).toEqual(false);
-            done();
-          }
-        );
+          json: true,
+        }).then(response => {
+          const body = response.data;
+          expect(body.features.push.immediatePush).toEqual(false);
+          expect(body.features.push.scheduledPush).toEqual(false);
+          done();
+        });
       })
       .catch(done.fail);
   });
@@ -247,21 +232,19 @@ describe('server', () => {
         const config = Config.get('test');
         expect(config.hasPushSupport).toEqual(true);
         expect(config.hasPushScheduledSupport).toEqual(false);
-        request.get(
-          {
-            url: 'http://localhost:8378/1/serverInfo',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-            },
-            json: true,
+        request({
+          url: 'http://localhost:8378/1/serverInfo',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
           },
-          (error, response, body) => {
-            expect(body.features.push.immediatePush).toEqual(true);
-            expect(body.features.push.scheduledPush).toEqual(false);
-            done();
-          }
-        );
+          json: true,
+        }).then(response => {
+          const body = response.data;
+          expect(body.features.push.immediatePush).toEqual(true);
+          expect(body.features.push.scheduledPush).toEqual(false);
+          done();
+        });
       })
       .catch(done.fail);
   });
@@ -280,35 +263,30 @@ describe('server', () => {
         const config = Config.get('test');
         expect(config.hasPushSupport).toEqual(true);
         expect(config.hasPushScheduledSupport).toEqual(true);
-        request.get(
-          {
-            url: 'http://localhost:8378/1/serverInfo',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-            },
-            json: true,
+        request({
+          url: 'http://localhost:8378/1/serverInfo',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
           },
-          (error, response, body) => {
-            expect(body.features.push.immediatePush).toEqual(true);
-            expect(body.features.push.scheduledPush).toEqual(true);
-            done();
-          }
-        );
+          json: true,
+        }).then(response => {
+          const body = response.data;
+          expect(body.features.push.immediatePush).toEqual(true);
+          expect(body.features.push.scheduledPush).toEqual(true);
+          done();
+        });
       })
       .catch(done.fail);
   });
 
   it('can respond 200 on path health', done => {
-    request.get(
-      {
-        url: 'http://localhost:8378/1/health',
-      },
-      (error, response) => {
-        expect(response.statusCode).toBe(200);
-        done();
-      }
-    );
+    request({
+      url: 'http://localhost:8378/1/health',
+    }).then(response => {
+      expect(response.status).toBe(200);
+      done();
+    });
   });
 
   it('can create a parse-server v1', done => {
@@ -525,7 +503,7 @@ describe('server', () => {
       middleware: 'spec/support/CustomMiddleware',
     })
       .then(() => {
-        return request.get('http://localhost:8378/1', (err, res) => {
+        return request({ url: 'http://localhost:8378/1' }).then(fail, res => {
           // Just check that the middleware set the header
           expect(res.headers['x-yolo']).toBe('1');
           done();

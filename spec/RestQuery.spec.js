@@ -3,9 +3,10 @@
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
+const RestQuery = require('../lib/RestQuery');
+const request = require('../lib/request');
 
 const querystring = require('querystring');
-const rp = require('request-promise');
 
 let config;
 let database;
@@ -221,40 +222,34 @@ describe('rest query', () => {
           'X-Parse-REST-API-Key': 'rest',
         };
 
-        const p0 = rp
-          .get({
-            headers: headers,
-            url:
-              'http://localhost:8378/1/classes/TestParameterEncode?' +
-              querystring
-                .stringify({
-                  where: '{"foo":{"$ne": "baz"}}',
-                  limit: 1,
-                })
-                .replace('=', '%3D'),
-          })
-          .then(fail, response => {
-            const error = response.error;
-            const b = JSON.parse(error);
-            expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-          });
+        const p0 = request({
+          headers: headers,
+          url:
+            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            querystring
+              .stringify({
+                where: '{"foo":{"$ne": "baz"}}',
+                limit: 1,
+              })
+              .replace('=', '%3D'),
+        }).then(fail, response => {
+          const error = response.data;
+          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
 
-        const p1 = rp
-          .get({
-            headers: headers,
-            url:
-              'http://localhost:8378/1/classes/TestParameterEncode?' +
-              querystring
-                .stringify({
-                  limit: 1,
-                })
-                .replace('=', '%3D'),
-          })
-          .then(fail, response => {
-            const error = response.error;
-            const b = JSON.parse(error);
-            expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-          });
+        const p1 = request({
+          headers: headers,
+          url:
+            'http://localhost:8378/1/classes/TestParameterEncode?' +
+            querystring
+              .stringify({
+                limit: 1,
+              })
+              .replace('=', '%3D'),
+        }).then(fail, response => {
+          const error = response.data;
+          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
         return Promise.all([p0, p1]);
       })
       .then(done)
@@ -339,5 +334,94 @@ describe('rest query', () => {
           done();
         }
       );
+  });
+});
+
+describe('RestQuery.each', () => {
+  it('should run each', async () => {
+    const objects = [];
+    while (objects.length != 10) {
+      objects.push(new Parse.Object('Object', { value: objects.length }));
+    }
+    const config = Config.get('test');
+    await Parse.Object.saveAll(objects);
+    const query = new RestQuery(
+      config,
+      auth.master(config),
+      'Object',
+      { value: { $gt: 2 } },
+      { limit: 2 }
+    );
+    const spy = spyOn(query, 'execute').and.callThrough();
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const results = [];
+    await query.each(result => {
+      expect(result.value).toBeGreaterThan(2);
+      results.push(result);
+    });
+    expect(spy.calls.count()).toBe(0);
+    expect(classSpy.calls.count()).toBe(4);
+    expect(results.length).toBe(7);
+  });
+
+  it('should work with query on relations', async () => {
+    const objectA = new Parse.Object('Letter', { value: 'A' });
+    const objectB = new Parse.Object('Letter', { value: 'B' });
+
+    const object1 = new Parse.Object('Number', { value: '1' });
+    const object2 = new Parse.Object('Number', { value: '2' });
+    const object3 = new Parse.Object('Number', { value: '3' });
+    const object4 = new Parse.Object('Number', { value: '4' });
+    await Parse.Object.saveAll([object1, object2, object3, object4]);
+
+    objectA.relation('numbers').add(object1);
+    objectB.relation('numbers').add(object2);
+    await Parse.Object.saveAll([objectA, objectB]);
+
+    const config = Config.get('test');
+
+    /**
+     * Two queries needed since objectId are sorted and we can't know which one
+     * going to be the first and then skip by the $gt added by each
+     */
+    const queryOne = new RestQuery(
+      config,
+      auth.master(config),
+      'Letter',
+      {
+        numbers: {
+          __type: 'Pointer',
+          className: 'Number',
+          objectId: object1.id,
+        },
+      },
+      { limit: 1 }
+    );
+    const queryTwo = new RestQuery(
+      config,
+      auth.master(config),
+      'Letter',
+      {
+        numbers: {
+          __type: 'Pointer',
+          className: 'Number',
+          objectId: object2.id,
+        },
+      },
+      { limit: 1 }
+    );
+
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const resultsOne = [];
+    const resultsTwo = [];
+    await queryOne.each(result => {
+      resultsOne.push(result);
+    });
+    await queryTwo.each(result => {
+      resultsTwo.push(result);
+    });
+    expect(classSpy.calls.count()).toBe(4);
+    expect(resultsOne.length).toBe(1);
+    expect(resultsTwo.length).toBe(1);
   });
 });

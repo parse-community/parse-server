@@ -1,11 +1,12 @@
 'use strict';
 const Parse = require('parse/node');
-const rp = require('request-promise');
+const request = require('../lib/request');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'test',
   'X-Parse-Master-Key': 'test',
+  'Content-Type': 'application/json',
 };
 
 const masterKeyOptions = {
@@ -53,6 +54,19 @@ const loadTestData = () => {
   return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
 };
 
+const get = function(url, options) {
+  options.qs = options.body;
+  delete options.body;
+  Object.keys(options.qs).forEach(key => {
+    options.qs[key] = JSON.stringify(options.qs[key]);
+  });
+  return request(Object.assign({}, { url }, options))
+    .then(response => response.data)
+    .catch(response => {
+      throw { error: response.data };
+    });
+};
+
 describe('Parse.Query Aggregate testing', () => {
   beforeEach(done => {
     loadTestData().then(done, done);
@@ -74,7 +88,7 @@ describe('Parse.Query Aggregate testing', () => {
         unknown: {},
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
       expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
       done();
     });
@@ -86,7 +100,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { _id: null },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
       expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
       done();
     });
@@ -98,7 +112,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: {},
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
+    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
       expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
       done();
     });
@@ -110,7 +124,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: '$name' },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
@@ -132,10 +146,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    const resp = await rp.get(
-      Parse.serverURL + '/aggregate/TestObject',
-      options
-    );
+    const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
     expect(resp.results.length).toBe(3);
     expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
     expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
@@ -429,7 +440,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -445,7 +456,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: 1 } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -461,7 +472,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, minScore: { $min: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -477,7 +488,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, maxScore: { $max: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -493,7 +504,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, avgScore: { $avg: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
@@ -509,7 +520,7 @@ describe('Parse.Query Aggregate testing', () => {
         limit: 2,
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
@@ -523,7 +534,7 @@ describe('Parse.Query Aggregate testing', () => {
         sort: { name: 1 },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('bar');
@@ -541,7 +552,7 @@ describe('Parse.Query Aggregate testing', () => {
         sort: { name: -1 },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(4);
         expect(resp.results[0].name).toBe('foo');
@@ -559,7 +570,7 @@ describe('Parse.Query Aggregate testing', () => {
         skip: 2,
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         done();
@@ -594,7 +605,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 15 } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(20);
@@ -609,7 +620,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results[0].score).toBe(10);
@@ -626,7 +637,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
@@ -642,7 +653,7 @@ describe('Parse.Query Aggregate testing', () => {
         match: { score: { $gt: 5, $lt: 15 }, views: 900 },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(1);
         expect(resp.results[0].score).toBe(10);
@@ -663,7 +674,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         // Match score { $gt: 15, $lt: 25 }
@@ -847,7 +858,7 @@ describe('Parse.Query Aggregate testing', () => {
         project: { name: 1 },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
@@ -867,7 +878,7 @@ describe('Parse.Query Aggregate testing', () => {
         project: { name: 1, score: 1, sender: 1 },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         resp.results.forEach(result => {
           expect(result.objectId).not.toBe(undefined);
@@ -911,7 +922,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: '$score', score: { $sum: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         resp.results.forEach(result => {
@@ -938,7 +949,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$score' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(Parse.serverURL + '/aggregate/UnknownClass', options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -952,7 +963,7 @@ describe('Parse.Query Aggregate testing', () => {
         group: { objectId: null, total: { $sum: '$unknownfield' } },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(Parse.serverURL + '/aggregate/UnknownClass', options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -964,7 +975,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'score' },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes(10)).toBe(true);
@@ -983,7 +994,7 @@ describe('Parse.Query Aggregate testing', () => {
         },
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
@@ -998,7 +1009,7 @@ describe('Parse.Query Aggregate testing', () => {
         where: JSON.stringify({ name: 'bar' }),
       },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results[0]).toBe(10);
         done();
@@ -1010,7 +1021,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'sender.group' },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
         expect(resp.results.includes('A')).toBe(true);
@@ -1047,7 +1058,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'unknown' },
     });
-    rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
+    get(Parse.serverURL + '/aggregate/UnknownClass', options)
       .then(resp => {
         expect(resp.results.length).toBe(0);
         done();
@@ -1063,7 +1074,7 @@ describe('Parse.Query Aggregate testing', () => {
     obj
       .save()
       .then(() => {
-        return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+        return get(Parse.serverURL + '/aggregate/TestObject', options);
       })
       .then(resp => {
         expect(resp.results.length).toBe(0);
@@ -1076,7 +1087,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: { distinct: 'size' },
     });
-    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+    get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
         expect(resp.results.includes('S')).toBe(true);
@@ -1085,6 +1096,36 @@ describe('Parse.Query Aggregate testing', () => {
         done();
       })
       .catch(done.fail);
+  });
+
+  it('distinct objectId', async () => {
+    const query = new Parse.Query(TestObject);
+    const results = await query.distinct('objectId');
+    expect(results.length).toBe(4);
+  });
+
+  it('distinct createdAt', async () => {
+    const object1 = new TestObject({ createdAt_test: true });
+    await object1.save();
+    const object2 = new TestObject({ createdAt_test: true });
+    await object2.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('createdAt_test', true);
+    const results = await query.distinct('createdAt');
+    expect(results.length).toBe(2);
+  });
+
+  it('distinct updatedAt', async () => {
+    const object1 = new TestObject({ updatedAt_test: true });
+    await object1.save();
+    const object2 = new TestObject();
+    await object2.save();
+    object2.set('updatedAt_test', true);
+    await object2.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('updatedAt_test', true);
+    const results = await query.distinct('updatedAt');
+    expect(results.length).toBe(2);
   });
 
   it('distinct null field', done => {
@@ -1106,7 +1147,7 @@ describe('Parse.Query Aggregate testing', () => {
         return user2.signUp();
       })
       .then(() => {
-        return rp.get(Parse.serverURL + '/aggregate/_User', options);
+        return get(Parse.serverURL + '/aggregate/_User', options);
       })
       .then(resp => {
         expect(resp.results.length).toEqual(1);
@@ -1137,7 +1178,7 @@ describe('Parse.Query Aggregate testing', () => {
     user
       .signUp()
       .then(function() {
-        return rp.get(Parse.serverURL + '/aggregate/_User', options);
+        return get(Parse.serverURL + '/aggregate/_User', options);
       })
       .then(function(resp) {
         expect(resp.results.length).toBe(1);
@@ -1177,39 +1218,41 @@ describe('Parse.Query Aggregate testing', () => {
       const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
 
       const options = Object.assign({}, masterKeyOptions, {
-        body: [
-          {
-            match: { name: 'Hello' },
-          },
-          {
-            // Transform className$objectId to objectId and store in new field tempPointer
-            project: {
-              tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
+        body: {
+          pipeline: [
+            {
+              match: { name: 'Hello' },
             },
-          },
-          {
-            // Left Join, replace objectId stored in tempPointer with an actual object
-            lookup: {
-              from: 'test_TestObject',
-              localField: 'tempPointer',
-              foreignField: '_id',
-              as: 'tempPointer',
+            {
+              // Transform className$objectId to objectId and store in new field tempPointer
+              project: {
+                tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
+              },
             },
-          },
-          {
-            // lookup returns an array, Deconstructs an array field to objects
-            unwind: {
-              path: '$tempPointer',
+            {
+              // Left Join, replace objectId stored in tempPointer with an actual object
+              lookup: {
+                from: 'test_TestObject',
+                localField: 'tempPointer',
+                foreignField: '_id',
+                as: 'tempPointer',
+              },
             },
-          },
-          {
-            match: { 'tempPointer.value': 2 },
-          },
-        ],
+            {
+              // lookup returns an array, Deconstructs an array field to objects
+              unwind: {
+                path: '$tempPointer',
+              },
+            },
+            {
+              match: { 'tempPointer.value': 2 },
+            },
+          ],
+        },
       });
       Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3])
         .then(() => {
-          return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+          return get(Parse.serverURL + '/aggregate/TestObject', options);
         })
         .then(resp => {
           expect(resp.results.length).toEqual(1);

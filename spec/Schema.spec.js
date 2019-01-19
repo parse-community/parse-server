@@ -1032,9 +1032,12 @@ describe('SchemaController', () => {
             createdAt: { type: 'Date' },
             ACL: { type: 'ACL' },
           };
-          expect(dd(schema.data.NewClass, expectedSchema)).toEqual(undefined);
-          done();
-        });
+          expect(dd(schema.schemaData.NewClass.fields, expectedSchema)).toEqual(
+            undefined
+          );
+        })
+        .then(done)
+        .catch(done.fail);
     });
   });
 
@@ -1063,7 +1066,6 @@ describe('SchemaController', () => {
           .then(obj2reloaded => {
             expect(obj2reloaded.get('aString')).toEqual(undefined);
             done();
-            Parse.Object.enableSingleInstance();
           });
       })
       .catch(error => {
@@ -1097,7 +1099,6 @@ describe('SchemaController', () => {
       .then(obj1 => {
         expect(obj1.get('aPointer')).toEqual('Now a string');
         done();
-        Parse.Object.enableSingleInstance();
       });
   });
 
@@ -1268,14 +1269,15 @@ describe('SchemaController', () => {
       })
       .then(userSchema => {
         validateSchemaStructure(userSchema);
-        validateSchemaDataStructure(schema.data);
+        validateSchemaDataStructure(schema.schemaData);
         return schema.getOneSchema('_PushStatus', true);
       })
       .then(pushStatusSchema => {
         validateSchemaStructure(pushStatusSchema);
-        validateSchemaDataStructure(schema.data);
-        done();
-      });
+        validateSchemaDataStructure(schema.schemaData);
+      })
+      .then(done)
+      .catch(done.fail);
   });
 });
 

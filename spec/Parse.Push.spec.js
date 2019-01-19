@@ -1,6 +1,6 @@
 'use strict';
 
-const request = require('request');
+const request = require('../lib/request');
 
 const delayPromise = delay => {
   return new Promise(resolve => {
@@ -153,19 +153,16 @@ describe('Parse.Push', () => {
       )
       .then(() => delayPromise(500))
       .then(() => {
-        request.get(
-          {
-            url: 'http://localhost:8378/1/classes/_PushStatus',
-            json: true,
-            headers: {
-              'X-Parse-Application-Id': 'test',
-            },
+        request({
+          url: 'http://localhost:8378/1/classes/_PushStatus',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
           },
-          (error, response, body) => {
-            expect(body.error).toEqual('unauthorized');
-            done();
-          }
-        );
+        }).then(fail, response => {
+          expect(response.data.error).toEqual('unauthorized');
+          done();
+        });
       })
       .catch(err => {
         jfail(err);
@@ -191,28 +188,26 @@ describe('Parse.Push', () => {
       )
       .then(() => delayPromise(500)) // put a delay as we keep writing
       .then(() => {
-        request.get(
-          {
-            url: 'http://localhost:8378/1/classes/_PushStatus',
-            json: true,
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-            },
+        request({
+          url: 'http://localhost:8378/1/classes/_PushStatus',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
           },
-          (error, response, body) => {
-            try {
-              expect(body.results.length).toEqual(1);
-              expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-              expect(body.results[0].payload).toEqual(
-                '{"badge":"increment","alert":"Hello world!"}'
-              );
-            } catch (e) {
-              jfail(e);
-            }
-            done();
+        }).then(response => {
+          const body = response.data;
+          try {
+            expect(body.results.length).toEqual(1);
+            expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
+            expect(body.results[0].payload).toEqual(
+              '{"badge":"increment","alert":"Hello world!"}'
+            );
+          } catch (e) {
+            jfail(e);
           }
-        );
+          done();
+        });
       })
       .catch(err => {
         jfail(err);

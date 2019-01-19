@@ -4,8 +4,14 @@
 [![Build Status](https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat)](https://travis-ci.org/parse-community/parse-server)
 [![Coverage Status](https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg)](https://codecov.io/github/parse-community/parse-server?branch=master)
 [![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
-[![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
+[![Join The Conversation](https://img.shields.io/discourse/https/communiy.parseplatform.org/topics.svg)](https://community.parseplatform.org/c/parse-server)
 [![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
+
+
+[![](https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat)]()
+[![](https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat)]()
 
 Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
 
@@ -35,7 +41,7 @@ Parse Server works with the Express web application framework. It can be added t
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-3.0.0)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started
@@ -391,7 +397,8 @@ We have written up a [migration guide](3.0.0.md), hoping this will help you tran
 
 # Support
 
-For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
+For implementation related questions or any other questions please refer to [Parse Community's Discourse forum](https://community.parseplatform.org/c/parse-server).
+
 
 If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
 

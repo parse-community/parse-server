@@ -4,7 +4,7 @@
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
-
+const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 // restOptions can include:
 //   skip
@@ -30,7 +30,6 @@ function RestQuery(
   this.clientSDK = clientSDK;
   this.response = null;
   this.findOptions = {};
-  this.isWrite = false;
 
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
@@ -199,6 +198,38 @@ RestQuery.prototype.execute = function(executeOptions) {
     });
 };
 
+RestQuery.prototype.each = function(callback) {
+  const { config, auth, className, restWhere, restOptions, clientSDK } = this;
+  // if the limit is set, use it
+  restOptions.limit = restOptions.limit || 100;
+  restOptions.order = 'objectId';
+  let finished = false;
+
+  return continueWhile(
+    () => {
+      return !finished;
+    },
+    async () => {
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK
+      );
+      const { results } = await query.execute();
+      results.forEach(callback);
+      finished = results.length < restOptions.limit;
+      if (!finished) {
+        restWhere.objectId = Object.assign({}, restWhere.objectId, {
+          $gt: results[results.length - 1].objectId,
+        });
+      }
+    }
+  );
+};
+
 RestQuery.prototype.buildRestWhere = function() {
   return Promise.resolve()
     .then(() => {
@@ -225,12 +256,6 @@ RestQuery.prototype.buildRestWhere = function() {
     .then(() => {
       return this.replaceEquality();
     });
-};
-
-// Marks the query for a write attempt, so we read the proper ACL (write instead of read)
-RestQuery.prototype.forWrite = function() {
-  this.isWrite = true;
-  return this;
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
@@ -614,9 +639,6 @@ RestQuery.prototype.runFind = function(options = {}) {
   }
   if (options.op) {
     findOptions.op = options.op;
-  }
-  if (this.isWrite) {
-    findOptions.isWrite = true;
   }
   return this.config.database
     .find(this.className, this.restWhere, findOptions)
