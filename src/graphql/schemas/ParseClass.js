@@ -158,11 +158,13 @@ function getObjectId(input) {
 export function loadClass(className, schema) {
   const c = getOrElse(className, () => new ParseClass(className, schema));
   const objectType = c.graphQLObjectType();
+  const eventObjectType = c.graphQLEventObjectType();
   const inputType = c.graphQLInputObjectType();
   const updateType = c.graphQLUpdateInputObjectType();
   const queryType = c.graphQLQueryInputObjectType();
   const queryResultType = c.graphQLQueryResultType(objectType);
   const mutationResultType = c.graphQLMutationResultType(objectType);
+  const subscriptionType = c.graphQLSubscriptionType();
 
   const get = {
     type: objectType,
@@ -283,6 +285,18 @@ export function loadClass(className, schema) {
       const object = await runGet(context, info, className, objectId);
       await rest.del(context.config, context.auth, className, objectId);
       return { object, clientMutationId };
+    },
+  };
+
+  const subscribe = {
+    type: subscriptionType,
+    description: `use this method to subscribe to an existing ${className}`,
+    args: {
+      trackEvents: {type : new GraphQLList(eventObjectType)} 
+      where: { type: queryType },
+    },
+    resolve: async (root, args, context, info) => {
+      //TODO : Make connection to the ParseServerLiveQuery
     },
   };
 
@@ -462,6 +476,56 @@ export class ParseClass {
     };
   }
 
+  graphQLSubscriptionConfig() {
+    const className = this.className;
+    return {
+      name: this.displayName + 'Subscription',
+      description: `Parse Class ${className} Subscription`,
+      fields: () => {
+        const objectFields = this.buildFields(graphQLQueryField);
+        delete objectFields.objectId;
+        delete objectFields.id;
+        return {
+          op : 
+          object : objectFields
+        };
+      },
+      isTypeOf: this.isTypeOf.bind(this),
+    };
+  }
+
+  graphQLEventObjectType(){
+    if(!this.eventObjectType) {
+      this.eventObjectType = new GraphQLEnumType({
+        name: 'eventObject',
+        values: {
+          create: {
+            value: "create",
+            description: "This event means a ParseObject is created and it fulfills the ParseQuery"
+          },
+          enter: {
+            value: "enter",
+            description: "This event means a ParseObject's old value does not fulfill the ParseQuery but its new value fulfills the ParseQuery"
+          },
+          update: {
+            value: "update",
+            description: "This event means a ParseObject's old value and its new value fulfill the ParseQuery at the same time"
+          },
+          leave: {
+            value: "leave",
+            description: "This event means a ParseObject's old value fulfills the ParseQuery but its new value does not"
+          },
+          delete: {
+            value: "delete",
+            description: "This event means a ParseObject's whose value fulfills the ParseQuery is deleted"
+          },
+        },
+      }),
+    } else {
+      return this.objectEventType;
+    }
+  }
+
   graphQLObjectType() {
     if (!this.objectType) {
       this.objectType = new GraphQLObjectType(this.graphQLConfig());
@@ -513,6 +577,15 @@ export class ParseClass {
     }
     return this.mutationResultObjectType;
   }
+
+  graphQLSubscriptionType() {
+    if (!this.subscriptionType) {
+      this.subscriptionType = new GraphQLObjectType(
+        this.graphQLSubscriptionConfig()
+      );
+    }
+    return this.subscriptionType;
+  }
 }
 
 export function getParseClassQueryFields(schema) {
@@ -539,7 +612,18 @@ export function getParseClassMutationFields(schema) {
   }, {});
 }
 
+export function getParseClassSubscriptionField(schema) {
+  return schema.__classNames.reduce((fields, className) => {
+    const { subscribe, displayName } = loadClass(
+      className,
+      schema
+    );
+    return Object.assign(fields,{`subscribe${displayName}`: subscribe});
+  }, {});
+}
+
 export default {
   Query: getParseClassQueryFields,
   Mutation: getParseClassMutationFields,
+  Subscription: getParseClassSubscriptionField
 };
