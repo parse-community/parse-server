@@ -558,12 +558,9 @@ describe('Personally Identifiable Information', () => {
         userObj.id = user.id;
         userObj
           .fetch()
-          .then(
-            fetchedUser => {
-              expect(fetchedUser.get('email')).toBe(EMAIL);
-            },
-            e => console.error('error', e)
-          )
+          .then(fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(EMAIL);
+          })
           .then(done)
           .catch(done.fail);
       });
@@ -573,20 +570,25 @@ describe('Personally Identifiable Information', () => {
           .equalTo('objectId', user.id)
           .find()
           .then(fetchedUser => {
+            fetchedUser = fetchedUser[0];
             expect(fetchedUser.get('email')).toBe(EMAIL);
             expect(fetchedUser.get('zip')).toBe(ZIP);
             expect(fetchedUser.get('ssn')).toBe(SSN);
             done();
-          });
+          })
+          .catch(done.fail);
       });
 
       it('privilaged user should be able to get user PII via API with Get', done => {
-        new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
-          expect(fetchedUser.get('email')).toBe(EMAIL);
-          expect(fetchedUser.get('zip')).toBe(ZIP);
-          expect(fetchedUser.get('ssn')).toBe(SSN);
-          done();
-        });
+        new Parse.Query(Parse.User)
+          .get(user.id)
+          .then(fetchedUser => {
+            expect(fetchedUser.get('email')).toBe(EMAIL);
+            expect(fetchedUser.get('zip')).toBe(ZIP);
+            expect(fetchedUser.get('ssn')).toBe(SSN);
+            done();
+          })
+          .catch(done.fail);
       });
 
       it('privilaged user should get user PII via REST by ID', done => {
@@ -608,7 +610,8 @@ describe('Personally Identifiable Information', () => {
             },
             e => console.error('error', e.message)
           )
-          .then(() => done());
+          .then(() => done())
+          .catch(done.fail);
       });
     });
 
@@ -616,7 +619,7 @@ describe('Personally Identifiable Information', () => {
     describe('with public read ACL', () => {
       beforeEach(async done => {
         const userACL = new Parse.ACL();
-        userACL.setPublicReadAccess();
+        userACL.setPublicReadAccess(true);
         await user.setACL(userACL).save(null, { useMasterKey: true });
         done();
       });
@@ -627,12 +630,9 @@ describe('Personally Identifiable Information', () => {
           userObj.id = user.id;
           userObj
             .fetch()
-            .then(
-              fetchedUser => {
-                expect(fetchedUser.get('email')).toBe(undefined);
-              },
-              e => console.error('error', e)
-            )
+            .then(fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(undefined);
+            })
             .then(done)
             .catch(done.fail);
         });
@@ -644,22 +644,27 @@ describe('Personally Identifiable Information', () => {
             .equalTo('objectId', user.id)
             .find()
             .then(fetchedUser => {
+              fetchedUser = fetchedUser[0];
               expect(fetchedUser.get('email')).toBe(undefined);
               expect(fetchedUser.get('zip')).toBe(undefined);
               expect(fetchedUser.get('ssn')).toBe(undefined);
               done();
             })
+            .catch(done.fail)
         );
       });
 
       it('should not be able to get user PII via API with Get', done => {
         Parse.User.logOut().then(() =>
-          new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(undefined);
-            expect(fetchedUser.get('zip')).toBe(undefined);
-            expect(fetchedUser.get('ssn')).toBe(undefined);
-            done();
-          })
+          new Parse.Query(Parse.User)
+            .get(user.id)
+            .then(fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(undefined);
+              expect(fetchedUser.get('zip')).toBe(undefined);
+              expect(fetchedUser.get('ssn')).toBe(undefined);
+              done();
+            })
+            .catch(done.fail)
         );
       });
 
@@ -672,16 +677,14 @@ describe('Personally Identifiable Information', () => {
             'X-Parse-Javascript-Key': 'test',
           },
         })
-          .then(
-            response => {
-              const result = response.data;
-              const fetchedUser = result;
-              expect(fetchedUser.zip).toBe(undefined);
-              expect(fetchedUser.email).toBe(undefined);
-            },
-            e => console.error('error', e.message)
-          )
-          .then(() => done());
+          .then(response => {
+            const result = response.data;
+            const fetchedUser = result;
+            expect(fetchedUser.zip).toBe(undefined);
+            expect(fetchedUser.email).toBe(undefined);
+          })
+          .then(() => done())
+          .catch(done.fail);
       });
 
       // Even with an authenticated user, Public read ACL should never expose sensitive data.
@@ -715,20 +718,25 @@ describe('Personally Identifiable Information', () => {
             .equalTo('objectId', user.id)
             .find()
             .then(fetchedUser => {
+              fetchedUser = fetchedUser[0];
               expect(fetchedUser.get('email')).toBe(undefined);
               expect(fetchedUser.get('zip')).toBe(undefined);
               expect(fetchedUser.get('ssn')).toBe(undefined);
               done();
-            });
+            })
+            .catch(done.fail);
         });
 
         it('should not be able to get user PII via API with Get', done => {
-          new Parse.Query(Parse.User).get(user.id).then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(undefined);
-            expect(fetchedUser.get('zip')).toBe(undefined);
-            expect(fetchedUser.get('ssn')).toBe(undefined);
-            done();
-          });
+          new Parse.Query(Parse.User)
+            .get(user.id)
+            .then(fetchedUser => {
+              expect(fetchedUser.get('email')).toBe(undefined);
+              expect(fetchedUser.get('zip')).toBe(undefined);
+              expect(fetchedUser.get('ssn')).toBe(undefined);
+              done();
+            })
+            .catch(done.fail);
         });
       });
     });
