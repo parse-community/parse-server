@@ -57,7 +57,7 @@
     "deep-diff": "1.0.2",
     "eslint": "^5.0.0",
     "eslint-plugin-flowtype": "^3.0.0",
-    "flow-bin": "0.83.0",
+    "flow-bin": "0.91.0",
     "gaze": "1.1.3",
     "husky": "^1.0.0-rc.13",
     "jasmine": "3.1.0",
