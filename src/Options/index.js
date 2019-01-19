@@ -190,7 +190,7 @@ export interface TwoFactorAuthentication {
   /* token to encrypt two factor hash on session */
   token: ?(string[]);
   /* if true all user have to be authenticated with 2FA. default false */
-  mustUsed: boolean;
+  twoFactorAlwaysRequired: boolean;
   /* minutes between creation and expiration of
   session generated on first authentication step.
   default 4 */

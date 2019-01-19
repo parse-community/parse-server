@@ -62,18 +62,19 @@ const getAuthForSessionToken = async function({
   installationId,
   sessionTwoFactorToken,
 }) {
-  const {
-    twoFactorAuthentication: { token, mustUsed },
-  } = config;
-
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
     let redisUserKey = sessionToken;
-    if (token && sessionTwoFactorToken) {
-      redisUserKey = `${sessionToken}-${cryptoUtils.createHashHmac(
-        token,
-        sessionTwoFactorToken
-      )}`;
+    if (config) {
+      const {
+        twoFactorAuthentication: { token },
+      } = config;
+      if (token && sessionTwoFactorToken) {
+        redisUserKey = `${sessionToken}-${cryptoUtils.createHashHmac(
+          token,
+          sessionTwoFactorToken
+        )}`;
+      }
     }
     const userJSON = await cacheController.user.get(redisUserKey);
     if (userJSON) {
@@ -133,10 +134,16 @@ const getAuthForSessionToken = async function({
   const obj = results[0]['user'];
   let encryptTwoFactorToken = '';
   if (config) {
+    const {
+      twoFactorAuthentication: { token, twoFactorAlwaysRequired },
+    } = config;
     //check if 2FA is enabled
     if (token) {
       //check if 2FA is optional or must be used. default false
-      if ((mustUsed || obj.twoFactorActive) && !sessionTwoFactorToken) {
+      if (
+        (twoFactorAlwaysRequired || obj.twoFactorActive) &&
+        !sessionTwoFactorToken
+      ) {
         throw new Parse.Error(
           Parse.Error.INVALID_SESSION_TOKEN,
           '2FA hash not found.'
@@ -426,9 +433,13 @@ const createSession = function(
 
   if (config) {
     const {
-      twoFactorAuthentication: { mustUsed, token, firstSessionExpireTime },
+      twoFactorAuthentication: {
+        twoFactorAlwaysRequired,
+        token,
+        firstSessionExpireTime,
+      },
     } = config;
-    if (mustUsed || (twoFactorActive && token)) {
+    if (twoFactorAlwaysRequired || (twoFactorActive && token)) {
       const now = new Date();
       sessionData.expiresAt = Parse._encode(
         new Date(now.getTime() + firstSessionExpireTime * 60000)

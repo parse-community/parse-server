@@ -166,7 +166,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     const {
-      twoFactorAuthentication: { mustUsed },
+      twoFactorAuthentication: { twoFactorAlwaysRequired },
     } = req.config;
 
     if (!req.info || !req.info.sessionToken) {
@@ -176,7 +176,7 @@ export class UsersRouter extends ClassesRouter {
       );
     }
 
-    if (mustUsed && !req.info.sessionTwoFactorToken) {
+    if (twoFactorAlwaysRequired && !req.info.sessionTwoFactorToken) {
       throw new Parse.Error(
         Parse.Error.INVALID_SESSION_TOKEN,
         'Invalid session token'
@@ -231,7 +231,7 @@ export class UsersRouter extends ClassesRouter {
     if (!req.auth.isMaster) {
       throw new Parse.Error(
         Parse.Error.INTERNAL_SERVER_ERROR,
-        'Need masterKey'
+        'MasterKey is required'
       );
     }
 
@@ -247,7 +247,7 @@ export class UsersRouter extends ClassesRouter {
       .then(response => {
         const { results } = response;
         const {
-          twoFactorAuthentication: { mustUsed, token },
+          twoFactorAuthentication: { twoFactorAlwaysRequired, token },
         } = req.config;
 
         if (!results || results.length == 0 || !results[0].user) {
@@ -257,7 +257,7 @@ export class UsersRouter extends ClassesRouter {
           );
         }
 
-        if (!mustUsed && !results[0].user.twoFactorActive) {
+        if (!twoFactorAlwaysRequired && !results[0].user.twoFactorActive) {
           throw new Parse.Error(
             Parse.Error.INVALID_SESSION_TOKEN,
             '2FA not active'

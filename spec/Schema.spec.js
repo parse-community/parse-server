@@ -806,6 +806,7 @@ describe('SchemaController', () => {
             sessionToken: { type: 'String' },
             expiresAt: { type: 'Date' },
             createdWith: { type: 'Object' },
+            twoFactorHash: { type: 'String' },
             ACL: { type: 'ACL' },
           },
           classLevelPermissions: {

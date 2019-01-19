@@ -41,6 +41,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     email: { type: 'String' },
     emailVerified: { type: 'Boolean' },
     authData: { type: 'Object' },
+    twoFactorActive: { type: 'Boolean' },
   },
   // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {

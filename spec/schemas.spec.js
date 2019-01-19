@@ -749,6 +749,7 @@ describe('schemas', () => {
               password: { type: 'String' },
               email: { type: 'String' },
               emailVerified: { type: 'Boolean' },
+              twoFactorActive: { type: 'Boolean' },
               authData: { type: 'Object' },
               newField: { type: 'String' },
               ACL: { type: 'ACL' },

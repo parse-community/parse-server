@@ -31,7 +31,7 @@ module.exports.ParseServerOptions = {
   twoFactorAuthentication: {
     env: 'PARSE_SERVER_TWO_FACTOR_AUTH',
     help: 'used for validate Session after two factor auth',
-    default: { firstSessionExpireTime: 4, mustUsed: false },
+    default: { firstSessionExpireTime: 4, twoFactorAlwaysRequired: false },
   },
   appName: {
     env: 'PARSE_SERVER_APP_NAME',
