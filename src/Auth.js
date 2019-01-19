@@ -140,36 +140,36 @@ const getAuthForSessionToken = async function({
     //check if 2FA is enabled
     if (token) {
       //check if 2FA is optional or must be used. default false
-      if (
-        (twoFactorAlwaysRequired || obj.twoFactorActive) &&
-        !sessionTwoFactorToken
-      ) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          '2FA hash not found.'
-        );
-      }
+      if (twoFactorAlwaysRequired || obj.twoFactorActive) {
+        //check if sessionTwoFactorToken is set
+        if (!sessionTwoFactorToken) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            '2FA hash not found.'
+          );
+        }
+        // check if session parse object has twoFactorHash;
+        const { twoFactorHash } = results[0];
+        if (!twoFactorHash) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            '2FA hash not found on session.'
+          );
+        }
 
-      const { twoFactorHash } = results[0];
-      if (!twoFactorHash) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          '2FA hash not found on session.'
+        // encrypt two factor token with the two factor config token
+        encryptTwoFactorToken = cryptoUtils.createHashHmac(
+          token,
+          sessionTwoFactorToken
         );
-      }
-      // encrypt two factor token with the two factor config token
-      encryptTwoFactorToken = cryptoUtils.createHashHmac(
-        token,
-        sessionTwoFactorToken
-      );
 
-      // invalid session if it not match with token saved on session
-
-      if (encryptTwoFactorToken !== twoFactorHash) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          '2FA hash not match.'
-        );
+        // invalid session if it not match with token saved on session
+        if (encryptTwoFactorToken !== twoFactorHash) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            '2FA hash not match.'
+          );
+        }
       }
     }
   }
