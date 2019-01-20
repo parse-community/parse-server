@@ -23,8 +23,7 @@
       "range": true,
       "jequal": true,
       "create": true,
-      "arrayContains": true,
-      "expectAsync": true
+      "arrayContains": true
     },
     "rules": {
       "no-console": [0],

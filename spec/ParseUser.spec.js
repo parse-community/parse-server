@@ -3793,7 +3793,13 @@ describe('2FA', () => {
     } = await enable2FA(user);
     const token = otplib.authenticator.generate(secret);
     await validate2FA(user, token);
-    // await Parse.User.logOut();
-    await expectAsync(Parse.User.logIn('username', 'password')).toBeRejected();
+    await Parse.User.logOut();
+    await Parse.User.logIn('username', 'password')
+      .then(() => {
+        throw 'Login should have failed';
+      })
+      .catch(() => {
+        /**/
+      });
   });
 });
