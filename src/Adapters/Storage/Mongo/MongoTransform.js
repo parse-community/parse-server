@@ -18,6 +18,8 @@ const transformKey = (className, fieldName, schema) => {
       return '_last_used';
     case 'timesUsed':
       return 'times_used';
+    case 'mfa':
+      return '_mfa';
   }
 
   if (
@@ -105,6 +107,9 @@ const transformKeyValueForUpdate = (
     case 'times_used':
       key = 'times_used';
       timeField = true;
+      break;
+    case 'mfa':
+      key = '_mfa';
       break;
   }
 
@@ -286,6 +291,7 @@ function transformQueryKeyValue(className, key, value, schema) {
     case '_wperm':
     case '_perishable_token':
     case '_email_verify_token':
+    case '_mfa':
       return { key, value };
     case '$or':
     case '$and':
@@ -1348,6 +1354,9 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject._hashed_password = mongoObject[key];
             break;
           case '_acl':
+            break;
+          case '_mfa':
+            restObject._mfa = mongoObject[key];
             break;
           case '_email_verify_token':
           case '_perishable_token':

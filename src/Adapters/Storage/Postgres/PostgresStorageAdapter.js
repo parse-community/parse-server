@@ -951,6 +951,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       fields._perishable_token_expires_at = { type: 'Date' };
       fields._password_changed_at = { type: 'Date' };
       fields._password_history = { type: 'Array' };
+      fields._mfa = { type: 'String' };
     }
     let index = 2;
     const relations = [];
@@ -1457,6 +1458,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         delete update[fieldName];
         update['authData'] = update['authData'] || {};
         update['authData'][provider] = value;
+      }
+      if (fieldName === 'mfa') {
+        update['_mfa'] = update['mfa'];
+        delete update.mfa;
       }
     }
 

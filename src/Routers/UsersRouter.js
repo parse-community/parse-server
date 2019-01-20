@@ -7,6 +7,7 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
+import * as otplib from 'otplib';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -44,7 +45,7 @@ export class UsersRouter extends ClassesRouter {
       ) {
         payload = req.query;
       }
-      const { username, email, password } = payload;
+      const { username, email, password, token } = payload;
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
@@ -153,7 +154,12 @@ export class UsersRouter extends ClassesRouter {
               delete user.authData;
             }
           }
-
+          if (user._mfa) {
+            if (!otplib.authenticator.verify({ token, secret: user._mfa })) {
+              throw new Parse.Error(-1, 'Invalid 2FA token');
+            }
+          }
+          delete user._mfa;
           return resolve(user);
         })
         .catch(error => {
@@ -189,16 +195,15 @@ export class UsersRouter extends ClassesRouter {
             Parse.Error.INVALID_SESSION_TOKEN,
             'Invalid session token'
           );
-        } else {
-          const user = response.results[0].user;
-          // Send token back on the login, because SDKs expect that.
-          user.sessionToken = sessionToken;
-
-          // Remove hidden properties.
-          UsersRouter.removeHiddenProperties(user);
-
-          return { response: user };
         }
+        const user = response.results[0].user;
+        // Send token back on the login, because SDKs expect that.
+        user.sessionToken = sessionToken;
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
+        return { response: user };
       });
   }
 
@@ -308,6 +313,60 @@ export class UsersRouter extends ClassesRouter {
         });
     }
     return Promise.resolve(success);
+  }
+
+  async enable2FA(req) {
+    const { user } = req.auth;
+    const secret = otplib.authenticator.generateSecret();
+    const otpauth = otplib.authenticator.keyuri(
+      user.username,
+      'service',
+      secret
+    );
+    await rest.update(
+      req.config,
+      req.auth,
+      '_User',
+      {
+        objectId: user.id,
+      },
+      {
+        mfa: `pending:${secret}`,
+      }
+    );
+    return { response: { qrcodeURL: otpauth, secret } };
+  }
+
+  async verify2FA(req) {
+    const { token } = req.body;
+    // Fetch the user directly from the DB as we need the _mfa
+    const [user] = await req.config.database.find('_User', {
+      objectId: req.auth.user.id,
+    });
+    const mfa = user._mfa;
+    if (!mfa) {
+      throw new Parse.Error(-1, 'MFA is not enabled on this account');
+    }
+    if (mfa.indexOf('pending:') !== 0) {
+      throw new Parse.Error(-1, 'MFA is already active');
+    }
+    const secret = mfa.slice('pending:'.length);
+    const result = otplib.authenticator.verify({ token, secret });
+    if (!result) {
+      throw new Parse.Error(-1, 'Invalid token');
+    }
+    await rest.update(
+      req.config,
+      req.auth,
+      '_User',
+      {
+        objectId: req.auth.user.id,
+      },
+      {
+        mfa: `${secret}`,
+      }
+    );
+    return { response: {} };
   }
 
   _throwOnBadEmailConfig(req) {
@@ -441,6 +500,8 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
     });
+    this.route('GET', '/users/me/enable2FA', req => this.enable2FA(req));
+    this.route('POST', '/users/me/verify2FA', req => this.verify2FA(req));
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });

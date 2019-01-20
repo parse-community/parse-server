@@ -12,6 +12,7 @@ const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageA
 const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
+const otplib = require('otplib');
 
 function verifyACL(user) {
   const ACL = user.getACL();
@@ -3752,5 +3753,47 @@ describe('Parse.User testing', () => {
         ok(model._isLinked('facebook'), 'User should be linked to facebook');
       }
     );
+  });
+});
+
+function enable2FA(user) {
+  return request({
+    method: 'GET',
+    url: 'http://localhost:8378/1/users/me/enable2FA',
+    json: true,
+    headers: {
+      'X-Parse-Session-Token': user.getSessionToken(),
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+    },
+  });
+}
+
+function validate2FA(user, token) {
+  return request({
+    method: 'POST',
+    url: 'http://localhost:8378/1/users/me/verify2FA',
+    body: {
+      token,
+    },
+    headers: {
+      'X-Parse-Session-Token': user.getSessionToken(),
+      'X-Parse-Application-Id': Parse.applicationId,
+      'X-Parse-REST-API-Key': 'rest',
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+describe('2FA', () => {
+  it('should enable 2FA tokens', async () => {
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret },
+    } = await enable2FA(user);
+    const token = otplib.authenticator.generate(secret);
+    await validate2FA(user, token);
+    // await Parse.User.logOut();
+    await expectAsync(Parse.User.logIn('username', 'password')).toBeRejected();
   });
 });
