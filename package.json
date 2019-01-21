@@ -67,7 +67,7 @@
     "lint-staged": "^8.1.0",
     "mongodb-runner": "4.3.2",
     "nyc": "^13.1.0",
-    "prettier": "1.15.3",
+    "prettier": "1.16.0",
     "supports-color": "^6.0.0"
   },
   "scripts": {
