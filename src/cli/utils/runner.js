@@ -6,6 +6,11 @@ function logStartupOptions(options) {
     if (key == 'masterKey') {
       value = '***REDACTED***';
     }
+    if (key == 'push') {
+      if (Buffer.isBuffer(value.ios.token.key)) {
+        value.ios.token.key = '***REDACTED***';
+      }
+    }
     if (typeof value === 'object') {
       try {
         value = JSON.stringify(value);
