@@ -33,7 +33,7 @@
     "lodash": "4.17.11",
     "lru-cache": "5.1.1",
     "mime": "2.4.0",
-    "mongodb": "3.2.0",
+    "mongodb": "3.1.13",
     "parse": "2.1.0",
     "pg-promise": "8.5.5",
     "redis": "2.8.0",
@@ -47,8 +47,8 @@
   "devDependencies": {
     "@babel/cli": "7.2.3",
     "@babel/core": "7.2.2",
-    "@babel/plugin-transform-flow-strip-types": "7.2.3",
     "@babel/plugin-proposal-object-rest-spread": "7.3.1",
+    "@babel/plugin-transform-flow-strip-types": "7.2.3",
     "@babel/preset-env": "7.2.3",
     "@parse/minami": "^1.0.0",
     "babel-eslint": "^10.0.0",
