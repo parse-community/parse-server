@@ -6,6 +6,9 @@ function logStartupOptions(options) {
     if (key == 'masterKey') {
       value = '***REDACTED***';
     }
+    if (key == 'push' && process.env.VERBOSE != true) {
+      value = '***REDACTED***';
+    }
     if (typeof value === 'object') {
       try {
         value = JSON.stringify(value);
