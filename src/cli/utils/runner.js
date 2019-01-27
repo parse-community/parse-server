@@ -6,7 +6,7 @@ function logStartupOptions(options) {
     if (key == 'masterKey') {
       value = '***REDACTED***';
     }
-    if (key == 'push' && process.env.VERBOSE != true) {
+    if (key == 'push' && options.verbose != true) {
       value = '***REDACTED***';
     }
     if (typeof value === 'object') {
