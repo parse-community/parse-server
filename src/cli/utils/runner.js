@@ -6,10 +6,8 @@ function logStartupOptions(options) {
     if (key == 'masterKey') {
       value = '***REDACTED***';
     }
-    if (key == 'push') {
-      if (Buffer.isBuffer(value.ios.token.key)) {
-        value.ios.token.key = '***REDACTED***';
-      }
+    if (key == 'push' && process.env.VERBOSE != true) {
+      value = '***REDACTED***';
     }
     if (typeof value === 'object') {
       try {
