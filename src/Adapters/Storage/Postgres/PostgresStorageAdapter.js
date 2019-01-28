@@ -1956,7 +1956,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   count(className, schema, query) {
     debug('count', className, query);
     const values = [className];
-
     const where = buildWhereClause({
       schema,
       query,
@@ -1964,8 +1963,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     values.push(...where.values);
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-
     let tempQs = '';
+    
     if (where.pattern.lenth > 0) {
       tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
@@ -1974,7 +1973,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const qs = tempQs;
     return this._client.one(qs, values, a => {
-      console.log(a.approximate_row_count); 
         if(a.approximate_row_count){
           return +a.approximate_row_count
         } else {
