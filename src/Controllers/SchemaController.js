@@ -203,6 +203,7 @@ const CLPValidKeys = Object.freeze([
   'addField',
   'readUserFields',
   'writeUserFields',
+  'protectedFields',
 ]);
 function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
   if (!perms) {
@@ -250,7 +251,10 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
       verifyPermissionKey(key);
       // @flow-disable-next
       const perm = perms[operation][key];
-      if (perm !== true) {
+      if (
+        perm !== true &&
+        (operation !== 'protectedFields' || !Array.isArray(perm))
+      ) {
         // @flow-disable-next
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
