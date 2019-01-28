@@ -565,19 +565,8 @@ RestQuery.prototype.replaceDontSelect = function() {
   });
 };
 
-const cleanResultOfSensitiveUserInfo = function(result, auth, config) {
-  delete result.password;
-
-  if (auth.isMaster || (auth.user && auth.user.id === result.objectId)) {
-    return;
-  }
-
-  for (const field of config.userSensitiveFields) {
-    delete result[field];
-  }
-};
-
 const cleanResultAuthData = function(result) {
+  delete result.password;
   if (result.authData) {
     Object.keys(result.authData).forEach(provider => {
       if (result.authData[provider] === null) {
@@ -645,7 +634,6 @@ RestQuery.prototype.runFind = function(options = {}) {
     .then(results => {
       if (this.className === '_User') {
         for (var result of results) {
-          cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
           cleanResultAuthData(result);
         }
       }
