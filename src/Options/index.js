@@ -81,9 +81,12 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PRESERVE_FILE_NAME
   :DEFAULT: false */
   preserveFileName: ?boolean;
-  /* Personally identifiable information fields in the user table the should be removed for non-authorized users.
+  /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
   :DEFAULT: ["email"] */
   userSensitiveFields: ?(string[]);
+  /* Protected fields that should be treated with extra security when fetching details.
+  :DEFAULT: {"_User": {"*": ["email"]}} */
+  protectedFields: ?any;
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
