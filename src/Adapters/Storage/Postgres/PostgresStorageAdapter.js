@@ -1963,11 +1963,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const wherePattern =
       where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
 
+    let tempQs = '';
+
     if (where.pattern.lenth > 0){
-       const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+       tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-       const qs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = ${className}`;
+       tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = ${className}`;
     }
+
+    const qs = tempQs;
 
     return this._client
       .one(qs, values, a => +a.count)
