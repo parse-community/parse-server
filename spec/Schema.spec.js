@@ -1066,7 +1066,6 @@ describe('SchemaController', () => {
           .then(obj2reloaded => {
             expect(obj2reloaded.get('aString')).toEqual(undefined);
             done();
-            Parse.Object.enableSingleInstance();
           });
       })
       .catch(error => {
@@ -1100,7 +1099,6 @@ describe('SchemaController', () => {
       .then(obj1 => {
         expect(obj1.get('aPointer')).toEqual('Now a string');
         done();
-        Parse.Object.enableSingleInstance();
       });
   });
 

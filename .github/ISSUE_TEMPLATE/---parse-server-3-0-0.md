@@ -7,6 +7,8 @@ about: Report an issue while migrating to parse-server 3.0.0
 <!--- 
 ** Use this template only if you have an issue migrating to parse-server 3.0.0 **
 
+If you have a question, ask on [Parse Community's Discourse forum](https://community.parseplatform.org/c/parse-server)
+
 If you have a vulnerability disclosure, please follow our policy available here https://github.com/parse-community/parse-server/blob/master/SECURITY.md
 
 You may also search through existing issues before opening a new one: https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=is%3Aissue 
