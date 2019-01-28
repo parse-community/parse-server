@@ -1953,34 +1953,40 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  // Executes a count.
-  count(className: string, schema: SchemaType, query: QueryType) {
+  count(className, schema, query) {
     debug('count', className, query);
     const values = [className];
-    const where = buildWhereClause({ schema, query, index: 2 });
-    values.push(...where.values);
 
-    const wherePattern =
-      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2
+    });
+    values.push(...where.values);
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
 
     let tempQs = '';
-
-    if (where.pattern.lenth > 0){
-       tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+    if (where.pattern.lenth > 0) {
+      tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-       tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = \"$1:name\"`;
+      tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = '` + className + "'";
     }
 
     const qs = tempQs;
-
-    return this._client
-      .one(qs, values, a => +a.count)
-      .catch(error => {
-        if (error.code !== PostgresRelationDoesNotExistError) {
-          throw error;
+    return this._client.one(qs, values, a => {
+      console.log(a.approximate_row_count); 
+        if(a.approximate_row_count){
+          return +a.approximate_row_count
+        } else {
+          return +a.count
         }
-        return 0;
-      });
+      }).catch(error => {
+      if (error.code !== PostgresRelationDoesNotExistError) {
+        throw error;
+      }
+
+      return 0;
+    });
   }
 
   distinct(
