@@ -257,6 +257,7 @@ describe('ParseLiveQueryServer', function() {
           find: {},
           update: {},
           delete: { '*': true },
+          protectedFields: {},
         });
 
         expect(deleteSpy).toHaveBeenCalled();
@@ -270,6 +271,7 @@ describe('ParseLiveQueryServer', function() {
           find: {},
           update: {},
           delete: { '*': true },
+          protectedFields: {},
         });
         done();
       })
@@ -1920,6 +1922,7 @@ describe('LiveQueryController', () => {
           find: {},
           update: {},
           delete: { '*': true },
+          protectedFields: {},
         });
 
         expect(deleteSpy).toHaveBeenCalled();
@@ -1933,6 +1936,7 @@ describe('LiveQueryController', () => {
           find: {},
           update: {},
           delete: { '*': true },
+          protectedFields: {},
         });
         done();
       })

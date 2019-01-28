@@ -45,6 +45,9 @@ const defaultClassLevelPermissions = {
   delete: {
     '*': true,
   },
+  protectedFields: {
+    '*': [],
+  },
 };
 
 const plainOldDataSchema = {
@@ -1141,6 +1144,7 @@ describe('schemas', () => {
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
         done();
       });
@@ -2037,6 +2041,7 @@ describe('schemas', () => {
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
       })
       .then(done)
