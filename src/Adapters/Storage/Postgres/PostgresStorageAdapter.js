@@ -1968,7 +1968,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (where.pattern.lenth > 0){
        tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-       tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1:name`;
+       tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = \"$1:name\"`;
     }
 
     const qs = tempQs;
