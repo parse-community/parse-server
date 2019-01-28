@@ -343,14 +343,15 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
-  options.userSensitiveFields = Array.from(
-    new Set(
-      options.userSensitiveFields.concat(
-        defaults.userSensitiveFields,
-        options.userSensitiveFields
-      )
-    )
-  );
+  // Backwards compatibility
+  if (!options.protectedFields && options.userSensitiveFields) {
+    /* eslint-disable no-console */
+    console.warn(
+      `\nDEPRECATED: userSensitiveFields has been replaced by protectedFields allowing the ability to protect fields in all classes with CLP. \n`
+    );
+    /* eslint-enable no-console */
+    options.protectedFields = { _User: { '*': options.userSensitiveFields } };
+  }
 
   options.masterKeyIps = Array.from(
     new Set(
