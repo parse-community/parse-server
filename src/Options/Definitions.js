@@ -157,7 +157,7 @@ module.exports.ParseServerOptions = {
     help:
       'Personally identifiable information fields in the user table the should be removed for non-authorized users.',
     action: parsers.objectParser,
-    //default: {"_User": {"*": ["email"]}} // For backwards compatiability, do not use a default here.
+    default: { _User: { '*': ['email'] } },
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',

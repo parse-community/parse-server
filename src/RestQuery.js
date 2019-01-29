@@ -630,7 +630,7 @@ RestQuery.prototype.runFind = function(options = {}) {
     findOptions.op = options.op;
   }
   return this.config.database
-    .find(this.className, this.restWhere, findOptions)
+    .find(this.className, this.restWhere, findOptions, this.auth)
     .then(results => {
       if (this.className === '_User') {
         for (var result of results) {
