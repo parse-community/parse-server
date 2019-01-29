@@ -1973,7 +1973,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const qs = tempQs;
     return this._client.one(qs, values, a => {
-        if(a.approximate_row_count){
+        if(a.approximate_row_count!=null){
           return +a.approximate_row_count
         } else {
           return +a.count
