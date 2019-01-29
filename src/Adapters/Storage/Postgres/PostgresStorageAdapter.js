@@ -1953,25 +1953,24 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  count(className, schema, query) {
+  // Executes a count.
+  count(className: string, schema: SchemaType, query: QueryType) {
     debug('count', className, query);
     const values = [className];
-    const where = buildWhereClause({
-      schema,
-      query,
-      index: 2
-    });
+    const where = buildWhereClause({ schema, query, index: 2 });
     values.push(...where.values);
-    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+
+    const wherePattern =
+      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     let tempQs = '';
-    
+
     if (where.pattern.lenth > 0) {
       tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
       tempQs = `SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = '` + className + "'";
     }
-
     const qs = tempQs;
+
     return this._client.one(qs, values, a => {
         if(a.approximate_row_count!=null){
           return +a.approximate_row_count
@@ -1982,9 +1981,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (error.code !== PostgresRelationDoesNotExistError) {
         throw error;
       }
-
       return 0;
     });
+
   }
 
   distinct(
