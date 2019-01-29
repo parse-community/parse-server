@@ -18,6 +18,8 @@
 const Parse = require('parse/node').Parse;
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import DatabaseController from './DatabaseController';
+import Config from '../Config';
+import deepcopy from 'deepcopy';
 import type {
   Schema,
   SchemaFields,
@@ -387,16 +389,34 @@ const convertAdapterSchemaToParseSchema = ({ ...schema }) => {
 
 class SchemaData {
   __data: any;
-  constructor(allSchemas = []) {
+  __protectedFields: any;
+  constructor(allSchemas = [], protectedFields = {}) {
     this.__data = {};
+    this.__protectedFields = protectedFields;
     allSchemas.forEach(schema => {
       Object.defineProperty(this, schema.className, {
         get: () => {
           if (!this.__data[schema.className]) {
             const data = {};
             data.fields = injectDefaultSchema(schema).fields;
-            data.classLevelPermissions = schema.classLevelPermissions;
+            data.classLevelPermissions = deepcopy(schema.classLevelPermissions);
             data.indexes = schema.indexes;
+
+            const classProtectedFields = this.__protectedFields[
+              schema.className
+            ];
+            if (classProtectedFields) {
+              for (const key in classProtectedFields) {
+                const unq = new Set([
+                  ...(data.classLevelPermissions.protectedFields[key] || []),
+                  ...classProtectedFields[key],
+                ]);
+                data.classLevelPermissions.protectedFields[key] = Array.from(
+                  unq
+                );
+              }
+            }
+
             this.__data[schema.className] = data;
           }
           return this.__data[schema.className];
@@ -523,6 +543,7 @@ export default class SchemaController {
     this._dbAdapter = databaseAdapter;
     this._cache = schemaCache;
     this.schemaData = new SchemaData();
+    this.protectedFields = Config.get(Parse.applicationId).protectedFields;
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -539,7 +560,7 @@ export default class SchemaController {
       .then(() => {
         return this.getAllClasses(options).then(
           allSchemas => {
-            this.schemaData = new SchemaData(allSchemas);
+            this.schemaData = new SchemaData(allSchemas, this.protectedFields);
             delete this.reloadDataPromise;
           },
           err => {

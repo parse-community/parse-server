@@ -756,7 +756,12 @@ describe('schemas', () => {
               newField: { type: 'String' },
               ACL: { type: 'ACL' },
             },
-            classLevelPermissions: defaultClassLevelPermissions,
+            classLevelPermissions: {
+              ...defaultClassLevelPermissions,
+              protectedFields: {
+                '*': ['email'],
+              },
+            },
           })
         ).toBeUndefined();
         request({
