@@ -159,31 +159,27 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const { username, token, new_password } = req.body;
 
+    let error;
     if (!username) {
-      if(req.xhr)
-        throw new Parse.Error(
-          Parse.Error.USERNAME_MISSING,
-          'Missing username'
-        );
-      return this.invalidLink(req);
+      error = new Parse.Error(
+        Parse.Error.USERNAME_MISSING,
+        'Missing username'
+      );
+    } else if (!token) {
+      error = new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'Missing token'
+      );
+    } else if (!new_password) {
+      error = new Parse.Error(
+        Parse.Error.PASSWORD_MISSING,
+        'Missing password'
+      );
     }
 
-    if (!token) {
-      if(req.xhr)
-        throw new Parse.Error(
-          Parse.Error.OTHER_CAUSE,
-          'Missing token'
-        );
-      return this.invalidLink(req);
-    }
-
-    if (!new_password) {
-      if(req.xhr)
-        throw new Parse.Error(
-          Parse.Error.PASSWORD_MISSING,
-          'Missing password'
-        );
-      return this.invalidLink(req);
+    if (error) {
+      if (req.xhr) { throw error }
+      return this.invalidLink(error);
     }
 
     return config.userController
