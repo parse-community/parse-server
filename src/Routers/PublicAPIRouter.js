@@ -159,7 +159,30 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const { username, token, new_password } = req.body;
 
-    if (!username || !token || !new_password) {
+    if (!username) {
+      if(req.xhr)
+        throw new Parse.Error(
+          Parse.Error.USERNAME_MISSING,
+          'Missing username'
+        );
+      return this.invalidLink(req);
+    }
+
+    if (!token) {
+      if(req.xhr)
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          'Missing token'
+        );
+      return this.invalidLink(req);
+    }
+
+    if (!new_password) {
+      if(req.xhr)
+        throw new Parse.Error(
+          Parse.Error.PASSWORD_MISSING,
+          'Missing password'
+        );
       return this.invalidLink(req);
     }
 
@@ -168,6 +191,14 @@ export class PublicAPIRouter extends PromiseRouter {
       .then(
         () => {
           const params = qs.stringify({ username: username });
+
+          if (req.xhr) {
+            return Promise.resolve({
+              status: 200,
+              response: 'Password successfully reset'
+            });
+          }
+
           return Promise.resolve({
             status: 302,
             location: `${config.passwordResetSuccessURL}?${params}`,
@@ -181,6 +212,14 @@ export class PublicAPIRouter extends PromiseRouter {
             error: err,
             app: config.appName,
           });
+
+          if (req.xhr) {
+            throw new Parse.Error(
+              Parse.Error.OTHER_CAUSE,
+              'Server failed to reset password with provided data'
+            )
+          }
+
           return Promise.resolve({
             status: 302,
             location: `${config.choosePasswordURL}?${params}`,
