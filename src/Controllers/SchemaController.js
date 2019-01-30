@@ -19,6 +19,7 @@ const Parse = require('parse/node').Parse;
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
+// @flow-disable-next
 import deepcopy from 'deepcopy';
 import type {
   Schema,
@@ -538,6 +539,7 @@ export default class SchemaController {
   schemaData: { [string]: Schema };
   _cache: any;
   reloadDataPromise: Promise<any>;
+  protectedFields: any;
 
   constructor(databaseAdapter: StorageAdapter, schemaCache: any) {
     this._dbAdapter = databaseAdapter;
