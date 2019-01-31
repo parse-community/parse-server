@@ -291,7 +291,9 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         } else if (fieldValue.$regex) {
           // Handle later
         } else {
-          patterns.push(`${name} = '${fieldValue}'`);
+          patterns.push(`${name} = $${index}`);
+          values.push(fieldValue);
+          index += 1;
         }
       }
     } else if (fieldValue === null || fieldValue === undefined) {
