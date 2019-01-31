@@ -1432,14 +1432,16 @@ class DatabaseController {
     )
       return null;
 
-    let protectedKeys;
-    [...(auth.userRoles || []), '*'].forEach(role => {
-      // If you are in multiple groups assign the role with the least protectedKeys.
-      // Technically this could fail if multiple roles protect different fields and produce the same count.
-      // But we have no way of knowing the role hierarchy here.
+    let protectedKeys = Object.values(protectedFields).reduce(
+      (acc, val) => acc.concat(val),
+      []
+    ); //.flat();
+    [...(auth.userRoles || [])].forEach(role => {
       const fields = protectedFields[role];
-      if (fields && (!protectedKeys || fields.length < protectedKeys.length)) {
-        protectedKeys = fields;
+      if (fields) {
+        protectedKeys = protectedKeys.filter(
+          value => -1 !== fields.indexOf(value)
+        );
       }
     });
 
