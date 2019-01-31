@@ -287,7 +287,9 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
               inPatterns.push(`${listElem}`);
             }
           });
-          patterns.push(`(${name})::jsonb @> '[${inPatterns.join()}]'::jsonb`);
+          patterns.push(
+            `(${name})::jsonb @> '[${inPatterns.join(',')}]'::jsonb`
+          );
         } else if (fieldValue.$regex) {
           // Handle later
         } else {
