@@ -282,6 +282,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           name = transformDotFieldToComponents(fieldName).join('->');
           fieldValue.$in.forEach(listElem => {
             if (typeof listElem === 'string') {
+              if (listElem.includes('"') || listElem.includes("'")) {
+                throw new Parse.Error(
+                  Parse.Error.INVALID_JSON,
+                  'bad $in value; Strings with quotes cannot yet be safely escaped'
+                );
+              }
               inPatterns.push(`"${listElem}"`);
             } else {
               inPatterns.push(`${listElem}`);
