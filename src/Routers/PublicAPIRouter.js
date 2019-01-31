@@ -179,7 +179,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     if (error) {
       if (req.xhr) { throw error }
-      return this.invalidLink(error);
+      return this.invalidLink(req);
     }
 
     return config.userController
