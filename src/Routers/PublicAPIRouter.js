@@ -167,22 +167,22 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     if (!username) {
-      throw new Parse.Error(
-        Parse.Error.USERNAME_MISSING,
+      throw new Error(
+        Error.USERNAME_MISSING,
         'Missing username'
       );
     }
 
     if (!token) {
-      throw new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
+      throw new Error(
+        Error.OTHER_CAUSE,
         'Missing token'
       );
     }
 
     if (!new_password) {
-      throw new Parse.Error(
-        Parse.Error.PASSWORD_MISSING,
+      throw new Error(
+        Error.PASSWORD_MISSING,
         'Missing password'
       );
     }
@@ -202,7 +202,7 @@ export class PublicAPIRouter extends PromiseRouter {
           });
         })
       .then(result => {
-        const params = _querystring.default.stringify({
+        const params = qs.default.stringify({
           username: username,
           token: token,
           id: config.applicationId,
@@ -218,8 +218,8 @@ export class PublicAPIRouter extends PromiseRouter {
             })
           }
 
-          throw new Parse.Error(
-            Parse.Error.OTHER_CAUSE,
+          throw new Error(
+            Error.OTHER_CAUSE,
             result.err
           )
         }
