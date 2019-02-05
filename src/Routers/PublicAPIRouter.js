@@ -191,7 +191,7 @@ export class PublicAPIRouter extends PromiseRouter {
         }
       )
       .then(result => {
-        const params = qs.default.stringify({
+        const params = qs.stringify({
           username: username,
           token: token,
           id: config.applicationId,
