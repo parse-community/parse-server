@@ -226,7 +226,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
         return Promise.resolve({
           status: 302,
-          location: `${result.success ? config.passwordResetSuccessURL : config.choosePasswordURL}?${params}`,
+          location: `${result.success ? `${config.passwordResetSuccessURL}?username=${username}` :
+            `${config.choosePasswordURL}?${params}` }`,
         });
       });
   }
