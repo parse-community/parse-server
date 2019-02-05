@@ -4,6 +4,7 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import qs from 'querystring';
+import { Parse } from 'parse/node';
 
 const public_html = path.resolve(__dirname, '../../public_html');
 const views = path.resolve(__dirname, '../../views');
@@ -156,35 +157,22 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.missingPublicServerURL();
     }
 
-    const {
-      username,
-      token,
-      new_password
-    } = req.body;
+    const { username, token, new_password } = req.body;
 
     if ((!username || !token || !new_password) && req.xhr === false) {
       return this.invalidLink(req);
     }
 
     if (!username) {
-      throw new Error(
-        Error.USERNAME_MISSING,
-        'Missing username'
-      );
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'Missing username');
     }
 
     if (!token) {
-      throw new Error(
-        Error.OTHER_CAUSE,
-        'Missing token'
-      );
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing token');
     }
 
     if (!new_password) {
-      throw new Error(
-        Error.PASSWORD_MISSING,
-        'Missing password'
-      );
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'Missing password');
     }
 
     return config.userController
@@ -192,42 +180,43 @@ export class PublicAPIRouter extends PromiseRouter {
       .then(
         () => {
           return Promise.resolve({
-            success: true
+            success: true,
           });
-
-        }, err => {
+        },
+        err => {
           return Promise.resolve({
             success: false,
-            err
+            err,
           });
-        })
+        }
+      )
       .then(result => {
         const params = qs.default.stringify({
           username: username,
           token: token,
           id: config.applicationId,
           error: result.err,
-          app: config.appName
+          app: config.appName,
         });
 
         if (req.xhr) {
           if (result.success) {
             return Promise.resolve({
               status: 200,
-              response: 'Password successfully reset'
-            })
+              response: 'Password successfully reset',
+            });
           }
 
-          throw new Error(
-            Error.OTHER_CAUSE,
-            result.err
-          )
+          throw new Parse.Error(Parse.Error.OTHER_CAUSE, result.err);
         }
 
         return Promise.resolve({
           status: 302,
-          location: `${result.success ? `${config.passwordResetSuccessURL}?username=${username}` :
-            `${config.choosePasswordURL}?${params}` }`,
+          location: `${
+            result.success
+              ? `${config.passwordResetSuccessURL}?username=${username}`
+              : `${config.choosePasswordURL}?${params}`
+          }`,
         });
       });
   }
