@@ -152,76 +152,83 @@ export class PublicAPIRouter extends PromiseRouter {
     if (!config) {
       this.invalidRequest();
     }
-
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
-    const { username, token, new_password } = req.body;
+    const {
+      username,
+      token,
+      new_password
+    } = req.body;
 
-    let error;
+    if ((!username || !token || !new_password) && req.xhr === false) {
+      return this.invalidLink(req);
+    }
+
     if (!username) {
-      error = new Parse.Error(
+      throw new Parse.Error(
         Parse.Error.USERNAME_MISSING,
         'Missing username'
       );
-    } else if (!token) {
-      error = new Parse.Error(
+    }
+
+    if (!token) {
+      throw new Parse.Error(
         Parse.Error.OTHER_CAUSE,
         'Missing token'
       );
-    } else if (!new_password) {
-      error = new Parse.Error(
+    }
+
+    if (!new_password) {
+      throw new Parse.Error(
         Parse.Error.PASSWORD_MISSING,
         'Missing password'
       );
-    }
-
-    if (error) {
-      if (req.xhr) { throw error }
-      return this.invalidLink(req);
     }
 
     return config.userController
       .updatePassword(username, token, new_password)
       .then(
         () => {
-          const params = qs.stringify({ username: username });
+          return Promise.resolve({
+            success: true
+          });
 
-          if (req.xhr) {
+        }, err => {
+          return Promise.resolve({
+            success: false,
+            err
+          });
+        })
+      .then(result => {
+        const params = _querystring.default.stringify({
+          username: username,
+          token: token,
+          id: config.applicationId,
+          error: result.err,
+          app: config.appName
+        });
+
+        if (req.xhr) {
+          if (result.success) {
             return Promise.resolve({
               status: 200,
               response: 'Password successfully reset'
-            });
+            })
           }
 
-          return Promise.resolve({
-            status: 302,
-            location: `${config.passwordResetSuccessURL}?${params}`,
-          });
-        },
-        err => {
-          const params = qs.stringify({
-            username: username,
-            token: token,
-            id: config.applicationId,
-            error: err,
-            app: config.appName,
-          });
-
-          if (req.xhr) {
-            throw new Parse.Error(
-              Parse.Error.OTHER_CAUSE,
-              'Server failed to reset password with provided data'
-            )
-          }
-
-          return Promise.resolve({
-            status: 302,
-            location: `${config.choosePasswordURL}?${params}`,
-          });
+          throw new Parse.Error(
+            Parse.Error.OTHER_CAUSE,
+            result.err
+          )
         }
-      );
+
+        return Promise.resolve({
+          status: 302,
+          location: `${result.success ? config.passwordResetSuccessURL : config.choosePasswordURL}?${params}`,
+        });
+      });
   }
 
   invalidLink(req) {
