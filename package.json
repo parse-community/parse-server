@@ -89,7 +89,7 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "3.0.3",
+    "bcrypt": "3.0.4",
     "uws": "10.148.1"
   },
   "collective": {
