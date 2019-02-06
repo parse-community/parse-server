@@ -207,7 +207,15 @@ export class PublicAPIRouter extends PromiseRouter {
             });
           }
 
-          throw new Parse.Error(Parse.Error.OTHER_CAUSE, result.err);
+          if (
+            result.err ===
+            'Password does not meet the Password Policy requirements.'
+          )
+            throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+          throw new Parse.Error(
+            Parse.Error.OTHER_CAUSE,
+            'Invalid token or username'
+          );
         }
 
         return Promise.resolve({

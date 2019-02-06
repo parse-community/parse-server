@@ -992,6 +992,31 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
+  it('should return ajax failure error on ajax request with wrong data provided', done => {
+    reconfigureServer({
+      publicServerURL: 'http://localhost:8378/1',
+    })
+      .then(() => {
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=user1&token=12345&username=Johnny`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+      })
+      .catch(error => {
+        expect(error.status).not.toBe(302);
+        expect(error.text).toEqual(
+          '{"code":-1,"error":"Failed to reset password (Username/email or token is invalid)"}'
+        );
+        done();
+      });
+  });
+
   it('deletes password reset token on email address change', done => {
     reconfigureServer({
       appName: 'coolapp',
