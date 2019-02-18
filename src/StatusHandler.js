@@ -6,6 +6,8 @@ import Auth from './Auth';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
+var error = ""; //added
+
 const incrementOp = function(object = {}, key, amount = 1) {
   if (!object[key]) {
     object[key] = { __op: 'Increment', amount: amount };
@@ -250,7 +252,7 @@ export function pushStatusHandler(config, existingObjectId) {
             result.device.deviceToken
           ) {
             const token = result.device.deviceToken;
-            const error = result.response.error;
+            error = result.response.error;
             // GCM errors
             if (error === 'NotRegistered' || error === 'InvalidRegistration') {
               devicesToRemove.push(token);
@@ -285,14 +287,18 @@ export function pushStatusHandler(config, existingObjectId) {
       }
     });
 
-    if (devicesToRemove.length > 0 && cleanupInstallations) {
+    if (devicesToRemove.length > 0 ) {  //&& cleanupInstallations) {
       logger.info(
         `Removing device tokens on ${devicesToRemove.length} _Installations`
       );
       database.update(
         '_Installation',
         { deviceToken: { $in: devicesToRemove } },
-        { deviceToken: { __op: 'Delete' } },
+      //  { deviceToken: { __op: 'Delete' } },
+        {  
+        App_Uninstalled : true ,
+        Reason: error
+        },
         {
           acl: undefined,
           many: true,

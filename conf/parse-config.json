@@ -1,0 +1,22 @@
+{
+	"mountPath": "",
+	"enableAnonymousUsers": false,
+	"logLevel": "verbose",
+	"allowClientClassCreation": true,
+	"masterKey": "MASTER-eb71bb9e4d226706e186c39b18ea6908a40350ea8cd6f0f275bc33937cc5bfc6",
+	"sessionLength": 31536000,
+	"databaseURI": "mongodb://thelo2ai:lo2lo2208@ds119765.mlab.com:19765/testing",
+	"appId": "loaiapp",
+	"push": {
+
+		"android": {
+
+			"senderId": "293400657698",
+
+			"apiKey": "AIzaSyBxEtRpgJNSfr_b_xUBxv8ju2o85Wn65Z0"
+
+		}
+
+	},
+	"cloud": "cloud/main.js"
+}

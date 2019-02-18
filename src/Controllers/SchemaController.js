@@ -57,6 +57,8 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     appName: { type: 'String' },
     appIdentifier: { type: 'String' },
     parseVersion: { type: 'String' },
+    App_Uninstalled: { type: 'Boolean' },
+    Reason: { type: 'String' },
   },
   // The additional default columns for the _Role collection (in addition to DefaultCols)
   _Role: {
