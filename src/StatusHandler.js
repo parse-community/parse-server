@@ -6,7 +6,7 @@ import Auth from './Auth';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
-var error = ""; //added
+var error = ''; //added
 
 const incrementOp = function(object = {}, key, amount = 1) {
   if (!object[key]) {
@@ -214,9 +214,10 @@ export function pushStatusHandler(config, existingObjectId) {
 
   const trackSent = function(
     results,
-    UTCOffset,
-    cleanupInstallations = process.env
-      .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+     UTCOffset
+     //,
+    // cleanupInstallations = process.env
+    //   .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
   ) {
     const update = {
       numSent: 0,
@@ -287,17 +288,18 @@ export function pushStatusHandler(config, existingObjectId) {
       }
     });
 
-    if (devicesToRemove.length > 0 ) {  //&& cleanupInstallations) {
+    if (devicesToRemove.length > 0) {
+      //&& cleanupInstallations) {
       logger.info(
         `Removing device tokens on ${devicesToRemove.length} _Installations`
       );
       database.update(
         '_Installation',
         { deviceToken: { $in: devicesToRemove } },
-      //  { deviceToken: { __op: 'Delete' } },
-        {  
-        App_Uninstalled : true ,
-        Reason: error
+        //  { deviceToken: { __op: 'Delete' } },
+        {
+          App_Uninstalled: true,
+          Reason: error,
         },
         {
           acl: undefined,
