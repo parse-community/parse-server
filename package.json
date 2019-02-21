@@ -90,7 +90,7 @@
   },
   "optionalDependencies": {
     "bcrypt": "3.0.4",
-    "uws": "10.148.1"
+    "uws": "100.0.1"
   },
   "collective": {
     "type": "opencollective",
