@@ -522,8 +522,8 @@ describe('Personally Identifiable Information', () => {
         .catch(done.fail);
     });
 
-    // Explict ACL should be able to read sensitive information
-    describe('with privilaged user no CLP', () => {
+    // Explicit ACL should be able to read sensitive information
+    describe('with privileged user no CLP', () => {
       let adminUser;
 
       beforeEach(async done => {
@@ -748,21 +748,18 @@ describe('Personally Identifiable Information', () => {
         protectedFields: {
           _User: { '*': ['ssn', 'zip'], 'role:Administrator': [] },
         },
-      }).then(() => done());
+      }).then(done);
     });
 
     it('should be able to get own PII via API with object', done => {
       const userObj = new (Parse.Object.extend(Parse.User))();
       userObj.id = user.id;
-      userObj.fetch().then(
-        fetchedUser => {
-          expect(fetchedUser.get('email')).toBe(EMAIL);
-          expect(fetchedUser.get('zip')).toBe(ZIP);
-          expect(fetchedUser.get('ssn')).toBe(SSN);
-          done();
-        },
-        e => done.fail(e)
-      );
+      userObj.fetch().then(fetchedUser => {
+        expect(fetchedUser.get('email')).toBe(EMAIL);
+        expect(fetchedUser.get('zip')).toBe(ZIP);
+        expect(fetchedUser.get('ssn')).toBe(SSN);
+        done();
+      }, done.fail);
     });
 
     it('should not be able to get PII via API with object', done => {
@@ -997,7 +994,7 @@ describe('Personally Identifiable Information', () => {
         .catch(done.fail);
     });
 
-    // Explict ACL should be able to read sensitive information
+    // Explicit ACL should be able to read sensitive information
     describe('with privilaged user CLP', () => {
       let adminUser;
 
