@@ -687,7 +687,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('refuses to add CLP with incorrect protectedFields', done => {
+  it('refuses to add CLP when incorrectly sending a string to protectedFields object value instead of an array', done => {
     const levelPermissions = {
       find: { '*': true },
       get: { '*': true },

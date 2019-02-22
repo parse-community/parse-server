@@ -352,6 +352,7 @@ function injectDefaults(options: ParseServerOptions) {
       console.warn(
         `\nDEPRECATED: userSensitiveFields has been replaced by protectedFields allowing the ability to protect fields in all classes with CLP. \n`
       );
+    /* eslint-enable no-console */
 
     const userSensitiveFields = Array.from(
       new Set([
@@ -360,7 +361,6 @@ function injectDefaults(options: ParseServerOptions) {
       ])
     );
 
-    /* eslint-enable no-console */
     options.protectedFields = { _User: { '*': userSensitiveFields } };
   }
 

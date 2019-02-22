@@ -1439,7 +1439,7 @@ class DatabaseController {
     [...(auth.userRoles || [])].forEach(role => {
       const fields = protectedFields[role];
       if (fields) {
-        protectedKeys = protectedKeys.filter(v => fields.includes(v));
+        protectedKeys = protectedKeys.filter(fields.includes);
       }
     });
 
