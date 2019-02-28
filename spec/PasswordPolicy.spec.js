@@ -667,7 +667,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`
+                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20should%20contain%20at%20least%20one%20digit.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'has 1 digit')
@@ -700,6 +700,7 @@ describe('Password Policy: ', () => {
       emailAdapter: emailAdapter,
       passwordPolicy: {
         validatorPattern: /[0-9]+/, // password should contain at least one digit
+        validationError: 'Password should contain at least one digit.',
       },
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
@@ -764,6 +765,9 @@ describe('Password Policy: ', () => {
         })
         .catch(error => {
           expect(error.code).toEqual(142);
+          expect(error.message).toEqual(
+            'Password cannot contain your username.'
+          );
           done();
         });
     });
@@ -853,7 +857,7 @@ describe('Password Policy: ', () => {
               .then(response => {
                 expect(response.status).toEqual(302);
                 expect(response.text).toEqual(
-                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`
+                  `Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20cannot%20contain%20your%20username.&app=passwordPolicy`
                 );
 
                 Parse.User.logIn('user1', 'r@nd0m')
