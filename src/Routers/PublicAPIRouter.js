@@ -212,11 +212,12 @@ export class PublicAPIRouter extends PromiseRouter {
             'Password does not meet the Password Policy requirements.'
           ) {
             throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+          } else {
+            throw new Parse.Error(
+              Parse.Error.OTHER_CAUSE,
+              'Failed to reset password (Username/email or token is invalid)'
+            );
           }
-          throw new Parse.Error(
-            Parse.Error.OTHER_CAUSE,
-            'Failed to reset password (Username/email or token is invalid)'
-          );
         }
 
         return Promise.resolve({
