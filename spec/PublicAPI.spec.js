@@ -7,7 +7,7 @@ const request = function(url, callback) {
 };
 
 describe('public API', () => {
-  it('should return ajax response on ajax request', done => {
+  it('should return missing username error on ajax request without username provided', done => {
     reconfigureServer({
       publicServerURL: 'http://localhost:8378/1',
     })
@@ -47,7 +47,6 @@ describe('public API', () => {
         });
       })
       .catch(error => {
-        console.log('ERROR IN TEST: ', error);
         expect(error.status).not.toBe(302);
         expect(error.text).toEqual('{"code":-1,"error":"Missing token"}');
         done();
@@ -71,7 +70,6 @@ describe('public API', () => {
         });
       })
       .catch(error => {
-        console.log('ERROR IN TEST: ', error);
         expect(error.status).not.toBe(302);
         expect(error.text).toEqual('{"code":201,"error":"Missing password"}');
         done();

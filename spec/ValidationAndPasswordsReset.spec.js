@@ -939,7 +939,6 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             },
             followRedirects: false,
           }).then(response => {
-            console.log('REQUEST RESPONSE');
             expect(response.status).toEqual(200);
             expect(response.text).toEqual('"Password successfully reset"');
 
