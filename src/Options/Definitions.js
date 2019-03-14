@@ -148,9 +148,16 @@ module.exports.ParseServerOptions = {
   userSensitiveFields: {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',
     help:
-      'Personally identifiable information fields in the user table the should be removed for non-authorized users.',
+      'Personally identifiable information fields in the user table the should be removed for non-authorized users. **Deprecated** @see protectedFields',
     action: parsers.arrayParser,
     default: ['email'],
+  },
+  protectedFields: {
+    env: 'PARSE_SERVER_PROTECTED_FIELDS',
+    help:
+      'Personally identifiable information fields in the user table the should be removed for non-authorized users.',
+    action: parsers.objectParser,
+    default: { _User: { '*': ['email'] } },
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',

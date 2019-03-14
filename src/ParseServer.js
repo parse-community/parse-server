@@ -333,6 +333,8 @@ function addParseCloud() {
 }
 
 function injectDefaults(options: ParseServerOptions) {
+  const hasProtectedFields = !!options.protectedFields;
+
   Object.keys(defaults).forEach(key => {
     if (!options.hasOwnProperty(key)) {
       options[key] = defaults[key];
@@ -343,14 +345,40 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
-  options.userSensitiveFields = Array.from(
-    new Set(
-      options.userSensitiveFields.concat(
-        defaults.userSensitiveFields,
-        options.userSensitiveFields
-      )
-    )
-  );
+  // Backwards compatibility
+  if (!hasProtectedFields && options.userSensitiveFields) {
+    /* eslint-disable no-console */
+    !process.env.TESTING &&
+      console.warn(
+        `\nDEPRECATED: userSensitiveFields has been replaced by protectedFields allowing the ability to protect fields in all classes with CLP. \n`
+      );
+    /* eslint-enable no-console */
+
+    const userSensitiveFields = Array.from(
+      new Set([
+        ...(defaults.userSensitiveFields || []),
+        ...(options.userSensitiveFields || []),
+      ])
+    );
+
+    options.protectedFields = { _User: { '*': userSensitiveFields } };
+  }
+
+  // Merge protectedFields options with defaults.
+  Object.keys(defaults.protectedFields).forEach(c => {
+    const cur = options.protectedFields[c];
+    if (!cur) {
+      options.protectedFields[c] = defaults.protectedFields[c];
+    } else {
+      Object.keys(defaults.protectedFields[c]).forEach(r => {
+        const unq = new Set([
+          ...(options.protectedFields[c][r] || []),
+          ...defaults.protectedFields[c][r],
+        ]);
+        options.protectedFields[c][r] = Array.from(unq);
+      });
+    }
+  });
 
   options.masterKeyIps = Array.from(
     new Set(

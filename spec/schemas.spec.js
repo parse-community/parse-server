@@ -45,6 +45,9 @@ const defaultClassLevelPermissions = {
   delete: {
     '*': true,
   },
+  protectedFields: {
+    '*': [],
+  },
 };
 
 const plainOldDataSchema = {
@@ -753,7 +756,12 @@ describe('schemas', () => {
               newField: { type: 'String' },
               ACL: { type: 'ACL' },
             },
-            classLevelPermissions: defaultClassLevelPermissions,
+            classLevelPermissions: {
+              ...defaultClassLevelPermissions,
+              protectedFields: {
+                '*': ['email'],
+              },
+            },
           })
         ).toBeUndefined();
         request({
@@ -1141,6 +1149,7 @@ describe('schemas', () => {
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
         done();
       });
@@ -2037,6 +2046,7 @@ describe('schemas', () => {
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
       })
       .then(done)

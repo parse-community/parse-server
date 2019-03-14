@@ -62,6 +62,7 @@ const emptyCLPS = Object.freeze({
   update: {},
   delete: {},
   addField: {},
+  protectedFields: {},
 });
 
 const defaultCLPS = Object.freeze({
@@ -71,6 +72,7 @@ const defaultCLPS = Object.freeze({
   update: { '*': true },
   delete: { '*': true },
   addField: { '*': true },
+  protectedFields: { '*': [] },
 });
 
 function mongoSchemaToParseSchema(mongoSchema) {

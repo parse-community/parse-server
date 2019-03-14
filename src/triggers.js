@@ -254,6 +254,7 @@ export function getResponseObject(request, resolve, reject) {
       // Use the JSON response
       if (
         response &&
+        typeof response === 'object' &&
         !request.object.equals(response) &&
         request.triggerName === Types.beforeSave
       ) {
@@ -573,6 +574,20 @@ export function maybeRunTrigger(
             auth
           );
         }
+        // beforeSave is expected to return null (nothing)
+        if (triggerType === Types.beforeSave) {
+          if (promise && typeof promise.then === 'function') {
+            return promise.then(response => {
+              // response.object may come from express routing before hook
+              if (response && response.object) {
+                return response;
+              }
+              return null;
+            });
+          }
+          return null;
+        }
+
         return promise;
       })
       .then(success, error);

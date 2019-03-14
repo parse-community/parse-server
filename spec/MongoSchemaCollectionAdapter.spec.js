@@ -23,6 +23,7 @@ describe('MongoSchemaCollection', () => {
             create: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
           indexes: {
             name1: { deviceToken: 1 },
@@ -72,6 +73,7 @@ describe('MongoSchemaCollection', () => {
         update: { '*': true },
         delete: { '*': true },
         addField: { '*': true },
+        protectedFields: { '*': [] },
       },
       indexes: {
         name1: { deviceToken: 1 },
