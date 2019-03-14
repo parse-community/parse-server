@@ -909,69 +909,49 @@ describe('Password Policy: ', () => {
     });
   });
 
-  it('Should return error when password violates Password Policy and reset through ajax', done => {
+  it('Should return error when password violates Password Policy and reset through ajax', async done => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
-      sendPasswordResetEmail: options => {
-        request({
+      sendPasswordResetEmail: async options => {
+        const response = await request({
           url: options.link,
           followRedirects: false,
           simple: false,
           resolveWithFullResponse: true,
-        })
-          .then(response => {
-            expect(response.status).toEqual(302);
-            const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-            const match = response.text.match(re);
-            if (!match) {
-              fail('should have a token');
-              done();
-              return;
-            }
-            const token = match[1];
+        });
+        expect(response.status).toEqual(302);
+        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+        const match = response.text.match(re);
+        if (!match) {
+          fail('should have a token');
+          return;
+        }
+        const token = match[1];
 
-            request({
-              method: 'POST',
-              url: 'http://localhost:8378/1/apps/test/request_password_reset',
-              body: `new_password=xuser12&token=${token}&username=user1`,
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              followRedirects: false,
-            })
-              .catch(error => {
-                expect(error.status).not.toBe(302);
-                expect(error.text).toEqual(
-                  '{"code":-1,"error":"Password does not meet the Password Policy requirements."}'
-                );
-
-                Parse.User.logIn('user1', 'r@nd0m')
-                  .then(function() {
-                    done();
-                  })
-                  .catch(err => {
-                    jfail(err);
-                    fail('should login with old password');
-                    done();
-                  });
-              })
-              .catch(error => {
-                jfail(error);
-                fail('Failed to POST request password reset');
-                done();
-              });
-          })
-          .catch(error => {
-            jfail(error);
-            fail('Failed to get the reset link');
-            done();
+        try {
+          await request({
+            method: 'POST',
+            url: 'http://localhost:8378/1/apps/test/request_password_reset',
+            body: `new_password=xuser12&token=${token}&username=user1`,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+            followRedirects: false,
           });
+        } catch (error) {
+          expect(error.status).not.toBe(302);
+          expect(error.text).toEqual(
+            '{"code":-1,"error":"Password does not meet the Password Policy requirements."}'
+          );
+        }
+        await Parse.User.logIn('user1', 'r@nd0m');
+        done();
       },
       sendMail: () => {},
     };
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'passwordPolicy',
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
@@ -979,25 +959,13 @@ describe('Password Policy: ', () => {
         doNotAllowUsername: true,
       },
       publicServerURL: 'http://localhost:8378/1',
-    }).then(() => {
-      user.setUsername('user1');
-      user.setPassword('r@nd0m');
-      user.set('email', 'user1@parse.com');
-      user
-        .signUp()
-        .then(() => {
-          Parse.User.requestPasswordReset('user1@parse.com').catch(err => {
-            jfail(err);
-            fail('Reset password request should not fail');
-            done();
-          });
-        })
-        .catch(error => {
-          jfail(error);
-          fail('signUp should not fail');
-          done();
-        });
     });
+    user.setUsername('user1');
+    user.setPassword('r@nd0m');
+    user.set('email', 'user1@parse.com');
+    await user.signUp();
+
+    await Parse.User.requestPasswordReset('user1@parse.com');
   });
 
   it('should reset password even if the new password contains user name while the policy allows', done => {

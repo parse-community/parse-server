@@ -910,110 +910,87 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
-  it('should programmatically reset password on ajax request', done => {
+  it('should programmatically reset password on ajax request', async done => {
     const user = new Parse.User();
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
-      sendPasswordResetEmail: options => {
-        request({
+      sendPasswordResetEmail: async options => {
+        const response = await request({
           url: options.link,
           followRedirects: false,
-        }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
-          const match = response.text.match(re);
-          if (!match) {
-            fail('should have a token');
-            done();
-            return;
-          }
-          const token = match[1];
-
-          request({
-            url: 'http://localhost:8378/1/apps/test/request_password_reset',
-            method: 'POST',
-            body: { new_password: 'hello', token, username: 'zxcv' },
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'X-Requested-With': 'XMLHttpRequest',
-            },
-            followRedirects: false,
-          }).then(response => {
-            expect(response.status).toEqual(200);
-            expect(response.text).toEqual('"Password successfully reset"');
-
-            Parse.User.logIn('zxcv', 'hello').then(
-              function() {
-                const config = Config.get('test');
-                config.database.adapter
-                  .find(
-                    '_User',
-                    { fields: {} },
-                    { username: 'zxcv' },
-                    { limit: 1 }
-                  )
-                  .then(results => {
-                    // _perishable_token should be unset after reset password
-                    expect(results.length).toEqual(1);
-                    expect(results[0]['_perishable_token']).toEqual(undefined);
-                    done();
-                  });
-              },
-              err => {
-                jfail(err);
-                fail('should login with new password');
-                done();
-              }
-            );
-          });
         });
-      },
-      sendMail: () => {},
-    };
-    reconfigureServer({
-      appName: 'emailing app',
-      verifyUserEmails: true,
-      emailAdapter: emailAdapter,
-      publicServerURL: 'http://localhost:8378/1',
-    }).then(() => {
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
-      user.set('email', 'user@parse.com');
-      user.signUp().then(() => {
-        Parse.User.requestPasswordReset('user@parse.com', {
-          error: err => {
-            jfail(err);
-            fail('Should not fail');
-            done();
-          },
-        });
-      });
-    });
-  });
+        expect(response.status).toEqual(302);
+        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
+        const match = response.text.match(re);
+        if (!match) {
+          fail('should have a token');
+          return;
+        }
+        const token = match[1];
 
-  it('should return ajax failure error on ajax request with wrong data provided', done => {
-    reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
-    })
-      .then(() => {
-        return request({
-          method: 'POST',
+        const resetResponse = await request({
           url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=user1&token=12345&username=Johnny`,
+          method: 'POST',
+          body: { new_password: 'hello', token, username: 'zxcv' },
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest',
           },
           followRedirects: false,
         });
-      })
-      .catch(error => {
-        expect(error.status).not.toBe(302);
-        expect(error.text).toEqual(
-          '{"code":-1,"error":"Failed to reset password (Username/email or token is invalid)"}'
+        expect(resetResponse.status).toEqual(200);
+        expect(resetResponse.text).toEqual('"Password successfully reset"');
+
+        await Parse.User.logIn('zxcv', 'hello');
+        const config = Config.get('test');
+        const results = await config.database.adapter.find(
+          '_User',
+          { fields: {} },
+          { username: 'zxcv' },
+          { limit: 1 }
         );
+        // _perishable_token should be unset after reset password
+        expect(results.length).toEqual(1);
+        expect(results[0]['_perishable_token']).toEqual(undefined);
         done();
+      },
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    user.setPassword('asdf');
+    user.setUsername('zxcv');
+    user.set('email', 'user@parse.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('user@parse.com');
+  });
+
+  it('should return ajax failure error on ajax request with wrong data provided', async () => {
+    await reconfigureServer({
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/apps/test/request_password_reset',
+        body: `new_password=user1&token=12345&username=Johnny`,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        followRedirects: false,
       });
+    } catch (error) {
+      expect(error.status).not.toBe(302);
+      expect(error.text).toEqual(
+        '{"code":-1,"error":"Failed to reset password (Username/email or token is invalid)"}'
+      );
+    }
   });
 
   it('deletes password reset token on email address change', done => {
