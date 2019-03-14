@@ -162,6 +162,27 @@ describe('Cloud Code', () => {
     );
   });
 
+  it("test beforeSave changed object fail doesn't change object", async function() {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
+      if (req.object.has('fail')) {
+        return Promise.reject(new Error('something went wrong'));
+      }
+
+      return Promise.resolve();
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
+    await obj.save();
+    obj.set('foo', 'baz').set('fail', true);
+    try {
+      await obj.save();
+    } catch (e) {
+      await obj.fetch();
+      expect(obj.get('foo')).toBe('bar');
+    }
+  });
+
   it('test beforeSave returns value on create and update', done => {
     Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
       req.object.set('foo', 'baz');
