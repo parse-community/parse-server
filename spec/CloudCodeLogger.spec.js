@@ -101,7 +101,7 @@ describe('Cloud Code Logger', () => {
       expect(cloudTriggerMessage[0]).toBe('info');
       expect(cloudTriggerMessage[2].triggerType).toEqual('beforeSave');
       expect(cloudTriggerMessage[1]).toMatch(
-        /beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {}/
+        /beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {"object":{}}/
       );
       expect(cloudTriggerMessage[2].user).toBe(user.id);
       expect(errorMessage[0]).toBe('error');
