@@ -90,7 +90,7 @@ export class UserController extends AdaptableController {
       )
       .then(results => {
         if (results.length != 1) {
-          throw undefined;
+          throw 'Failed to reset password: username / email / token is invalid';
         }
 
         if (

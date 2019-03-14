@@ -988,7 +988,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     } catch (error) {
       expect(error.status).not.toBe(302);
       expect(error.text).toEqual(
-        '{"code":-1,"error":"Failed to reset password (Username/email or token is invalid)"}'
+        '{"code":-1,"error":"Failed to reset password: username / email / token is invalid"}'
       );
     }
   });

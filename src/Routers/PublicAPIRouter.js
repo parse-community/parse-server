@@ -209,11 +209,6 @@ export class PublicAPIRouter extends PromiseRouter {
           }
           if (result.err) {
             throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
-          } else {
-            throw new Parse.Error(
-              Parse.Error.OTHER_CAUSE,
-              'Failed to reset password (Username/email or token is invalid)'
-            );
           }
         }
 
