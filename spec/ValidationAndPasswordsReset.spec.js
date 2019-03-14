@@ -910,6 +910,89 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     });
   });
 
+  it('should programmatically reset password on ajax request', async done => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: async options => {
+        const response = await request({
+          url: options.link,
+          followRedirects: false,
+        });
+        expect(response.status).toEqual(302);
+        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
+        const match = response.text.match(re);
+        if (!match) {
+          fail('should have a token');
+          return;
+        }
+        const token = match[1];
+
+        const resetResponse = await request({
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          method: 'POST',
+          body: { new_password: 'hello', token, username: 'zxcv' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+        expect(resetResponse.status).toEqual(200);
+        expect(resetResponse.text).toEqual('"Password successfully reset"');
+
+        await Parse.User.logIn('zxcv', 'hello');
+        const config = Config.get('test');
+        const results = await config.database.adapter.find(
+          '_User',
+          { fields: {} },
+          { username: 'zxcv' },
+          { limit: 1 }
+        );
+        // _perishable_token should be unset after reset password
+        expect(results.length).toEqual(1);
+        expect(results[0]['_perishable_token']).toEqual(undefined);
+        done();
+      },
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    user.setPassword('asdf');
+    user.setUsername('zxcv');
+    user.set('email', 'user@parse.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('user@parse.com');
+  });
+
+  it('should return ajax failure error on ajax request with wrong data provided', async () => {
+    await reconfigureServer({
+      publicServerURL: 'http://localhost:8378/1',
+    });
+
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/apps/test/request_password_reset',
+        body: `new_password=user1&token=12345&username=Johnny`,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        followRedirects: false,
+      });
+    } catch (error) {
+      expect(error.status).not.toBe(302);
+      expect(error.text).toEqual(
+        '{"code":-1,"error":"Failed to reset password: username / email / token is invalid"}'
+      );
+    }
+  });
+
   it('deletes password reset token on email address change', done => {
     reconfigureServer({
       appName: 'coolapp',
