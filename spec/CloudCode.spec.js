@@ -193,6 +193,31 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('test beforeSave applies changes and resolves returned promise', done => {
+    Parse.Cloud.beforeSave('Insurance', function(req) {
+      req.object.set('rate', '$49.99/Month');
+      return new Parse.Query('Pet').get(req.object.get('pet').id).then(pet => {
+        pet.set('healthy', true);
+        return pet.save();
+      });
+    });
+
+    const pet = new Parse.Object('Pet');
+    pet.set('healthy', false);
+    pet.save().then(pet => {
+      const insurance = new Parse.Object('Insurance');
+      insurance.set('pet', pet);
+      insurance.set('rate', '$5.00/Month');
+      insurance.save().then(insurance => {
+        expect(insurance.get('rate')).toEqual('$49.99/Month');
+        new Parse.Query('Pet').get(insurance.get('pet').id).then(pet => {
+          expect(pet.get('healthy')).toEqual(true);
+          done();
+        });
+      });
+    });
+  });
+
   it('test afterSave ran and created an object', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest', function(req) {
       const obj = new Parse.Object('AfterSaveProof');
