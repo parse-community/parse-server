@@ -153,6 +153,7 @@ export class PublicAPIRouter extends PromiseRouter {
     if (!config) {
       this.invalidRequest();
     }
+
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
     }
@@ -206,17 +207,14 @@ export class PublicAPIRouter extends PromiseRouter {
               response: 'Password successfully reset',
             });
           }
-
-          if (
-            result.err ===
-            'Password does not meet the Password Policy requirements.'
-          ) {
+          if (result.err) {
             throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+          } else {
+            throw new Parse.Error(
+              Parse.Error.OTHER_CAUSE,
+              'Failed to reset password (Username/email or token is invalid)'
+            );
           }
-          throw new Parse.Error(
-            Parse.Error.OTHER_CAUSE,
-            'Failed to reset password (Username/email or token is invalid)'
-          );
         }
 
         return Promise.resolve({

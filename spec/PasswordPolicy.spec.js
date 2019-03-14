@@ -947,7 +947,7 @@ describe('Password Policy: ', () => {
         } catch (error) {
           expect(error.status).not.toBe(302);
           expect(error.text).toEqual(
-            '{"code":-1,"error":"Password does not meet the Password Policy requirements."}'
+            '{"code":-1,"error":"Password cannot contain your username."}'
           );
         }
         await Parse.User.logIn('user1', 'r@nd0m');
