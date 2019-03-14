@@ -8,7 +8,7 @@ function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
-// MemoryPromiseQueue is a simple promise queue
+// KeyPromiseQueue is a simple promise queue
 // used to queue operations per key basis.
 class KeyPromiseQueue {
   constructor() {
