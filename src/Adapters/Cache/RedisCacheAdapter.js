@@ -18,10 +18,10 @@ class KeyPromiseQueue {
   beforeOp(key) {
     let tuple = this.queue[key];
     if (!tuple) {
-      tuple = { count: 0, promise: Promise.resolve() };
+      tuple = [0, Promise.resolve()];
       this.queue[key] = tuple;
     }
-    tuple.count++;
+    tuple[0]++;
     return tuple;
   }
 
@@ -30,23 +30,24 @@ class KeyPromiseQueue {
     if (!tuple) {
       return;
     }
-    let { count } = tuple;
+    let [count] = tuple;
     count--;
     if (count <= 0) {
       delete this.queue[key];
       return;
     }
+    tuple[0] = count;
   }
 
   enqueue(key, operation) {
     const tuple = this.beforeOp(key);
-    const toAwait = tuple.promise;
+    const toAwait = tuple[1];
     const nextOperation = toAwait.then(operation);
     const wrappedOperation = nextOperation.then(result => {
       this.afterOp(key);
       return result;
     });
-    tuple.promise = wrappedOperation;
+    tuple[1] = wrappedOperation;
     return wrappedOperation;
   }
 }
