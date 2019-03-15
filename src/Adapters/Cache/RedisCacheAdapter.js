@@ -30,13 +30,11 @@ class KeyPromiseQueue {
     if (!tuple) {
       return;
     }
-    let [count] = tuple;
-    count--;
-    if (count <= 0) {
+    tuple[0]--;
+    if (tuple[0] <= 0) {
       delete this.queue[key];
       return;
     }
-    tuple[0] = count;
   }
 
   enqueue(key, operation) {
