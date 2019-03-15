@@ -12,38 +12,41 @@ function debug() {
 // used to queue operations per key basis.
 class KeyPromiseQueue {
   constructor() {
-    this.queues = {};
-    this.queueCount = {};
+    this.queue = {};
   }
 
   beforeOp(key) {
-    const count = this.queueCount[key] || 0;
-    this.queueCount[key] = count + 1;
+    let tuple = this.queue[key];
+    if (!tuple) {
+      tuple = { count: 0, promise: Promise.resolve() };
+      this.queue[key] = tuple;
+    }
+    tuple.count++;
+    return tuple;
   }
 
   afterOp(key) {
-    let count = this.queueCount[key];
-    if (count === undefined) {
+    const tuple = this.queue[key];
+    if (!tuple) {
       return;
     }
+    let { count } = tuple;
     count--;
     if (count <= 0) {
-      delete this.queues[key];
-      delete this.queueCount[key];
+      delete this.queue[key];
       return;
     }
-    this.queueCount[key] = count;
   }
 
   enqueue(key, operation) {
-    this.beforeOp(key);
-    const toAwait = this.queues[key] || Promise.resolve();
+    const tuple = this.beforeOp(key);
+    const toAwait = tuple.promise;
     const nextOperation = toAwait.then(operation);
     const wrappedOperation = nextOperation.then(result => {
       this.afterOp(key);
       return result;
     });
-    this.queues[key] = wrappedOperation;
+    tuple.promise = wrappedOperation;
     return wrappedOperation;
   }
 }
