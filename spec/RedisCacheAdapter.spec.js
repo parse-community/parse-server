@@ -95,8 +95,7 @@ describe_only(() => {
     }
 
     // at the end the queue should be empty
-    promise.then(() => expect(getQueueCount(cache)).toEqual(0))
-    .then(done);
+    promise.then(() => expect(getQueueCount(cache)).toEqual(0)).then(done);
   });
 
   it('it should count per key chained operations correctly', done => {
@@ -107,7 +106,7 @@ describe_only(() => {
     for (let index = 1; index < 100; index++) {
       key1Promise = cache.put(KEY1, VALUE);
       key2Promise = cache.put(KEY2, VALUE);
-      // per key chain should be equal to index, which is the 
+      // per key chain should be equal to index, which is the
       // total number of operations on that key
       expect(getQueueCountForKey(cache, KEY1)).toEqual(index);
       expect(getQueueCountForKey(cache, KEY2)).toEqual(index);
