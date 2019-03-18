@@ -61,7 +61,7 @@ describe_only(() => {
 
 describe_only(() => {
   return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('RedisCacheAdapter KeyPromiseQueue', function() {
+})('RedisCacheAdapter/KeyPromiseQueue', function() {
   const KEY1 = 'key1';
   const KEY2 = 'key2';
   const VALUE = 'hello';
@@ -76,14 +76,11 @@ describe_only(() => {
     return Object.keys(cache.queue.queue).length;
   }
 
-  it('it should clear completed operations', done => {
-    const cache = new RedisCacheAdapter({
-      ttl: NaN,
-    });
+  it('it should clear completed operations from queue', done => {
+    const cache = new RedisCacheAdapter({ ttl: NaN });
 
+    // execute a bunch of operations in sequence
     let promise = Promise.resolve();
-
-    // execute a bunch of operations
     for (let index = 1; index < 100; index++) {
       promise = promise.then(() => {
         const key = `${index}`;
@@ -98,27 +95,29 @@ describe_only(() => {
     }
 
     // at the end the queue should be empty
-    promise.then(() => expect(getQueueCount(cache)).toEqual(0)).then(done);
+    promise.then(() => expect(getQueueCount(cache)).toEqual(0))
+    .then(done);
   });
 
-  it('it should count chained operations correctly', done => {
-    const cache = new RedisCacheAdapter({
-      ttl: NaN,
-    });
+  it('it should count per key chained operations correctly', done => {
+    const cache = new RedisCacheAdapter({ ttl: NaN });
 
-    let promise1 = Promise.resolve();
-    let promise2 = Promise.resolve();
-
+    let key1Promise = Promise.resolve();
+    let key2Promise = Promise.resolve();
     for (let index = 1; index < 100; index++) {
-      promise1 = cache.put(KEY1, VALUE);
-      promise2 = cache.put(KEY2, VALUE);
+      key1Promise = cache.put(KEY1, VALUE);
+      key2Promise = cache.put(KEY2, VALUE);
+      // per key chain should be equal to index, which is the 
+      // total number of operations on that key
       expect(getQueueCountForKey(cache, KEY1)).toEqual(index);
       expect(getQueueCountForKey(cache, KEY2)).toEqual(index);
+      // the total keys counts should be equal to the different keys
+      // we have currently being processed.
       expect(getQueueCount(cache)).toEqual(2);
     }
 
     // at the end the queue should be empty
-    Promise.all([promise1, promise2])
+    Promise.all([key1Promise, key2Promise])
       .then(() => expect(getQueueCount(cache)).toEqual(0))
       .then(done);
   });
