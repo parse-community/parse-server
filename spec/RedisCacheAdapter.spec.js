@@ -45,6 +45,48 @@ describe_only(() => {
       .then(done);
   });
 
+  it('should not store value for ttl=0', done => {
+    const cache = new RedisCacheAdapter(null, 5);
+
+    cache
+      .put(KEY, VALUE, 0)
+      .then(() => cache.get(KEY))
+      .then(value => expect(value).toEqual(null))
+      .then(done);
+  });
+
+  it('should not expire when ttl=Infinity', done => {
+    const cache = new RedisCacheAdapter(null, 1);
+
+    cache
+      .put(KEY, VALUE, Infinity)
+      .then(() => cache.get(KEY))
+      .then(value => expect(value).toEqual(VALUE))
+      .then(wait.bind(null, 1))
+      .then(() => cache.get(KEY))
+      .then(value => expect(value).toEqual(VALUE))
+      .then(done);
+  });
+
+  it('should fallback to default ttl', done => {
+    const cache = new RedisCacheAdapter(null, 2);
+    let promise = Promise.resolve();
+
+    [-1, null, undefined].map(ttl => {
+      promise = promise.then(() =>
+        cache
+          .put(KEY, VALUE, ttl)
+          .then(() => cache.get(KEY))
+          .then(value => expect(value).toEqual(VALUE))
+          .then(wait.bind(null, 2))
+          .then(() => cache.get(KEY))
+          .then(value => expect(value).toEqual(null))
+      );
+    });
+
+    promise.then(done);
+  });
+
   it('should find un-expired records', done => {
     const cache = new RedisCacheAdapter(null, 5);
 
