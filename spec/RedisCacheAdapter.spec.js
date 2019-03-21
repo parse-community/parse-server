@@ -69,11 +69,11 @@ describe_only(() => {
   });
 
   it('should fallback to default ttl', done => {
-    const cache = new RedisCacheAdapter(null, 2);
+    const cache = new RedisCacheAdapter(null, 1);
     let promise = Promise.resolve();
 
-    [-1, null, undefined].map(ttl => {
-      promise = promise.then(() =>
+    [-100, null, undefined, 'not number', true].forEach(() => {
+      promise = promise.then(ttl =>
         cache
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))
