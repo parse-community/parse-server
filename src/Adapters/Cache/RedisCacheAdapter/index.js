@@ -38,26 +38,35 @@ export class RedisCacheAdapter {
   put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
     debug('put', key, value, ttl);
+
     if (ttl === 0) {
       // ttl of zero is a logical no-op, but redis cannot set expire time of zero
       return this.queue.enqueue(key, () => Promise.resolve());
     }
+
+    if (ttl === Infinity) {
+      return this.queue.enqueue(
+        key,
+        () =>
+          new Promise(resolve => {
+            this.client.set(key, value, function() {
+              resolve();
+            });
+          })
+      );
+    }
+
     if (!isValidTTL(ttl)) {
       ttl = this.ttl;
     }
+
     return this.queue.enqueue(
       key,
       () =>
         new Promise(resolve => {
-          if (ttl === Infinity) {
-            this.client.set(key, value, function() {
-              resolve();
-            });
-          } else {
-            this.client.psetex(key, ttl, value, function() {
-              resolve();
-            });
-          }
+          this.client.psetex(key, ttl, value, function() {
+            resolve();
+          });
         })
     );
   }
