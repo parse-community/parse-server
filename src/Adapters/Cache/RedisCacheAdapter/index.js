@@ -9,10 +9,12 @@ function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
+const isValidTTL = ttl => !isNaN(ttl) && ttl > 0;
+
 export class RedisCacheAdapter {
   constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
+    this.ttl = isValidTTL(ttl) ? ttl : DEFAULT_REDIS_TTL;
     this.client = redis.createClient(redisCtx);
-    this.ttl = ttl;
     this.queue = new KeyPromiseQueue();
   }
 
@@ -40,8 +42,8 @@ export class RedisCacheAdapter {
       // ttl of zero is a logical no-op, but redis cannot set expire time of zero
       return this.queue.enqueue(key, () => Promise.resolve());
     }
-    if (ttl < 0 || isNaN(ttl)) {
-      ttl = DEFAULT_REDIS_TTL;
+    if (!isValidTTL(ttl)) {
+      ttl = this.ttl;
     }
     return this.queue.enqueue(
       key,
@@ -88,3 +90,4 @@ export class RedisCacheAdapter {
 }
 
 export default RedisCacheAdapter;
+
