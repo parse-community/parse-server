@@ -72,8 +72,8 @@ describe_only(() => {
     const cache = new RedisCacheAdapter(null, 1);
     let promise = Promise.resolve();
 
-    [-100, null, undefined, 'not number', true].forEach(() => {
-      promise = promise.then(ttl =>
+    [-100, null, undefined, 'not number', true].forEach(ttl => {
+      promise = promise.then(() =>
         cache
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))

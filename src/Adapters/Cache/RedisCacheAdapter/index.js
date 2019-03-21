@@ -9,7 +9,7 @@ function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
-const isValidTTL = ttl => !isNaN(ttl) && ttl > 0;
+const isValidTTL = ttl => typeof ttl === 'number' && ttl > 0;
 
 export class RedisCacheAdapter {
   constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
@@ -90,4 +90,3 @@ export class RedisCacheAdapter {
 }
 
 export default RedisCacheAdapter;
-
