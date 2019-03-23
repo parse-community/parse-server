@@ -267,8 +267,7 @@ RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
   const extraData = { className: this.className };
   const user = triggers.inflate(extraData, userData);
 
-  // no need to return a response, the
-  // only purpose here is to reject a login
+  // no need to return a response
   await triggers.maybeRunTrigger(
     triggers.Types.beforeLogin,
     this.auth,
