@@ -120,6 +120,39 @@ ParseCloud.beforeDelete = function(parseClass, handler) {
 };
 
 /**
+ *
+ * Registers the before login function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * This function provides further control
+ * in validating a login attempt. Specifically,
+ * it is triggered after a user enters
+ * correct credentials (or other valid authData),
+ * but prior to a session being generated.
+ *
+ * ```
+ * Parse.Cloud.beforeLogin((request) => {
+ *   // code here
+ * })
+ *
+ * ```
+ *
+ * @method beforeLogin
+ * @name Parse.Cloud.beforeLogin
+ * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
+ */
+ParseCloud.beforeLogin = function(handler) {
+  const className = '_User';
+  triggers.addTrigger(
+    triggers.Types.beforeLogin,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
  * Registers an after save function.
  *
  * **Available in Cloud Code only.**

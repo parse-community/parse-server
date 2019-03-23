@@ -3,6 +3,7 @@ import Parse from 'parse/node';
 import { logger } from './logger';
 
 export const Types = {
+  beforeLogin: 'beforeLogin',
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
