@@ -1,16 +1,24 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...master)
 
+### 3.2.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...3.1.2)
+- NEW: Support accessing sensitive fields with an explicit ACL.  Not documented yet, see [tests](https://github.com/parse-community/parse-server/blob/f2c332ea6a984808ad5b2e3ce34864a20724f72b/spec/UserPII.spec.js#L526) for examples
+- Hides token contents in logStartupOptions if they arrive as a buffer
+- Password requirement custom message (#5399)
+- Postgres: Refuse to build unsafe JSON lists for contains (#5337)
+- Properly handle return values in beforeSave (#5228)
+- Ajax password reset (#5332)
 ### 3.1.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
 
 - Postgres: Fixes support for global configuration
 - Postgres: Fixes support for numeric arrays
-- Postgres: Fixes issue affecting queries on emtpy arrays
+- Postgres: Fixes issue affecting queries on empty arrays
 - LiveQuery: Adds support for transmitting the original object
-- Queries: Use estimated count if queyr is empty 
+- Queries: Use estimated count if query is empty
 - Docker: Reduces the size of the docker image to 154Mb
 
 
