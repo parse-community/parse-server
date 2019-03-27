@@ -1964,26 +1964,28 @@ export class PostgresStorageAdapter implements StorageAdapter {
       where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     let tempQs = '';
 
-    if (where.pattern.length > 0) {
+    if (where.pattern.length > 0 || !query) {
       tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-      tempQs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
+      tempQs =
+        'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
     const qs = tempQs;
 
-    return this._client.one(qs, values, a => {
-      if (a.approximate_row_count != null) {
-        return +a.approximate_row_count
-      } else {
-        return +a.count
-      }
-    }).catch(error => {
-      if (error.code !== PostgresRelationDoesNotExistError) {
-        throw error;
-      }
-      return 0;
-    });
-
+    return this._client
+      .one(qs, values, a => {
+        if (a.approximate_row_count != null) {
+          return +a.approximate_row_count;
+        } else {
+          return +a.count;
+        }
+      })
+      .catch(error => {
+        if (error.code !== PostgresRelationDoesNotExistError) {
+          throw error;
+        }
+        return 0;
+      });
   }
 
   distinct(
