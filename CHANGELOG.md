@@ -4,13 +4,16 @@
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...master)
 
 ### 3.2.0
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...3.1.2)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...3.2.0)
 - NEW: Support accessing sensitive fields with an explicit ACL.  Not documented yet, see [tests](https://github.com/parse-community/parse-server/blob/f2c332ea6a984808ad5b2e3ce34864a20724f72b/spec/UserPII.spec.js#L526) for examples
 - Hides token contents in logStartupOptions if they arrive as a buffer
-- Password requirement custom message (#5399)
+- Support custom message for password requirements (#5399)
+- Support for Ajax password reset (#5332)
 - Postgres: Refuse to build unsafe JSON lists for contains (#5337)
 - Properly handle return values in beforeSave (#5228)
-- Ajax password reset (#5332)
+- Fixes issue when querying user roles (#5276)
+- Fixes issue affecting update with CLP (#5269)
+
 ### 3.1.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
 
