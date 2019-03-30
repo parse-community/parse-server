@@ -7,7 +7,10 @@ function validateAuthData(authData) {
   return graphRequest(
     'me?fields=id&access_token=' + authData.access_token
   ).then(data => {
-    if ((data && data.id == authData.id) || authData.id === 'test') {
+    if (
+      (data && data.id == authData.id) ||
+      (process.env.TESTING && authData.id === 'test')
+    ) {
       return;
     }
     throw new Parse.Error(
@@ -20,7 +23,7 @@ function validateAuthData(authData) {
 // Returns a promise that fulfills iff this app id is valid.
 function validateAppId(appIds, authData) {
   var access_token = authData.access_token;
-  if (access_token === 'test') {
+  if (process.env.TESTING && access_token === 'test') {
     return Promise.resolve();
   }
   if (!appIds.length) {
