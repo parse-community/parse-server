@@ -333,8 +333,6 @@ function addParseCloud() {
 }
 
 function injectDefaults(options: ParseServerOptions) {
-  const hasProtectedFields = !!options.protectedFields;
-
   Object.keys(defaults).forEach(key => {
     if (!options.hasOwnProperty(key)) {
       options[key] = defaults[key];
@@ -346,7 +344,7 @@ function injectDefaults(options: ParseServerOptions) {
   }
 
   // Backwards compatibility
-  if (!hasProtectedFields && options.userSensitiveFields) {
+  if (options.userSensitiveFields) {
     /* eslint-disable no-console */
     !process.env.TESTING &&
       console.warn(
@@ -361,7 +359,20 @@ function injectDefaults(options: ParseServerOptions) {
       ])
     );
 
-    options.protectedFields = { _User: { '*': userSensitiveFields } };
+    if (!('protectedFields' in options)) {
+      options.protectedFields = [];
+    }
+
+    if (!('_User' in options.protectedFields)) {
+      options.protectedFields['_User'] = [];
+    }
+
+    options.protectedFields['_User']['*'] = Array.from(
+      new Set([
+        ...(options.protectedFields['_User']['*'] || []),
+        ...userSensitiveFields,
+      ])
+    );
   }
 
   // Merge protectedFields options with defaults.
