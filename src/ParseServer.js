@@ -359,14 +359,6 @@ function injectDefaults(options: ParseServerOptions) {
       ])
     );
 
-    if (!('protectedFields' in options)) {
-      options.protectedFields = [];
-    }
-
-    if (!('_User' in options.protectedFields)) {
-      options.protectedFields['_User'] = [];
-    }
-
     options.protectedFields['_User']['*'] = Array.from(
       new Set([
         ...(options.protectedFields['_User']['*'] || []),
