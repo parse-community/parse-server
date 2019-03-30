@@ -553,7 +553,7 @@ describe('Personally Identifiable Information', () => {
         done();
       });
 
-      it('privilaged user should not be able to get user PII via API with object', done => {
+      it('privileged user should not be able to get user PII via API with object', done => {
         const userObj = new (Parse.Object.extend(Parse.User))();
         userObj.id = user.id;
         userObj
@@ -565,7 +565,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should not be able to get user PII via API with Find', done => {
+      it('privileged user should not be able to get user PII via API with Find', done => {
         new Parse.Query(Parse.User)
           .equalTo('objectId', user.id)
           .find()
@@ -579,7 +579,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should not be able to get user PII via API with Get', done => {
+      it('privileged user should not be able to get user PII via API with Get', done => {
         new Parse.Query(Parse.User)
           .get(user.id)
           .then(fetchedUser => {
@@ -591,7 +591,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should not get user PII via REST by ID', done => {
+      it('privileged user should not get user PII via REST by ID', done => {
         request({
           url: `http://localhost:8378/1/classes/_User/${user.id}`,
           json: true,
@@ -995,7 +995,7 @@ describe('Personally Identifiable Information', () => {
     });
 
     // Explicit ACL should be able to read sensitive information
-    describe('with privilaged user CLP', () => {
+    describe('with privileged user CLP', () => {
       let adminUser;
 
       beforeEach(async done => {
@@ -1025,7 +1025,7 @@ describe('Personally Identifiable Information', () => {
         done();
       });
 
-      it('privilaged user should be able to get user PII via API with object', done => {
+      it('privileged user should be able to get user PII via API with object', done => {
         const userObj = new (Parse.Object.extend(Parse.User))();
         userObj.id = user.id;
         userObj
@@ -1037,7 +1037,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should be able to get user PII via API with Find', done => {
+      it('privileged user should be able to get user PII via API with Find', done => {
         new Parse.Query(Parse.User)
           .equalTo('objectId', user.id)
           .find()
@@ -1051,7 +1051,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should be able to get user PII via API with Get', done => {
+      it('privileged user should be able to get user PII via API with Get', done => {
         new Parse.Query(Parse.User)
           .get(user.id)
           .then(fetchedUser => {
@@ -1063,7 +1063,7 @@ describe('Personally Identifiable Information', () => {
           .catch(done.fail);
       });
 
-      it('privilaged user should get user PII via REST by ID', done => {
+      it('privileged user should get user PII via REST by ID', done => {
         request({
           url: `http://localhost:8378/1/classes/_User/${user.id}`,
           json: true,
