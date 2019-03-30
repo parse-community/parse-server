@@ -1,7 +1,11 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.1...master)
+
+### 3.2.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...3.2.1)
+- Increment package.json version to match the deployment tag
 
 ### 3.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...3.2.0)
