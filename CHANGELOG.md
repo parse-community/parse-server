@@ -6,7 +6,7 @@
 ### 3.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...3.2.0)
 - NEW: Support accessing sensitive fields with an explicit ACL.  Not documented yet, see [tests](https://github.com/parse-community/parse-server/blob/f2c332ea6a984808ad5b2e3ce34864a20724f72b/spec/UserPII.spec.js#L526) for examples
-- Upgrade Parse SDK JS to 3.2.1 [#5457](https://github.com/parse-community/parse-server/pull/5457)
+- Upgrade Parse SDK JS to 2.3.1 [#5457](https://github.com/parse-community/parse-server/pull/5457)
 - Hides token contents in logStartupOptions if they arrive as a buffer [#6a9380](https://github.com/parse-community/parse-server/commit/6a93806c62205a56a8f4e3b8765848c552510337)
 - Support custom message for password requirements [#5399](https://github.com/parse-community/parse-server/pull/5399)
 - Support for Ajax password reset [#5332](https://github.com/parse-community/parse-server/pull/5332)
