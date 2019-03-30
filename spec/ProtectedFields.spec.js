@@ -1,4 +1,20 @@
 describe('ProtectedFields', function() {
+  it('should handle and empty protectedFields', async function() {
+    const protectedFields = {};
+    await reconfigureServer({ protectedFields });
+
+    const user = new Parse.User();
+    user.setUsername('Alice');
+    user.setPassword('sekrit');
+    user.set('email', 'alice@aol.com');
+    user.set('favoriteColor', 'yellow');
+    await user.save();
+
+    const fetched = await new Parse.Query(Parse.User).get(user.id);
+    expect(fetched.has('email')).toBeFalsy();
+    expect(fetched.has('favoriteColor')).toBeTruthy();
+  });
+
   describe('interaction with legacy userSensitiveFields', function() {
     it('should fall back on sensitive fields if protected fields are not configured', async function() {
       const userSensitiveFields = ['phoneNumber', 'timeZone'];

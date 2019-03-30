@@ -359,6 +359,17 @@ function injectDefaults(options: ParseServerOptions) {
       ])
     );
 
+    // If the options.protectedFields is unset,
+    // it'll be assigned the default above.
+    // Here, protect against the case where protectedFields
+    // is set, but doesn't have _User.
+    if (!('_User' in options.protectedFields)) {
+      options.protectedFields = Object.assign(
+        { _User: [] },
+        options.protectedFields
+      );
+    }
+
     options.protectedFields['_User']['*'] = Array.from(
       new Set([
         ...(options.protectedFields['_User']['*'] || []),
