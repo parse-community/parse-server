@@ -162,7 +162,15 @@ const validateQuery = (query: any): void => {
 };
 
 // Filters out any data that shouldn't be on this REST-formatted object.
-const filterSensitiveData = (isMaster, aclGroup, className, object) => {
+const filterSensitiveData = (
+  isMaster,
+  aclGroup,
+  className,
+  protectedFields,
+  object
+) => {
+  protectedFields && protectedFields.forEach(k => delete object[k]);
+
   if (className !== '_User') {
     return object;
   }
@@ -1141,7 +1149,8 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
-    }: any = {}
+    }: any = {},
+    auth: any = {}
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
@@ -1206,6 +1215,7 @@ class DatabaseController {
               this.reduceInRelation(className, query, schemaController)
             )
             .then(() => {
+              let protectedFields;
               if (!isMaster) {
                 query = this.addPointerPermissions(
                   schemaController,
@@ -1213,6 +1223,15 @@ class DatabaseController {
                   op,
                   query,
                   aclGroup
+                );
+                // ProtectedFields is generated before executing the query so we
+                // can optimize the query using Mongo Projection at a later stage.
+                protectedFields = this.addProtectedFields(
+                  schemaController,
+                  className,
+                  query,
+                  aclGroup,
+                  auth
                 );
               }
               if (!query) {
@@ -1276,6 +1295,7 @@ class DatabaseController {
                         isMaster,
                         aclGroup,
                         className,
+                        protectedFields,
                         object
                       );
                     })
@@ -1388,6 +1408,42 @@ class DatabaseController {
     } else {
       return query;
     }
+  }
+
+  addProtectedFields(
+    schema: SchemaController.SchemaController,
+    className: string,
+    query: any = {},
+    aclGroup: any[] = [],
+    auth: any = {}
+  ) {
+    const perms = schema.getClassLevelPermissions(className);
+    if (!perms) return null;
+
+    const protectedFields = perms.protectedFields;
+    if (!protectedFields) return null;
+
+    if (aclGroup.indexOf(query.objectId) > -1) return null;
+    if (
+      Object.keys(query).length === 0 &&
+      auth &&
+      auth.user &&
+      aclGroup.indexOf(auth.user.id) > -1
+    )
+      return null;
+
+    let protectedKeys = Object.values(protectedFields).reduce(
+      (acc, val) => acc.concat(val),
+      []
+    ); //.flat();
+    [...(auth.userRoles || [])].forEach(role => {
+      const fields = protectedFields[role];
+      if (fields) {
+        protectedKeys = protectedKeys.filter(v => fields.includes(v));
+      }
+    });
+
+    return protectedKeys;
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to

@@ -162,6 +162,27 @@ describe('Cloud Code', () => {
     );
   });
 
+  it("test beforeSave changed object fail doesn't change object", async function() {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
+      if (req.object.has('fail')) {
+        return Promise.reject(new Error('something went wrong'));
+      }
+
+      return Promise.resolve();
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
+    await obj.save();
+    obj.set('foo', 'baz').set('fail', true);
+    try {
+      await obj.save();
+    } catch (e) {
+      await obj.fetch();
+      expect(obj.get('foo')).toBe('bar');
+    }
+  });
+
   it('test beforeSave returns value on create and update', done => {
     Parse.Cloud.beforeSave('BeforeSaveChanged', function(req) {
       req.object.set('foo', 'baz');
@@ -175,6 +196,45 @@ describe('Cloud Code', () => {
       return obj.save().then(() => {
         expect(obj.get('foo')).toEqual('baz');
         done();
+      });
+    });
+  });
+
+  it('test beforeSave applies changes when beforeSave returns true', done => {
+    Parse.Cloud.beforeSave('Insurance', function(req) {
+      req.object.set('rate', '$49.99/Month');
+      return true;
+    });
+
+    const insurance = new Parse.Object('Insurance');
+    insurance.set('rate', '$5.00/Month');
+    insurance.save().then(insurance => {
+      expect(insurance.get('rate')).toEqual('$49.99/Month');
+      done();
+    });
+  });
+
+  it('test beforeSave applies changes and resolves returned promise', done => {
+    Parse.Cloud.beforeSave('Insurance', function(req) {
+      req.object.set('rate', '$49.99/Month');
+      return new Parse.Query('Pet').get(req.object.get('pet').id).then(pet => {
+        pet.set('healthy', true);
+        return pet.save();
+      });
+    });
+
+    const pet = new Parse.Object('Pet');
+    pet.set('healthy', false);
+    pet.save().then(pet => {
+      const insurance = new Parse.Object('Insurance');
+      insurance.set('pet', pet);
+      insurance.set('rate', '$5.00/Month');
+      insurance.save().then(insurance => {
+        expect(insurance.get('rate')).toEqual('$49.99/Month');
+        new Parse.Query('Pet').get(insurance.get('pet').id).then(pet => {
+          expect(pet.get('healthy')).toEqual(true);
+          done();
+        });
       });
     });
   });

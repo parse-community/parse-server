@@ -320,6 +320,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -338,6 +339,7 @@ describe('SchemaController', () => {
       update: { '*': true },
       delete: { '*': true },
       addField: { '*': true },
+      protectedFields: { '*': [] },
     };
     config.database.loadSchema().then(schema => {
       schema
@@ -461,6 +463,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -653,6 +656,68 @@ describe('SchemaController', () => {
       });
   });
 
+  it('refuses to add CLP with incorrect find', done => {
+    const levelPermissions = {
+      find: { '*': false },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': ['email'] },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', {})
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            levelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(done.fail)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+          done();
+        });
+    });
+  });
+
+  it('refuses to add CLP when incorrectly sending a string to protectedFields object value instead of an array', done => {
+    const levelPermissions = {
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': 'email' },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', {})
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            levelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(done.fail)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+          done();
+        });
+    });
+  });
+
   it('will create classes', done => {
     config.database
       .loadSchema()
@@ -706,6 +771,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -751,6 +817,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -782,6 +849,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -815,6 +883,7 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -1002,6 +1071,7 @@ describe('SchemaController', () => {
               update: { '*': true },
               delete: { '*': true },
               addField: { '*': true },
+              protectedFields: { '*': [] },
             },
           };
           expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
