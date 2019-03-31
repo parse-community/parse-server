@@ -1,7 +1,18 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.1...master)
+
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...master)
+
+### 3.2.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.2...3.2.3)
+- Correct previous release with patch that is fully merged
+
+### 3.2.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.1...3.2.2)
+- Security fix to properly process userSensitiveFields when parse-server is started with
+  ../lib/cli/parse-server [#5463](https://github.com/parse-community/parse-server/pull/5463
+  )
 
 ### 3.2.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...3.2.1)
