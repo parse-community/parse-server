@@ -1962,7 +1962,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   // Executes a count.
-  count(className: string, schema: SchemaType, query: QueryType) {
+  count(className, schema, query) {
     debug('count', className, query);
     const values = [className];
     const where = buildWhereClause({ schema, query, index: 2 });
