@@ -63,6 +63,8 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 ### Inside a Docker container
 ```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
