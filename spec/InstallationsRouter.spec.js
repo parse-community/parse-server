@@ -209,7 +209,7 @@ describe('InstallationsRouter', () => {
       });
   });
 
-  it_exclude_dbs(['mongo'])('query installations with count = 1', async () => {
+  it_only_db('postgres')('query installations with count = 1', async () => {
     const config = Config.get('test');
     const androidDeviceRequest = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
