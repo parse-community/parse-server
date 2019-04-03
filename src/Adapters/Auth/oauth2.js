@@ -30,7 +30,7 @@
  *      provider.
  *      Default: - (undefined)
  *
- * 4. "appIds" (array of strings, optional)
+ * 4. "appIds" (array of strings, required if appidField is defined)
  *      A set of appIds that are used to restrict accepted access tokens based
  *      on a specific field's value in the token introspection response.
  *      Default: - (undefined)
@@ -43,9 +43,6 @@
  *      version of the concatenated <username> + ":" + <password> string.
  *      Eg. "Basic dXNlcm5hbWU6cGFzc3dvcmQ="
  *
- * 6. "debug" (boolean, optional)
- *      Enables extensive logging using the "verbose" level.
- *
  * The adapter expects requests with the following authData JSON:
  *
  * {
@@ -56,97 +53,84 @@
  * }
  */
 
-import logger from '../../logger';
 const Parse = require('parse/node').Parse;
 const url = require('url');
 const querystring = require('querystring');
 const httpsRequest = require('./httpsRequest');
 
+const INVALID_ACCESS = 'OAuth2 access token is invalid for this user.';
+const INVALID_ACCESS_APPID =
+  "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration.";
+const MISSING_APPIDS =
+  'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).';
+const MISSING_URL =
+  'OAuth2 token introspection endpoint URL is missing from configuration!';
+
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {
   return requestTokenInfo(options, authData.access_token).then(response => {
     if (
-      response &&
-      response.active &&
-      (!options ||
-        !options.hasOwnProperty('useridField') ||
-        !options.useridField ||
-        authData.id == response[options.useridField])
+      !response ||
+      !response.active ||
+      (options.useridField && authData.id !== response[options.useridField])
     ) {
-      return;
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS);
     }
-    const errorMessage = 'OAuth2 access token is invalid for this user.';
-    logger.error(errorMessage);
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, errorMessage);
   });
 }
 
 function validateAppId(appIds, authData, options) {
-  if (
-    !(options && options.hasOwnProperty('appidField') && options.appidField)
-  ) {
+  if (!options || !options.appidField) {
     return Promise.resolve();
-  } else {
-    if (!appIds.length) {
-      const errorMessage =
-        'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).';
-      logger.error(errorMessage);
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, errorMessage);
-    }
-    return requestTokenInfo(options, authData.access_token).then(response => {
-      const appidField = options.appidField;
-      if (response && response[appidField]) {
-        const responseValue = response[appidField];
-        if (Array.isArray(responseValue)) {
-          if (
-            typeof responseValue.find(function(element) {
-              return appIds.includes(element);
-            }) !== 'undefined'
-          ) {
-            return;
-          }
-        } else {
-          if (appIds.includes(responseValue)) {
-            return;
-          }
-        }
-      }
-      const errorMessage2 =
-        "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration.";
-      logger.error(errorMessage2);
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, errorMessage2);
-    });
   }
+  if (!appIds || appIds.length === 0) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_APPIDS);
+  }
+  return requestTokenInfo(options, authData.access_token).then(response => {
+    if (!response || !response.active) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS);
+    }
+    const appidField = options.appidField;
+    if (!response[appidField]) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS_APPID);
+    }
+    const responseValue = response[appidField];
+    if (!Array.isArray(responseValue) && appIds.includes(responseValue)) {
+      return;
+    } else if (
+      Array.isArray(responseValue) &&
+      responseValue.some(appId => appIds.includes(appId))
+    ) {
+      return;
+    } else {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, INVALID_ACCESS_APPID);
+    }
+  });
 }
 
 // A promise wrapper for requests to the OAuth2 token introspection endpoint.
 function requestTokenInfo(options, access_token) {
-  return new Promise(() => {
-    if (!options || !options.tokenIntrospectionEndpointUrl) {
-      const errorMessage =
-        'OAuth2 token introspection endpoint URL is missing from configuration!';
-      logger.error(errorMessage);
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, errorMessage);
-    }
-    const parsedUrl = url.parse(options.tokenIntrospectionEndpointUrl);
-    const postData = querystring.stringify({
-      token: access_token,
-    });
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(postData),
-    };
-    if (options.authorizationHeader) {
-      headers['Authorization'] = options.authorizationHeader;
-    }
-    const postOptions = {
-      hostname: parsedUrl.hostname,
-      path: parsedUrl.pathname,
-      method: 'POST',
-      headers: headers,
-    };
-    return httpsRequest.request(postOptions, postData);
+  if (!options || !options.tokenIntrospectionEndpointUrl) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, MISSING_URL);
+  }
+  const parsedUrl = url.parse(options.tokenIntrospectionEndpointUrl);
+  const postData = querystring.stringify({
+    token: access_token,
   });
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': Buffer.byteLength(postData),
+  };
+  if (options.authorizationHeader) {
+    headers['Authorization'] = options.authorizationHeader;
+  }
+  const postOptions = {
+    hostname: parsedUrl.hostname,
+    path: parsedUrl.pathname,
+    method: 'POST',
+    headers: headers,
+  };
+  return httpsRequest.request(postOptions, postData);
 }
 
 module.exports = {
