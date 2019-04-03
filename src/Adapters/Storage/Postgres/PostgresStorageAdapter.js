@@ -1962,23 +1962,28 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   // Executes a count.
-  count(className: string, schema: SchemaType, query: QueryType) {
-    debug('count', className, query);
+  count(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    readPreference?: string,
+    estimate?: boolean = true
+  ) {
+    debug('count', className, query, readPreference, estimate);
     const values = [className];
     const where = buildWhereClause({ schema, query, index: 2 });
     values.push(...where.values);
 
     const wherePattern =
       where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    let tempQs = '';
+    let qs = '';
 
-    if (where.pattern.length > 0 || !query) {
-      tempQs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+    if (where.pattern.length > 0 || !estimate) {
+      qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-      tempQs =
+      qs =
         'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
-    const qs = tempQs;
 
     return this._client
       .one(qs, values, a => {
@@ -2341,6 +2346,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   updateSchemaWithIndexes(): Promise<void> {
     return Promise.resolve();
+  }
+
+  // Used for testing purposes
+  updateEstimatedCount(className: string) {
+    return this._client.none('ANALYZE $1:name', [className]);
   }
 }
 
