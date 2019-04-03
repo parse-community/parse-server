@@ -1570,4 +1570,38 @@ describe('Password Policy: ', () => {
         });
     });
   });
+
+  it('should not infinitely loop if maxPasswordHistory is 1 (#4918)', async () => {
+    const user = new Parse.User();
+    const query = new Parse.Query(Parse.User);
+
+    await reconfigureServer({
+      appName: 'passwordPolicy',
+      verifyUserEmails: false,
+      passwordPolicy: {
+        maxPasswordHistory: 1,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    user.setUsername('user1');
+    user.setPassword('user1');
+    user.set('email', 'user1@parse.com');
+    await user.signUp();
+
+    user.setPassword('user2');
+    await user.save();
+
+    const result1 = await query.get(user.id, { useMasterKey: true });
+    expect(result1.get('_password_history').length).toBe(1);
+
+    user.setPassword('user3');
+    await user.save();
+
+    const result2 = await query.get(user.id, { useMasterKey: true });
+    expect(result2.get('_password_history').length).toBe(1);
+
+    expect(result1.get('_password_history')).not.toEqual(
+      result2.get('_password_history')
+    );
+  });
 });
