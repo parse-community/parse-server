@@ -5,59 +5,57 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 import _ from 'lodash';
 import defaults from '../../defaults';
 
-const logger = new winston.Logger();
-const additionalTransports = [];
+const logger = winston.createLogger();
 
-function updateTransports(options) {
-  const transports = Object.assign({}, logger.transports);
+function configureTransports(options) {
+  const transports = [];
   if (options) {
     const silent = options.silent;
     delete options.silent;
-    if (_.isNull(options.dirname)) {
-      delete transports['parse-server'];
-      delete transports['parse-server-error'];
-    } else if (!_.isUndefined(options.dirname)) {
-      transports['parse-server'] = new DailyRotateFile(
+    if (!_.isUndefined(options.dirname) && !_.isNull(options.dirname)) {
+      const parseServer = new DailyRotateFile(
         Object.assign(
-          {},
           {
             filename: 'parse-server.info',
-            name: 'parse-server',
+            json: true,
           },
           options,
           { timestamp: true }
         )
       );
-      transports['parse-server-error'] = new DailyRotateFile(
+      parseServer.name = 'parse-server';
+      transports.push(parseServer);
+
+      const parseServerError = new DailyRotateFile(
         Object.assign(
-          {},
           {
             filename: 'parse-server.err',
-            name: 'parse-server-error',
+            json: true,
           },
           options,
           { level: 'error', timestamp: true }
         )
       );
+      parseServerError.name = 'parse-server-error';
+      transports.push(parseServerError);
     }
 
-    transports.console = new winston.transports.Console(
-      Object.assign(
-        {
-          colorize: true,
-          name: 'console',
-          silent,
-        },
-        options
+    transports.push(
+      new winston.transports.Console(
+        Object.assign(
+          {
+            colorize: true,
+            name: 'console',
+            silent,
+          },
+          options
+        )
       )
     );
   }
-  // Mount the additional transports
-  additionalTransports.forEach(transport => {
-    transports[transport.name] = transport;
-  });
+
   logger.configure({
-    transports: _.values(transports),
+    transports,
   });
 }
 
@@ -93,25 +91,23 @@ export function configureLogger({
     options.json = true;
     options.stringify = true;
   }
-  updateTransports(options);
+  configureTransports(options);
 }
 
 export function addTransport(transport) {
-  additionalTransports.push(transport);
-  updateTransports();
+  logger.add(transport);
 }
 
 export function removeTransport(transport) {
-  const transportName =
-    typeof transport == 'string' ? transport : transport.name;
-  const transports = Object.assign({}, logger.transports);
-  delete transports[transportName];
-  logger.configure({
-    transports: _.values(transports),
+  const matchingTransport = logger.transports.find(t1 => {
+    return typeof transport === 'string'
+      ? t1.name === transport
+      : t1 === transport;
   });
-  _.remove(additionalTransports, transport => {
-    return transport.name === transportName;
-  });
+
+  if (matchingTransport) {
+    logger.remove(matchingTransport);
+  }
 }
 
 export { logger };
