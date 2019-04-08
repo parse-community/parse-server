@@ -86,7 +86,8 @@ export interface StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    readPreference: ?string
+    readPreference?: string,
+    estimate?: boolean
   ): Promise<number>;
   distinct(
     className: string,

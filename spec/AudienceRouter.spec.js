@@ -145,7 +145,7 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it('query installations with count = 1', done => {
+  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
     const config = Config.get('test');
     const androidAudienceRequest = {
       name: 'Android Users',
@@ -189,7 +189,7 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it('query installations with limit = 0 and count = 1', done => {
+  it_exclude_dbs(['postgres'])('query installations with limit = 0 and count = 1', done => {
     const config = Config.get('test');
     const androidAudienceRequest = {
       name: 'Android Users',
