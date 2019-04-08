@@ -15,6 +15,8 @@ describe('WinstonLogger', () => {
     expect(logging.logger.transports.length).toBe(4);
     logging.logger.info('hi');
     expect(testTransport.log).toHaveBeenCalled();
+    logging.logger.error('error');
+    expect(testTransport.log).toHaveBeenCalled();
     logging.removeTransport(testTransport);
     expect(logging.logger.transports.length).toBe(3);
   });
