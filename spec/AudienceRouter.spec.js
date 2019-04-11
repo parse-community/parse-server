@@ -145,7 +145,7 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it('query installations with count = 1', done => {
+  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
     const config = Config.get('test');
     const androidAudienceRequest = {
       name: 'Android Users',
@@ -189,52 +189,60 @@ describe('AudiencesRouter', () => {
       });
   });
 
-  it('query installations with limit = 0 and count = 1', done => {
-    const config = Config.get('test');
-    const androidAudienceRequest = {
-      name: 'Android Users',
-      query: '{ "test": "android" }',
-    };
-    const iosAudienceRequest = {
-      name: 'Iphone Users',
-      query: '{ "test": "ios" }',
-    };
-    const request = {
-      config: config,
-      auth: auth.master(config),
-      body: {},
-      query: {
-        limit: 0,
-        count: 1,
-      },
-      info: {},
-    };
+  it_exclude_dbs(['postgres'])(
+    'query installations with limit = 0 and count = 1',
+    done => {
+      const config = Config.get('test');
+      const androidAudienceRequest = {
+        name: 'Android Users',
+        query: '{ "test": "android" }',
+      };
+      const iosAudienceRequest = {
+        name: 'Iphone Users',
+        query: '{ "test": "ios" }',
+      };
+      const request = {
+        config: config,
+        auth: auth.master(config),
+        body: {},
+        query: {
+          limit: 0,
+          count: 1,
+        },
+        info: {},
+      };
 
-    const router = new AudiencesRouter();
-    rest
-      .create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
-      .then(() => {
-        return rest.create(
+      const router = new AudiencesRouter();
+      rest
+        .create(
           config,
           auth.nobody(config),
           '_Audience',
-          iosAudienceRequest
-        );
-      })
-      .then(() => {
-        return router.handleFind(request);
-      })
-      .then(res => {
-        const response = res.response;
-        expect(response.results.length).toEqual(0);
-        expect(response.count).toEqual(2);
-        done();
-      })
-      .catch(err => {
-        fail(JSON.stringify(err));
-        done();
-      });
-  });
+          androidAudienceRequest
+        )
+        .then(() => {
+          return rest.create(
+            config,
+            auth.nobody(config),
+            '_Audience',
+            iosAudienceRequest
+          );
+        })
+        .then(() => {
+          return router.handleFind(request);
+        })
+        .then(res => {
+          const response = res.response;
+          expect(response.results.length).toEqual(0);
+          expect(response.count).toEqual(2);
+          done();
+        })
+        .catch(err => {
+          fail(JSON.stringify(err));
+          done();
+        });
+    }
+  );
 
   it('should create, read, update and delete audiences throw api', done => {
     Parse._request(

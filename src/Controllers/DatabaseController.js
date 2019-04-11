@@ -1324,7 +1324,9 @@ class DatabaseController {
       })
       .then((schema: any) => {
         return this.collectionExists(className)
-          .then(() => this.adapter.count(className, { fields: {} }))
+          .then(() =>
+            this.adapter.count(className, { fields: {} }, null, '', false)
+          )
           .then(count => {
             if (count > 0) {
               throw new Parse.Error(
