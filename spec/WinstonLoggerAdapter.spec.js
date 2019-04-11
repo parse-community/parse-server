@@ -7,59 +7,64 @@ const request = require('../lib/request');
 describe('info logs', () => {
   it('Verify INFO logs', done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs', () => {
-      winstonLoggerAdapter.query(
-        {
-          from: new Date(Date.now() - 500),
-          size: 100,
-          level: 'info',
-        },
-        results => {
-          if (results.length == 0) {
-            fail('The adapter should return non-empty results');
-          } else {
-            expect(results[0].message).toEqual('testing info logs');
-          }
-          // Check the error log
-          // Regression #2639
-          winstonLoggerAdapter.query(
-            {
-              from: new Date(Date.now() - 200),
-              size: 100,
-              level: 'error',
-            },
-            results => {
-              expect(results.length).toEqual(0);
-              done();
-            }
+    winstonLoggerAdapter.log('info', 'testing info logs with 1234');
+    winstonLoggerAdapter.query(
+      {
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'info',
+        order: 'desc',
+      },
+      results => {
+        if (results.length == 0) {
+          fail('The adapter should return non-empty results');
+        } else {
+          const log = results.find(
+            x => x.message === 'testing info logs with 1234'
           );
+          expect(log.level).toEqual('info');
         }
-      );
-    });
+        // Check the error log
+        // Regression #2639
+        winstonLoggerAdapter.query(
+          {
+            from: new Date(Date.now() - 200),
+            size: 100,
+            level: 'error',
+          },
+          errors => {
+            const log = errors.find(
+              x => x.message === 'testing info logs with 1234'
+            );
+            expect(log).toBeUndefined();
+            done();
+          }
+        );
+      }
+    );
   });
 });
 
 describe('error logs', () => {
   it('Verify ERROR logs', done => {
     const winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs', () => {
-      winstonLoggerAdapter.query(
-        {
-          from: new Date(Date.now() - 500),
-          size: 100,
-          level: 'error',
-        },
-        results => {
-          if (results.length == 0) {
-            fail('The adapter should return non-empty results');
-            done();
-          } else {
-            expect(results[0].message).toEqual('testing error logs');
-            done();
-          }
+    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.query(
+      {
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'error',
+      },
+      results => {
+        if (results.length == 0) {
+          fail('The adapter should return non-empty results');
+          done();
+        } else {
+          expect(results[0].message).toEqual('testing error logs');
+          done();
         }
-      );
-    });
+      }
+    );
   });
 });
 

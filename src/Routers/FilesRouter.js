@@ -113,7 +113,10 @@ export class FilesRouter {
       .catch(e => {
         logger.error('Error creating a file: ', e);
         next(
-          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.')
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `Could not store file: ${filename}.`
+          )
         );
       });
   }
