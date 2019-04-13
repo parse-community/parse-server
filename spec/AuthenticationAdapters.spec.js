@@ -37,11 +37,14 @@ describe('AuthenticationProviders', function() {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
       jequal(typeof provider.validateAppId, 'function');
-      const authDataPromise = provider.validateAuthData({}, {});
+      const validateAuthDataPromise = provider.validateAuthData({}, {});
       const validateAppIdPromise = provider.validateAppId('app', 'key', {});
-      jequal(authDataPromise.constructor, Promise.prototype.constructor);
+      jequal(
+        validateAuthDataPromise.constructor,
+        Promise.prototype.constructor
+      );
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
-      authDataPromise.then(() => {}, () => {});
+      validateAuthDataPromise.then(() => {}, () => {});
       validateAppIdPromise.then(() => {}, () => {});
       done();
     });
@@ -581,6 +584,452 @@ describe('google auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe('Google auth is invalid for this user.');
+    }
+  });
+});
+
+describe('oauth2 auth adapter', () => {
+  const oauth2 = require('../lib/Adapters/Auth/oauth2');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('properly loads OAuth2 adapter via the "oauth2" option', () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+      },
+    };
+    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    expect(loadedAuthAdapter.adapter).toEqual(oauth2);
+  });
+
+  it('properly loads OAuth2 adapter with options', () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        useridField: 'sub',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+        authorizationHeader: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+        debug: true,
+      },
+    };
+    const loadedAuthAdapter = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    const appIds = loadedAuthAdapter.appIds;
+    const providerOptions = loadedAuthAdapter.providerOptions;
+    expect(providerOptions.tokenIntrospectionEndpointUrl).toEqual(
+      'https://example.com/introspect'
+    );
+    expect(providerOptions.useridField).toEqual('sub');
+    expect(providerOptions.appidField).toEqual('appId');
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions.authorizationHeader).toEqual(
+      'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
+    );
+    expect(providerOptions.debug).toEqual(true);
+  });
+
+  it('validateAppId should fail if OAuth2 tokenIntrospectionEndpointUrl is not configured properly', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        appIds: ['a', 'b'],
+        appidField: 'appId',
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        'OAuth2 token introspection endpoint URL is missing from configuration!'
+      );
+    }
+  });
+
+  it('validateAppId appidField optional', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      // Should not reach here
+      fail(e);
+    }
+  });
+
+  it('validateAppId should fail without appIds', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
+      );
+    }
+  });
+
+  it('validateAppId should fail empty appIds', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: [],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).'
+      );
+    }
+  });
+
+  it('validateAppId invalid accessToken', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({});
+    });
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe('OAuth2 access token is invalid for this user.');
+    }
+  });
+
+  it('validateAppId invalid accessToken appId', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({ active: true });
+    });
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration."
+      );
+    }
+  });
+
+  it('validateAppId valid accessToken appId', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({
+        active: true,
+        appId: 'a',
+      });
+    });
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      // Should not enter here
+      fail(e);
+    }
+  });
+
+  it('validateAppId valid accessToken appId array', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({
+        active: true,
+        appId: ['a'],
+      });
+    });
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      // Should not enter here
+      fail(e);
+    }
+  });
+
+  it('validateAppId valid accessToken invalid appId', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({
+        active: true,
+        appId: 'unknown',
+      });
+    });
+    try {
+      await adapter.validateAppId(appIds, authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration."
+      );
+    }
+  });
+
+  it('validateAuthData should fail if OAuth2 tokenIntrospectionEndpointUrl is not configured properly', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe(
+        'OAuth2 token introspection endpoint URL is missing from configuration!'
+      );
+    }
+  });
+
+  it('validateAuthData invalid accessToken', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        useridField: 'sub',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+        authorizationHeader: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({});
+    });
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+    } catch (e) {
+      expect(e.message).toBe('OAuth2 access token is invalid for this user.');
+    }
+    expect(httpsRequest.request).toHaveBeenCalledWith(
+      {
+        hostname: 'example.com',
+        path: '/introspect',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': 15,
+          Authorization: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
+        },
+      },
+      'token=sometoken'
+    );
+  });
+
+  it('validateAuthData valid accessToken', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        useridField: 'sub',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({
+        active: true,
+        sub: 'fakeid',
+      });
+    });
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+    } catch (e) {
+      // Should not enter here
+      fail(e);
+    }
+    expect(httpsRequest.request).toHaveBeenCalledWith(
+      {
+        hostname: 'example.com',
+        path: '/introspect',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': 15,
+        },
+      },
+      'token=sometoken'
+    );
+  });
+
+  it('validateAuthData valid accessToken without useridField', async () => {
+    const options = {
+      oauth2Authentication: {
+        oauth2: true,
+        tokenIntrospectionEndpointUrl: 'https://example.com/introspect',
+        appidField: 'appId',
+        appIds: ['a', 'b'],
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'oauth2Authentication',
+      options
+    );
+    spyOn(httpsRequest, 'request').and.callFake(() => {
+      return Promise.resolve({
+        active: true,
+        sub: 'fakeid',
+      });
+    });
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+    } catch (e) {
+      // Should not enter here
+      fail(e);
     }
   });
 });
