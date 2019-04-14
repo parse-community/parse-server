@@ -1512,7 +1512,10 @@ describe('PushController', () => {
           date: noTimezone,
           isLocalTime: true,
         })
-      ).toBe(`2017-09-06T${expectedHour}:14:01.048`, 'No timezone');
+      ).toBe(
+        `2017-09-06T${expectedHour.toString().padStart(2, '0')}:14:01.048`,
+        'No timezone'
+      );
       expect(
         PushController.formatPushTime({
           date: new Date('2017-09-06'),
@@ -1569,7 +1572,7 @@ describe('PushController', () => {
         .then(pushStatus => {
           expect(pushStatus.get('status')).toBe('scheduled');
           expect(pushStatus.get('pushTime')).toBe(
-            `2017-09-06T${expectedHour}:14:01.048`
+            `2017-09-06T${expectedHour.toString().padStart(2, '0')}:14:01.048`
           );
         })
         .then(done, done.fail);

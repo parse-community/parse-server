@@ -325,7 +325,7 @@ export function handleParseErrors(err, req, res, next) {
 
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error(err.message, err);
+    log.error('Parse error: ', err);
     if (req.config && req.config.enableExpressErrorHandler) {
       next(err);
     }
