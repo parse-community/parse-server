@@ -48,7 +48,8 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
           callback(err);
           return reject(err);
         }
-        if (level == 'error') {
+
+        if (level === 'error') {
           callback(res['parse-server-error']);
           resolve(res['parse-server-error']);
         } else {
