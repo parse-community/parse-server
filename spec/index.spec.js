@@ -57,7 +57,7 @@ describe('server', () => {
     });
   });
 
-  it('fails if database is unreachable', done => {
+  xit('fails if database is unreachable', done => {
     reconfigureServer({
       databaseAdapter: new MongoStorageAdapter({
         uri: 'mongodb://fake:fake@localhost:43605/drew3',
