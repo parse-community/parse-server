@@ -12,7 +12,8 @@ function configureTransports(options) {
   if (options) {
     const silent = options.silent;
     delete options.silent;
-    if (!_.isUndefined(options.dirname) && !_.isNull(options.dirname)) {
+
+    if (!_.isNil(options.dirname)) {
       const parseServer = new DailyRotateFile(
         Object.assign(
           {
@@ -95,6 +96,10 @@ export function configureLogger({
 }
 
 export function addTransport(transport) {
+  // we will remove the existing transport
+  // before replacing it with a new one
+  removeTransport(transport.name);
+
   logger.add(transport);
 }
 
