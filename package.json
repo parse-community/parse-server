@@ -33,7 +33,7 @@
     "lodash": "4.17.11",
     "lru-cache": "5.1.1",
     "mime": "2.4.2",
-    "mongodb": "3.2.2",
+    "mongodb": "3.2.3",
     "parse": "2.3.2",
     "pg-promise": "8.6.5",
     "redis": "2.8.0",
