@@ -1,23 +1,10 @@
-import gql from 'graphql-tag';
-import { makeExecutableSchema } from 'graphql-tools';
+import {
+  GraphQLSchema,
+  GraphQLNonNull,
+  GraphQLObjectType,
+  GraphQLBoolean,
+} from 'graphql';
 import requiredParameter from '../requiredParameter';
-
-const defaultGraphQLSchema = makeExecutableSchema({
-  typeDefs: gql`
-    schema {
-      query: Query
-    }
-
-    type Query {
-      health: Boolean!
-    }
-  `,
-  resolvers: {
-    Query: {
-      health: () => true,
-    },
-  },
-});
 
 class ParseGraphQLSchema {
   constructor(parseServer) {
@@ -27,7 +14,34 @@ class ParseGraphQLSchema {
   }
 
   make() {
-    return defaultGraphQLSchema;
+    const types = [];
+
+    const queryFields = {};
+
+    queryFields.health = {
+      description:
+        'The health query can be used to check if the server is up and running.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: () => true,
+    };
+
+    const query = new GraphQLObjectType({
+      name: 'Query',
+      description: 'Query is the top level type for queries.',
+      fields: queryFields,
+    });
+    types.push(query);
+
+    const mutation = undefined;
+
+    const subscription = undefined;
+
+    return new GraphQLSchema({
+      types,
+      query,
+      mutation,
+      subscription,
+    });
   }
 }
 
