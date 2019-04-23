@@ -1,6 +1,10 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 
+function isParseObjectConstructor(object) {
+  return typeof object === 'function' && object.hasOwnProperty('className');
+}
+
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
     return parseClass.className;
@@ -113,6 +117,45 @@ ParseCloud.beforeDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeDelete,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ *
+ * Registers the before login function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * This function provides further control
+ * in validating a login attempt. Specifically,
+ * it is triggered after a user enters
+ * correct credentials (or other valid authData),
+ * but prior to a session being generated.
+ *
+ * ```
+ * Parse.Cloud.beforeLogin((request) => {
+ *   // code here
+ * })
+ *
+ * ```
+ *
+ * @method beforeLogin
+ * @name Parse.Cloud.beforeLogin
+ * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
+ */
+ParseCloud.beforeLogin = function(handler) {
+  let className = '_User';
+  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+    // validation will occur downstream, this is to maintain internal
+    // code consistency with the other hook types.
+    className = getClassName(handler);
+    handler = arguments[1];
+  }
+  triggers.addTrigger(
+    triggers.Types.beforeLogin,
     className,
     handler,
     Parse.applicationId
