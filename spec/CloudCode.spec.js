@@ -2021,6 +2021,24 @@ describe('afterFind hooks', () => {
     expect(() => {
       Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforeLogin(() => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin('_User', () => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin(Parse.User, () => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin('SomeClass', () => {});
+    }).toThrow('Only the _User class is allowed for the beforeLogin trigger');
   });
 
   it('should skip afterFind hooks for aggregate', done => {
