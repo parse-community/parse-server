@@ -42,6 +42,11 @@ function validateClassNameForTriggers(className, type) {
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
   }
+  if (type === Types.beforeLogin && className !== '_User') {
+    // TODO: check if upstream code will handle `Error` instance rather
+    // than this anti-pattern of throwing strings
+    throw 'Only the _User class is allowed for the beforeLogin trigger';
+  }
   return className;
 }
 
