@@ -17,12 +17,14 @@ class ParseGraphQLServer {
       config.graphQLPath ||
       requiredParameter('You must provide a config.graphQLPath!');
     this.config = config;
-    this.parseGraphQLSchema = new ParseGraphQLSchema(this.parseServer);
+    this.parseGraphQLSchema = new ParseGraphQLSchema(
+      this.parseServer.config.databaseController
+    );
   }
 
-  _getGraphQLOptions() {
+  async _getGraphQLOptions() {
     return {
-      schema: this.parseGraphQLSchema.make(),
+      schema: await this.parseGraphQLSchema.load(),
       context: {},
     };
   }
@@ -33,7 +35,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(
       this.config.graphQLPath,
-      graphqlExpress(req => this._getGraphQLOptions(req.headers))
+      graphqlExpress(async req => await this._getGraphQLOptions(req.headers))
     );
   }
 
@@ -61,11 +63,11 @@ class ParseGraphQLServer {
       {
         execute,
         subscribe,
-        onOperation: (_message, params, webSocket) =>
+        onOperation: async (_message, params, webSocket) =>
           Object.assign(
             {},
             params,
-            this._getGraphQLOptions(webSocket.upgradeReq.headers)
+            await this._getGraphQLOptions(webSocket.upgradeReq.headers)
           ),
       },
       {

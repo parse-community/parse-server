@@ -1,47 +1,83 @@
-import {
-  GraphQLSchema,
-  GraphQLNonNull,
-  GraphQLObjectType,
-  GraphQLBoolean,
-} from 'graphql';
+import { GraphQLSchema, GraphQLObjectType } from 'graphql';
 import requiredParameter from '../requiredParameter';
+import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
+import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 
 class ParseGraphQLSchema {
-  constructor(parseServer) {
-    this.parseServer =
-      parseServer ||
-      requiredParameter('You must provide a parseServer instance!');
+  constructor(databaseController) {
+    this.databaseController =
+      databaseController ||
+      requiredParameter('You must provide a databaseController instance!');
   }
 
-  make() {
-    const types = [];
+  async load() {
+    const schemaController = await this.databaseController.loadSchema();
+    const parseClasses = await schemaController.getAllClasses();
+    const parseClassesString = JSON.stringify(parseClasses);
 
-    const queryFields = {};
+    if (this.graphQLSchema) {
+      if (this.parseClasses === parseClasses) {
+        return this.graphQLSchema;
+      }
 
-    queryFields.health = {
-      description:
-        'The health query can be used to check if the server is up and running.',
-      type: new GraphQLNonNull(GraphQLBoolean),
-      resolve: () => true,
-    };
+      if (this.parseClassesString === parseClassesString) {
+        this.parseClasses = parseClasses;
+        return this.graphQLSchema;
+      }
+    }
 
-    const query = new GraphQLObjectType({
-      name: 'Query',
-      description: 'Query is the top level type for queries.',
-      fields: queryFields,
+    this.parseClasses = parseClasses;
+    this.parseClassesString = parseClassesString;
+    this.graphQLSchema = null;
+    this.graphQLTypes = [];
+    this.graphQLQueries = {};
+    this.graphQLMutations = {};
+    this.graphQLSubscriptions = {};
+
+    defaultGraphQLTypes.load(this);
+
+    //parseClasses.forEach(parseClass => {});
+
+    defaultGraphQLQueries.load(this);
+
+    let graphQLQuery = undefined;
+    if (Object.keys(this.graphQLQueries).length > 0) {
+      graphQLQuery = new GraphQLObjectType({
+        name: 'Query',
+        description: 'Query is the top level type for queries.',
+        fields: this.graphQLQueries,
+      });
+      this.graphQLTypes.push(graphQLQuery);
+    }
+
+    let graphQLMutation = undefined;
+    if (Object.keys(this.graphQLMutations).length > 0) {
+      graphQLMutation = new GraphQLObjectType({
+        name: 'Mutation',
+        description: 'Mutation is the top level type for mutations.',
+        fields: this.graphQLMutations,
+      });
+      this.graphQLTypes.push(graphQLMutation);
+    }
+
+    let graphQLSubscription = undefined;
+    if (Object.keys(this.graphQLSubscriptions).length > 0) {
+      graphQLSubscription = new GraphQLObjectType({
+        name: 'Subscription',
+        description: 'Subscription is the top level type for subscriptions.',
+        fields: this.graphQLSubscriptions,
+      });
+      this.graphQLTypes.push(graphQLSubscription);
+    }
+
+    this.graphQLSchema = new GraphQLSchema({
+      types: this.graphQLTypes,
+      query: graphQLQuery,
+      mutation: graphQLMutation,
+      subscription: graphQLSubscription,
     });
-    types.push(query);
 
-    const mutation = undefined;
-
-    const subscription = undefined;
-
-    return new GraphQLSchema({
-      types,
-      query,
-      mutation,
-      subscription,
-    });
+    return this.graphQLSchema;
   }
 }
 
