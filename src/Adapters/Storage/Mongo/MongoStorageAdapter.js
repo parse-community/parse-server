@@ -385,8 +385,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   deleteAllClasses(fast: boolean) {
     return storageAdapterAllCollections(this).then(collections =>
       Promise.all(
-        collections.map(
-          collection => (fast ? collection.deleteMany({}) : collection.drop())
+        collections.map(collection =>
+          fast ? collection.deleteMany({}) : collection.drop()
         )
       )
     );
@@ -693,7 +693,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection.count(transformWhere(className, query, schema), {
+        collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
         })

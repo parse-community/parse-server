@@ -11,9 +11,8 @@ describe('Parse.GeoPoint testing', () => {
     obj.set('location', point);
     obj.set('name', 'Ferndale');
     await obj.save();
-    const results = await new Parse.Query(TestObject).find();
-    equal(results.length, 1);
-    const pointAgain = results[0].get('location');
+    const result = await new Parse.Query(TestObject).get(obj.id);
+    const pointAgain = result.get('location');
     ok(pointAgain);
     equal(pointAgain.latitude, 44.0);
     equal(pointAgain.longitude, -11.0);
@@ -726,5 +725,50 @@ describe('Parse.GeoPoint testing', () => {
         expect(err.data.code).toEqual(107);
         done();
       });
+  });
+
+  it('withinKilometers supports count', async () => {
+    const inside = new Parse.GeoPoint(10, 10);
+    const outside = new Parse.GeoPoint(20, 20);
+
+    const obj1 = new Parse.Object('TestObject', { location: inside });
+    const obj2 = new Parse.Object('TestObject', { location: outside });
+
+    await Parse.Object.saveAll([obj1, obj2]);
+
+    const q = new Parse.Query(TestObject).withinKilometers(
+      'location',
+      inside,
+      5
+    );
+    const count = await q.count();
+
+    equal(count, 1);
+  });
+
+  it('withinKilometers complex supports count', async () => {
+    const inside = new Parse.GeoPoint(10, 10);
+    const middle = new Parse.GeoPoint(20, 20);
+    const outside = new Parse.GeoPoint(30, 30);
+    const obj1 = new Parse.Object('TestObject', { location: inside });
+    const obj2 = new Parse.Object('TestObject', { location: middle });
+    const obj3 = new Parse.Object('TestObject', { location: outside });
+
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+
+    const q1 = new Parse.Query(TestObject).withinKilometers(
+      'location',
+      inside,
+      5
+    );
+    const q2 = new Parse.Query(TestObject).withinKilometers(
+      'location',
+      middle,
+      5
+    );
+    const query = Parse.Query.or(q1, q2);
+    const count = await query.count();
+
+    equal(count, 2);
   });
 });
