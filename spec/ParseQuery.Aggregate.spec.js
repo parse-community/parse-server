@@ -381,16 +381,16 @@ describe('Parse.Query Aggregate testing', () => {
   it_exclude_dbs(['postgres'])(
     'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
-      const obj1 = new TestObject({ dateField2: new Date(1990, 11, 1) });
-      const obj2 = new TestObject({ dateField2: new Date(1990, 5, 1) });
-      const obj3 = new TestObject({ dateField2: new Date(1990, 11, 1) });
+      const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
+      const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
+      const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
         {
           group: {
             objectId: {
-              day: { $dayOfMonth: '$dateField2' },
-              month: { $month: '$dateField2' },
-              year: { $year: '$dateField2' },
+              day: { $dayOfMonth: '$dateField2019' },
+              month: { $month: '$dateField2019' },
+              year: { $year: '$dateField2019' },
             },
             count: { $sum: 1 },
           },
@@ -401,13 +401,13 @@ describe('Parse.Query Aggregate testing', () => {
           const query = new Parse.Query(TestObject);
           return query.aggregate(pipeline);
         })
-        .catch(done.fail)
         .then(results => {
           const counts = results.map(result => result.count);
           expect(counts.length).toBe(3);
           expect(counts.sort()).toEqual([1, 2, 4]);
           done();
-        });
+        })
+        .catch(done.fail);
     }
   );
 
