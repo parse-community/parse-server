@@ -386,6 +386,11 @@ describe('Parse.Query Aggregate testing', () => {
       const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
         {
+          match: {
+            dateField2019: { $exists: true },
+          },
+        },
+        {
           group: {
             objectId: {
               day: { $dayOfMonth: '$dateField2019' },
@@ -403,8 +408,8 @@ describe('Parse.Query Aggregate testing', () => {
         })
         .then(results => {
           const counts = results.map(result => result.count);
-          expect(counts.length).toBe(3);
-          expect(counts.sort()).toEqual([1, 2, 4]);
+          expect(counts.length).toBe(2);
+          expect(counts.sort()).toEqual([1, 2]);
           done();
         })
         .catch(done.fail);
