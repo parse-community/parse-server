@@ -5,6 +5,7 @@ import { graphqlExpress } from 'apollo-server-express/dist/expressApollo';
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
+import { handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 
@@ -22,10 +23,14 @@ class ParseGraphQLServer {
     );
   }
 
-  async _getGraphQLOptions() {
+  async _getGraphQLOptions(req) {
     return {
       schema: await this.parseGraphQLSchema.load(),
-      context: {},
+      context: {
+        info: req.info,
+        config: req.config,
+        auth: req.auth,
+      },
     };
   }
 
@@ -33,9 +38,10 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, graphqlUploadExpress());
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, bodyParser.json());
+    app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(
       this.config.graphQLPath,
-      graphqlExpress(async req => await this._getGraphQLOptions(req.headers))
+      graphqlExpress(async req => await this._getGraphQLOptions(req))
     );
   }
 
@@ -67,7 +73,7 @@ class ParseGraphQLServer {
           Object.assign(
             {},
             params,
-            await this._getGraphQLOptions(webSocket.upgradeReq.headers)
+            await this._getGraphQLOptions(webSocket.upgradeReq)
           ),
       },
       {

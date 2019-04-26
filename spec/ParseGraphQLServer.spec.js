@@ -33,14 +33,16 @@ describe('ParseGraphQLServer', () => {
     parseGraphQLServer.createSubscriptions(httpServer);
     await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
 
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+    };
+
     const subscriptionClient = new SubscriptionClient(
       'ws://localhost:13377/subscriptions',
       {
         reconnect: true,
-        connectionParams: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Javascript-Key': 'test',
-        },
+        connectionParams: headers,
       },
       ws
     );
@@ -48,6 +50,7 @@ describe('ParseGraphQLServer', () => {
     const httpLink = createUploadLink({
       uri: 'http://localhost:13377/graphql',
       fetch,
+      headers,
     });
     const apolloClient = new ApolloClient({
       link: split(

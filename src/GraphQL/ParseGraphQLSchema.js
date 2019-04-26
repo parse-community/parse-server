@@ -1,7 +1,11 @@
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
 import requiredParameter from '../requiredParameter';
-import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
+import * as parseClassTypes from './loaders/parseClassTypes';
+import * as parseClassQueries from './loaders/parseClassQueries';
+import * as parseClassMutations from './loaders/parseClassMutations';
+import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
+import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 
 class ParseGraphQLSchema {
   constructor(databaseController) {
@@ -28,6 +32,7 @@ class ParseGraphQLSchema {
 
     this.parseClasses = parseClasses;
     this.parseClassesString = parseClassesString;
+    this.parseClassTypes = {};
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLQueries = {};
@@ -36,9 +41,17 @@ class ParseGraphQLSchema {
 
     defaultGraphQLTypes.load(this);
 
-    //parseClasses.forEach(parseClass => {});
+    parseClasses.forEach(parseClass => {
+      parseClassTypes.load(this, parseClass);
+
+      parseClassQueries.load(this, parseClass);
+
+      parseClassMutations.load(this, parseClass);
+    });
 
     defaultGraphQLQueries.load(this);
+
+    defaultGraphQLMutations.load(this);
 
     let graphQLQuery = undefined;
     if (Object.keys(this.graphQLQueries).length > 0) {
