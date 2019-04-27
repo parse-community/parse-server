@@ -23,6 +23,8 @@ $ code . # launch vscode
 $ npm run watch # run babel watching for local file changes
 ```
 
+> To launch VS Code from the terminal with the `code` command you first need to follow the [launching from the command line section](https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line) in the VS Code setup documentation.
+
 Once you have babel running in watch mode, you can start making changes to parse-server.
 
 ### Good to know:
