@@ -9,7 +9,7 @@ If you are not familiar with Pull Requests and want to know more about them, you
 ### Recommended setup:
 
 * [vscode](https://code.visualstudio.com), the popular IDE.
-* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), a very practical test exploration plugin which let you run, debug and see the test results inline.
+* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up you local machine:
 
