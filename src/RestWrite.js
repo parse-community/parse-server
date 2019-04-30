@@ -221,6 +221,34 @@ RestWrite.prototype.runBeforeSaveTrigger = function() {
 
   return Promise.resolve()
     .then(() => {
+      let databasePromise = null;
+      if (this.query) {
+        databasePromise = this.config.database.update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          true
+        );
+      } else {
+        databasePromise = this.config.database.create(
+          this.className,
+          this.data,
+          this.runOptions,
+          true
+        );
+      }
+      return databasePromise.then(result => {
+        if (!result || result.length <= 0) {
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found.'
+          );
+        }
+      });
+    })
+    .then(() => {
       return triggers.maybeRunTrigger(
         triggers.Types.beforeSave,
         this.auth,

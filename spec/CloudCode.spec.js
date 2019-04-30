@@ -240,7 +240,7 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('beforeSave should be called only if user fulfill permissions', async () => {
+  it('beforeSave should be called only if user fulfills permissions', async () => {
     const triggeruser = new Parse.User();
     triggeruser.setUsername('triggeruser');
     triggeruser.setPassword('triggeruser');

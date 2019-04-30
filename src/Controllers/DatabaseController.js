@@ -476,7 +476,8 @@ class DatabaseController {
     query: any,
     update: any,
     { acl, many, upsert }: FullQueryOptions = {},
-    skipSanitization: boolean = false
+    skipSanitization: boolean = false,
+    validateOnly: boolean = false
   ): Promise<any> {
     const originalQuery = query;
     const originalUpdate = update;
@@ -557,6 +558,19 @@ class DatabaseController {
               }
               update = transformObjectACL(update);
               transformAuthData(className, update, schema);
+              if (validateOnly) {
+                return this.adapter
+                  .find(className, schema, query, {})
+                  .then(result => {
+                    if (!result || !result.length) {
+                      throw new Parse.Error(
+                        Parse.Error.OBJECT_NOT_FOUND,
+                        'Object not found.'
+                      );
+                    }
+                    return result;
+                  });
+              }
               if (many) {
                 return this.adapter.updateObjectsByQuery(
                   className,
@@ -587,6 +601,9 @@ class DatabaseController {
               Parse.Error.OBJECT_NOT_FOUND,
               'Object not found.'
             );
+          }
+          if (validateOnly) {
+            return result;
           }
           return this.handleRelationUpdates(
             className,
@@ -802,7 +819,8 @@ class DatabaseController {
   create(
     className: string,
     object: any,
-    { acl }: QueryOptions = {}
+    { acl }: QueryOptions = {},
+    validateOnly = false
   ): Promise<any> {
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
@@ -831,6 +849,9 @@ class DatabaseController {
           .then(schema => {
             transformAuthData(className, object, schema);
             flattenUpdateOperatorsForCreate(object);
+            if (validateOnly) {
+              return object;
+            }
             return this.adapter.createObject(
               className,
               SchemaController.convertSchemaToAdapterSchema(schema),
@@ -838,6 +859,9 @@ class DatabaseController {
             );
           })
           .then(result => {
+            if (validateOnly) {
+              return result;
+            }
             return this.handleRelationUpdates(
               className,
               object.objectId,
