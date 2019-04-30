@@ -820,7 +820,7 @@ class DatabaseController {
     className: string,
     object: any,
     { acl }: QueryOptions = {},
-    validateOnly = false
+    validateOnly: boolean = false
   ): Promise<any> {
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
