@@ -177,6 +177,10 @@ function matchesKeyConstraints(object, key, constraints) {
     // Bail! We can't handle relational queries locally
     return false;
   }
+  // Decode Date JSON value
+  if (object[key] && object[key].__type == 'Date') {
+    object[key] = new Date(object[key].iso);
+  }
   // Equality (or Array contains) cases
   if (typeof constraints !== 'object') {
     if (Array.isArray(object[key])) {
