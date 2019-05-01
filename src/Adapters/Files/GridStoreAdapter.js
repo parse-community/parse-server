@@ -2,6 +2,7 @@
  GridStoreAdapter
  Stores files in Mongo using GridStore
  Requires the database adapter to be based on mongoclient
+ (GridStore is deprecated, Please use GridFSBucket instead)
 
  @flow weak
  */
@@ -14,17 +15,21 @@ import defaults from '../../defaults';
 export class GridStoreAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
+  _mongoOptions: Object;
 
-  constructor(mongoDatabaseURI = defaults.DefaultMongoURI) {
+  constructor(mongoDatabaseURI = defaults.DefaultMongoURI, mongoOptions = {}) {
     super();
     this._databaseURI = mongoDatabaseURI;
+    this._mongoOptions = mongoOptions;
+    this._mongoOptions.useNewUrlParser = true;
   }
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(this._databaseURI).then(
-        client => client.db(client.s.options.dbName)
-      );
+      this._connectionPromise = MongoClient.connect(
+        this._databaseURI,
+        this._mongoOptions
+      ).then(client => client.db(client.s.options.dbName));
     }
     return this._connectionPromise;
   }
