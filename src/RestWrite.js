@@ -221,8 +221,10 @@ RestWrite.prototype.runBeforeSaveTrigger = function() {
 
   return Promise.resolve()
     .then(() => {
+      // Before calling the trigger, validate the permissions for the save operation
       let databasePromise = null;
       if (this.query) {
+        // Validate for updating
         databasePromise = this.config.database.update(
           this.className,
           this.query,
@@ -232,6 +234,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function() {
           true
         );
       } else {
+        // Validate for creating
         databasePromise = this.config.database.create(
           this.className,
           this.data,
@@ -239,6 +242,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function() {
           true
         );
       }
+      // In the case that there is no permission for the operation, it throws an error
       return databasePromise.then(result => {
         if (!result || result.length <= 0) {
           throw new Parse.Error(
