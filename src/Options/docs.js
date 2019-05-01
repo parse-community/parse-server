@@ -28,7 +28,8 @@
  * @property {String} webhookKey Key sent with outgoing webhook calls
  * @property {String} fileKey Key for your files
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
- * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users.
+ * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
+ * @property {Any} protectedFields Protected fields that should be treated with extra security when fetching details.
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anon users, defaults to true
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Any} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
@@ -50,6 +51,7 @@
  * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
+ * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime
  * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10

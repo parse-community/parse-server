@@ -511,4 +511,12 @@ describe('server', () => {
       })
       .catch(done.fail);
   });
+
+  it('should allow direct access', async () => {
+    const spy = spyOn(Parse.CoreManager, 'setRESTController').and.callThrough();
+    await reconfigureServer({
+      directAccess: true,
+    });
+    expect(spy).toHaveBeenCalled();
+  });
 });

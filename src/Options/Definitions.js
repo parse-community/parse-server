@@ -148,16 +148,16 @@ module.exports.ParseServerOptions = {
   userSensitiveFields: {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',
     help:
-      'Personally identifiable information fields in the user table the should be removed for non-authorized users. **Deprecated** @see protectedFields',
+      'Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields',
     action: parsers.arrayParser,
     default: ['email'],
   },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
     help:
-      'Personally identifiable information fields in the user table the should be removed for non-authorized users.',
+      'Protected fields that should be treated with extra security when fetching details.',
     action: parsers.objectParser,
-    default: { _User: { '*': ['email'] } },
+    default: [],
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
@@ -279,6 +279,12 @@ module.exports.ParseServerOptions = {
     help: 'Sets the maximum size for the in memory cache, defaults to 10000',
     action: parsers.numberParser('cacheMaxSize'),
     default: 10000,
+  },
+  directAccess: {
+    env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
+    help: 'Replace HTTP Interface when using JS SDK in current node runtime',
+    action: parsers.booleanParser,
+    default: false,
   },
   enableSingleSchemaCache: {
     env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
