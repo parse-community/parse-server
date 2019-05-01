@@ -498,6 +498,16 @@ describe('server', () => {
       .catch(done.fail);
   });
 
+  it('should allow direct access', async () => {
+    const RESTController = Parse.CoreManager.getRESTController();
+    const spy = spyOn(Parse.CoreManager, 'setRESTController').and.callThrough();
+    await reconfigureServer({
+      directAccess: true,
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    Parse.CoreManager.setRESTController(RESTController);
+  });
+
   it('should load a middleware from string', done => {
     reconfigureServer({
       middleware: 'spec/support/CustomMiddleware',
@@ -510,13 +520,5 @@ describe('server', () => {
         });
       })
       .catch(done.fail);
-  });
-
-  it('should allow direct access', async () => {
-    const spy = spyOn(Parse.CoreManager, 'setRESTController').and.callThrough();
-    await reconfigureServer({
-      directAccess: true,
-    });
-    expect(spy).toHaveBeenCalled();
   });
 });
