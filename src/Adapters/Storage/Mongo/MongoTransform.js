@@ -224,7 +224,7 @@ const valueAsDate = value => {
   return false;
 };
 
-function transformQueryKeyValue(className, key, value, schema) {
+function transformQueryKeyValue(className, key, value, schema, count = false) {
   switch (key) {
     case 'createdAt':
       if (valueAsDate(value)) {
@@ -293,7 +293,7 @@ function transformQueryKeyValue(className, key, value, schema) {
       return {
         key: key,
         value: value.map(subQuery =>
-          transformWhere(className, subQuery, schema)
+          transformWhere(className, subQuery, schema, count)
         ),
       };
     case 'lastUsed':
@@ -330,7 +330,7 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, field);
+  const transformedConstraint = transformConstraint(value, field, count);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return { key: '$text', value: transformedConstraint.$text };
@@ -359,14 +359,15 @@ function transformQueryKeyValue(className, key, value, schema) {
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
-function transformWhere(className, restWhere, schema) {
+function transformWhere(className, restWhere, schema, count = false) {
   const mongoWhere = {};
   for (const restKey in restWhere) {
     const out = transformQueryKeyValue(
       className,
       restKey,
       restWhere[restKey],
-      schema
+      schema,
+      count
     );
     mongoWhere[out.key] = out.value;
   }
@@ -816,7 +817,7 @@ function relativeTimeToDate(text, now = new Date()) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, field) {
+function transformConstraint(constraint, field, count = false) {
   const inArray = field && field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
@@ -1002,15 +1003,27 @@ function transformConstraint(constraint, field) {
         }
         break;
       }
-      case '$nearSphere':
-        var point = constraint[key];
-        answer[key] = [point.longitude, point.latitude];
+      case '$nearSphere': {
+        const point = constraint[key];
+        if (count) {
+          answer.$geoWithin = {
+            $centerSphere: [
+              [point.longitude, point.latitude],
+              constraint.$maxDistance,
+            ],
+          };
+        } else {
+          answer[key] = [point.longitude, point.latitude];
+        }
         break;
-
-      case '$maxDistance':
+      }
+      case '$maxDistance': {
+        if (count) {
+          break;
+        }
         answer[key] = constraint[key];
         break;
-
+      }
       // The SDKs don't seem to use these but they are documented in the
       // REST API docs.
       case '$maxDistanceInRadians':

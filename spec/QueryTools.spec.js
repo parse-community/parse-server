@@ -587,4 +587,49 @@ describe('matchesQuery', function() {
     q.notContainedIn('profile', ['abc', 'def', 'ghi']);
     expect(matchesQuery(message, q)).toBe(false);
   });
+
+  it('matches on Date', () => {
+    // given
+    const now = new Date();
+    const obj = {
+      id: new Id('Person', '01'),
+      dateObject: now,
+      dateJSON: {
+        __type: 'Date',
+        iso: now.toISOString(),
+      },
+    };
+
+    // when, then: Equal
+    let q = new Parse.Query('Person');
+    q.equalTo('dateObject', now);
+    q.equalTo('dateJSON', now);
+    expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+
+    // when, then: lessThan
+    const future = Date(now.getTime() + 1000);
+    q = new Parse.Query('Person');
+    q.lessThan('dateObject', future);
+    q.lessThan('dateJSON', future);
+    expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+
+    // when, then: lessThanOrEqualTo
+    q = new Parse.Query('Person');
+    q.lessThanOrEqualTo('dateObject', now);
+    q.lessThanOrEqualTo('dateJSON', now);
+    expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+
+    // when, then: greaterThan
+    const past = Date(now.getTime() - 1000);
+    q = new Parse.Query('Person');
+    q.greaterThan('dateObject', past);
+    q.greaterThan('dateJSON', past);
+    expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+
+    // when, then: greaterThanOrEqualTo
+    q = new Parse.Query('Person');
+    q.greaterThanOrEqualTo('dateObject', now);
+    q.greaterThanOrEqualTo('dateJSON', now);
+    expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+  });
 });

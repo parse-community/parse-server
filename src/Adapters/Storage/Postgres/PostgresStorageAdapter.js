@@ -360,15 +360,27 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           continue;
         } else {
           // if not null, we need to manually exclude null
-          patterns.push(
-            `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
-          );
+          if (fieldValue.$ne.__type === 'GeoPoint') {
+            patterns.push(
+              `($${index}:name <> POINT($${index + 1}, $${index +
+                2}) OR $${index}:name IS NULL)`
+            );
+          } else {
+            patterns.push(
+              `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
+            );
+          }
         }
       }
-
-      // TODO: support arrays
-      values.push(fieldName, fieldValue.$ne);
-      index += 2;
+      if (fieldValue.$ne.__type === 'GeoPoint') {
+        const point = fieldValue.$ne;
+        values.push(fieldName, point.longitude, point.latitude);
+        index += 3;
+      } else {
+        // TODO: support arrays
+        values.push(fieldName, fieldValue.$ne);
+        index += 2;
+      }
     }
     if (fieldValue.$eq !== undefined) {
       if (fieldValue.$eq === null) {
@@ -730,15 +742,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
 
     if (fieldValue.__type === 'GeoPoint') {
-      patterns.push(
-        '$' +
-          index +
-          ':name ~= POINT($' +
-          (index + 1) +
-          ', $' +
-          (index + 2) +
-          ')'
-      );
+      patterns.push(`$${index}:name ~= POINT($${index + 1}, $${index + 2})`);
       values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
       index += 3;
     }

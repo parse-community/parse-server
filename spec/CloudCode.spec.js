@@ -2021,6 +2021,24 @@ describe('afterFind hooks', () => {
     expect(() => {
       Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.beforeLogin(() => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin('_User', () => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin(Parse.User, () => {});
+    }).not.toThrow(
+      'Only the _User class is allowed for the beforeLogin trigger'
+    );
+    expect(() => {
+      Parse.Cloud.beforeLogin('SomeClass', () => {});
+    }).toThrow('Only the _User class is allowed for the beforeLogin trigger');
   });
 
   it('should skip afterFind hooks for aggregate', done => {
@@ -2113,5 +2131,90 @@ describe('afterFind hooks', () => {
     await object.save();
     expect(calledBefore).toBe(true);
     expect(calledAfter).toBe(true);
+  });
+});
+
+describe('beforeLogin hook', () => {
+  it('should run beforeLogin with correct credentials', async done => {
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('tupac');
+    });
+
+    await Parse.User.signUp('tupac', 'shakur');
+    const user = await Parse.User.logIn('tupac', 'shakur');
+    expect(hit).toBe(1);
+    expect(user).toBeDefined();
+    expect(user.getUsername()).toBe('tupac');
+    expect(user.getSessionToken()).toBeDefined();
+    done();
+  });
+
+  it('should be able to block login if an error is thrown', async done => {
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+
+    const user = await Parse.User.signUp('tupac', 'shakur');
+    await user.save({ isBanned: true });
+
+    try {
+      await Parse.User.logIn('tupac', 'shakur');
+      throw new Error('should not have been logged in.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+    expect(hit).toBe(1);
+    done();
+  });
+
+  it('should not run beforeLogin with incorrect credentials', async done => {
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('tupac');
+    });
+
+    await Parse.User.signUp('tupac', 'shakur');
+    try {
+      await Parse.User.logIn('tony', 'shakur');
+    } catch (e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('should not run beforeLogin on sign up', async done => {
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      expect(req.object.get('username')).toEqual('tupac');
+    });
+
+    const user = await Parse.User.signUp('tupac', 'shakur');
+    expect(user).toBeDefined();
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('should have expected data in request', async done => {
+    Parse.Cloud.beforeLogin(req => {
+      expect(req.object).toBeDefined();
+      expect(req.user).toBeUndefined();
+      expect(req.headers).toBeDefined();
+      expect(req.ip).toBeDefined();
+      expect(req.installationId).toBeDefined();
+      expect(req.context).toBeUndefined();
+    });
+
+    await Parse.User.signUp('tupac', 'shakur');
+    await Parse.User.logIn('tupac', 'shakur');
+    done();
   });
 });

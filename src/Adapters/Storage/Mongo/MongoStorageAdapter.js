@@ -690,7 +690,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection.count(transformWhere(className, query, schema), {
+        collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
         })
@@ -765,12 +765,6 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
         })
       )
-      .catch(error => {
-        if (error.code === 16006) {
-          throw new Parse.Error(Parse.Error.INVALID_QUERY, error.message);
-        }
-        throw error;
-      })
       .then(results => {
         results.forEach(result => {
           if (result.hasOwnProperty('_id')) {
