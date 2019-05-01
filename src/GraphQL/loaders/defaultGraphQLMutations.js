@@ -22,32 +22,25 @@ const CREATE = {
     },
   },
   type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
+  async resolve(_source, args, context) {
+    const { className } = args;
+    let { fields } = args;
+
+    if (!fields) {
+      fields = {};
+    }
+
+    const { config, auth, info } = context;
+
+    return (await rest.create(config, auth, className, fields, info.clientSDK))
+      .response;
+  },
 };
 
 const load = parseGraphQLSchema => {
   //parseGraphQLSchema.graphQLMutations.signUp = SIGN_UP;
 
-  parseGraphQLSchema.graphQLMutations.create = {
-    ...CREATE,
-    async resolve(_source, args, context) {
-      const { className } = args;
-      let { fields } = args;
-
-      if (!fields) {
-        fields = {};
-      }
-
-      const { config, auth, info } = context;
-
-      return (await rest.create(
-        config,
-        auth,
-        className,
-        fields,
-        info.clientSDK
-      )).response;
-    },
-  };
+  parseGraphQLSchema.graphQLMutations.create = CREATE;
 };
 
 export { load };

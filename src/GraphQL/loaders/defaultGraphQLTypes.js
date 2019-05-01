@@ -14,36 +14,47 @@ class TypeValidationError extends Error {
   }
 }
 
-const parseObject = value => {
-  if (typeof value === 'object') {
+const parseStringValue = value => {
+  if (typeof value === 'string') {
     return value;
   }
-  throw new TypeValidationError(value, 'Object');
+
+  throw new TypeValidationError(value, 'String');
 };
 
-const OBJECT = new GraphQLScalarType({
-  name: 'Object',
-  description:
-    'The Object scalar type is used in operations and types that involve objects.',
-  parseValue: parseObject,
-  serialize: parseObject,
-  parseLiteral(ast) {
-    if (ast.kind === Kind.OBJECT) {
-      return ast.fields.reduce(
-        (fields, field) => ({
-          ...fields,
-          [field.name.value]: field.value.value,
-        }),
-        {}
-      );
-    }
-    throw new TypeValidationError(ast.kind, 'Object');
-  },
-});
-
-const parseDate = value => {
+const parseIntValue = value => {
   if (typeof value === 'string') {
-    const date = new Date(parseDate);
+    const int = Number(value);
+    if (Number.isInteger(int)) {
+      return int;
+    }
+  }
+
+  throw new TypeValidationError(value, 'Int');
+};
+
+const parseFloatValue = value => {
+  if (typeof value === 'string') {
+    const float = Number(value);
+    if (!isNaN(float)) {
+      return float;
+    }
+  }
+
+  throw new TypeValidationError(value, 'Float');
+};
+
+const parseBooleanValue = value => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  throw new TypeValidationError(value, 'Boolean');
+};
+
+const parseDateValue = value => {
+  if (typeof value === 'string') {
+    const date = new Date(value);
     if (!isNaN(date)) {
       return date;
     }
@@ -52,11 +63,85 @@ const parseDate = value => {
   throw new TypeValidationError(value, 'Date');
 };
 
+const parseValue = value => {
+  switch (value.kind) {
+    case Kind.STRING:
+      return parseStringValue(value.value);
+
+    case Kind.INT:
+      return parseIntValue(value.value);
+
+    case Kind.FLOAT:
+      return parseFloatValue(value.value);
+
+    case Kind.BOOLEAN:
+      return parseBooleanValue(value.value);
+
+    case Kind.LIST:
+      return parseListValues(value.values);
+
+    case Kind.OBJECT:
+      return parseObjectFields(value.fields);
+
+    default:
+      return value.value;
+  }
+};
+
+const parseListValues = values => {
+  if (Array.isArray(values)) {
+    return values.map(value => parseValue(value));
+  }
+
+  throw new TypeValidationError(values, 'List');
+};
+
+const parseObjectFields = fields => {
+  if (typeof fields === 'object') {
+    return fields.reduce(
+      (object, field) => ({
+        ...object,
+        [field.name.value]: parseValue(field.value),
+      }),
+      {}
+    );
+  }
+
+  throw new TypeValidationError(fields, 'Object');
+};
+
+const OBJECT = new GraphQLScalarType({
+  name: 'Object',
+  description:
+    'The Object scalar type is used in operations and types that involve objects.',
+  parseValue(value) {
+    if (typeof value === 'object') {
+      return value;
+    }
+
+    throw new TypeValidationError(value, 'Object');
+  },
+  serialize(value) {
+    if (typeof value === 'object') {
+      return value;
+    }
+
+    throw new TypeValidationError(value, 'Object');
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.OBJECT) {
+      return parseObjectFields(ast.fields);
+    }
+
+    throw new TypeValidationError(ast.kind, 'Object');
+  },
+});
+
 const DATE = new GraphQLScalarType({
   name: 'Date',
   description:
     'The Date scalar type is used in operations and types that involve dates.',
-  parseValue: parseDate,
+  parseValue: parseDateValue,
   serialize(value) {
     if (typeof value === 'string') {
       return value;
@@ -69,7 +154,7 @@ const DATE = new GraphQLScalarType({
   },
   parseLiteral(ast) {
     if (ast.kind === Kind.STRING) {
-      return parseDate(ast.value);
+      return parseDateValue(ast.value);
     }
 
     throw new TypeValidationError(ast.kind, 'Date');
