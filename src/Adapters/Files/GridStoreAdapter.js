@@ -20,8 +20,9 @@ export class GridStoreAdapter extends FilesAdapter {
   constructor(mongoDatabaseURI = defaults.DefaultMongoURI, mongoOptions = {}) {
     super();
     this._databaseURI = mongoDatabaseURI;
-    this._mongoOptions = mongoOptions;
-    this._mongoOptions.useNewUrlParser = true;
+
+    const defaultMongoOptions = { useNewUrlParser: true };
+    this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
   }
 
   _connect() {
