@@ -771,4 +771,24 @@ describe('Parse.GeoPoint testing', () => {
 
     equal(count, 2);
   });
+
+  it('fails to fetch geopoints that are specifically not at (0,0)', async () => {
+    const tmp = new TestObject({
+      location: new Parse.GeoPoint({ latitude: 0, longitude: 0 }),
+    });
+    const tmp2 = new TestObject({
+      location: new Parse.GeoPoint({
+        latitude: 49.2577142,
+        longitude: -123.1941149,
+      }),
+    });
+    await Parse.Object.saveAll([tmp, tmp2]);
+    const query = new Parse.Query(TestObject);
+    query.notEqualTo(
+      'location',
+      new Parse.GeoPoint({ latitude: 0, longitude: 0 })
+    );
+    const results = await query.find();
+    expect(results.length).toEqual(1);
+  });
 });
