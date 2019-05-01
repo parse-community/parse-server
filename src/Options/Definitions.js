@@ -157,7 +157,7 @@ module.exports.ParseServerOptions = {
     help:
       'Protected fields that should be treated with extra security when fetching details.',
     action: parsers.objectParser,
-    default: [],
+    default: { _User: { '*': ['email'] } },
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
