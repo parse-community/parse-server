@@ -568,7 +568,7 @@ class DatabaseController {
                         'Object not found.'
                       );
                     }
-                    return result;
+                    return {};
                   });
               }
               if (many) {
@@ -850,7 +850,7 @@ class DatabaseController {
             transformAuthData(className, object, schema);
             flattenUpdateOperatorsForCreate(object);
             if (validateOnly) {
-              return object;
+              return {};
             }
             return this.adapter.createObject(
               className,
@@ -860,7 +860,7 @@ class DatabaseController {
           })
           .then(result => {
             if (validateOnly) {
-              return result;
+              return originalObject;
             }
             return this.handleRelationUpdates(
               className,
