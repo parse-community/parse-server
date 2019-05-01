@@ -362,7 +362,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           // if not null, we need to manually exclude null
           if (fieldValue.$ne.__type === 'GeoPoint') {
             patterns.push(
-              `($${index}:name <> $${index + 1}:raw OR $${index}:name IS NULL)`
+              `($${index}:name <> POINT($${index + 1}, $${index +
+                2}) OR $${index}:name IS NULL)`
             );
           } else {
             patterns.push(
@@ -373,8 +374,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       }
       if (fieldValue.$ne.__type === 'GeoPoint') {
         const point = fieldValue.$ne;
-        values.push(fieldName, `POINT(${point.longitude}, ${point.latitude})`);
-        index += 2;
+        values.push(fieldName, point.longitude, point.latitude);
+        index += 3;
       } else {
         // TODO: support arrays
         values.push(fieldName, fieldValue.$ne);
