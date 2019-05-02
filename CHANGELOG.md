@@ -2,7 +2,16 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...master)
+
+### 3.3.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...3.3.0)
+- NEW: beforeLogin trigger with support for auth providers ([#5445](https://github.com/parse-community/parse-server/pull/5445)), thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
+- NEW: RFC 7662 compliant OAuth2 auth adapter ([#4910](https://github.com/parse-community/parse-server/pull/4910)), thanks to [Müller Zsolt](https://github.com/zsmuller)
+- FIX: cannot change password when maxPasswordHistory is 1 ([#5191](https://github.com/parse-community/parse-server/pull/5191)), thanks to [Tulsi Sapkota](https://github.com/Tolsee)
+- FIX (Postgres): count being very slow on large Parse Classes' collections ([#5330](https://github.com/parse-community/parse-server/pull/5330)), thanks to [CoderickLamar](https://github.com/CoderickLamar)
+- FIX: using per-key basis queue ([#5420](https://github.com/parse-community/parse-server/pull/5420)), thanks to [Georges Jamous](https://github.com/georgesjamous)
+- FIX: issue on count with Geo constraints and mongo ([#5286](https://github.com/parse-community/parse-server/pull/5286)), thanks to [Julien Quéré](https://github.com/jlnquere)
 
 ### 3.2.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.2...3.2.3)
