@@ -64,13 +64,15 @@ describe('Server Url Checks', () => {
       databaseAdapter,
     });
     const parseServer = ParseServer.start(newConfiguration, () => {
-      parseServer.handleShutdown();
-      parseServer.server.close(err => {
-        if (err) {
-          done.fail('Close Server Error');
-        }
-        reconfigureServer({}).then(() => {
-          done();
+      parseServer.dbInitPromise.then(() => {
+        parseServer.handleShutdown();
+        parseServer.server.close(err => {
+          if (err) {
+            done.fail('Close Server Error');
+          }
+          reconfigureServer({}).then(() => {
+            done();
+          });
         });
       });
     });
