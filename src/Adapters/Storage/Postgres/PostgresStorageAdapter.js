@@ -1672,33 +1672,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
           values.push(fieldName, fieldValue);
           index += 2;
         } else {
-          values.push(fieldName);
-          const buildSQLArray = fieldValue => {
-            let pattern = 'json_build_array(';
-            for (let i = 0; i < fieldValue.length; i += 1) {
-              const element = fieldValue[i];
-              let type = '';
-              if (Array.isArray(element)) {
-                pattern += buildSQLArray(element) + ',';
-                continue;
-              } else if (typeof element == 'object') {
-                type = '::json';
-              }
-              values.push(element);
-              pattern += `$${index + 1}${type},`;
-              index += 1;
-            }
-            // remove last comma
-            if (fieldValue.length > 0) {
-              pattern = pattern.slice(0, -1);
-            }
-            pattern += ')';
-            return pattern;
-          };
-          const sql = `$${index}:name = ${buildSQLArray(fieldValue)}`;
-
-          updatePatterns.push(sql);
-          index += 1;
+          updatePatterns.push(`$${index}:name = $${index + 1}::jsonb`);
+          values.push(fieldName, JSON.stringify(fieldValue));
+          index += 2;
         }
       } else {
         debug('Not supported update', fieldName, fieldValue);
