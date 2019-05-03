@@ -28,7 +28,7 @@ const load = (parseGraphQLSchema, parseClass) => {
         objectId,
         {},
         info.clientSDK
-      )).response.results[0];
+      )).results[0];
     },
   };
 };
