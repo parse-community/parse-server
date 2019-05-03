@@ -42,6 +42,48 @@ const CREATE = {
   },
 };
 
+const UPDATE = {
+  description:
+    'The update mutation can be used to update an object of a certain class.',
+  args: {
+    className: {
+      description: 'This is the class name of the object that will be updated.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    objectId: {
+      description: 'This is the objectId of the object that will be updated',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    fields: {
+      description:
+        'These are the fields to be attributed to the object in the update process.',
+      type: defaultGraphQLTypes.OBJECT,
+    },
+  },
+  type: new GraphQLNonNull(GraphQLBoolean),
+  async resolve(_source, args, context) {
+    const { className, objectId } = args;
+    let { fields } = args;
+
+    if (!fields) {
+      fields = {};
+    }
+
+    const { config, auth, info } = context;
+
+    await rest.update(
+      config,
+      auth,
+      className,
+      { objectId },
+      fields,
+      info.clientSDK
+    );
+
+    return true;
+  },
+};
+
 const DELETE = {
   description:
     'The delete mutation can be used to delete an object of a certain class.',
@@ -71,6 +113,7 @@ const load = parseGraphQLSchema => {
   //parseGraphQLSchema.graphQLMutations.signUp = SIGN_UP;
 
   parseGraphQLSchema.graphQLMutations.create = CREATE;
+  parseGraphQLSchema.graphQLMutations.update = UPDATE;
   parseGraphQLSchema.graphQLMutations.delete = DELETE;
 };
 

@@ -38,7 +38,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
     args: {},
     type: new GraphQLNonNull(classGraphQLType),
-    async resolve(_source, args, context) {
+    async resolve(_source, _args, context) {
       const { config, auth, info } = context;
 
       return (await rest.find(config, auth, className, {}, {}, info.clientSDK))
