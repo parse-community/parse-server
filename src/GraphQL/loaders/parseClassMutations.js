@@ -4,6 +4,7 @@ import rest from '../../rest';
 
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
+
   const createGraphQLMutationName = `create${className}`;
   parseGraphQLSchema.graphQLMutations[createGraphQLMutationName] = {
     description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
