@@ -1,4 +1,4 @@
-import winston from 'winston';
+import winston, { format } from 'winston';
 import fs from 'fs';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
@@ -56,6 +56,7 @@ function configureTransports(options) {
   }
 
   logger.configure({
+    format: format.combine(format.timestamp(), format.json()),
     transports,
   });
 }
