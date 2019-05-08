@@ -39,6 +39,16 @@ describe('WinstonLogger', () => {
     });
   });
 
+  it('should have a timestamp', done => {
+    logging.logger.query({}, (err, results) => {
+      if (err) {
+        done.fail(err);
+      }
+      expect(results['parse-server'][0].timestamp).toBeDefined();
+      done();
+    });
+  });
+
   it('should enable JSON logs', done => {
     // Force console transport
     reconfigureServer({
