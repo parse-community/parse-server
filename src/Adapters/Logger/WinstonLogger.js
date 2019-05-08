@@ -20,8 +20,7 @@ function configureTransports(options) {
             filename: 'parse-server.info',
             json: true,
           },
-          options,
-          { timestamp: true }
+          options
         )
       );
       parseServer.name = 'parse-server';
@@ -34,7 +33,7 @@ function configureTransports(options) {
             json: true,
           },
           options,
-          { level: 'error', timestamp: true }
+          { level: 'error' }
         )
       );
       parseServerError.name = 'parse-server-error';
