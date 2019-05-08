@@ -51,7 +51,7 @@
  * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
- * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime
+ * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10

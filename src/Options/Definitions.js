@@ -157,7 +157,7 @@ module.exports.ParseServerOptions = {
     help:
       'Protected fields that should be treated with extra security when fetching details.',
     action: parsers.objectParser,
-    default: { _User: { '*': ['email'] } },
+    default: [],
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
@@ -282,7 +282,8 @@ module.exports.ParseServerOptions = {
   },
   directAccess: {
     env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
-    help: 'Replace HTTP Interface when using JS SDK in current node runtime',
+    help:
+      'Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.',
     action: parsers.booleanParser,
     default: false,
   },
