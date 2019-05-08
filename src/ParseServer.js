@@ -96,12 +96,12 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
 
     logging.setLogger(loggerController);
-    this.dbInitPromise = databaseController.performInitialization();
+    const dbInitPromise = databaseController.performInitialization();
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
     if (process.env.TESTING) {
-      __indexBuildCompletionCallbackForTests(this.dbInitPromise);
+      __indexBuildCompletionCallbackForTests(dbInitPromise);
     }
 
     if (cloud) {

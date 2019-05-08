@@ -62,19 +62,20 @@ describe('Server Url Checks', () => {
     }
     const newConfiguration = Object.assign({}, defaultConfiguration, {
       databaseAdapter,
-    });
-    const parseServer = ParseServer.start(newConfiguration, () => {
-      parseServer.dbInitPromise.then(() => {
-        parseServer.handleShutdown();
-        parseServer.server.close(err => {
-          if (err) {
-            done.fail('Close Server Error');
-          }
-          reconfigureServer({}).then(() => {
-            done();
+      __indexBuildCompletionCallbackForTests: promise => {
+        promise.then(() => {
+          parseServer.handleShutdown();
+          parseServer.server.close(err => {
+            if (err) {
+              done.fail('Close Server Error');
+            }
+            reconfigureServer({}).then(() => {
+              done();
+            });
           });
         });
-      });
+      },
     });
+    const parseServer = ParseServer.start(newConfiguration);
   });
 });
