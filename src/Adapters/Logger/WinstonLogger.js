@@ -18,10 +18,8 @@ function configureTransports(options) {
         Object.assign(
           {
             filename: 'parse-server.info',
-            json: true,
           },
-          options,
-          { timestamp: true }
+          options
         )
       );
       parseServer.name = 'parse-server';
@@ -31,10 +29,9 @@ function configureTransports(options) {
         Object.assign(
           {
             filename: 'parse-server.err',
-            json: true,
           },
           options,
-          { level: 'error', timestamp: true }
+          { level: 'error' }
         )
       );
       parseServerError.name = 'parse-server-error';
