@@ -674,78 +674,64 @@ describe('Installations', () => {
       });
   });
 
-  it('update android device token with duplicate device token', done => {
+  it('update android device token with duplicate device token', async () => {
     const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     const t =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
     let input = {
       installationId: installId1,
       deviceToken: t,
       deviceType: 'android',
     };
-    let firstObject;
-    let secondObject;
-    rest
-      .create(config, auth.nobody(config), '_Installation', input)
-      .then(() => {
-        input = {
-          installationId: installId2,
-          deviceType: 'android',
-        };
-        return rest.create(config, auth.nobody(config), '_Installation', input);
-      })
-      .then(() =>
-        database.adapter.find(
-          '_Installation',
-          installationSchema,
-          { installationId: installId1 },
-          {}
-        )
-      )
-      .then(results => {
-        firstObject = results[0];
-        expect(results.length).toEqual(1);
-        return database.adapter.find(
-          '_Installation',
-          installationSchema,
-          { installationId: installId2 },
-          {}
-        );
-      })
-      .then(results => {
-        expect(results.length).toEqual(1);
-        secondObject = results[0];
-        // Update second installation to conflict with first installation
-        input = {
-          objectId: secondObject.objectId,
-          deviceToken: t,
-        };
-        return rest.update(
-          config,
-          auth.nobody(config),
-          '_Installation',
-          { objectId: secondObject.objectId },
-          input
-        );
-      })
-      .then(() =>
-        database.adapter.find(
-          '_Installation',
-          installationSchema,
-          { objectId: firstObject.objectId },
-          {}
-        )
-      )
-      .then(results => {
-        // The first object should have been deleted
-        expect(results.length).toEqual(0);
-        done();
-      })
-      .catch(error => {
-        jfail(error);
-        done();
-      });
+    await rest.create(config, auth.nobody(config), '_Installation', input);
+
+    input = {
+      installationId: installId2,
+      deviceType: 'android',
+    };
+    await rest.create(config, auth.nobody(config), '_Installation', input);
+    await delay(100);
+
+    let results = await database.adapter.find(
+      '_Installation',
+      installationSchema,
+      { installationId: installId1 },
+      {}
+    );
+    expect(results.length).toEqual(1);
+    const firstObject = results[0];
+
+    results = await database.adapter.find(
+      '_Installation',
+      installationSchema,
+      { installationId: installId2 },
+      {}
+    );
+    expect(results.length).toEqual(1);
+    const secondObject = results[0];
+
+    // Update second installation to conflict with first installation
+    input = {
+      objectId: secondObject.objectId,
+      deviceToken: t,
+    };
+    await rest.update(
+      config,
+      auth.nobody(config),
+      '_Installation',
+      { objectId: secondObject.objectId },
+      input
+    );
+    await delay(100);
+    results = await database.adapter.find(
+      '_Installation',
+      installationSchema,
+      { objectId: firstObject.objectId },
+      {}
+    );
+    expect(results.length).toEqual(0);
   });
 
   it('update ios device token with duplicate device token', done => {
