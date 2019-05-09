@@ -66,6 +66,22 @@ describe('error logs', () => {
       }
     );
   });
+
+  fit('Should filter on query', done => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.query(
+      {
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'info',
+      },
+      results => {
+        expect(results.filter(e => e.level !== 'info').length).toBe(0);
+        done();
+      }
+    );
+  });
 });
 
 describe('verbose logs', () => {
