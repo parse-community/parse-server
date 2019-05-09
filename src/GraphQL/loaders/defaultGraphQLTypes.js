@@ -197,6 +197,14 @@ const CREATE_RESULT = new GraphQLObjectType({
 
 const CLASS_FIELDS = {
   ...CREATE_RESULT_FIELDS,
+  updatedAt: {
+    description: 'This is the date in which the object was las updated.',
+    type: new GraphQLNonNull(DATE),
+  },
+  ACL: {
+    description: "This is the object's access control list.",
+    type: new GraphQLNonNull(OBJECT),
+  },
 };
 
 const CLASS = new GraphQLInterfaceType({

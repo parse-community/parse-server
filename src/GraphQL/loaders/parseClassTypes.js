@@ -16,11 +16,13 @@ const mapType = parseType => {
     case 'Boolean':
       return GraphQLBoolean;
     case 'Array':
-      return GraphQLList;
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
     case 'Object':
       return defaultGraphQLTypes.OBJECT;
     case 'Date':
       return defaultGraphQLTypes.DATE;
+    case 'Relation':
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
   }
 };
 
