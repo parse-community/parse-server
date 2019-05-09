@@ -21,6 +21,8 @@ const mapType = parseType => {
       return defaultGraphQLTypes.OBJECT;
     case 'Date':
       return defaultGraphQLTypes.DATE;
+    case 'Pointer':
+      return defaultGraphQLTypes.OBJECT;
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
   }
