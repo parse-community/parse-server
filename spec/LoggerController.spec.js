@@ -66,10 +66,7 @@ describe('LoggerController', () => {
   });
 
   it('can process an ascending query without throwing', done => {
-    // Make mock request
     const query = {
-      from: '2016-01-01Z00:00:00',
-      until: '2016-01-01Z00:00:00',
       size: 5,
       order: 'asc',
       level: 'error',
@@ -114,10 +111,7 @@ describe('LoggerController', () => {
   });
 
   it('can process a descending query without throwing', done => {
-    // Make mock request
     const query = {
-      from: '2016-01-01Z00:00:00',
-      until: '2016-01-01Z00:00:00',
       size: 5,
       order: 'desc',
       level: 'error',
