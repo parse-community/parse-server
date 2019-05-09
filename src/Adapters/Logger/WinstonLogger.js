@@ -1,4 +1,4 @@
-import winston from 'winston';
+import winston, { format } from 'winston';
 import fs from 'fs';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
@@ -18,6 +18,8 @@ function configureTransports(options) {
         Object.assign(
           {
             filename: 'parse-server.info',
+            json: true,
+            format: format.combine(format.timestamp(), format.json()),
           },
           options
         )
@@ -29,6 +31,8 @@ function configureTransports(options) {
         Object.assign(
           {
             filename: 'parse-server.err',
+            json: true,
+            format: format.combine(format.timestamp(), format.json()),
           },
           options,
           { level: 'error' }
@@ -38,18 +42,18 @@ function configureTransports(options) {
       transports.push(parseServerError);
     }
 
-    transports.push(
-      new winston.transports.Console(
-        Object.assign(
-          {
-            colorize: true,
-            name: 'console',
-            silent,
-          },
-          options
-        )
-      )
+    const consoleFormat = options.json ? format.json() : format.simple();
+    const consoleOptions = Object.assign(
+      {
+        colorize: true,
+        name: 'console',
+        silent,
+        format: consoleFormat,
+      },
+      options
     );
+
+    transports.push(new winston.transports.Console(consoleOptions));
   }
 
   logger.configure({
