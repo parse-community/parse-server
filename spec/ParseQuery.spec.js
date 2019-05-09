@@ -4637,4 +4637,23 @@ describe('Parse.Query testing', () => {
     const results = await query.find();
     equal(results[0].get('array'), data2);
   });
+
+  it('can update mixed array more than 100 elements', async () => {
+    const array = [0, 1.1, 'hello world', { foo: 'bar' }, null];
+    const obj = new TestObject({ array });
+    await obj.save();
+
+    const query = new Parse.Query(TestObject);
+    const result = await query.get(obj.id);
+    equal(result.get('array').length, 5);
+
+    for (let i = 0; i < 100; i += 1) {
+      array.push(i);
+    }
+    obj.set('array', array);
+    await obj.save();
+
+    const results = await query.find();
+    equal(results[0].get('array').length, 105);
+  });
 });
