@@ -38,75 +38,91 @@ describe('ParseGraphQLServer', () => {
     });
 
     it('should only require parseServer and config.graphQLPath args', () => {
-      expect(
-        () => new ParseGraphQLServer(parseServer, { graphQLPath: 'graphql' })
-      ).not.toThrow();
+      let parseGraphQLServer;
+      expect(() => {
+        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'graphql',
+        });
+      }).not.toThrow();
+      expect(parseGraphQLServer.parseGraphQLSchema).toBeDefined();
+      expect(parseGraphQLServer.parseGraphQLSchema.databaseController).toEqual(
+        parseServer.config.databaseController
+      );
     });
   });
 
-  it('can be initialized', async () => {
-    const expressApp = express();
-    const httpServer = http.createServer(expressApp);
-    expressApp.use('/parse', parseServer.app);
-    ParseServer.createLiveQueryServer(httpServer, {
-      port: 1338,
-    });
-    const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-      graphQLPath: '/graphql',
-      playgroundPath: '/playground',
-      subscriptionsPath: '/subscriptions',
-    });
-    parseGraphQLServer.applyGraphQL(expressApp);
-    parseGraphQLServer.applyPlayground(expressApp);
-    parseGraphQLServer.createSubscriptions(httpServer);
-    await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+  describe('API', () => {
+    let httpServer;
+    let apolloClient;
 
-    const headers = {
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-Javascript-Key': 'test',
-    };
+    beforeAll(async () => {
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      expressApp.use('/parse', parseServer.app);
+      ParseServer.createLiveQueryServer(httpServer, {
+        port: 1338,
+      });
+      const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      parseGraphQLServer.applyPlayground(expressApp);
+      parseGraphQLServer.createSubscriptions(httpServer);
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
 
-    const subscriptionClient = new SubscriptionClient(
-      'ws://localhost:13377/subscriptions',
-      {
-        reconnect: true,
-        connectionParams: headers,
-      },
-      ws
-    );
-    const wsLink = new WebSocketLink(subscriptionClient);
-    const httpLink = createUploadLink({
-      uri: 'http://localhost:13377/graphql',
-      fetch,
-      headers,
-    });
-    const apolloClient = new ApolloClient({
-      link: split(
-        ({ query }) => {
-          const { kind, operation } = getMainDefinition(query);
-          return kind === 'OperationDefinition' && operation === 'subscription';
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      const subscriptionClient = new SubscriptionClient(
+        'ws://localhost:13377/subscriptions',
+        {
+          reconnect: true,
+          connectionParams: headers,
         },
-        wsLink,
-        httpLink
-      ),
-      cache: new InMemoryCache(),
+        ws
+      );
+      const wsLink = new WebSocketLink(subscriptionClient);
+      const httpLink = createUploadLink({
+        uri: 'http://localhost:13377/graphql',
+        fetch,
+        headers,
+      });
+      apolloClient = new ApolloClient({
+        link: split(
+          ({ query }) => {
+            const { kind, operation } = getMainDefinition(query);
+            return (
+              kind === 'OperationDefinition' && operation === 'subscription'
+            );
+          },
+          wsLink,
+          httpLink
+        ),
+        cache: new InMemoryCache(),
+      });
     });
 
-    const health = (await apolloClient.query({
-      query: gql`
-        query Health {
-          health
-        }
-      `,
-      fetchPolicy: 'no-cache',
-    })).data.health;
-    expect(health).toBeTruthy();
-
-    await req({
-      method: 'GET',
-      url: 'http://localhost:13377/playground',
+    it('should be healthy', async () => {
+      const health = (await apolloClient.query({
+        query: gql`
+          query Health {
+            health
+          }
+        `,
+        fetchPolicy: 'no-cache',
+      })).data.health;
+      expect(health).toBeTruthy();
     });
 
-    httpServer.close();
+    it('should mount playground', async () => {
+      const res = await req({
+        method: 'GET',
+        url: 'http://localhost:13377/playground',
+      });
+      expect(res.status).toEqual(200);
+    });
   });
 });
