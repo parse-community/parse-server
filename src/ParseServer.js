@@ -80,7 +80,7 @@ class ParseServer {
       cloud,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      serverStartComplete = () => {},
+      serverStartComplete,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -100,9 +100,21 @@ class ParseServer {
     const hooksLoadPromise = hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
-    if (process.env.TESTING) {
-      serverStartComplete(Promise.all([dbInitPromise, hooksLoadPromise]));
-    }
+    Promise.all([dbInitPromise, hooksLoadPromise])
+      .then(() => {
+        if (serverStartComplete) {
+          serverStartComplete();
+        }
+      })
+      .catch(error => {
+        if (serverStartComplete) {
+          serverStartComplete(error);
+        } else {
+          // eslint-disable-next-line no-console
+          console.error(error);
+          process.exit(1);
+        }
+      });
 
     if (cloud) {
       addParseCloud();

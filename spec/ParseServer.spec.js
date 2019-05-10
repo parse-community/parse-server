@@ -62,16 +62,14 @@ describe('Server Url Checks', () => {
     }
     const newConfiguration = Object.assign({}, defaultConfiguration, {
       databaseAdapter,
-      serverStartComplete: promise => {
-        promise.then(() => {
-          parseServer.handleShutdown();
-          parseServer.server.close(err => {
-            if (err) {
-              done.fail('Close Server Error');
-            }
-            reconfigureServer({}).then(() => {
-              done();
-            });
+      serverStartComplete: () => {
+        parseServer.handleShutdown();
+        parseServer.server.close(err => {
+          if (err) {
+            done.fail('Close Server Error');
+          }
+          reconfigureServer({}).then(() => {
+            done();
           });
         });
       },
