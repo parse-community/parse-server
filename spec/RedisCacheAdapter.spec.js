@@ -78,7 +78,7 @@ describe_only(() => {
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(VALUE))
-          .then(wait.bind(null, 2))
+          .then(wait.bind(null, 500))
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(null))
       );

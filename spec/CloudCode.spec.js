@@ -540,7 +540,7 @@ describe('Cloud Code', () => {
           done();
         }
       );
-    }, 500);
+    }, 1000);
   });
 
   it('test cloud function return types', function(done) {
