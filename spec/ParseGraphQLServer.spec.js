@@ -16,9 +16,15 @@ const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 
 describe('ParseGraphQLServer', () => {
   let parseServer;
+  let parseGraphQLServer;
 
   beforeAll(async () => {
     parseServer = await global.reconfigureServer();
+    parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+      graphQLPath: '/graphql',
+      playgroundPath: '/playground',
+      subscriptionsPath: '/subscriptions',
+    });
   });
 
   describe('constructor', () => {
@@ -51,21 +57,49 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('_getGraphQLOptions', () => {
+    const req = {
+      info: new Object(),
+      config: new Object(),
+      auth: new Object(),
+    };
+
+    it("should return schema and context with req's info, config and auth", async () => {
+      const options = await parseGraphQLServer._getGraphQLOptions(req);
+      expect(options.schema).toEqual(
+        parseGraphQLServer.parseGraphQLSchema.graphQLSchema
+      );
+      expect(options.context.info).toEqual(req.info);
+      expect(options.context.config).toEqual(req.config);
+      expect(options.context.auth).toEqual(req.auth);
+    });
+
+    it('should load GraphQL schema in every call', async () => {
+      const originalLoad = parseGraphQLServer.parseGraphQLSchema.load;
+      let counter = 0;
+      parseGraphQLServer.parseGraphQLSchema.load = () => ++counter;
+      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(
+        1
+      );
+      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(
+        2
+      );
+      expect((await parseGraphQLServer._getGraphQLOptions(req)).schema).toEqual(
+        3
+      );
+      parseGraphQLServer.parseGraphQLSchema.load = originalLoad;
+    });
+  });
+
   describe('API', () => {
-    let httpServer;
     let apolloClient;
 
     beforeAll(async () => {
       const expressApp = express();
-      httpServer = http.createServer(expressApp);
+      const httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
       ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
-      });
-      const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-        graphQLPath: '/graphql',
-        playgroundPath: '/playground',
-        subscriptionsPath: '/subscriptions',
       });
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
