@@ -189,7 +189,7 @@ app.listen(1337, function() {
 });
 ```
 
-For a full list of available options, run `parse-server --help`.
+For a full list of available options, run `parse-server --help` or [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 ## Logging
 
@@ -237,8 +237,6 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `dotNetKey`
 
 #### Advanced options
-
-[Full Parse Server Configuration](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html)
 
 ##### Logging
 
@@ -348,7 +346,7 @@ The default port is 1337, to use a different port set the PORT environment varia
 $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
 
-For the full list of configurable environment variables, run `parse-server --help`.
+For the full list of configurable environment variables, run `parse-server --help` or [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 ### Available Adapters
 
