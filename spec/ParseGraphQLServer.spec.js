@@ -15,10 +15,38 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 
 describe('ParseGraphQLServer', () => {
+  let parseServer;
+
+  beforeAll(async () => {
+    parseServer = await global.reconfigureServer();
+  });
+
+  describe('constructor', () => {
+    it('should require a parseServer instance', () => {
+      expect(() => new ParseGraphQLServer()).toThrow(
+        'You must provide a parseServer instance!'
+      );
+    });
+
+    it('should require config.graphQLPath', () => {
+      expect(() => new ParseGraphQLServer(parseServer)).toThrow(
+        'You must provide a config.graphQLPath!'
+      );
+      expect(() => new ParseGraphQLServer(parseServer, {})).toThrow(
+        'You must provide a config.graphQLPath!'
+      );
+    });
+
+    it('should only require parseServer and config.graphQLPath args', () => {
+      expect(
+        () => new ParseGraphQLServer(parseServer, { graphQLPath: 'graphql' })
+      ).not.toThrow();
+    });
+  });
+
   it('can be initialized', async () => {
     const expressApp = express();
     const httpServer = http.createServer(expressApp);
-    const parseServer = await global.reconfigureServer();
     expressApp.use('/parse', parseServer.app);
     ParseServer.createLiveQueryServer(httpServer, {
       port: 1338,
