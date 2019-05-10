@@ -40,7 +40,7 @@
     "mime": "2.4.2",
     "mongodb": "3.2.4",
     "parse": "2.4.0",
-    "pg-promise": "8.7.0",
+    "pg-promise": "8.7.1",
     "redis": "2.8.0",
     "semver": "6.0.0",
     "subscriptions-transport-ws": "0.9.16",
@@ -79,7 +79,7 @@
     "lint-staged": "8.1.6",
     "mongodb-runner": "4.3.2",
     "node-fetch": "^2.5.0",
-    "nyc": "14.1.0",
+    "nyc": "14.1.1",
     "prettier": "1.17.0",
     "supports-color": "6.0.0"
   },
