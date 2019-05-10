@@ -14,9 +14,9 @@ class ParseGraphQLServer {
     this.parseServer =
       parseServer ||
       requiredParameter('You must provide a parseServer instance!');
-    config.graphQLPath =
-      config.graphQLPath ||
+    if (!config || !config.graphQLPath) {
       requiredParameter('You must provide a config.graphQLPath!');
+    }
     this.config = config;
     this.parseGraphQLSchema = new ParseGraphQLSchema(
       this.parseServer.config.databaseController
@@ -35,6 +35,9 @@ class ParseGraphQLServer {
   }
 
   applyGraphQL(app) {
+    if (!app || !app.use) {
+      requiredParameter('You must provide an Express.js app instance!');
+    }
     app.use(this.config.graphQLPath, graphqlUploadExpress());
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, bodyParser.json());

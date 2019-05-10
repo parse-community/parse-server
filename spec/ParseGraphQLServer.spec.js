@@ -91,6 +91,35 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('applyGraphQL', () => {
+    it('should require a Express.js app instance', () => {
+      expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
+        'You must provide an Express.js app instance!'
+      );
+      expect(() => parseGraphQLServer.applyGraphQL({})).toThrow(
+        'You must provide an Express.js app instance!'
+      );
+      expect(() =>
+        parseGraphQLServer.applyGraphQL(new express())
+      ).not.toThrow();
+    });
+
+    it('should apply middlewares at config.graphQLPath', () => {
+      let useCount = 0;
+      expect(() =>
+        new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'somepath',
+        }).applyGraphQL({
+          use: path => {
+            useCount++;
+            expect(path).toEqual('somepath');
+          },
+        })
+      ).not.toThrow();
+      expect(useCount).toBeGreaterThan(0);
+    });
+  });
+
   describe('API', () => {
     let apolloClient;
 
