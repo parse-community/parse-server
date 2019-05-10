@@ -243,13 +243,13 @@ describe('Cloud Code', () => {
     Parse.Cloud.afterSave('AfterSaveTest', function(req) {
       const obj = new Parse.Object('AfterSaveProof');
       obj.set('proof', req.object.id);
-      obj.save();
+      obj.save().then(test);
     });
 
     const obj = new Parse.Object('AfterSaveTest');
     obj.save();
 
-    setTimeout(function() {
+    function test() {
       const query = new Parse.Query('AfterSaveProof');
       query.equalTo('proof', obj.id);
       query.find().then(
@@ -262,7 +262,7 @@ describe('Cloud Code', () => {
           done();
         }
       );
-    }, 500);
+    }
   });
 
   it('test afterSave ran on created object and returned a promise', function(done) {
@@ -519,7 +519,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.afterDelete('AfterDeleteTest', function(req) {
       const obj = new Parse.Object('AfterDeleteProof');
       obj.set('proof', req.object.id);
-      obj.save();
+      obj.save().then(test);
     });
 
     const obj = new Parse.Object('AfterDeleteTest');
@@ -527,7 +527,7 @@ describe('Cloud Code', () => {
       obj.destroy();
     });
 
-    setTimeout(function() {
+    function test() {
       const query = new Parse.Query('AfterDeleteProof');
       query.equalTo('proof', obj.id);
       query.find().then(
@@ -540,7 +540,7 @@ describe('Cloud Code', () => {
           done();
         }
       );
-    }, 500);
+    }
   });
 
   it('test cloud function return types', function(done) {
