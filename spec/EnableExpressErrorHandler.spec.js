@@ -17,7 +17,7 @@ describe('Enable express error handler', () => {
         masterKey: masterKey,
         serverURL: serverUrl,
         enableExpressErrorHandler: true,
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise.then(() => {
             expect(Parse.applicationId).toEqual('anOtherTestApp');
             const app = express();

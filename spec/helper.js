@@ -150,7 +150,7 @@ const reconfigureServer = changedConfiguration => {
         defaultConfiguration,
         changedConfiguration,
         {
-          __indexBuildCompletionCallbackForTests: indexBuildPromise =>
+          serverStartComplete: indexBuildPromise =>
             indexBuildPromise.then(() => {
               resolve(parseServer);
             }, reject),

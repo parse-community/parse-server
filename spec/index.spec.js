@@ -295,7 +295,7 @@ describe('server', () => {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
         serverURL: 'http://localhost:12666/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise.then(() => {
             expect(Parse.applicationId).toEqual('aTestApp');
             const app = express();
@@ -332,7 +332,7 @@ describe('server', () => {
         appId: 'anOtherTestApp',
         masterKey: 'anOtherTestMasterKey',
         serverURL: 'http://localhost:12667/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise
             .then(() => {
               expect(Parse.applicationId).toEqual('anOtherTestApp');

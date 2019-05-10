@@ -80,7 +80,7 @@ class ParseServer {
       cloud,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      __indexBuildCompletionCallbackForTests = () => {},
+      serverStartComplete = () => {},
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -101,9 +101,7 @@ class ParseServer {
 
     // Note: Tests will start to fail if any validation happens after this is called.
     if (process.env.TESTING) {
-      __indexBuildCompletionCallbackForTests(
-        Promise.all([dbInitPromise, hooksLoadPromise])
-      );
+      serverStartComplete(Promise.all([dbInitPromise, hooksLoadPromise]));
     }
 
     if (cloud) {

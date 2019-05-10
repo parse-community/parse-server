@@ -173,7 +173,7 @@ export interface ParseServerOptions {
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
 
-  __indexBuildCompletionCallbackForTests: ?() => void;
+  serverStartComplete: ?() => void;
 }
 
 export interface CustomPagesOptions {

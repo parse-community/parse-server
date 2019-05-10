@@ -28,7 +28,7 @@ function createParseServer(options) {
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, options, {
         serverURL: 'http://localhost:12666/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise.then(() => {
             expect(Parse.applicationId).toEqual('test');
             const app = express();

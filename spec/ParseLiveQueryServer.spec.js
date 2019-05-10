@@ -158,7 +158,7 @@ describe('ParseLiveQueryServer', function() {
           classNames: ['Yolo'],
         },
         startLiveQueryServer: true,
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise.then(() => {
             expect(parseServer.liveQueryServer).not.toBeUndefined();
             expect(parseServer.liveQueryServer.server).toBe(parseServer.server);
@@ -181,7 +181,7 @@ describe('ParseLiveQueryServer', function() {
         liveQueryServerOptions: {
           port: 22347,
         },
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: promise => {
           promise.then(() => {
             expect(parseServer.liveQueryServer).not.toBeUndefined();
             expect(parseServer.liveQueryServer.server).not.toBe(
