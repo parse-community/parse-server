@@ -70,6 +70,17 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_db('mongo')` // will make a test that only runs on mongo
   - `it_exclude_dbs(['postgres'])` // will make a test that runs against all DB's but postgres
 
+### Generate Parse Server Config Definition
+
+If you want to make changes to [Parse Server Configuration][config] add desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs]. 
+
+To view docs run `npm run docs` and check the `/out` directory.
+
 ### Code of Conduct
 
 This project adheres to the [Contributor Covenant Code of Conduct](https://github.com/parse-community/parse-server/blob/master/CODE_OF_CONDUCT.md). By participating, you are expected to honor this code.
+
+[config]: http://parseplatform.org/parse-server/api/master/ParseServerOptions.html
+[config-def]: https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js
+[config-docs]: https://github.com/parse-community/parse-server/blob/master/src/Options/docs.js
+[config-index]: https://github.com/parse-community/parse-server/blob/master/src/Options/index.js
