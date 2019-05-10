@@ -46,7 +46,6 @@ describe('FilesController', () => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
     reconfigureServer({ filesAdapter: mockAdapter })
-      .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
       .then(() => new Parse.File('yolo.txt', [1, 2, 3], 'text/plain').save())
       .then(
         () => done.fail('should not succeed'),
