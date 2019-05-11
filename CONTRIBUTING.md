@@ -72,7 +72,7 @@ If your pull request introduces a change that may affect the storage or retrieva
 
 ### Generate Parse Server Config Definition
 
-If you want to make changes to [Parse Server Configuration][config] add desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs]. 
+If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs]. 
 
 To view docs run `npm run docs` and check the `/out` directory.
 

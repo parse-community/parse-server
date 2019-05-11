@@ -106,7 +106,7 @@ function processProperty(property, iface) {
 
 function doInterface(iface) {
   return iface.body.properties
-    .sort((p1, p2) => p1.key.name > p2.key.name ? 1 : -1)
+    .sort((a, b) => a.key.name.localeCompare(b.key.name))
     .map((prop) => processProperty(prop, iface))
     .filter((e) => e !== undefined);
 }

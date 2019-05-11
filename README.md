@@ -189,7 +189,7 @@ app.listen(1337, function() {
 });
 ```
 
-For a full list of available options, run `parse-server --help` or [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 ## Logging
 
@@ -215,7 +215,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
-For the full list of available options, run `parse-server --help` or [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 #### Basic options
 
@@ -346,7 +346,7 @@ The default port is 1337, to use a different port set the PORT environment varia
 $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
 
-For the full list of configurable environment variables, run `parse-server --help` or [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
+For the full list of configurable environment variables, run `parse-server --help` or take a look at [Parse Server Configuration](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
 
 ### Available Adapters
 

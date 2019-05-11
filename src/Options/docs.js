@@ -32,8 +32,8 @@
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
  * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
- * @property {String} logLevel Sets the level for logs
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
+ * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
  * @property {String} masterKey Your Parse Master Key
  * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)

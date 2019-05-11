@@ -178,14 +178,14 @@ module.exports.ParseServerOptions = {
       'Live query server configuration options (will start the liveQuery server)',
     action: parsers.objectParser,
   },
-  logLevel: {
-    env: 'PARSE_SERVER_LOG_LEVEL',
-    help: 'Sets the level for logs',
-  },
   loggerAdapter: {
     env: 'PARSE_SERVER_LOGGER_ADAPTER',
     help: 'Adapter module for the logging sub-system',
     action: parsers.moduleOrObjectParser,
+  },
+  logLevel: {
+    env: 'PARSE_SERVER_LOG_LEVEL',
+    help: 'Sets the level for logs',
   },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
