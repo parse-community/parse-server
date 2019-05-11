@@ -159,6 +159,18 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('createSubscriptions', () => {
+    it('should require initialization with config.subscriptionsPath', () => {
+      expect(() =>
+        new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'graphql',
+        }).createSubscriptions({})
+      ).toThrow(
+        'You must provide a config.subscriptionsPath to createSubscriptions!'
+      );
+    });
+  });
+
   describe('API', () => {
     const headers = {
       'X-Parse-Application-Id': 'test',
