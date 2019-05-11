@@ -36,7 +36,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
         - [Available Adapters](#available-adapters)
         - [Configuring File Adapters](#configuring-file-adapters)
         - [Logging](#logging)
-  - [Live Queries](#live-queries)
+- [Live Queries](#live-queries)
 - [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
@@ -350,7 +350,7 @@ Logs are also be viewable in Parse Dashboard.
 
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
-## Live Queries
+# Live Queries
 
 Live queries are meant to be used in real-time reactive applications, where just using the traditional query paradigm could cause several problems, like increased response time and high network and server usage. Live queries should be used in cases where you need to continuously update a page with fresh data coming from the database, which often happens in (but is not limited to) online games, messaging clients and shared to-do lists.
 
