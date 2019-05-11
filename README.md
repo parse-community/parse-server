@@ -189,7 +189,7 @@ app.listen(1337, function() {
 });
 ```
 
-For a full list of available options, run `parse-server --help`.
+For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 ## Logging
 
@@ -209,13 +209,13 @@ Logs are also be viewable in Parse Dashboard.
 
 # Documentation
 
-The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
+The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) is also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
 
 ## Configuration
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
-For the full list of available options, run `parse-server --help`.
+For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 #### Basic options
 
@@ -237,29 +237,6 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `dotNetKey`
 
 #### Advanced options
-
-* `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
-* `preserveFileName` - Set to true to remove the unique hash added to the file names. Defaults to false.
-* `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
-* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
-* `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).
-* `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
-* `mountPath` - Mount path for the server. Defaults to `/parse`.
-* `directAccess` - Replace HTTP Interface when using JS SDK in current node runtime. Defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
-* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
-* `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
-* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
-* `logLevel` - Set the specific level you want to log. Defaults to `info`. The default logger uses the npm log levels as defined by the underlying winston logger. Check [Winston logging levels](https://github.com/winstonjs/winston#logging-levels) for details on values to specify.
-* `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
-* `maxLimit` - The maximum value supported for the limit option on queries. Defaults to unlimited.
-* `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
-* `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
-* `passwordPolicy` - Optional password policy rules to enforce.
-* `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
-* `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
-* `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
-* `readOnlyMasterKey` -  A masterKey that has full read access to the data, but no write access. This key should be treated the same way as your masterKey, keeping it private.
-* `objectIdSize` - The string length of the newly generated object's ids.
 
 ##### Logging
 
@@ -369,7 +346,7 @@ The default port is 1337, to use a different port set the PORT environment varia
 $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
 
-For the full list of configurable environment variables, run `parse-server --help`.
+For the full list of configurable environment variables, run `parse-server --help` or take a look at [Parse Server Configuration](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
 
 ### Available Adapters
 
