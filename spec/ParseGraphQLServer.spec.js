@@ -93,7 +93,7 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('applyGraphQL', () => {
-    it('should require a Express.js app instance', () => {
+    it('should require an Express.js app instance', () => {
       expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
         'You must provide an Express.js app instance!'
       );
@@ -112,6 +112,44 @@ describe('ParseGraphQLServer', () => {
           graphQLPath: 'somepath',
         }).applyGraphQL({
           use: path => {
+            useCount++;
+            expect(path).toEqual('somepath');
+          },
+        })
+      ).not.toThrow();
+      expect(useCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe('applyPlayground', () => {
+    it('should require an Express.js app instance', () => {
+      expect(() => parseGraphQLServer.applyPlayground()).toThrow(
+        'You must provide an Express.js app instance!'
+      );
+      expect(() => parseGraphQLServer.applyPlayground({})).toThrow(
+        'You must provide an Express.js app instance!'
+      );
+      expect(() =>
+        parseGraphQLServer.applyPlayground(new express())
+      ).not.toThrow();
+    });
+
+    it('should require initialization with config.playgroundPath', () => {
+      expect(() =>
+        new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'graphql',
+        }).applyPlayground(new express())
+      ).toThrow('You must provide a config.playgroundPath to applyPlayground!');
+    });
+
+    it('should apply middlewares at config.playgroundPath', () => {
+      let useCount = 0;
+      expect(() =>
+        new ParseGraphQLServer(parseServer, {
+          graphQLPath: 'graphQL',
+          playgroundPath: 'somepath',
+        }).applyPlayground({
+          get: path => {
             useCount++;
             expect(path).toEqual('somepath');
           },

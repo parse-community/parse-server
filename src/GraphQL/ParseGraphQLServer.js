@@ -49,10 +49,13 @@ class ParseGraphQLServer {
   }
 
   applyPlayground(app) {
+    if (!app || !app.get) {
+      requiredParameter('You must provide an Express.js app instance!');
+    }
     app.get(
       this.config.playgroundPath ||
         requiredParameter(
-          'You must provide a config.playgroundPath to applyGround!'
+          'You must provide a config.playgroundPath to applyPlayground!'
         ),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
