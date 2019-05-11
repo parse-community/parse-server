@@ -440,13 +440,20 @@ describe('SchemaController', () => {
     // If two callers race to create the same schema, the response to the
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema().then(schema => {
-      const p1 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      const p2 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      Promise.race([p1, p2]).then(actualSchema => {
+      const p1 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      const p2 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      let schemaValidated = false;
+      function validateSchema(actualSchema) {
         const expectedSchema = {
           className: 'NewClass',
           fields: {
@@ -467,10 +474,17 @@ describe('SchemaController', () => {
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
-      });
-      Promise.all([p1, p2]).catch(error => {
+        schemaValidated = true;
+      }
+      let errorValidated = false;
+      function validateError(error) {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
         expect(error.message).toEqual('Class NewClass already exists.');
+        errorValidated = true;
+      }
+      Promise.all([p1, p2]).then(() => {
+        expect(schemaValidated).toEqual(true);
+        expect(errorValidated).toEqual(true);
         done();
       });
     });

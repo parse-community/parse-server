@@ -9,7 +9,7 @@ If you are not familiar with Pull Requests and want to know more about them, you
 ### Recommended setup:
 
 * [vscode](https://code.visualstudio.com), the popular IDE.
-* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), a very practical test exploration plugin which let you run, debug and see the test results inline.
+* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up you local machine:
 
@@ -22,6 +22,8 @@ $ npm install # install all the node dependencies
 $ code . # launch vscode
 $ npm run watch # run babel watching for local file changes
 ```
+
+> To launch VS Code from the terminal with the `code` command you first need to follow the [launching from the command line section](https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line) in the VS Code setup documentation.
 
 Once you have babel running in watch mode, you can start making changes to parse-server.
 

@@ -245,6 +245,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).
 * `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
 * `mountPath` - Mount path for the server. Defaults to `/parse`.
+* `directAccess` - Replace HTTP Interface when using JS SDK in current node runtime. Defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
 * `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).

@@ -18,7 +18,7 @@ branches:
   - /^greenkeeper/.*$/
 cache:
   directories:
-  - node_modules
+  - "$HOME/.npm"
   - "$HOME/.mongodb/versions"
 
 # Test stage

@@ -145,6 +145,10 @@ export interface ParseServerOptions {
   /* Sets the maximum size for the in memory cache, defaults to 10000
   :DEFAULT: 10000 */
   cacheMaxSize: ?number;
+  /* Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
+  :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
+  :DEFAULT: false */
+  directAccess: ?boolean;
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
   :DEFAULT: false */
   enableSingleSchemaCache: ?boolean;
