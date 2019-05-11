@@ -9,6 +9,7 @@ import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 // @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
+type ProtectedFields = any;
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -86,7 +87,7 @@ export interface ParseServerOptions {
   userSensitiveFields: ?(string[]);
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
-  protectedFields: ?any;
+  protectedFields: ?ProtectedFields;
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */

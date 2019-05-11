@@ -71,6 +71,7 @@
     "supports-color": "6.0.0"
   },
   "scripts": {
+    "definitions": "node ./resources/buildConfigDefinitions.js",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "dev": "npm run build && node bin/dev",
     "lint": "flow && eslint --cache ./",
