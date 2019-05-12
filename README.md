@@ -17,6 +17,8 @@ Parse Server is an [open source version of the Parse backend](http://blog.parsep
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
+The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) is also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
+
 - [Getting Started](#getting-started)
     - [Running Parse Server](#running-parse-server)
         - [Locally](#locally)
@@ -26,22 +28,20 @@ Parse Server works with the Express web application framework. It can be added t
     - [Running elsewhere](#running-parse-server-elsewhere)
         - [Sample Application](#parse-server-sample-application)
         - [Parse Server + Express](#parse-server--express)
-    - [Logging](#logging)
-- [Documentation](#documentation)
     - [Configuration](#configuration)
         - [Basic Options](#basic-options)
         - [Client Key Options](#client-key-options)
-        - [Advanced Options](#advanced-options)
-            - [Logging](#logging-1)
-            - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Email Verification & Password Reset](#email-verification-and-password-reset)
         - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
         - [Available Adapters](#available-adapters)
         - [Configuring File Adapters](#configuring-file-adapters)
+        - [Logging](#logging)
+- [Live Queries](#live-queries)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
 - [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Sponsors](#sponsors)
 
 # Getting Started
@@ -142,7 +142,7 @@ To learn more about using saving and querying objects on Parse Server, check out
 
 ### Connect your app to Parse Server
 
-Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://github.com/parse-community/parse-server/wiki/Parse-Server-Guide#using-parse-sdks-with-parse-server).
+Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://docs.parseplatform.org/parse-server/guide/#using-parse-sdks-with-parse-server).
 
 ## Running Parse Server elsewhere
 
@@ -191,33 +191,13 @@ app.listen(1337, function() {
 
 For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-## Logging
-
-Parse Server will, by default, log:
-* to the console
-* daily rotating files as new line delimited JSON
-
-Logs are also be viewable in Parse Dashboard.
-
-**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-**Want logs to be in placed in other folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
-
-**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-# Documentation
-
-The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) is also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
-
 ## Configuration
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
 For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-#### Basic options
+### Basic options
 
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
@@ -227,7 +207,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `cloud` - The absolute path to your cloud code `main.js` file.
 * `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
 
-#### Client key options
+### Client key options
 
 The client keys used with Parse are no longer necessary with Parse Server. If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time. Setting any of these keys will require all requests to provide one of the configured keys.
 
@@ -236,19 +216,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `restAPIKey`
 * `dotNetKey`
 
-#### Advanced options
-
-##### Logging
-
-Use the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server` to save your server logfiles to the specified folder.
-
-Usage:
-
-```
-PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
-```
-
-##### Email verification and password reset
+### Email verification and password reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
 
@@ -365,6 +333,28 @@ Parse Server allows developers to choose from several options when hosting files
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+### Logging
+
+Parse Server will, by default, log:
+* to the console
+* daily rotating files as new line delimited JSON
+
+Logs are also viewable in Parse Dashboard.
+
+**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+**Want logs to be in placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
+
+**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Live Queries
+
+Live queries are meant to be used in real-time reactive applications, where just using the traditional query paradigm could cause several problems, like increased response time and high network and server usage. Live queries should be used in cases where you need to continuously update a page with fresh data coming from the database, which often happens in (but is not limited to) online games, messaging clients and shared to-do lists.
+
+Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/guide/#live-queries), [Live Query Server Setup Guide](https://docs.parseplatform.org/parse-server/guide/#scalability) and [Live Query Protocol Specification](https://github.com/parse-community/parse-server/wiki/Parse-LiveQuery-Protocol-Specification). You can setup a standalone server or multiple instances for scalability (recommended).
 
 # Upgrading to 3.0.0
 
