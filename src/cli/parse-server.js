@@ -60,6 +60,11 @@ runner({
       options.liveQuery.redisURL = options['liveQuery.redisURL'];
       delete options['liveQuery.redisURL'];
     }
+    if (options['liveQuery.redisOptions']) {
+      options.liveQuery = options.liveQuery || {};
+      options.liveQuery.redisOptions = options['liveQuery.redisOptions'];
+      delete options['liveQuery.redisOptions'];
+    }
 
     if (options.cluster) {
       const numCPUs =

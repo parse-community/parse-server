@@ -196,6 +196,8 @@ export interface LiveQueryOptions {
   /* parse-server's LiveQuery classNames
   :ENV: PARSE_SERVER_LIVEQUERY_CLASSNAMES */
   classNames: ?(string[]);
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
@@ -220,6 +222,8 @@ export interface LiveQueryServerOptions {
   /* The port to run the LiveQuery server, defaults to 1337.
   :DEFAULT: 1337 */
   port: ?number;
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
