@@ -377,6 +377,11 @@ module.exports.LiveQueryOptions = {
     help: 'LiveQuery pubsub adapter',
     action: parsers.moduleOrObjectParser,
   },
+  redisOptions: {
+    env: 'PARSE_SERVER_LIVEQUERY_REDIS_OPTIONS',
+    help: "parse-server's LiveQuery redisOptions",
+    action: parsers.objectParser,
+  },
   redisURL: {
     env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
@@ -420,6 +425,11 @@ module.exports.LiveQueryServerOptions = {
     env: 'PARSE_LIVE_QUERY_SERVER_PUB_SUB_ADAPTER',
     help: 'LiveQuery pubsub adapter',
     action: parsers.moduleOrObjectParser,
+  },
+  redisOptions: {
+    env: 'PARSE_LIVE_QUERY_SERVER_REDIS_OPTIONS',
+    help: "parse-server's LiveQuery redisOptions",
+    action: parsers.objectParser,
   },
   redisURL: {
     env: 'PARSE_LIVE_QUERY_SERVER_REDIS_URL',
