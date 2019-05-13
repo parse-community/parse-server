@@ -1,4 +1,5 @@
 'use strict';
+const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
@@ -237,6 +238,215 @@ describe('Cloud Code', () => {
         });
       });
     });
+  });
+
+  it('beforeSave should be called only if user fulfills permissions', async () => {
+    const triggeruser = new Parse.User();
+    triggeruser.setUsername('triggeruser');
+    triggeruser.setPassword('triggeruser');
+    await triggeruser.signUp();
+
+    const triggeruser2 = new Parse.User();
+    triggeruser2.setUsername('triggeruser2');
+    triggeruser2.setPassword('triggeruser2');
+    await triggeruser2.signUp();
+
+    const triggeruser3 = new Parse.User();
+    triggeruser3.setUsername('triggeruser3');
+    triggeruser3.setPassword('triggeruser3');
+    await triggeruser3.signUp();
+
+    const triggeruser4 = new Parse.User();
+    triggeruser4.setUsername('triggeruser4');
+    triggeruser4.setPassword('triggeruser4');
+    await triggeruser4.signUp();
+
+    const triggeruser5 = new Parse.User();
+    triggeruser5.setUsername('triggeruser5');
+    triggeruser5.setPassword('triggeruser5');
+    await triggeruser5.signUp();
+
+    const triggerroleacl = new Parse.ACL();
+    triggerroleacl.setPublicReadAccess(true);
+
+    const triggerrole = new Parse.Role();
+    triggerrole.setName('triggerrole');
+    triggerrole.setACL(triggerroleacl);
+    triggerrole.getUsers().add(triggeruser);
+    triggerrole.getUsers().add(triggeruser3);
+    await triggerrole.save();
+
+    const config = Config.get('test');
+    const schema = await config.database.loadSchema();
+    await schema.addClassIfNotExists(
+      'triggerclass',
+      {
+        someField: { type: 'String' },
+        pointerToUser: { type: 'Pointer', targetClass: '_User' },
+      },
+      {
+        find: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        create: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        get: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        update: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        addField: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        delete: {
+          'role:triggerrole': true,
+          [triggeruser.id]: true,
+          [triggeruser2.id]: true,
+        },
+        readUserFields: ['pointerToUser'],
+        writeUserFields: ['pointerToUser'],
+      },
+      {}
+    );
+
+    let called = 0;
+    Parse.Cloud.beforeSave('triggerclass', () => {
+      called++;
+    });
+
+    const triggerobject = new Parse.Object('triggerclass');
+    triggerobject.set('someField', 'someValue');
+    triggerobject.set('someField2', 'someValue');
+    const triggerobjectacl = new Parse.ACL();
+    triggerobjectacl.setPublicReadAccess(false);
+    triggerobjectacl.setPublicWriteAccess(false);
+    triggerobjectacl.setRoleReadAccess(triggerrole, true);
+    triggerobjectacl.setRoleWriteAccess(triggerrole, true);
+    triggerobjectacl.setReadAccess(triggeruser.id, true);
+    triggerobjectacl.setWriteAccess(triggeruser.id, true);
+    triggerobjectacl.setReadAccess(triggeruser2.id, true);
+    triggerobjectacl.setWriteAccess(triggeruser2.id, true);
+    triggerobject.setACL(triggerobjectacl);
+
+    await triggerobject.save(undefined, {
+      sessionToken: triggeruser.getSessionToken(),
+    });
+    expect(called).toBe(1);
+    await triggerobject.save(undefined, {
+      sessionToken: triggeruser.getSessionToken(),
+    });
+    expect(called).toBe(2);
+    await triggerobject.save(undefined, {
+      sessionToken: triggeruser2.getSessionToken(),
+    });
+    expect(called).toBe(3);
+    await triggerobject.save(undefined, {
+      sessionToken: triggeruser3.getSessionToken(),
+    });
+    expect(called).toBe(4);
+
+    const triggerobject2 = new Parse.Object('triggerclass');
+    triggerobject2.set('someField', 'someValue');
+    triggerobject2.set('someField22', 'someValue');
+    const triggerobjectacl2 = new Parse.ACL();
+    triggerobjectacl2.setPublicReadAccess(false);
+    triggerobjectacl2.setPublicWriteAccess(false);
+    triggerobjectacl2.setReadAccess(triggeruser.id, true);
+    triggerobjectacl2.setWriteAccess(triggeruser.id, true);
+    triggerobjectacl2.setReadAccess(triggeruser2.id, true);
+    triggerobjectacl2.setWriteAccess(triggeruser2.id, true);
+    triggerobjectacl2.setReadAccess(triggeruser5.id, true);
+    triggerobjectacl2.setWriteAccess(triggeruser5.id, true);
+    triggerobject2.setACL(triggerobjectacl2);
+
+    await triggerobject2.save(undefined, {
+      sessionToken: triggeruser2.getSessionToken(),
+    });
+    expect(called).toBe(5);
+    await triggerobject2.save(undefined, {
+      sessionToken: triggeruser2.getSessionToken(),
+    });
+    expect(called).toBe(6);
+    await triggerobject2.save(undefined, {
+      sessionToken: triggeruser.getSessionToken(),
+    });
+    expect(called).toBe(7);
+
+    let catched = false;
+    try {
+      await triggerobject2.save(undefined, {
+        sessionToken: triggeruser3.getSessionToken(),
+      });
+    } catch (e) {
+      catched = true;
+      expect(e.code).toBe(101);
+    }
+    expect(catched).toBe(true);
+    expect(called).toBe(7);
+
+    catched = false;
+    try {
+      await triggerobject2.save(undefined, {
+        sessionToken: triggeruser4.getSessionToken(),
+      });
+    } catch (e) {
+      catched = true;
+      expect(e.code).toBe(101);
+    }
+    expect(catched).toBe(true);
+    expect(called).toBe(7);
+
+    catched = false;
+    try {
+      await triggerobject2.save(undefined, {
+        sessionToken: triggeruser5.getSessionToken(),
+      });
+    } catch (e) {
+      catched = true;
+      expect(e.code).toBe(101);
+    }
+    expect(catched).toBe(true);
+    expect(called).toBe(7);
+
+    const triggerobject3 = new Parse.Object('triggerclass');
+    triggerobject3.set('someField', 'someValue');
+    triggerobject3.set('someField33', 'someValue');
+
+    catched = false;
+    try {
+      await triggerobject3.save(undefined, {
+        sessionToken: triggeruser4.getSessionToken(),
+      });
+    } catch (e) {
+      catched = true;
+      expect(e.code).toBe(119);
+    }
+    expect(catched).toBe(true);
+    expect(called).toBe(7);
+
+    catched = false;
+    try {
+      await triggerobject3.save(undefined, {
+        sessionToken: triggeruser5.getSessionToken(),
+      });
+    } catch (e) {
+      catched = true;
+      expect(e.code).toBe(119);
+    }
+    expect(catched).toBe(true);
+    expect(called).toBe(7);
   });
 
   it('test afterSave ran and created an object', function(done) {

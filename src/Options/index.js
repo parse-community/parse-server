@@ -9,6 +9,7 @@ import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 // @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
+type ProtectedFields = any;
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -86,7 +87,7 @@ export interface ParseServerOptions {
   userSensitiveFields: ?(string[]);
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
-  protectedFields: ?any;
+  protectedFields: ?ProtectedFields;
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
@@ -145,6 +146,10 @@ export interface ParseServerOptions {
   /* Sets the maximum size for the in memory cache, defaults to 10000
   :DEFAULT: 10000 */
   cacheMaxSize: ?number;
+  /* Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
+  :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
+  :DEFAULT: false */
+  directAccess: ?boolean;
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
   :DEFAULT: false */
   enableSingleSchemaCache: ?boolean;
@@ -191,6 +196,8 @@ export interface LiveQueryOptions {
   /* parse-server's LiveQuery classNames
   :ENV: PARSE_SERVER_LIVEQUERY_CLASSNAMES */
   classNames: ?(string[]);
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
@@ -215,6 +222,8 @@ export interface LiveQueryServerOptions {
   /* The port to run the LiveQuery server, defaults to 1337.
   :DEFAULT: 1337 */
   port: ?number;
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
