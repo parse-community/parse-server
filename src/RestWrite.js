@@ -221,6 +221,38 @@ RestWrite.prototype.runBeforeSaveTrigger = function() {
 
   return Promise.resolve()
     .then(() => {
+      // Before calling the trigger, validate the permissions for the save operation
+      let databasePromise = null;
+      if (this.query) {
+        // Validate for updating
+        databasePromise = this.config.database.update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          true
+        );
+      } else {
+        // Validate for creating
+        databasePromise = this.config.database.create(
+          this.className,
+          this.data,
+          this.runOptions,
+          true
+        );
+      }
+      // In the case that there is no permission for the operation, it throws an error
+      return databasePromise.then(result => {
+        if (!result || result.length <= 0) {
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found.'
+          );
+        }
+      });
+    })
+    .then(() => {
       return triggers.maybeRunTrigger(
         triggers.Types.beforeSave,
         this.auth,
