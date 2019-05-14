@@ -222,4 +222,13 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(CLASS);
 };
 
-export { OBJECT, DATE, FILE, CREATE_RESULT, CLASS_FIELDS, CLASS, load };
+export {
+  TypeValidationError,
+  OBJECT,
+  DATE,
+  FILE,
+  CREATE_RESULT,
+  CLASS_FIELDS,
+  CLASS,
+  load,
+};
