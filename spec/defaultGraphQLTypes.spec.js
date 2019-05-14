@@ -1,5 +1,6 @@
 const {
   TypeValidationError,
+  parseStringValue,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -13,6 +14,13 @@ describe('defaultGraphQLTypes', () => {
       expect(typeValidationError.message).toEqual(
         'somevalue is not a valid sometype'
       );
+    });
+  });
+
+  describe('parseStringValue', () => {
+    it('should return itself if a string', () => {
+      const myString = 'myString';
+      expect(parseStringValue(myString)).toBe(myString);
     });
   });
 });
