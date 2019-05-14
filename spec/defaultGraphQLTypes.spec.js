@@ -22,5 +22,20 @@ describe('defaultGraphQLTypes', () => {
       const myString = 'myString';
       expect(parseStringValue(myString)).toBe(myString);
     });
+
+    it('should fail if not a string', () => {
+      expect(() => parseStringValue()).toThrow(
+        jasmine.stringMatching('is not a valid String')
+      );
+      expect(() => parseStringValue({})).toThrow(
+        jasmine.stringMatching('is not a valid String')
+      );
+      expect(() => parseStringValue([])).toThrow(
+        jasmine.stringMatching('is not a valid String')
+      );
+      expect(() => parseStringValue(123)).toThrow(
+        jasmine.stringMatching('is not a valid String')
+      );
+    });
   });
 });
