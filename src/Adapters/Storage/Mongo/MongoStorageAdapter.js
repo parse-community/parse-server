@@ -926,6 +926,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   _parseReadPreference(readPreference: ?string): ?string {
+    if (readPreference) {
+      readPreference = readPreference.toUpperCase();
+    }
     switch (readPreference) {
       case 'PRIMARY':
         readPreference = ReadPreference.PRIMARY;

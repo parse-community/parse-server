@@ -132,7 +132,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should check read preference as case insensitive', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -516,7 +516,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for GET directly from API', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -528,16 +528,18 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
-        qs: { readPreference: 'SECONDARY' },
+        url:
+          'http://localhost:8378/1/classes/MyObject/' +
+          obj0.id +
+          '?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.boolKey).toBe(false);
+        .then(response => {
+          expect(response.data.boolKey).toBe(false);
 
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
@@ -557,7 +559,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for GET using API through the beforeFind overriding API option', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -573,16 +575,18 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
-        qs: { readPreference: 'SECONDARY' },
+        url:
+          'http://localhost:8378/1/classes/MyObject/' +
+          obj0.id +
+          '?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.boolKey).toBe(false);
+        .then(response => {
+          expect(response.data.boolKey).toBe(false);
 
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
@@ -604,7 +608,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for FIND using API through beforeFind trigger', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -620,15 +624,15 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/',
+        url: 'http://localhost:8378/1/classes/MyObject/',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.results.length).toEqual(2);
+        .then(response => {
+          expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
@@ -648,7 +652,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for FIND directly from API', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -660,16 +664,16 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/',
-        qs: { readPreference: 'SECONDARY' },
+        url:
+          'http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.results.length).toEqual(2);
+        .then(response => {
+          expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
@@ -689,7 +693,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for FIND using API through the beforeFind overriding API option', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -705,16 +709,16 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject/',
-        qs: { readPreference: 'SECONDARY' },
+        url:
+          'http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.results.length).toEqual(2);
+        .then(response => {
+          expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
@@ -915,7 +919,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change includes read preference when finding through API', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -931,20 +935,20 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject2/' + obj2.id,
-        qs: {
-          include: JSON.stringify(['myObject1', 'myObject1.myObject0']),
-          readPreference: 'SECONDARY_PREFERRED',
-          includeReadPreference: 'SECONDARY',
-        },
+        url:
+          'http://localhost:8378/1/classes/MyObject2/' +
+          obj2.id +
+          '?include=' +
+          JSON.stringify(['myObject1', 'myObject1.myObject0']) +
+          '&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          const firstResult = body;
+        .then(response => {
+          const firstResult = response.data;
           expect(firstResult.boolKey).toBe(false);
           expect(firstResult.myObject1.boolKey).toBe(true);
           expect(firstResult.myObject1.myObject0.boolKey).toBe(false);
@@ -982,7 +986,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change includes read preference when getting through API', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -998,22 +1002,21 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject2/',
-        qs: {
-          where: JSON.stringify({ boolKey: false }),
-          include: JSON.stringify(['myObject1', 'myObject1.myObject0']),
-          readPreference: 'SECONDARY_PREFERRED',
-          includeReadPreference: 'SECONDARY',
-        },
+        url:
+          'http://localhost:8378/1/classes/MyObject2?where=' +
+          JSON.stringify({ boolKey: false }) +
+          '&include=' +
+          JSON.stringify(['myObject1', 'myObject1.myObject0']) +
+          '&readPreference=SECONDARY_PREFERRED&includeReadPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.results.length).toBe(1);
-          const firstResult = body.results[0];
+        .then(response => {
+          expect(response.data.results.length).toBe(1);
+          const firstResult = response.data.results[0];
           expect(firstResult.boolKey).toBe(false);
           expect(firstResult.myObject1.boolKey).toBe(true);
           expect(firstResult.myObject1.myObject0.boolKey).toBe(false);
@@ -1317,7 +1320,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery to find through API', done => {
-    const databaseAdapter = new Config(Parse.applicationId).database.adapter;
+    const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -1331,40 +1334,40 @@ describe_only_db('mongo')('Read preference option', () => {
     Parse.Object.saveAll([obj0, obj1, obj2]).then(() => {
       spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
+      const whereString = JSON.stringify({
+        boolKey: {
+          $select: {
+            query: {
+              className: 'MyObject0',
+              where: { boolKey: false },
+            },
+            key: 'boolKey',
+          },
+          $dontSelect: {
+            query: {
+              className: 'MyObject1',
+              where: { boolKey: true },
+            },
+            key: 'boolKey',
+          },
+        },
+      });
+
       request({
         method: 'GET',
-        uri: 'http://localhost:8378/1/classes/MyObject2/',
-        qs: {
-          where: JSON.stringify({
-            boolKey: {
-              $select: {
-                query: {
-                  className: 'MyObject0',
-                  where: { boolKey: false },
-                },
-                key: 'boolKey',
-              },
-              $dontSelect: {
-                query: {
-                  className: 'MyObject1',
-                  where: { boolKey: true },
-                },
-                key: 'boolKey',
-              },
-            },
-          }),
-          readPreference: 'SECONDARY_PREFERRED',
-          subqueryReadPreference: 'SECONDARY',
-        },
+        url:
+          'http://localhost:8378/1/classes/MyObject2/?where=' +
+          whereString +
+          '&readPreference=SECONDARY_PREFERRED&subqueryReadPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
         json: true,
       })
-        .then(body => {
-          expect(body.results.length).toBe(1);
-          expect(body.results[0].boolKey).toBe(false);
+        .then(response => {
+          expect(response.data.results.length).toBe(1);
+          expect(response.data.results[0].boolKey).toBe(false);
 
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;

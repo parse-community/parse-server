@@ -206,6 +206,15 @@ export class ClassesRouter extends PromiseRouter {
     if (body.includeAll) {
       options.includeAll = true;
     }
+    if (typeof body.readPreference === 'string') {
+      options.readPreference = body.readPreference;
+    }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
+    }
     return options;
   }
 

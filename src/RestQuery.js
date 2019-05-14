@@ -14,6 +14,9 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 //   include
 //   keys
 //   redirectClassNameForKey
+//   readPreference
+//   includeReadPreference
+//   subqueryReadPreference
 function RestQuery(
   config,
   auth,
