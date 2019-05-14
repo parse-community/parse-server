@@ -41,16 +41,12 @@ describe('GridFSBucket and GridStore interop', () => {
     expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
   });
 
-  it(
-    'properly deletes a file from GridFS',
-    async () => {
-      const gfsAdapter = new GridFSBucketAdapter(databaseURI);
-      await gfsAdapter.createFile('myFileName', 'a simple file');
-      await gfsAdapter.deleteFile('myFileName');
-      await expectMissingFile(gfsAdapter, 'myFileName');
-    },
-    1000000
-  );
+  it('properly deletes a file from GridFS', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await gfsAdapter.createFile('myFileName', 'a simple file');
+    await gfsAdapter.deleteFile('myFileName');
+    await expectMissingFile(gfsAdapter, 'myFileName');
+  }, 1000000);
 
   it('properly overrides files', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);

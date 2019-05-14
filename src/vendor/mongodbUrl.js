@@ -101,7 +101,7 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
       code === 10 /*\n*/ ||
       code === 12 /*\f*/ ||
       code === 160 /*\u00A0*/ ||
-      code === 65279 /*\uFEFF*/;
+      code === 65279; /*\uFEFF*/
     if (start === -1) {
       if (isWs) continue;
       lastPos = start = i;
@@ -193,7 +193,7 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
   // how the browser resolves relative URLs.
   if (slashesDenoteHost || proto || /^\/\/[^@\/]+@[^@\/]+/.test(rest)) {
     var slashes =
-      rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47 /*/*/;
+      rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
     if (slashes && !(proto && hostlessProtocol[proto])) {
       rest = rest.slice(2);
       this.slashes = true;
@@ -285,7 +285,7 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
     // assume that it's an IPv6 address.
     var ipv6Hostname =
       hostname.charCodeAt(0) === 91 /*[*/ &&
-      hostname.charCodeAt(hostname.length - 1) === 93 /*]*/;
+      hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
 
     // validate a little.
     if (!ipv6Hostname) {
@@ -868,11 +868,11 @@ Url.prototype.resolveObject = function(relative) {
 
   // put the host back
   if (psychotic) {
-    result.hostname = result.host = isAbsolute
-      ? ''
-      : srcPath.length
-        ? srcPath.shift()
-        : '';
+    if (isAbsolute) {
+      result.hostname = result.host = '';
+    } else {
+      result.hostname = result.host = srcPath.length ? srcPath.shift() : '';
+    }
     //occasionally the auth can get stuck only in host
     //this especially happens in cases like
     //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
