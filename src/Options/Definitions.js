@@ -330,7 +330,6 @@ module.exports.ParseServerOptions = {
     help:
       'Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields',
     action: parsers.arrayParser,
-    default: ['email'],
   },
   verbose: {
     env: 'VERBOSE',
