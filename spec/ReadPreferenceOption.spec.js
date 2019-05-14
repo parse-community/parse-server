@@ -779,7 +779,7 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should find includes in primary by default', done => {
+  it('should find includes in same replica of readPreference by default', done => {
     const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
@@ -824,12 +824,12 @@ describe_only_db('mongo')('Read preference option', () => {
             .all()
             .forEach(call => {
               if (call.args[0].indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 = true;
-                expect(call.args[2].readPreference).toBe(null);
+                myObjectReadPreference0 =
+                  call.args[2].readPreference.preference;
               }
               if (call.args[0].indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 = true;
-                expect(call.args[2].readPreference).toBe(null);
+                myObjectReadPreference1 =
+                  call.args[2].readPreference.preference;
               }
               if (call.args[0].indexOf('MyObject2') >= 0) {
                 myObjectReadPreference2 =
@@ -837,8 +837,8 @@ describe_only_db('mongo')('Read preference option', () => {
               }
             });
 
-          expect(myObjectReadPreference0).toBe(true);
-          expect(myObjectReadPreference1).toBe(true);
+          expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
+          expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
           done();
@@ -1053,7 +1053,7 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should find subqueries in primary by default', done => {
+  it('should find subqueries in same replica of readPreference by default', done => {
     const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
@@ -1094,12 +1094,12 @@ describe_only_db('mongo')('Read preference option', () => {
             .all()
             .forEach(call => {
               if (call.args[0].indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 = true;
-                expect(call.args[2].readPreference).toBe(null);
+                myObjectReadPreference0 =
+                  call.args[2].readPreference.preference;
               }
               if (call.args[0].indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 = true;
-                expect(call.args[2].readPreference).toBe(null);
+                myObjectReadPreference1 =
+                  call.args[2].readPreference.preference;
               }
               if (call.args[0].indexOf('MyObject2') >= 0) {
                 myObjectReadPreference2 =
@@ -1107,8 +1107,8 @@ describe_only_db('mongo')('Read preference option', () => {
               }
             });
 
-          expect(myObjectReadPreference0).toBe(true);
-          expect(myObjectReadPreference1).toBe(true);
+          expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
+          expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
           done();
