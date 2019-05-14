@@ -150,10 +150,13 @@ const reconfigureServer = changedConfiguration => {
         defaultConfiguration,
         changedConfiguration,
         {
-          __indexBuildCompletionCallbackForTests: indexBuildPromise =>
-            indexBuildPromise.then(() => {
+          serverStartComplete: error => {
+            if (error) {
+              reject(error);
+            } else {
               resolve(parseServer);
-            }, reject),
+            }
+          },
           mountPath: '/1',
           port,
         }
