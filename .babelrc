@@ -1,9 +1,14 @@
 {
     "plugins": [
-        "transform-flow-strip-types"
+        "@babel/plugin-transform-flow-strip-types",
+        "@babel/plugin-proposal-object-rest-spread"
     ],
     "presets": [
-        "es2015",
-        "stage-0"
-    ]
+        ["@babel/preset-env", {
+            "targets": {
+                "node": "8"
+            }
+        }]
+    ],
+    "sourceMaps": "inline"
 }

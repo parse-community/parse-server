@@ -1,34 +1,52 @@
 import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
-
+import { LiveQueryOptions } from '../Options';
 export class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;
 
-  constructor(config: any) {
+  constructor(config: ?LiveQueryOptions) {
     // If config is empty, we just assume no classs needs to be registered as LiveQuery
     if (!config || !config.classNames) {
       this.classNames = new Set();
     } else if (config.classNames instanceof Array) {
       this.classNames = new Set(config.classNames);
     } else {
-      throw 'liveQuery.classes should be an array of string'
+      throw 'liveQuery.classes should be an array of string';
     }
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
   }
 
-  onAfterSave(className: string, currentObject: any, originalObject: any) {
+  onAfterSave(
+    className: string,
+    currentObject: any,
+    originalObject: any,
+    classLevelPermissions: ?any
+  ) {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(
+      currentObject,
+      originalObject,
+      classLevelPermissions
+    );
     this.liveQueryPublisher.onCloudCodeAfterSave(req);
   }
 
-  onAfterDelete(className: string, currentObject: any, originalObject: any) {
+  onAfterDelete(
+    className: string,
+    currentObject: any,
+    originalObject: any,
+    classLevelPermissions: any
+  ) {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(
+      currentObject,
+      originalObject,
+      classLevelPermissions
+    );
     this.liveQueryPublisher.onCloudCodeAfterDelete(req);
   }
 
@@ -36,12 +54,19 @@ export class LiveQueryController {
     return this.classNames.has(className);
   }
 
-  _makePublisherRequest(currentObject: any, originalObject: any): any {
+  _makePublisherRequest(
+    currentObject: any,
+    originalObject: any,
+    classLevelPermissions: ?any
+  ): any {
     const req = {
-      object: currentObject
+      object: currentObject,
     };
     if (currentObject) {
       req.original = originalObject;
+    }
+    if (classLevelPermissions) {
+      req.classLevelPermissions = classLevelPermissions;
     }
     return req;
   }

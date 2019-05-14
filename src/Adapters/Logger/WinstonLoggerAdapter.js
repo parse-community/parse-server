@@ -28,7 +28,8 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
       options = {};
     }
     // defaults to 7 days prior
-    const from = options.from || new Date(Date.now() - (7 * MILLISECONDS_IN_A_DAY));
+    const from =
+      options.from || new Date(Date.now() - 7 * MILLISECONDS_IN_A_DAY);
     const until = options.until || new Date();
     const limit = options.size || 10;
     const order = options.order || 'desc';
@@ -38,7 +39,7 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
       from,
       until,
       limit,
-      order
+      order,
     };
 
     return new Promise((resolve, reject) => {
@@ -47,14 +48,15 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
           callback(err);
           return reject(err);
         }
-        if (level == 'error') {
+
+        if (level === 'error') {
           callback(res['parse-server-error']);
           resolve(res['parse-server-error']);
         } else {
           callback(res['parse-server']);
           resolve(res['parse-server']);
         }
-      })
+      });
     });
   }
 }

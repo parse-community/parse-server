@@ -1,12 +1,13 @@
-var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+const EventEmitterPubSub = require('../lib/Adapters/PubSub/EventEmitterPubSub')
+  .EventEmitterPubSub;
 
 describe('EventEmitterPubSub', function() {
   it('can publish and subscribe', function() {
-    var publisher = EventEmitterPubSub.createPublisher();
-    var subscriber = EventEmitterPubSub.createSubscriber();
+    const publisher = EventEmitterPubSub.createPublisher();
+    const subscriber = EventEmitterPubSub.createSubscriber();
     subscriber.subscribe('testChannel');
     // Register mock checked for subscriber
-    var isChecked = false;
+    let isChecked = false;
     subscriber.on('message', function(channel, message) {
       isChecked = true;
       expect(channel).toBe('testChannel');
@@ -19,12 +20,12 @@ describe('EventEmitterPubSub', function() {
   });
 
   it('can unsubscribe', function() {
-    var publisher = EventEmitterPubSub.createPublisher();
-    var subscriber = EventEmitterPubSub.createSubscriber();
+    const publisher = EventEmitterPubSub.createPublisher();
+    const subscriber = EventEmitterPubSub.createSubscriber();
     subscriber.subscribe('testChannel');
     subscriber.unsubscribe('testChannel');
     // Register mock checked for subscriber
-    var isCalled = false;
+    let isCalled = false;
     subscriber.on('message', function() {
       isCalled = true;
     });
@@ -35,7 +36,7 @@ describe('EventEmitterPubSub', function() {
   });
 
   it('can unsubscribe not subscribing channel', function() {
-    var subscriber = EventEmitterPubSub.createSubscriber();
+    const subscriber = EventEmitterPubSub.createSubscriber();
 
     // Make sure subscriber does not throw exception
     subscriber.unsubscribe('testChannel');

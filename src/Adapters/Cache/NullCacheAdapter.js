@@ -1,11 +1,10 @@
 export class NullCacheAdapter {
-
   constructor() {}
 
   get() {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       return resolve(null);
-    })
+    });
   }
 
   put() {

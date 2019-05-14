@@ -1,11 +1,11 @@
-var ParseWebSocketServer = require('../src/LiveQuery/ParseWebSocketServer').ParseWebSocketServer;
+const ParseWebSocketServer = require('../lib/LiveQuery/ParseWebSocketServer')
+  .ParseWebSocketServer;
 
 describe('ParseWebSocketServer', function() {
-
   beforeEach(function(done) {
     // Mock ws server
-    var EventEmitter = require('events');
-    var mockServer = function() {
+    const EventEmitter = require('events');
+    const mockServer = function() {
       return new EventEmitter();
     };
     jasmine.mockLibrary('ws', 'Server', mockServer);
@@ -13,14 +13,18 @@ describe('ParseWebSocketServer', function() {
   });
 
   it('can handle connect event when ws is open', function(done) {
-    var onConnectCallback = jasmine.createSpy('onConnectCallback');
-    var http = require('http');
-    var server = http.createServer();
-    var parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, 5).server;
-    var ws = {
+    const onConnectCallback = jasmine.createSpy('onConnectCallback');
+    const http = require('http');
+    const server = http.createServer();
+    const parseWebSocketServer = new ParseWebSocketServer(
+      server,
+      onConnectCallback,
+      5
+    ).server;
+    const ws = {
       readyState: 0,
       OPEN: 0,
-      ping: jasmine.createSpy('ping')
+      ping: jasmine.createSpy('ping'),
     };
     parseWebSocketServer.emit('connection', ws);
 
@@ -31,10 +35,10 @@ describe('ParseWebSocketServer', function() {
       expect(ws.ping).toHaveBeenCalled();
       server.close();
       done();
-    }, 10)
+    }, 10);
   });
 
-  afterEach(function(){
+  afterEach(function() {
     jasmine.restoreLibrary('ws', 'Server');
   });
 });

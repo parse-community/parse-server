@@ -1,47 +1,63 @@
-import winston from 'winston';
+import winston, { format } from 'winston';
 import fs from 'fs';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import _ from 'lodash';
-import defaults  from '../../defaults';
+import defaults from '../../defaults';
 
-const logger = new winston.Logger();
-const additionalTransports = [];
+const logger = winston.createLogger();
 
-function updateTransports(options) {
-  const transports = Object.assign({}, logger.transports);
+function configureTransports(options) {
+  const transports = [];
   if (options) {
     const silent = options.silent;
     delete options.silent;
-    if (_.isNull(options.dirname)) {
-      delete transports['parse-server'];
-      delete transports['parse-server-error'];
-    } else if (!_.isUndefined(options.dirname)) {
-      transports['parse-server'] = new (DailyRotateFile)(
-        Object.assign({}, {
-          filename: 'parse-server.info',
-          name: 'parse-server',
-        }, options, { timestamp: true }));
-      transports['parse-server-error'] = new (DailyRotateFile)(
-        Object.assign({}, {
-          filename: 'parse-server.err',
-          name: 'parse-server-error',
-        }, options, { level: 'error', timestamp: true  }));
+
+    if (!_.isNil(options.dirname)) {
+      const parseServer = new DailyRotateFile(
+        Object.assign(
+          {
+            filename: 'parse-server.info',
+            json: true,
+            format: format.combine(format.timestamp(), format.json()),
+          },
+          options
+        )
+      );
+      parseServer.name = 'parse-server';
+      transports.push(parseServer);
+
+      const parseServerError = new DailyRotateFile(
+        Object.assign(
+          {
+            filename: 'parse-server.err',
+            json: true,
+            format: format.combine(format.timestamp(), format.json()),
+          },
+          options,
+          { level: 'error' }
+        )
+      );
+      parseServerError.name = 'parse-server-error';
+      transports.push(parseServerError);
     }
 
-    transports.console = new (winston.transports.Console)(
-      Object.assign({
+    const consoleFormat = options.json ? format.json() : format.simple();
+    const consoleOptions = Object.assign(
+      {
         colorize: true,
         name: 'console',
-        silent
-      }, options));
+        silent,
+        format: consoleFormat,
+      },
+      options
+    );
+
+    transports.push(new winston.transports.Console(consoleOptions));
   }
-  // Mount the additional transports
-  additionalTransports.forEach((transport) => {
-    transports[transport.name] = transport;
-  });
+
   logger.configure({
-    transports: _.values(transports)
+    transports,
   });
 }
 
@@ -50,8 +66,8 @@ export function configureLogger({
   jsonLogs = defaults.jsonLogs,
   logLevel = winston.level,
   verbose = defaults.verbose,
-  silent = defaults.silent } = {}) {
-
+  silent = defaults.silent,
+} = {}) {
   if (verbose) {
     logLevel = 'verbose';
   }
@@ -65,7 +81,9 @@ export function configureLogger({
     }
     try {
       fs.mkdirSync(logsFolder);
-    } catch (e) { /* */ }
+    } catch (e) {
+      /* */
+    }
   }
   options.dirname = logsFolder;
   options.level = logLevel;
@@ -75,24 +93,27 @@ export function configureLogger({
     options.json = true;
     options.stringify = true;
   }
-  updateTransports(options);
+  configureTransports(options);
 }
 
 export function addTransport(transport) {
-  additionalTransports.push(transport);
-  updateTransports();
+  // we will remove the existing transport
+  // before replacing it with a new one
+  removeTransport(transport.name);
+
+  logger.add(transport);
 }
 
 export function removeTransport(transport) {
-  const transportName = typeof transport == 'string' ? transport : transport.name;
-  const transports = Object.assign({}, logger.transports);
-  delete transports[transportName];
-  logger.configure({
-    transports: _.values(transports)
+  const matchingTransport = logger.transports.find(t1 => {
+    return typeof transport === 'string'
+      ? t1.name === transport
+      : t1 === transport;
   });
-  _.remove(additionalTransports, (transport) => {
-    return transport.name === transportName;
-  });
+
+  if (matchingTransport) {
+    logger.remove(matchingTransport);
+  }
 }
 
 export { logger };

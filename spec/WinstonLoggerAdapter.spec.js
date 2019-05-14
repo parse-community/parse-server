@@ -1,62 +1,91 @@
 'use strict';
 
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-var request = require('request');
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
+  .WinstonLoggerAdapter;
+const request = require('../lib/request');
 
 describe('info logs', () => {
-
-  it("Verify INFO logs", (done) => {
-    var winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('info', 'testing info logs', () => {
-      winstonLoggerAdapter.query({
+  it('Verify INFO logs', done => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('info', 'testing info logs with 1234');
+    winstonLoggerAdapter.query(
+      {
         from: new Date(Date.now() - 500),
         size: 100,
-        level: 'info'
-      }, (results) => {
+        level: 'info',
+        order: 'desc',
+      },
+      results => {
         if (results.length == 0) {
           fail('The adapter should return non-empty results');
         } else {
-          expect(results[0].message).toEqual('testing info logs');
+          const log = results.find(
+            x => x.message === 'testing info logs with 1234'
+          );
+          expect(log.level).toEqual('info');
         }
         // Check the error log
         // Regression #2639
-        winstonLoggerAdapter.query({
-          from: new Date(Date.now() - 500),
-          size: 100,
-          level: 'error'
-        }, (results) => {
-          expect(results.length).toEqual(0);
-          done();
-        });
-      });
-    });
+        winstonLoggerAdapter.query(
+          {
+            from: new Date(Date.now() - 200),
+            size: 100,
+            level: 'error',
+          },
+          errors => {
+            const log = errors.find(
+              x => x.message === 'testing info logs with 1234'
+            );
+            expect(log).toBeUndefined();
+            done();
+          }
+        );
+      }
+    );
   });
 });
 
 describe('error logs', () => {
-  it("Verify ERROR logs", (done) => {
-    var winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.log('error', 'testing error logs', () => {
-      winstonLoggerAdapter.query({
+  it('Verify ERROR logs', done => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.query(
+      {
         from: new Date(Date.now() - 500),
         size: 100,
-        level: 'error'
-      }, (results) => {
-        if(results.length == 0) {
+        level: 'error',
+      },
+      results => {
+        if (results.length == 0) {
           fail('The adapter should return non-empty results');
           done();
-        }
-        else {
+        } else {
           expect(results[0].message).toEqual('testing error logs');
           done();
         }
-      });
-    });
+      }
+    );
+  });
+
+  it('Should filter on query', done => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('error', 'testing error logs');
+    winstonLoggerAdapter.query(
+      {
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'error',
+      },
+      results => {
+        expect(results.filter(e => e.level !== 'error').length).toBe(0);
+        done();
+      }
+    );
   });
 });
 
 describe('verbose logs', () => {
-  it("mask sensitive information in _User class", (done) => {
+  it('mask sensitive information in _User class', done => {
     reconfigureServer({ verbose: true })
       .then(() => createTestUser())
       .then(() => {
@@ -64,36 +93,40 @@ describe('verbose logs', () => {
         return winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
           size: 100,
-          level: 'verbose'
+          level: 'verbose',
         });
-      }).then((results) => {
+      })
+      .then(results => {
         const logString = JSON.stringify(results);
         expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
         expect(logString.match(/moon-y/g)).toBe(null);
 
-        var headers = {
+        const headers = {
           'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest'
+          'X-Parse-REST-API-Key': 'rest',
         };
-        request.get({
+        request({
           headers: headers,
-          url: 'http://localhost:8378/1/login?username=test&password=moon-y'
-        }, () => {
+          url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+        }).then(() => {
           const winstonLoggerAdapter = new WinstonLoggerAdapter();
-          return winstonLoggerAdapter.query({
-            from: new Date(Date.now() - 500),
-            size: 100,
-            level: 'verbose'
-          }).then((results) => {
-            const logString = JSON.stringify(results);
-            expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
-            expect(logString.match(/moon-y/g)).toBe(null);
-            done();
-          });
+          return winstonLoggerAdapter
+            .query({
+              from: new Date(Date.now() - 500),
+              size: 100,
+              level: 'verbose',
+            })
+            .then(results => {
+              const logString = JSON.stringify(results);
+              expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+              expect(logString.match(/moon-y/g)).toBe(null);
+              done();
+            });
         });
-      }).catch((err) => {
+      })
+      .catch(err => {
         fail(JSON.stringify(err));
         done();
-      })
+      });
   });
 });

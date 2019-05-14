@@ -1,15 +1,21 @@
-import {
+const {
   numberParser,
   numberOrBoolParser,
   booleanParser,
-} from '../src/cli/utils/parsers';
+  objectParser,
+  arrayParser,
+  moduleOrObjectParser,
+  nullParser,
+} = require('../lib/Options/parsers');
 
 describe('parsers', () => {
   it('parses correctly with numberParser', () => {
     const parser = numberParser('key');
     expect(parser(2)).toEqual(2);
     expect(parser('2')).toEqual(2);
-    expect(() => {parser('string')}).toThrow();
+    expect(() => {
+      parser('string');
+    }).toThrow();
   });
 
   it('parses correctly with numberOrBoolParser', () => {
@@ -30,5 +36,38 @@ describe('parsers', () => {
     expect(parser('false')).toEqual(false);
     expect(parser(1)).toEqual(true);
     expect(parser(2)).toEqual(false);
+  });
+
+  it('parses correctly with objectParser', () => {
+    const parser = objectParser;
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
+    expect(() => {
+      parser('string');
+    }).toThrow();
+  });
+
+  it('parses correctly with moduleOrObjectParser', () => {
+    const parser = moduleOrObjectParser;
+    expect(parser({ hello: 'world' })).toEqual({ hello: 'world' });
+    expect(parser('{"hello": "world"}')).toEqual({ hello: 'world' });
+    expect(parser('string')).toEqual('string');
+  });
+
+  it('parses correctly with arrayParser', () => {
+    const parser = arrayParser;
+    expect(parser([1, 2, 3])).toEqual([1, 2, 3]);
+    expect(parser('{"hello": "world"}')).toEqual(['{"hello": "world"}']);
+    expect(parser('1,2,3')).toEqual(['1', '2', '3']);
+    expect(() => {
+      parser(1);
+    }).toThrow();
+  });
+
+  it('parses correctly with nullParser', () => {
+    const parser = nullParser;
+    expect(parser('null')).toEqual(null);
+    expect(parser(1)).toEqual(1);
+    expect(parser('blabla')).toEqual('blabla');
   });
 });

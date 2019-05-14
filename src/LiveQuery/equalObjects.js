@@ -9,14 +9,14 @@ function equalObjects(a, b) {
     return false;
   }
   if (typeof a !== 'object') {
-    return (a === b);
+    return a === b;
   }
   if (a === b) {
     return true;
   }
   if (toString.call(a) === '[object Date]') {
     if (toString.call(b) === '[object Date]') {
-      return (+a === +b);
+      return +a === +b;
     }
     return false;
   }

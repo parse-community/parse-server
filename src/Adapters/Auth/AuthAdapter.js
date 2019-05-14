@@ -1,12 +1,12 @@
 /*eslint no-unused-vars: "off"*/
 export class AuthAdapter {
-
   /*
   @param appIds: the specified app ids in the configuration
   @param authData: the client provided authData
+  @param options: additional options
   @returns a promise that resolves if the applicationId is valid
    */
-  validateAppId(appIds, authData) {
+  validateAppId(appIds, authData, options) {
     return Promise.resolve({});
   }
 

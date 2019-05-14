@@ -2,36 +2,38 @@
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
-import path  from 'path';
+import path from 'path';
 import mime from 'mime';
 
-const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
+const legacyFilesRegex = new RegExp(
+  '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
+);
 
 export class FilesController extends AdaptableController {
-
   getFileData(config, filename) {
     return this.adapter.getFileData(filename);
   }
 
   createFile(config, filename, data, contentType) {
-
     const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
 
-    if (!hasExtension && contentType && mime.extension(contentType)) {
-      filename = filename + '.' + mime.extension(contentType);
+    if (!hasExtension && contentType && mime.getExtension(contentType)) {
+      filename = filename + '.' + mime.getExtension(contentType);
     } else if (hasExtension && !contentType) {
-      contentType = mime.lookup(filename);
+      contentType = mime.getType(filename);
     }
 
-    filename = randomHexString(32) + '_' + filename;
+    if (!this.options.preserveFileName) {
+      filename = randomHexString(32) + '_' + filename;
+    }
 
-    var location = this.adapter.getFileLocation(config, filename);
+    const location = this.adapter.getFileLocation(config, filename);
     return this.adapter.createFile(filename, data, contentType).then(() => {
       return Promise.resolve({
         url: location,
-        name: filename
+        name: filename,
       });
     });
   }
@@ -47,7 +49,7 @@ export class FilesController extends AdaptableController {
    */
   expandFilesInObject(config, object) {
     if (object instanceof Array) {
-      object.map((obj) => this.expandFilesInObject(config, obj));
+      object.map(obj => this.expandFilesInObject(config, obj));
       return;
     }
     if (typeof object !== 'object') {
@@ -67,9 +69,17 @@ export class FilesController extends AdaptableController {
           fileObject['url'] = this.adapter.getFileLocation(config, filename);
         } else {
           if (filename.indexOf('tfss-') === 0) {
-            fileObject['url'] = 'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+            fileObject['url'] =
+              'http://files.parsetfss.com/' +
+              config.fileKey +
+              '/' +
+              encodeURIComponent(filename);
           } else if (legacyFilesRegex.test(filename)) {
-            fileObject['url'] = 'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+            fileObject['url'] =
+              'http://files.parse.com/' +
+              config.fileKey +
+              '/' +
+              encodeURIComponent(filename);
           } else {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
           }

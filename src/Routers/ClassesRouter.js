@@ -1,27 +1,188 @@
-
 import PromiseRouter from '../PromiseRouter';
-import rest          from '../rest';
-import _             from 'lodash';
-import Parse         from 'parse/node';
+import rest from '../rest';
+import _ from 'lodash';
+import Parse from 'parse/node';
 
-const ALLOWED_GET_QUERY_KEYS = ['keys', 'include', 'readPreference',
-  'includeReadPreference', 'subqueryReadPreference'];
+const ALLOWED_GET_QUERY_KEYS = [
+  'keys',
+  'include',
+  'readPreference',
+  'includeReadPreference',
+  'subqueryReadPreference',
+];
 
 export class ClassesRouter extends PromiseRouter {
+  className(req) {
+    return req.params.className;
+  }
 
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(
+      req.body,
+      ClassesRouter.JSONFromQuery(req.query)
+    );
+    const options = ClassesRouter.optionsFromBody(body);
+    if (req.config.maxLimit && body.limit > req.config.maxLimit) {
+      // Silently replace the limit on the query with the max configured
+      options.limit = Number(req.config.maxLimit);
+    }
+    if (body.redirectClassNameForKey) {
+      options.redirectClassNameForKey = String(body.redirectClassNameForKey);
+    }
+    if (typeof body.where === 'string') {
+      body.where = JSON.parse(body.where);
+    }
+    return rest
+      .find(
+        req.config,
+        req.auth,
+        this.className(req),
+        body.where,
+        options,
+        req.info.clientSDK
+      )
+      .then(response => {
+        return { response: response };
+      });
+  }
+
+  // Returns a promise for a {response} object.
+  handleGet(req) {
+    const body = Object.assign(
+      req.body,
+      ClassesRouter.JSONFromQuery(req.query)
+    );
     const options = {};
-    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
-      'include', 'redirectClassNameForKey', 'where', 'readPreference',
-      'includeReadPreference', 'subqueryReadPreference'];
 
     for (const key of Object.keys(body)) {
-      if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+      if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          'Improper encode of parameter'
+        );
       }
     }
 
+    if (typeof body.keys === 'string') {
+      options.keys = body.keys;
+    }
+    if (body.include) {
+      options.include = String(body.include);
+    }
+    if (typeof body.readPreference === 'string') {
+      options.readPreference = body.readPreference;
+    }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
+    }
+
+    return rest
+      .get(
+        req.config,
+        req.auth,
+        this.className(req),
+        req.params.objectId,
+        options,
+        req.info.clientSDK
+      )
+      .then(response => {
+        if (!response.results || response.results.length == 0) {
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found.'
+          );
+        }
+
+        if (this.className(req) === '_User') {
+          delete response.results[0].sessionToken;
+
+          const user = response.results[0];
+
+          if (req.auth.user && user.objectId == req.auth.user.id) {
+            // Force the session token
+            response.results[0].sessionToken = req.info.sessionToken;
+          }
+        }
+        return { response: response.results[0] };
+      });
+  }
+
+  handleCreate(req) {
+    return rest.create(
+      req.config,
+      req.auth,
+      this.className(req),
+      req.body,
+      req.info.clientSDK
+    );
+  }
+
+  handleUpdate(req) {
+    const where = { objectId: req.params.objectId };
+    return rest.update(
+      req.config,
+      req.auth,
+      this.className(req),
+      where,
+      req.body,
+      req.info.clientSDK
+    );
+  }
+
+  handleDelete(req) {
+    return rest
+      .del(
+        req.config,
+        req.auth,
+        this.className(req),
+        req.params.objectId,
+        req.info.clientSDK
+      )
+      .then(() => {
+        return { response: {} };
+      });
+  }
+
+  static JSONFromQuery(query) {
+    const json = {};
+    for (const [key, value] of _.entries(query)) {
+      try {
+        json[key] = JSON.parse(value);
+      } catch (e) {
+        json[key] = value;
+      }
+    }
+    return json;
+  }
+
+  static optionsFromBody(body) {
+    const allowConstraints = [
+      'skip',
+      'limit',
+      'order',
+      'count',
+      'keys',
+      'include',
+      'includeAll',
+      'redirectClassNameForKey',
+      'where',
+      'readPreference',
+      'includeReadPreference',
+      'subqueryReadPreference',
+    ];
+
+    for (const key of Object.keys(body)) {
+      if (allowConstraints.indexOf(key) === -1) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Invalid parameter for query: ${key}`
+        );
+      }
+    }
+    const options = {};
     if (body.skip) {
       options.skip = Number(body.skip);
     }
@@ -36,122 +197,34 @@ export class ClassesRouter extends PromiseRouter {
     if (body.count) {
       options.count = true;
     }
-    if (typeof body.keys === 'string') {
+    if (typeof body.keys == 'string') {
       options.keys = body.keys;
     }
     if (body.include) {
       options.include = String(body.include);
     }
-    if (body.redirectClassNameForKey) {
-      options.redirectClassNameForKey = String(body.redirectClassNameForKey);
+    if (body.includeAll) {
+      options.includeAll = true;
     }
-    if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
-    }
-    if (typeof body.readPreference === 'string') {
-      options.readPreference = body.readPreference;
-    }
-    if (typeof body.includeReadPreference === 'string') {
-      options.includeReadPreference = body.includeReadPreference;
-    }
-    if (typeof body.subqueryReadPreference === 'string') {
-      options.subqueryReadPreference = body.subqueryReadPreference;
-    }
-    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
-      .then((response) => {
-        if (response && response.results) {
-          for (const result of response.results) {
-            if (result.sessionToken) {
-              result.sessionToken = req.info.sessionToken || result.sessionToken;
-            }
-          }
-        }
-        return { response: response };
-      });
-  }
-
-  // Returns a promise for a {response} object.
-  handleGet(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    const options = {};
-
-    for (const key of Object.keys(body)) {
-      if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
-      }
-    }
-
-    if (typeof body.keys === 'string') {
-      options.keys = body.keys;
-    }
-    if (body.include) {
-      options.include = String(body.include);
-    }
-    if (typeof body.readPreference === 'string') {
-      options.readPreference = body.readPreference;
-    }
-    if (typeof body.includeReadPreference === 'string') {
-      options.includeReadPreference = body.includeReadPreference;
-    }
-    if (typeof body.subqueryReadPreference === 'string') {
-      options.subqueryReadPreference = body.subqueryReadPreference;
-    }
-
-    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options, req.info.clientSDK)
-      .then((response) => {
-        if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
-        }
-
-        if (req.params.className === "_User") {
-
-          delete response.results[0].sessionToken;
-
-          const user =  response.results[0];
-
-          if (req.auth.user && user.objectId == req.auth.user.id) {
-            // Force the session token
-            response.results[0].sessionToken = req.info.sessionToken;
-          }
-        }
-        return { response: response.results[0] };
-      });
-  }
-
-  handleCreate(req) {
-    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK);
-  }
-
-  handleUpdate(req) {
-    const where = { objectId: req.params.objectId }
-    return rest.update(req.config, req.auth, req.params.className, where, req.body, req.info.clientSDK);
-  }
-
-  handleDelete(req) {
-    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK)
-      .then(() => {
-        return {response: {}};
-      });
-  }
-
-  static JSONFromQuery(query) {
-    const json = {};
-    for (const [key, value] of _.entries(query)) {
-      try {
-        json[key] = JSON.parse(value);
-      } catch (e) {
-        json[key] = value;
-      }
-    }
-    return json
+    return options;
   }
 
   mountRoutes() {
-    this.route('GET', '/classes/:className', (req) => { return this.handleFind(req); });
-    this.route('GET', '/classes/:className/:objectId', (req) => { return this.handleGet(req); });
-    this.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
-    this.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
-    this.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
+    this.route('GET', '/classes/:className', req => {
+      return this.handleFind(req);
+    });
+    this.route('GET', '/classes/:className/:objectId', req => {
+      return this.handleGet(req);
+    });
+    this.route('POST', '/classes/:className', req => {
+      return this.handleCreate(req);
+    });
+    this.route('PUT', '/classes/:className/:objectId', req => {
+      return this.handleUpdate(req);
+    });
+    this.route('DELETE', '/classes/:className/:objectId', req => {
+      return this.handleDelete(req);
+    });
   }
 }
 

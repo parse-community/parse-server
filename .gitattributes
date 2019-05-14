@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+*.js text
+*.html text
+*.less text
+*.json text
+*.css text
+*.xml text
+*.md text
+*.txt text
+*.yml text
+*.sql text
+*.sh text
+
+*.png binary

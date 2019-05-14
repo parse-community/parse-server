@@ -1,14 +1,25 @@
-export function loadAdapter(adapter, defaultAdapter, options) {
+/**
+ * @module AdapterLoader
+ */
+/**
+ * @static
+ * Attempt to load an adapter or fallback to the default.
+ * @param {Adapter} adapter an adapter
+ * @param {Adapter} defaultAdapter the default adapter to load
+ * @param {any} options options to pass to the contstructor
+ * @returns {Object} the loaded adapter
+ */
+export function loadAdapter<T>(adapter, defaultAdapter, options): T {
   if (!adapter) {
     if (!defaultAdapter) {
       return options;
     }
     // Load from the default adapter when no adapter is set
     return loadAdapter(defaultAdapter, undefined, options);
-  } else if (typeof adapter === "function") {
+  } else if (typeof adapter === 'function') {
     try {
       return adapter(options);
-    } catch(e) {
+    } catch (e) {
       if (e.name === 'TypeError') {
         var Adapter = adapter;
         return new Adapter(options);
@@ -16,7 +27,7 @@ export function loadAdapter(adapter, defaultAdapter, options) {
         throw e;
       }
     }
-  } else if (typeof adapter === "string") {
+  } else if (typeof adapter === 'string') {
     /* eslint-disable */
     adapter = require(adapter);
     // If it's define as a module, get the default

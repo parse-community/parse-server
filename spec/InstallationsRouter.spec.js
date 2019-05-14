@@ -1,148 +1,204 @@
-var auth = require('../src/Auth');
-var Config = require('../src/Config');
-var rest = require('../src/rest');
-var InstallationsRouter = require('../src/Routers/InstallationsRouter').InstallationsRouter;
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
+const InstallationsRouter = require('../lib/Routers/InstallationsRouter')
+  .InstallationsRouter;
 
 describe('InstallationsRouter', () => {
-  it('uses find condition from request.body', (done) => {
-    var config = new Config('test');
-    var androidDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android'
+  it('uses find condition from request.body', done => {
+    const config = Config.get('test');
+    const androidDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
-    var iosDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
-      'deviceType': 'ios'
+    const iosDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
-    var request = {
+    const request = {
       config: config,
       auth: auth.master(config),
       body: {
         where: {
-          deviceType: 'android'
-        }
+          deviceType: 'android',
+        },
       },
       query: {},
-      info: {}
+      info: {},
     };
 
-    var router = new InstallationsRouter();
-    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+    const router = new InstallationsRouter();
+    rest
+      .create(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        androidDeviceRequest
+      )
       .then(() => {
-        return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-      }).then(() => {
+        return rest.create(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          iosDeviceRequest
+        );
+      })
+      .then(() => {
         return router.handleFind(request);
-      }).then((res) => {
-        var results = res.response.results;
+      })
+      .then(res => {
+        const results = res.response.results;
         expect(results.length).toEqual(1);
         done();
-      }).catch((err) => {
+      })
+      .catch(err => {
         fail(JSON.stringify(err));
         done();
       });
   });
 
-  it('uses find condition from request.query', (done) => {
-    var config = new Config('test');
-    var androidDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android'
+  it('uses find condition from request.query', done => {
+    const config = Config.get('test');
+    const androidDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
-    var iosDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
-      'deviceType': 'ios'
+    const iosDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
-    var request = {
+    const request = {
       config: config,
       auth: auth.master(config),
       body: {},
       query: {
         where: {
-          deviceType: 'android'
-        }
+          deviceType: 'android',
+        },
       },
-      info: {}
+      info: {},
     };
 
-    var router = new InstallationsRouter();
-    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+    const router = new InstallationsRouter();
+    rest
+      .create(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        androidDeviceRequest
+      )
       .then(() => {
-        return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-      }).then(() => {
+        return rest.create(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          iosDeviceRequest
+        );
+      })
+      .then(() => {
         return router.handleFind(request);
-      }).then((res) => {
-        var results = res.response.results;
+      })
+      .then(res => {
+        const results = res.response.results;
         expect(results.length).toEqual(1);
         done();
-      }).catch((err) => {
+      })
+      .catch(err => {
         jfail(err);
         done();
       });
   });
 
-  it('query installations with limit = 0', (done) => {
-    var config = new Config('test');
-    var androidDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android'
+  it('query installations with limit = 0', done => {
+    const config = Config.get('test');
+    const androidDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
-    var iosDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
-      'deviceType': 'ios'
+    const iosDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
-    var request = {
+    const request = {
       config: config,
       auth: auth.master(config),
       body: {},
       query: {
-        limit: 0
+        limit: 0,
       },
-      info: {}
+      info: {},
     };
 
-    new Config('test');
-    var router = new InstallationsRouter();
-    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+    Config.get('test');
+    const router = new InstallationsRouter();
+    rest
+      .create(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        androidDeviceRequest
+      )
       .then(() => {
-        return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-      }).then(() => {
+        return rest.create(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          iosDeviceRequest
+        );
+      })
+      .then(() => {
         return router.handleFind(request);
-      }).then((res) => {
-        var response = res.response;
+      })
+      .then(res => {
+        const response = res.response;
         expect(response.results.length).toEqual(0);
         done();
-      }).catch((err) => {
+      })
+      .catch(err => {
         fail(JSON.stringify(err));
         done();
       });
   });
 
-  it('query installations with count = 1', done => {
-    var config = new Config('test');
-    var androidDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android'
+  it_exclude_dbs(['postgres'])('query installations with count = 1', done => {
+    const config = Config.get('test');
+    const androidDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
-    var iosDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
-      'deviceType': 'ios'
+    const iosDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
-    var request = {
+    const request = {
       config: config,
       auth: auth.master(config),
       body: {},
       query: {
-        count: 1
+        count: 1,
       },
-      info: {}
+      info: {},
     };
 
-    var router = new InstallationsRouter();
-    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
-      .then(() => rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest))
+    const router = new InstallationsRouter();
+    rest
+      .create(
+        config,
+        auth.nobody(config),
+        '_Installation',
+        androidDeviceRequest
+      )
+      .then(() =>
+        rest.create(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          iosDeviceRequest
+        )
+      )
       .then(() => router.handleFind(request))
-      .then((res) => {
-        var response = res.response;
+      .then(res => {
+        const response = res.response;
         expect(response.results.length).toEqual(2);
         expect(response.count).toEqual(2);
         done();
@@ -150,44 +206,108 @@ describe('InstallationsRouter', () => {
       .catch(error => {
         fail(JSON.stringify(error));
         done();
-      })
+      });
   });
 
-  it('query installations with limit = 0 and count = 1', (done) => {
-    var config = new Config('test');
-    var androidDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android'
+  it_only_db('postgres')('query installations with count = 1', async () => {
+    const config = Config.get('test');
+    const androidDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
     };
-    var iosDeviceRequest = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
-      'deviceType': 'ios'
+    const iosDeviceRequest = {
+      installationId: '12345678-abcd-abcd-abcd-123456789abd',
+      deviceType: 'ios',
     };
-    var request = {
+    const request = {
       config: config,
       auth: auth.master(config),
       body: {},
       query: {
-        limit: 0,
-        count: 1
+        count: 1,
       },
-      info: {}
+      info: {},
     };
 
-    var router = new InstallationsRouter();
-    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
-      .then(() => {
-        return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-      }).then(() => {
-        return router.handleFind(request);
-      }).then((res) => {
-        var response = res.response;
-        expect(response.results.length).toEqual(0);
-        expect(response.count).toEqual(2);
-        done();
-      }).catch((err) => {
-        fail(JSON.stringify(err));
-        done();
-      });
+    const router = new InstallationsRouter();
+    await rest.create(
+      config,
+      auth.nobody(config),
+      '_Installation',
+      androidDeviceRequest
+    );
+    await rest.create(
+      config,
+      auth.nobody(config),
+      '_Installation',
+      iosDeviceRequest
+    );
+    let res = await router.handleFind(request);
+    let response = res.response;
+    expect(response.results.length).toEqual(2);
+    expect(response.count).toEqual(0); // estimate count is zero
+
+    const pgAdapter = config.database.adapter;
+    await pgAdapter.updateEstimatedCount('_Installation');
+
+    res = await router.handleFind(request);
+    response = res.response;
+    expect(response.results.length).toEqual(2);
+    expect(response.count).toEqual(2);
   });
+
+  it_exclude_dbs(['postgres'])(
+    'query installations with limit = 0 and count = 1',
+    done => {
+      const config = Config.get('test');
+      const androidDeviceRequest = {
+        installationId: '12345678-abcd-abcd-abcd-123456789abc',
+        deviceType: 'android',
+      };
+      const iosDeviceRequest = {
+        installationId: '12345678-abcd-abcd-abcd-123456789abd',
+        deviceType: 'ios',
+      };
+      const request = {
+        config: config,
+        auth: auth.master(config),
+        body: {},
+        query: {
+          limit: 0,
+          count: 1,
+        },
+        info: {},
+      };
+
+      const router = new InstallationsRouter();
+      rest
+        .create(
+          config,
+          auth.nobody(config),
+          '_Installation',
+          androidDeviceRequest
+        )
+        .then(() => {
+          return rest.create(
+            config,
+            auth.nobody(config),
+            '_Installation',
+            iosDeviceRequest
+          );
+        })
+        .then(() => {
+          return router.handleFind(request);
+        })
+        .then(res => {
+          const response = res.response;
+          expect(response.results.length).toEqual(0);
+          expect(response.count).toEqual(2);
+          done();
+        })
+        .catch(err => {
+          fail(JSON.stringify(err));
+          done();
+        });
+    }
+  );
 });
