@@ -32,7 +32,7 @@
     "intersect": "1.0.1",
     "lodash": "4.17.11",
     "lru-cache": "5.1.1",
-    "mime": "2.4.2",
+    "mime": "2.4.3",
     "mongodb": "3.2.4",
     "parse": "2.4.0",
     "pg-promise": "8.7.2",
