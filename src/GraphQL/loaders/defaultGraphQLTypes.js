@@ -226,6 +226,8 @@ export {
   TypeValidationError,
   parseStringValue,
   parseIntValue,
+  parseFloatValue,
+  parseBooleanValue,
   OBJECT,
   DATE,
   FILE,

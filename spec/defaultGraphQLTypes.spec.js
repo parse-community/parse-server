@@ -2,6 +2,8 @@ const {
   TypeValidationError,
   parseStringValue,
   parseIntValue,
+  parseFloatValue,
+  parseBooleanValue,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -41,7 +43,7 @@ describe('defaultGraphQLTypes', () => {
   });
 
   describe('parseIntValue', () => {
-    it('should parse to int if a string', () => {
+    it('should parse to number if a string', () => {
       const myString = '123';
       expect(parseIntValue(myString)).toBe(123);
     });
@@ -62,8 +64,64 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not an integer string', () => {
+      expect(() => parseIntValue('a123')).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
       expect(() => parseIntValue('123.4')).toThrow(
         jasmine.stringMatching('is not a valid Int')
+      );
+    });
+  });
+
+  describe('parseIntValue', () => {
+    it('should parse to number if a string', () => {
+      expect(parseFloatValue('123')).toBe(123);
+      expect(parseFloatValue('123.4')).toBe(123.4);
+    });
+
+    it('should fail if not a string', () => {
+      expect(() => parseFloatValue()).toThrow(
+        jasmine.stringMatching('is not a valid Float')
+      );
+      expect(() => parseFloatValue({})).toThrow(
+        jasmine.stringMatching('is not a valid Float')
+      );
+      expect(() => parseFloatValue([])).toThrow(
+        jasmine.stringMatching('is not a valid Float')
+      );
+    });
+
+    it('should fail if not a float string', () => {
+      expect(() => parseIntValue('a123')).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
+    });
+  });
+
+  describe('parseBooleanValue', () => {
+    it('should return itself if a boolean', () => {
+      let myBoolean = true;
+      expect(parseBooleanValue(myBoolean)).toBe(myBoolean);
+      myBoolean = false;
+      expect(parseBooleanValue(myBoolean)).toBe(myBoolean);
+    });
+
+    it('should fail if not a boolean', () => {
+      expect(() => parseBooleanValue()).toThrow(
+        jasmine.stringMatching('is not a valid Boolean')
+      );
+      expect(() => parseBooleanValue({})).toThrow(
+        jasmine.stringMatching('is not a valid Boolean')
+      );
+      expect(() => parseBooleanValue([])).toThrow(
+        jasmine.stringMatching('is not a valid Boolean')
+      );
+      expect(() => parseBooleanValue(123)).toThrow(
+        jasmine.stringMatching('is not a valid Boolean')
+      );
+
+      expect(() => parseBooleanValue('true')).toThrow(
+        jasmine.stringMatching('is not a valid Boolean')
       );
     });
   });
