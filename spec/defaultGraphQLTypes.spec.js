@@ -4,6 +4,7 @@ const {
   parseIntValue,
   parseFloatValue,
   parseBooleanValue,
+  parseDateValue,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -119,9 +120,40 @@ describe('defaultGraphQLTypes', () => {
       expect(() => parseBooleanValue(123)).toThrow(
         jasmine.stringMatching('is not a valid Boolean')
       );
-
       expect(() => parseBooleanValue('true')).toThrow(
         jasmine.stringMatching('is not a valid Boolean')
+      );
+    });
+  });
+
+  describe('parseDateValue', () => {
+    it('should parse to date if a string', () => {
+      const myDateString = '2019-05-09T23:12:00.000Z';
+      const myDate = new Date(Date.UTC(2019, 4, 9, 23, 12, 0, 0));
+      expect(parseDateValue(myDateString)).toEqual(myDate);
+    });
+
+    it('should fail if not a string', () => {
+      expect(() => parseDateValue()).toThrow(
+        jasmine.stringMatching('is not a valid Date')
+      );
+      expect(() => parseDateValue({})).toThrow(
+        jasmine.stringMatching('is not a valid Date')
+      );
+      expect(() => parseDateValue([])).toThrow(
+        jasmine.stringMatching('is not a valid Date')
+      );
+      expect(() => parseDateValue(123)).toThrow(
+        jasmine.stringMatching('is not a valid Date')
+      );
+      expect(() => parseDateValue(new Date())).toThrow(
+        jasmine.stringMatching('is not a valid Date')
+      );
+    });
+
+    it('should fail if not a date string', () => {
+      expect(() => parseDateValue('not a date')).toThrow(
+        jasmine.stringMatching('is not a valid Date')
       );
     });
   });
