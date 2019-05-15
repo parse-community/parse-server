@@ -225,6 +225,7 @@ const load = parseGraphQLSchema => {
 export {
   TypeValidationError,
   parseStringValue,
+  parseIntValue,
   OBJECT,
   DATE,
   FILE,

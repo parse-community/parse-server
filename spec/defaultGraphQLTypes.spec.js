@@ -1,6 +1,7 @@
 const {
   TypeValidationError,
   parseStringValue,
+  parseIntValue,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -35,6 +36,34 @@ describe('defaultGraphQLTypes', () => {
       );
       expect(() => parseStringValue(123)).toThrow(
         jasmine.stringMatching('is not a valid String')
+      );
+    });
+  });
+
+  describe('parseIntValue', () => {
+    it('should parse to int if a string', () => {
+      const myString = '123';
+      expect(parseIntValue(myString)).toBe(123);
+    });
+
+    it('should fail if not a string', () => {
+      expect(() => parseIntValue()).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
+      expect(() => parseIntValue({})).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
+      expect(() => parseIntValue([])).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
+      expect(() => parseIntValue(123)).toThrow(
+        jasmine.stringMatching('is not a valid Int')
+      );
+    });
+
+    it('should fail if not an integer string', () => {
+      expect(() => parseIntValue('123.4')).toThrow(
+        jasmine.stringMatching('is not a valid Int')
       );
     });
   });
