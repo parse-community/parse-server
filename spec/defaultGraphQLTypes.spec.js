@@ -1,3 +1,4 @@
+const { Kind } = require('graphql');
 const {
   TypeValidationError,
   parseStringValue,
@@ -5,6 +6,7 @@ const {
   parseFloatValue,
   parseBooleanValue,
   parseDateValue,
+  parseValue,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -155,6 +157,154 @@ describe('defaultGraphQLTypes', () => {
       expect(() => parseDateValue('not a date')).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
+    });
+  });
+
+  describe('parseValue', () => {
+    function createValue(kind, value, values, fields) {
+      return {
+        kind,
+        value,
+        values,
+        fields,
+      };
+    }
+
+    function createObjectField(name, value) {
+      return {
+        name: {
+          value: name,
+        },
+        value,
+      };
+    }
+
+    const someString = createValue(Kind.STRING, 'somestring');
+    const someInt = createValue(Kind.INT, '123');
+    const someFloat = createValue(Kind.FLOAT, '123.4');
+    const someBoolean = createValue(Kind.BOOLEAN, true);
+    const someOther = createValue(undefined, new Object());
+    const someObject = createValue(Kind.OBJECT, undefined, undefined, [
+      createObjectField('someString', someString),
+      createObjectField('someInt', someInt),
+      createObjectField('someFloat', someFloat),
+      createObjectField('someBoolean', someBoolean),
+      createObjectField('someOther', someOther),
+      createObjectField(
+        'someList',
+        createValue(Kind.LIST, undefined, [
+          createValue(Kind.OBJECT, undefined, undefined, [
+            createObjectField('someString', someString),
+          ]),
+        ])
+      ),
+      createObjectField(
+        'someObject',
+        createValue(Kind.OBJECT, undefined, undefined, [
+          createObjectField('someString', someString),
+        ])
+      ),
+    ]);
+    const someList = createValue(Kind.LIST, undefined, [
+      someString,
+      someInt,
+      someFloat,
+      someBoolean,
+      someObject,
+      someOther,
+      createValue(Kind.LIST, undefined, [
+        someString,
+        someInt,
+        someFloat,
+        someBoolean,
+        someObject,
+        someOther,
+      ]),
+    ]);
+
+    it('should parse string', () => {
+      expect(parseValue(someString)).toEqual('somestring');
+    });
+
+    it('should parse int', () => {
+      expect(parseValue(someInt)).toEqual(123);
+    });
+
+    it('should parse float', () => {
+      expect(parseValue(someFloat)).toEqual(123.4);
+    });
+
+    it('should parse boolean', () => {
+      expect(parseValue(someBoolean)).toEqual(true);
+    });
+
+    it('should parse list', () => {
+      expect(parseValue(someList)).toEqual([
+        'somestring',
+        123,
+        123.4,
+        true,
+        {
+          someString: 'somestring',
+          someInt: 123,
+          someFloat: 123.4,
+          someBoolean: true,
+          someOther: {},
+          someList: [
+            {
+              someString: 'somestring',
+            },
+          ],
+          someObject: {
+            someString: 'somestring',
+          },
+        },
+        {},
+        [
+          'somestring',
+          123,
+          123.4,
+          true,
+          {
+            someString: 'somestring',
+            someInt: 123,
+            someFloat: 123.4,
+            someBoolean: true,
+            someOther: {},
+            someList: [
+              {
+                someString: 'somestring',
+              },
+            ],
+            someObject: {
+              someString: 'somestring',
+            },
+          },
+          {},
+        ],
+      ]);
+    });
+
+    it('should parse object', () => {
+      expect(parseValue(someObject)).toEqual({
+        someString: 'somestring',
+        someInt: 123,
+        someFloat: 123.4,
+        someBoolean: true,
+        someOther: {},
+        someList: [
+          {
+            someString: 'somestring',
+          },
+        ],
+        someObject: {
+          someString: 'somestring',
+        },
+      });
+    });
+
+    it('should return value otherwise', () => {
+      expect(parseValue(someOther)).toEqual(new Object());
     });
   });
 });

@@ -97,7 +97,7 @@ const parseListValues = values => {
 };
 
 const parseObjectFields = fields => {
-  if (typeof fields === 'object') {
+  if (Array.isArray(fields)) {
     return fields.reduce(
       (object, field) => ({
         ...object,
@@ -229,6 +229,7 @@ export {
   parseFloatValue,
   parseBooleanValue,
   parseDateValue,
+  parseValue,
   OBJECT,
   DATE,
   FILE,
