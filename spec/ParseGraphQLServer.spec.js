@@ -398,6 +398,31 @@ describe('ParseGraphQLServer', () => {
           ]);
         });
       });
+
+      describe('Default Queries', () => {
+        it('should have a generic get query', async () => {
+          let obj = new Parse.Object('SomeClass');
+          obj.set('someField', 'someValue');
+          obj = await obj.save();
+
+          const result = (await apolloClient.query({
+            query: gql`
+              query GetSomeObject {
+                get(
+                  className: "SomeClass"
+                  objectId: "${obj.id}"
+                )
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data.get;
+
+          expect(result.objectId).toEqual(obj.id);
+          expect(result.someField).toEqual('someValue');
+          expect(new Date(result.createdAt)).toEqual(obj.createdAt);
+          expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
+        });
+      });
     });
   });
 });
