@@ -8,6 +8,7 @@ const {
   parseDateValue,
   parseValue,
   parseListValues,
+  parseObjectFields,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -331,6 +332,41 @@ describe('defaultGraphQLTypes', () => {
       );
       expect(() => parseListValues(123)).toThrow(
         jasmine.stringMatching('is not a valid List')
+      );
+    });
+  });
+
+  describe('parseListValues', () => {
+    it('should parse to list if an array', () => {
+      expect(
+        parseObjectFields([
+          {
+            name: { value: 'someString' },
+            value: { kind: Kind.STRING, value: 'someString' },
+          },
+          {
+            name: { value: 'someInt' },
+            value: { kind: Kind.INT, value: '123' },
+          },
+        ])
+      ).toEqual({
+        someString: 'someString',
+        someInt: 123,
+      });
+    });
+
+    it('should fail if not an array', () => {
+      expect(() => parseObjectFields()).toThrow(
+        jasmine.stringMatching('is not a valid Object')
+      );
+      expect(() => parseObjectFields({})).toThrow(
+        jasmine.stringMatching('is not a valid Object')
+      );
+      expect(() => parseObjectFields('some string')).toThrow(
+        jasmine.stringMatching('is not a valid Object')
+      );
+      expect(() => parseObjectFields(123)).toThrow(
+        jasmine.stringMatching('is not a valid Object')
       );
     });
   });

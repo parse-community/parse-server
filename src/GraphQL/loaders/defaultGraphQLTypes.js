@@ -231,6 +231,7 @@ export {
   parseDateValue,
   parseValue,
   parseListValues,
+  parseObjectFields,
   OBJECT,
   DATE,
   FILE,
