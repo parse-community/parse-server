@@ -230,6 +230,7 @@ export {
   parseBooleanValue,
   parseDateValue,
   parseValue,
+  parseListValues,
   OBJECT,
   DATE,
   FILE,

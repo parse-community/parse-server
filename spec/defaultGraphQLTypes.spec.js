@@ -7,6 +7,7 @@ const {
   parseBooleanValue,
   parseDateValue,
   parseValue,
+  parseListValues,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
 describe('defaultGraphQLTypes', () => {
@@ -305,6 +306,32 @@ describe('defaultGraphQLTypes', () => {
 
     it('should return value otherwise', () => {
       expect(parseValue(someOther)).toEqual(new Object());
+    });
+  });
+
+  describe('parseListValues', () => {
+    it('should parse to list if an array', () => {
+      expect(
+        parseListValues([
+          { kind: Kind.STRING, value: 'someString' },
+          { kind: Kind.INT, value: '123' },
+        ])
+      ).toEqual(['someString', 123]);
+    });
+
+    it('should fail if not an array', () => {
+      expect(() => parseListValues()).toThrow(
+        jasmine.stringMatching('is not a valid List')
+      );
+      expect(() => parseListValues({})).toThrow(
+        jasmine.stringMatching('is not a valid List')
+      );
+      expect(() => parseListValues('some string')).toThrow(
+        jasmine.stringMatching('is not a valid List')
+      );
+      expect(() => parseListValues(123)).toThrow(
+        jasmine.stringMatching('is not a valid List')
+      );
     });
   });
 });
