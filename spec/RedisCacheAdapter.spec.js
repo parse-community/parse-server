@@ -39,7 +39,7 @@ describe_only(() => {
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 2))
+      .then(wait.bind(null, 5))
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(null))
       .then(done);
@@ -62,7 +62,7 @@ describe_only(() => {
       .put(KEY, VALUE, Infinity)
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 1))
+      .then(wait.bind(null, 5))
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
       .then(done);
@@ -78,7 +78,7 @@ describe_only(() => {
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(VALUE))
-          .then(wait.bind(null, 2))
+          .then(wait.bind(null, 5))
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(null))
       );
