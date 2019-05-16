@@ -303,5 +303,101 @@ describe('ParseGraphQLServer', () => {
         expect(res.status).toEqual(200);
       });
     });
+
+    describe('Schema', () => {
+      describe('Default Types', () => {
+        it('should have Object scalar type', async () => {
+          const objectType = (await apolloClient.query({
+            query: gql`
+              query ObjectType {
+                __type(name: "Object") {
+                  kind
+                }
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data['__type'];
+          expect(objectType.kind).toEqual('SCALAR');
+        });
+
+        it('should have Date scalar type', async () => {
+          const dateType = (await apolloClient.query({
+            query: gql`
+              query DateType {
+                __type(name: "Date") {
+                  kind
+                }
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data['__type'];
+          expect(dateType.kind).toEqual('SCALAR');
+        });
+
+        it('should have File object type', async () => {
+          const fileType = (await apolloClient.query({
+            query: gql`
+              query FileType {
+                __type(name: "File") {
+                  kind
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data['__type'];
+          expect(fileType.kind).toEqual('OBJECT');
+          expect(fileType.fields.map(field => field.name).sort()).toEqual([
+            'name',
+            'url',
+          ]);
+        });
+
+        it('should have CreateResult object type', async () => {
+          const createResultType = (await apolloClient.query({
+            query: gql`
+              query CreateResultType {
+                __type(name: "CreateResult") {
+                  kind
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data['__type'];
+          expect(createResultType.kind).toEqual('OBJECT');
+          expect(
+            createResultType.fields.map(field => field.name).sort()
+          ).toEqual(['createdAt', 'objectId']);
+        });
+
+        it('should have Class interface type', async () => {
+          const classType = (await apolloClient.query({
+            query: gql`
+              query CreateResultType {
+                __type(name: "Class") {
+                  kind
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+            fetchPolicy: 'no-cache',
+          })).data['__type'];
+          expect(classType.kind).toEqual('INTERFACE');
+          expect(classType.fields.map(field => field.name).sort()).toEqual([
+            'ACL',
+            'createdAt',
+            'objectId',
+            'updatedAt',
+          ]);
+        });
+      });
+    });
   });
 });
