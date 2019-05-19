@@ -52,16 +52,17 @@ script:
 after_script:
 - greenkeeper-lockfile-upload
 - bash <(curl -s https://codecov.io/bash)
+- silent=1 mongodb-runner --stop
 
 jobs:
   include:
     # release on npm on tags
     - stage: release
       node_js: '8.10'
-      env: 
+      env:
       before_script: skip
       after_script: skip
-      script: 
+      script:
         - ./release_docs.sh
       deploy:
         - provider: pages
