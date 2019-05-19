@@ -65,7 +65,7 @@
     "jsdoc": "3.6.2",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "8.1.7",
-    "mongodb-runner": "4.3.2",
+    "mongodb-runner": "^4.7.1",
     "nyc": "14.1.1",
     "prettier": "1.17.1",
     "supports-color": "6.0.0"
