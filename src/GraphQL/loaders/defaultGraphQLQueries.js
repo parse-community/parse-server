@@ -5,6 +5,7 @@ import {
   GraphQLList,
   GraphQLID,
 } from 'graphql';
+import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
@@ -34,14 +35,31 @@ const GET = {
 
     const { config, auth, info } = context;
 
-    return (await rest.get(
+    const response = await rest.get(
       config,
       auth,
       className,
       objectId,
       {},
       info.clientSDK
-    )).results[0];
+    );
+
+    if (!response.results || response.results.length == 0) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+    }
+
+    if (className === '_User') {
+      delete response.results[0].sessionToken;
+
+      const user = response.results[0];
+
+      if (auth.user && user.objectId == auth.user.id) {
+        // Force the session token
+        response.results[0].sessionToken = info.sessionToken;
+      }
+    }
+
+    return response.results[0];
   },
 };
 

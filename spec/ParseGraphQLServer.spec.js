@@ -179,6 +179,16 @@ describe('ParseGraphQLServer', () => {
 
     let apolloClient;
 
+    let user1;
+    let user2;
+    let user3;
+    let user4;
+    let user5;
+    let role;
+    let object1;
+    let object2;
+    let object3;
+
     beforeAll(async () => {
       const expressApp = express();
       const httpServer = http.createServer(expressApp);
@@ -218,6 +228,116 @@ describe('ParseGraphQLServer', () => {
         ),
         cache: new InMemoryCache(),
       });
+
+      user1 = new Parse.User();
+      user1.setUsername('user1');
+      user1.setPassword('user1');
+      user1 = await user1.signUp();
+
+      user2 = new Parse.User();
+      user2.setUsername('user2');
+      user2.setPassword('user2');
+      user2 = await user2.signUp();
+
+      user3 = new Parse.User();
+      user3.setUsername('user3');
+      user3.setPassword('user3');
+      user3 = await user3.signUp();
+
+      user4 = new Parse.User();
+      user4.setUsername('user4');
+      user4.setPassword('user4');
+      user4 = await user4.signUp();
+
+      user5 = new Parse.User();
+      user5.setUsername('user5');
+      user5.setPassword('user5');
+      user5 = await user5.signUp();
+
+      const roleACL = new Parse.ACL();
+      roleACL.setPublicReadAccess(true);
+      role = new Parse.Role();
+      role.setName('role');
+      role.setACL(roleACL);
+      role.getUsers().add(user1);
+      role.getUsers().add(user3);
+      role = await role.save();
+
+      const schemaController = await parseServer.config.databaseController.loadSchema();
+      await schemaController.addClassIfNotExists(
+        'GraphQLClass',
+        {
+          someField: { type: 'String' },
+          pointerToUser: { type: 'Pointer', targetClass: '_User' },
+        },
+        {
+          find: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          create: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          get: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          update: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          addField: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          delete: {
+            'role:role': true,
+            [user1.id]: true,
+            [user2.id]: true,
+          },
+          readUserFields: ['pointerToUser'],
+          writeUserFields: ['pointerToUser'],
+        },
+        {}
+      );
+
+      object1 = new Parse.Object('GraphQLClass');
+      object1.set('someField', 'someValue1');
+      const object1ACL = new Parse.ACL();
+      object1ACL.setPublicReadAccess(false);
+      object1ACL.setPublicWriteAccess(false);
+      object1ACL.setRoleReadAccess(role, true);
+      object1ACL.setRoleWriteAccess(role, true);
+      object1ACL.setReadAccess(user1.id, true);
+      object1ACL.setWriteAccess(user1.id, true);
+      object1ACL.setReadAccess(user2.id, true);
+      object1ACL.setWriteAccess(user2.id, true);
+      object1.setACL(object1ACL);
+      await object1.save(undefined, { useMasterKey: true });
+
+      object2 = new Parse.Object('GraphQLClass');
+      object2.set('someField', 'someValue2');
+      const object2ACL = new Parse.ACL();
+      object2ACL.setPublicReadAccess(false);
+      object2ACL.setPublicWriteAccess(false);
+      object2ACL.setReadAccess(user1.id, true);
+      object2ACL.setWriteAccess(user1.id, true);
+      object2ACL.setReadAccess(user2.id, true);
+      object2ACL.setWriteAccess(user2.id, true);
+      object2ACL.setReadAccess(user5.id, true);
+      object2ACL.setWriteAccess(user5.id, true);
+      object2.setACL(object2ACL);
+      await object2.save(undefined, { useMasterKey: true });
+
+      object3 = new Parse.Object('GraphQLClass');
+      object3.set('someField', 'someValue3');
+      await object3.save(undefined, { useMasterKey: true });
     });
 
     describe('GraphQL', () => {
@@ -400,27 +520,49 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Default Queries', () => {
-        it('should have a generic get query', async () => {
-          let obj = new Parse.Object('SomeClass');
-          obj.set('someField', 'someValue');
-          obj = await obj.save();
+        describe('Get', () => {
+          it('should return a class object', async () => {
+            let obj = new Parse.Object('SomeClass');
+            obj.set('someField', 'someValue');
+            obj = await obj.save();
 
-          const result = (await apolloClient.query({
-            query: gql`
-              query GetSomeObject {
-                get(
-                  className: "SomeClass"
-                  objectId: "${obj.id}"
-                )
-              }
-            `,
-            fetchPolicy: 'no-cache',
-          })).data.get;
+            const result = (await apolloClient.query({
+              query: gql`
+                query GetSomeObject {
+                  get(
+                    className: "SomeClass"
+                    objectId: "${obj.id}"
+                  )
+                }
+              `,
+              fetchPolicy: 'no-cache',
+            })).data.get;
 
-          expect(result.objectId).toEqual(obj.id);
-          expect(result.someField).toEqual('someValue');
-          expect(new Date(result.createdAt)).toEqual(obj.createdAt);
-          expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
+            expect(result.objectId).toEqual(obj.id);
+            expect(result.someField).toEqual('someValue');
+            expect(new Date(result.createdAt)).toEqual(obj.createdAt);
+            expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
+          });
+
+          it('should respect level permissions', async () => {
+            function getObject(objectId) {
+              return apolloClient.query({
+                query: gql`
+                  query GetSomeObject {
+                    get(
+                      className: "SomeClass"
+                      objectId: "${objectId}"
+                    )
+                  }
+                `,
+                fetchPolicy: 'no-cache',
+              });
+            }
+
+            await expectAsync(getObject(object1.id)).toBeRejectedWith(
+              jasmine.stringMatching('Object not found')
+            );
+          });
         });
       });
     });
