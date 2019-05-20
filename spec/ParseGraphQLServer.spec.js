@@ -188,47 +188,9 @@ describe('ParseGraphQLServer', () => {
     let object1;
     let object2;
     let object3;
+    let object4;
 
-    beforeAll(async () => {
-      const expressApp = express();
-      const httpServer = http.createServer(expressApp);
-      expressApp.use('/parse', parseServer.app);
-      ParseServer.createLiveQueryServer(httpServer, {
-        port: 1338,
-      });
-      parseGraphQLServer.applyGraphQL(expressApp);
-      parseGraphQLServer.applyPlayground(expressApp);
-      parseGraphQLServer.createSubscriptions(httpServer);
-      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-
-      const subscriptionClient = new SubscriptionClient(
-        'ws://localhost:13377/subscriptions',
-        {
-          reconnect: true,
-          connectionParams: headers,
-        },
-        ws
-      );
-      const wsLink = new WebSocketLink(subscriptionClient);
-      const httpLink = createUploadLink({
-        uri: 'http://localhost:13377/graphql',
-        fetch,
-        headers,
-      });
-      apolloClient = new ApolloClient({
-        link: split(
-          ({ query }) => {
-            const { kind, operation } = getMainDefinition(query);
-            return (
-              kind === 'OperationDefinition' && operation === 'subscription'
-            );
-          },
-          wsLink,
-          httpLink
-        ),
-        cache: new InMemoryCache(),
-      });
-
+    async function prepareData() {
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
@@ -338,6 +300,51 @@ describe('ParseGraphQLServer', () => {
       object3 = new Parse.Object('GraphQLClass');
       object3.set('someField', 'someValue3');
       await object3.save(undefined, { useMasterKey: true });
+
+      object4 = new Parse.Object('PublicClass');
+      object4.set('someField', 'someValue4');
+      await object4.save();
+    }
+
+    beforeAll(async () => {
+      const expressApp = express();
+      const httpServer = http.createServer(expressApp);
+      expressApp.use('/parse', parseServer.app);
+      ParseServer.createLiveQueryServer(httpServer, {
+        port: 1338,
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      parseGraphQLServer.applyPlayground(expressApp);
+      parseGraphQLServer.createSubscriptions(httpServer);
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+
+      const subscriptionClient = new SubscriptionClient(
+        'ws://localhost:13377/subscriptions',
+        {
+          reconnect: true,
+          connectionParams: headers,
+        },
+        ws
+      );
+      const wsLink = new WebSocketLink(subscriptionClient);
+      const httpLink = createUploadLink({
+        uri: 'http://localhost:13377/graphql',
+        fetch,
+        headers,
+      });
+      apolloClient = new ApolloClient({
+        link: split(
+          ({ query }) => {
+            const { kind, operation } = getMainDefinition(query);
+            return (
+              kind === 'OperationDefinition' && operation === 'subscription'
+            );
+          },
+          wsLink,
+          httpLink
+        ),
+        cache: new InMemoryCache(),
+      });
     });
 
     describe('GraphQL', () => {
@@ -522,19 +529,19 @@ describe('ParseGraphQLServer', () => {
       describe('Default Queries', () => {
         describe('Get', () => {
           it('should return a class object', async () => {
-            let obj = new Parse.Object('SomeClass');
+            const obj = new Parse.Object('SomeClass');
             obj.set('someField', 'someValue');
-            obj = await obj.save();
+            await obj.save();
 
             const result = (await apolloClient.query({
               query: gql`
-                query GetSomeObject {
-                  get(
-                    className: "SomeClass"
-                    objectId: "${obj.id}"
-                  )
+                query GetSomeObject($objectId: ID!) {
+                  get(className: "SomeClass", objectId: $objectId)
                 }
               `,
+              variables: {
+                objectId: obj.id,
+              },
               fetchPolicy: 'no-cache',
             })).data.get;
 
@@ -545,23 +552,35 @@ describe('ParseGraphQLServer', () => {
           });
 
           it('should respect level permissions', async () => {
-            function getObject(objectId) {
+            await prepareData();
+
+            function getObject(className, objectId) {
               return apolloClient.query({
                 query: gql`
-                  query GetSomeObject {
-                    get(
-                      className: "SomeClass"
-                      objectId: "${objectId}"
-                    )
+                  query GetSomeObject($className: String!, $objectId: ID!) {
+                    get(className: $className, objectId: $objectId)
                   }
                 `,
+                variables: {
+                  className,
+                  objectId,
+                },
                 fetchPolicy: 'no-cache',
               });
             }
 
-            await expectAsync(getObject(object1.id)).toBeRejectedWith(
-              jasmine.stringMatching('Object not found')
-            );
+            await expectAsync(
+              getObject('GraphQLClass', object1.id)
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            await expectAsync(
+              getObject('GraphQLClass', object2.id)
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            await expectAsync(
+              getObject('GraphQLClass', object3.id)
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            expect(
+              (await getObject('PublicClass', object4.id)).data.get.someField
+            ).toEqual('someValue4');
           });
         });
       });
