@@ -592,6 +592,15 @@ describe('ParseGraphQLServer', () => {
                 ).toEqual(obj.get('someField'))
               )
             );
+            await Promise.all(
+              objects.map(async obj =>
+                expect(
+                  (await getObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user1.getSessionToken(),
+                  })).data.get.someField
+                ).toEqual(obj.get('someField'))
+              )
+            );
           });
         });
       });
