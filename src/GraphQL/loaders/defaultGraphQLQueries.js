@@ -28,19 +28,28 @@ const GET = {
       description: 'The objectId that will be used to get the object.',
       type: new GraphQLNonNull(GraphQLID),
     },
+    keys: {
+      description: 'The keys of the object that will be returned',
+      type: GraphQLString,
+    },
   },
   type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
   async resolve(_source, args, context) {
-    const { className, objectId } = args;
+    const { className, objectId, keys } = args;
 
     const { config, auth, info } = context;
+
+    const options = {};
+    if (keys) {
+      options.keys = keys;
+    }
 
     const response = await rest.get(
       config,
       auth,
       className,
       objectId,
-      {},
+      options,
       info.clientSDK
     );
 

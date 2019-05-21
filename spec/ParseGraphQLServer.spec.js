@@ -701,6 +701,55 @@ describe('ParseGraphQLServer', () => {
             });
             expect(result.data.get.sessionToken).toBeDefined();
           });
+
+          it('should support keys argument', async () => {
+            await prepareData();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  get(
+                    className: "GraphQLClass"
+                    objectId: $objectId
+                    keys: "someField"
+                  )
+                }
+              `,
+              variables: {
+                objectId: object3.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  get(
+                    className: "GraphQLClass"
+                    objectId: $objectId
+                    keys: "someField,pointerToUser"
+                  )
+                }
+              `,
+              variables: {
+                objectId: object3.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(result1.data.get.someField).toBeDefined();
+            expect(result1.data.get.pointerToUser).toBeUndefined();
+            expect(result2.data.get.someField).toBeDefined();
+            expect(result2.data.get.pointerToUser).toBeDefined();
+          });
         });
       });
     });
