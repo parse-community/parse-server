@@ -624,6 +624,15 @@ describe('ParseGraphQLServer', () => {
                 ).toEqual(obj.get('someField'))
               )
             );
+            await Promise.all(
+              objects.slice(0, 3).map(obj =>
+                expectAsync(
+                  getObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user4.getSessionToken(),
+                  })
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
+              )
+            );
           });
         });
       });
