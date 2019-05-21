@@ -189,32 +189,33 @@ describe('ParseGraphQLServer', () => {
     let object2;
     let object3;
     let object4;
+    const objects = [];
 
     async function prepareData() {
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
-      user1 = await user1.signUp();
+      await user1.signUp();
 
       user2 = new Parse.User();
       user2.setUsername('user2');
       user2.setPassword('user2');
-      user2 = await user2.signUp();
+      await user2.signUp();
 
       user3 = new Parse.User();
       user3.setUsername('user3');
       user3.setPassword('user3');
-      user3 = await user3.signUp();
+      await user3.signUp();
 
       user4 = new Parse.User();
       user4.setUsername('user4');
       user4.setPassword('user4');
-      user4 = await user4.signUp();
+      await user4.signUp();
 
       user5 = new Parse.User();
       user5.setUsername('user5');
       user5.setPassword('user5');
-      user5 = await user5.signUp();
+      await user5.signUp();
 
       const roleACL = new Parse.ACL();
       roleACL.setPublicReadAccess(true);
@@ -304,6 +305,8 @@ describe('ParseGraphQLServer', () => {
       object4 = new Parse.Object('PublicClass');
       object4.set('someField', 'someValue4');
       await object4.save();
+
+      objects.push(object1, object2, object3, object4);
     }
 
     beforeAll(async () => {
@@ -344,6 +347,11 @@ describe('ParseGraphQLServer', () => {
           httpLink
         ),
         cache: new InMemoryCache(),
+        defaultOptions: {
+          query: {
+            fetchPolicy: 'no-cache',
+          },
+        },
       });
     });
 
@@ -355,7 +363,6 @@ describe('ParseGraphQLServer', () => {
               health
             }
           `,
-          fetchPolicy: 'no-cache',
         })).data.health;
         expect(health).toBeTruthy();
       });
@@ -391,7 +398,6 @@ describe('ParseGraphQLServer', () => {
               health
             }
           `,
-          fetchPolicy: 'no-cache',
         });
         expect(healthResponse.data.health).toBeTruthy();
         expect(checked).toBeTruthy();
@@ -413,7 +419,6 @@ describe('ParseGraphQLServer', () => {
               health
             }
           `,
-          fetchPolicy: 'no-cache',
         })).data.health;
         expect(health).toBeTruthy();
         expect(checked).toBeTruthy();
@@ -442,7 +447,6 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
-            fetchPolicy: 'no-cache',
           })).data['__type'];
           expect(objectType.kind).toEqual('SCALAR');
         });
@@ -456,7 +460,6 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
-            fetchPolicy: 'no-cache',
           })).data['__type'];
           expect(dateType.kind).toEqual('SCALAR');
         });
@@ -473,7 +476,6 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
-            fetchPolicy: 'no-cache',
           })).data['__type'];
           expect(fileType.kind).toEqual('OBJECT');
           expect(fileType.fields.map(field => field.name).sort()).toEqual([
@@ -494,7 +496,6 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
-            fetchPolicy: 'no-cache',
           })).data['__type'];
           expect(createResultType.kind).toEqual('OBJECT');
           expect(
@@ -514,7 +515,6 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
-            fetchPolicy: 'no-cache',
           })).data['__type'];
           expect(classType.kind).toEqual('INTERFACE');
           expect(classType.fields.map(field => field.name).sort()).toEqual([
@@ -542,7 +542,6 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 objectId: obj.id,
               },
-              fetchPolicy: 'no-cache',
             })).data.get;
 
             expect(result.objectId).toEqual(obj.id);
@@ -554,7 +553,7 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            function getObject(className, objectId) {
+            function getObject(className, objectId, headers) {
               return apolloClient.query({
                 query: gql`
                   query GetSomeObject($className: String!, $objectId: ID!) {
@@ -565,22 +564,34 @@ describe('ParseGraphQLServer', () => {
                   className,
                   objectId,
                 },
-                fetchPolicy: 'no-cache',
+                context: {
+                  headers,
+                },
               });
             }
 
-            await expectAsync(
-              getObject('GraphQLClass', object1.id)
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
-            await expectAsync(
-              getObject('GraphQLClass', object2.id)
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
-            await expectAsync(
-              getObject('GraphQLClass', object3.id)
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            await Promise.all(
+              objects
+                .slice(0, 3)
+                .map(obj =>
+                  expectAsync(
+                    getObject(obj.className, obj.id)
+                  ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
+                )
+            );
             expect(
-              (await getObject('PublicClass', object4.id)).data.get.someField
+              (await getObject(object4.className, object4.id)).data.get
+                .someField
             ).toEqual('someValue4');
+            await Promise.all(
+              objects.map(async obj =>
+                expect(
+                  (await getObject(obj.className, obj.id, {
+                    'X-Parse-Master-Key': 'test',
+                  })).data.get.someField
+                ).toEqual(obj.get('someField'))
+              )
+            );
           });
         });
       });
