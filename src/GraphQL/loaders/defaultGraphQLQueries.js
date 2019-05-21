@@ -32,16 +32,23 @@ const GET = {
       description: 'The keys of the object that will be returned',
       type: GraphQLString,
     },
+    include: {
+      description: 'The pointers of the object that will be returned',
+      type: GraphQLString,
+    },
   },
   type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
   async resolve(_source, args, context) {
-    const { className, objectId, keys } = args;
+    const { className, objectId, keys, include } = args;
 
     const { config, auth, info } = context;
 
     const options = {};
     if (keys) {
       options.keys = keys;
+    }
+    if (include) {
+      options.include = include;
     }
 
     const response = await rest.get(
