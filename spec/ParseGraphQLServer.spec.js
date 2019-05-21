@@ -659,6 +659,48 @@ describe('ParseGraphQLServer', () => {
               })).data.get.someField
             ).toEqual('someValue4');
           });
+
+          it('should not bring session token of another user', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  get(className: "_User", objectId: $objectId)
+                }
+              `,
+              variables: {
+                objectId: user2.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+            expect(result.data.get.sessionToken).toBeUndefined();
+          });
+
+          it('should bring session token of current user', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  get(className: "_User", objectId: $objectId)
+                }
+              `,
+              variables: {
+                objectId: user1.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+            expect(result.data.get.sessionToken).toBeDefined();
+          });
         });
       });
     });
