@@ -977,6 +977,33 @@ describe('ParseGraphQLServer', () => {
             });
           });
         });
+
+        describe('Find', () => {
+          it('should return class objects', async () => {
+            const obj1 = new Parse.Object('SomeClass');
+            obj1.set('someField', 'someValue1');
+            await obj1.save();
+            const obj2 = new Parse.Object('SomeClass');
+            obj2.set('someField', 'someValue1');
+            await obj2.save();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects {
+                  find(className: "SomeClass")
+                }
+              `,
+            });
+
+            result.data.find.forEach(resultObj => {
+              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
+              expect(resultObj.objectId).toEqual(obj.id);
+              expect(resultObj.someField).toEqual(obj.get('someField'));
+              expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
+              expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
+            });
+          });
+        });
       });
     });
   });
