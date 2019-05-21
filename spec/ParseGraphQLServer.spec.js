@@ -508,7 +508,7 @@ describe('ParseGraphQLServer', () => {
         it('should have Class interface type', async () => {
           const classType = (await apolloClient.query({
             query: gql`
-              query CreateResultType {
+              query ClassType {
                 __type(name: "Class") {
                   kind
                   fields {
@@ -524,6 +524,31 @@ describe('ParseGraphQLServer', () => {
             'createdAt',
             'objectId',
             'updatedAt',
+          ]);
+        });
+
+        it('should have ReadPreference enum type', async () => {
+          const readPreferenceType = (await apolloClient.query({
+            query: gql`
+              query ReadPreferenceType {
+                __type(name: "ReadPreference") {
+                  kind
+                  enumValues {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'];
+          expect(readPreferenceType.kind).toEqual('ENUM');
+          expect(
+            readPreferenceType.enumValues.map(value => value.name).sort()
+          ).toEqual([
+            'NEAREST',
+            'PRIMARY',
+            'PRIMARY_PREFERRED',
+            'SECONDARY',
+            'SECONDARY_PREFERRED',
           ]);
         });
       });
