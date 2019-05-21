@@ -601,6 +601,29 @@ describe('ParseGraphQLServer', () => {
                 ).toEqual(obj.get('someField'))
               )
             );
+            await Promise.all(
+              objects.map(async obj =>
+                expect(
+                  (await getObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user2.getSessionToken(),
+                  })).data.get.someField
+                ).toEqual(obj.get('someField'))
+              )
+            );
+            await expectAsync(
+              getObject(object2.className, object2.id, {
+                'X-Parse-Session-Token': user3.getSessionToken(),
+              })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            await Promise.all(
+              [object1, object3, object4].map(async obj =>
+                expect(
+                  (await getObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user3.getSessionToken(),
+                  })).data.get.someField
+                ).toEqual(obj.get('someField'))
+              )
+            );
           });
         });
       });
