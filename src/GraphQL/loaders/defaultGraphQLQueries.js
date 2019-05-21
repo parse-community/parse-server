@@ -36,10 +36,26 @@ const GET = {
       description: 'The pointers of the object that will be returned',
       type: GraphQLString,
     },
+    readPreference: {
+      description: 'The read preference for the main query to be executed',
+      type: defaultGraphQLTypes.READ_PREFERENCE,
+    },
+    includeReadPreference: {
+      description:
+        'The read preference for the queries to be executed to include fields',
+      type: defaultGraphQLTypes.READ_PREFERENCE,
+    },
   },
   type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
   async resolve(_source, args, context) {
-    const { className, objectId, keys, include } = args;
+    const {
+      className,
+      objectId,
+      keys,
+      include,
+      readPreference,
+      includeReadPreference,
+    } = args;
 
     const { config, auth, info } = context;
 
@@ -49,6 +65,12 @@ const GET = {
     }
     if (include) {
       options.include = include;
+    }
+    if (readPreference) {
+      options.readPreference = readPreference;
+    }
+    if (includeReadPreference) {
+      options.includeReadPreference = includeReadPreference;
     }
 
     const response = await rest.get(

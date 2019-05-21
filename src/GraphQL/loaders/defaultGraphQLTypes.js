@@ -6,6 +6,7 @@ import {
   GraphQLString,
   GraphQLObjectType,
   GraphQLInterfaceType,
+  GraphQLEnumType,
 } from 'graphql';
 
 class TypeValidationError extends Error {
@@ -214,12 +215,26 @@ const CLASS = new GraphQLInterfaceType({
   fields: CLASS_FIELDS,
 });
 
+const READ_PREFERENCE = new GraphQLEnumType({
+  name: 'ReadPreference',
+  description:
+    'The ReadPreference enum type is used in queries in order to select in which database replica the operation must run',
+  values: {
+    PRIMARY: { value: 'PRIMARY' },
+    PRIMARY_PREFERRED: { value: 'PRIMARY_PREFERRED' },
+    SECONDARY: { value: 'SECONDARY' },
+    SECONDARY_PREFERRED: { value: 'SECONDARY_PREFERRED' },
+    NEAREST: { value: 'NEAREST' },
+  },
+});
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(FILE);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(CLASS);
+  parseGraphQLSchema.graphQLTypes.push(READ_PREFERENCE);
 };
 
 export {
@@ -239,5 +254,6 @@ export {
   CREATE_RESULT,
   CLASS_FIELDS,
   CLASS,
+  READ_PREFERENCE,
   load,
 };
