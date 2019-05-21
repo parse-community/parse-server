@@ -300,6 +300,7 @@ describe('ParseGraphQLServer', () => {
 
       object3 = new Parse.Object('GraphQLClass');
       object3.set('someField', 'someValue3');
+      object3.set('pointerToUser', user5);
       await object3.save(undefined, { useMasterKey: true });
 
       object4 = new Parse.Object('PublicClass');
@@ -633,6 +634,30 @@ describe('ParseGraphQLServer', () => {
                 ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
               )
             );
+            expect(
+              (await getObject(object4.className, object4.id, {
+                'X-Parse-Session-Token': user4.getSessionToken(),
+              })).data.get.someField
+            ).toEqual('someValue4');
+            await Promise.all(
+              objects.slice(0, 2).map(obj =>
+                expectAsync(
+                  getObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user5.getSessionToken(),
+                  })
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
+              )
+            );
+            expect(
+              (await getObject(object3.className, object3.id, {
+                'X-Parse-Session-Token': user5.getSessionToken(),
+              })).data.get.someField
+            ).toEqual('someValue3');
+            expect(
+              (await getObject(object4.className, object4.id, {
+                'X-Parse-Session-Token': user5.getSessionToken(),
+              })).data.get.someField
+            ).toEqual('someValue4');
           });
         });
       });
