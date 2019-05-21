@@ -2,7 +2,18 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.0...master)
+
+### 3.4.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...3.4.0)
+- NEW: Aggregate supports group by date fields [#5538](https://github.com/parse-community/parse-server/pull/5538) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: Add Redis options for LiveQuery [#5584](https://github.com/parse-community/parse-server/pull/5584) thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: updating mixed array in Postgres [#5552](https://github.com/parse-community/parse-server/pull/5552) thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: put the timestamp back in logs that was lost after Winston upgrade [#5571](https://github.com/parse-community/parse-server/pull/5571), thanks [Steven Rowe](https://github.com/mrowe009) and [Arthur Cinader](https://github.com/acinader)
+- FIX: Validates permission before calling beforeSave [#5546](https://github.com/parse-community/parse-server/pull/5546) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Remove userSensitiveFields default value. [#5588](https://github.com/parse-community/parse-server/pull/5588) thanks to [William George](https://github.com/awgeorge)
+
+
 
 ### 3.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...3.3.0)
