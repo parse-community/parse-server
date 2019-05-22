@@ -1082,6 +1082,46 @@ describe('ParseGraphQLServer', () => {
               })).data.find.map(object => object.someField)
             ).toEqual(['someValue3']);
           });
+
+          it('should support where argument', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects($where: Object) {
+                  find(className: "GraphQLClass", where: $where)
+                }
+              `,
+              variables: {
+                where: {
+                  someField: {
+                    $in: ['someValue1', 'someValue2', 'someValue3'],
+                  },
+                  $or: [
+                    {
+                      pointerToUser: {
+                        __type: 'Pointer',
+                        className: '_User',
+                        objectId: user5.id,
+                      },
+                    },
+                    {
+                      objectId: object1.id,
+                    },
+                  ],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(
+              result.data.find.map(object => object.someField).sort()
+            ).toEqual(['someValue1', 'someValue3']);
+          });
         });
       });
     });

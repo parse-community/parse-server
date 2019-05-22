@@ -108,14 +108,20 @@ const FIND = {
       description: 'This is the class name of the objects to be found',
       type: new GraphQLNonNull(GraphQLString),
     },
+    where: {
+      description:
+        'These are the conditions that the objects need to match in order to be found',
+      type: defaultGraphQLTypes.OBJECT,
+      defaultValue: {},
+    },
   },
   type: new GraphQLNonNull(new GraphQLList(defaultGraphQLTypes.OBJECT)),
   async resolve(_source, args, context) {
-    const { className } = args;
+    const { className, where } = args;
 
     const { config, auth, info } = context;
 
-    return (await rest.find(config, auth, className, {}, {}, info.clientSDK))
+    return (await rest.find(config, auth, className, where, {}, info.clientSDK))
       .results;
   },
 };
