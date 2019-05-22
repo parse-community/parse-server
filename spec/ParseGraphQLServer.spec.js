@@ -21,7 +21,9 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
 
   beforeAll(async () => {
-    parseServer = await global.reconfigureServer();
+    parseServer = await global.reconfigureServer({
+      maxLimit: 10,
+    });
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -1121,6 +1123,53 @@ describe('ParseGraphQLServer', () => {
             expect(
               result.data.find.map(object => object.someField).sort()
             ).toEqual(['someValue1', 'someValue3']);
+          });
+
+          it('should support order, skip and limit arguments', async () => {
+            const promises = [];
+            for (let i = 0; i < 100; i++) {
+              const obj = new Parse.Object('SomeClass');
+              obj.set('someField', `someValue${i < 10 ? '0' : ''}${i}`);
+              obj.set('numberField', i % 3);
+              promises.push(obj.save());
+            }
+            await Promise.all(promises);
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects(
+                  $className: String!
+                  $where: Object
+                  $order: String
+                  $skip: Int
+                  $limit: Int
+                ) {
+                  find(
+                    className: $className
+                    where: $where
+                    order: $order
+                    skip: $skip
+                    limit: $limit
+                  )
+                }
+              `,
+              variables: {
+                className: 'SomeClass',
+                where: {
+                  someField: {
+                    $regex: '^someValue',
+                  },
+                },
+                order: '-numberField,someField',
+                skip: 4,
+                limit: 2,
+              },
+            });
+
+            expect(result.data.find.map(obj => obj.someField)).toEqual([
+              'someValue14',
+              'someValue17',
+            ]);
           });
         });
       });

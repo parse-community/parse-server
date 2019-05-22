@@ -4,6 +4,7 @@ import {
   GraphQLString,
   GraphQLList,
   GraphQLID,
+  GraphQLInt,
 } from 'graphql';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -114,15 +115,49 @@ const FIND = {
       type: defaultGraphQLTypes.OBJECT,
       defaultValue: {},
     },
+    order: {
+      description: 'This is the order in which the objects should be returned',
+      type: GraphQLString,
+    },
+    skip: {
+      description:
+        'This is the number of objects that must be skipped to return',
+      type: GraphQLInt,
+    },
+    limit: {
+      description: 'This is the limit number of objects that must be returned',
+      type: GraphQLInt,
+    },
   },
   type: new GraphQLNonNull(new GraphQLList(defaultGraphQLTypes.OBJECT)),
   async resolve(_source, args, context) {
-    const { className, where } = args;
+    const { className, where, order, skip, limit } = args;
 
     const { config, auth, info } = context;
 
-    return (await rest.find(config, auth, className, where, {}, info.clientSDK))
-      .results;
+    const options = {};
+    if (order) {
+      options.order = order;
+    }
+    if (skip) {
+      options.skip = skip;
+    }
+    if (limit || limit === 0) {
+      options.limit = limit;
+    }
+    if (config.maxLimit && options.limit > config.maxLimit) {
+      // Silently replace the limit on the query with the max configured
+      options.limit = config.maxLimit;
+    }
+
+    return (await rest.find(
+      config,
+      auth,
+      className,
+      where,
+      options,
+      info.clientSDK
+    )).results;
   },
 };
 
