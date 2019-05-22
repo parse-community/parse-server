@@ -60,20 +60,15 @@ export default class SchemaCache {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.get(this.prefix + className).then(schema => {
+    return this.cache.get(this.prefix + MAIN_SCHEMA).then(cachedSchemas => {
+      cachedSchemas = cachedSchemas || [];
+      const schema = cachedSchemas.find(cachedSchema => {
+        return cachedSchema.className === className;
+      });
       if (schema) {
         return Promise.resolve(schema);
       }
-      return this.cache.get(this.prefix + MAIN_SCHEMA).then(cachedSchemas => {
-        cachedSchemas = cachedSchemas || [];
-        schema = cachedSchemas.find(cachedSchema => {
-          return cachedSchema.className === className;
-        });
-        if (schema) {
-          return Promise.resolve(schema);
-        }
-        return Promise.resolve(null);
-      });
+      return Promise.resolve(null);
     });
   }
 

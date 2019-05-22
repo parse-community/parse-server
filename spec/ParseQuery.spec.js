@@ -6,6 +6,8 @@
 
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
+  .default;
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -31,6 +33,34 @@ describe('Parse.Query testing', () => {
         done();
       });
     });
+  });
+  fit('empty', done => done());
+
+  const cacheAdapter = new RedisCacheAdapter();
+  fit('redis test', async () => {
+    try {
+      await reconfigureServer({ cacheAdapter: cacheAdapter });
+      console.log('startTest');
+      spyOn(cacheAdapter, 'get').and.callThrough();
+      spyOn(cacheAdapter, 'del').and.callThrough();
+      const object = new TestObject();
+      object.set('foo', 'bar');
+      await object.save();
+      console.log(cacheAdapter.get.calls.count());
+      console.log(cacheAdapter.del.calls.count());
+      object.set('foo', 'barz');
+      await object.save();
+      console.log(cacheAdapter.get.calls.count());
+      console.log(cacheAdapter.del.calls.count());
+      object.set('new', 'barz');
+      await object.save();
+      console.log(cacheAdapter.get.calls.count());
+      console.log(cacheAdapter.del.calls.count());
+      await cacheAdapter.clear();
+      console.log('done');
+    } catch (e) {
+      console.log(e);
+    }
   });
 
   it('searching for null', function(done) {

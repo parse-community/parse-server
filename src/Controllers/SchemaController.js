@@ -549,29 +549,21 @@ export default class SchemaController {
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
-    let promise = Promise.resolve();
-    if (options.clearCache) {
-      promise = promise.then(() => {
-        return this._cache.clear();
-      });
-    }
     if (this.reloadDataPromise && !options.clearCache) {
       return this.reloadDataPromise;
     }
-    this.reloadDataPromise = promise
-      .then(() => {
-        return this.getAllClasses(options).then(
-          allSchemas => {
-            this.schemaData = new SchemaData(allSchemas, this.protectedFields);
-            delete this.reloadDataPromise;
-          },
-          err => {
-            this.schemaData = new SchemaData();
-            delete this.reloadDataPromise;
-            throw err;
-          }
-        );
-      })
+    this.reloadDataPromise = this.getAllClasses(options)
+      .then(
+        allSchemas => {
+          this.schemaData = new SchemaData(allSchemas, this.protectedFields);
+          delete this.reloadDataPromise;
+        },
+        err => {
+          this.schemaData = new SchemaData();
+          delete this.reloadDataPromise;
+          throw err;
+        }
+      )
       .then(() => {});
     return this.reloadDataPromise;
   }
@@ -579,26 +571,25 @@ export default class SchemaController {
   getAllClasses(
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<Array<Schema>> {
-    let promise = Promise.resolve();
     if (options.clearCache) {
-      promise = this._cache.clear();
+      return this.setAllClasses();
     }
-    return promise
-      .then(() => {
-        return this._cache.getAllClasses();
-      })
-      .then(allClasses => {
-        if (allClasses && allClasses.length && !options.clearCache) {
-          return Promise.resolve(allClasses);
-        }
-        return this._dbAdapter
-          .getAllClasses()
-          .then(allSchemas => allSchemas.map(injectDefaultSchema))
-          .then(allSchemas => {
-            return this._cache.setAllClasses(allSchemas).then(() => {
-              return allSchemas;
-            });
-          });
+    return this._cache.getAllClasses().then(allClasses => {
+      if (allClasses && allClasses.length) {
+        return Promise.resolve(allClasses);
+      }
+      return this.setAllClasses();
+    });
+  }
+
+  setAllClasses(): Promise<Array<Schema>> {
+    return this._dbAdapter
+      .getAllClasses()
+      .then(allSchemas => allSchemas.map(injectDefaultSchema))
+      .then(allSchemas => {
+        return this._cache.setAllClasses(allSchemas).then(() => {
+          return allSchemas;
+        });
       });
   }
 
@@ -625,14 +616,9 @@ export default class SchemaController {
         if (cached && !options.clearCache) {
           return Promise.resolve(cached);
         }
-        return this._dbAdapter
-          .getClass(className)
-          .then(injectDefaultSchema)
-          .then(result => {
-            return this._cache.setOneSchema(className, result).then(() => {
-              return result;
-            });
-          });
+        return this.setAllClasses().then(allSchemas => {
+          return allSchemas.find(schema => schema.className === className);
+        });
       });
     });
   }
@@ -766,7 +752,6 @@ export default class SchemaController {
                 fullNewSchema
               )
             )
-            .then(() => this.reloadData({ clearCache: true }))
             //TODO: Move this logic into the database adapter
             .then(() => {
               const schema = this.schemaData[className];
@@ -987,8 +972,6 @@ export default class SchemaController {
               `Could not add field ${fieldName}`
             );
           }
-          // Remove the cached schema
-          this._cache.clear();
           return this;
         });
     });
@@ -1282,6 +1265,9 @@ export default class SchemaController {
 
   // Checks if a given class is in the schema.
   hasClass(className: string) {
+    if (this.schemaData[className]) {
+      return Promise.resolve(this);
+    }
     return this.reloadData().then(() => !!this.schemaData[className]);
   }
 }
