@@ -1003,6 +1003,85 @@ describe('ParseGraphQLServer', () => {
               expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
             });
           });
+
+          it('should respect level permissions', async () => {
+            await prepareData();
+
+            function findObjects(className, headers) {
+              return apolloClient.query({
+                query: gql`
+                  query FindSomeObjects($className: String!) {
+                    find(className: $className)
+                  }
+                `,
+                variables: {
+                  className,
+                },
+                context: {
+                  headers,
+                },
+              });
+            }
+
+            expect(
+              (await findObjects('GraphQLClass')).data.find.map(
+                object => object.someField
+              )
+            ).toEqual([]);
+            expect(
+              (await findObjects('PublicClass')).data.find.map(
+                object => object.someField
+              )
+            ).toEqual(['someValue4']);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Master-Key': 'test',
+              })).data.find
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
+            expect(
+              (await findObjects('PublicClass', {
+                'X-Parse-Master-Key': 'test',
+              })).data.find.map(object => object.someField)
+            ).toEqual(['someValue4']);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
+              })).data.find
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
+            expect(
+              (await findObjects('PublicClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
+              })).data.find.map(object => object.someField)
+            ).toEqual(['someValue4']);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Session-Token': user2.getSessionToken(),
+              })).data.find
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue2', 'someValue3']);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Session-Token': user3.getSessionToken(),
+              })).data.find
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue3']);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Session-Token': user4.getSessionToken(),
+              })).data.find.map(object => object.someField)
+            ).toEqual([]);
+            expect(
+              (await findObjects('GraphQLClass', {
+                'X-Parse-Session-Token': user5.getSessionToken(),
+              })).data.find.map(object => object.someField)
+            ).toEqual(['someValue3']);
+          });
         });
       });
     });
