@@ -1064,9 +1064,7 @@ export default class SchemaController {
             );
           });
       })
-      .then(() => {
-        this._cache.clear();
-      });
+      .then(() => this.setAllClasses());
   }
 
   // Validates an object provided in REST format.
@@ -1272,9 +1270,6 @@ export default class SchemaController {
 
   // Checks if a given class is in the schema.
   hasClass(className: string) {
-    if (this.schemaData[className]) {
-      return Promise.resolve(this);
-    }
     return this.reloadData().then(() => !!this.schemaData[className]);
   }
 }

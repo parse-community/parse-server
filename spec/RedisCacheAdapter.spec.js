@@ -113,13 +113,13 @@ describe_only(() => {
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(spy.calls.count()).toBe(8);
+    expect(spy.calls.count()).toBe(4);
     spy.calls.reset();
 
     // Update Existing Field
     object.set('foo', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(5);
+    expect(spy.calls.count()).toBe(4);
     spy.calls.reset();
 
     // Add New Field
@@ -131,7 +131,7 @@ describe_only(() => {
     // Get Object
     let query = new Parse.Query(TestObject);
     await query.get(object.id);
-    expect(spy.calls.count()).toBe(3);
+    expect(spy.calls.count()).toBe(2);
     spy.calls.reset();
 
     // Find Object
@@ -152,7 +152,7 @@ describe_only(() => {
       objects.push(obj);
     }
     await Parse.Object.saveAll(objects);
-    expect(spy.calls.count()).toBe(136);
+    expect(spy.calls.count()).toBe(116);
     spy.calls.reset();
 
     await cacheAdapter.clear();

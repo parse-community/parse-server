@@ -33,28 +33,12 @@ describe('SchemaCache', () => {
       });
   });
 
-  it('does not return all schemas after a single schema is stored', done => {
-    const schemaCache = new SchemaCache(cacheController);
-    const schema = {
-      className: 'Class1',
-    };
-    schemaCache
-      .setOneSchema(schema.className, schema)
-      .then(() => {
-        return schemaCache.getAllClasses();
-      })
-      .then(allSchemas => {
-        expect(allSchemas).toBeNull();
-        done();
-      });
-  });
-
   it("doesn't persist cached data by default", done => {
     const schemaCache = new SchemaCache(cacheController);
     const schema = {
       className: 'Class1',
     };
-    schemaCache.setOneSchema(schema.className, schema).then(() => {
+    schemaCache.setAllClasses([schema]).then(() => {
       const anotherSchemaCache = new SchemaCache(cacheController);
       return anotherSchemaCache.getOneSchema(schema.className).then(schema => {
         expect(schema).toBeNull();
