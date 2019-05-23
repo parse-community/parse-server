@@ -139,29 +139,61 @@ const load = parseGraphQLSchema => {
           'This is the limit number of objects that must be returned',
         type: GraphQLInt,
       },
+      keys: {
+        description: 'The keys of the objects that will be returned',
+        type: GraphQLString,
+      },
+      include: {
+        description: 'The pointers of the objects that will be returned',
+        type: GraphQLString,
+      },
+      includeAll: {
+        description: 'All pointers will be returned',
+        type: GraphQLBoolean,
+      },
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
     async resolve(_source, args, context, queryInfo) {
       try {
-        const { className, where, order, skip, limit } = args;
+        const {
+          className,
+          where,
+          order,
+          skip,
+          limit,
+          keys,
+          include,
+          includeAll,
+        } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
 
         const options = {};
 
         if (selectedFields.includes('results')) {
-          if (order) {
-            options.order = order;
-          }
-          if (skip) {
-            options.skip = skip;
-          }
           if (limit || limit === 0) {
             options.limit = limit;
           }
-          if (config.maxLimit && options.limit > config.maxLimit) {
-            // Silently replace the limit on the query with the max configured
-            options.limit = config.maxLimit;
+          if (options.limit !== 0) {
+            if (order) {
+              options.order = order;
+            }
+            if (skip) {
+              options.skip = skip;
+            }
+            if (config.maxLimit && options.limit > config.maxLimit) {
+              // Silently replace the limit on the query with the max configured
+              options.limit = config.maxLimit;
+            }
+            if (keys) {
+              options.keys = keys;
+            }
+            if (includeAll === true) {
+              options.includeAll = includeAll;
+            }
+            if (!options.includeAll && include) {
+              options.include = include;
+            }
           }
         } else {
           options.limit = 0;

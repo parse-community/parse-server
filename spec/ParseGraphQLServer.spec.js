@@ -1334,6 +1334,162 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.results.length).toEqual(10);
             expect(result.data.find.count).toEqual(100);
           });
+
+          it('should support keys argument', async () => {
+            await prepareData();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject($where: Object) {
+                  find(
+                    className: "GraphQLClass"
+                    where: $where
+                    keys: "someField"
+                  ) {
+                    results
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  objectId: object3.id,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject($where: Object) {
+                  find(
+                    className: "GraphQLClass"
+                    where: $where
+                    keys: "someField,pointerToUser"
+                  ) {
+                    results
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  objectId: object3.id,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(result1.data.find.results[0].someField).toBeDefined();
+            expect(result1.data.find.results[0].pointerToUser).toBeUndefined();
+            expect(result2.data.find.results[0].someField).toBeDefined();
+            expect(result2.data.find.results[0].pointerToUser).toBeDefined();
+          });
+
+          it('should support include argument', async () => {
+            await prepareData();
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject($where: Object) {
+                  find(className: "GraphQLClass", where: $where) {
+                    results
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  objectId: object3.id,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject($where: Object) {
+                  find(
+                    className: "GraphQLClass"
+                    where: $where
+                    include: "pointerToUser"
+                  ) {
+                    results
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  objectId: object3.id,
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+
+            expect(
+              result1.data.find.results[0].pointerToUser.username
+            ).toBeUndefined();
+            expect(
+              result2.data.find.results[0].pointerToUser.username
+            ).toBeDefined();
+          });
+
+          it('should support includeAll argument', async () => {
+            const obj1 = new Parse.Object('SomeClass1');
+            obj1.set('someField1', 'someValue1');
+            const obj2 = new Parse.Object('SomeClass2');
+            obj2.set('someField2', 'someValue2');
+            const obj3 = new Parse.Object('SomeClass3');
+            obj3.set('obj1', obj1);
+            obj3.set('obj2', obj2);
+            await Promise.all([obj1.save(), obj2.save(), obj3.save()]);
+
+            const result1 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject {
+                  find(className: "SomeClass3") {
+                    results
+                  }
+                }
+              `,
+            });
+
+            const result2 = await apolloClient.query({
+              query: gql`
+                query FindSomeObject {
+                  find(className: "SomeClass3", includeAll: true) {
+                    results
+                  }
+                }
+              `,
+            });
+
+            expect(
+              result1.data.find.results[0].obj1.someField1
+            ).toBeUndefined();
+            expect(
+              result1.data.find.results[0].obj2.someField2
+            ).toBeUndefined();
+            expect(result2.data.find.results[0].obj1.someField1).toEqual(
+              'someValue1'
+            );
+            expect(result2.data.find.results[0].obj2.someField2).toEqual(
+              'someValue2'
+            );
+          });
         });
       });
     });
