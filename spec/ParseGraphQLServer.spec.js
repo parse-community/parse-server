@@ -206,7 +206,7 @@ describe('ParseGraphQLServer', () => {
     let object2;
     let object3;
     let object4;
-    const objects = [];
+    let objects = [];
 
     async function prepareData() {
       user1 = new Parse.User();
@@ -324,6 +324,7 @@ describe('ParseGraphQLServer', () => {
       object4.set('someField', 'someValue4');
       await object4.save();
 
+      objects = [];
       objects.push(object1, object2, object3, object4);
     }
 
@@ -1854,6 +1855,185 @@ describe('ParseGraphQLServer', () => {
 
             expect(obj.get('someField1')).toEqual('someField1Value2');
             expect(obj.get('someField2')).toEqual('someField2Value1');
+          });
+
+          it('should respect level permissions', async () => {
+            await prepareData();
+
+            function updateObject(className, objectId, fields, headers) {
+              return apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdateSomeObject(
+                    $className: String!
+                    $objectId: ID!
+                    $fields: Object
+                  ) {
+                    update(
+                      className: $className
+                      objectId: $objectId
+                      fields: $fields
+                    ) {
+                      updatedAt
+                    }
+                  }
+                `,
+                variables: {
+                  className,
+                  objectId,
+                  fields,
+                },
+                context: {
+                  headers,
+                },
+              });
+            }
+
+            await Promise.all(
+              objects.slice(0, 3).map(async obj => {
+                const originalFieldValue = obj.get('someField');
+                await expectAsync(
+                  updateObject(obj.className, obj.id, {
+                    someField: 'changedValue1',
+                  })
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual(originalFieldValue);
+              })
+            );
+            expect(
+              (await updateObject(object4.className, object4.id, {
+                someField: 'changedValue1',
+              })).data.update.updatedAt
+            ).toBeDefined();
+            await object4.fetch({ useMasterKey: true });
+            expect(object4.get('someField')).toEqual('changedValue1');
+            await Promise.all(
+              objects.map(async obj => {
+                expect(
+                  (await updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue2' },
+                    { 'X-Parse-Master-Key': 'test' }
+                  )).data.update.updatedAt
+                ).toBeDefined();
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual('changedValue2');
+              })
+            );
+            await Promise.all(
+              objects.map(async obj => {
+                expect(
+                  (await updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue3' },
+                    { 'X-Parse-Session-Token': user1.getSessionToken() }
+                  )).data.update.updatedAt
+                ).toBeDefined();
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual('changedValue3');
+              })
+            );
+            await Promise.all(
+              objects.map(async obj => {
+                expect(
+                  (await updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue4' },
+                    { 'X-Parse-Session-Token': user2.getSessionToken() }
+                  )).data.update.updatedAt
+                ).toBeDefined();
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual('changedValue4');
+              })
+            );
+            await Promise.all(
+              [object1, object3, object4].map(async obj => {
+                expect(
+                  (await updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue5' },
+                    { 'X-Parse-Session-Token': user3.getSessionToken() }
+                  )).data.update.updatedAt
+                ).toBeDefined();
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual('changedValue5');
+              })
+            );
+            const originalFieldValue = object2.get('someField');
+            await expectAsync(
+              updateObject(
+                object2.className,
+                object2.id,
+                { someField: 'changedValue5' },
+                { 'X-Parse-Session-Token': user3.getSessionToken() }
+              )
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            await object2.fetch({ useMasterKey: true });
+            expect(object2.get('someField')).toEqual(originalFieldValue);
+            await Promise.all(
+              objects.slice(0, 3).map(async obj => {
+                const originalFieldValue = obj.get('someField');
+                await expectAsync(
+                  updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue6' },
+                    { 'X-Parse-Session-Token': user4.getSessionToken() }
+                  )
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual(originalFieldValue);
+              })
+            );
+            expect(
+              (await updateObject(
+                object4.className,
+                object4.id,
+                { someField: 'changedValue6' },
+                { 'X-Parse-Session-Token': user4.getSessionToken() }
+              )).data.update.updatedAt
+            ).toBeDefined();
+            await object4.fetch({ useMasterKey: true });
+            expect(object4.get('someField')).toEqual('changedValue6');
+            await Promise.all(
+              objects.slice(0, 2).map(async obj => {
+                const originalFieldValue = obj.get('someField');
+                await expectAsync(
+                  updateObject(
+                    obj.className,
+                    obj.id,
+                    { someField: 'changedValue7' },
+                    { 'X-Parse-Session-Token': user5.getSessionToken() }
+                  )
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual(originalFieldValue);
+              })
+            );
+            expect(
+              (await updateObject(
+                object3.className,
+                object3.id,
+                { someField: 'changedValue7' },
+                { 'X-Parse-Session-Token': user5.getSessionToken() }
+              )).data.update.updatedAt
+            ).toBeDefined();
+            await object3.fetch({ useMasterKey: true });
+            expect(object3.get('someField')).toEqual('changedValue7');
+            expect(
+              (await updateObject(
+                object4.className,
+                object4.id,
+                { someField: 'changedValue7' },
+                { 'X-Parse-Session-Token': user5.getSessionToken() }
+              )).data.update.updatedAt
+            ).toBeDefined();
+            await object4.fetch({ useMasterKey: true });
+            expect(object4.get('someField')).toEqual('changedValue7');
           });
         });
       });
