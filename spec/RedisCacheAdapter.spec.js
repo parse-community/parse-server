@@ -153,6 +153,7 @@ describe_only(() => {
     spy.calls.reset();
 
     await cacheAdapter.clear();
+    await reconfigureServer();
   });
 });
 
