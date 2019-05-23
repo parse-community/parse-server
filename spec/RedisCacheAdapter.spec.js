@@ -110,36 +110,46 @@ describe_only(() => {
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(spy.calls.count()).toBe(18);
+    expect(spy.calls.count()).toBe(8);
     spy.calls.reset();
 
     // Update Existing Field
     object.set('foo', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(8);
+    expect(spy.calls.count()).toBe(5);
     spy.calls.reset();
 
     // Add New Field
     object.set('new', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(13);
+    expect(spy.calls.count()).toBe(6);
     spy.calls.reset();
 
     // Get Object
     let query = new Parse.Query(TestObject);
     await query.get(object.id);
-    expect(spy.calls.count()).toBe(4);
+    expect(spy.calls.count()).toBe(3);
     spy.calls.reset();
 
     // Find Object
     query = new Parse.Query(TestObject);
     await query.find();
-    expect(spy.calls.count()).toBe(4);
+    expect(spy.calls.count()).toBe(3);
     spy.calls.reset();
 
     // Delete Object
     await object.destroy();
-    expect(spy.calls.count()).toBe(5);
+    expect(spy.calls.count()).toBe(4);
+    spy.calls.reset();
+
+    const objects = [];
+    for (let i = 0; i < 100; i++) {
+      const obj = new TestObject();
+      obj.set('number', i);
+      objects.push(obj);
+    }
+    await Parse.Object.saveAll(objects);
+    expect(spy.calls.count()).toBe(141);
     spy.calls.reset();
 
     await cacheAdapter.clear();
