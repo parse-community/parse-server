@@ -569,6 +569,26 @@ describe('ParseGraphQLServer', () => {
             'SECONDARY_PREFERRED',
           ]);
         });
+
+        it('should have FindResult object type', async () => {
+          const findResultType = (await apolloClient.query({
+            query: gql`
+              query FindResultType {
+                __type(name: "FindResult") {
+                  kind
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'];
+          expect(findResultType.kind).toEqual('OBJECT');
+          expect(findResultType.fields.map(name => name.name).sort()).toEqual([
+            'count',
+            'results',
+          ]);
+        });
       });
 
       describe('Default Queries', () => {
