@@ -21,9 +21,7 @@ describe('ParseGraphQLServer', () => {
   let parseGraphQLServer;
 
   beforeAll(async () => {
-    parseServer = await global.reconfigureServer({
-      maxLimit: 10,
-    });
+    parseServer = await global.reconfigureServer({});
     parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -1300,6 +1298,41 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.data.find.results).toBeUndefined();
             expect(result.data.find.count).toEqual(2);
+          });
+
+          it('should respect max limit', async () => {
+            parseServer = await global.reconfigureServer({
+              maxLimit: 10,
+            });
+
+            const promises = [];
+            for (let i = 0; i < 100; i++) {
+              const obj = new Parse.Object('SomeClass');
+              promises.push(obj.save());
+            }
+            await Promise.all(promises);
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects($limit: Int) {
+                  find(className: "SomeClass", limit: $limit) {
+                    results
+                    count
+                  }
+                }
+              `,
+              variables: {
+                limit: 50,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(result.data.find.results.length).toEqual(10);
+            expect(result.data.find.count).toEqual(100);
           });
         });
       });
