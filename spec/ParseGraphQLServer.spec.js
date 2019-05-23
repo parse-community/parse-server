@@ -59,6 +59,22 @@ describe('ParseGraphQLServer', () => {
         parseServer.config.databaseController
       );
     });
+
+    it('should initialize parseGraphQLSchema with a log controller', async () => {
+      const loggerAdapter = {
+        log: () => {},
+        error: () => {},
+      };
+      const parseServer = await reconfigureServer({
+        loggerAdapter,
+      });
+      const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: 'graphql',
+      });
+      expect(parseGraphQLServer.parseGraphQLSchema.log.adapter).toBe(
+        loggerAdapter
+      );
+    });
   });
 
   describe('_getGraphQLOptions', () => {
@@ -1170,6 +1186,54 @@ describe('ParseGraphQLServer', () => {
               'someValue14',
               'someValue17',
             ]);
+          });
+
+          it('should support count', async () => {
+            await prepareData();
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects(
+                  $where: Object
+                  $limit: Int
+                  $count: Bool
+                ) {
+                  find(
+                    className: "GraphQLClass"
+                    where: $where
+                    limit: $limit
+                    count: $count
+                  )
+                }
+              `,
+              variables: {
+                where: {
+                  someField: {
+                    $in: ['someValue1', 'someValue2', 'someValue3'],
+                  },
+                  $or: [
+                    {
+                      pointerToUser: {
+                        __type: 'Pointer',
+                        className: '_User',
+                        objectId: user5.id,
+                      },
+                    },
+                    {
+                      objectId: object1.id,
+                    },
+                  ],
+                },
+                limit: 0,
+                count: true,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(result).toEqual({ count: 2 });
           });
         });
       });

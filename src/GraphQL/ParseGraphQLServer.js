@@ -7,10 +7,11 @@ import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
+import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 
 class ParseGraphQLServer {
-  constructor(parseServer, config = {}) {
+  constructor(parseServer, config) {
     this.parseServer =
       parseServer ||
       requiredParameter('You must provide a parseServer instance!');
@@ -19,7 +20,9 @@ class ParseGraphQLServer {
     }
     this.config = config;
     this.parseGraphQLSchema = new ParseGraphQLSchema(
-      this.parseServer.config.databaseController
+      this.parseServer.config.databaseController,
+      (this.parseServer.config && this.parseServer.config.loggerController) ||
+        defaultLogger
     );
   }
 

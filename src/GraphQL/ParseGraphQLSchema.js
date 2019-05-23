@@ -1,4 +1,6 @@
+import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import { ApolloError } from 'apollo-server-core';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -8,10 +10,11 @@ import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 
 class ParseGraphQLSchema {
-  constructor(databaseController) {
+  constructor(databaseController, log) {
     this.databaseController =
       databaseController ||
       requiredParameter('You must provide a databaseController instance!');
+    this.log = log || requiredParameter('You must provide a log instance!');
   }
 
   async load() {
@@ -91,6 +94,20 @@ class ParseGraphQLSchema {
     });
 
     return this.graphQLSchema;
+  }
+
+  handleError(error) {
+    let code, message;
+    if (error instanceof Parse.Error) {
+      this.log.error('Parse error: ', error);
+      code = error.code;
+      message = error.message;
+    } else {
+      this.log.error('Uncaught internal server error.', error, error.stack);
+      code = Parse.Error.INTERNAL_SERVER_ERROR;
+      message = 'Internal server error.';
+    }
+    throw new ApolloError(message, code);
   }
 }
 

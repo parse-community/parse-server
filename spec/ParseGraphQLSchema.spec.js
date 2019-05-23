@@ -1,3 +1,4 @@
+const defaultLogger = require('../lib/logger').default;
 const { ParseGraphQLSchema } = require('../lib/GraphQL/ParseGraphQLSchema');
 
 describe('ParseGraphQLSchema', () => {
@@ -10,15 +11,21 @@ describe('ParseGraphQLSchema', () => {
       schemaCacheTTL: 100,
     });
     databaseController = parseServer.config.databaseController;
-    parseGraphQLSchema = new ParseGraphQLSchema(databaseController);
+    parseGraphQLSchema = new ParseGraphQLSchema(
+      databaseController,
+      defaultLogger
+    );
   });
 
   describe('constructor', () => {
-    it('should require a databaseController instance', () => {
+    it('should require a databaseController and a log instance', () => {
       expect(() => new ParseGraphQLSchema()).toThrow(
         'You must provide a databaseController instance!'
       );
-      expect(() => new ParseGraphQLSchema({})).not.toThrow();
+      expect(() => new ParseGraphQLSchema({})).toThrow(
+        'You must provide a log instance!'
+      );
+      expect(() => new ParseGraphQLSchema({}, {})).not.toThrow();
     });
   });
 
