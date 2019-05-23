@@ -23,7 +23,7 @@
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anon users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
- * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to true, i.e. unique schema cache per request.
+ * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system

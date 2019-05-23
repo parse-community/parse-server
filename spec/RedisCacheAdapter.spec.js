@@ -102,7 +102,10 @@ describe_only(() => {
 
   it('redis performance test', async () => {
     const cacheAdapter = new RedisCacheAdapter();
-    await reconfigureServer({ cacheAdapter });
+    await reconfigureServer({
+      cacheAdapter,
+      enableSingleSchemaCache: true,
+    });
     await cacheAdapter.clear();
     const getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
     const putSpy = spyOn(cacheAdapter, 'put').and.callThrough();

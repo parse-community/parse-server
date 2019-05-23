@@ -149,8 +149,8 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
   :DEFAULT: false */
   directAccess: ?boolean;
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to true, i.e. unique schema cache per request.
-  :DEFAULT: true */
+  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
+  :DEFAULT: false */
   enableSingleSchemaCache: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
