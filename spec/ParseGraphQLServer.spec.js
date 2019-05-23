@@ -521,6 +521,25 @@ describe('ParseGraphQLServer', () => {
           ).toEqual(['createdAt', 'objectId']);
         });
 
+        it('should have UpdateResult object type', async () => {
+          const updateResultType = (await apolloClient.query({
+            query: gql`
+              query UpdateResultType {
+                __type(name: "UpdateResult") {
+                  kind
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'];
+          expect(updateResultType.kind).toEqual('OBJECT');
+          expect(updateResultType.fields.map(field => field.name)).toEqual([
+            'updatedAt',
+          ]);
+        });
+
         it('should have Class interface type', async () => {
           const classType = (await apolloClient.query({
             query: gql`
