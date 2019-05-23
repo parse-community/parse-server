@@ -617,7 +617,13 @@ export default class SchemaController {
           return Promise.resolve(cached);
         }
         return this.setAllClasses().then(allSchemas => {
-          return allSchemas.find(schema => schema.className === className);
+          const oneSchema = allSchemas.find(
+            schema => schema.className === className
+          );
+          if (!oneSchema) {
+            return Promise.reject(undefined);
+          }
+          return oneSchema;
         });
       });
     });

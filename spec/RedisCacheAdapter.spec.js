@@ -102,7 +102,10 @@ describe_only(() => {
 
   it('redis performance test', async () => {
     const cacheAdapter = new RedisCacheAdapter();
-    await reconfigureServer({ cacheAdapter: cacheAdapter });
+    await reconfigureServer({
+      cacheAdapter,
+      enableSingleSchemaCache: true,
+    });
     await cacheAdapter.clear();
     const spy = spyOn(cacheAdapter, 'get').and.callThrough();
 
@@ -122,7 +125,7 @@ describe_only(() => {
     // Add New Field
     object.set('new', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(6);
+    expect(spy.calls.count()).toBe(4);
     spy.calls.reset();
 
     // Get Object
@@ -134,12 +137,12 @@ describe_only(() => {
     // Find Object
     query = new Parse.Query(TestObject);
     await query.find();
-    expect(spy.calls.count()).toBe(3);
+    expect(spy.calls.count()).toBe(2);
     spy.calls.reset();
 
     // Delete Object
     await object.destroy();
-    expect(spy.calls.count()).toBe(4);
+    expect(spy.calls.count()).toBe(3);
     spy.calls.reset();
 
     const objects = [];
@@ -149,7 +152,7 @@ describe_only(() => {
       objects.push(obj);
     }
     await Parse.Object.saveAll(objects);
-    expect(spy.calls.count()).toBe(141);
+    expect(spy.calls.count()).toBe(136);
     spy.calls.reset();
 
     await cacheAdapter.clear();
