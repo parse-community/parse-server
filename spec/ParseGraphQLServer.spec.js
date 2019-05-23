@@ -2036,6 +2036,30 @@ describe('ParseGraphQLServer', () => {
             expect(object4.get('someField')).toEqual('changedValue7');
           });
         });
+
+        describe('Delete', () => {
+          it('should return a boolean confirming the operation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation DeleteSomeObject($objectId: ID!) {
+                  delete(className: "SomeClass", objectId: $objectId)
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+              },
+            });
+
+            expect(result.data.delete).toEqual(true);
+
+            await expectAsync(
+              obj.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+          });
+        });
       });
     });
   });

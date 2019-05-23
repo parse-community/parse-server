@@ -106,7 +106,6 @@ const load = parseGraphQLSchema => {
     async resolve(_source, args, context) {
       try {
         const { className, objectId } = args;
-
         const { config, auth, info } = context;
 
         await rest.del(config, auth, className, objectId, info.clientSDK);
