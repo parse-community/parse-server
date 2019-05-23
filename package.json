@@ -33,6 +33,7 @@
     "express": "4.16.4",
     "follow-redirects": "1.7.0",
     "graphql": "14.2.1",
+    "graphql-list-fields": "^2.0.2",
     "graphql-upload": "8.0.5",
     "intersect": "1.0.1",
     "lodash": "4.17.11",

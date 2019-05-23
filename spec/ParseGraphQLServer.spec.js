@@ -1220,16 +1220,11 @@ describe('ParseGraphQLServer', () => {
             await prepareData();
             const result = await apolloClient.query({
               query: gql`
-                query FindSomeObjects(
-                  $where: Object
-                  $limit: Int
-                  $count: Boolean
-                ) {
+                query FindSomeObjects($where: Object, $limit: Int) {
                   find(
                     className: "GraphQLClass"
                     where: $where
                     limit: $limit
-                    count: $count
                   ) {
                     results
                     count
@@ -1255,7 +1250,6 @@ describe('ParseGraphQLServer', () => {
                   ],
                 },
                 limit: 0,
-                count: true,
               },
               context: {
                 headers: {
@@ -1265,6 +1259,46 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.data.find.results).toEqual([]);
+            expect(result.data.find.count).toEqual(2);
+          });
+
+          it('should only count', async () => {
+            await prepareData();
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects($where: Object) {
+                  find(className: "GraphQLClass", where: $where) {
+                    count
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  someField: {
+                    $in: ['someValue1', 'someValue2', 'someValue3'],
+                  },
+                  $or: [
+                    {
+                      pointerToUser: {
+                        __type: 'Pointer',
+                        className: '_User',
+                        objectId: user5.id,
+                      },
+                    },
+                    {
+                      objectId: object1.id,
+                    },
+                  ],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(result.data.find.results).toBeUndefined();
             expect(result.data.find.count).toEqual(2);
           });
         });

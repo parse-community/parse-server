@@ -5,6 +5,7 @@ import {
   GraphQLID,
   GraphQLInt,
 } from 'graphql';
+import getFieldNames from 'graphql-list-fields';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
@@ -138,35 +139,36 @@ const load = parseGraphQLSchema => {
           'This is the limit number of objects that must be returned',
         type: GraphQLInt,
       },
-      count: {
-        description:
-          'This is a flag that can be set to request the count of objects that match the where constraints',
-        type: GraphQLBoolean,
-      },
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
-    async resolve(_source, args, context) {
+    async resolve(_source, args, context, queryInfo) {
       try {
-        const { className, where, order, skip, limit, count } = args;
-
+        const { className, where, order, skip, limit } = args;
         const { config, auth, info } = context;
+        const selectedFields = getFieldNames(queryInfo);
 
         const options = {};
-        if (order) {
-          options.order = order;
+
+        if (selectedFields.includes('results')) {
+          if (order) {
+            options.order = order;
+          }
+          if (skip) {
+            options.skip = skip;
+          }
+          if (limit || limit === 0) {
+            options.limit = limit;
+          }
+          if (config.maxLimit && options.limit > config.maxLimit) {
+            // Silently replace the limit on the query with the max configured
+            options.limit = config.maxLimit;
+          }
+        } else {
+          options.limit = 0;
         }
-        if (skip) {
-          options.skip = skip;
-        }
-        if (limit || limit === 0) {
-          options.limit = limit;
-        }
-        if (config.maxLimit && options.limit > config.maxLimit) {
-          // Silently replace the limit on the query with the max configured
-          options.limit = config.maxLimit;
-        }
-        if (count === true) {
-          options.count = count;
+
+        if (selectedFields.includes('count')) {
+          options.count = true;
         }
 
         return await rest.find(
