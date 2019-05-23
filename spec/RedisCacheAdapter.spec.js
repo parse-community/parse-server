@@ -99,6 +99,51 @@ describe_only(() => {
       .then(value => expect(value).not.toEqual(null))
       .then(done);
   });
+
+  it('redis performance test', async () => {
+    const cacheAdapter = new RedisCacheAdapter();
+    await reconfigureServer({ cacheAdapter: cacheAdapter });
+    await cacheAdapter.clear();
+    const spy = spyOn(cacheAdapter, 'get').and.callThrough();
+
+    // New Object
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+    expect(spy.calls.count()).toBe(18);
+    spy.calls.reset();
+
+    // Update Existing Field
+    object.set('foo', 'barz');
+    await object.save();
+    expect(spy.calls.count()).toBe(8);
+    spy.calls.reset();
+
+    // Add New Field
+    object.set('new', 'barz');
+    await object.save();
+    expect(spy.calls.count()).toBe(13);
+    spy.calls.reset();
+
+    // Get Object
+    let query = new Parse.Query(TestObject);
+    await query.get(object.id);
+    expect(spy.calls.count()).toBe(4);
+    spy.calls.reset();
+
+    // Find Object
+    query = new Parse.Query(TestObject);
+    await query.find();
+    expect(spy.calls.count()).toBe(4);
+    spy.calls.reset();
+
+    // Delete Object
+    await object.destroy();
+    expect(spy.calls.count()).toBe(5);
+    spy.calls.reset();
+
+    await cacheAdapter.clear();
+  });
 });
 
 describe_only(() => {
