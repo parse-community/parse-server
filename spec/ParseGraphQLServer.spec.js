@@ -1730,6 +1730,76 @@ describe('ParseGraphQLServer', () => {
             );
             expect(obj.get('someField')).toEqual('someValue');
           });
+
+          it('should respect level permissions', async () => {
+            await prepareData();
+
+            function createObject(className, headers) {
+              return apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateSomeObject($className: String!) {
+                    create(className: $className) {
+                      objectId
+                      createdAt
+                    }
+                  }
+                `,
+                variables: {
+                  className,
+                },
+                context: {
+                  headers,
+                },
+              });
+            }
+
+            await expectAsync(createObject('GraphQLClass')).toBeRejectedWith(
+              jasmine.stringMatching(
+                'Permission denied for action create on class GraphQLClass'
+              )
+            );
+            await expectAsync(createObject('PublicClass')).toBeResolved();
+            await expectAsync(
+              createObject('GraphQLClass', { 'X-Parse-Master-Key': 'test' })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('PublicClass', { 'X-Parse-Master-Key': 'test' })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
+              })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user1.getSessionToken(),
+              })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user2.getSessionToken(),
+              })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user2.getSessionToken(),
+              })
+            ).toBeResolved();
+            await expectAsync(
+              createObject('GraphQLClass', {
+                'X-Parse-Session-Token': user4.getSessionToken(),
+              })
+            ).toBeRejectedWith(
+              jasmine.stringMatching(
+                'Permission denied for action create on class GraphQLClass'
+              )
+            );
+            await expectAsync(
+              createObject('PublicClass', {
+                'X-Parse-Session-Token': user4.getSessionToken(),
+              })
+            ).toBeResolved();
+          });
         });
       });
     });
