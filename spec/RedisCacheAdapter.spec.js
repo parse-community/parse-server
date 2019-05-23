@@ -107,43 +107,56 @@ describe_only(() => {
       enableSingleSchemaCache: true,
     });
     await cacheAdapter.clear();
-    const spy = spyOn(cacheAdapter, 'get').and.callThrough();
+    const getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
+    const putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
 
     // New Object
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(spy.calls.count()).toBe(4);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(3);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     // Update Existing Field
     object.set('foo', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(4);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(0);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     // Add New Field
     object.set('new', 'barz');
     await object.save();
-    expect(spy.calls.count()).toBe(4);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(1);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     // Get Object
     let query = new Parse.Query(TestObject);
     await query.get(object.id);
-    expect(spy.calls.count()).toBe(2);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(0);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     // Find Object
     query = new Parse.Query(TestObject);
     await query.find();
-    expect(spy.calls.count()).toBe(2);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(0);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     // Delete Object
     await object.destroy();
-    expect(spy.calls.count()).toBe(3);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(0);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     const objects = [];
     for (let i = 0; i < 100; i++) {
@@ -152,8 +165,10 @@ describe_only(() => {
       objects.push(obj);
     }
     await Parse.Object.saveAll(objects);
-    expect(spy.calls.count()).toBe(116);
-    spy.calls.reset();
+    expect(getSpy.calls.count()).toBe(116);
+    expect(putSpy.calls.count()).toBe(20);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
 
     await cacheAdapter.clear();
     await reconfigureServer();
