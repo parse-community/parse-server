@@ -197,12 +197,23 @@ const CREATE_RESULT = new GraphQLObjectType({
   fields: CREATE_RESULT_FIELDS,
 });
 
-const CLASS_FIELDS = {
-  ...CREATE_RESULT_FIELDS,
+const UPDATE_RESULT_FIELDS = {
   updatedAt: {
     description: 'This is the date in which the object was las updated.',
     type: new GraphQLNonNull(DATE),
   },
+};
+
+const UPDATE_RESULT = new GraphQLObjectType({
+  name: 'UpdateResult',
+  description:
+    'The UpdateResult object type is used in the update mutations to return the data of the recent updated object.',
+  fields: UPDATE_RESULT_FIELDS,
+});
+
+const CLASS_FIELDS = {
+  ...CREATE_RESULT_FIELDS,
+  ...UPDATE_RESULT_FIELDS,
   ACL: {
     description: "This is the object's access control list.",
     type: new GraphQLNonNull(OBJECT),
@@ -251,6 +262,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(FILE);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
+  parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(CLASS);
   parseGraphQLSchema.graphQLTypes.push(READ_PREFERENCE);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
@@ -271,6 +283,8 @@ export {
   FILE,
   CREATE_RESULT_FIELDS,
   CREATE_RESULT,
+  UPDATE_RESULT_FIELDS,
+  UPDATE_RESULT,
   CLASS_FIELDS,
   CLASS,
   FIND_RESULT,

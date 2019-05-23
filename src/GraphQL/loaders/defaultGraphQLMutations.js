@@ -53,27 +53,24 @@ const UPDATE = {
       type: defaultGraphQLTypes.OBJECT,
     },
   },
-  type: new GraphQLNonNull(GraphQLBoolean),
+  type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
   async resolve(_source, args, context) {
     const { className, objectId } = args;
     let { fields } = args;
+    const { config, auth, info } = context;
 
     if (!fields) {
       fields = {};
     }
 
-    const { config, auth, info } = context;
-
-    await rest.update(
+    return (await rest.update(
       config,
       auth,
       className,
       { objectId },
       fields,
       info.clientSDK
-    );
-
-    return true;
+    )).response;
   },
 };
 
