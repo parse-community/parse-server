@@ -758,6 +758,7 @@ export default class SchemaController {
                 fullNewSchema
               )
             )
+            .then(() => this.reloadData({ clearCache: true }))
             //TODO: Move this logic into the database adapter
             .then(() => {
               const schema = this.schemaData[className];

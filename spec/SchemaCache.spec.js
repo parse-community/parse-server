@@ -68,7 +68,7 @@ describe('SchemaCache', () => {
     const schema = {
       className: 'Class1',
     };
-    schemaCache.setOneSchema(schema.className, schema).then(() => {
+    schemaCache.setAllClasses([schema]).then(() => {
       const anotherSchemaCache = new SchemaCache(cacheController, 5000, true);
       return anotherSchemaCache.getOneSchema(schema.className).then(schema => {
         expect(schema).not.toBeNull();
