@@ -1490,6 +1490,213 @@ describe('ParseGraphQLServer', () => {
               'someValue2'
             );
           });
+
+          describe_only_db('mongo')('read preferences', () => {
+            it('should read from primary by default', async () => {
+              await prepareData();
+
+              const databaseAdapter =
+                parseServer.config.databaseController.adapter;
+              spyOn(
+                databaseAdapter.database.serverConfig,
+                'cursor'
+              ).and.callThrough();
+
+              await apolloClient.query({
+                query: gql`
+                  query FindSomeObjects {
+                    find(className: "GraphQLClass", include: "pointerToUser") {
+                      results
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Session-Token': user1.getSessionToken(),
+                  },
+                },
+              });
+
+              let foundGraphQLClassReadPreference = false;
+              let foundUserClassReadPreference = false;
+              databaseAdapter.database.serverConfig.cursor.calls
+                .all()
+                .forEach(call => {
+                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                    foundGraphQLClassReadPreference = true;
+                    expect(call.args[2].readPreference).toBe(null);
+                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    foundUserClassReadPreference = true;
+                    expect(call.args[2].readPreference).toBe(null);
+                  }
+                });
+
+              expect(foundGraphQLClassReadPreference).toBe(true);
+              expect(foundUserClassReadPreference).toBe(true);
+            });
+
+            it('should support readPreference argument', async () => {
+              await prepareData();
+
+              const databaseAdapter =
+                parseServer.config.databaseController.adapter;
+              spyOn(
+                databaseAdapter.database.serverConfig,
+                'cursor'
+              ).and.callThrough();
+
+              await apolloClient.query({
+                query: gql`
+                  query FindSomeObjects {
+                    find(
+                      className: "GraphQLClass"
+                      include: "pointerToUser"
+                      readPreference: SECONDARY
+                    ) {
+                      results
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              let foundGraphQLClassReadPreference = false;
+              let foundUserClassReadPreference = false;
+              databaseAdapter.database.serverConfig.cursor.calls
+                .all()
+                .forEach(call => {
+                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                    foundGraphQLClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.SECONDARY
+                    );
+                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    foundUserClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.SECONDARY
+                    );
+                  }
+                });
+
+              expect(foundGraphQLClassReadPreference).toBe(true);
+              expect(foundUserClassReadPreference).toBe(true);
+            });
+
+            it('should support includeReadPreference argument', async () => {
+              await prepareData();
+
+              const databaseAdapter =
+                parseServer.config.databaseController.adapter;
+              spyOn(
+                databaseAdapter.database.serverConfig,
+                'cursor'
+              ).and.callThrough();
+
+              await apolloClient.query({
+                query: gql`
+                  query FindSomeObjects {
+                    find(
+                      className: "GraphQLClass"
+                      include: "pointerToUser"
+                      readPreference: SECONDARY
+                      includeReadPreference: NEAREST
+                    ) {
+                      results
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              let foundGraphQLClassReadPreference = false;
+              let foundUserClassReadPreference = false;
+              databaseAdapter.database.serverConfig.cursor.calls
+                .all()
+                .forEach(call => {
+                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                    foundGraphQLClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.SECONDARY
+                    );
+                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    foundUserClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.NEAREST
+                    );
+                  }
+                });
+
+              expect(foundGraphQLClassReadPreference).toBe(true);
+              expect(foundUserClassReadPreference).toBe(true);
+            });
+
+            it('should support subqueryReadPreference argument', async () => {
+              await prepareData();
+
+              const databaseAdapter =
+                parseServer.config.databaseController.adapter;
+              spyOn(
+                databaseAdapter.database.serverConfig,
+                'cursor'
+              ).and.callThrough();
+
+              await apolloClient.query({
+                query: gql`
+                  query FindSomeObjects($where: Object) {
+                    find(
+                      className: "GraphQLClass"
+                      where: $where
+                      readPreference: SECONDARY
+                      subqueryReadPreference: NEAREST
+                    ) {
+                      count
+                    }
+                  }
+                `,
+                variables: {
+                  where: {
+                    pointerToUser: {
+                      $inQuery: { where: {}, className: '_User' },
+                    },
+                  },
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              let foundGraphQLClassReadPreference = false;
+              let foundUserClassReadPreference = false;
+              databaseAdapter.database.serverConfig.cursor.calls
+                .all()
+                .forEach(call => {
+                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                    foundGraphQLClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.SECONDARY
+                    );
+                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    foundUserClassReadPreference = true;
+                    expect(call.args[2].readPreference.preference).toBe(
+                      ReadPreference.NEAREST
+                    );
+                  }
+                });
+
+              expect(foundGraphQLClassReadPreference).toBe(true);
+              expect(foundUserClassReadPreference).toBe(true);
+            });
+          });
         });
       });
     });

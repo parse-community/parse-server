@@ -11,14 +11,14 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
 const load = parseGraphQLSchema => {
-  const health = {
+  parseGraphQLSchema.graphQLQueries.health = {
     description:
       'The health query can be used to check if the server is up and running.',
     type: new GraphQLNonNull(GraphQLBoolean),
     resolve: () => true,
   };
 
-  const get = {
+  parseGraphQLSchema.graphQLQueries.get = {
     description:
       'The get query can be used to get an object of a certain class by its objectId.',
     args: {
@@ -68,12 +68,12 @@ const load = parseGraphQLSchema => {
         }
         if (include) {
           options.include = include;
+          if (includeReadPreference) {
+            options.includeReadPreference = includeReadPreference;
+          }
         }
         if (readPreference) {
           options.readPreference = readPreference;
-        }
-        if (includeReadPreference) {
-          options.includeReadPreference = includeReadPreference;
         }
 
         const response = await rest.get(
@@ -110,7 +110,7 @@ const load = parseGraphQLSchema => {
     },
   };
 
-  const find = {
+  parseGraphQLSchema.graphQLQueries.find = {
     description:
       'The find query can be used to find objects of a certain class.',
     args: {
@@ -151,6 +151,20 @@ const load = parseGraphQLSchema => {
         description: 'All pointers will be returned',
         type: GraphQLBoolean,
       },
+      readPreference: {
+        description: 'The read preference for the main query to be executed',
+        type: defaultGraphQLTypes.READ_PREFERENCE,
+      },
+      includeReadPreference: {
+        description:
+          'The read preference for the queries to be executed to include fields',
+        type: defaultGraphQLTypes.READ_PREFERENCE,
+      },
+      subqueryReadPreference: {
+        description:
+          'The read preference for the subqueries that may be required',
+        type: defaultGraphQLTypes.READ_PREFERENCE,
+      },
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
     async resolve(_source, args, context, queryInfo) {
@@ -164,6 +178,9 @@ const load = parseGraphQLSchema => {
           keys,
           include,
           includeAll,
+          readPreference,
+          includeReadPreference,
+          subqueryReadPreference,
         } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
@@ -194,6 +211,12 @@ const load = parseGraphQLSchema => {
             if (!options.includeAll && include) {
               options.include = include;
             }
+            if (
+              (options.includeAll || options.include) &&
+              includeReadPreference
+            ) {
+              options.includeReadPreference = includeReadPreference;
+            }
           }
         } else {
           options.limit = 0;
@@ -201,6 +224,13 @@ const load = parseGraphQLSchema => {
 
         if (selectedFields.includes('count')) {
           options.count = true;
+        }
+
+        if (readPreference) {
+          options.readPreference = readPreference;
+        }
+        if (Object.keys(where).length > 0 && subqueryReadPreference) {
+          options.subqueryReadPreference = subqueryReadPreference;
         }
 
         return await rest.find(
@@ -216,10 +246,6 @@ const load = parseGraphQLSchema => {
       }
     },
   };
-
-  parseGraphQLSchema.graphQLQueries.health = health;
-  parseGraphQLSchema.graphQLQueries.get = get;
-  parseGraphQLSchema.graphQLQueries.find = find;
 };
 
 export { load };
