@@ -133,9 +133,9 @@ module.exports.ParseServerOptions = {
   enableSingleSchemaCache: {
     env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
     help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
+      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to true, i.e. unique schema cache per request.',
     action: parsers.booleanParser,
-    default: false,
+    default: true,
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
