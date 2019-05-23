@@ -1008,12 +1008,14 @@ describe('ParseGraphQLServer', () => {
             const result = await apolloClient.query({
               query: gql`
                 query FindSomeObjects {
-                  find(className: "SomeClass")
+                  find(className: "SomeClass") {
+                    results
+                  }
                 }
               `,
             });
 
-            result.data.find.forEach(resultObj => {
+            result.data.find.results.forEach(resultObj => {
               const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
               expect(resultObj.objectId).toEqual(obj.id);
               expect(resultObj.someField).toEqual(obj.get('someField'));
@@ -1029,7 +1031,9 @@ describe('ParseGraphQLServer', () => {
               return apolloClient.query({
                 query: gql`
                   query FindSomeObjects($className: String!) {
-                    find(className: $className)
+                    find(className: $className) {
+                      results
+                    }
                   }
                 `,
                 variables: {
@@ -1042,62 +1046,62 @@ describe('ParseGraphQLServer', () => {
             }
 
             expect(
-              (await findObjects('GraphQLClass')).data.find.map(
+              (await findObjects('GraphQLClass')).data.find.results.map(
                 object => object.someField
               )
             ).toEqual([]);
             expect(
-              (await findObjects('PublicClass')).data.find.map(
+              (await findObjects('PublicClass')).data.find.results.map(
                 object => object.someField
               )
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Master-Key': 'test',
-              })).data.find
+              })).data.find.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('PublicClass', {
                 'X-Parse-Master-Key': 'test',
-              })).data.find.map(object => object.someField)
+              })).data.find.results.map(object => object.someField)
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find
+              })).data.find.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('PublicClass', {
                 'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find.map(object => object.someField)
+              })).data.find.results.map(object => object.someField)
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.find
+              })).data.find.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user3.getSessionToken(),
-              })).data.find
+              })).data.find.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user4.getSessionToken(),
-              })).data.find.map(object => object.someField)
+              })).data.find.results.map(object => object.someField)
             ).toEqual([]);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.find.map(object => object.someField)
+              })).data.find.results.map(object => object.someField)
             ).toEqual(['someValue3']);
           });
 
@@ -1107,7 +1111,9 @@ describe('ParseGraphQLServer', () => {
             const result = await apolloClient.query({
               query: gql`
                 query FindSomeObjects($where: Object) {
-                  find(className: "GraphQLClass", where: $where)
+                  find(className: "GraphQLClass", where: $where) {
+                    results
+                  }
                 }
               `,
               variables: {
@@ -1137,7 +1143,7 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.find.map(object => object.someField).sort()
+              result.data.find.results.map(object => object.someField).sort()
             ).toEqual(['someValue1', 'someValue3']);
           });
 
@@ -1166,7 +1172,9 @@ describe('ParseGraphQLServer', () => {
                     order: $order
                     skip: $skip
                     limit: $limit
-                  )
+                  ) {
+                    results
+                  }
                 }
               `,
               variables: {
@@ -1182,7 +1190,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.find.map(obj => obj.someField)).toEqual([
+            expect(result.data.find.results.map(obj => obj.someField)).toEqual([
               'someValue14',
               'someValue17',
             ]);
@@ -1195,14 +1203,17 @@ describe('ParseGraphQLServer', () => {
                 query FindSomeObjects(
                   $where: Object
                   $limit: Int
-                  $count: Bool
+                  $count: Boolean
                 ) {
                   find(
                     className: "GraphQLClass"
                     where: $where
                     limit: $limit
                     count: $count
-                  )
+                  ) {
+                    results
+                    count
+                  }
                 }
               `,
               variables: {
@@ -1233,7 +1244,8 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result).toEqual({ count: 2 });
+            expect(result.data.find.results).toEqual([]);
+            expect(result.data.find.count).toEqual(2);
           });
         });
       });

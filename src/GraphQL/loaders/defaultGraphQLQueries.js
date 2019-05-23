@@ -2,7 +2,6 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLString,
-  GraphQLList,
   GraphQLID,
   GraphQLInt,
 } from 'graphql';
@@ -145,7 +144,7 @@ const load = parseGraphQLSchema => {
         type: GraphQLBoolean,
       },
     },
-    type: new GraphQLNonNull(new GraphQLList(defaultGraphQLTypes.OBJECT)),
+    type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
     async resolve(_source, args, context) {
       try {
         const { className, where, order, skip, limit, count } = args;
@@ -170,14 +169,14 @@ const load = parseGraphQLSchema => {
           options.count = count;
         }
 
-        return (await rest.find(
+        return await rest.find(
           config,
           auth,
           className,
           where,
           options,
           info.clientSDK
-        )).results;
+        );
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }

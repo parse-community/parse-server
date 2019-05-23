@@ -7,6 +7,7 @@ import {
   GraphQLObjectType,
   GraphQLInterfaceType,
   GraphQLEnumType,
+  GraphQLInt,
 } from 'graphql';
 
 class TypeValidationError extends Error {
@@ -228,6 +229,23 @@ const READ_PREFERENCE = new GraphQLEnumType({
   },
 });
 
+const FIND_RESULT = new GraphQLObjectType({
+  name: 'FindResult',
+  description:
+    'The FindResult object type is used in the find queries to return the data of the matched objects.',
+  fields: {
+    results: {
+      description: 'This is the objects returned by the query',
+      type: new GraphQLNonNull(OBJECT),
+    },
+    count: {
+      description:
+        'This is the total matched objecs count that is returned when the count flag is set',
+      type: GraphQLInt,
+    },
+  },
+});
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
   parseGraphQLSchema.graphQLTypes.push(DATE);
@@ -235,6 +253,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(CLASS);
   parseGraphQLSchema.graphQLTypes.push(READ_PREFERENCE);
+  parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
 };
 
 export {
@@ -254,6 +273,7 @@ export {
   CREATE_RESULT,
   CLASS_FIELDS,
   CLASS,
+  FIND_RESULT,
   READ_PREFERENCE,
   load,
 };
