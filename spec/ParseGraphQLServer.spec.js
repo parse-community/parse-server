@@ -2140,7 +2140,7 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Data Types', () => {
-        fit('should support String', async () => {
+        it('should support String', async () => {
           const someFieldValue = 'some string';
 
           const createResult = await apolloClient.mutate({
@@ -2172,6 +2172,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
+          expect(typeof getResult.data.get.someField).toEqual('string');
           expect(getResult.data.get.someField).toEqual(someFieldValue);
         });
       });
