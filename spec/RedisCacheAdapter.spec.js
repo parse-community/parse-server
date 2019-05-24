@@ -101,155 +101,6 @@ describe_only(() => {
       .then(value => expect(value).not.toEqual(null))
       .then(done);
   });
-
-  it('redis performance test', async () => {
-    const cacheAdapter = new RedisCacheAdapter();
-    await reconfigureServer({
-      cacheAdapter,
-      enableSingleSchemaCache: true,
-    });
-    await cacheAdapter.clear();
-    const getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
-    const putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
-
-    // New Object
-    const object = new TestObject();
-    object.set('foo', 'bar');
-    await object.save();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(3);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Update Existing Field
-    object.set('foo', 'barz');
-    await object.save();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(0);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Add New Field
-    object.set('new', 'barz');
-    await object.save();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(1);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Get Object
-    let query = new Parse.Query(TestObject);
-    await query.get(object.id);
-    expect(getSpy.calls.count()).toBe(2);
-    expect(putSpy.calls.count()).toBe(0);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Find Object
-    query = new Parse.Query(TestObject);
-    await query.find();
-    expect(getSpy.calls.count()).toBe(2);
-    expect(putSpy.calls.count()).toBe(0);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Existing Object Mutiple Fields
-    object.set({
-      dateField: new Date(),
-      arrayField: [],
-      numberField: 1,
-      stringField: 'hello',
-      booleanField: true,
-    });
-    await object.save();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(1);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Delete Object
-    await object.destroy();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(0);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    const objects = [];
-    for (let i = 0; i < 100; i++) {
-      const obj = new TestObject();
-      obj.set('number', i);
-      objects.push(obj);
-    }
-    await Parse.Object.saveAll(objects);
-    expect(getSpy.calls.count()).toBe(111);
-    expect(putSpy.calls.count()).toBe(20);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // New Object Mutiple Fields
-    const container = new Container({
-      dateField: new Date(),
-      arrayField: [],
-      numberField: 1,
-      stringField: 'hello',
-      booleanField: true,
-      pointerField: object,
-    });
-    await container.save();
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(2);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    // Update Class Schema
-    const config = Config.get('test');
-    const schema = await config.database.loadSchema();
-    await schema.reloadData();
-
-    const levelPermissions = {
-      find: { '*': true },
-      get: { '*': true },
-      create: { '*': true },
-      update: { '*': true },
-      delete: { '*': true },
-      addField: { '*': true },
-      protectedFields: { '*': [] },
-    };
-
-    await schema.updateClass(
-      'Container',
-      {
-        fooOne: { type: 'Number' },
-        fooTwo: { type: 'Array' },
-        fooThree: { type: 'Date' },
-        fooFour: { type: 'Object' },
-        fooFive: { type: 'Relation', targetClass: '_User' },
-        fooSix: { type: 'String' },
-        fooSeven: { type: 'Object' },
-        fooEight: { type: 'String' },
-        fooNine: { type: 'String' },
-        fooTeen: { type: 'Number' },
-        fooEleven: { type: 'String' },
-        fooTwelve: { type: 'String' },
-        fooThirteen: { type: 'String' },
-        fooFourteen: { type: 'String' },
-        fooFifteen: { type: 'String' },
-        fooSixteen: { type: 'String' },
-        fooEighteen: { type: 'String' },
-        fooNineteen: { type: 'String' },
-      },
-      levelPermissions,
-      {},
-      config.database
-    );
-    expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(2);
-    getSpy.calls.reset();
-    putSpy.calls.reset();
-
-    await cacheAdapter.clear();
-    await reconfigureServer();
-  });
 });
 
 describe_only(() => {
@@ -312,5 +163,194 @@ describe_only(() => {
     Promise.all([key1Promise, key2Promise])
       .then(() => expect(getQueueCount(cache)).toEqual(0))
       .then(done);
+  });
+});
+
+describe_only(() => {
+  return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
+})('Redis Performance', function() {
+  const cacheAdapter = new RedisCacheAdapter();
+  let getSpy;
+  let putSpy;
+
+  function setUp() {
+    return reconfigureServer({
+      cacheAdapter,
+      enableSingleSchemaCache: true,
+    });
+  }
+
+  beforeEach(async () => {
+    await cacheAdapter.clear();
+    getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
+    putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
+  });
+
+  it('test new object', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(3);
+  });
+
+  it('test new object multiple fields', async () => {
+    await setUp();
+    const container = new Container({
+      dateField: new Date(),
+      arrayField: [],
+      numberField: 1,
+      stringField: 'hello',
+      booleanField: true,
+    });
+    await container.save();
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(3);
+  });
+
+  it('test update existing fields', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    object.set('foo', 'barz');
+    await object.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test add new field to existing object', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    object.set('new', 'barz');
+    await object.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(1);
+  });
+
+  it('test add multiple fields to existing object', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    object.set({
+      dateField: new Date(),
+      arrayField: [],
+      numberField: 1,
+      stringField: 'hello',
+      booleanField: true,
+    });
+    await object.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(1);
+  });
+
+  it('test query', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const query = new Parse.Query(TestObject);
+    await query.get(object.id);
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test delete object', async () => {
+    await setUp();
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    await object.destroy();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test saveAll', async () => {
+    await setUp();
+    const objects = [];
+    for (let i = 0; i < 100; i++) {
+      const object = new TestObject();
+      object.set('number', i);
+      objects.push(object);
+    }
+    await Parse.Object.saveAll(objects);
+    expect(getSpy.calls.count()).toBe(112);
+    expect(putSpy.calls.count()).toBe(41);
+  });
+
+  it('test schema update class', async () => {
+    await setUp();
+    const container = new Container();
+    await container.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const config = Config.get('test');
+    const schema = await config.database.loadSchema();
+    await schema.reloadData();
+
+    const levelPermissions = {
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+
+    await schema.updateClass(
+      'Container',
+      {
+        fooOne: { type: 'Number' },
+        fooTwo: { type: 'Array' },
+        fooThree: { type: 'Date' },
+        fooFour: { type: 'Object' },
+        fooFive: { type: 'Relation', targetClass: '_User' },
+        fooSix: { type: 'String' },
+        fooSeven: { type: 'Object' },
+        fooEight: { type: 'String' },
+        fooNine: { type: 'String' },
+        fooTeen: { type: 'Number' },
+        fooEleven: { type: 'String' },
+        fooTwelve: { type: 'String' },
+        fooThirteen: { type: 'String' },
+        fooFourteen: { type: 'String' },
+        fooFifteen: { type: 'String' },
+        fooSixteen: { type: 'String' },
+        fooEighteen: { type: 'String' },
+        fooNineteen: { type: 'String' },
+      },
+      levelPermissions,
+      {},
+      config.database
+    );
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(2);
   });
 });

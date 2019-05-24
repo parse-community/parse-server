@@ -307,8 +307,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
     try {
       await adapter.getClass('UnknownClass');
-    } catch (e) {
-      expect(e).toBeUndefined();
+    } catch (schema) {
+      expect(schema).toBeUndefined();
     }
   });
 });

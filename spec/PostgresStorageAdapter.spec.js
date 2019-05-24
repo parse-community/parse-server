@@ -139,8 +139,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await adapter.createClass('MyClass', schema);
     try {
       await adapter.getClass('UnknownClass');
-    } catch (e) {
-      expect(e).toBeUndefined();
+    } catch (schema) {
+      expect(schema).toBeUndefined();
     }
   });
 });
