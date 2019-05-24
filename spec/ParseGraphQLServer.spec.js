@@ -2175,6 +2175,162 @@ describe('ParseGraphQLServer', () => {
           expect(typeof getResult.data.get.someField).toEqual('string');
           expect(getResult.data.get.someField).toEqual(someFieldValue);
         });
+
+        xit('should support ID string', async () => {});
+
+        it('should support Int numbers', async () => {
+          const someFieldValue = 123;
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                create(className: "SomeClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('Number');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                get(className: "SomeClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.someField).toEqual('number');
+          expect(getResult.data.get.someField).toEqual(someFieldValue);
+        });
+
+        it('should support Float numbers', async () => {
+          const someFieldValue = 123.4;
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                create(className: "SomeClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('Number');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                get(className: "SomeClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.someField).toEqual('number');
+          expect(getResult.data.get.someField).toEqual(someFieldValue);
+        });
+
+        it('should support Boolean', async () => {
+          const someFieldValueTrue = true;
+          const someFieldValueFalse = false;
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                create(className: "SomeClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someFieldTrue: someFieldValueTrue,
+                someFieldFalse: someFieldValueFalse,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someFieldTrue.type).toEqual('Boolean');
+          expect(schema.fields.someFieldFalse.type).toEqual('Boolean');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                get(className: "SomeClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.someFieldTrue).toEqual('boolean');
+          expect(typeof getResult.data.get.someFieldFalse).toEqual('boolean');
+          expect(getResult.data.get.someFieldTrue).toEqual(true);
+          expect(getResult.data.get.someFieldFalse).toEqual(false);
+        });
+
+        it('should support Date', async () => {
+          const someFieldValue = {
+            __type: 'Date',
+            iso: new Date().toISOString(),
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                create(className: "SomeClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('Date');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                get(className: "SomeClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.someField).toEqual('object');
+          expect(getResult.data.get.someField).toEqual(someFieldValue);
+        });
+
+        xit('should support null values', async () => {});
       });
     });
   });
