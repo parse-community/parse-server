@@ -2330,6 +2330,55 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.get.someField).toEqual(someFieldValue);
         });
 
+        it('should support pointer values', async () => {
+          const parent = new Parse.Object('ParentClass');
+          parent.set('someParentField', 'some parent value');
+          await parent.save();
+
+          const pointerFieldValue = {
+            __type: 'Pointer',
+            className: 'ParentClass',
+            objectId: parent.id,
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateChildObject($fields: Object) {
+                create(className: "ChildClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                pointerField: pointerFieldValue,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('ChildClass').get();
+          expect(schema.fields.pointerField.type).toEqual('Pointer');
+          expect(schema.fields.pointerField.targetClass).toEqual('ParentClass');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetChildObject($objectId: ID!) {
+                get(className: "ChildClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.pointerField).toEqual('object');
+          expect(getResult.data.get.pointerField).toEqual(pointerFieldValue);
+        });
+
+        xit('should support object values', async () => {});
+
+        xit('should support array values', async () => {});
+
         xit('should support null values', async () => {});
       });
     });
