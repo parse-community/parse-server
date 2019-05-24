@@ -173,21 +173,17 @@ describe_only(() => {
   let getSpy;
   let putSpy;
 
-  function setUp() {
-    return reconfigureServer({
-      cacheAdapter,
-      enableSingleSchemaCache: true,
-    });
-  }
-
   beforeEach(async () => {
     await cacheAdapter.clear();
     getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
     putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
+    await reconfigureServer({
+      cacheAdapter,
+      enableSingleSchemaCache: true,
+    });
   });
 
   it('test new object', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -196,7 +192,6 @@ describe_only(() => {
   });
 
   it('test new object multiple fields', async () => {
-    await setUp();
     const container = new Container({
       dateField: new Date(),
       arrayField: [],
@@ -210,7 +205,6 @@ describe_only(() => {
   });
 
   it('test update existing fields', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -225,7 +219,6 @@ describe_only(() => {
   });
 
   it('test add new field to existing object', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -240,7 +233,6 @@ describe_only(() => {
   });
 
   it('test add multiple fields to existing object', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -261,7 +253,6 @@ describe_only(() => {
   });
 
   it('test query', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -276,7 +267,6 @@ describe_only(() => {
   });
 
   it('test delete object', async () => {
-    await setUp();
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
@@ -290,7 +280,6 @@ describe_only(() => {
   });
 
   it('test schema update class', async () => {
-    await setUp();
     const container = new Container();
     await container.save();
 
