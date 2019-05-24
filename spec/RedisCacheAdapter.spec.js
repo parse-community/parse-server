@@ -114,7 +114,7 @@ describe_only(() => {
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(getSpy.calls.count()).toBe(4);
+    expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(3);
     getSpy.calls.reset();
     putSpy.calls.reset();
@@ -122,7 +122,7 @@ describe_only(() => {
     // Update Existing Field
     object.set('foo', 'barz');
     await object.save();
-    expect(getSpy.calls.count()).toBe(4);
+    expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(0);
     getSpy.calls.reset();
     putSpy.calls.reset();
@@ -130,7 +130,7 @@ describe_only(() => {
     // Add New Field
     object.set('new', 'barz');
     await object.save();
-    expect(getSpy.calls.count()).toBe(4);
+    expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(1);
     getSpy.calls.reset();
     putSpy.calls.reset();
@@ -165,8 +165,23 @@ describe_only(() => {
       objects.push(obj);
     }
     await Parse.Object.saveAll(objects);
-    expect(getSpy.calls.count()).toBe(116);
+    expect(getSpy.calls.count()).toBe(111);
     expect(putSpy.calls.count()).toBe(20);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    // New Object Mutiple Fields
+    const container = new Container({
+      dateField: new Date(),
+      arrayField: [],
+      numberField: 1,
+      stringField: 'hello',
+      booleanField: true,
+      pointerField: object,
+    });
+    await container.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(2);
     getSpy.calls.reset();
     putSpy.calls.reset();
 

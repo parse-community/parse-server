@@ -909,6 +909,70 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
+  ensureFieldExists(
+    className: string,
+    fieldName: string,
+    type: string | SchemaField
+  ) {
+    if (fieldName.indexOf('.') > 0) {
+      // subdocument key (x.y) => ok if x is of type 'object'
+      fieldName = fieldName.split('.')[0];
+      type = 'Object';
+    }
+    if (!fieldNameIsValid(fieldName)) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_KEY_NAME,
+        `Invalid field name: ${fieldName}.`
+      );
+    }
+
+    // If someone tries to create a new field with null/undefined as the value, return;
+    if (!type) {
+      return undefined;
+    }
+
+    const expectedType = this.getExpectedType(className, fieldName);
+    if (typeof type === 'string') {
+      type = { type };
+    }
+
+    if (expectedType) {
+      if (!dbTypeMatchesObjectType(expectedType, type)) {
+        throw new Parse.Error(
+          Parse.Error.INCORRECT_TYPE,
+          `schema mismatch for ${className}.${fieldName}; expected ${typeToString(
+            expectedType
+          )} but got ${typeToString(type)}`
+        );
+      }
+      return undefined;
+    }
+
+    return this._dbAdapter
+      .addFieldIfNotExists(className, fieldName, type)
+      .catch(error => {
+        if (error.code == Parse.Error.INCORRECT_TYPE) {
+          // Make sure that we throw errors when it is appropriate to do so.
+          throw error;
+        }
+        // The update failed. This can be okay - it might have been a race
+        // condition where another client updated the schema in the same
+        // way that we wanted to. So, just reload the schema
+        return Promise.resolve();
+      })
+      .then(() => {
+        return {
+          className,
+          fieldName,
+          type,
+        };
+      });
+  }
+
+  // Returns a promise that resolves successfully to the new schema
+  // object if the provided className-fieldName-type tuple is valid.
+  // The className must already be validated.
+  // If 'freeze' is true, refuse to update the schema for this field.
   enforceFieldExists(
     className: string,
     fieldName: string,
@@ -1064,15 +1128,17 @@ export default class SchemaController {
             );
           });
       })
-      .then(() => this.setAllClasses());
+      .then(() => this._cache.clear());
   }
 
   // Validates an object provided in REST format.
   // Returns a promise that resolves to the new schema if this object is
   // valid.
-  validateObject(className: string, object: any, query: any) {
+  async validateObject(className: string, object: any, query: any) {
     let geocount = 0;
-    let promise = this.enforceClassExists(className);
+    const schema = await this.enforceClassExists(className);
+    const promises = [];
+
     for (const fieldName in object) {
       if (object[fieldName] === undefined) {
         continue;
@@ -1084,14 +1150,12 @@ export default class SchemaController {
       if (geocount > 1) {
         // Make sure all field validation operations run before we return.
         // If not - we are continuing to run logic, but already provided response from the server.
-        return promise.then(() => {
-          return Promise.reject(
-            new Parse.Error(
-              Parse.Error.INCORRECT_TYPE,
-              'there can only be one geopoint field in a class'
-            )
-          );
-        });
+        return Promise.reject(
+          new Parse.Error(
+            Parse.Error.INCORRECT_TYPE,
+            'there can only be one geopoint field in a class'
+          )
+        );
       }
       if (!expected) {
         continue;
@@ -1100,13 +1164,38 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-
-      promise = promise.then(schema =>
-        schema.enforceFieldExists(className, fieldName, expected)
-      );
+      promises.push(schema.ensureFieldExists(className, fieldName, expected));
     }
-    promise = thenValidateRequiredColumns(promise, className, object, query);
-    return promise;
+    const results = await Promise.all(promises);
+    const toValidate = results.filter(result => !!result);
+
+    if (toValidate.length !== 0) {
+      await this.reloadData({ clearCache: true });
+    }
+
+    for (let i = 0; i < toValidate.length; i += 1) {
+      const value = toValidate[i];
+      // Ensure that the schema now validates
+      const expectedType = this.getExpectedType(
+        value.className,
+        value.fieldName
+      );
+      if (typeof value.type === 'string') {
+        value.type = { type: value.type };
+      }
+      if (!expectedType || !dbTypeMatchesObjectType(expectedType, value.type)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `Could not add field ${value.fieldName}`
+        );
+      }
+    }
+    return thenValidateRequiredColumns(
+      Promise.resolve(schema),
+      className,
+      object,
+      query
+    );
   }
 
   // Validates that all the properties are set for the object
