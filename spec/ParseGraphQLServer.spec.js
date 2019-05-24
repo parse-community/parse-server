@@ -2138,6 +2138,43 @@ describe('ParseGraphQLServer', () => {
           });
         });
       });
+
+      describe('Data Types', () => {
+        fit('should support String', async () => {
+          const someFieldValue = 'some string';
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                create(className: "SomeClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('String');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                get(className: "SomeClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(getResult.data.get.someField).toEqual(someFieldValue);
+        });
+      });
     });
   });
 });
