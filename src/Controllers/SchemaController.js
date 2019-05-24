@@ -587,9 +587,14 @@ export default class SchemaController {
       .getAllClasses()
       .then(allSchemas => allSchemas.map(injectDefaultSchema))
       .then(allSchemas => {
-        return this._cache.setAllClasses(allSchemas).then(() => {
-          return allSchemas;
-        });
+        /* eslint-disable no-console */
+        this._cache
+          .setAllClasses(allSchemas)
+          .catch(error =>
+            console.error('Error saving schema to cache:', error)
+          );
+        /* eslint-enable no-console */
+        return allSchemas;
       });
   }
 
