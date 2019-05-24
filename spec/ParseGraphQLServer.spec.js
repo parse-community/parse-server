@@ -2059,6 +2059,83 @@ describe('ParseGraphQLServer', () => {
               obj.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
+
+          it('should respect level permissions', async () => {
+            await prepareData();
+
+            function deleteObject(className, objectId, headers) {
+              return apolloClient.mutate({
+                mutation: gql`
+                  mutation DeleteSomeObject(
+                    $className: String!
+                    $objectId: ID!
+                  ) {
+                    delete(className: $className, objectId: $objectId)
+                  }
+                `,
+                variables: {
+                  className,
+                  objectId,
+                },
+                context: {
+                  headers,
+                },
+              });
+            }
+
+            await Promise.all(
+              objects.slice(0, 3).map(async obj => {
+                const originalFieldValue = obj.get('someField');
+                await expectAsync(
+                  deleteObject(obj.className, obj.id)
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual(originalFieldValue);
+              })
+            );
+            await Promise.all(
+              objects.slice(0, 3).map(async obj => {
+                const originalFieldValue = obj.get('someField');
+                await expectAsync(
+                  deleteObject(obj.className, obj.id, {
+                    'X-Parse-Session-Token': user4.getSessionToken(),
+                  })
+                ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+                await obj.fetch({ useMasterKey: true });
+                expect(obj.get('someField')).toEqual(originalFieldValue);
+              })
+            );
+            expect(
+              (await deleteObject(object4.className, object4.id)).data.delete
+            ).toEqual(true);
+            await expectAsync(
+              object4.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            expect(
+              (await deleteObject(object1.className, object1.id, {
+                'X-Parse-Master-Key': 'test',
+              })).data.delete
+            ).toEqual(true);
+            await expectAsync(
+              object1.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            expect(
+              (await deleteObject(object2.className, object2.id, {
+                'X-Parse-Session-Token': user2.getSessionToken(),
+              })).data.delete
+            ).toEqual(true);
+            await expectAsync(
+              object2.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+            expect(
+              (await deleteObject(object3.className, object3.id, {
+                'X-Parse-Session-Token': user5.getSessionToken(),
+              })).data.delete
+            ).toEqual(true);
+            await expectAsync(
+              object3.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+          });
         });
       });
     });
