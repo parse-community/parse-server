@@ -114,6 +114,35 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       })
       .catch(done);
   });
+
+  it('getClass if exists', async () => {
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
+    await adapter.createClass('MyClass', schema);
+    const myClassSchema = await adapter.getClass('MyClass');
+    expect(myClassSchema).toBeDefined();
+  });
+
+  it('getClass if not exists', async () => {
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
+    await adapter.createClass('MyClass', schema);
+    try {
+      await adapter.getClass('UnknownClass');
+    } catch (e) {
+      expect(e).toBeUndefined();
+    }
+  });
 });
 
 describe_only_db('postgres')('PostgresStorageAdapter shutdown', () => {

@@ -60,4 +60,18 @@ describe('SchemaCache', () => {
       });
     });
   });
+
+  it('should not store if ttl is null', async () => {
+    const ttl = null;
+    const schemaCache = new SchemaCache(cacheController, ttl);
+    expect(await schemaCache.getAllClasses()).toBeNull();
+    expect(await schemaCache.setAllClasses()).toBeNull();
+    expect(await schemaCache.getOneSchema()).toBeNull();
+  });
+
+  it('should convert string ttl to number', async () => {
+    const ttl = '5000';
+    const schemaCache = new SchemaCache(cacheController, ttl);
+    expect(schemaCache.ttl).toBe(5000);
+  });
 });

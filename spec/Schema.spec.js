@@ -1734,4 +1734,29 @@ describe('Class Level Permissions for requiredAuth', () => {
         }
       );
   });
+
+  it('should not throw on null field types', async () => {
+    const schema = await config.database.loadSchema();
+    const result = await schema.enforceFieldExists(
+      'NewClass',
+      'fieldName',
+      null
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('ensureFields should throw when schema is not set', async () => {
+    const schema = await config.database.loadSchema();
+    try {
+      await schema.ensureFields([
+        {
+          className: 'NewClass',
+          fieldName: 'fieldName',
+          type: 'String',
+        },
+      ]);
+    } catch (e) {
+      expect(e.message).toBe('Could not add field fieldName');
+    }
+  });
 });

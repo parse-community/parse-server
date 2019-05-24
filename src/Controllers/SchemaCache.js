@@ -54,7 +54,6 @@ export default class SchemaCache {
   }
 
   clear() {
-    // That clears all caches...
     return this.cache.del(this.prefix + MAIN_SCHEMA);
   }
 }
