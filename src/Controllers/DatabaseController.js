@@ -844,7 +844,6 @@ class DatabaseController {
           : schemaController.validatePermission(className, aclGroup, 'create')
         )
           .then(() => schemaController.enforceClassExists(className))
-          .then(() => schemaController.reloadData())
           .then(() => schemaController.getOneSchema(className, true))
           .then(schema => {
             transformAuthData(className, object, schema);
