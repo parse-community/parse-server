@@ -289,19 +289,6 @@ describe_only(() => {
     expect(putSpy.calls.count()).toBe(0);
   });
 
-  it('test saveAll', async () => {
-    await setUp();
-    const objects = [];
-    for (let i = 0; i < 100; i++) {
-      const object = new TestObject();
-      object.set('number', i);
-      objects.push(object);
-    }
-    await Parse.Object.saveAll(objects);
-    expect(getSpy.calls.count()).toBe(112);
-    expect(putSpy.calls.count()).toBe(41);
-  });
-
   it('test schema update class', async () => {
     await setUp();
     const container = new Container();
