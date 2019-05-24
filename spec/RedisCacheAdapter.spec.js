@@ -1,5 +1,7 @@
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
   .default;
+const Config = require('../lib/Config');
+
 /*
 To run this test part of the complete suite
 set PARSE_SERVER_TEST_CACHE='redis'
@@ -151,6 +153,20 @@ describe_only(() => {
     getSpy.calls.reset();
     putSpy.calls.reset();
 
+    // Existing Object Mutiple Fields
+    object.set({
+      dateField: new Date(),
+      arrayField: [],
+      numberField: 1,
+      stringField: 'hello',
+      booleanField: true,
+    });
+    await object.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(1);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
     // Delete Object
     await object.destroy();
     expect(getSpy.calls.count()).toBe(3);
@@ -180,6 +196,52 @@ describe_only(() => {
       pointerField: object,
     });
     await container.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(2);
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    // Update Class Schema
+    const config = Config.get('test');
+    const schema = await config.database.loadSchema();
+    await schema.reloadData();
+
+    const levelPermissions = {
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': [] },
+    };
+
+    await schema.updateClass(
+      'Container',
+      {
+        fooOne: { type: 'Number' },
+        fooTwo: { type: 'Array' },
+        fooThree: { type: 'Date' },
+        fooFour: { type: 'Object' },
+        fooFive: { type: 'Relation', targetClass: '_User' },
+        fooSix: { type: 'String' },
+        fooSeven: { type: 'Object' },
+        fooEight: { type: 'String' },
+        fooNine: { type: 'String' },
+        fooTeen: { type: 'Number' },
+        fooEleven: { type: 'String' },
+        fooTwelve: { type: 'String' },
+        fooThirteen: { type: 'String' },
+        fooFourteen: { type: 'String' },
+        fooFifteen: { type: 'String' },
+        fooSixteen: { type: 'String' },
+        fooEighteen: { type: 'String' },
+        fooNineteen: { type: 'String' },
+      },
+      levelPermissions,
+      {},
+      config.database
+    );
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(2);
     getSpy.calls.reset();

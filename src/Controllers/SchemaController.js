@@ -737,6 +737,7 @@ export default class SchemaController {
         if (deletedFields.length > 0) {
           deletePromise = this.deleteFields(deletedFields, className, database);
         }
+        let enforceFields = [];
         return (
           deletePromise // Delete Everything
             .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
@@ -747,9 +748,10 @@ export default class SchemaController {
               });
               return Promise.all(promises);
             })
-            .then(() =>
-              this.setPermissions(className, classLevelPermissions, newSchema)
-            )
+            .then(results => {
+              enforceFields = results.filter(result => !!result);
+              this.setPermissions(className, classLevelPermissions, newSchema);
+            })
             .then(() =>
               this._dbAdapter.setIndexesWithSchemaFormat(
                 className,
@@ -761,6 +763,7 @@ export default class SchemaController {
             .then(() => this.reloadData({ clearCache: true }))
             //TODO: Move this logic into the database adapter
             .then(() => {
+              this.ensureFields(enforceFields);
               const schema = this.schemaData[className];
               const reloadedSchema: Schema = {
                 className: className,
@@ -909,7 +912,7 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  ensureFieldExists(
+  enforceFieldExists(
     className: string,
     fieldName: string,
     type: string | SchemaField
@@ -969,83 +972,21 @@ export default class SchemaController {
       });
   }
 
-  // Returns a promise that resolves successfully to the new schema
-  // object if the provided className-fieldName-type tuple is valid.
-  // The className must already be validated.
-  // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(
-    className: string,
-    fieldName: string,
-    type: string | SchemaField
-  ) {
-    if (fieldName.indexOf('.') > 0) {
-      // subdocument key (x.y) => ok if x is of type 'object'
-      fieldName = fieldName.split('.')[0];
-      type = 'Object';
-    }
-    if (!fieldNameIsValid(fieldName)) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        `Invalid field name: ${fieldName}.`
-      );
-    }
-
-    // If someone tries to create a new field with null/undefined as the value, return;
-    if (!type) {
-      return Promise.resolve(this);
-    }
-
-    return this.reloadData().then(() => {
+  ensureFields(fields: any) {
+    for (let i = 0; i < fields.length; i += 1) {
+      const { className, fieldName } = fields[i];
+      let { type } = fields[i];
       const expectedType = this.getExpectedType(className, fieldName);
       if (typeof type === 'string') {
-        type = { type };
+        type = { type: type };
       }
-
-      if (expectedType) {
-        if (!dbTypeMatchesObjectType(expectedType, type)) {
-          throw new Parse.Error(
-            Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${typeToString(
-              expectedType
-            )} but got ${typeToString(type)}`
-          );
-        }
-        return this;
+      if (!expectedType || !dbTypeMatchesObjectType(expectedType, type)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `Could not add field ${fieldName}`
+        );
       }
-
-      return this._dbAdapter
-        .addFieldIfNotExists(className, fieldName, type)
-        .then(
-          () => {
-            // The update succeeded. Reload the schema
-            return this.reloadData({ clearCache: true });
-          },
-          error => {
-            if (error.code == Parse.Error.INCORRECT_TYPE) {
-              // Make sure that we throw errors when it is appropriate to do so.
-              throw error;
-            }
-            // The update failed. This can be okay - it might have been a race
-            // condition where another client updated the schema in the same
-            // way that we wanted to. So, just reload the schema
-            return this.reloadData({ clearCache: true });
-          }
-        )
-        .then(() => {
-          // Ensure that the schema now validates
-          const expectedType = this.getExpectedType(className, fieldName);
-          if (typeof type === 'string') {
-            type = { type };
-          }
-          if (!expectedType || !dbTypeMatchesObjectType(expectedType, type)) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
-              `Could not add field ${fieldName}`
-            );
-          }
-          return this;
-        });
-    });
+    }
   }
 
   // maintain compatibility
@@ -1164,38 +1105,18 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.ensureFieldExists(className, fieldName, expected));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected));
     }
     const results = await Promise.all(promises);
-    const toValidate = results.filter(result => !!result);
+    const enforceFields = results.filter(result => !!result);
 
-    if (toValidate.length !== 0) {
+    if (enforceFields.length !== 0) {
       await this.reloadData({ clearCache: true });
     }
+    this.ensureFields(enforceFields);
 
-    for (let i = 0; i < toValidate.length; i += 1) {
-      const value = toValidate[i];
-      // Ensure that the schema now validates
-      const expectedType = this.getExpectedType(
-        value.className,
-        value.fieldName
-      );
-      if (typeof value.type === 'string') {
-        value.type = { type: value.type };
-      }
-      if (!expectedType || !dbTypeMatchesObjectType(expectedType, value.type)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `Could not add field ${value.fieldName}`
-        );
-      }
-    }
-    return thenValidateRequiredColumns(
-      Promise.resolve(schema),
-      className,
-      object,
-      query
-    );
+    const promise = Promise.resolve(schema);
+    return thenValidateRequiredColumns(promise, className, object, query);
   }
 
   // Validates that all the properties are set for the object
