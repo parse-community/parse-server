@@ -2330,9 +2330,12 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.get.someField).toEqual(someFieldValue);
         });
 
+        xit('should support createdAt', async () => {});
+
+        xit('should support updatedAt', async () => {});
+
         it('should support pointer values', async () => {
           const parent = new Parse.Object('ParentClass');
-          parent.set('someParentField', 'some parent value');
           await parent.save();
 
           const pointerFieldValue = {
@@ -2375,9 +2378,118 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.get.pointerField).toEqual(pointerFieldValue);
         });
 
+        it('should support relation', async () => {
+          const someObject1 = new Parse.Object('SomeClass');
+          await someObject1.save();
+          const someObject2 = new Parse.Object('SomeClass');
+          await someObject2.save();
+
+          const pointerValue1 = {
+            __type: 'Pointer',
+            className: 'SomeClass',
+            objectId: someObject1.id,
+          };
+          const pointerValue2 = {
+            __type: 'Pointer',
+            className: 'SomeClass',
+            objectId: someObject2.id,
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateMainObject($fields: Object) {
+                create(className: "MainClass", fields: $fields) {
+                  objectId
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                relationField: {
+                  __op: 'Batch',
+                  ops: [
+                    {
+                      __op: 'AddRelation',
+                      objects: [pointerValue1],
+                    },
+                    {
+                      __op: 'AddRelation',
+                      objects: [pointerValue2],
+                    },
+                  ],
+                },
+              },
+            },
+          });
+
+          const schema = await new Parse.Schema('MainClass').get();
+          expect(schema.fields.relationField.type).toEqual('Relation');
+          expect(schema.fields.relationField.targetClass).toEqual('SomeClass');
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetMainObject($objectId: ID!) {
+                get(className: "MainClass", objectId: $objectId)
+              }
+            `,
+            variables: {
+              objectId: createResult.data.create.objectId,
+            },
+          });
+
+          expect(typeof getResult.data.get.relationField).toEqual('object');
+          expect(getResult.data.get.relationField).toEqual({
+            __type: 'Relation',
+            className: 'SomeClass',
+          });
+
+          const findResult = await apolloClient.query({
+            query: gql`
+              query FindSomeObjects($where: Object) {
+                find(className: "SomeClass", where: $where) {
+                  results
+                }
+              }
+            `,
+            variables: {
+              where: {
+                $relatedTo: {
+                  object: {
+                    __type: 'Pointer',
+                    className: 'MainClass',
+                    objectId: createResult.data.create.objectId,
+                  },
+                  key: 'relationField',
+                },
+              },
+            },
+          });
+
+          const compare = (obj1, obj2) =>
+            obj1.createdAt > obj2.createdAt ? 1 : -1;
+
+          expect(findResult.data.find.results).toEqual(jasmine.any(Array));
+          expect(findResult.data.find.results.sort(compare)).toEqual(
+            [
+              {
+                objectId: someObject1.id,
+                createdAt: someObject1.createdAt.toISOString(),
+                updatedAt: someObject1.updatedAt.toISOString(),
+              },
+              {
+                objectId: someObject2.id,
+                createdAt: someObject2.createdAt.toISOString(),
+                updatedAt: someObject2.updatedAt.toISOString(),
+              },
+            ].sort(compare)
+          );
+        });
+
         xit('should support object values', async () => {});
 
         xit('should support array values', async () => {});
+
+        xit('should support ACL', async () => {});
 
         xit('should support null values', async () => {});
       });
