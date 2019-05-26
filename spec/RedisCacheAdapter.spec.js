@@ -218,7 +218,7 @@ describe_only(() => {
     expect(putSpy.calls.count()).toBe(0);
   });
 
-  it('test saveAll', async () => {
+  it('test saveAll / destroyAll', async () => {
     const object = new TestObject();
     await object.save();
 
@@ -234,6 +234,38 @@ describe_only(() => {
     await Parse.Object.saveAll(objects);
     expect(getSpy.calls.count()).toBe(11);
     expect(putSpy.calls.count()).toBe(10);
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    await Parse.Object.destroyAll(objects);
+    expect(getSpy.calls.count()).toBe(11);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test saveAll / destroyAll batch', async () => {
+    const object = new TestObject();
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
+      const object = new TestObject();
+      object.set('number', i);
+      objects.push(object);
+    }
+    await Parse.Object.saveAll(objects, { batchSize: 5 });
+    expect(getSpy.calls.count()).toBe(12);
+    expect(putSpy.calls.count()).toBe(5);
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    await Parse.Object.destroyAll(objects, { batchSize: 5 });
+    expect(getSpy.calls.count()).toBe(12);
+    expect(putSpy.calls.count()).toBe(0);
   });
 
   it('test add new field to existing object', async () => {
@@ -293,7 +325,7 @@ describe_only(() => {
     putSpy.calls.reset();
 
     await object.destroy();
-    expect(getSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(0);
   });
 

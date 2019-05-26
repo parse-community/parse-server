@@ -753,12 +753,17 @@ class DatabaseController {
   destroy(
     className: string,
     query: any,
-    { acl }: QueryOptions = {}
+    { acl }: QueryOptions = {},
+    validSchemaController: any
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
 
-    return this.loadSchema().then(schemaController => {
+    const loadSchemaPromise = validSchemaController
+      ? Promise.resolve(validSchemaController)
+      : this.loadSchema();
+
+    return loadSchemaPromise.then(schemaController => {
       return (isMaster
         ? Promise.resolve()
         : schemaController.validatePermission(className, aclGroup, 'delete')
