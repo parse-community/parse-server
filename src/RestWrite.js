@@ -69,6 +69,10 @@ function RestWrite(
 
   // The timestamp we'll use for this whole operation
   this.updatedAt = Parse._encode(new Date()).iso;
+
+  // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
+  // Once set the schemaData should be immutable
+  this.validSchemaController = null;
 }
 
 // A convenient method to perform all the steps of processing the
@@ -101,7 +105,8 @@ RestWrite.prototype.execute = function() {
     .then(() => {
       return this.validateSchema();
     })
-    .then(() => {
+    .then(schemaController => {
+      this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
     })
     .then(() => {
@@ -1391,7 +1396,13 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database
-      .create(this.className, this.data, this.runOptions)
+      .create(
+        this.className,
+        this.data,
+        this.runOptions,
+        false,
+        this.validSchemaController
+      )
       .catch(error => {
         if (
           this.className !== '_User' ||

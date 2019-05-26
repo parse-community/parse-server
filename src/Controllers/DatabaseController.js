@@ -820,7 +820,8 @@ class DatabaseController {
     className: string,
     object: any,
     { acl }: QueryOptions = {},
-    validateOnly: boolean = false
+    validateOnly: boolean = false,
+    validSchemaController: any
   ): Promise<any> {
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
@@ -836,8 +837,11 @@ class DatabaseController {
       null,
       object
     );
+    const loadSchemaPromise = validSchemaController
+      ? Promise.resolve(validSchemaController)
+      : this.loadSchema();
     return this.validateClassName(className)
-      .then(() => this.loadSchema())
+      .then(() => loadSchemaPromise)
       .then(schemaController => {
         return (isMaster
           ? Promise.resolve()

@@ -175,20 +175,20 @@ describe_only(() => {
 
   beforeEach(async () => {
     await cacheAdapter.clear();
-    getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
-    putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
     await reconfigureServer({
       cacheAdapter,
       enableSingleSchemaCache: true,
     });
+    getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
+    putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
   });
 
   it('test new object', async () => {
     const object = new TestObject();
     object.set('foo', 'bar');
     await object.save();
-    expect(getSpy.calls.count()).toBe(4);
-    expect(putSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test new object multiple fields', async () => {
@@ -200,8 +200,8 @@ describe_only(() => {
       booleanField: true,
     });
     await container.save();
-    expect(getSpy.calls.count()).toBe(4);
-    expect(putSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test update existing fields', async () => {
@@ -216,6 +216,24 @@ describe_only(() => {
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test saveAll', async () => {
+    const object = new TestObject();
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const objects = [];
+    for (let i = 0; i < 10; i++) {
+      const object = new TestObject();
+      object.set('number', i);
+      objects.push(object);
+    }
+    await Parse.Object.saveAll(objects);
+    expect(getSpy.calls.count()).toBe(11);
+    expect(putSpy.calls.count()).toBe(10);
   });
 
   it('test add new field to existing object', async () => {
