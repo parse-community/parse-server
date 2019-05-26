@@ -181,31 +181,26 @@ describe('rest query', () => {
       );
   });
 
-  it('query existent class when disabled client class creation', done => {
+  it('query existent class when disabled client class creation', async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    config.database
-      .loadSchema()
-      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-      .then(actualSchema => {
-        expect(actualSchema.className).toEqual('ClientClassCreation');
-        return rest.find(
-          customConfig,
-          auth.nobody(customConfig),
-          'ClientClassCreation',
-          {}
-        );
-      })
-      .then(
-        result => {
-          expect(result.results.length).toEqual(0);
-          done();
-        },
-        () => {
-          fail('Should not throw error');
-        }
-      );
+    const schema = await config.database.loadSchema();
+    const actualSchema = await schema.addClassIfNotExists(
+      'ClientClassCreation',
+      {}
+    );
+    expect(actualSchema.className).toEqual('ClientClassCreation');
+
+    await schema.reloadData({ clearCache: true });
+    // Should not throw
+    const result = await rest.find(
+      customConfig,
+      auth.nobody(customConfig),
+      'ClientClassCreation',
+      {}
+    );
+    expect(result.results.length).toEqual(0);
   });
 
   it('query with wrongly encoded parameter', done => {
