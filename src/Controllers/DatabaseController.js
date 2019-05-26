@@ -477,7 +477,8 @@ class DatabaseController {
     update: any,
     { acl, many, upsert }: FullQueryOptions = {},
     skipSanitization: boolean = false,
-    validateOnly: boolean = false
+    validateOnly: boolean = false,
+    validSchemaController: any
   ): Promise<any> {
     const originalQuery = query;
     const originalUpdate = update;
@@ -486,7 +487,12 @@ class DatabaseController {
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
-    return this.loadSchema().then(schemaController => {
+
+    const loadSchemaPromise = validSchemaController
+      ? Promise.resolve(validSchemaController)
+      : this.loadSchema();
+
+    return loadSchemaPromise.then(schemaController => {
       return (isMaster
         ? Promise.resolve()
         : schemaController.validatePermission(className, aclGroup, 'update')

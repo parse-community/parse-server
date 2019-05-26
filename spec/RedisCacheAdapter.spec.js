@@ -214,7 +214,7 @@ describe_only(() => {
 
     object.set('foo', 'barz');
     await object.save();
-    expect(getSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(0);
   });
 
@@ -278,7 +278,7 @@ describe_only(() => {
 
     object.set('new', 'barz');
     await object.save();
-    expect(getSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(1);
   });
 
@@ -298,7 +298,7 @@ describe_only(() => {
       booleanField: true,
     });
     await object.save();
-    expect(getSpy.calls.count()).toBe(3);
+    expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(1);
   });
 
