@@ -302,6 +302,41 @@ describe_only(() => {
     expect(putSpy.calls.count()).toBe(1);
   });
 
+  it('test user', async () => {
+    const user = new Parse.User();
+    user.setUsername('testing');
+    user.setPassword('testing');
+    await user.signUp();
+
+    expect(getSpy.calls.count()).toBe(8);
+    expect(putSpy.calls.count()).toBe(1);
+  });
+
+  it('test allowClientCreation false', async () => {
+    const object = new TestObject();
+    await object.save();
+    await reconfigureServer({
+      cacheAdapter,
+      enableSingleSchemaCache: true,
+      allowClientClassCreation: false,
+    });
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    object.set('foo', 'bar');
+    await object.save();
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(1);
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const query = new Parse.Query(TestObject);
+    await query.get(object.id);
+    expect(getSpy.calls.count()).toBe(3);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
   it('test query', async () => {
     const object = new TestObject();
     object.set('foo', 'bar');
@@ -312,6 +347,45 @@ describe_only(() => {
 
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
+    expect(getSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('test query include', async () => {
+    const child = new TestObject();
+    await child.save();
+
+    const object = new TestObject();
+    object.set('child', child);
+    await object.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const query = new Parse.Query(TestObject);
+    query.include('child');
+    await query.get(object.id);
+
+    expect(getSpy.calls.count()).toBe(4);
+    expect(putSpy.calls.count()).toBe(0);
+  });
+
+  it('query relation without schema', async () => {
+    const child = new Parse.Object('ChildObject');
+    await child.save();
+
+    const parent = new Parse.Object('ParentObject');
+    const relation = parent.relation('child');
+    relation.add(child);
+    await parent.save();
+
+    getSpy.calls.reset();
+    putSpy.calls.reset();
+
+    const objects = await relation.query().find();
+    expect(objects.length).toBe(1);
+    expect(objects[0].id).toBe(child.id);
+
     expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(0);
   });

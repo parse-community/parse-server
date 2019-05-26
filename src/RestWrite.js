@@ -1366,7 +1366,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return defer.then(() => {
       // Run an update
       return this.config.database
-        .update(this.className, this.query, this.data, this.runOptions)
+        .update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          false,
+          this.validSchemaController
+        )
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
