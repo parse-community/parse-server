@@ -10,7 +10,7 @@ describe('DatabaseController', function() {
           _rperm: { $in: ['a', 'b'] },
           foo: 3,
         };
-        validateQuery(query, true);
+        validateQuery(query, false);
         expect(query).toEqual({
           $or: [
             { a: 1, _rperm: { $in: ['a', 'b'] }, foo: 3 },
@@ -22,13 +22,13 @@ describe('DatabaseController', function() {
 
       it('should not restructure SERVER-13732 queries with $nears', done => {
         let query = { $or: [{ a: 1 }, { b: 1 }], c: { $nearSphere: {} } };
-        validateQuery(query, true);
+        validateQuery(query, false);
         expect(query).toEqual({
           $or: [{ a: 1 }, { b: 1 }],
           c: { $nearSphere: {} },
         });
         query = { $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } };
-        validateQuery(query, true);
+        validateQuery(query, false);
         expect(query).toEqual({ $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } });
         done();
       });
@@ -38,7 +38,7 @@ describe('DatabaseController', function() {
           a: 1,
           $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
         };
-        validateQuery(query, true);
+        validateQuery(query, false);
         expect(query).toEqual({
           $or: [
             { $or: [{ b: 1, a: 1 }, { b: 2, a: 1 }] },
@@ -49,13 +49,13 @@ describe('DatabaseController', function() {
       });
 
       it('should reject invalid queries', done => {
-        expect(() => validateQuery({ $or: { a: 1 } }, true)).toThrow();
+        expect(() => validateQuery({ $or: { a: 1 } }, false)).toThrow();
         done();
       });
 
       it('should accept valid queries', done => {
         expect(() =>
-          validateQuery({ $or: [{ a: 1 }, { b: 2 }] }, true)
+          validateQuery({ $or: [{ a: 1 }, { b: 2 }] }, false)
         ).not.toThrow();
         done();
       });
@@ -68,7 +68,7 @@ describe('DatabaseController', function() {
           _rperm: { $in: ['a', 'b'] },
           foo: 3,
         };
-        validateQuery(query, false);
+        validateQuery(query, true);
         expect(query).toEqual({
           $or: [{ a: 1 }, { a: 2 }],
           _rperm: { $in: ['a', 'b'] },
@@ -79,13 +79,13 @@ describe('DatabaseController', function() {
 
       it('should not restructure SERVER-13732 queries with $nears', done => {
         let query = { $or: [{ a: 1 }, { b: 1 }], c: { $nearSphere: {} } };
-        validateQuery(query, false);
+        validateQuery(query, true);
         expect(query).toEqual({
           $or: [{ a: 1 }, { b: 1 }],
           c: { $nearSphere: {} },
         });
         query = { $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } };
-        validateQuery(query, false);
+        validateQuery(query, true);
         expect(query).toEqual({ $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } });
         done();
       });
@@ -95,7 +95,7 @@ describe('DatabaseController', function() {
           a: 1,
           $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
         };
-        validateQuery(query, false);
+        validateQuery(query, true);
         expect(query).toEqual({
           a: 1,
           $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
@@ -105,13 +105,13 @@ describe('DatabaseController', function() {
       });
 
       it('should reject invalid queries', done => {
-        expect(() => validateQuery({ $or: { a: 1 } }, false)).toThrow();
+        expect(() => validateQuery({ $or: { a: 1 } }, true)).toThrow();
         done();
       });
 
       it('should accept valid queries', done => {
         expect(() =>
-          validateQuery({ $or: [{ a: 1 }, { b: 2 }] }, false)
+          validateQuery({ $or: [{ a: 1 }, { b: 2 }] }, true)
         ).not.toThrow();
         done();
       });
