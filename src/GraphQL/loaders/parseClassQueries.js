@@ -8,7 +8,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     parseGraphQLSchema.parseClassTypes[className].classGraphQLType;
 
   const getGraphQLQueryName = `get${className}`;
-  parseGraphQLSchema.graphQLQueries[getGraphQLQueryName] = {
+  parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
     description: `The ${getGraphQLQueryName} query can be used to get an object of the ${className} class by its id.`,
     args: {
       objectId: {
@@ -34,7 +34,7 @@ const load = (parseGraphQLSchema, parseClass) => {
   };
 
   const findGraphQLQueryName = `find${className}`;
-  parseGraphQLSchema.graphQLQueries[findGraphQLQueryName] = {
+  parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
     description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
     args: {},
     type: new GraphQLNonNull(classGraphQLType),

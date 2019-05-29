@@ -12,9 +12,7 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
 const load = parseGraphQLSchema => {
-  const fields = {};
-
-  fields.get = {
+  parseGraphQLSchema.graphQLObjectsQueries.get = {
     description:
       'The get query can be used to get an object of a certain class by its objectId.',
     args: {
@@ -106,7 +104,7 @@ const load = parseGraphQLSchema => {
     },
   };
 
-  fields.find = {
+  parseGraphQLSchema.graphQLObjectsQueries.find = {
     description:
       'The find query can be used to find objects of a certain class.',
     args: {
@@ -246,7 +244,7 @@ const load = parseGraphQLSchema => {
   const objectsQuery = new GraphQLObjectType({
     name: 'ObjectsQuery',
     description: 'ObjectsQuery is the top level type for objects queries.',
-    fields,
+    fields: parseGraphQLSchema.graphQLObjectsQueries,
   });
   parseGraphQLSchema.graphQLTypes.push(objectsQuery);
 

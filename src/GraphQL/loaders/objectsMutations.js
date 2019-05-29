@@ -9,9 +9,7 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
 const load = parseGraphQLSchema => {
-  const fields = {};
-
-  fields.create = {
+  parseGraphQLSchema.graphQLObjectsMutations.create = {
     description:
       'The create mutation can be used to create a new object of a certain class.',
     args: {
@@ -48,7 +46,7 @@ const load = parseGraphQLSchema => {
     },
   };
 
-  fields.update = {
+  parseGraphQLSchema.graphQLObjectsMutations.update = {
     description:
       'The update mutation can be used to update an object of a certain class.',
     args: {
@@ -92,7 +90,7 @@ const load = parseGraphQLSchema => {
     },
   };
 
-  fields.delete = {
+  parseGraphQLSchema.graphQLObjectsMutations.delete = {
     description:
       'The delete mutation can be used to delete an object of a certain class.',
     args: {
@@ -123,7 +121,7 @@ const load = parseGraphQLSchema => {
   const objectsMutation = new GraphQLObjectType({
     name: 'ObjectsMutation',
     description: 'ObjectsMutation is the top level type for objects mutations.',
-    fields,
+    fields: parseGraphQLSchema.graphQLObjectsMutations,
   });
   parseGraphQLSchema.graphQLTypes.push(objectsMutation);
 

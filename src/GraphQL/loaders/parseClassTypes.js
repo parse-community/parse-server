@@ -7,7 +7,28 @@ import {
 } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 
-const mapType = parseType => {
+const mapInputType = parseType => {
+  switch (parseType) {
+    case 'String':
+      return GraphQLString;
+    case 'Number':
+      return GraphQLFloat;
+    case 'Boolean':
+      return GraphQLBoolean;
+    case 'Array':
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'Object':
+      return defaultGraphQLTypes.OBJECT;
+    case 'Date':
+      return defaultGraphQLTypes.DATE;
+    case 'Pointer':
+      return defaultGraphQLTypes.OBJECT;
+    case 'Relation':
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+  }
+};
+
+const mapOutputType = parseType => {
   switch (parseType) {
     case 'String':
       return GraphQLString;
@@ -31,36 +52,47 @@ const mapType = parseType => {
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
-  const classGraphQLCustomFields = Object.keys(parseClass.fields)
-    .filter(
-      field => !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field)
-    )
-    .reduce(
-      (args, field) => ({
-        ...args,
-        [field]: {
-          description: `This is the object ${field}.`,
-          type: mapType(parseClass.fields[field].type),
-        },
-      }),
-      {}
-    );
+  const classCustomFields = Object.keys(parseClass.fields).filter(
+    field => !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field)
+  );
+
+  const classGraphQLInputFields = classCustomFields.reduce(
+    (fields, field) => ({
+      ...fields,
+      [field]: {
+        description: `This is the object ${field}.`,
+        type: mapInputType(parseClass.fields[field].type),
+      },
+    }),
+    {
+      ACL: defaultGraphQLTypes.CLASS_FIELDS.ACL,
+    }
+  );
+
+  const classGraphQLOutputFields = classCustomFields.reduce(
+    (fields, field) => ({
+      ...fields,
+      [field]: {
+        description: `This is the object ${field}.`,
+        type: mapOutputType(parseClass.fields[field].type),
+      },
+    }),
+    defaultGraphQLTypes.CLASS_FIELDS
+  );
 
   const classGraphQLTypeName = `${className}Class`;
   const classGraphQLType = new GraphQLObjectType({
     name: classGraphQLTypeName,
     description: `The ${classGraphQLTypeName} object type is used in operations that involve objects of this specific class.`,
     interfaces: [defaultGraphQLTypes.CLASS],
-    fields: {
-      ...defaultGraphQLTypes.CLASS_FIELDS,
-      ...classGraphQLCustomFields,
-    },
+    fields: classGraphQLOutputFields,
   });
 
   parseGraphQLSchema.parseClassTypes = {
     [className]: {
       classGraphQLType,
-      classGraphQLCustomFields,
+      classGraphQLInputFields,
+      classGraphQLOutputFields,
     },
   };
 

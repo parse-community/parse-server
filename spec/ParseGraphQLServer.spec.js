@@ -2843,6 +2843,30 @@ describe('ParseGraphQLServer', () => {
           );
         });
       });
+
+      describe('Special Classes', () => {
+        xit('should support User class', async () => {});
+
+        xit('should support Installation class', async () => {});
+
+        xit('should support Role class', async () => {});
+
+        xit('should support Session class', async () => {});
+
+        xit('should support Product class', async () => {});
+
+        xit('should support PushStatus class', async () => {});
+
+        xit('should support JobStatus class', async () => {});
+
+        xit('should support JobSchedule class', async () => {});
+
+        xit('should support Hooks class', async () => {});
+
+        xit('should support GlobalConfig class', async () => {});
+
+        xit('should support Audience class', async () => {});
+      });
     });
   });
 });
