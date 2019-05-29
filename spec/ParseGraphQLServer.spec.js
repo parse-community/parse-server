@@ -2773,7 +2773,75 @@ describe('ParseGraphQLServer', () => {
 
         xit('should support ACL', async () => {});
 
-        xit('should support null values', async () => {});
+        it('should support null values', async () => {
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                objects {
+                  create(className: "SomeClass", fields: $fields) {
+                    objectId
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someStringField: 'some string',
+                someNumberField: 123,
+                someBooleanField: true,
+                someObjectField: { someField: 'some value' },
+                someNullField: null,
+              },
+            },
+          });
+
+          await apolloClient.mutate({
+            mutation: gql`
+              mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
+                objects {
+                  update(
+                    className: "SomeClass"
+                    objectId: $objectId
+                    fields: $fields
+                  ) {
+                    updatedAt
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: createResult.data.objects.create.objectId,
+              fields: {
+                someStringField: null,
+                someNumberField: null,
+                someBooleanField: null,
+                someObjectField: null,
+                someNullField: 'now it has a string',
+              },
+            },
+          });
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                objects {
+                  get(className: "SomeClass", objectId: $objectId)
+                }
+              }
+            `,
+            variables: {
+              objectId: createResult.data.objects.create.objectId,
+            },
+          });
+
+          expect(getResult.data.objects.get.someStringField).toEqual(null);
+          expect(getResult.data.objects.get.someNumberField).toEqual(null);
+          expect(getResult.data.objects.get.someBooleanField).toEqual(null);
+          expect(getResult.data.objects.get.someObjectField).toEqual(null);
+          expect(getResult.data.objects.get.someNullField).toEqual(
+            'now it has a string'
+          );
+        });
       });
     });
   });
