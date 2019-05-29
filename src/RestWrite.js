@@ -619,7 +619,9 @@ RestWrite.prototype._validateUserName = function() {
     .find(
       this.className,
       { username: this.data.username, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -650,7 +652,9 @@ RestWrite.prototype._validateEmail = function() {
     .find(
       this.className,
       { email: this.data.email, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -859,11 +863,16 @@ RestWrite.prototype.destroyDuplicatedSessions = function() {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy('_Session', {
-    user,
-    installationId,
-    sessionToken: { $ne: sessionToken },
-  });
+  this.config.database.destroy(
+    '_Session',
+    {
+      user,
+      installationId,
+      sessionToken: { $ne: sessionToken },
+    },
+    {},
+    this.validSchemaController
+  );
 };
 
 // Handles any followup logic

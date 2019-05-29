@@ -308,7 +308,7 @@ describe_only(() => {
     user.setPassword('testing');
     await user.signUp();
 
-    expect(getSpy.calls.count()).toBe(8);
+    expect(getSpy.calls.count()).toBe(6);
     expect(putSpy.calls.count()).toBe(1);
   });
 
