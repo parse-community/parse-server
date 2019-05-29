@@ -41,7 +41,17 @@ class ParseGraphQLServer {
     if (!app || !app.use) {
       requiredParameter('You must provide an Express.js app instance!');
     }
-    app.use(this.config.graphQLPath, graphqlUploadExpress());
+
+    const maxUploadSize = this.parseServer.config.maxUploadSize || '20mb';
+    const maxFileSize =
+      (Number(maxUploadSize.slice(0, -2)) * 1024) ^
+      {
+        kb: 1,
+        mb: 2,
+        gb: 3,
+      }[maxUploadSize.slice(-2).toLowerCase()];
+
+    app.use(this.config.graphQLPath, graphqlUploadExpress({ maxFileSize }));
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);

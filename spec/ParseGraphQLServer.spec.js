@@ -2,6 +2,7 @@ const http = require('http');
 const express = require('express');
 const req = require('../lib/request');
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 const ws = require('ws');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -2220,6 +2221,63 @@ describe('ParseGraphQLServer', () => {
             await expectAsync(
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+          });
+        });
+      });
+
+      describe('Files Mutations', () => {
+        describe('Create', () => {
+          it('should return File object', async () => {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
+
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateFile($file: Upload!) {
+                    files {
+                      create(file: $file) {
+                        name
+                        url
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  file: null,
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.file'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            let res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+
+            expect(result.data.files.create.name).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+            expect(result.data.files.create.url).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+
+            res = await fetch(result.data.files.create.url);
+
+            expect(res.status).toEqual(200);
+            expect(await res.text()).toEqual('My File Content');
           });
         });
       });

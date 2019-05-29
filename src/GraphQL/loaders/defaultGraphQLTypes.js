@@ -9,6 +9,7 @@ import {
   GraphQLEnumType,
   GraphQLInt,
 } from 'graphql';
+import { GraphQLUpload } from 'graphql-upload';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -258,6 +259,7 @@ const FIND_RESULT = new GraphQLObjectType({
 });
 
 const load = parseGraphQLSchema => {
+  parseGraphQLSchema.graphQLTypes.push(GraphQLUpload);
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(FILE);
