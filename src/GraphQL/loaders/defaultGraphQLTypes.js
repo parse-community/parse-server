@@ -180,15 +180,39 @@ const FILE = new GraphQLObjectType({
   },
 });
 
+const CLASS_NAME = {
+  description: 'This is the class name of the object.',
+  type: new GraphQLNonNull(GraphQLString),
+};
+
+const FIELDS = {
+  description: 'These are the fields of the object.',
+  type: OBJECT,
+};
+
+const OBJECT_ID = {
+  description: 'This is the object id.',
+  type: new GraphQLNonNull(GraphQLID),
+};
+
+const CREATED_AT = {
+  description: 'This is the date in which the object was created.',
+  type: new GraphQLNonNull(DATE),
+};
+
+const UPDATED_AT = {
+  description: 'This is the date in which the object was las updated.',
+  type: new GraphQLNonNull(DATE),
+};
+
+const ACL = {
+  description: "This is the object's access control list.",
+  type: new GraphQLNonNull(OBJECT),
+};
+
 const CREATE_RESULT_FIELDS = {
-  objectId: {
-    description: 'This is the object id.',
-    type: new GraphQLNonNull(GraphQLID),
-  },
-  createdAt: {
-    description: 'This is the date in which the object was created.',
-    type: new GraphQLNonNull(DATE),
-  },
+  objectId: OBJECT_ID,
+  createdAt: CREATED_AT,
 };
 
 const CREATE_RESULT = new GraphQLObjectType({
@@ -199,10 +223,7 @@ const CREATE_RESULT = new GraphQLObjectType({
 });
 
 const UPDATE_RESULT_FIELDS = {
-  updatedAt: {
-    description: 'This is the date in which the object was las updated.',
-    type: new GraphQLNonNull(DATE),
-  },
+  updatedAt: UPDATED_AT,
 };
 
 const UPDATE_RESULT = new GraphQLObjectType({
@@ -215,10 +236,7 @@ const UPDATE_RESULT = new GraphQLObjectType({
 const CLASS_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
-  ACL: {
-    description: "This is the object's access control list.",
-    type: new GraphQLNonNull(OBJECT),
-  },
+  ACL,
 };
 
 const CLASS = new GraphQLInterfaceType({
@@ -283,6 +301,12 @@ export {
   OBJECT,
   DATE,
   FILE,
+  CLASS_NAME,
+  FIELDS,
+  OBJECT_ID,
+  CREATED_AT,
+  UPDATED_AT,
+  ACL,
   CREATE_RESULT_FIELDS,
   CREATE_RESULT,
   UPDATE_RESULT_FIELDS,

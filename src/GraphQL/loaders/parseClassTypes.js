@@ -65,7 +65,7 @@ const load = (parseGraphQLSchema, parseClass) => {
       },
     }),
     {
-      ACL: defaultGraphQLTypes.CLASS_FIELDS.ACL,
+      ACL: defaultGraphQLTypes.ACL,
     }
   );
 

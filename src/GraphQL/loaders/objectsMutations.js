@@ -1,45 +1,58 @@
-import {
-  GraphQLNonNull,
-  GraphQLString,
-  GraphQLID,
-  GraphQLBoolean,
-  GraphQLObjectType,
-} from 'graphql';
+import { GraphQLNonNull, GraphQLBoolean, GraphQLObjectType } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
+
+const createObject = async (className, fields, config, auth, info) => {
+  if (!fields) {
+    fields = {};
+  }
+
+  return (await rest.create(config, auth, className, fields, info.clientSDK))
+    .response;
+};
+
+const updateObject = async (
+  className,
+  objectId,
+  fields,
+  config,
+  auth,
+  info
+) => {
+  if (!fields) {
+    fields = {};
+  }
+
+  return (await rest.update(
+    config,
+    auth,
+    className,
+    { objectId },
+    fields,
+    info.clientSDK
+  )).response;
+};
+
+const deleteObject = async (className, objectId, config, auth, info) => {
+  await rest.del(config, auth, className, objectId, info.clientSDK);
+  return true;
+};
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLObjectsMutations.create = {
     description:
       'The create mutation can be used to create a new object of a certain class.',
     args: {
-      className: {
-        description: 'This is the class name of the new object.',
-        type: new GraphQLNonNull(GraphQLString),
-      },
-      fields: {
-        description: 'These are the fields to be attributed to the new object.',
-        type: defaultGraphQLTypes.OBJECT,
-      },
+      className: defaultGraphQLTypes.CLASS_NAME,
+      fields: defaultGraphQLTypes.FIELDS,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
     async resolve(_source, args, context) {
       try {
-        const { className } = args;
-        let { fields } = args;
+        const { className, fields } = args;
         const { config, auth, info } = context;
 
-        if (!fields) {
-          fields = {};
-        }
-
-        return (await rest.create(
-          config,
-          auth,
-          className,
-          fields,
-          info.clientSDK
-        )).response;
+        return await createObject(className, fields, config, auth, info);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -50,40 +63,24 @@ const load = parseGraphQLSchema => {
     description:
       'The update mutation can be used to update an object of a certain class.',
     args: {
-      className: {
-        description:
-          'This is the class name of the object that will be updated.',
-        type: new GraphQLNonNull(GraphQLString),
-      },
-      objectId: {
-        description: 'This is the objectId of the object that will be updated',
-        type: new GraphQLNonNull(GraphQLID),
-      },
-      fields: {
-        description:
-          'These are the fields to be attributed to the object in the update process.',
-        type: defaultGraphQLTypes.OBJECT,
-      },
+      className: defaultGraphQLTypes.CLASS_NAME,
+      objectId: defaultGraphQLTypes.OBJECT_ID,
+      fields: defaultGraphQLTypes.FIELDS,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
     async resolve(_source, args, context) {
       try {
-        const { className, objectId } = args;
-        let { fields } = args;
+        const { className, objectId, fields } = args;
         const { config, auth, info } = context;
 
-        if (!fields) {
-          fields = {};
-        }
-
-        return (await rest.update(
+        return await updateObject(
+          className,
+          objectId,
+          fields,
           config,
           auth,
-          className,
-          { objectId },
-          fields,
-          info.clientSDK
-        )).response;
+          info
+        );
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -94,14 +91,8 @@ const load = parseGraphQLSchema => {
     description:
       'The delete mutation can be used to delete an object of a certain class.',
     args: {
-      className: {
-        description: 'This is the class name of the object to be deleted.',
-        type: new GraphQLNonNull(GraphQLString),
-      },
-      objectId: {
-        description: 'This is the objectId of the object to be deleted.',
-        type: new GraphQLNonNull(GraphQLID),
-      },
+      className: defaultGraphQLTypes.CLASS_NAME,
+      objectId: defaultGraphQLTypes.OBJECT_ID,
     },
     type: new GraphQLNonNull(GraphQLBoolean),
     async resolve(_source, args, context) {
@@ -109,9 +100,7 @@ const load = parseGraphQLSchema => {
         const { className, objectId } = args;
         const { config, auth, info } = context;
 
-        await rest.del(config, auth, className, objectId, info.clientSDK);
-
-        return true;
+        return await deleteObject(className, objectId, config, auth, info);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -132,4 +121,4 @@ const load = parseGraphQLSchema => {
   };
 };
 
-export { load };
+export { createObject, updateObject, deleteObject, load };
