@@ -1795,7 +1795,7 @@ describe('ParseGraphQLServer', () => {
 
       describe('Objects Mutations', () => {
         describe('Create', () => {
-          it('should return CreateResult object', async () => {
+          it('should return CreateResult object using generic mutation', async () => {
             const result = await apolloClient.mutate({
               mutation: gql`
                 mutation CreateSomeObject($fields: Object) {
@@ -1824,6 +1824,43 @@ describe('ParseGraphQLServer', () => {
               new Date(result.data.objects.create.createdAt)
             );
             expect(obj.get('someField')).toEqual('someValue');
+          });
+
+          it('should return CreateResult object using class specific mutation', async () => {
+            const customerSchema = new Parse.Schema('Customer');
+            customerSchema.addString('someField');
+            await customerSchema.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateCustomer($fields: CustomerInput) {
+                  objects {
+                    createCustomer(fields: $fields) {
+                      objectId
+                      createdAt
+                    }
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: 'someValue',
+                },
+              },
+            });
+
+            expect(result.data.objects.createCustomer.objectId).toBeDefined();
+
+            const customer = await new Parse.Query('Customer').get(
+              result.data.objects.createCustomer.objectId
+            );
+
+            expect(customer.createdAt).toEqual(
+              new Date(result.data.objects.createCustomer.createdAt)
+            );
+            expect(customer.get('someField')).toEqual('someValue');
           });
 
           it('should respect level permissions', async () => {

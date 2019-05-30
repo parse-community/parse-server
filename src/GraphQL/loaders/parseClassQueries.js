@@ -4,8 +4,8 @@ import * as rest from '../../rest';
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
-  const classGraphQLType =
-    parseGraphQLSchema.parseClassTypes[className].classGraphQLType;
+  const classGraphQLOutputType =
+    parseGraphQLSchema.parseClassTypes[className].classGraphQLOutputType;
 
   const getGraphQLQueryName = `get${className}`;
   parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
@@ -16,7 +16,7 @@ const load = (parseGraphQLSchema, parseClass) => {
         type: new GraphQLNonNull(GraphQLID),
       },
     },
-    type: new GraphQLNonNull(classGraphQLType),
+    type: new GraphQLNonNull(classGraphQLOutputType),
     async resolve(_source, args, context) {
       const { objectId } = args;
 
@@ -37,7 +37,7 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
     description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
     args: {},
-    type: new GraphQLNonNull(classGraphQLType),
+    type: new GraphQLNonNull(classGraphQLOutputType),
     async resolve(_source, _args, context) {
       const { config, auth, info } = context;
 

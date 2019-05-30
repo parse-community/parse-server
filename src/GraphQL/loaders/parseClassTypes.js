@@ -4,6 +4,7 @@ import {
   GraphQLFloat,
   GraphQLBoolean,
   GraphQLList,
+  GraphQLInputObjectType,
 } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 
@@ -68,6 +69,13 @@ const load = (parseGraphQLSchema, parseClass) => {
       ACL: defaultGraphQLTypes.ACL,
     }
   );
+  const classGraphQLInputTypeName = `${className}Input`;
+  const classGraphQLInputType = new GraphQLInputObjectType({
+    name: classGraphQLInputTypeName,
+    description: `The ${classGraphQLInputTypeName} input type is used in operations that involve inputting objects of ${className} class.`,
+    fields: classGraphQLInputFields,
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLInputType);
 
   const classGraphQLOutputFields = classCustomFields.reduce(
     (fields, field) => ({
@@ -79,24 +87,21 @@ const load = (parseGraphQLSchema, parseClass) => {
     }),
     defaultGraphQLTypes.CLASS_FIELDS
   );
-
-  const classGraphQLTypeName = `${className}Class`;
-  const classGraphQLType = new GraphQLObjectType({
-    name: classGraphQLTypeName,
-    description: `The ${classGraphQLTypeName} object type is used in operations that involve objects of this specific class.`,
+  const classGraphQLOutputTypeName = `${className}Class`;
+  const classGraphQLOutputType = new GraphQLObjectType({
+    name: classGraphQLOutputTypeName,
+    description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
     interfaces: [defaultGraphQLTypes.CLASS],
     fields: classGraphQLOutputFields,
   });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
 
   parseGraphQLSchema.parseClassTypes = {
     [className]: {
-      classGraphQLType,
-      classGraphQLInputFields,
-      classGraphQLOutputFields,
+      classGraphQLInputType,
+      classGraphQLOutputType,
     },
   };
-
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLType);
 };
 
 export { load };

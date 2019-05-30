@@ -5,21 +5,28 @@ import * as objectsMutations from './objectsMutations';
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
-  const classGraphQLInputFields =
-    parseGraphQLSchema.parseClassTypes[className].classGraphQLInputFields;
+  const classGraphQLInputType =
+    parseGraphQLSchema.parseClassTypes[className].classGraphQLInputType;
+  const fields = {
+    description: 'These are the fields of the object.',
+    type: classGraphQLInputType,
+  };
 
   const createGraphQLMutationName = `create${className}`;
   parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
     description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
-    args: classGraphQLInputFields,
+    args: {
+      fields,
+    },
     type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
     async resolve(_source, args, context) {
       try {
+        const { fields } = args;
         const { config, auth, info } = context;
 
         return await objectsMutations.createObject(
           className,
-          args,
+          fields,
           config,
           auth,
           info
@@ -35,9 +42,9 @@ const load = (parseGraphQLSchema, parseClass) => {
     description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
     args: {
       objectId: defaultGraphQLTypes.OBJECT_ID,
-      ...classGraphQLInputFields,
+      fields,
     },
-    type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
+    type: defaultGraphQLTypes.UPDATE_RESULT,
     async resolve(_source, args, context) {
       try {
         const { objectId, ...fields } = args;

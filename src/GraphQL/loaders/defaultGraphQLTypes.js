@@ -206,8 +206,12 @@ const UPDATED_AT = {
 };
 
 const ACL = {
-  description: "This is the object's access control list.",
-  type: new GraphQLNonNull(OBJECT),
+  description: 'This is the access control list of the object.',
+  type: OBJECT,
+};
+
+const INPUT_FIELDS = {
+  ACL,
 };
 
 const CREATE_RESULT_FIELDS = {
@@ -236,7 +240,7 @@ const UPDATE_RESULT = new GraphQLObjectType({
 const CLASS_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
-  ACL,
+  ...INPUT_FIELDS,
 };
 
 const CLASS = new GraphQLInterfaceType({
@@ -307,6 +311,7 @@ export {
   CREATED_AT,
   UPDATED_AT,
   ACL,
+  INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
   CREATE_RESULT,
   UPDATE_RESULT_FIELDS,

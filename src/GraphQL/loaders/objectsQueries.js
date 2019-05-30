@@ -116,7 +116,6 @@ const load = parseGraphQLSchema => {
         description:
           'These are the conditions that the objects need to match in order to be found',
         type: defaultGraphQLTypes.OBJECT,
-        defaultValue: {},
       },
       order: {
         description:
@@ -165,7 +164,6 @@ const load = parseGraphQLSchema => {
       try {
         const {
           className,
-          where,
           order,
           skip,
           limit,
@@ -176,8 +174,13 @@ const load = parseGraphQLSchema => {
           includeReadPreference,
           subqueryReadPreference,
         } = args;
+        let { where } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
+
+        if (!where) {
+          where = {};
+        }
 
         const options = {};
 
