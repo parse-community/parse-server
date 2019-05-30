@@ -25,6 +25,7 @@ export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
 export interface StorageAdapter {
   canSortOnJoinTables: boolean;
+  databaseVersion: string;
 
   classExists(className: string): Promise<boolean>;
   setClassLevelPermissions(className: string, clps: any): Promise<void>;

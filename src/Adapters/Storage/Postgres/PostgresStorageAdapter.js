@@ -778,6 +778,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
 
 export class PostgresStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
+  databaseVersion: string;
 
   // Private
   _collectionPrefix: string;

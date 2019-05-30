@@ -126,6 +126,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   client: MongoClient;
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
+  databaseVersion: string;
 
   constructor({
     uri = defaults.DefaultMongoURI,
@@ -171,6 +172,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         this.client = client;
         this.database = database;
+
+        // databaseVersion
+        const adminDb = database.admin();
+        adminDb.serverStatus().then(status => {
+          this.databaseVersion = status.version;
+        });
       })
       .catch(err => {
         delete this.connectionPromise;

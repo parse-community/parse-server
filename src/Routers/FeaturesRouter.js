@@ -55,6 +55,9 @@ export class FeaturesRouter extends PromiseRouter {
           response: {
             features: features,
             parseServerVersion: version,
+            database: {
+              version: req.config.database.adapter.databaseVersion,
+            },
           },
         };
       }
