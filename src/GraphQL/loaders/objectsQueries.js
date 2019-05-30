@@ -2,7 +2,6 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLString,
-  GraphQLInt,
   GraphQLObjectType,
 } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
@@ -62,6 +61,82 @@ const getObject = async (
   return response.results[0];
 };
 
+const findObjects = async (
+  className,
+  where,
+  order,
+  skip,
+  limit,
+  keys,
+  include,
+  includeAll,
+  readPreference,
+  includeReadPreference,
+  subqueryReadPreference,
+  config,
+  auth,
+  info,
+  selectedFields
+) => {
+  if (!where) {
+    where = {};
+  }
+
+  const options = {};
+
+  if (selectedFields.includes('results')) {
+    if (limit || limit === 0) {
+      options.limit = limit;
+    }
+    if (options.limit !== 0) {
+      if (order) {
+        options.order = order;
+      }
+      if (skip) {
+        options.skip = skip;
+      }
+      if (config.maxLimit && options.limit > config.maxLimit) {
+        // Silently replace the limit on the query with the max configured
+        options.limit = config.maxLimit;
+      }
+      if (keys) {
+        options.keys = keys;
+      }
+      if (includeAll === true) {
+        options.includeAll = includeAll;
+      }
+      if (!options.includeAll && include) {
+        options.include = include;
+      }
+      if ((options.includeAll || options.include) && includeReadPreference) {
+        options.includeReadPreference = includeReadPreference;
+      }
+    }
+  } else {
+    options.limit = 0;
+  }
+
+  if (selectedFields.includes('count')) {
+    options.count = true;
+  }
+
+  if (readPreference) {
+    options.readPreference = readPreference;
+  }
+  if (Object.keys(where).length > 0 && subqueryReadPreference) {
+    options.subqueryReadPreference = subqueryReadPreference;
+  }
+
+  return await rest.find(
+    config,
+    auth,
+    className,
+    where,
+    options,
+    info.clientSDK
+  );
+};
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLObjectsQueries.get = {
     description:
@@ -69,14 +144,8 @@ const load = parseGraphQLSchema => {
     args: {
       className: defaultGraphQLTypes.CLASS_NAME_ATT,
       objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      keys: {
-        description: 'The keys of the object that will be returned',
-        type: GraphQLString,
-      },
-      include: {
-        description: 'The pointers of the object that will be returned',
-        type: GraphQLString,
-      },
+      keys: defaultGraphQLTypes.KEYS_ATT,
+      include: defaultGraphQLTypes.INCLUDE_ATT,
       readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
       includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
     },
@@ -114,10 +183,7 @@ const load = parseGraphQLSchema => {
     description:
       'The find query can be used to find objects of a certain class.',
     args: {
-      className: {
-        description: 'This is the class name of the objects to be found',
-        type: new GraphQLNonNull(GraphQLString),
-      },
+      className: defaultGraphQLTypes.CLASS_NAME_ATT,
       where: {
         description:
           'These are the conditions that the objects need to match in order to be found',
@@ -128,48 +194,24 @@ const load = parseGraphQLSchema => {
           'This is the order in which the objects should be returned',
         type: GraphQLString,
       },
-      skip: {
-        description:
-          'This is the number of objects that must be skipped to return',
-        type: GraphQLInt,
-      },
-      limit: {
-        description:
-          'This is the limit number of objects that must be returned',
-        type: GraphQLInt,
-      },
-      keys: {
-        description: 'The keys of the objects that will be returned',
-        type: GraphQLString,
-      },
-      include: {
-        description: 'The pointers of the objects that will be returned',
-        type: GraphQLString,
-      },
+      skip: defaultGraphQLTypes.SKIP_ATT,
+      limit: defaultGraphQLTypes.LIMIT_ATT,
+      keys: defaultGraphQLTypes.KEYS_ATT,
+      include: defaultGraphQLTypes.INCLUDE_ATT,
       includeAll: {
         description: 'All pointers will be returned',
         type: GraphQLBoolean,
       },
-      readPreference: {
-        description: 'The read preference for the main query to be executed',
-        type: defaultGraphQLTypes.READ_PREFERENCE,
-      },
-      includeReadPreference: {
-        description:
-          'The read preference for the queries to be executed to include fields',
-        type: defaultGraphQLTypes.READ_PREFERENCE,
-      },
-      subqueryReadPreference: {
-        description:
-          'The read preference for the subqueries that may be required',
-        type: defaultGraphQLTypes.READ_PREFERENCE,
-      },
+      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
+      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
+      subqueryReadPreference: defaultGraphQLTypes.SUBQUERY_READ_PREFERENCE_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
     async resolve(_source, args, context, queryInfo) {
       try {
         const {
           className,
+          where,
           order,
           skip,
           limit,
@@ -180,69 +222,25 @@ const load = parseGraphQLSchema => {
           includeReadPreference,
           subqueryReadPreference,
         } = args;
-        let { where } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
 
-        if (!where) {
-          where = {};
-        }
-
-        const options = {};
-
-        if (selectedFields.includes('results')) {
-          if (limit || limit === 0) {
-            options.limit = limit;
-          }
-          if (options.limit !== 0) {
-            if (order) {
-              options.order = order;
-            }
-            if (skip) {
-              options.skip = skip;
-            }
-            if (config.maxLimit && options.limit > config.maxLimit) {
-              // Silently replace the limit on the query with the max configured
-              options.limit = config.maxLimit;
-            }
-            if (keys) {
-              options.keys = keys;
-            }
-            if (includeAll === true) {
-              options.includeAll = includeAll;
-            }
-            if (!options.includeAll && include) {
-              options.include = include;
-            }
-            if (
-              (options.includeAll || options.include) &&
-              includeReadPreference
-            ) {
-              options.includeReadPreference = includeReadPreference;
-            }
-          }
-        } else {
-          options.limit = 0;
-        }
-
-        if (selectedFields.includes('count')) {
-          options.count = true;
-        }
-
-        if (readPreference) {
-          options.readPreference = readPreference;
-        }
-        if (Object.keys(where).length > 0 && subqueryReadPreference) {
-          options.subqueryReadPreference = subqueryReadPreference;
-        }
-
-        return await rest.find(
-          config,
-          auth,
+        return await findObjects(
           className,
           where,
-          options,
-          info.clientSDK
+          order,
+          skip,
+          limit,
+          keys,
+          include,
+          includeAll,
+          readPreference,
+          includeReadPreference,
+          subqueryReadPreference,
+          config,
+          auth,
+          info,
+          selectedFields
         );
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -264,4 +262,4 @@ const load = parseGraphQLSchema => {
   };
 };
 
-export { getObject, load };
+export { getObject, findObjects, load };

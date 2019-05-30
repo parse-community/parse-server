@@ -8,6 +8,7 @@ import {
   GraphQLInterfaceType,
   GraphQLEnumType,
   GraphQLInt,
+  GraphQLList,
 } from 'graphql';
 import { GraphQLUpload } from 'graphql-upload';
 
@@ -250,6 +251,16 @@ const CLASS = new GraphQLInterfaceType({
   fields: CLASS_FIELDS,
 });
 
+const KEYS_ATT = {
+  description: 'The keys of the objects that will be returned',
+  type: GraphQLString,
+};
+
+const INCLUDE_ATT = {
+  description: 'The pointers of the objects that will be returned',
+  type: GraphQLString,
+};
+
 const READ_PREFERENCE = new GraphQLEnumType({
   name: 'ReadPreference',
   description:
@@ -274,6 +285,27 @@ const INCLUDE_READ_PREFERENCE_ATT = {
   type: READ_PREFERENCE,
 };
 
+const SUBQUERY_READ_PREFERENCE_ATT = {
+  description: 'The read preference for the subqueries that may be required',
+  type: READ_PREFERENCE,
+};
+
+const SKIP_ATT = {
+  description: 'This is the number of objects that must be skipped to return',
+  type: GraphQLInt,
+};
+
+const LIMIT_ATT = {
+  description: 'This is the limit number of objects that must be returned',
+  type: GraphQLInt,
+};
+
+const COUNT_ATT = {
+  description:
+    'This is the total matched objecs count that is returned when the count flag is set',
+  type: new GraphQLNonNull(GraphQLInt),
+};
+
 const FIND_RESULT = new GraphQLObjectType({
   name: 'FindResult',
   description:
@@ -281,13 +313,9 @@ const FIND_RESULT = new GraphQLObjectType({
   fields: {
     results: {
       description: 'This is the objects returned by the query',
-      type: new GraphQLNonNull(OBJECT),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(OBJECT))),
     },
-    count: {
-      description:
-        'This is the total matched objecs count that is returned when the count flag is set',
-      type: GraphQLInt,
-    },
+    count: COUNT_ATT,
   },
 });
 
@@ -329,9 +357,15 @@ export {
   UPDATE_RESULT,
   CLASS_FIELDS,
   CLASS,
+  KEYS_ATT,
+  INCLUDE_ATT,
   READ_PREFERENCE,
   READ_PREFERENCE_ATT,
   INCLUDE_READ_PREFERENCE_ATT,
+  SUBQUERY_READ_PREFERENCE_ATT,
+  SKIP_ATT,
+  LIMIT_ATT,
+  COUNT_ATT,
   FIND_RESULT,
   load,
 };

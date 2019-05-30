@@ -74,6 +74,8 @@ describe('ParseGraphQLServer', () => {
         loggerAdapter
       );
     });
+
+    xit('should generate only what is asked', async () => {});
   });
 
   describe('_getGraphQLOptions', () => {
@@ -614,6 +616,8 @@ describe('ParseGraphQLServer', () => {
 
       describe('Parse Class Types', () => {
         xit('should have all expected types', async () => {});
+
+        xit('should update schema when it changes', async () => {});
       });
 
       describe('Objects Queries', () => {
@@ -1101,7 +1105,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         describe('Find', () => {
-          it('should return class objects', async () => {
+          it('should return class objects using generic query', async () => {
             const obj1 = new Parse.Object('SomeClass');
             obj1.set('someField', 'someValue1');
             await obj1.save();
@@ -1121,7 +1125,47 @@ describe('ParseGraphQLServer', () => {
               `,
             });
 
+            expect(result.data.objects.find.results.length).toEqual(2);
+
             result.data.objects.find.results.forEach(resultObj => {
+              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
+              expect(resultObj.objectId).toEqual(obj.id);
+              expect(resultObj.someField).toEqual(obj.get('someField'));
+              expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
+              expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
+            });
+          });
+
+          it('should return class objects using class specific query', async () => {
+            const obj1 = new Parse.Object('Customer');
+            obj1.set('someField', 'someValue1');
+            await obj1.save();
+            const obj2 = new Parse.Object('Customer');
+            obj2.set('someField', 'someValue1');
+            await obj2.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindCustomer {
+                  objects {
+                    findCustomer {
+                      results {
+                        objectId
+                        someField
+                        createdAt
+                        updatedAt
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+
+            expect(result.data.objects.findCustomer.results.length).toEqual(2);
+
+            result.data.objects.findCustomer.results.forEach(resultObj => {
               const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
               expect(resultObj.objectId).toEqual(obj.id);
               expect(resultObj.someField).toEqual(obj.get('someField'));
@@ -1829,6 +1873,8 @@ describe('ParseGraphQLServer', () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
           });
+
+          xit('should pass other tests using class specific query', async () => {});
         });
       });
 
@@ -1874,7 +1920,7 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation CreateCustomer($fields: CustomerInput) {
+                mutation CreateCustomer($fields: CustomerFields) {
                   objects {
                     createCustomer(fields: $fields) {
                       objectId
@@ -2026,7 +2072,7 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation UpdateCustomer(
                   $objectId: ID!
-                  $fields: CustomerInput
+                  $fields: CustomerFields
                 ) {
                   objects {
                     updateCustomer(objectId: $objectId, fields: $fields) {

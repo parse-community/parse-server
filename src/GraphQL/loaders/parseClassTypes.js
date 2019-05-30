@@ -5,6 +5,7 @@ import {
   GraphQLBoolean,
   GraphQLList,
   GraphQLInputObjectType,
+  GraphQLNonNull,
 } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 
@@ -69,7 +70,7 @@ const load = (parseGraphQLSchema, parseClass) => {
       ACL: defaultGraphQLTypes.ACL_ATT,
     }
   );
-  const classGraphQLInputTypeName = `${className}Input`;
+  const classGraphQLInputTypeName = `${className}Fields`;
   const classGraphQLInputType = new GraphQLInputObjectType({
     name: classGraphQLInputTypeName,
     description: `The ${classGraphQLInputTypeName} input type is used in operations that involve inputting objects of ${className} class.`,
@@ -96,10 +97,27 @@ const load = (parseGraphQLSchema, parseClass) => {
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
 
+  const classGraphQLFindResultTypeName = `${className}FindResult`;
+  const classGraphQLFindResultType = new GraphQLObjectType({
+    name: classGraphQLFindResultTypeName,
+    description: `The ${classGraphQLFindResultTypeName} object type is used in the ${className} find query to return the data of the matched objects.`,
+    fields: {
+      results: {
+        description: 'This is the objects returned by the query',
+        type: new GraphQLNonNull(
+          new GraphQLList(new GraphQLNonNull(classGraphQLOutputType))
+        ),
+      },
+      count: defaultGraphQLTypes.COUNT_ATT,
+    },
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLFindResultType);
+
   parseGraphQLSchema.parseClassTypes = {
     [className]: {
       classGraphQLInputType,
       classGraphQLOutputType,
+      classGraphQLFindResultType,
     },
   };
 };
