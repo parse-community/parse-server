@@ -69,6 +69,10 @@ function RestWrite(
 
   // The timestamp we'll use for this whole operation
   this.updatedAt = Parse._encode(new Date()).iso;
+
+  // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
+  // Once set the schemaData should be immutable
+  this.validSchemaController = null;
 }
 
 // A convenient method to perform all the steps of processing the
@@ -101,7 +105,8 @@ RestWrite.prototype.execute = function() {
     .then(() => {
       return this.validateSchema();
     })
-    .then(() => {
+    .then(schemaController => {
+      this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
     })
     .then(() => {
@@ -614,7 +619,9 @@ RestWrite.prototype._validateUserName = function() {
     .find(
       this.className,
       { username: this.data.username, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -645,7 +652,9 @@ RestWrite.prototype._validateEmail = function() {
     .find(
       this.className,
       { email: this.data.email, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -854,11 +863,16 @@ RestWrite.prototype.destroyDuplicatedSessions = function() {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy('_Session', {
-    user,
-    installationId,
-    sessionToken: { $ne: sessionToken },
-  });
+  this.config.database.destroy(
+    '_Session',
+    {
+      user,
+      installationId,
+      sessionToken: { $ne: sessionToken },
+    },
+    {},
+    this.validSchemaController
+  );
 };
 
 // Handles any followup logic
@@ -1361,7 +1375,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return defer.then(() => {
       // Run an update
       return this.config.database
-        .update(this.className, this.query, this.data, this.runOptions)
+        .update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          false,
+          this.validSchemaController
+        )
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
@@ -1391,7 +1413,13 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database
-      .create(this.className, this.data, this.runOptions)
+      .create(
+        this.className,
+        this.data,
+        this.runOptions,
+        false,
+        this.validSchemaController
+      )
       .catch(error => {
         if (
           this.className !== '_User' ||

@@ -929,6 +929,7 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema
           .addClassIfNotExists('NewClass', {})
+          .then(() => schema.reloadData({ clearCache: true }))
           .then(() => {
             schema
               .hasClass('NewClass')
