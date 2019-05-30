@@ -180,43 +180,43 @@ const FILE = new GraphQLObjectType({
   },
 });
 
-const CLASS_NAME = {
+const CLASS_NAME_ATT = {
   description: 'This is the class name of the object.',
   type: new GraphQLNonNull(GraphQLString),
 };
 
-const FIELDS = {
+const FIELDS_ATT = {
   description: 'These are the fields of the object.',
   type: OBJECT,
 };
 
-const OBJECT_ID = {
+const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: new GraphQLNonNull(GraphQLID),
 };
 
-const CREATED_AT = {
+const CREATED_AT_ATT = {
   description: 'This is the date in which the object was created.',
   type: new GraphQLNonNull(DATE),
 };
 
-const UPDATED_AT = {
+const UPDATED_AT_ATT = {
   description: 'This is the date in which the object was las updated.',
   type: new GraphQLNonNull(DATE),
 };
 
-const ACL = {
+const ACL_ATT = {
   description: 'This is the access control list of the object.',
   type: OBJECT,
 };
 
 const INPUT_FIELDS = {
-  ACL,
+  ACL: ACL_ATT,
 };
 
 const CREATE_RESULT_FIELDS = {
-  objectId: OBJECT_ID,
-  createdAt: CREATED_AT,
+  objectId: OBJECT_ID_ATT,
+  createdAt: CREATED_AT_ATT,
 };
 
 const CREATE_RESULT = new GraphQLObjectType({
@@ -227,7 +227,7 @@ const CREATE_RESULT = new GraphQLObjectType({
 });
 
 const UPDATE_RESULT_FIELDS = {
-  updatedAt: UPDATED_AT,
+  updatedAt: UPDATED_AT_ATT,
 };
 
 const UPDATE_RESULT = new GraphQLObjectType({
@@ -262,6 +262,17 @@ const READ_PREFERENCE = new GraphQLEnumType({
     NEAREST: { value: 'NEAREST' },
   },
 });
+
+const READ_PREFERENCE_ATT = {
+  description: 'The read preference for the main query to be executed',
+  type: READ_PREFERENCE,
+};
+
+const INCLUDE_READ_PREFERENCE_ATT = {
+  description:
+    'The read preference for the queries to be executed to include fields',
+  type: READ_PREFERENCE,
+};
 
 const FIND_RESULT = new GraphQLObjectType({
   name: 'FindResult',
@@ -305,12 +316,12 @@ export {
   OBJECT,
   DATE,
   FILE,
-  CLASS_NAME,
-  FIELDS,
-  OBJECT_ID,
-  CREATED_AT,
-  UPDATED_AT,
-  ACL,
+  CLASS_NAME_ATT,
+  FIELDS_ATT,
+  OBJECT_ID_ATT,
+  CREATED_AT_ATT,
+  UPDATED_AT_ATT,
+  ACL_ATT,
   INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
   CREATE_RESULT,
@@ -319,6 +330,8 @@ export {
   CLASS_FIELDS,
   CLASS,
   READ_PREFERENCE,
+  READ_PREFERENCE_ATT,
+  INCLUDE_READ_PREFERENCE_ATT,
   FIND_RESULT,
   load,
 };

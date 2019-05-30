@@ -43,8 +43,8 @@ const load = parseGraphQLSchema => {
     description:
       'The create mutation can be used to create a new object of a certain class.',
     args: {
-      className: defaultGraphQLTypes.CLASS_NAME,
-      fields: defaultGraphQLTypes.FIELDS,
+      className: defaultGraphQLTypes.CLASS_NAME_ATT,
+      fields: defaultGraphQLTypes.FIELDS_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
     async resolve(_source, args, context) {
@@ -63,9 +63,9 @@ const load = parseGraphQLSchema => {
     description:
       'The update mutation can be used to update an object of a certain class.',
     args: {
-      className: defaultGraphQLTypes.CLASS_NAME,
-      objectId: defaultGraphQLTypes.OBJECT_ID,
-      fields: defaultGraphQLTypes.FIELDS,
+      className: defaultGraphQLTypes.CLASS_NAME_ATT,
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+      fields: defaultGraphQLTypes.FIELDS_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
     async resolve(_source, args, context) {
@@ -91,8 +91,8 @@ const load = parseGraphQLSchema => {
     description:
       'The delete mutation can be used to delete an object of a certain class.',
     args: {
-      className: defaultGraphQLTypes.CLASS_NAME,
-      objectId: defaultGraphQLTypes.OBJECT_ID,
+      className: defaultGraphQLTypes.CLASS_NAME_ATT,
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
     },
     type: new GraphQLNonNull(GraphQLBoolean),
     async resolve(_source, args, context) {

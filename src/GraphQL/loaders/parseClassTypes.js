@@ -66,7 +66,7 @@ const load = (parseGraphQLSchema, parseClass) => {
       },
     }),
     {
-      ACL: defaultGraphQLTypes.ACL,
+      ACL: defaultGraphQLTypes.ACL_ATT,
     }
   );
   const classGraphQLInputTypeName = `${className}Input`;

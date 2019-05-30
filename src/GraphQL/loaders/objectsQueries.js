@@ -2,7 +2,6 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLString,
-  GraphQLID,
   GraphQLInt,
   GraphQLObjectType,
 } from 'graphql';
@@ -11,19 +10,65 @@ import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
+const getObject = async (
+  className,
+  objectId,
+  keys,
+  include,
+  readPreference,
+  includeReadPreference,
+  config,
+  auth,
+  info
+) => {
+  const options = {};
+  if (keys) {
+    options.keys = keys;
+  }
+  if (include) {
+    options.include = include;
+    if (includeReadPreference) {
+      options.includeReadPreference = includeReadPreference;
+    }
+  }
+  if (readPreference) {
+    options.readPreference = readPreference;
+  }
+
+  const response = await rest.get(
+    config,
+    auth,
+    className,
+    objectId,
+    options,
+    info.clientSDK
+  );
+
+  if (!response.results || response.results.length == 0) {
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+  }
+
+  if (className === '_User') {
+    delete response.results[0].sessionToken;
+
+    const user = response.results[0];
+
+    if (auth.user && user.objectId == auth.user.id) {
+      // Force the session token
+      response.results[0].sessionToken = info.sessionToken;
+    }
+  }
+
+  return response.results[0];
+};
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLObjectsQueries.get = {
     description:
       'The get query can be used to get an object of a certain class by its objectId.',
     args: {
-      className: {
-        description: 'This is the class name of the objects to be found',
-        type: new GraphQLNonNull(GraphQLString),
-      },
-      objectId: {
-        description: 'The objectId that will be used to get the object.',
-        type: new GraphQLNonNull(GraphQLID),
-      },
+      className: defaultGraphQLTypes.CLASS_NAME_ATT,
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
       keys: {
         description: 'The keys of the object that will be returned',
         type: GraphQLString,
@@ -32,15 +77,8 @@ const load = parseGraphQLSchema => {
         description: 'The pointers of the object that will be returned',
         type: GraphQLString,
       },
-      readPreference: {
-        description: 'The read preference for the main query to be executed',
-        type: defaultGraphQLTypes.READ_PREFERENCE,
-      },
-      includeReadPreference: {
-        description:
-          'The read preference for the queries to be executed to include fields',
-        type: defaultGraphQLTypes.READ_PREFERENCE,
-      },
+      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
+      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
     async resolve(_source, args, context) {
@@ -53,51 +91,19 @@ const load = parseGraphQLSchema => {
           readPreference,
           includeReadPreference,
         } = args;
-
         const { config, auth, info } = context;
 
-        const options = {};
-        if (keys) {
-          options.keys = keys;
-        }
-        if (include) {
-          options.include = include;
-          if (includeReadPreference) {
-            options.includeReadPreference = includeReadPreference;
-          }
-        }
-        if (readPreference) {
-          options.readPreference = readPreference;
-        }
-
-        const response = await rest.get(
-          config,
-          auth,
+        return await getObject(
           className,
           objectId,
-          options,
-          info.clientSDK
+          keys,
+          include,
+          readPreference,
+          includeReadPreference,
+          config,
+          auth,
+          info
         );
-
-        if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'
-          );
-        }
-
-        if (className === '_User') {
-          delete response.results[0].sessionToken;
-
-          const user = response.results[0];
-
-          if (auth.user && user.objectId == auth.user.id) {
-            // Force the session token
-            response.results[0].sessionToken = info.sessionToken;
-          }
-        }
-
-        return response.results[0];
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -258,4 +264,4 @@ const load = parseGraphQLSchema => {
   };
 };
 
-export { load };
+export { getObject, load };

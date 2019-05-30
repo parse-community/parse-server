@@ -1,5 +1,8 @@
-import { GraphQLNonNull, GraphQLID } from 'graphql';
+import { GraphQLNonNull } from 'graphql';
+import getFieldNames from 'graphql-list-fields';
 import * as rest from '../../rest';
+import * as defaultGraphQLTypes from './defaultGraphQLTypes';
+import * as objectsQueries from './objectsQueries';
 
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
@@ -11,25 +14,51 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
     description: `The ${getGraphQLQueryName} query can be used to get an object of the ${className} class by its id.`,
     args: {
-      objectId: {
-        description: 'The objectId that will be used to get the object.',
-        type: new GraphQLNonNull(GraphQLID),
-      },
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
+      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
     },
     type: new GraphQLNonNull(classGraphQLOutputType),
-    async resolve(_source, args, context) {
-      const { objectId } = args;
+    async resolve(_source, args, context, queryInfo) {
+      try {
+        const { objectId, readPreference, includeReadPreference } = args;
+        const { config, auth, info } = context;
+        const selectedFields = getFieldNames(queryInfo);
 
-      const { config, auth, info } = context;
+        let keys = undefined;
+        let include = undefined;
+        if (selectedFields && selectedFields.length > 0) {
+          keys = selectedFields.join(',');
+          include = selectedFields
+            .reduce((fields, field) => {
+              fields = fields.slice();
+              let pointIndex = field.lastIndexOf('.');
+              while (pointIndex > 0) {
+                field = field.slice(0, pointIndex);
+                if (!fields.includes(field)) {
+                  fields.push(field);
+                }
+                pointIndex = field.lastIndexOf('.');
+              }
+              return fields;
+            }, [])
+            .join(',');
+        }
 
-      return (await rest.get(
-        config,
-        auth,
-        className,
-        objectId,
-        {},
-        info.clientSDK
-      )).results[0];
+        return await objectsQueries.getObject(
+          className,
+          objectId,
+          keys,
+          include,
+          readPreference,
+          includeReadPreference,
+          config,
+          auth,
+          info
+        );
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
     },
   };
 

@@ -608,11 +608,17 @@ describe('ParseGraphQLServer', () => {
             'results',
           ]);
         });
+
+        xit('should have all expected types', async () => {});
+      });
+
+      describe('Parse Class Types', () => {
+        xit('should have all expected types', async () => {});
       });
 
       describe('Objects Queries', () => {
         describe('Get', () => {
-          it('should return a class object', async () => {
+          it('should return a class object using generic query', async () => {
             const obj = new Parse.Object('SomeClass');
             obj.set('someField', 'someValue');
             await obj.save();
@@ -629,6 +635,37 @@ describe('ParseGraphQLServer', () => {
                 objectId: obj.id,
               },
             })).data.objects.get;
+
+            expect(result.objectId).toEqual(obj.id);
+            expect(result.someField).toEqual('someValue');
+            expect(new Date(result.createdAt)).toEqual(obj.createdAt);
+            expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
+          });
+
+          it('should return a class object using class specific query', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField', 'someValue');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = (await apolloClient.query({
+              query: gql`
+                query GetCustomer($objectId: ID!) {
+                  objects {
+                    getCustomer(objectId: $objectId) {
+                      objectId
+                      someField
+                      createdAt
+                      updatedAt
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+              },
+            })).data.objects.getCustomer;
 
             expect(result.objectId).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
@@ -1059,6 +1096,8 @@ describe('ParseGraphQLServer', () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
           });
+
+          xit('should pass other tests using class specific query', async () => {});
         });
 
         describe('Find', () => {

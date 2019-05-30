@@ -41,7 +41,7 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLObjectsMutations[updateGraphQLMutationName] = {
     description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
     args: {
-      objectId: defaultGraphQLTypes.OBJECT_ID,
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
       fields,
     },
     type: defaultGraphQLTypes.UPDATE_RESULT,
@@ -68,7 +68,7 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLObjectsMutations[deleteGraphQLMutationName] = {
     description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`,
     args: {
-      objectId: defaultGraphQLTypes.OBJECT_ID,
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
     },
     type: new GraphQLNonNull(GraphQLBoolean),
     async resolve(_source, args, context) {
