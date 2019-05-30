@@ -646,7 +646,7 @@ export default class SchemaController {
     fields: SchemaFields = {},
     classLevelPermissions: any,
     indexes: any = {}
-  ): Promise<void> {
+  ): Promise<void | Schema> {
     var validationError = this.validateNewClass(
       className,
       fields,
@@ -667,11 +667,6 @@ export default class SchemaController {
         })
       )
       .then(convertAdapterSchemaToParseSchema)
-      .then(res => {
-        return this._cache.clear().then(() => {
-          return Promise.resolve(res);
-        });
-      })
       .catch(error => {
         if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
           throw new Parse.Error(
@@ -1285,6 +1280,9 @@ export default class SchemaController {
 
   // Checks if a given class is in the schema.
   hasClass(className: string) {
+    if (this.schemaData[className]) {
+      return Promise.resolve(true);
+    }
     return this.reloadData().then(() => !!this.schemaData[className]);
   }
 }
