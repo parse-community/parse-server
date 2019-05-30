@@ -48,12 +48,8 @@ Once you have babel running in watch mode, you can start making changes to parse
 ### Please Do's
 
 * Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
-* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run:
-    * **Windows**: `npm run coverage:win`
-    * **Unix**: `npm run coverage`
-* Run the tests for the file you are working on with the following command:
-    * **Windows**: `npm run test:win spec/MyFile.spec.js`
-    * **Unix**: `npm test spec/MyFile.spec.js`
+* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run: `npm run coverage`
+* Run the tests for the file you are working on with the following command: `npm test spec/MyFile.spec.js`
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
