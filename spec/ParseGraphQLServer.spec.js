@@ -1934,10 +1934,12 @@ describe('ParseGraphQLServer', () => {
               })
             ).toBeResolved();
           });
+
+          xit('should pass other tests using class specific mutation', async () => {});
         });
 
         describe('Update', () => {
-          it('should return UpdateResult object', async () => {
+          it('should return UpdateResult object using generic mutation', async () => {
             const obj = new Parse.Object('SomeClass');
             obj.set('someField1', 'someField1Value1');
             obj.set('someField2', 'someField2Value1');
@@ -1966,6 +1968,43 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.data.objects.update.updatedAt).toBeDefined();
+
+            await obj.fetch();
+
+            expect(obj.get('someField1')).toEqual('someField1Value2');
+            expect(obj.get('someField2')).toEqual('someField2Value1');
+          });
+
+          it('should return UpdateResult object using class specific mutation', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation UpdateCustomer(
+                  $objectId: ID!
+                  $fields: CustomerInput
+                ) {
+                  objects {
+                    updateCustomer(objectId: $objectId, fields: $fields) {
+                      updatedAt
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+                fields: {
+                  someField1: 'someField1Value2',
+                },
+              },
+            });
+
+            expect(result.data.objects.updateCustomer.updatedAt).toBeDefined();
 
             await obj.fetch();
 
@@ -2153,6 +2192,8 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue7');
           });
+
+          xit('should pass other tests using class specific mutation', async () => {});
         });
 
         describe('Delete', () => {

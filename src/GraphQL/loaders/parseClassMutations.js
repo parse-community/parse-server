@@ -47,7 +47,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     type: defaultGraphQLTypes.UPDATE_RESULT,
     async resolve(_source, args, context) {
       try {
-        const { objectId, ...fields } = args;
+        const { objectId, fields } = args;
         const { config, auth, info } = context;
 
         return await objectsMutations.updateObject(
