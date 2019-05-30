@@ -2197,7 +2197,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         describe('Delete', () => {
-          it('should return a boolean confirming the operation', async () => {
+          it('should return a boolean confirmation using generic mutation', async () => {
             const obj = new Parse.Object('SomeClass');
             await obj.save();
 
@@ -2215,6 +2215,32 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.data.objects.delete).toEqual(true);
+
+            await expectAsync(
+              obj.fetch({ useMasterKey: true })
+            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
+          });
+
+          it('should return a boolean confirmation using class specific mutation', async () => {
+            const obj = new Parse.Object('Customer');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation DeleteCustomer($objectId: ID!) {
+                  objects {
+                    deleteCustomer(objectId: $objectId)
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+              },
+            });
+
+            expect(result.data.objects.deleteCustomer).toEqual(true);
 
             await expectAsync(
               obj.fetch({ useMasterKey: true })
@@ -2300,6 +2326,8 @@ describe('ParseGraphQLServer', () => {
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
+
+          xit('should pass other tests using class specific mutation', async () => {});
         });
       });
 
