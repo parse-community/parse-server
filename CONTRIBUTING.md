@@ -49,7 +49,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 * Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
 * Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run:
-    * **Windows**: `npm run coverage:win`
+    * **Windows**: `npm run coverage`
     * **Unix**: `npm run coverage`
 * Run the tests for the file you are working on with the following command:
     * **Windows**: `npm run test spec/MyFile.spec.js`
