@@ -618,17 +618,19 @@ RestWrite.prototype._validateUserName = function() {
   return this.config.database
     .find(
       this.className,
-      { username: this.data.username, objectId: { $ne: this.objectId() } },
-      { limit: 1 },
+      { username: this.data.username },
+      {},
       {},
       this.validSchemaController
     )
     .then(results => {
-      if (results.length > 0) {
-        throw new Parse.Error(
-          Parse.Error.USERNAME_TAKEN,
-          'Account already exists for this username.'
-        );
+      for (const user of results) {
+        if (user.objectId !== this.objectId()) {
+          throw new Parse.Error(
+            Parse.Error.USERNAME_TAKEN,
+            'Account already exists for this username.'
+          );
+        }
       }
       return;
     });
@@ -651,17 +653,19 @@ RestWrite.prototype._validateEmail = function() {
   return this.config.database
     .find(
       this.className,
-      { email: this.data.email, objectId: { $ne: this.objectId() } },
-      { limit: 1 },
+      { email: this.data.email },
+      {},
       {},
       this.validSchemaController
     )
     .then(results => {
-      if (results.length > 0) {
-        throw new Parse.Error(
-          Parse.Error.EMAIL_TAKEN,
-          'Account already exists for this email address.'
-        );
+      for (const user of results) {
+        if (user.objectId !== this.objectId()) {
+          throw new Parse.Error(
+            Parse.Error.EMAIL_TAKEN,
+            'Account already exists for this email address.'
+          );
+        }
       }
       if (
         !this.data.authData ||
@@ -1456,33 +1460,30 @@ RestWrite.prototype.runDatabaseOperation = function() {
         // Fallback to the original method
         // TODO: See if we can later do this without additional queries by using named indexes.
         return this.config.database
-          .find(
-            this.className,
-            {
-              username: this.data.username,
-              objectId: { $ne: this.objectId() },
-            },
-            { limit: 1 }
-          )
+          .find(this.className, { username: this.data.username }, {})
           .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(
-                Parse.Error.USERNAME_TAKEN,
-                'Account already exists for this username.'
-              );
+            for (const user of results) {
+              if (user.objectId !== this.objectId()) {
+                throw new Parse.Error(
+                  Parse.Error.USERNAME_TAKEN,
+                  'Account already exists for this username.'
+                );
+              }
             }
             return this.config.database.find(
               this.className,
-              { email: this.data.email, objectId: { $ne: this.objectId() } },
-              { limit: 1 }
+              { email: this.data.email },
+              {}
             );
           })
           .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(
-                Parse.Error.EMAIL_TAKEN,
-                'Account already exists for this email address.'
-              );
+            for (const user of results) {
+              if (user.objectId !== this.objectId()) {
+                throw new Parse.Error(
+                  Parse.Error.EMAIL_TAKEN,
+                  'Account already exists for this email address.'
+                );
+              }
             }
             throw new Parse.Error(
               Parse.Error.DUPLICATE_VALUE,
