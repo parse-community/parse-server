@@ -9,6 +9,7 @@ export class FeaturesRouter extends PromiseRouter {
       '/serverInfo',
       middleware.promiseEnforceMasterKeyAccess,
       req => {
+        const config = req.config;
         const features = {
           globalConfig: {
             create: true,
@@ -33,9 +34,9 @@ export class FeaturesRouter extends PromiseRouter {
             from: true,
           },
           push: {
-            immediatePush: req.config.hasPushSupport,
-            scheduledPush: req.config.hasPushScheduledSupport,
-            storedPushData: req.config.hasPushSupport,
+            immediatePush: config.hasPushSupport,
+            scheduledPush: config.hasPushScheduledSupport,
+            storedPushData: config.hasPushSupport,
             pushAudiences: true,
             localization: true,
           },
@@ -51,12 +52,14 @@ export class FeaturesRouter extends PromiseRouter {
           },
         };
 
+        const dbAdapter = config.database.adapter;
         return {
           response: {
             features: features,
             parseServerVersion: version,
             database: {
-              version: req.config.database.adapter.databaseVersion,
+              engine: dbAdapter.engine,
+              version: dbAdapter.databaseVersion,
             },
           },
         };
