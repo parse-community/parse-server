@@ -963,7 +963,7 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   performInitialization(): Promise<void> {
     // databaseVersion
-    this.connect()
+    return this.connect()
       .then(() => {
         const adminDb = this.database.admin();
         return adminDb.serverStatus();
