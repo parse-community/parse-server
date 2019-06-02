@@ -2279,6 +2279,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       })
       .then(data => {
         debug(`initializationDone in ${data.duration}`);
+        // databaseVersion
+        return this._client.query('SHOW server_version');
+      })
+      .then(versionData => {
+        // versionData is like [ { server_version: '11.3' } ]
+        this.databaseVersion = versionData[0].server_version;
       })
       .catch(error => {
         /* eslint-disable no-console */

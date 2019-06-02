@@ -23,7 +23,6 @@ describe('features', () => {
 
   it('requires the master key to get features', async done => {
     try {
-      console.log('==============');
       await request({
         url: 'http://localhost:8378/1/serverInfo',
         json: true,

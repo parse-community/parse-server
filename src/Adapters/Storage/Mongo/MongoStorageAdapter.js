@@ -174,12 +174,6 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         this.client = client;
         this.database = database;
-
-        // databaseVersion
-        const adminDb = database.admin();
-        adminDb.serverStatus().then(status => {
-          this.databaseVersion = status.version;
-        });
       })
       .catch(err => {
         delete this.connectionPromise;
@@ -968,7 +962,15 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   performInitialization(): Promise<void> {
-    return Promise.resolve();
+    // databaseVersion
+    this.connect()
+      .then(() => {
+        const adminDb = this.database.admin();
+        return adminDb.serverStatus();
+      })
+      .then(status => {
+        this.databaseVersion = status.version;
+      });
   }
 
   createIndex(className: string, index: any) {
