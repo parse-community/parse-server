@@ -1257,7 +1257,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue3']);
           });
 
-          it('should support where argument', async () => {
+          it('should support where argument using generic query', async () => {
             await prepareData();
 
             const result = await apolloClient.query({
@@ -1298,6 +1298,54 @@ describe('ParseGraphQLServer', () => {
 
             expect(
               result.data.objects.find.results
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue3']);
+          });
+
+          xit('should support where argument using class specific query', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects($where: Object) {
+                  objects {
+                    findGraphQLClass(where: $where) {
+                      results {
+                        someField
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  someField: {
+                    $in: ['someValue1', 'someValue2', 'someValue3'],
+                  },
+                  _or: [
+                    {
+                      pointerToUser: {
+                        __type: 'Pointer',
+                        className: '_User',
+                        objectId: user5.id,
+                      },
+                    },
+                    {
+                      objectId: object1.id,
+                    },
+                  ],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(
+              result.data.objects.findGraphQLClass.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);

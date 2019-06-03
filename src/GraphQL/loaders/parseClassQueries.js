@@ -34,6 +34,7 @@ const load = (parseGraphQLSchema, parseClass) => {
 
   const {
     classGraphQLOutputType,
+    classGraphQLConstraintsType,
     classGraphQLFindResultType,
   } = parseGraphQLSchema.parseClassTypes[className];
 
@@ -75,6 +76,11 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
     description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
     args: {
+      where: {
+        description:
+          'These are the conditions that the objects need to match in order to be found',
+        type: classGraphQLConstraintsType,
+      },
       skip: defaultGraphQLTypes.SKIP_ATT,
       limit: defaultGraphQLTypes.LIMIT_ATT,
       readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,

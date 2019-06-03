@@ -61,6 +61,41 @@ const getObject = async (
   return response.results[0];
 };
 
+const parseMap = {
+  _or: '$or',
+  _and: '$and',
+  _eq: '$eq',
+  _lt: '$lt',
+  _lte: '$lte',
+  _gt: '$gt',
+  _gte: '$gte',
+  _ne: '$ne',
+  _in: '$in',
+  _nin: '$nin',
+  _exists: '$exists',
+  _select: '$select',
+  _dontSelect: '$dontSelect',
+  _all: '$all',
+  _regex: '$regex',
+  _text: '$text',
+};
+
+const transformToParse = constraints => {
+  if (typeof constraints !== 'object') {
+    return;
+  }
+  Object.keys(constraints).forEach(fieldName => {
+    const fieldValue = constraints[fieldName];
+    if (parseMap[fieldName]) {
+      delete constraints[fieldName];
+      constraints[parseMap[fieldName]] = fieldValue;
+    }
+    if (typeof fieldValue === 'object') {
+      transformToParse(fieldValue);
+    }
+  });
+};
+
 const findObjects = async (
   className,
   where,
@@ -81,6 +116,8 @@ const findObjects = async (
   if (!where) {
     where = {};
   }
+
+  transformToParse(where);
 
   const options = {};
 

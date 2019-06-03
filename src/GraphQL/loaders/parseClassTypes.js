@@ -27,6 +27,8 @@ const mapInputType = parseType => {
       return defaultGraphQLTypes.OBJECT;
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'ACL':
+      return defaultGraphQLTypes.OBJECT;
   }
 };
 
@@ -48,13 +50,40 @@ const mapOutputType = parseType => {
       return defaultGraphQLTypes.OBJECT;
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'ACL':
+      return defaultGraphQLTypes.OBJECT;
+  }
+};
+
+const mapConstraintType = parseType => {
+  switch (parseType) {
+    case 'String':
+      return GraphQLString;
+    case 'Number':
+      return GraphQLFloat;
+    case 'Boolean':
+      return GraphQLBoolean;
+    case 'Array':
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'Object':
+      return defaultGraphQLTypes.OBJECT;
+    case 'Date':
+      return defaultGraphQLTypes.DATE;
+    case 'Pointer':
+      return defaultGraphQLTypes.OBJECT;
+    case 'Relation':
+      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'ACL':
+      return defaultGraphQLTypes.OBJECT;
   }
 };
 
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
-  const classCustomFields = Object.keys(parseClass.fields).filter(
+  const classFields = Object.keys(parseClass.fields);
+
+  const classCustomFields = classFields.filter(
     field => !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field)
   );
 
@@ -97,6 +126,34 @@ const load = (parseGraphQLSchema, parseClass) => {
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
 
+  const classGraphQLConstraintsFields = classFields.reduce(
+    (fields, field) => ({
+      ...fields,
+      [field]: {
+        description: `This is the object ${field}.`,
+        type: mapConstraintType(parseClass.fields[field].type),
+      },
+    }),
+    {}
+  );
+  const classGraphQLConstraintsTypeName = `${className}Constraints`;
+  const classGraphQLConstraintsType = new GraphQLInputObjectType({
+    name: classGraphQLConstraintsTypeName,
+    description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${className} class.`,
+    fields: () => ({
+      ...classGraphQLConstraintsFields,
+      _or: {
+        description: 'This is the $or operator to compound constraints.',
+        type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
+      },
+      _and: {
+        description: 'This is the $and operator to compound constraints.',
+        type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
+      },
+    }),
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintsType);
+
   const classGraphQLFindResultTypeName = `${className}FindResult`;
   const classGraphQLFindResultType = new GraphQLObjectType({
     name: classGraphQLFindResultTypeName,
@@ -117,6 +174,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     [className]: {
       classGraphQLInputType,
       classGraphQLOutputType,
+      classGraphQLConstraintsType,
       classGraphQLFindResultType,
     },
   };
