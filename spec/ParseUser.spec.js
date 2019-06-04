@@ -2165,6 +2165,25 @@ describe('Parse.User testing', () => {
       );
   });
 
+  describe('case insensitive signup not allowed', () => {
+    fit('user should fail with duplicate insensitive username', async () => {
+      const user = new Parse.User();
+      user.set('username', 'test1');
+      user.set('password', 'test');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.set('username', 'Test1');
+      user2.set('password', 'test');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
+    });
+  });
+
   it('user cannot update email to existing user', done => {
     const user = new Parse.User();
     user.set('username', 'test1');
