@@ -2166,7 +2166,7 @@ describe('Parse.User testing', () => {
   });
 
   describe('case insensitive signup not allowed', () => {
-    fit('user should fail with duplicate insensitive username', async () => {
+    it('user should fail with duplicate insensitive username', async () => {
       const user = new Parse.User();
       user.set('username', 'test1');
       user.set('password', 'test');
