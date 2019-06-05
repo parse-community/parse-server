@@ -63,6 +63,7 @@ const specialQuerykeys = [
   '_email_verify_token_expires_at',
   '_account_lockout_expires_at',
   '_failed_login_count',
+  '_auth_data_anonymous',
 ];
 
 const isSpecialQueryKey = key => {

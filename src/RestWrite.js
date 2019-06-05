@@ -618,7 +618,11 @@ RestWrite.prototype._validateUserName = function() {
   return this.config.database
     .find(
       this.className,
-      { username: this.data.username, objectId: { $ne: this.objectId() } },
+      {
+        username: { $regex: `^${this.data.username}$`, $options: 'i' },
+        objectId: { $ne: this.objectId() },
+        _auth_data_anonymous: null,
+      },
       { limit: 1 },
       {},
       this.validSchemaController
