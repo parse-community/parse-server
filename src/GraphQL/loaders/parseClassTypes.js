@@ -18,7 +18,7 @@ const mapInputType = parseType => {
     case 'Boolean':
       return GraphQLBoolean;
     case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+      return new GraphQLList(defaultGraphQLTypes.ANY);
     case 'Object':
       return defaultGraphQLTypes.OBJECT;
     case 'Date':
@@ -41,7 +41,7 @@ const mapOutputType = parseType => {
     case 'Boolean':
       return GraphQLBoolean;
     case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+      return new GraphQLList(defaultGraphQLTypes.ANY);
     case 'Object':
       return defaultGraphQLTypes.OBJECT;
     case 'Date':
@@ -58,17 +58,17 @@ const mapOutputType = parseType => {
 const mapConstraintType = parseType => {
   switch (parseType) {
     case 'String':
-      return GraphQLString;
+      return defaultGraphQLTypes.STRING_CONSTRAINT;
     case 'Number':
-      return GraphQLFloat;
+      return defaultGraphQLTypes.NUMBER_CONSTRAINT;
     case 'Boolean':
-      return GraphQLBoolean;
+      return defaultGraphQLTypes.BOOLEAN_CONSTRAINT;
     case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.OBJECT);
+      return defaultGraphQLTypes.ARRAY_CONSTRAINT;
     case 'Object':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.OBJECT_CONSTRAINT;
     case 'Date':
-      return defaultGraphQLTypes.DATE;
+      return defaultGraphQLTypes.DATE_CONSTRAINT;
     case 'Pointer':
       return defaultGraphQLTypes.OBJECT;
     case 'Relation':
@@ -150,6 +150,11 @@ const load = (parseGraphQLSchema, parseClass) => {
         description: 'This is the $and operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
+      _nor: {
+        description: 'This is the $nor operator to compound constraints.',
+        type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
+      },
+      // _relatedTo: {},
     }),
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintsType);

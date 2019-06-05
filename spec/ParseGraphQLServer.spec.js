@@ -1351,6 +1351,8 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue3']);
           });
 
+          xit('should support each of the where operators', async () => {});
+
           it('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
@@ -2326,6 +2328,10 @@ describe('ParseGraphQLServer', () => {
             expect(object4.get('someField')).toEqual('changedValue7');
           });
 
+          xit('should support increment operation', async () => {});
+
+          xit('should support unset operation', async () => {});
+
           xit('should pass other tests using class specific mutation', async () => {});
         });
 
@@ -3005,6 +3011,12 @@ describe('ParseGraphQLServer', () => {
           expect(res.status).toEqual(200);
           expect(await res.text()).toEqual('My File Content');
         });
+
+        xit('should support geo point values', async () => {});
+
+        xit('should support polygon values', async () => {});
+
+        xit('should support byte values', async () => {});
 
         xit('should support object values', async () => {});
 

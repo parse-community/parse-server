@@ -64,24 +64,47 @@ const getObject = async (
 const parseMap = {
   _or: '$or',
   _and: '$and',
+  _nor: '$nor',
+  _relatedTo: '$relatedTo', // relation
   _eq: '$eq',
+  _ne: '$ne',
   _lt: '$lt',
   _lte: '$lte',
   _gt: '$gt',
   _gte: '$gte',
-  _ne: '$ne',
   _in: '$in',
   _nin: '$nin',
   _exists: '$exists',
   _select: '$select',
   _dontSelect: '$dontSelect',
+  _inQuery: '$inQuery', // pointer
+  _notInQuery: '$notInQuery', // pointer
+  _containedBy: '$containedBy',
   _all: '$all',
   _regex: '$regex',
+  _options: '$options',
   _text: '$text',
+  _search: '$search',
+  _term: '$term',
+  _language: '$language',
+  _caseSensitive: '$caseSensitive',
+  _diacriticSensitive: '$diacriticSensitive',
+  _nearSphere: '$nearSphere', // geo
+  _maxDistance: '$maxDistance', // geo
+  _maxDistanceInRadians: '$maxDistanceInRadians', // geo
+  _maxDistanceInMiles: '$maxDistanceInMiles', // geo
+  _maxDistanceInKilometers: '$maxDistanceInKilometers', // geo
+  _geoWithin: '$geoWithin', // geo
+  _within: '$within', // geo
+  _box: '$box', // geo
+  _polygon: '$polygon', // geo
+  _centerSphere: '$centerSphere', // geo
+  _geoIntersects: '$geoIntersects', // geo
+  _relativeTime: '$relativeTime',
 };
 
 const transformToParse = constraints => {
-  if (typeof constraints !== 'object') {
+  if (!constraints || typeof constraints !== 'object') {
     return;
   }
   Object.keys(constraints).forEach(fieldName => {
@@ -221,11 +244,7 @@ const load = parseGraphQLSchema => {
       'The find query can be used to find objects of a certain class.',
     args: {
       className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      where: {
-        description:
-          'These are the conditions that the objects need to match in order to be found',
-        type: defaultGraphQLTypes.OBJECT,
-      },
+      where: defaultGraphQLTypes.WHERE_ATT,
       order: {
         description:
           'This is the order in which the objects should be returned',

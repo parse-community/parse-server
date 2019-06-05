@@ -8,7 +8,10 @@ import {
   GraphQLInterfaceType,
   GraphQLEnumType,
   GraphQLInt,
+  GraphQLFloat,
   GraphQLList,
+  GraphQLInputObjectType,
+  GraphQLBoolean,
 } from 'graphql';
 import { GraphQLUpload } from 'graphql-upload';
 
@@ -54,17 +57,6 @@ const parseBooleanValue = value => {
   }
 
   throw new TypeValidationError(value, 'Boolean');
-};
-
-const parseDateValue = value => {
-  if (typeof value === 'string') {
-    const date = new Date(value);
-    if (!isNaN(date)) {
-      return date;
-    }
-  }
-
-  throw new TypeValidationError(value, 'Date');
 };
 
 const parseValue = value => {
@@ -141,28 +133,117 @@ const OBJECT = new GraphQLScalarType({
   },
 });
 
+const parseDateIsoValue = value => {
+  if (typeof value === 'string') {
+    const date = new Date(value);
+    if (!isNaN(date)) {
+      return date;
+    }
+  } else if (value instanceof Date) {
+    return value;
+  }
+
+  throw new TypeValidationError(value, 'DateIso');
+};
+
+const serializeDateIso = value => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toUTCString();
+  }
+
+  throw new TypeValidationError(value, 'DateIso');
+};
+
+const parseDateIsoLiteral = ast => {
+  if (ast.kind === Kind.STRING) {
+    return parseDateIsoValue(ast.value);
+  }
+
+  throw new TypeValidationError(ast.kind, 'DateIso');
+};
+
+const DATE_ISO = new GraphQLScalarType({
+  name: 'DateIso',
+  description:
+    'The DateIso scalar type is used in operations and types that involve createdAt and updatedAt fields.',
+  parseValue: parseDateIsoValue,
+  serialize: serializeDateIso,
+  parseLiteral: parseDateIsoLiteral,
+});
+
 const DATE = new GraphQLScalarType({
   name: 'Date',
   description:
     'The Date scalar type is used in operations and types that involve dates.',
-  parseValue: parseDateValue,
-  serialize(value) {
-    if (typeof value === 'string') {
-      return value;
+  parseValue(value) {
+    if (typeof value === 'string' || value instanceof Date) {
+      return {
+        __type: 'Date',
+        iso: parseDateIsoValue(value),
+      };
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Date' &&
+      value.iso
+    ) {
+      return {
+        __type: value.__type,
+        iso: parseDateIsoValue(value.iso),
+      };
     }
-    if (value instanceof Date) {
-      return value.toUTCString();
+
+    throw new TypeValidationError(value, 'Date');
+  },
+  serialize(value) {
+    if (typeof value === 'string' || value instanceof Date) {
+      return {
+        __type: 'Date',
+        iso: serializeDateIso(value),
+      };
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Date' &&
+      value.iso
+    ) {
+      return {
+        __type: value.__type,
+        iso: serializeDateIso(value.iso),
+      };
     }
 
     throw new TypeValidationError(value, 'Date');
   },
   parseLiteral(ast) {
     if (ast.kind === Kind.STRING) {
-      return parseDateValue(ast.value);
+      return {
+        __type: 'Date',
+        iso: parseDateIsoLiteral(ast),
+      };
+    } else if (ast.kind === Kind.OBJECT) {
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const iso = ast.fields.find(field => field.name.value === 'iso');
+      if (__type && __type.value && __type.value.value === 'Date' && iso) {
+        return {
+          __type: 'Date',
+          iso: parseDateIsoLiteral(iso.value),
+        };
+      }
     }
 
-    throw new TypeValidationError(ast.kind, 'Date');
+    throw new TypeValidationError(ast.kind, 'DateIso');
   },
+});
+
+const ANY = new GraphQLScalarType({
+  name: 'Any',
+  description:
+    'The Any scalar type is used in operations and types that involve any type of value.',
+  parseValue: value => value,
+  serialize: value => value,
+  parseLiteral: ast => parseValue(ast),
 });
 
 const FILE = new GraphQLObjectType({
@@ -198,12 +279,12 @@ const OBJECT_ID_ATT = {
 
 const CREATED_AT_ATT = {
   description: 'This is the date in which the object was created.',
-  type: new GraphQLNonNull(DATE),
+  type: new GraphQLNonNull(DATE_ISO),
 };
 
 const UPDATED_AT_ATT = {
   description: 'This is the date in which the object was las updated.',
-  type: new GraphQLNonNull(DATE),
+  type: new GraphQLNonNull(DATE_ISO),
 };
 
 const ACL_ATT = {
@@ -252,19 +333,19 @@ const CLASS = new GraphQLInterfaceType({
 });
 
 const KEYS_ATT = {
-  description: 'The keys of the objects that will be returned',
+  description: 'The keys of the objects that will be returned.',
   type: GraphQLString,
 };
 
 const INCLUDE_ATT = {
-  description: 'The pointers of the objects that will be returned',
+  description: 'The pointers of the objects that will be returned.',
   type: GraphQLString,
 };
 
 const READ_PREFERENCE = new GraphQLEnumType({
   name: 'ReadPreference',
   description:
-    'The ReadPreference enum type is used in queries in order to select in which database replica the operation must run',
+    'The ReadPreference enum type is used in queries in order to select in which database replica the operation must run.',
   values: {
     PRIMARY: { value: 'PRIMARY' },
     PRIMARY_PREFERRED: { value: 'PRIMARY_PREFERRED' },
@@ -275,36 +356,299 @@ const READ_PREFERENCE = new GraphQLEnumType({
 });
 
 const READ_PREFERENCE_ATT = {
-  description: 'The read preference for the main query to be executed',
+  description: 'The read preference for the main query to be executed.',
   type: READ_PREFERENCE,
 };
 
 const INCLUDE_READ_PREFERENCE_ATT = {
   description:
-    'The read preference for the queries to be executed to include fields',
+    'The read preference for the queries to be executed to include fields.',
   type: READ_PREFERENCE,
 };
 
 const SUBQUERY_READ_PREFERENCE_ATT = {
-  description: 'The read preference for the subqueries that may be required',
+  description: 'The read preference for the subqueries that may be required.',
   type: READ_PREFERENCE,
 };
 
+const WHERE_ATT = {
+  description:
+    'These are the conditions that the objects need to match in order to be found',
+  type: OBJECT,
+};
+
 const SKIP_ATT = {
-  description: 'This is the number of objects that must be skipped to return',
+  description: 'This is the number of objects that must be skipped to return.',
   type: GraphQLInt,
 };
 
 const LIMIT_ATT = {
-  description: 'This is the limit number of objects that must be returned',
+  description: 'This is the limit number of objects that must be returned.',
   type: GraphQLInt,
 };
 
 const COUNT_ATT = {
   description:
-    'This is the total matched objecs count that is returned when the count flag is set',
+    'This is the total matched objecs count that is returned when the count flag is set.',
   type: new GraphQLNonNull(GraphQLInt),
 };
+
+const SUBQUERY = new GraphQLInputObjectType({
+  name: 'Subquery',
+  description:
+    'The Subquery input type is used to specific a different query to a different class.',
+  fields: {
+    className: CLASS_NAME_ATT,
+    where: Object.assign({}, WHERE_ATT, {
+      type: new GraphQLNonNull(WHERE_ATT.type),
+    }),
+  },
+});
+
+const SELECT_OPERATOR = new GraphQLInputObjectType({
+  name: 'SelectOperator',
+  description:
+    'The SelectOperator input type is used to specify a $select operation on a constraint.',
+  fields: {
+    query: {
+      description: 'This is the subquery to be executed.',
+      type: new GraphQLNonNull(SUBQUERY),
+    },
+    key: {
+      description:
+        'This is the key in the result of the subquery that must match (not match) the field.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+const SEARCH_OPERATOR = new GraphQLInputObjectType({
+  name: 'SearchOperator',
+  description:
+    'The SearchOperator input type is used to specifiy a $search operation on a full text search.',
+  fields: {
+    _term: {
+      description: 'This is the term to be searched.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    _language: {
+      description:
+        'This is the language to tetermine the list of stop words and the rules for tokenizer.',
+      type: GraphQLString,
+    },
+    _caseSensitive: {
+      description:
+        'This is the flag to enable or disable case sensitive search.',
+      type: GraphQLBoolean,
+    },
+    _diacriticSensitive: {
+      description:
+        'This is the flag to enable or disable diacritic sensitive search.',
+      type: GraphQLBoolean,
+    },
+  },
+});
+
+const TEXT_OPERATOR = new GraphQLInputObjectType({
+  name: 'TextOperator',
+  description:
+    'The TextOperator input type is used to specify a $text operation on a constraint.',
+  fields: {
+    _search: {
+      description: 'This is the search to be executed.',
+      type: new GraphQLNonNull(SEARCH_OPERATOR),
+    },
+  },
+});
+
+const _eq = type => ({
+  description:
+    'This is the $eq operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
+  type,
+});
+
+const _ne = type => ({
+  description:
+    'This is the $ne operator to specify a constraint to select the objects where the value of a field do not equal to a specified value.',
+  type,
+});
+
+const _lt = type => ({
+  description:
+    'This is the $lt operator to specify a constraint to select the objects where the value of a field is less than a specified value.',
+  type,
+});
+
+const _lte = type => ({
+  description:
+    'This is the $lte operator to specify a constraint to select the objects where the value of a field is less than or equal to a specified value.',
+  type,
+});
+
+const _gt = type => ({
+  description:
+    'This is the $gt operator to specify a constraint to select the objects where the value of a field is greater than a specified value.',
+  type,
+});
+
+const _gte = type => ({
+  description:
+    'This is the $gte operator to specify a constraint to select the objects where the value of a field is greater than or equal to a specified value.',
+  type,
+});
+
+const _in = type => ({
+  description:
+    'This is the $in operator to specify a constraint to select the objects where the value of a field equals any value in the specified array.',
+  type: new GraphQLList(type),
+});
+
+const _nin = type => ({
+  description:
+    'This is the $nin operator to specify a constraint to select the objects where the value of a field do not equal any value in the specified array.',
+  type: new GraphQLList(type),
+});
+
+const _exists = {
+  description:
+    'This is the $exists operator to specify a constraint to select the objects where a field exists (or do not exist).',
+  type: GraphQLBoolean,
+};
+
+const _select = {
+  description:
+    'This is the $select operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
+  type: SELECT_OPERATOR,
+};
+
+const _dontSelect = {
+  description:
+    'This is the $dontSelect operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
+  type: SELECT_OPERATOR,
+};
+
+const STRING_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'StringConstraint',
+  description:
+    'The StringConstraint input type is used in operations that involve filtering objects by a field of type String.',
+  fields: {
+    _eq: _eq(GraphQLString),
+    _ne: _ne(GraphQLString),
+    _lt: _lt(GraphQLString),
+    _lte: _lte(GraphQLString),
+    _gt: _gt(GraphQLString),
+    _gte: _gte(GraphQLString),
+    _in: _in(GraphQLString),
+    _nin: _nin(GraphQLString),
+    _exists,
+    _select,
+    _dontSelect,
+    _regex: {
+      description:
+        'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
+      type: GraphQLString,
+    },
+    _options: {
+      description:
+        'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
+      type: GraphQLString,
+    },
+    _text: {
+      description:
+        'This is the $text operator to specify a full text search constraint.',
+      type: TEXT_OPERATOR,
+    },
+  },
+});
+
+const NUMBER_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'NumberConstraint',
+  description:
+    'The NumberConstraint input type is used in operations that involve filtering objects by a field of type Number.',
+  fields: {
+    _eq: _eq(GraphQLFloat),
+    _ne: _ne(GraphQLFloat),
+    _lt: _lt(GraphQLFloat),
+    _lte: _lte(GraphQLFloat),
+    _gt: _gt(GraphQLFloat),
+    _gte: _gte(GraphQLFloat),
+    _in: _in(GraphQLFloat),
+    _nin: _nin(GraphQLFloat),
+    _exists,
+    _select,
+    _dontSelect,
+  },
+});
+
+const BOOLEAN_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'BooleanConstraint',
+  description:
+    'The BooleanConstraint input type is used in operations that involve filtering objects by a field of type Boolean.',
+  fields: {
+    _eq: _eq(GraphQLBoolean),
+    _ne: _ne(GraphQLBoolean),
+    _exists,
+    _select,
+    _dontSelect,
+  },
+});
+
+const ARRAY_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'ArrayConstraint',
+  description:
+    'The ArrayConstraint input type is used in operations that involve filtering objects by a field of type Array.',
+  fields: {
+    _eq: _eq(ANY),
+    _ne: _ne(ANY),
+    _lt: _lt(GraphQLFloat),
+    _lte: _lte(GraphQLFloat),
+    _gt: _gt(GraphQLFloat),
+    _gte: _gte(GraphQLFloat),
+    _in: _in(GraphQLFloat),
+    _nin: _nin(GraphQLFloat),
+    _exists,
+    _select,
+    _dontSelect,
+    _containedBy: {
+      description:
+        'This is the $containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
+      type: new GraphQLList(ANY),
+    },
+    _all: {
+      description:
+        'This is the $all operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
+      type: new GraphQLList(ANY),
+    },
+  },
+});
+
+const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'ObjectConstraint',
+  description:
+    'The ObjectConstraint input type is used in operations that involve filtering objects by a field of type Object.',
+  fields: {
+    _exists,
+  },
+});
+
+const DATE_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'DateConstraint',
+  description:
+    'The DateConstraint input type is used in operations that involve filtering objects by a field of type Date.',
+  fields: {
+    _eq: _eq(DATE),
+    _ne: _ne(DATE),
+    _lt: _lt(DATE),
+    _lte: _lte(DATE),
+    _gt: _gt(DATE),
+    _gte: _gte(DATE),
+    _in: _in(DATE),
+    _nin: _nin(DATE),
+    _exists,
+    _select,
+    _dontSelect,
+  },
+});
 
 const FIND_RESULT = new GraphQLObjectType({
   name: 'FindResult',
@@ -322,12 +666,24 @@ const FIND_RESULT = new GraphQLObjectType({
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GraphQLUpload);
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
+  parseGraphQLSchema.graphQLTypes.push(DATE_ISO);
   parseGraphQLSchema.graphQLTypes.push(DATE);
+  parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(FILE);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(CLASS);
   parseGraphQLSchema.graphQLTypes.push(READ_PREFERENCE);
+  parseGraphQLSchema.graphQLTypes.push(SUBQUERY);
+  parseGraphQLSchema.graphQLTypes.push(SELECT_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(SEARCH_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(TEXT_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(STRING_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(NUMBER_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(BOOLEAN_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(ARRAY_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(OBJECT_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(DATE_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
 };
 
@@ -337,12 +693,14 @@ export {
   parseIntValue,
   parseFloatValue,
   parseBooleanValue,
-  parseDateValue,
+  parseDateIsoValue,
   parseValue,
   parseListValues,
   parseObjectFields,
   OBJECT,
+  DATE_ISO,
   DATE,
+  ANY,
   FILE,
   CLASS_NAME_ATT,
   FIELDS_ATT,
@@ -363,9 +721,20 @@ export {
   READ_PREFERENCE_ATT,
   INCLUDE_READ_PREFERENCE_ATT,
   SUBQUERY_READ_PREFERENCE_ATT,
+  WHERE_ATT,
   SKIP_ATT,
   LIMIT_ATT,
   COUNT_ATT,
+  SUBQUERY,
+  SELECT_OPERATOR,
+  SEARCH_OPERATOR,
+  TEXT_OPERATOR,
+  STRING_CONSTRAINT,
+  NUMBER_CONSTRAINT,
+  BOOLEAN_CONSTRAINT,
+  ARRAY_CONSTRAINT,
+  OBJECT_CONSTRAINT,
+  DATE_CONSTRAINT,
   FIND_RESULT,
   load,
 };
