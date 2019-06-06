@@ -233,7 +233,7 @@ const DATE = new GraphQLScalarType({
       }
     }
 
-    throw new TypeValidationError(ast.kind, 'DateIso');
+    throw new TypeValidationError(ast.kind, 'Date');
   },
 });
 
@@ -259,6 +259,17 @@ const FILE = new GraphQLObjectType({
       description: 'This is the url in which the file can be downloaded.',
       type: new GraphQLNonNull(GraphQLString),
     },
+  },
+});
+
+const RELATION_OP = new GraphQLEnumType({
+  name: 'RelationOp',
+  description:
+    'The RelationOp enum type is used to specify which kind of operation should be executed at a relation.',
+  values: {
+    Batch: { value: 'Batch' },
+    AddRelation: { value: 'AddRelation' },
+    RemoveRelation: { value: 'RemoveRelation' },
   },
 });
 
@@ -670,6 +681,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(FILE);
+  parseGraphQLSchema.graphQLTypes.push(RELATION_OP);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(CLASS);
@@ -702,6 +714,7 @@ export {
   DATE,
   ANY,
   FILE,
+  RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
   OBJECT_ID_ATT,
@@ -729,6 +742,17 @@ export {
   SELECT_OPERATOR,
   SEARCH_OPERATOR,
   TEXT_OPERATOR,
+  _eq,
+  _ne,
+  _lt,
+  _lte,
+  _gt,
+  _gte,
+  _in,
+  _nin,
+  _exists,
+  _select,
+  _dontSelect,
   STRING_CONSTRAINT,
   NUMBER_CONSTRAINT,
   BOOLEAN_CONSTRAINT,

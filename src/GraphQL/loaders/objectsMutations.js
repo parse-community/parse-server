@@ -2,10 +2,32 @@ import { GraphQLNonNull, GraphQLBoolean, GraphQLObjectType } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
+const parseMap = {
+  _op: '__op',
+};
+
+const transformToParse = fields => {
+  if (!fields || typeof fields !== 'object') {
+    return;
+  }
+  Object.keys(fields).forEach(fieldName => {
+    const fieldValue = fields[fieldName];
+    if (parseMap[fieldName]) {
+      delete fields[fieldName];
+      fields[parseMap[fieldName]] = fieldValue;
+    }
+    if (typeof fieldValue === 'object') {
+      transformToParse(fieldValue);
+    }
+  });
+};
+
 const createObject = async (className, fields, config, auth, info) => {
   if (!fields) {
     fields = {};
   }
+
+  transformToParse(fields);
 
   return (await rest.create(config, auth, className, fields, info.clientSDK))
     .response;
@@ -22,6 +44,8 @@ const updateObject = async (
   if (!fields) {
     fields = {};
   }
+
+  transformToParse(fields);
 
   return (await rest.update(
     config,

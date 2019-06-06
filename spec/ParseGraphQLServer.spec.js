@@ -3016,8 +3016,6 @@ describe('ParseGraphQLServer', () => {
 
         xit('should support polygon values', async () => {});
 
-        xit('should support byte values', async () => {});
-
         xit('should support object values', async () => {});
 
         xit('should support array values', async () => {});

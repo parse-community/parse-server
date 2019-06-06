@@ -65,7 +65,7 @@ const parseMap = {
   _or: '$or',
   _and: '$and',
   _nor: '$nor',
-  _relatedTo: '$relatedTo', // relation
+  _relatedTo: '$relatedTo',
   _eq: '$eq',
   _ne: '$ne',
   _lt: '$lt',
@@ -77,8 +77,8 @@ const parseMap = {
   _exists: '$exists',
   _select: '$select',
   _dontSelect: '$dontSelect',
-  _inQuery: '$inQuery', // pointer
-  _notInQuery: '$notInQuery', // pointer
+  _inQuery: '$inQuery',
+  _notInQuery: '$notInQuery',
   _containedBy: '$containedBy',
   _all: '$all',
   _regex: '$regex',
@@ -100,7 +100,6 @@ const parseMap = {
   _polygon: '$polygon', // geo
   _centerSphere: '$centerSphere', // geo
   _geoIntersects: '$geoIntersects', // geo
-  _relativeTime: '$relativeTime',
 };
 
 const transformToParse = constraints => {
@@ -318,4 +317,31 @@ const load = parseGraphQLSchema => {
   };
 };
 
-export { getObject, findObjects, load };
+const extractKeysAndInclude = selectedFields => {
+  selectedFields = selectedFields.filter(
+    field => !field.includes('__typename')
+  );
+  let keys = undefined;
+  let include = undefined;
+  if (selectedFields && selectedFields.length > 0) {
+    keys = selectedFields.join(',');
+    include = selectedFields
+      .reduce((fields, field) => {
+        fields = fields.slice();
+        let pointIndex = field.lastIndexOf('.');
+        while (pointIndex > 0) {
+          const lastField = field.slice(pointIndex + 1);
+          field = field.slice(0, pointIndex);
+          if (!fields.includes(field) && lastField !== 'objectId') {
+            fields.push(field);
+          }
+          pointIndex = field.lastIndexOf('.');
+        }
+        return fields;
+      }, [])
+      .join(',');
+  }
+  return { keys, include };
+};
+
+export { getObject, findObjects, load, extractKeysAndInclude };
