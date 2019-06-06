@@ -200,8 +200,8 @@ const load = (parseGraphQLSchema, parseClass) => {
   parseGraphQLSchema.graphQLTypes.push(classGraphQLInputType);
 
   const classGraphQLOutputTypeName = `${className}Class`;
-  const outputFields = () =>
-    classCustomFields.reduce(
+  const outputFields = () => {
+    const fields = classCustomFields.reduce(
       (fields, field) => ({
         ...fields,
         [field]: {
@@ -215,6 +215,14 @@ const load = (parseGraphQLSchema, parseClass) => {
       }),
       defaultGraphQLTypes.CLASS_FIELDS
     );
+    if (className === '_User') {
+      fields.sessionToken = {
+        description: 'The user session token',
+        type: GraphQLString,
+      };
+    }
+    return fields;
+  };
   const classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
