@@ -77,8 +77,8 @@ const parseMap = {
   _exists: '$exists',
   _select: '$select',
   _dontSelect: '$dontSelect',
-  _inQuery: '$inQuery', // pointer
-  _notInQuery: '$notInQuery', // pointer
+  _inQuery: '$inQuery',
+  _notInQuery: '$notInQuery',
   _containedBy: '$containedBy',
   _all: '$all',
   _regex: '$regex',
@@ -100,7 +100,6 @@ const parseMap = {
   _polygon: '$polygon', // geo
   _centerSphere: '$centerSphere', // geo
   _geoIntersects: '$geoIntersects', // geo
-  _relativeTime: '$relativeTime',
 };
 
 const transformToParse = constraints => {

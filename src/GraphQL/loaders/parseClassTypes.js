@@ -1,4 +1,5 @@
 import {
+  Kind,
   GraphQLObjectType,
   GraphQLString,
   GraphQLFloat,
@@ -6,10 +7,11 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLNonNull,
+  GraphQLScalarType,
 } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 
-const mapInputType = parseType => {
+const mapInputType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
     case 'String':
       return GraphQLString;
@@ -24,15 +26,23 @@ const mapInputType = parseType => {
     case 'Date':
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
-      return defaultGraphQLTypes.OBJECT;
+      if (parseClassTypes[targetClass]) {
+        return parseClassTypes[targetClass].classGraphQLScalarType;
+      } else {
+        return defaultGraphQLTypes.OBJECT;
+      }
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'File':
+      return defaultGraphQLTypes.OBJECT;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.OBJECT;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
   }
 };
 
-const mapOutputType = parseType => {
+const mapOutputType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
     case 'String':
       return GraphQLString;
@@ -47,15 +57,23 @@ const mapOutputType = parseType => {
     case 'Date':
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
-      return defaultGraphQLTypes.OBJECT;
+      if (parseClassTypes[targetClass]) {
+        return parseClassTypes[targetClass].classGraphQLOutputType;
+      } else {
+        return defaultGraphQLTypes.OBJECT;
+      }
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'File':
+      return defaultGraphQLTypes.OBJECT;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.OBJECT;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
   }
 };
 
-const mapConstraintType = parseType => {
+const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
     case 'String':
       return defaultGraphQLTypes.STRING_CONSTRAINT;
@@ -70,9 +88,17 @@ const mapConstraintType = parseType => {
     case 'Date':
       return defaultGraphQLTypes.DATE_CONSTRAINT;
     case 'Pointer':
-      return defaultGraphQLTypes.OBJECT;
+      if (parseClassTypes[targetClass]) {
+        return parseClassTypes[targetClass].classGraphQLConstraintType;
+      } else {
+        return defaultGraphQLTypes.OBJECT;
+      }
     case 'Relation':
       return new GraphQLList(defaultGraphQLTypes.OBJECT);
+    case 'File':
+      return defaultGraphQLTypes.OBJECT;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.OBJECT;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
   }
@@ -87,61 +113,161 @@ const load = (parseGraphQLSchema, parseClass) => {
     field => !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field)
   );
 
-  const classGraphQLInputFields = classCustomFields.reduce(
-    (fields, field) => ({
-      ...fields,
-      [field]: {
-        description: `This is the object ${field}.`,
-        type: mapInputType(parseClass.fields[field].type),
-      },
-    }),
-    {
-      ACL: defaultGraphQLTypes.ACL_ATT,
+  const classGraphQLScalarTypeName = `${className}Field`;
+  const parseScalarValue = value => {
+    if (typeof value === 'string') {
+      return {
+        __type: 'Pointer',
+        className,
+        objectId: value,
+      };
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Pointer' &&
+      value.className === className &&
+      typeof value.objectId === 'string'
+    ) {
+      return value;
     }
-  );
+
+    throw new defaultGraphQLTypes.TypeValidationError(
+      value,
+      classGraphQLScalarTypeName
+    );
+  };
+  const classGraphQLScalarType = new GraphQLScalarType({
+    name: classGraphQLScalarTypeName,
+    description: `The ${classGraphQLScalarTypeName} is used in operations that involve ${className} pointers.`,
+    parseValue: parseScalarValue,
+    serialize: parseScalarValue,
+    parseLiteral(ast) {
+      if (ast.kind === Kind.STRING) {
+        return parseScalarValue(ast.value);
+      } else if (ast.kind === Kind.OBJECT) {
+        const __type = ast.fields.find(field => field.name.value === '__type');
+        const className = ast.fields.find(
+          field => field.name.value === 'className'
+        );
+        const objectId = ast.fields.find(
+          field => field.name.value === 'objectId'
+        );
+        if (
+          __type &&
+          __type.value &&
+          className &&
+          className.value &&
+          objectId &&
+          objectId.value
+        ) {
+          return parseScalarValue({
+            __type: __type.value.value,
+            className: className.value.value,
+            objectId: objectId.value.value,
+          });
+        }
+      }
+
+      throw new defaultGraphQLTypes.TypeValidationError(
+        ast.kind,
+        classGraphQLScalarTypeName
+      );
+    },
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLScalarType);
+
   const classGraphQLInputTypeName = `${className}Fields`;
   const classGraphQLInputType = new GraphQLInputObjectType({
     name: classGraphQLInputTypeName,
     description: `The ${classGraphQLInputTypeName} input type is used in operations that involve inputting objects of ${className} class.`,
-    fields: classGraphQLInputFields,
+    fields: () =>
+      classCustomFields.reduce(
+        (fields, field) => ({
+          ...fields,
+          [field]: {
+            description: `This is the object ${field}.`,
+            type: mapInputType(
+              parseClass.fields[field].type,
+              parseClass.fields[field].targetClass,
+              parseGraphQLSchema.parseClassTypes
+            ),
+          },
+        }),
+        {
+          ACL: defaultGraphQLTypes.ACL_ATT,
+        }
+      ),
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLInputType);
 
-  const classGraphQLOutputFields = classCustomFields.reduce(
-    (fields, field) => ({
-      ...fields,
-      [field]: {
-        description: `This is the object ${field}.`,
-        type: mapOutputType(parseClass.fields[field].type),
-      },
-    }),
-    defaultGraphQLTypes.CLASS_FIELDS
-  );
   const classGraphQLOutputTypeName = `${className}Class`;
+  const outputFields = () =>
+    classCustomFields.reduce(
+      (fields, field) => ({
+        ...fields,
+        [field]: {
+          description: `This is the object ${field}.`,
+          type: mapOutputType(
+            parseClass.fields[field].type,
+            parseClass.fields[field].targetClass,
+            parseGraphQLSchema.parseClassTypes
+          ),
+        },
+      }),
+      defaultGraphQLTypes.CLASS_FIELDS
+    );
   const classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
     interfaces: [defaultGraphQLTypes.CLASS],
-    fields: classGraphQLOutputFields,
+    fields: outputFields,
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
 
-  const classGraphQLConstraintsFields = classFields.reduce(
-    (fields, field) => ({
-      ...fields,
-      [field]: {
-        description: `This is the object ${field}.`,
-        type: mapConstraintType(parseClass.fields[field].type),
+  const classGraphQLConstraintTypeName = `${className}Constraint`;
+  const classGraphQLConstraintType = new GraphQLInputObjectType({
+    name: classGraphQLConstraintTypeName,
+    description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${className} class.`,
+    fields: {
+      _eq: defaultGraphQLTypes._eq(classGraphQLScalarType),
+      _ne: defaultGraphQLTypes._ne(classGraphQLScalarType),
+      _in: defaultGraphQLTypes._in(classGraphQLScalarType),
+      _nin: defaultGraphQLTypes._nin(classGraphQLScalarType),
+      _exists: defaultGraphQLTypes._exists,
+      _select: defaultGraphQLTypes._select,
+      _dontSelect: defaultGraphQLTypes._dontSelect,
+      _inQuery: {
+        description:
+          'This is the $inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
+        type: defaultGraphQLTypes.SUBQUERY,
       },
-    }),
-    {}
-  );
+      _notInQuery: {
+        description:
+          'This is the $notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
+        type: defaultGraphQLTypes.SUBQUERY,
+      },
+    },
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintType);
+
   const classGraphQLConstraintsTypeName = `${className}Constraints`;
   const classGraphQLConstraintsType = new GraphQLInputObjectType({
     name: classGraphQLConstraintsTypeName,
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${className} class.`,
     fields: () => ({
-      ...classGraphQLConstraintsFields,
+      ...classFields.reduce(
+        (fields, field) => ({
+          ...fields,
+          [field]: {
+            description: `This is the object ${field}.`,
+            type: mapConstraintType(
+              parseClass.fields[field].type,
+              parseClass.fields[field].targetClass,
+              parseGraphQLSchema.parseClassTypes
+            ),
+          },
+        }),
+        {}
+      ),
       _or: {
         description: 'This is the $or operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
@@ -175,13 +301,13 @@ const load = (parseGraphQLSchema, parseClass) => {
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLFindResultType);
 
-  parseGraphQLSchema.parseClassTypes = {
-    [className]: {
-      classGraphQLInputType,
-      classGraphQLOutputType,
-      classGraphQLConstraintsType,
-      classGraphQLFindResultType,
-    },
+  parseGraphQLSchema.parseClassTypes[className] = {
+    classGraphQLScalarType,
+    classGraphQLInputType,
+    classGraphQLOutputType,
+    classGraphQLConstraintType,
+    classGraphQLConstraintsType,
+    classGraphQLFindResultType,
   };
 };
 

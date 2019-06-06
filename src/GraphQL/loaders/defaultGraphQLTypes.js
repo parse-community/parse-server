@@ -233,7 +233,7 @@ const DATE = new GraphQLScalarType({
       }
     }
 
-    throw new TypeValidationError(ast.kind, 'DateIso');
+    throw new TypeValidationError(ast.kind, 'Date');
   },
 });
 
@@ -729,6 +729,17 @@ export {
   SELECT_OPERATOR,
   SEARCH_OPERATOR,
   TEXT_OPERATOR,
+  _eq,
+  _ne,
+  _lt,
+  _lte,
+  _gt,
+  _gte,
+  _in,
+  _nin,
+  _exists,
+  _select,
+  _dontSelect,
   STRING_CONSTRAINT,
   NUMBER_CONSTRAINT,
   BOOLEAN_CONSTRAINT,
