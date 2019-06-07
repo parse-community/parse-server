@@ -79,7 +79,7 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
         return new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT);
       }
     case 'File':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.FILE;
     case 'GeoPoint':
       return defaultGraphQLTypes.OBJECT;
     case 'ACL':
