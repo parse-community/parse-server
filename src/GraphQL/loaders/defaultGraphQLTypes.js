@@ -343,6 +343,11 @@ const CLASS = new GraphQLInterfaceType({
   fields: CLASS_FIELDS,
 });
 
+const SESSION_TOKEN_ATT = {
+  description: 'The user session token',
+  type: GraphQLString,
+};
+
 const KEYS_ATT = {
   description: 'The keys of the objects that will be returned.',
   type: GraphQLString,
@@ -728,6 +733,7 @@ export {
   UPDATE_RESULT,
   CLASS_FIELDS,
   CLASS,
+  SESSION_TOKEN_ATT,
   KEYS_ATT,
   INCLUDE_ATT,
   READ_PREFERENCE,

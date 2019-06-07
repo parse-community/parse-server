@@ -325,8 +325,15 @@ const load = (parseGraphQLSchema, parseClass) => {
   };
 
   const classGraphQLOutputTypeName = `${className}Class`;
-  const outputFields = () =>
-    classCustomFields.reduce((fields, field) => {
+  const outputFields = () => {
+    let defaultFields = defaultGraphQLTypes.CLASS_FIELDS;
+    if (className === '_User') {
+      defaultFields = {
+        ...defaultFields,
+        sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
+      };
+    }
+    return classCustomFields.reduce((fields, field) => {
       const type = mapOutputType(
         parseClass.fields[field].type,
         parseClass.fields[field].targetClass,
@@ -410,7 +417,8 @@ const load = (parseGraphQLSchema, parseClass) => {
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.CLASS_FIELDS);
+    }, defaultFields);
+  };
   const classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
