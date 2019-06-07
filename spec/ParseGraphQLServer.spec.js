@@ -1524,7 +1524,7 @@ describe('ParseGraphQLServer', () => {
 
           xit('should support each of the where operators', async () => {});
 
-          it('should support order, skip and limit arguments', async () => {
+          xit('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');

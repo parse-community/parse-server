@@ -41,8 +41,12 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE_FIELD;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.OBJECT;
+    // case 'GeoPoint':
+    //   return defaultGraphQLTypes.GEO_POINT;
+    // case 'Polygon':
+    //   return defaultGraphQLTypes.POLYGON;
+    // case 'Bytes':
+    //   return defaultGraphQLTypes.BYTES;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
     default:
@@ -80,8 +84,12 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE_FIELD;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.OBJECT;
+    // case 'GeoPoint':
+    //   return defaultGraphQLTypes.GEO_POINT;
+    // case 'Polygon':
+    //   return defaultGraphQLTypes.POLYGON;
+    // case 'Bytes':
+    //   return defaultGraphQLTypes.BYTES;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
     default:
@@ -111,8 +119,12 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE_CONSTRAINT;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.OBJECT;
+    // case 'GeoPoint':
+    //   return defaultGraphQLTypes.GEO_POINT_CONSTRAINT;
+    // case 'Polygon':
+    //   return defaultGraphQLTypes.POLYGON_CONSTRAINT;
+    // case 'Bytes':
+    //   return defaultGraphQLTypes.BYTES_CONSTRAINT;
     case 'ACL':
       return defaultGraphQLTypes.OBJECT;
     case 'Relation':

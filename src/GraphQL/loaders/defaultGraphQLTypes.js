@@ -305,6 +305,50 @@ const FILE_FIELD = new GraphQLScalarType({
   },
 });
 
+// const parseGeoPointValue = value => {
+//   if (typeof value === 'string') {
+//     return {
+//       __type: 'GeoPoint',
+//       name: value,
+//     };
+//   } else if (
+//     typeof value === 'object' &&
+//     value.__type === 'File' &&
+//     typeof value.name === 'string' &&
+//     (value.url === undefined || typeof value.url === 'string')
+//   ) {
+//     return value;
+//   }
+
+//   throw new TypeValidationError(value, 'FileField');
+// };
+
+// const FILE_FIELD = new GraphQLScalarType({
+//   name: 'FileField',
+//   description:
+//     'The FieldField is used in operations that involve fields of type File.',
+//   parseValue: parseFileFieldValue,
+//   serialize: parseFileFieldValue,
+//   parseLiteral(ast) {
+//     if (ast.kind === Kind.STRING) {
+//       return parseFileFieldValue(ast.value);
+//     } else if (ast.kind === Kind.OBJECT) {
+//       const __type = ast.fields.find(field => field.name.value === '__type');
+//       const name = ast.fields.find(field => field.name.value === 'name');
+//       const url = ast.fields.find(field => field.name.value === 'url');
+//       if (__type && __type.value && name && name.value) {
+//         return parseFileFieldValue({
+//           __type: __type.value.value,
+//           name: name.value.value,
+//           url: url && url.value ? url.value.value : undefined,
+//         });
+//       }
+//     }
+
+//     throw new TypeValidationError(ast.kind, 'FileField');
+//   },
+// });
+
 const RELATION_OP = new GraphQLEnumType({
   name: 'RelationOp',
   description:
