@@ -1541,7 +1541,9 @@ describe('ParseGraphQLServer', () => {
                 query FindSomeObjects(
                   $className: String!
                   $where: Object
+                  $whereCustom: SomeClassConstraints
                   $order: String
+                  $orderCustom: [SomeClassOrder!]
                   $skip: Int
                   $limit: Int
                 ) {
@@ -1556,8 +1558,8 @@ describe('ParseGraphQLServer', () => {
                       results
                     }
                     findSomeClass(
-                      where: $where
-                      order: $order
+                      where: $whereCustom
+                      order: $orderCustom
                       skip: $skip
                       limit: $limit
                     ) {
@@ -1575,7 +1577,13 @@ describe('ParseGraphQLServer', () => {
                     $regex: '^someValue',
                   },
                 },
+                whereCustom: {
+                  someField: {
+                    _regex: '^someValue',
+                  },
+                },
                 order: '-numberField,someField',
+                orderCustom: ['numberField_DESC', 'someField_ASC'],
                 skip: 4,
                 limit: 2,
               },

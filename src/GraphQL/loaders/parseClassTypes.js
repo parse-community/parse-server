@@ -8,6 +8,7 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLScalarType,
+  GraphQLEnumType,
 } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -366,11 +367,29 @@ const load = (parseGraphQLSchema, parseClass) => {
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintsType);
 
+  const classGraphQLOrderTypeName = `${className}Order`;
+  const classGraphQLOrderType = new GraphQLEnumType({
+    name: classGraphQLOrderTypeName,
+    description: `The ${classGraphQLOrderTypeName} input type is used when sorting objects of the ${className} class.`,
+    values: classFields.reduce((orderFields, field) => {
+      return {
+        ...orderFields,
+        [`${field}_ASC`]: { value: field },
+        [`${field}_DESC`]: { value: `-${field}` },
+      };
+    }, {}),
+  });
+  parseGraphQLSchema.graphQLTypes.push(classGraphQLOrderType);
+
   const classGraphQLFindArgs = {
     where: {
       description:
         'These are the conditions that the objects need to match in order to be found.',
       type: classGraphQLConstraintsType,
+    },
+    order: {
+      description: 'The fields to be used when sorting the data fetched.',
+      type: new GraphQLList(new GraphQLNonNull(classGraphQLOrderType)),
     },
     skip: defaultGraphQLTypes.SKIP_ATT,
     limit: defaultGraphQLTypes.LIMIT_ATT,
