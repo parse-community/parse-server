@@ -248,8 +248,7 @@ const ANY = new GraphQLScalarType({
 
 const FILE = new GraphQLObjectType({
   name: 'File',
-  description:
-    'The File object type is used in operations and types that have fields involving files.',
+  description: 'The File object type is used in operations with files.',
   fields: {
     name: {
       description: 'This is the file name.',
@@ -259,6 +258,50 @@ const FILE = new GraphQLObjectType({
       description: 'This is the url in which the file can be downloaded.',
       type: new GraphQLNonNull(GraphQLString),
     },
+  },
+});
+
+const parseFileFieldValue = value => {
+  if (typeof value === 'string') {
+    return {
+      __type: 'File',
+      name: value,
+    };
+  } else if (
+    typeof value === 'object' &&
+    value.__type === 'File' &&
+    typeof value.name === 'string' &&
+    (value.url === undefined || typeof value.url === 'string')
+  ) {
+    return value;
+  }
+
+  throw new TypeValidationError(value, 'FileField');
+};
+
+const FILE_FIELD = new GraphQLScalarType({
+  name: 'FileField',
+  description:
+    'The FieldField is used in operations that involve fields of type File.',
+  parseValue: parseFileFieldValue,
+  serialize: parseFileFieldValue,
+  parseLiteral(ast) {
+    if (ast.kind === Kind.STRING) {
+      return parseFileFieldValue(ast.value);
+    } else if (ast.kind === Kind.OBJECT) {
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const name = ast.fields.find(field => field.name.value === 'name');
+      const url = ast.fields.find(field => field.name.value === 'url');
+      if (__type && __type.value && name && name.value) {
+        return parseFileFieldValue({
+          __type: __type.value.value,
+          name: name.value.value,
+          url: url && url.value ? url.value.value : undefined,
+        });
+      }
+    }
+
+    throw new TypeValidationError(ast.kind, 'FileField');
   },
 });
 
@@ -666,6 +709,35 @@ const DATE_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
+const FILE_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'FileConstraint',
+  description:
+    'The FILE_CONSTRAINT input type is used in operations that involve filtering objects by a field of type File.',
+  fields: {
+    _eq: _eq(FILE_FIELD),
+    _ne: _ne(FILE_FIELD),
+    _lt: _lt(FILE_FIELD),
+    _lte: _lte(FILE_FIELD),
+    _gt: _gt(FILE_FIELD),
+    _gte: _gte(FILE_FIELD),
+    _in: _in(FILE_FIELD),
+    _nin: _nin(FILE_FIELD),
+    _exists,
+    _select,
+    _dontSelect,
+    _regex: {
+      description:
+        'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
+      type: GraphQLString,
+    },
+    _options: {
+      description:
+        'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
+      type: GraphQLString,
+    },
+  },
+});
+
 const FIND_RESULT = new GraphQLObjectType({
   name: 'FindResult',
   description:
@@ -686,6 +758,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(FILE);
+  parseGraphQLSchema.graphQLTypes.push(FILE_FIELD);
   parseGraphQLSchema.graphQLTypes.push(RELATION_OP);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
@@ -701,6 +774,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(OBJECT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(DATE_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(FILE_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
 };
 
@@ -719,6 +793,7 @@ export {
   DATE,
   ANY,
   FILE,
+  FILE_FIELD,
   RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
@@ -765,6 +840,7 @@ export {
   ARRAY_CONSTRAINT,
   OBJECT_CONSTRAINT,
   DATE_CONSTRAINT,
+  FILE_CONSTRAINT,
   FIND_RESULT,
   load,
 };
