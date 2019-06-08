@@ -68,8 +68,8 @@ jobs:
         all_branches: true
     - provider: npm
       skip_cleanup: true
-      email:
-        secure: "$NPM_EMAIL"
+      # email:
+      #   secure: "$NPM_EMAIL"
       on:
         tags: true
         all_branches: true
