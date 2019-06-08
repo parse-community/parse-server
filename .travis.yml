@@ -62,7 +62,8 @@ jobs:
     deploy:
     - provider: pages
       skip_cleanup: true
-      github_token: "$GITHUB_TOKEN"
+      github_token:
+        secure: VHNpkz4+Q0ZxoO7RPP8RlZWuH/jEpLO1A0a1wRpVvP05iMUimqlHRDg3SS491CBTa6VupDlg2kbgcwX8AtZENf9GZWHr4RpOdk8Q9FIcR//9peyXpFbqkMBybJyvxABaNuLDMpGkAkKofmxTwMoMoQ/bdyhVrnEklXlyiRuwnDSjcR70Ti9OFOkYValvgb6Qa4HEX0qs4rRGak+FgNrZzX1cZc7LTOYyiuXwdTvt/UqH5mDW+mXFNScwUZnWTyS+kB+tDJYe/wtKeuFv6J+wHI9TkVHmDsZK6TwnnEEmh+D38cBqlU90ZUKXZYOd4v9E0TFlM4kNxBNmp5N/jYUPThJ+Gc56HULMwqQmdwb+HFa/ZdQImM0Q/ibGgYZtxHxXH9j4K3mOLTpcOOqYGQcw3DBkQGMQM2/rY1b4LUlCqhngs6stEGFkkGCORAV5NE4EMIv0B9/BhfBN4v8nZPm9xin/mqyecaxUxwOGOvJZs1hRO20OEJE30Tk6H6dmkRen8Q2u5Uy6gYH2RU/6lumNTlY223nQ1JvtexKDa6fVWzRKYZ3KfbJ5umoA48i6p1ll9xvAoACy9CUnIdz3WWro86NBA/AK3efRKi0hjA+InjQZ1T8IkqlWN4Habr54E5Vzyz7VQ7/541JN1HvVsTctsnMOErXCBv54wU4Anw2r8lU=
       local_dir: docs/
       on:
         all_branches: true
