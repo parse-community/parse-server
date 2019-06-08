@@ -1,27 +1,25 @@
 language: node_js
 dist: trusty
 services:
-  - mongodb
-  - postgresql
-  - redis-server
-  - docker
+- mongodb
+- postgresql
+- redis-server
+- docker
 addons:
   postgresql: '9.5'
   apt:
     packages:
-      - postgresql-9.5-postgis-2.3
+    - postgresql-9.5-postgis-2.3
 branches:
   only:
   - master
-  - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
+  - "/^[0-9]+.[0-9]+.[0-9]+(-.*)?$/"
   - 3.x
-  - /^greenkeeper/.*$/
+  - "/^greenkeeper/.*$/"
 cache:
   directories:
   - "$HOME/.npm"
   - "$HOME/.mongodb/versions"
-
-# Test stage
 stage: test
 env:
   global:
@@ -34,7 +32,7 @@ env:
   - NODE_VERSION=11.4.0
 matrix:
   allow_failures:
-    - env: NODE_VERSION=11.4.0
+  - env: NODE_VERSION=11.4.0
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
@@ -52,31 +50,30 @@ script:
 after_script:
 - greenkeeper-lockfile-upload
 - bash <(curl -s https://codecov.io/bash)
-
 jobs:
   include:
-    # release on npm on tags
-    - stage: release
-      node_js: '8.10'
-      env: 
-      before_script: skip
-      after_script: skip
-      script: 
-        - ./release_docs.sh
-      deploy:
-        - provider: pages
-          skip_cleanup: true
-          github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-          local_dir: docs/
-          on:
-            all_branches: true
-        - provider: npm
-          skip_cleanup: true
-          email:
-            secure: $NPM_EMAIL
-          api_key:
-            secure: $NPM_TOKEN
-          on:
-            tags: true
-            all_branches: true
-            repo: parse-community/parse-server
+  - stage: release
+    node_js: '10'
+    env:
+    before_script: skip
+    after_script: skip
+    script:
+    - "./release_docs.sh"
+    deploy:
+    - provider: pages
+      skip_cleanup: true
+      github_token: "$GITHUB_TOKEN"
+      local_dir: docs/
+      on:
+        all_branches: true
+    - provider: npm
+      skip_cleanup: true
+      # email:
+      #   secure: "$NPM_EMAIL"
+      on:
+        tags: true
+        all_branches: true
+        repo: parse-community/parse-server
+deploy:
+  api_key:
+    secure: Yrng6jsnMAtzrrln9DwRuY4xpcxl/WYS/1A5fckyQF6DsLmNlvqVtu3MWF+zdJgANF63G3jIee11tNBpYRecHl8FjPGwO0kc1vEgvIRVnveyR0bwIIDH6s/mR9dg4rZikflwG4XExsLyaQd7ko8aTIOIayfxJiv/u0yqwuBuBW2bFrL/41b1cKGK5+Iq2a+PdFENUPenKXISkACGaMnQF4Y/KVF98UwCiGLf957yFWc2sD6TFbjNDbAENSccvg1J3fBb+djbtzKzldl29ntp2mKVGSVASiKCRa6hSfgQulHiidFqFIKgpYJ1uATRr3UFr/NRVt1WbrgLnzY74OCX7y02c/xiYQMMEPRl/P8hHJu+KjQ3PBWsBvmsRN0QMUJv3PEjUPE3AY8sw49NoxiJZzJr7574vUBuM/dk0byYI6K/gwmUrPIhQjljzZqinS8JJJ4FjGjCdzXRhT5Q+PZvt5bF1rMOZXayNJZa+cICtmiJoU3vO2Yf6TXC3wY1veKvmcs24nws5lp4keJePTKAi1Ig7VoSxwAlgs3EGANIh7oBKx9zWnXQYMdmxbYsvLXAWcnnM+PcSCvooLmXWso3BQBeRuUUSS2oLaBpsFMsiniLNbA1cW4fwMkgUGz4oEDRi8wTD89E/1J2oNxzqtWRPawcVKpMpnBbDJHrWJPEHMw=
