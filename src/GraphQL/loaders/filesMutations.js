@@ -16,7 +16,7 @@ const load = parseGraphQLSchema => {
         type: new GraphQLNonNull(GraphQLUpload),
       },
     },
-    type: new GraphQLNonNull(defaultGraphQLTypes.FILE),
+    type: new GraphQLNonNull(defaultGraphQLTypes.FILE_INFO),
     async resolve(_source, args, context) {
       try {
         const { file } = args;

@@ -106,6 +106,15 @@ const parseObjectFields = fields => {
   throw new TypeValidationError(fields, 'Object');
 };
 
+const ANY = new GraphQLScalarType({
+  name: 'Any',
+  description:
+    'The Any scalar type is used in operations and types that involve any type of value.',
+  parseValue: value => value,
+  serialize: value => value,
+  parseLiteral: ast => parseValue(ast),
+});
+
 const OBJECT = new GraphQLScalarType({
   name: 'Object',
   description:
@@ -222,31 +231,7 @@ const DATE = new GraphQLScalarType({
   },
 });
 
-const ANY = new GraphQLScalarType({
-  name: 'Any',
-  description:
-    'The Any scalar type is used in operations and types that involve any type of value.',
-  parseValue: value => value,
-  serialize: value => value,
-  parseLiteral: ast => parseValue(ast),
-});
-
-const FILE = new GraphQLObjectType({
-  name: 'File',
-  description: 'The File object type is used in operations with files.',
-  fields: {
-    name: {
-      description: 'This is the file name.',
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    url: {
-      description: 'This is the url in which the file can be downloaded.',
-      type: new GraphQLNonNull(GraphQLString),
-    },
-  },
-});
-
-const parseFileFieldValue = value => {
+const parseFileValue = value => {
   if (typeof value === 'string') {
     return {
       __type: 'File',
@@ -261,24 +246,37 @@ const parseFileFieldValue = value => {
     return value;
   }
 
-  throw new TypeValidationError(value, 'FileField');
+  throw new TypeValidationError(value, 'File');
 };
 
-const FILE_FIELD = new GraphQLScalarType({
-  name: 'FileField',
+const FILE = new GraphQLScalarType({
+  name: 'File',
   description:
-    'The FieldField is used in operations that involve fields of type File.',
-  parseValue: parseFileFieldValue,
-  serialize: parseFileFieldValue,
+    'The File scalar type is used in operations and types that involve files.',
+  parseValue: parseFileValue,
+  serialize: value => {
+    if (typeof value === 'string') {
+      return value;
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'File' &&
+      typeof value.name === 'string' &&
+      (value.url === undefined || typeof value.url === 'string')
+    ) {
+      return value.name;
+    }
+
+    throw new TypeValidationError(value, 'File');
+  },
   parseLiteral(ast) {
     if (ast.kind === Kind.STRING) {
-      return parseFileFieldValue(ast.value);
+      return parseFileValue(ast.value);
     } else if (ast.kind === Kind.OBJECT) {
       const __type = ast.fields.find(field => field.name.value === '__type');
       const name = ast.fields.find(field => field.name.value === 'name');
       const url = ast.fields.find(field => field.name.value === 'url');
       if (__type && __type.value && name && name.value) {
-        return parseFileFieldValue({
+        return parseFileValue({
           __type: __type.value.value,
           name: name.value.value,
           url: url && url.value ? url.value.value : undefined,
@@ -287,6 +285,22 @@ const FILE_FIELD = new GraphQLScalarType({
     }
 
     throw new TypeValidationError(ast.kind, 'FileField');
+  },
+});
+
+const FILE_INFO = new GraphQLObjectType({
+  name: 'FileInfo',
+  description:
+    'The FileInfo object type is used to return the information about files.',
+  fields: {
+    name: {
+      description: 'This is the file name.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    url: {
+      description: 'This is the url in which the file can be downloaded.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
@@ -743,14 +757,14 @@ const FILE_CONSTRAINT = new GraphQLInputObjectType({
   description:
     'The FILE_CONSTRAINT input type is used in operations that involve filtering objects by a field of type File.',
   fields: {
-    _eq: _eq(FILE_FIELD),
-    _ne: _ne(FILE_FIELD),
-    _lt: _lt(FILE_FIELD),
-    _lte: _lte(FILE_FIELD),
-    _gt: _gt(FILE_FIELD),
-    _gte: _gte(FILE_FIELD),
-    _in: _in(FILE_FIELD),
-    _nin: _nin(FILE_FIELD),
+    _eq: _eq(FILE),
+    _ne: _ne(FILE),
+    _lt: _lt(FILE),
+    _lte: _lte(FILE),
+    _gt: _gt(FILE),
+    _gte: _gte(FILE),
+    _in: _in(FILE),
+    _nin: _nin(FILE),
     _exists,
     _select,
     _dontSelect,
@@ -782,11 +796,11 @@ const FIND_RESULT = new GraphQLObjectType({
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GraphQLUpload);
+  parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
   parseGraphQLSchema.graphQLTypes.push(DATE);
-  parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(FILE);
-  parseGraphQLSchema.graphQLTypes.push(FILE_FIELD);
+  parseGraphQLSchema.graphQLTypes.push(FILE_INFO);
   parseGraphQLSchema.graphQLTypes.push(RELATION_OP);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
@@ -816,11 +830,11 @@ export {
   parseValue,
   parseListValues,
   parseObjectFields,
+  ANY,
   OBJECT,
   DATE,
-  ANY,
   FILE,
-  FILE_FIELD,
+  FILE_INFO,
   RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,

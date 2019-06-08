@@ -40,7 +40,7 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
         return defaultGraphQLTypes.OBJECT;
       }
     case 'File':
-      return defaultGraphQLTypes.FILE_FIELD;
+      return defaultGraphQLTypes.FILE;
     // case 'GeoPoint':
     //   return defaultGraphQLTypes.GEO_POINT;
     // case 'Polygon':
@@ -83,7 +83,7 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
         return new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT);
       }
     case 'File':
-      return defaultGraphQLTypes.FILE_FIELD;
+      return defaultGraphQLTypes.FILE_INFO;
     // case 'GeoPoint':
     //   return defaultGraphQLTypes.GEO_POINT;
     // case 'Polygon':

@@ -5,7 +5,7 @@ const {
   parseIntValue,
   parseFloatValue,
   parseBooleanValue,
-  parseDateValue,
+  parseDateIsoValue,
   parseValue,
   parseListValues,
   parseObjectFields,
@@ -78,7 +78,7 @@ describe('defaultGraphQLTypes', () => {
     });
   });
 
-  describe('parseIntValue', () => {
+  describe('parseFloatValue', () => {
     it('should parse to number if a string', () => {
       expect(parseFloatValue('123')).toBe(123);
       expect(parseFloatValue('123.4')).toBe(123.4);
@@ -134,29 +134,26 @@ describe('defaultGraphQLTypes', () => {
     it('should parse to date if a string', () => {
       const myDateString = '2019-05-09T23:12:00.000Z';
       const myDate = new Date(Date.UTC(2019, 4, 9, 23, 12, 0, 0));
-      expect(parseDateValue(myDateString)).toEqual(myDate);
+      expect(parseDateIsoValue(myDateString)).toEqual(myDate);
     });
 
     it('should fail if not a string', () => {
-      expect(() => parseDateValue()).toThrow(
+      expect(() => parseDateIsoValue()).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
-      expect(() => parseDateValue({})).toThrow(
+      expect(() => parseDateIsoValue({})).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
-      expect(() => parseDateValue([])).toThrow(
+      expect(() => parseDateIsoValue([])).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
-      expect(() => parseDateValue(123)).toThrow(
-        jasmine.stringMatching('is not a valid Date')
-      );
-      expect(() => parseDateValue(new Date())).toThrow(
+      expect(() => parseDateIsoValue(123)).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
     });
 
     it('should fail if not a date string', () => {
-      expect(() => parseDateValue('not a date')).toThrow(
+      expect(() => parseDateIsoValue('not a date')).toThrow(
         jasmine.stringMatching('is not a valid Date')
       );
     });
@@ -336,7 +333,7 @@ describe('defaultGraphQLTypes', () => {
     });
   });
 
-  describe('parseListValues', () => {
+  describe('parseObjectFields', () => {
     it('should parse to list if an array', () => {
       expect(
         parseObjectFields([

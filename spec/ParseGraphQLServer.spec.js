@@ -499,7 +499,7 @@ describe('ParseGraphQLServer', () => {
           const fileType = (await apolloClient.query({
             query: gql`
               query FileType {
-                __type(name: "File") {
+                __type(name: "FileInfo") {
                   kind
                   fields {
                     name
