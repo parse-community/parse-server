@@ -351,7 +351,7 @@ const FILE_INFO = new GraphQLObjectType({
 const RELATION_OP = new GraphQLEnumType({
   name: 'RelationOp',
   description:
-    'The RelationOp enum type is used to specify which kind of operation should be executed at a relation.',
+    'The RelationOp enum type is used to specify which kind of operation should be executed to a relation.',
   values: {
     Batch: { value: 'Batch' },
     AddRelation: { value: 'AddRelation' },
@@ -629,6 +629,18 @@ const _dontSelect = {
   type: SELECT_OPERATOR,
 };
 
+const _regex = {
+  description:
+    'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
+  type: GraphQLString,
+};
+
+const _options = {
+  description:
+    'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
+  type: GraphQLString,
+};
+
 const STRING_CONSTRAINT = new GraphQLInputObjectType({
   name: 'StringConstraint',
   description:
@@ -645,16 +657,8 @@ const STRING_CONSTRAINT = new GraphQLInputObjectType({
     _exists,
     _select,
     _dontSelect,
-    _regex: {
-      description:
-        'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
-      type: GraphQLString,
-    },
-    _options: {
-      description:
-        'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
-      type: GraphQLString,
-    },
+    _regex,
+    _options,
     _text: {
       description:
         'This is the $text operator to specify a full text search constraint.',
@@ -702,12 +706,12 @@ const ARRAY_CONSTRAINT = new GraphQLInputObjectType({
   fields: {
     _eq: _eq(ANY),
     _ne: _ne(ANY),
-    _lt: _lt(GraphQLFloat),
-    _lte: _lte(GraphQLFloat),
-    _gt: _gt(GraphQLFloat),
-    _gte: _gte(GraphQLFloat),
-    _in: _in(GraphQLFloat),
-    _nin: _nin(GraphQLFloat),
+    _lt: _lt(ANY),
+    _lte: _lte(ANY),
+    _gt: _gt(ANY),
+    _gte: _gte(ANY),
+    _in: _in(ANY),
+    _nin: _nin(ANY),
     _exists,
     _select,
     _dontSelect,
@@ -768,16 +772,8 @@ const FILE_CONSTRAINT = new GraphQLInputObjectType({
     _exists,
     _select,
     _dontSelect,
-    _regex: {
-      description:
-        'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
-      type: GraphQLString,
-    },
-    _options: {
-      description:
-        'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
-      type: GraphQLString,
-    },
+    _regex,
+    _options,
   },
 });
 
@@ -826,21 +822,23 @@ export {
   parseIntValue,
   parseFloatValue,
   parseBooleanValue,
-  parseDateIsoValue,
   parseValue,
   parseListValues,
   parseObjectFields,
   ANY,
   OBJECT,
+  parseDateIsoValue,
+  serializeDateIso,
   DATE,
+  parseFileValue,
   FILE,
   FILE_INFO,
   RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
   OBJECT_ID_ATT,
-  CREATED_AT_ATT,
   UPDATED_AT_ATT,
+  CREATED_AT_ATT,
   ACL_ATT,
   INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
@@ -875,6 +873,8 @@ export {
   _exists,
   _select,
   _dontSelect,
+  _regex,
+  _options,
   STRING_CONSTRAINT,
   NUMBER_CONSTRAINT,
   BOOLEAN_CONSTRAINT,
