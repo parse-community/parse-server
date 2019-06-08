@@ -181,30 +181,25 @@ describe('rest create', () => {
       );
   });
 
-  it('handles create on existent class when disabled client class creation', done => {
+  it('handles create on existent class when disabled client class creation', async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    config.database
-      .loadSchema()
-      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-      .then(actualSchema => {
-        expect(actualSchema.className).toEqual('ClientClassCreation');
-        return rest.create(
-          customConfig,
-          auth.nobody(customConfig),
-          'ClientClassCreation',
-          {}
-        );
-      })
-      .then(
-        () => {
-          done();
-        },
-        () => {
-          fail('Should not throw error');
-        }
-      );
+    const schema = await config.database.loadSchema();
+    const actualSchema = await schema.addClassIfNotExists(
+      'ClientClassCreation',
+      {}
+    );
+    expect(actualSchema.className).toEqual('ClientClassCreation');
+
+    await schema.reloadData({ clearCache: true });
+    // Should not throw
+    await rest.create(
+      customConfig,
+      auth.nobody(customConfig),
+      'ClientClassCreation',
+      {}
+    );
   });
 
   it('handles user signup', done => {

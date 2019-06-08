@@ -126,6 +126,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   client: MongoClient;
   _maxTimeMS: ?number;
   canSortOnJoinTables: boolean;
+  databaseVersion: string;
+  engine: string;
 
   constructor({
     uri = defaults.DefaultMongoURI,
@@ -136,6 +138,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
+    this.engine = 'MongoDB';
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -818,9 +821,9 @@ export class MongoStorageAdapter implements StorageAdapter {
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
-            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${
-              pipeline[field]
-            }`;
+            returnValue[
+              `_p_${field}`
+            ] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
         } else if (
           schema.fields[field] &&
@@ -959,7 +962,15 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   performInitialization(): Promise<void> {
-    return Promise.resolve();
+    // databaseVersion
+    return this.connect()
+      .then(() => {
+        const adminDb = this.database.admin();
+        return adminDb.serverStatus();
+      })
+      .then(status => {
+        this.databaseVersion = status.version;
+      });
   }
 
   createIndex(className: string, index: any) {
