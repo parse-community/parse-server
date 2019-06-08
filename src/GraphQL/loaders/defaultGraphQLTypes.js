@@ -143,7 +143,7 @@ const parseDateIsoValue = value => {
     return value;
   }
 
-  throw new TypeValidationError(value, 'DateIso');
+  throw new TypeValidationError(value, 'Date');
 };
 
 const serializeDateIso = value => {
@@ -154,7 +154,7 @@ const serializeDateIso = value => {
     return value.toUTCString();
   }
 
-  throw new TypeValidationError(value, 'DateIso');
+  throw new TypeValidationError(value, 'Date');
 };
 
 const parseDateIsoLiteral = ast => {
@@ -162,17 +162,8 @@ const parseDateIsoLiteral = ast => {
     return parseDateIsoValue(ast.value);
   }
 
-  throw new TypeValidationError(ast.kind, 'DateIso');
+  throw new TypeValidationError(ast.kind, 'Date');
 };
-
-const DATE_ISO = new GraphQLScalarType({
-  name: 'DateIso',
-  description:
-    'The DateIso scalar type is used in operations and types that involve createdAt and updatedAt fields.',
-  parseValue: parseDateIsoValue,
-  serialize: serializeDateIso,
-  parseLiteral: parseDateIsoLiteral,
-});
 
 const DATE = new GraphQLScalarType({
   name: 'Date',
@@ -199,19 +190,13 @@ const DATE = new GraphQLScalarType({
   },
   serialize(value) {
     if (typeof value === 'string' || value instanceof Date) {
-      return {
-        __type: 'Date',
-        iso: serializeDateIso(value),
-      };
+      return serializeDateIso(value);
     } else if (
       typeof value === 'object' &&
       value.__type === 'Date' &&
       value.iso
     ) {
-      return {
-        __type: value.__type,
-        iso: serializeDateIso(value.iso),
-      };
+      return serializeDateIso(value.iso);
     }
 
     throw new TypeValidationError(value, 'Date');
@@ -377,12 +362,12 @@ const OBJECT_ID_ATT = {
 
 const CREATED_AT_ATT = {
   description: 'This is the date in which the object was created.',
-  type: new GraphQLNonNull(DATE_ISO),
+  type: new GraphQLNonNull(DATE),
 };
 
 const UPDATED_AT_ATT = {
   description: 'This is the date in which the object was las updated.',
-  type: new GraphQLNonNull(DATE_ISO),
+  type: new GraphQLNonNull(DATE),
 };
 
 const ACL_ATT = {
@@ -798,7 +783,6 @@ const FIND_RESULT = new GraphQLObjectType({
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GraphQLUpload);
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
-  parseGraphQLSchema.graphQLTypes.push(DATE_ISO);
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(FILE);
@@ -833,7 +817,6 @@ export {
   parseListValues,
   parseObjectFields,
   OBJECT,
-  DATE_ISO,
   DATE,
   ANY,
   FILE,
