@@ -47,6 +47,10 @@ const getObject = async (
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
 
+  if (className === '_User') {
+    delete response.results[0].sessionToken;
+  }
+
   return response.results[0];
 };
 

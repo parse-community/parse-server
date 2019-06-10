@@ -915,6 +915,52 @@ describe('ParseGraphQLServer', () => {
             ).toEqual('someValue4');
           });
 
+          it('should not bring session token of another user', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  objects {
+                    get(className: "_User", objectId: $objectId)
+                  }
+                }
+              `,
+              variables: {
+                objectId: user2.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+            expect(result.data.objects.get.sessionToken).toBeUndefined();
+          });
+
+          it('should not bring session token of current user', async () => {
+            await prepareData();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  objects {
+                    get(className: "_User", objectId: $objectId)
+                  }
+                }
+              `,
+              variables: {
+                objectId: user1.id,
+              },
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                },
+              },
+            });
+            expect(result.data.objects.get.sessionToken).toBeUndefined();
+          });
+
           it('should support keys argument', async () => {
             await prepareData();
 
@@ -1798,6 +1844,8 @@ describe('ParseGraphQLServer', () => {
 
           it('should support include argument', async () => {
             await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const result1 = await apolloClient.query({
               query: gql`
