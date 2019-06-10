@@ -1,7 +1,62 @@
 const DatabaseController = require('../lib/Controllers/DatabaseController.js');
+const isVersionAffectedByServer13732 =
+  DatabaseController._isVersionAffectedByServer13732;
 const validateQuery = DatabaseController._validateQuery;
 
 describe('DatabaseController', function() {
+  describe('isVersionAffectedByServer13732', function() {
+    it('should only return true for affected versions of mongodb', function() {
+      for (let patch = 0; patch <= 12; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '2.6.' + patch)
+        ).toEqual(true);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '2.6.' + patch)
+        ).toEqual(false);
+      }
+      for (let patch = 0; patch <= 15; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '3.0.' + patch)
+        ).toEqual(true);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '3.0.' + patch)
+        ).toEqual(false);
+      }
+      for (let patch = 0; patch <= 22; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '3.2.' + patch)
+        ).toEqual(true);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '3.2.' + patch)
+        ).toEqual(false);
+      }
+      for (let patch = 0; patch <= 21; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '3.4.' + patch)
+        ).toEqual(true);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '3.4.' + patch)
+        ).toEqual(false);
+      }
+      for (let patch = 0; patch <= 13; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '3.6.' + patch)
+        ).toEqual(false);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '3.6.' + patch)
+        ).toEqual(false);
+      }
+      for (let patch = 0; patch <= 10; patch++) {
+        expect(
+          isVersionAffectedByServer13732('MongoDB', '4.0.' + patch)
+        ).toEqual(false);
+        expect(
+          isVersionAffectedByServer13732('PostgreSQL', '4.0.' + patch)
+        ).toEqual(false);
+      }
+    });
+  });
+
   describe('validateQuery', function() {
     describe('with skipMongoDBServer13732Workaround disabled (the default)', function() {
       it('should restructure simple cases of SERVER-13732', done => {

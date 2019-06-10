@@ -781,7 +781,9 @@ RestWrite.prototype._validatePasswordHistory = function() {
               return Promise.reject(
                 new Parse.Error(
                   Parse.Error.VALIDATION_ERROR,
-                  `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
+                  `New password should not be the same as last ${
+                    this.config.passwordPolicy.maxPasswordHistory
+                  } passwords.`
                 )
               );
             throw err;

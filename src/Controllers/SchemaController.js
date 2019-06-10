@@ -228,7 +228,9 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
         // @flow-disable-next
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `'${perms[operation]}' is not a valid value for class level permissions ${operation}`
+          `'${
+            perms[operation]
+          }' is not a valid value for class level permissions ${operation}`
         );
       } else {
         perms[operation].forEach(key => {

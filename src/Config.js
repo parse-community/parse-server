@@ -34,8 +34,7 @@ export class Config {
         );
         config.database = new DatabaseController(
           cacheInfo.databaseController.adapter,
-          schemaCache,
-          cacheInfo.skipMongoDBServer13732Workaround
+          schemaCache
         );
       } else {
         config[key] = cacheInfo[key];

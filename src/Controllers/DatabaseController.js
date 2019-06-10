@@ -406,24 +406,26 @@ const relationSchema = {
   fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } },
 };
 
+const isVersionAffectedByServer13732 = (engine, version) =>
+  engine == 'MongoDB' && /^(2\.6|3\.0|3\.2|3\.4)/.test(version);
+
 class DatabaseController {
   adapter: StorageAdapter;
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   skipMongoDBServer13732Workaround: boolean;
 
-  constructor(
-    adapter: StorageAdapter,
-    schemaCache: any,
-    skipMongoDBServer13732Workaround: boolean
-  ) {
+  constructor(adapter: StorageAdapter, schemaCache: any) {
     this.adapter = adapter;
     this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
-    this.skipMongoDBServer13732Workaround = skipMongoDBServer13732Workaround;
+    this.skipMongoDBServer13732Workaround = !isVersionAffectedByServer13732(
+      adapter.engine,
+      adapter.databaseVersion
+    );
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -1605,9 +1607,11 @@ class DatabaseController {
     ]);
   }
 
+  static _isVersionAffectedByServer13732: (string, string) => boolean;
   static _validateQuery: (any, boolean) => void;
 }
 
 module.exports = DatabaseController;
-// Expose validateQuery for tests
+// Expose validateQuery & isVersionAffectedByServer13732 for tests
+module.exports._isVersionAffectedByServer13732 = isVersionAffectedByServer13732;
 module.exports._validateQuery = validateQuery;
