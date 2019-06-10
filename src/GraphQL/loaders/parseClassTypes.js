@@ -126,7 +126,7 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
     case 'Bytes':
       return defaultGraphQLTypes.BYTES_CONSTRAINT;
     case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.OBJECT_CONSTRAINT;
     case 'Relation':
     default:
       return undefined;
