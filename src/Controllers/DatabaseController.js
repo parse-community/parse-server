@@ -432,6 +432,15 @@ class DatabaseController {
     return this.loadSchema(options);
   }
 
+  loadSchemaIfNeeded(
+    schemaController: SchemaController.SchemaController,
+    options: LoadSchemaOptions = { clearCache: false }
+  ): Promise<SchemaController.SchemaController> {
+    return schemaController
+      ? Promise.resolve(schemaController)
+      : this.loadSchema(options);
+  }
+
   // Returns a promise for the classname that is related to the given
   // classname through the key.
   // TODO: make this not in the DatabaseController interface
@@ -477,7 +486,8 @@ class DatabaseController {
     update: any,
     { acl, many, upsert }: FullQueryOptions = {},
     skipSanitization: boolean = false,
-    validateOnly: boolean = false
+    validateOnly: boolean = false,
+    validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const originalQuery = query;
     const originalUpdate = update;
@@ -486,141 +496,145 @@ class DatabaseController {
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
-    return this.loadSchema().then(schemaController => {
-      return (isMaster
-        ? Promise.resolve()
-        : schemaController.validatePermission(className, aclGroup, 'update')
-      )
-        .then(() => {
-          relationUpdates = this.collectRelationUpdates(
-            className,
-            originalQuery.objectId,
-            update
-          );
-          if (!isMaster) {
-            query = this.addPointerPermissions(
-              schemaController,
+
+    return this.loadSchemaIfNeeded(validSchemaController).then(
+      schemaController => {
+        return (isMaster
+          ? Promise.resolve()
+          : schemaController.validatePermission(className, aclGroup, 'update')
+        )
+          .then(() => {
+            relationUpdates = this.collectRelationUpdates(
               className,
-              'update',
-              query,
-              aclGroup
+              originalQuery.objectId,
+              update
             );
-          }
-          if (!query) {
-            return Promise.resolve();
-          }
-          if (acl) {
-            query = addWriteACL(query, acl);
-          }
-          validateQuery(query);
-          return schemaController
-            .getOneSchema(className, true)
-            .catch(error => {
-              // If the schema doesn't exist, pretend it exists with no fields. This behavior
-              // will likely need revisiting.
-              if (error === undefined) {
-                return { fields: {} };
-              }
-              throw error;
-            })
-            .then(schema => {
-              Object.keys(update).forEach(fieldName => {
-                if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_KEY_NAME,
-                    `Invalid field name for update: ${fieldName}`
-                  );
+            if (!isMaster) {
+              query = this.addPointerPermissions(
+                schemaController,
+                className,
+                'update',
+                query,
+                aclGroup
+              );
+            }
+            if (!query) {
+              return Promise.resolve();
+            }
+            if (acl) {
+              query = addWriteACL(query, acl);
+            }
+            validateQuery(query);
+            return schemaController
+              .getOneSchema(className, true)
+              .catch(error => {
+                // If the schema doesn't exist, pretend it exists with no fields. This behavior
+                // will likely need revisiting.
+                if (error === undefined) {
+                  return { fields: {} };
                 }
-                const rootFieldName = getRootFieldName(fieldName);
-                if (
-                  !SchemaController.fieldNameIsValid(rootFieldName) &&
-                  !isSpecialUpdateKey(rootFieldName)
-                ) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_KEY_NAME,
-                    `Invalid field name for update: ${fieldName}`
+                throw error;
+              })
+              .then(schema => {
+                Object.keys(update).forEach(fieldName => {
+                  if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+                    throw new Parse.Error(
+                      Parse.Error.INVALID_KEY_NAME,
+                      `Invalid field name for update: ${fieldName}`
+                    );
+                  }
+                  const rootFieldName = getRootFieldName(fieldName);
+                  if (
+                    !SchemaController.fieldNameIsValid(rootFieldName) &&
+                    !isSpecialUpdateKey(rootFieldName)
+                  ) {
+                    throw new Parse.Error(
+                      Parse.Error.INVALID_KEY_NAME,
+                      `Invalid field name for update: ${fieldName}`
+                    );
+                  }
+                });
+                for (const updateOperation in update) {
+                  if (
+                    update[updateOperation] &&
+                    typeof update[updateOperation] === 'object' &&
+                    Object.keys(update[updateOperation]).some(
+                      innerKey =>
+                        innerKey.includes('$') || innerKey.includes('.')
+                    )
+                  ) {
+                    throw new Parse.Error(
+                      Parse.Error.INVALID_NESTED_KEY,
+                      "Nested keys should not contain the '$' or '.' characters"
+                    );
+                  }
+                }
+                update = transformObjectACL(update);
+                transformAuthData(className, update, schema);
+                if (validateOnly) {
+                  return this.adapter
+                    .find(className, schema, query, {})
+                    .then(result => {
+                      if (!result || !result.length) {
+                        throw new Parse.Error(
+                          Parse.Error.OBJECT_NOT_FOUND,
+                          'Object not found.'
+                        );
+                      }
+                      return {};
+                    });
+                }
+                if (many) {
+                  return this.adapter.updateObjectsByQuery(
+                    className,
+                    schema,
+                    query,
+                    update
+                  );
+                } else if (upsert) {
+                  return this.adapter.upsertOneObject(
+                    className,
+                    schema,
+                    query,
+                    update
+                  );
+                } else {
+                  return this.adapter.findOneAndUpdate(
+                    className,
+                    schema,
+                    query,
+                    update
                   );
                 }
               });
-              for (const updateOperation in update) {
-                if (
-                  update[updateOperation] &&
-                  typeof update[updateOperation] === 'object' &&
-                  Object.keys(update[updateOperation]).some(
-                    innerKey => innerKey.includes('$') || innerKey.includes('.')
-                  )
-                ) {
-                  throw new Parse.Error(
-                    Parse.Error.INVALID_NESTED_KEY,
-                    "Nested keys should not contain the '$' or '.' characters"
-                  );
-                }
-              }
-              update = transformObjectACL(update);
-              transformAuthData(className, update, schema);
-              if (validateOnly) {
-                return this.adapter
-                  .find(className, schema, query, {})
-                  .then(result => {
-                    if (!result || !result.length) {
-                      throw new Parse.Error(
-                        Parse.Error.OBJECT_NOT_FOUND,
-                        'Object not found.'
-                      );
-                    }
-                    return {};
-                  });
-              }
-              if (many) {
-                return this.adapter.updateObjectsByQuery(
-                  className,
-                  schema,
-                  query,
-                  update
-                );
-              } else if (upsert) {
-                return this.adapter.upsertOneObject(
-                  className,
-                  schema,
-                  query,
-                  update
-                );
-              } else {
-                return this.adapter.findOneAndUpdate(
-                  className,
-                  schema,
-                  query,
-                  update
-                );
-              }
+          })
+          .then((result: any) => {
+            if (!result) {
+              throw new Parse.Error(
+                Parse.Error.OBJECT_NOT_FOUND,
+                'Object not found.'
+              );
+            }
+            if (validateOnly) {
+              return result;
+            }
+            return this.handleRelationUpdates(
+              className,
+              originalQuery.objectId,
+              update,
+              relationUpdates
+            ).then(() => {
+              return result;
             });
-        })
-        .then((result: any) => {
-          if (!result) {
-            throw new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found.'
-            );
-          }
-          if (validateOnly) {
-            return result;
-          }
-          return this.handleRelationUpdates(
-            className,
-            originalQuery.objectId,
-            update,
-            relationUpdates
-          ).then(() => {
-            return result;
+          })
+          .then(result => {
+            if (skipSanitization) {
+              return Promise.resolve(result);
+            }
+            return sanitizeDatabaseResult(originalUpdate, result);
           });
-        })
-        .then(result => {
-          if (skipSanitization) {
-            return Promise.resolve(result);
-          }
-          return sanitizeDatabaseResult(originalUpdate, result);
-        });
-    });
+      }
+    );
   }
 
   // Collect all relation-updating operations from a REST-format update.
@@ -753,65 +767,68 @@ class DatabaseController {
   destroy(
     className: string,
     query: any,
-    { acl }: QueryOptions = {}
+    { acl }: QueryOptions = {},
+    validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
 
-    return this.loadSchema().then(schemaController => {
-      return (isMaster
-        ? Promise.resolve()
-        : schemaController.validatePermission(className, aclGroup, 'delete')
-      ).then(() => {
-        if (!isMaster) {
-          query = this.addPointerPermissions(
-            schemaController,
-            className,
-            'delete',
-            query,
-            aclGroup
-          );
-          if (!query) {
-            throw new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found.'
-            );
-          }
-        }
-        // delete by query
-        if (acl) {
-          query = addWriteACL(query, acl);
-        }
-        validateQuery(query);
-        return schemaController
-          .getOneSchema(className)
-          .catch(error => {
-            // If the schema doesn't exist, pretend it exists with no fields. This behavior
-            // will likely need revisiting.
-            if (error === undefined) {
-              return { fields: {} };
-            }
-            throw error;
-          })
-          .then(parseFormatSchema =>
-            this.adapter.deleteObjectsByQuery(
+    return this.loadSchemaIfNeeded(validSchemaController).then(
+      schemaController => {
+        return (isMaster
+          ? Promise.resolve()
+          : schemaController.validatePermission(className, aclGroup, 'delete')
+        ).then(() => {
+          if (!isMaster) {
+            query = this.addPointerPermissions(
+              schemaController,
               className,
-              parseFormatSchema,
-              query
-            )
-          )
-          .catch(error => {
-            // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
-            if (
-              className === '_Session' &&
-              error.code === Parse.Error.OBJECT_NOT_FOUND
-            ) {
-              return Promise.resolve({});
+              'delete',
+              query,
+              aclGroup
+            );
+            if (!query) {
+              throw new Parse.Error(
+                Parse.Error.OBJECT_NOT_FOUND,
+                'Object not found.'
+              );
             }
-            throw error;
-          });
-      });
-    });
+          }
+          // delete by query
+          if (acl) {
+            query = addWriteACL(query, acl);
+          }
+          validateQuery(query);
+          return schemaController
+            .getOneSchema(className)
+            .catch(error => {
+              // If the schema doesn't exist, pretend it exists with no fields. This behavior
+              // will likely need revisiting.
+              if (error === undefined) {
+                return { fields: {} };
+              }
+              throw error;
+            })
+            .then(parseFormatSchema =>
+              this.adapter.deleteObjectsByQuery(
+                className,
+                parseFormatSchema,
+                query
+              )
+            )
+            .catch(error => {
+              // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
+              if (
+                className === '_Session' &&
+                error.code === Parse.Error.OBJECT_NOT_FOUND
+              ) {
+                return Promise.resolve({});
+              }
+              throw error;
+            });
+        });
+      }
+    );
   }
 
   // Inserts an object into the database.
@@ -820,7 +837,8 @@ class DatabaseController {
     className: string,
     object: any,
     { acl }: QueryOptions = {},
-    validateOnly: boolean = false
+    validateOnly: boolean = false,
+    validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
@@ -836,15 +854,15 @@ class DatabaseController {
       null,
       object
     );
+
     return this.validateClassName(className)
-      .then(() => this.loadSchema())
+      .then(() => this.loadSchemaIfNeeded(validSchemaController))
       .then(schemaController => {
         return (isMaster
           ? Promise.resolve()
           : schemaController.validatePermission(className, aclGroup, 'create')
         )
           .then(() => schemaController.enforceClassExists(className))
-          .then(() => schemaController.reloadData())
           .then(() => schemaController.getOneSchema(className, true))
           .then(schema => {
             transformAuthData(className, object, schema);
@@ -1174,7 +1192,8 @@ class DatabaseController {
       pipeline,
       readPreference,
     }: any = {},
-    auth: any = {}
+    auth: any = {},
+    validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
@@ -1187,153 +1206,157 @@ class DatabaseController {
     op = count === true ? 'count' : op;
 
     let classExists = true;
-    return this.loadSchema().then(schemaController => {
-      //Allow volatile classes if querying with Master (for _PushStatus)
-      //TODO: Move volatile classes concept into mongo adapter, postgres adapter shouldn't care
-      //that api.parse.com breaks when _PushStatus exists in mongo.
-      return schemaController
-        .getOneSchema(className, isMaster)
-        .catch(error => {
-          // Behavior for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
-          // For now, pretend the class exists but has no objects,
-          if (error === undefined) {
-            classExists = false;
-            return { fields: {} };
-          }
-          throw error;
-        })
-        .then(schema => {
-          // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
-          // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
-          // use the one that appears first in the sort list.
-          if (sort._created_at) {
-            sort.createdAt = sort._created_at;
-            delete sort._created_at;
-          }
-          if (sort._updated_at) {
-            sort.updatedAt = sort._updated_at;
-            delete sort._updated_at;
-          }
-          const queryOptions = { skip, limit, sort, keys, readPreference };
-          Object.keys(sort).forEach(fieldName => {
-            if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_KEY_NAME,
-                `Cannot sort by ${fieldName}`
-              );
+    return this.loadSchemaIfNeeded(validSchemaController).then(
+      schemaController => {
+        //Allow volatile classes if querying with Master (for _PushStatus)
+        //TODO: Move volatile classes concept into mongo adapter, postgres adapter shouldn't care
+        //that api.parse.com breaks when _PushStatus exists in mongo.
+        return schemaController
+          .getOneSchema(className, isMaster)
+          .catch(error => {
+            // Behavior for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
+            // For now, pretend the class exists but has no objects,
+            if (error === undefined) {
+              classExists = false;
+              return { fields: {} };
             }
-            const rootFieldName = getRootFieldName(fieldName);
-            if (!SchemaController.fieldNameIsValid(rootFieldName)) {
-              throw new Parse.Error(
-                Parse.Error.INVALID_KEY_NAME,
-                `Invalid field name: ${fieldName}.`
-              );
+            throw error;
+          })
+          .then(schema => {
+            // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+            // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
+            // use the one that appears first in the sort list.
+            if (sort._created_at) {
+              sort.createdAt = sort._created_at;
+              delete sort._created_at;
             }
-          });
-          return (isMaster
-            ? Promise.resolve()
-            : schemaController.validatePermission(className, aclGroup, op)
-          )
-            .then(() => this.reduceRelationKeys(className, query, queryOptions))
-            .then(() =>
-              this.reduceInRelation(className, query, schemaController)
-            )
-            .then(() => {
-              let protectedFields;
-              if (!isMaster) {
-                query = this.addPointerPermissions(
-                  schemaController,
-                  className,
-                  op,
-                  query,
-                  aclGroup
-                );
-                // ProtectedFields is generated before executing the query so we
-                // can optimize the query using Mongo Projection at a later stage.
-                protectedFields = this.addProtectedFields(
-                  schemaController,
-                  className,
-                  query,
-                  aclGroup,
-                  auth
+            if (sort._updated_at) {
+              sort.updatedAt = sort._updated_at;
+              delete sort._updated_at;
+            }
+            const queryOptions = { skip, limit, sort, keys, readPreference };
+            Object.keys(sort).forEach(fieldName => {
+              if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+                throw new Parse.Error(
+                  Parse.Error.INVALID_KEY_NAME,
+                  `Cannot sort by ${fieldName}`
                 );
               }
-              if (!query) {
-                if (op === 'get') {
-                  throw new Parse.Error(
-                    Parse.Error.OBJECT_NOT_FOUND,
-                    'Object not found.'
-                  );
-                } else {
-                  return [];
-                }
-              }
-              if (!isMaster) {
-                if (op === 'update' || op === 'delete') {
-                  query = addWriteACL(query, aclGroup);
-                } else {
-                  query = addReadACL(query, aclGroup);
-                }
-              }
-              validateQuery(query);
-              if (count) {
-                if (!classExists) {
-                  return 0;
-                } else {
-                  return this.adapter.count(
-                    className,
-                    schema,
-                    query,
-                    readPreference
-                  );
-                }
-              } else if (distinct) {
-                if (!classExists) {
-                  return [];
-                } else {
-                  return this.adapter.distinct(
-                    className,
-                    schema,
-                    query,
-                    distinct
-                  );
-                }
-              } else if (pipeline) {
-                if (!classExists) {
-                  return [];
-                } else {
-                  return this.adapter.aggregate(
-                    className,
-                    schema,
-                    pipeline,
-                    readPreference
-                  );
-                }
-              } else {
-                return this.adapter
-                  .find(className, schema, query, queryOptions)
-                  .then(objects =>
-                    objects.map(object => {
-                      object = untransformObjectACL(object);
-                      return filterSensitiveData(
-                        isMaster,
-                        aclGroup,
-                        className,
-                        protectedFields,
-                        object
-                      );
-                    })
-                  )
-                  .catch(error => {
-                    throw new Parse.Error(
-                      Parse.Error.INTERNAL_SERVER_ERROR,
-                      error
-                    );
-                  });
+              const rootFieldName = getRootFieldName(fieldName);
+              if (!SchemaController.fieldNameIsValid(rootFieldName)) {
+                throw new Parse.Error(
+                  Parse.Error.INVALID_KEY_NAME,
+                  `Invalid field name: ${fieldName}.`
+                );
               }
             });
-        });
-    });
+            return (isMaster
+              ? Promise.resolve()
+              : schemaController.validatePermission(className, aclGroup, op)
+            )
+              .then(() =>
+                this.reduceRelationKeys(className, query, queryOptions)
+              )
+              .then(() =>
+                this.reduceInRelation(className, query, schemaController)
+              )
+              .then(() => {
+                let protectedFields;
+                if (!isMaster) {
+                  query = this.addPointerPermissions(
+                    schemaController,
+                    className,
+                    op,
+                    query,
+                    aclGroup
+                  );
+                  // ProtectedFields is generated before executing the query so we
+                  // can optimize the query using Mongo Projection at a later stage.
+                  protectedFields = this.addProtectedFields(
+                    schemaController,
+                    className,
+                    query,
+                    aclGroup,
+                    auth
+                  );
+                }
+                if (!query) {
+                  if (op === 'get') {
+                    throw new Parse.Error(
+                      Parse.Error.OBJECT_NOT_FOUND,
+                      'Object not found.'
+                    );
+                  } else {
+                    return [];
+                  }
+                }
+                if (!isMaster) {
+                  if (op === 'update' || op === 'delete') {
+                    query = addWriteACL(query, aclGroup);
+                  } else {
+                    query = addReadACL(query, aclGroup);
+                  }
+                }
+                validateQuery(query);
+                if (count) {
+                  if (!classExists) {
+                    return 0;
+                  } else {
+                    return this.adapter.count(
+                      className,
+                      schema,
+                      query,
+                      readPreference
+                    );
+                  }
+                } else if (distinct) {
+                  if (!classExists) {
+                    return [];
+                  } else {
+                    return this.adapter.distinct(
+                      className,
+                      schema,
+                      query,
+                      distinct
+                    );
+                  }
+                } else if (pipeline) {
+                  if (!classExists) {
+                    return [];
+                  } else {
+                    return this.adapter.aggregate(
+                      className,
+                      schema,
+                      pipeline,
+                      readPreference
+                    );
+                  }
+                } else {
+                  return this.adapter
+                    .find(className, schema, query, queryOptions)
+                    .then(objects =>
+                      objects.map(object => {
+                        object = untransformObjectACL(object);
+                        return filterSensitiveData(
+                          isMaster,
+                          aclGroup,
+                          className,
+                          protectedFields,
+                          object
+                        );
+                      })
+                    )
+                    .catch(error => {
+                      throw new Parse.Error(
+                        Parse.Error.INTERNAL_SERVER_ERROR,
+                        error
+                      );
+                    });
+                }
+              });
+          });
+      }
+    );
   }
 
   deleteSchema(className: string): Promise<void> {

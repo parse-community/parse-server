@@ -929,6 +929,7 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema
           .addClassIfNotExists('NewClass', {})
+          .then(() => schema.reloadData({ clearCache: true }))
           .then(() => {
             schema
               .hasClass('NewClass')
@@ -1362,6 +1363,47 @@ describe('SchemaController', () => {
       })
       .then(done)
       .catch(done.fail);
+  });
+
+  it('setAllClasses return classes if cache fails', async () => {
+    const schema = await config.database.loadSchema();
+
+    spyOn(schema._cache, 'setAllClasses').and.callFake(() =>
+      Promise.reject('Oops!')
+    );
+    const errorSpy = spyOn(console, 'error').and.callFake(() => {});
+    const allSchema = await schema.setAllClasses();
+
+    expect(allSchema).toBeDefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Error saving schema to cache:',
+      'Oops!'
+    );
+  });
+
+  it('should not throw on null field types', async () => {
+    const schema = await config.database.loadSchema();
+    const result = await schema.enforceFieldExists(
+      'NewClass',
+      'fieldName',
+      null
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('ensureFields should throw when schema is not set', async () => {
+    const schema = await config.database.loadSchema();
+    try {
+      schema.ensureFields([
+        {
+          className: 'NewClass',
+          fieldName: 'fieldName',
+          type: 'String',
+        },
+      ]);
+    } catch (e) {
+      expect(e.message).toBe('Could not add field fieldName');
+    }
   });
 });
 

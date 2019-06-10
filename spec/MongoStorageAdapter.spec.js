@@ -286,4 +286,27 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       done();
     });
   });
+
+  it('getClass if exists', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
+
+    await adapter.createClass('MyClass', schema);
+    const myClassSchema = await adapter.getClass('MyClass');
+    expect(myClassSchema).toBeDefined();
+  });
+
+  it('getClass if not exists', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
+      undefined
+    );
+  });
 });

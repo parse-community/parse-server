@@ -102,6 +102,7 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   let inflatedObject;
+  let schemaController;
 
   return Promise.resolve()
     .then(() => {
@@ -151,8 +152,10 @@ function del(config, auth, className, objectId) {
         return;
       }
     })
-    .then(() => {
-      var options = {};
+    .then(() => config.database.loadSchema())
+    .then(s => {
+      schemaController = s;
+      const options = {};
       if (!auth.isMaster) {
         options.acl = ['*'];
         if (auth.user) {
@@ -166,20 +169,19 @@ function del(config, auth, className, objectId) {
         {
           objectId: objectId,
         },
-        options
+        options,
+        schemaController
       );
     })
     .then(() => {
       // Notify LiveQuery server if possible
-      config.database.loadSchema().then(schemaController => {
-        const perms = schemaController.getClassLevelPermissions(className);
-        config.liveQueryController.onAfterDelete(
-          className,
-          inflatedObject,
-          null,
-          perms
-        );
-      });
+      const perms = schemaController.getClassLevelPermissions(className);
+      config.liveQueryController.onAfterDelete(
+        className,
+        inflatedObject,
+        null,
+        perms
+      );
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
