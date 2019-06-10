@@ -915,63 +915,6 @@ describe('ParseGraphQLServer', () => {
             ).toEqual('someValue4');
           });
 
-          it('should not bring session token of another user', async () => {
-            await prepareData();
-
-            const result = await apolloClient.query({
-              query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  objects {
-                    get(className: "_User", objectId: $objectId)
-                    get_User(objectId: $objectId) {
-                      sessionToken
-                    }
-                  }
-                }
-              `,
-              variables: {
-                objectId: user2.id,
-              },
-              context: {
-                headers: {
-                  'X-Parse-Session-Token': user1.getSessionToken(),
-                },
-              },
-            });
-            expect(result.data.objects.get.sessionToken).toBeUndefined();
-            expect(result.data.objects.get_User.sessionToken).toBeNull();
-          });
-
-          it('should bring session token of current user', async () => {
-            await prepareData();
-
-            const result = await apolloClient.query({
-              query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  objects {
-                    get(className: "_User", objectId: $objectId)
-                    get_User(objectId: $objectId) {
-                      sessionToken
-                    }
-                  }
-                }
-              `,
-              variables: {
-                objectId: user1.id,
-              },
-              context: {
-                headers: {
-                  'X-Parse-Session-Token': user1.getSessionToken(),
-                },
-              },
-            });
-            expect(result.data.objects.get.sessionToken).toBeDefined();
-            expect(result.data.objects.get_User.sessionToken).toBeDefined();
-            expect(result.data.objects.get.sessionToken).toEqual(
-              result.data.objects.get_User.sessionToken
-            );
-          });
-
           it('should support keys argument', async () => {
             await prepareData();
 
