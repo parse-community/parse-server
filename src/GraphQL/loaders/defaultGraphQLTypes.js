@@ -284,7 +284,7 @@ const FILE = new GraphQLScalarType({
       }
     }
 
-    throw new TypeValidationError(ast.kind, 'FileField');
+    throw new TypeValidationError(ast.kind, 'File');
   },
 });
 

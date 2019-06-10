@@ -169,7 +169,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     field => !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field)
   );
 
-  const classGraphQLScalarTypeName = `${className}Field`;
+  const classGraphQLScalarTypeName = `${className}Pointer`;
   const parseScalarValue = value => {
     if (typeof value === 'string') {
       return {
@@ -195,7 +195,23 @@ const load = (parseGraphQLSchema, parseClass) => {
     name: classGraphQLScalarTypeName,
     description: `The ${classGraphQLScalarTypeName} is used in operations that involve ${className} pointers.`,
     parseValue: parseScalarValue,
-    serialize: parseScalarValue,
+    serialize(value) {
+      if (typeof value === 'string') {
+        return value;
+      } else if (
+        typeof value === 'object' &&
+        value.__type === 'Pointer' &&
+        value.className === className &&
+        typeof value.objectId === 'string'
+      ) {
+        return value.objectId;
+      }
+
+      throw new defaultGraphQLTypes.TypeValidationError(
+        value,
+        classGraphQLScalarTypeName
+      );
+    },
     parseLiteral(ast) {
       if (ast.kind === Kind.STRING) {
         return parseScalarValue(ast.value);
