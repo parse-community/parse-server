@@ -89,17 +89,18 @@ const parseMap = {
   _language: '$language',
   _caseSensitive: '$caseSensitive',
   _diacriticSensitive: '$diacriticSensitive',
-  _nearSphere: '$nearSphere', // geo
-  _maxDistance: '$maxDistance', // geo
-  _maxDistanceInRadians: '$maxDistanceInRadians', // geo
-  _maxDistanceInMiles: '$maxDistanceInMiles', // geo
-  _maxDistanceInKilometers: '$maxDistanceInKilometers', // geo
-  _geoWithin: '$geoWithin', // geo
-  _within: '$within', // geo
-  _box: '$box', // geo
-  _polygon: '$polygon', // geo
-  _centerSphere: '$centerSphere', // geo
-  _geoIntersects: '$geoIntersects', // geo
+  _nearSphere: '$nearSphere',
+  _maxDistance: '$maxDistance',
+  _maxDistanceInRadians: '$maxDistanceInRadians',
+  _maxDistanceInMiles: '$maxDistanceInMiles',
+  _maxDistanceInKilometers: '$maxDistanceInKilometers',
+  _within: '$within',
+  _box: '$box',
+  _geoWithin: '$geoWithin',
+  _polygon: '$polygon',
+  _centerSphere: '$centerSphere',
+  _geoIntersects: '$geoIntersects',
+  _point: '$point',
 };
 
 const transformToParse = constraints => {
@@ -107,10 +108,63 @@ const transformToParse = constraints => {
     return;
   }
   Object.keys(constraints).forEach(fieldName => {
-    const fieldValue = constraints[fieldName];
+    let fieldValue = constraints[fieldName];
     if (parseMap[fieldName]) {
       delete constraints[fieldName];
-      constraints[parseMap[fieldName]] = fieldValue;
+      fieldName = parseMap[fieldName];
+      constraints[fieldName] = fieldValue;
+    }
+    switch (fieldName) {
+      case '$point':
+      case '$nearSphere':
+        if (typeof fieldValue === 'object' && !fieldValue.__type) {
+          fieldValue.__type = 'GeoPoint';
+        }
+        break;
+      case '$box':
+        if (
+          typeof fieldValue === 'object' &&
+          fieldValue.bottomLeft &&
+          fieldValue.upperRight
+        ) {
+          fieldValue = [
+            {
+              __type: 'GeoPoint',
+              ...fieldValue.bottomLeft,
+            },
+            {
+              __type: 'GeoPoint',
+              ...fieldValue.upperRight,
+            },
+          ];
+          constraints[fieldName] = fieldValue;
+        }
+        break;
+      case '$polygon':
+        if (fieldValue instanceof Array) {
+          fieldValue.forEach(geoPoint => {
+            if (typeof geoPoint === 'object' && !geoPoint.__type) {
+              geoPoint.__type = 'GeoPoint';
+            }
+          });
+        }
+        break;
+      case 'centerSphere':
+        if (
+          typeof fieldValue === 'object' &&
+          fieldValue.center &&
+          fieldValue.distance
+        ) {
+          fieldValue = [
+            {
+              __type: 'GeoPoint',
+              ...fieldValue.center,
+            },
+            fieldValue.distance,
+          ];
+          constraints[fieldName] = fieldValue;
+        }
+        break;
     }
     if (typeof fieldValue === 'object') {
       transformToParse(fieldValue);

@@ -41,10 +41,10 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE;
-    // case 'GeoPoint':
-    //   return defaultGraphQLTypes.GEO_POINT;
-    // case 'Polygon':
-    //   return defaultGraphQLTypes.POLYGON;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.GEO_POINT;
+    case 'Polygon':
+      return defaultGraphQLTypes.POLYGON;
     // case 'Bytes':
     //   return defaultGraphQLTypes.BYTES;
     case 'ACL':
@@ -84,10 +84,10 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE_INFO;
-    // case 'GeoPoint':
-    //   return defaultGraphQLTypes.GEO_POINT;
-    // case 'Polygon':
-    //   return defaultGraphQLTypes.POLYGON;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.GEO_POINT_INFO;
+    case 'Polygon':
+      return defaultGraphQLTypes.POLYGON_INFO;
     // case 'Bytes':
     //   return defaultGraphQLTypes.BYTES;
     case 'ACL':
@@ -119,10 +119,10 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
       }
     case 'File':
       return defaultGraphQLTypes.FILE_CONSTRAINT;
-    // case 'GeoPoint':
-    //   return defaultGraphQLTypes.GEO_POINT_CONSTRAINT;
-    // case 'Polygon':
-    //   return defaultGraphQLTypes.POLYGON_CONSTRAINT;
+    case 'GeoPoint':
+      return defaultGraphQLTypes.GEO_POINT_CONSTRAINT;
+    case 'Polygon':
+      return defaultGraphQLTypes.POLYGON_CONSTRAINT;
     // case 'Bytes':
     //   return defaultGraphQLTypes.BYTES_CONSTRAINT;
     case 'ACL':
@@ -457,6 +457,24 @@ const load = (parseGraphQLSchema, parseClass) => {
                 );
               } catch (e) {
                 parseGraphQLSchema.handleError(e);
+              }
+            },
+          },
+        };
+      } else if (parseClass.fields[field].type === 'Polygon') {
+        return {
+          ...fields,
+          [field]: {
+            description: `This is the object ${field}.`,
+            type,
+            async resolve(source) {
+              if (source[field] && source[field].coordinates) {
+                return source[field].coordinates.map(coordinate => ({
+                  latitude: coordinate[0],
+                  longitude: coordinate[1],
+                }));
+              } else {
+                return null;
               }
             },
           },

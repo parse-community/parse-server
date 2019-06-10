@@ -304,49 +304,34 @@ const FILE_INFO = new GraphQLObjectType({
   },
 });
 
-// const parseGeoPointValue = value => {
-//   if (typeof value === 'string') {
-//     return {
-//       __type: 'GeoPoint',
-//       name: value,
-//     };
-//   } else if (
-//     typeof value === 'object' &&
-//     value.__type === 'File' &&
-//     typeof value.name === 'string' &&
-//     (value.url === undefined || typeof value.url === 'string')
-//   ) {
-//     return value;
-//   }
+const GEO_POINT_FIELDS = {
+  latitude: {
+    description: 'This is the latitude.',
+    type: new GraphQLNonNull(GraphQLFloat),
+  },
+  longitude: {
+    description: 'This is the longitude.',
+    type: new GraphQLNonNull(GraphQLFloat),
+  },
+};
 
-//   throw new TypeValidationError(value, 'FileField');
-// };
+const GEO_POINT = new GraphQLInputObjectType({
+  name: 'GeoPoint',
+  description:
+    'The GeoPoint input type is used in operations that involve inputting fields of type geo point.',
+  fields: GEO_POINT_FIELDS,
+});
 
-// const FILE_FIELD = new GraphQLScalarType({
-//   name: 'FileField',
-//   description:
-//     'The FieldField is used in operations that involve fields of type File.',
-//   parseValue: parseFileFieldValue,
-//   serialize: parseFileFieldValue,
-//   parseLiteral(ast) {
-//     if (ast.kind === Kind.STRING) {
-//       return parseFileFieldValue(ast.value);
-//     } else if (ast.kind === Kind.OBJECT) {
-//       const __type = ast.fields.find(field => field.name.value === '__type');
-//       const name = ast.fields.find(field => field.name.value === 'name');
-//       const url = ast.fields.find(field => field.name.value === 'url');
-//       if (__type && __type.value && name && name.value) {
-//         return parseFileFieldValue({
-//           __type: __type.value.value,
-//           name: name.value.value,
-//           url: url && url.value ? url.value.value : undefined,
-//         });
-//       }
-//     }
+const GEO_POINT_INFO = new GraphQLObjectType({
+  name: 'GeoPointInfo',
+  description:
+    'The GeoPointInfo object type is used to return the information about geo points.',
+  fields: GEO_POINT_FIELDS,
+});
 
-//     throw new TypeValidationError(ast.kind, 'FileField');
-//   },
-// });
+const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
+
+const POLYGON_INFO = new GraphQLList(new GraphQLNonNull(GEO_POINT_INFO));
 
 const RELATION_OP = new GraphQLEnumType({
   name: 'RelationOp',
@@ -563,6 +548,78 @@ const TEXT_OPERATOR = new GraphQLInputObjectType({
   },
 });
 
+const BOX_OPERATOR = new GraphQLInputObjectType({
+  name: 'BoxOperator',
+  description:
+    'The BoxOperator input type is used to specifiy a $box operation on a within geo query.',
+  fields: {
+    bottomLeft: {
+      description: 'This is the bottom left coordinates of the box.',
+      type: new GraphQLNonNull(GEO_POINT),
+    },
+    upperRight: {
+      description: 'This is the upper right coordinates of the box.',
+      type: new GraphQLNonNull(GEO_POINT),
+    },
+  },
+});
+
+const WITHIN_OPERATOR = new GraphQLInputObjectType({
+  name: 'WithinOperator',
+  description:
+    'The WithinOperator input type is used to specify a $within operation on a constraint.',
+  fields: {
+    _box: {
+      description: 'This is the box to be specified.',
+      type: new GraphQLNonNull(BOX_OPERATOR),
+    },
+  },
+});
+
+const CENTER_SPHERE_OPERATOR = new GraphQLInputObjectType({
+  name: 'CenterSphereOperator',
+  description:
+    'The CenterSphereOperator input type is used to specifiy a $centerSphere operation on a geoWithin query.',
+  fields: {
+    center: {
+      description: 'This is the center of the sphere.',
+      type: new GraphQLNonNull(GEO_POINT),
+    },
+    distance: {
+      description: 'This is the radius of the sphere.',
+      type: new GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
+const GEO_WITHIN_OPERATOR = new GraphQLInputObjectType({
+  name: 'GeoWithinOperator',
+  description:
+    'The GeoWithinOperator input type is used to specify a $geoWithin operation on a constraint.',
+  fields: {
+    _polygon: {
+      description: 'This is the polygon to be specified.',
+      type: POLYGON,
+    },
+    _centerSphere: {
+      description: 'This is the sphere to be specified.',
+      type: CENTER_SPHERE_OPERATOR,
+    },
+  },
+});
+
+const GEO_INTERSECTS = new GraphQLInputObjectType({
+  name: 'GeoIntersectsOperator',
+  description:
+    'The GeoIntersectsOperator input type is used to specify a $geoIntersects operation on a constraint.',
+  fields: {
+    _point: {
+      description: 'This is the point to be specified.',
+      type: GEO_POINT,
+    },
+  },
+});
+
 const _eq = type => ({
   description:
     'This is the $eq operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
@@ -733,7 +790,13 @@ const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
   description:
     'The ObjectConstraint input type is used in operations that involve filtering objects by a field of type Object.',
   fields: {
+    _eq: _eq(OBJECT),
+    _ne: _ne(OBJECT),
+    _in: _in(OBJECT),
+    _nin: _nin(OBJECT),
     _exists,
+    _select,
+    _dontSelect,
   },
 });
 
@@ -777,6 +840,64 @@ const FILE_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
+const GEO_POINT_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'GeoPointConstraint',
+  description:
+    'The GeoPointConstraint input type is used in operations that involve filtering objects by a field of type GeoPoint.',
+  fields: {
+    _exists,
+    _nearSphere: {
+      description:
+        'This is the $nearSphere operator to specify a constraint to select the objects where the values of a geo point field is near to another geo point.',
+      type: GEO_POINT,
+    },
+    _maxDistance: {
+      description:
+        'This is the $maxDistance operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
+      type: GraphQLFloat,
+    },
+    _maxDistanceInRadians: {
+      description:
+        'This is the $maxDistanceInRadians operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
+      type: GraphQLFloat,
+    },
+    _maxDistanceInMiles: {
+      description:
+        'This is the $maxDistanceInMiles operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in miles) from the geo point specified in the $nearSphere operator.',
+      type: GraphQLFloat,
+    },
+    _maxDistanceInKilometers: {
+      description:
+        'This is the $maxDistanceInKilometers operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in kilometers) from the geo point specified in the $nearSphere operator.',
+      type: GraphQLFloat,
+    },
+    _within: {
+      description:
+        'This is the $within operator to specify a constraint to select the objects where the values of a geo point field is within a specified box.',
+      type: WITHIN_OPERATOR,
+    },
+    _geoWithin: {
+      description:
+        'This is the $geoWithin operator to specify a constraint to select the objects where the values of a geo point field is within a specified polygon or sphere.',
+      type: GEO_WITHIN_OPERATOR,
+    },
+  },
+});
+
+const POLYGON_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'PolygonConstraint',
+  description:
+    'The PolygonConstraint input type is used in operations that involve filtering objects by a field of type Polygon.',
+  fields: {
+    _exists,
+    _geoIntersects: {
+      description:
+        'This is the $geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
+      type: GEO_INTERSECTS,
+    },
+  },
+});
+
 const FIND_RESULT = new GraphQLObjectType({
   name: 'FindResult',
   description:
@@ -797,6 +918,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(DATE);
   parseGraphQLSchema.graphQLTypes.push(FILE);
   parseGraphQLSchema.graphQLTypes.push(FILE_INFO);
+  parseGraphQLSchema.graphQLTypes.push(GEO_POINT);
+  parseGraphQLSchema.graphQLTypes.push(GEO_POINT_INFO);
   parseGraphQLSchema.graphQLTypes.push(RELATION_OP);
   parseGraphQLSchema.graphQLTypes.push(CREATE_RESULT);
   parseGraphQLSchema.graphQLTypes.push(UPDATE_RESULT);
@@ -806,6 +929,11 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(SELECT_OPERATOR);
   parseGraphQLSchema.graphQLTypes.push(SEARCH_OPERATOR);
   parseGraphQLSchema.graphQLTypes.push(TEXT_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(BOX_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(WITHIN_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(CENTER_SPHERE_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(GEO_WITHIN_OPERATOR);
+  parseGraphQLSchema.graphQLTypes.push(GEO_INTERSECTS);
   parseGraphQLSchema.graphQLTypes.push(STRING_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(NUMBER_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(BOOLEAN_CONSTRAINT);
@@ -813,6 +941,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(OBJECT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(DATE_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FILE_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(GEO_POINT_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
 };
 
@@ -833,6 +963,11 @@ export {
   parseFileValue,
   FILE,
   FILE_INFO,
+  GEO_POINT_FIELDS,
+  GEO_POINT,
+  GEO_POINT_INFO,
+  POLYGON,
+  POLYGON_INFO,
   RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
@@ -862,6 +997,11 @@ export {
   SELECT_OPERATOR,
   SEARCH_OPERATOR,
   TEXT_OPERATOR,
+  BOX_OPERATOR,
+  WITHIN_OPERATOR,
+  CENTER_SPHERE_OPERATOR,
+  GEO_WITHIN_OPERATOR,
+  GEO_INTERSECTS,
   _eq,
   _ne,
   _lt,
@@ -882,6 +1022,8 @@ export {
   OBJECT_CONSTRAINT,
   DATE_CONSTRAINT,
   FILE_CONSTRAINT,
+  GEO_POINT_CONSTRAINT,
+  POLYGON_CONSTRAINT,
   FIND_RESULT,
   load,
 };

@@ -11,6 +11,30 @@ const load = (parseGraphQLSchema, parseClass) => {
     description: 'These are the fields of the object.',
     type: classGraphQLInputType,
   };
+  const classGraphQLInputTypeFields = classGraphQLInputType.getFields();
+
+  const transformTypes = fields => {
+    if (fields) {
+      Object.keys(fields).forEach(field => {
+        if (classGraphQLInputTypeFields[field]) {
+          switch (classGraphQLInputTypeFields[field].type) {
+            case defaultGraphQLTypes.GEO_POINT:
+              fields[field].__type = 'GeoPoint';
+              break;
+            case defaultGraphQLTypes.POLYGON:
+              fields[field] = {
+                __type: 'Polygon',
+                coordinates: fields[field].map(geoPoint => [
+                  geoPoint.latitude,
+                  geoPoint.longitude,
+                ]),
+              };
+              break;
+          }
+        }
+      });
+    }
+  };
 
   const createGraphQLMutationName = `create${className}`;
   parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
@@ -23,6 +47,8 @@ const load = (parseGraphQLSchema, parseClass) => {
       try {
         const { fields } = args;
         const { config, auth, info } = context;
+
+        transformTypes(fields);
 
         return await objectsMutations.createObject(
           className,
@@ -49,6 +75,8 @@ const load = (parseGraphQLSchema, parseClass) => {
       try {
         const { objectId, fields } = args;
         const { config, auth, info } = context;
+
+        transformTypes(fields);
 
         return await objectsMutations.updateObject(
           className,
