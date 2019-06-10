@@ -778,6 +778,8 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
             async function getObject(className, objectId, headers) {
               const specificQueryResult = await apolloClient.query({
                 query: gql`
@@ -1025,6 +1027,8 @@ describe('ParseGraphQLServer', () => {
 
           it('should support include argument', async () => {
             await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const result1 = await apolloClient.query({
               query: gql`
@@ -1319,6 +1323,8 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
             async function findObjects(className, headers) {
               const result = await apolloClient.query({
                 query: gql`
@@ -1471,6 +1477,8 @@ describe('ParseGraphQLServer', () => {
           it('should support where argument using class specific query', async () => {
             await prepareData();
 
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
             const result = await apolloClient.query({
               query: gql`
                 query FindSomeObjects($where: GraphQLClassConstraints) {
@@ -1598,6 +1606,8 @@ describe('ParseGraphQLServer', () => {
           it('should support count', async () => {
             await prepareData();
 
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
             const where = {
               someField: {
                 _in: ['someValue1', 'someValue2', 'someValue3'],
@@ -1665,6 +1675,8 @@ describe('ParseGraphQLServer', () => {
 
           it('should only count', async () => {
             await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const where = {
               someField: {
