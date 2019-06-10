@@ -73,11 +73,12 @@ const load = (parseGraphQLSchema, parseClass) => {
             .filter(field => field.includes('.'))
             .map(field => field.slice(field.indexOf('.') + 1))
         );
+        const parseOrder = order && order.join(',');
 
         return await objectsQueries.findObjects(
           className,
           where,
-          order,
+          parseOrder,
           skip,
           limit,
           keys,
