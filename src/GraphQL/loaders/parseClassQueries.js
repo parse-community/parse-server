@@ -2,6 +2,7 @@ import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
+import * as parseClassTypes from './parseClassTypes';
 
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
@@ -27,7 +28,7 @@ const load = (parseGraphQLSchema, parseClass) => {
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
 
-        const { keys, include } = objectsQueries.extractKeysAndInclude(
+        const { keys, include } = parseClassTypes.extractKeysAndInclude(
           selectedFields
         );
 
@@ -67,7 +68,7 @@ const load = (parseGraphQLSchema, parseClass) => {
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
 
-        const { keys, include } = objectsQueries.extractKeysAndInclude(
+        const { keys, include } = parseClassTypes.extractKeysAndInclude(
           selectedFields
             .filter(field => field.includes('.'))
             .map(field => field.slice(field.indexOf('.') + 1))

@@ -133,6 +133,33 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
   }
 };
 
+const extractKeysAndInclude = selectedFields => {
+  selectedFields = selectedFields.filter(
+    field => !field.includes('__typename')
+  );
+  let keys = undefined;
+  let include = undefined;
+  if (selectedFields && selectedFields.length > 0) {
+    keys = selectedFields.join(',');
+    include = selectedFields
+      .reduce((fields, field) => {
+        fields = fields.slice();
+        let pointIndex = field.lastIndexOf('.');
+        while (pointIndex > 0) {
+          const lastField = field.slice(pointIndex + 1);
+          field = field.slice(0, pointIndex);
+          if (!fields.includes(field) && lastField !== 'objectId') {
+            fields.push(field);
+          }
+          pointIndex = field.lastIndexOf('.');
+        }
+        return fields;
+      }, [])
+      .join(',');
+  }
+  return { keys, include };
+};
+
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
@@ -379,7 +406,7 @@ const load = (parseGraphQLSchema, parseClass) => {
                 const { config, auth, info } = context;
                 const selectedFields = getFieldNames(queryInfo);
 
-                const { keys, include } = objectsQueries.extractKeysAndInclude(
+                const { keys, include } = extractKeysAndInclude(
                   selectedFields
                     .filter(field => field.includes('.'))
                     .map(field => field.slice(field.indexOf('.') + 1))
@@ -467,4 +494,4 @@ const load = (parseGraphQLSchema, parseClass) => {
   };
 };
 
-export { load };
+export { extractKeysAndInclude, load };
