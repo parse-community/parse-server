@@ -221,13 +221,74 @@ const DATE = new GraphQLScalarType({
       const iso = ast.fields.find(field => field.name.value === 'iso');
       if (__type && __type.value && __type.value.value === 'Date' && iso) {
         return {
-          __type: 'Date',
+          __type: __type.value.value,
           iso: parseDateIsoLiteral(iso.value),
         };
       }
     }
 
     throw new TypeValidationError(ast.kind, 'Date');
+  },
+});
+
+const BYTES = new GraphQLScalarType({
+  name: 'Bytes',
+  description:
+    'The Bytes scalar type is used in operations and types that involve base 64 binary data.',
+  parseValue(value) {
+    if (typeof value === 'string') {
+      return {
+        __type: 'Bytes',
+        base64: value,
+      };
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Bytes' &&
+      typeof value.base64 === 'string'
+    ) {
+      return value;
+    }
+
+    throw new TypeValidationError(value, 'Bytes');
+  },
+  serialize(value) {
+    if (typeof value === 'string') {
+      return value;
+    } else if (
+      typeof value === 'object' &&
+      value.__type === 'Bytes' &&
+      typeof value.base64 === 'string'
+    ) {
+      return value.base64;
+    }
+
+    throw new TypeValidationError(value, 'Bytes');
+  },
+  parseLiteral(ast) {
+    if (ast.kind === Kind.STRING) {
+      return {
+        __type: 'Bytes',
+        base64: ast.value,
+      };
+    } else if (ast.kind === Kind.OBJECT) {
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const base64 = ast.fields.find(field => field.name.value === 'base64');
+      if (
+        __type &&
+        __type.value &&
+        __type.value.value === 'Bytes' &&
+        base64 &&
+        base64.value &&
+        typeof base64.value.value === 'string'
+      ) {
+        return {
+          __type: __type.value.value,
+          base64: base64.value.value,
+        };
+      }
+    }
+
+    throw new TypeValidationError(ast.kind, 'Bytes');
   },
 });
 
@@ -819,6 +880,25 @@ const DATE_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
+const BYTES_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'BytesConstraint',
+  description:
+    'The BytesConstraint input type is used in operations that involve filtering objects by a field of type Bytes.',
+  fields: {
+    _eq: _eq(BYTES),
+    _ne: _ne(BYTES),
+    _lt: _lt(BYTES),
+    _lte: _lte(BYTES),
+    _gt: _gt(BYTES),
+    _gte: _gte(BYTES),
+    _in: _in(BYTES),
+    _nin: _nin(BYTES),
+    _exists,
+    _select,
+    _dontSelect,
+  },
+});
+
 const FILE_CONSTRAINT = new GraphQLInputObjectType({
   name: 'FileConstraint',
   description:
@@ -916,6 +996,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(ANY);
   parseGraphQLSchema.graphQLTypes.push(OBJECT);
   parseGraphQLSchema.graphQLTypes.push(DATE);
+  parseGraphQLSchema.graphQLTypes.push(BYTES);
   parseGraphQLSchema.graphQLTypes.push(FILE);
   parseGraphQLSchema.graphQLTypes.push(FILE_INFO);
   parseGraphQLSchema.graphQLTypes.push(GEO_POINT);
@@ -940,6 +1021,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(OBJECT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(DATE_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(BYTES_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FILE_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(GEO_POINT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
@@ -960,6 +1042,7 @@ export {
   parseDateIsoValue,
   serializeDateIso,
   DATE,
+  BYTES,
   parseFileValue,
   FILE,
   FILE_INFO,
@@ -1021,6 +1104,7 @@ export {
   ARRAY_CONSTRAINT,
   OBJECT_CONSTRAINT,
   DATE_CONSTRAINT,
+  BYTES_CONSTRAINT,
   FILE_CONSTRAINT,
   GEO_POINT_CONSTRAINT,
   POLYGON_CONSTRAINT,
