@@ -74,8 +74,6 @@ describe('ParseGraphQLServer', () => {
         loggerAdapter
       );
     });
-
-    xit('should generate only what is asked', async () => {});
   });
 
   describe('_getGraphQLOptions', () => {
@@ -1522,9 +1520,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue3']);
           });
 
-          xit('should support each of the where operators', async () => {});
-
-          xit('should support order, skip and limit arguments', async () => {
+          it('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -2784,12 +2780,6 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue7');
           });
-
-          xit('should support increment operation', async () => {});
-
-          xit('should support unset operation', async () => {});
-
-          xit('should pass other tests using class specific mutation', async () => {});
         });
 
         describe('Delete', () => {
@@ -3060,8 +3050,6 @@ describe('ParseGraphQLServer', () => {
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
           });
-
-          xit('should pass secondary cases', async () => {});
         });
       });
 
@@ -3105,8 +3093,6 @@ describe('ParseGraphQLServer', () => {
           expect(typeof getResult.data.objects.get.someField).toEqual('string');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
         });
-
-        xit('should support ID string', async () => {});
 
         it('should support Int numbers', async () => {
           const someFieldValue = 123;
@@ -3599,10 +3585,6 @@ describe('ParseGraphQLServer', () => {
           expect(await res.text()).toEqual('My File Content');
         });
 
-        xit('should support geo point values', async () => {});
-
-        xit('should support polygon values', async () => {});
-
         it('should support object values', async () => {
           const someFieldValue = { foo: 'bar' };
 
@@ -3684,8 +3666,6 @@ describe('ParseGraphQLServer', () => {
           expect(Array.isArray(someField)).toBeTruthy();
           expect(someField).toEqual(someFieldValue);
         });
-
-        xit('should support ACL', async () => {});
 
         it('should support null values', async () => {
           const createResult = await apolloClient.mutate({
@@ -3996,8 +3976,6 @@ describe('ParseGraphQLServer', () => {
           expect(results.length).toEqual(1);
           expect(results[0].functionName).toEqual(functionName);
         });
-
-        xit('should support GlobalConfig class', async () => {});
 
         it('should support Audience class', async () => {
           const Audience = Parse.Object.extend('_Audience');
