@@ -1742,11 +1742,18 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObjects($limit: Int) {
                   objects {
-                    find(className: "SomeClass", limit: $limit) {
+                    find(
+                      className: "SomeClass"
+                      where: { objectId: { _exists: true } }
+                      limit: $limit
+                    ) {
                       results
                       count
                     }
-                    findSomeClass(limit: $limit) {
+                    findSomeClass(
+                      where: { objectId: { _exists: true } }
+                      limit: $limit
+                    ) {
                       results {
                         objectId
                       }
