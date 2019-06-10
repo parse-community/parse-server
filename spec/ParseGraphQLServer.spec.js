@@ -3009,7 +3009,7 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Users Queries', () => {
-        fit('should return current logged user', async () => {
+        it('should return current logged user', async () => {
           const userName = 'user1',
             password = 'user1',
             email = 'emailUser1@parse.com';
@@ -3930,8 +3930,6 @@ describe('ParseGraphQLServer', () => {
             },
             { useMasterKey: true }
           );
-
-          console.log(product.id);
 
           const getResult = await apolloClient.query({
             query: gql`
