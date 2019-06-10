@@ -149,7 +149,7 @@ const transformToParse = constraints => {
           });
         }
         break;
-      case 'centerSphere':
+      case '$centerSphere':
         if (
           typeof fieldValue === 'object' &&
           fieldValue.center &&
