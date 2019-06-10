@@ -49,6 +49,7 @@ describe('ParseGraphQLSchema', () => {
       const graphQLSubscriptions = parseGraphQLSchema.parseClasses;
       const newClassObject = new Parse.Object('NewClass');
       await newClassObject.save();
+      await databaseController.schemaCache.clear();
       await new Promise(resolve => setTimeout(resolve, 200));
       await parseGraphQLSchema.load();
       expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
