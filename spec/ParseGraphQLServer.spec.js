@@ -3738,10 +3738,10 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.objects.get.someStringField).toEqual(null);
-          expect(getResult.data.objects.get.someNumberField).toEqual(null);
-          expect(getResult.data.objects.get.someBooleanField).toEqual(null);
-          expect(getResult.data.objects.get.someObjectField).toEqual(null);
+          expect(getResult.data.objects.get.someStringField).toBeFalsy();
+          expect(getResult.data.objects.get.someNumberField).toBeFalsy();
+          expect(getResult.data.objects.get.someBooleanField).toBeFalsy();
+          expect(getResult.data.objects.get.someObjectField).toBeFalsy();
           expect(getResult.data.objects.get.someNullField).toEqual(
             'now it has a string'
           );
