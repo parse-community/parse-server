@@ -301,7 +301,7 @@ const load = (parseGraphQLSchema, parseClass) => {
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLInputType);
 
-  const classGraphQLConstraintTypeName = `${className}Constraint`;
+  const classGraphQLConstraintTypeName = `${className}PointerConstraint`;
   const classGraphQLConstraintType = new GraphQLInputObjectType({
     name: classGraphQLConstraintTypeName,
     description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${className} class.`,
@@ -502,10 +502,10 @@ const load = (parseGraphQLSchema, parseClass) => {
     classGraphQLScalarType,
     classGraphQLRelationOpType,
     classGraphQLInputType,
-    classGraphQLOutputType,
     classGraphQLConstraintType,
     classGraphQLConstraintsType,
     classGraphQLFindArgs,
+    classGraphQLOutputType,
     classGraphQLFindResultType,
   };
 };
