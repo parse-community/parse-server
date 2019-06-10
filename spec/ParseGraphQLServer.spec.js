@@ -3008,6 +3008,135 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe('Users Queries', () => {
+        fit('should return current logged user', async () => {
+          const userName = 'user1',
+            password = 'user1',
+            email = 'emailUser1@parse.com';
+
+          const user = new Parse.User();
+          user.setUsername(userName);
+          user.setPassword(password);
+          user.setEmail(email);
+          await user.signUp();
+
+          const session = await Parse.Session.current();
+          const result = await apolloClient.query({
+            query: gql`
+              query GetCurrentUser {
+                users {
+                  me {
+                    objectId
+                    username
+                    email
+                  }
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Session-Token': session.getSessionToken(),
+              },
+            },
+          });
+
+          const {
+            objectId,
+            username: resultUserName,
+            email: resultEmail,
+          } = result.data.users.me;
+          expect(objectId).toBeDefined();
+          expect(resultUserName).toEqual(userName);
+          expect(resultEmail).toEqual(email);
+        });
+      });
+
+      describe('Users Mutations', () => {
+        it('should log the user in', async () => {
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          await user.signUp();
+          await Parse.User.logOut();
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation LoginUser($username: String!, $password: String!) {
+                users {
+                  login(username: $username, password: $password)
+                }
+              }
+            `,
+            variables: {
+              username: 'user1',
+              password: 'user1',
+            },
+          });
+
+          expect(result.data.users.login).toBeDefined();
+          expect(typeof result.data.users.login).toBe('string');
+        });
+
+        it('should log the user out', async () => {
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          await user.signUp();
+          await Parse.User.logOut();
+
+          const login = await apolloClient.mutate({
+            mutation: gql`
+              mutation LoginUser($username: String!, $password: String!) {
+                users {
+                  login(username: $username, password: $password)
+                }
+              }
+            `,
+            variables: {
+              username: 'user1',
+              password: 'user1',
+            },
+          });
+
+          const sessionToken = login.data.users.login;
+
+          const logout = await apolloClient.mutate({
+            mutation: gql`
+              mutation LogoutUser {
+                users {
+                  logout
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Session-Token': sessionToken,
+              },
+            },
+          });
+          expect(logout.data.users.logout).toBeTruthy();
+
+          await expectAsync(
+            apolloClient.query({
+              query: gql`
+                query GetCurrentUser {
+                  users {
+                    me {
+                      username
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': sessionToken,
+                },
+              },
+            })
+          ).toBeRejected();
+        });
+      });
+
       describe('Data Types', () => {
         it('should support String', async () => {
           const someFieldValue = 'some string';

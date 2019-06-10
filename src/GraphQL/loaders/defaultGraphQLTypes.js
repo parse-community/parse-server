@@ -991,6 +991,26 @@ const FIND_RESULT = new GraphQLObjectType({
   },
 });
 
+const USER_RESULT = new GraphQLObjectType({
+  name: 'UserResult',
+  description:
+    'The UserResult object type represents the Parse user used in the users queries.',
+  fields: {
+    objectId: {
+      description: 'The user object ID',
+      type: GraphQLString,
+    },
+    username: {
+      description: 'The username',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    email: {
+      description: 'The user e-mail',
+      type: GraphQLString,
+    },
+  },
+});
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GraphQLUpload);
   parseGraphQLSchema.graphQLTypes.push(ANY);
@@ -1026,6 +1046,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GEO_POINT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
+  parseGraphQLSchema.graphQLTypes.push(USER_RESULT);
 };
 
 export {
@@ -1110,4 +1131,5 @@ export {
   POLYGON_CONSTRAINT,
   FIND_RESULT,
   load,
+  USER_RESULT,
 };

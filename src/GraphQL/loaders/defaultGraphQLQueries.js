@@ -1,5 +1,6 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
 import * as objectsQueries from './objectsQueries';
+import * as usersQueries from './usersQueries';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLQueries.health = {
@@ -10,6 +11,7 @@ const load = parseGraphQLSchema => {
   };
 
   objectsQueries.load(parseGraphQLSchema);
+  usersQueries.load(parseGraphQLSchema);
 };
 
 export { load };
