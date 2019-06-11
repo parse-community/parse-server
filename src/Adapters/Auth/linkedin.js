@@ -4,7 +4,7 @@ var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request('people/~:(id)', authData.access_token, authData.is_mobile_sdk)
+  return request('me', authData.access_token, authData.is_mobile_sdk)
     .then((data) => {
       if (data && data.id == authData.id) {
         return;
@@ -34,7 +34,7 @@ function request(path, access_token, is_mobile_sdk) {
   return new Promise(function(resolve, reject) {
     https.get({
       host: 'api.linkedin.com',
-      path: '/v1/' + path,
+      path: '/v2/' + path,
       headers: headers
     }, function(res) {
       var data = '';
