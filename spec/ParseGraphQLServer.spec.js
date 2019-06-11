@@ -3565,12 +3565,10 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: Date) {
+              query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  findSomeClass(
-                    where: { someField: { _eq: $someFieldValue } }
-                  ) {
+                  findSomeClass(where: { someField: { _exists: true } }) {
                     results {
                       objectId
                     }
@@ -3580,7 +3578,6 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               objectId: createResult.data.objects.create.objectId,
-              someFieldValue,
             },
           });
 
@@ -3758,7 +3755,7 @@ describe('ParseGraphQLServer', () => {
           );
         });
 
-        it('should support relation', async () => {
+        it_only_db('mongo')('should support relation', async () => {
           const someObject1 = new Parse.Object('SomeClass');
           await someObject1.save();
           const someObject2 = new Parse.Object('SomeClass');
@@ -4028,15 +4025,11 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject(
-                $objectId: ID!
-                $someFieldValue1: File
-                $someFieldValue2: File
-              ) {
+              query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
                   findSomeClass1: findSomeClass(
-                    where: { someField: { _eq: $someFieldValue1 } }
+                    where: { someField: { _exists: true } }
                   ) {
                     results {
                       someField {
@@ -4046,7 +4039,7 @@ describe('ParseGraphQLServer', () => {
                     }
                   }
                   findSomeClass2: findSomeClass(
-                    where: { someField: { _eq: $someFieldValue2 } }
+                    where: { someField: { _exists: true } }
                   ) {
                     results {
                       someField {
@@ -4060,8 +4053,6 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               objectId: createResult.data.objects.create.objectId,
-              someFieldValue1: someFieldValue,
-              someFieldValue2: someFieldValue.name,
             },
           });
 
@@ -4585,7 +4576,7 @@ describe('ParseGraphQLServer', () => {
           });
         });
 
-        it('should support bytes values', async () => {
+        it_only_db('mongo')('should support bytes values', async () => {
           const SomeClass = Parse.Object.extend('SomeClass');
           const someClass = new SomeClass();
           someClass.set('someField', {
