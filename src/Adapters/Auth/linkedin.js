@@ -5,7 +5,7 @@ const httpsRequest = require('./httpsRequest');
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
   return request(
-    'people/~:(id)',
+    'me',
     authData.access_token,
     authData.is_mobile_sdk
   ).then(data => {
@@ -36,7 +36,7 @@ function request(path, access_token, is_mobile_sdk) {
   }
   return httpsRequest.get({
     host: 'api.linkedin.com',
-    path: '/v1/' + path,
+    path: '/v2/' + path,
     headers: headers,
   });
 }
