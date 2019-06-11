@@ -538,6 +538,20 @@ const load = (parseGraphQLSchema, parseClass) => {
     classGraphQLOutputType,
     classGraphQLFindResultType,
   };
+
+  if (className === '_User') {
+    const meType = new GraphQLObjectType({
+      name: 'Me',
+      description: `The Me object type is used in operations that involve outputting the current user data.`,
+      interfaces: [defaultGraphQLTypes.CLASS],
+      fields: () => ({
+        ...outputFields(),
+        sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
+      }),
+    });
+    parseGraphQLSchema.meType = meType;
+    parseGraphQLSchema.graphQLTypes.push(meType);
+  }
 };
 
 export { extractKeysAndInclude, load };

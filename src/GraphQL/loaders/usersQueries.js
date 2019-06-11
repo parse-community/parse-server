@@ -1,33 +1,18 @@
 import { GraphQLNonNull, GraphQLObjectType } from 'graphql';
-import { USER_RESULT } from './defaultGraphQLTypes';
-import getFieldNames from 'graphql-list-fields';
-import UserRouter from '../../Routers/UsersRouter';
+import UsersRouter from '../../Routers/UsersRouter';
+
+const usersRouter = new UsersRouter();
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.graphQLUsersQueries.me = {
-    description:
-      'The find query can be used to find objects of a certain class.',
-    type: new GraphQLNonNull(USER_RESULT),
-    async resolve(_source, args, context, queryInfo) {
+  const fields = {};
+
+  fields.me = {
+    description: 'The Me query can be used to return the current user data.',
+    type: new GraphQLNonNull(parseGraphQLSchema.meType),
+    async resolve(_source, _args, context) {
       try {
         const { config, auth, info } = context;
-        const selectedFields = getFieldNames(queryInfo);
-        const req = {
-          config,
-          auth,
-          info,
-        };
-        const user = (await new UserRouter().handleMe(req)).response;
-        const response = Object.entries(user).reduce(
-          (fields, [field, value]) => {
-            if (selectedFields.includes(field)) {
-              fields[field] = value;
-            }
-            return fields;
-          },
-          {}
-        );
-        return response;
+        return (await usersRouter.handleMe({ config, auth, info })).response;
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -37,7 +22,7 @@ const load = parseGraphQLSchema => {
   const usersQuery = new GraphQLObjectType({
     name: 'UsersQuery',
     description: 'UsersQuery is the top level type for users queries.',
-    fields: parseGraphQLSchema.graphQLUsersQueries,
+    fields,
   });
   parseGraphQLSchema.graphQLTypes.push(usersQuery);
 

@@ -36,6 +36,7 @@ class ParseGraphQLSchema {
     this.parseClasses = parseClasses;
     this.parseClassesString = parseClassesString;
     this.parseClassTypes = {};
+    this.meType = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
@@ -43,8 +44,6 @@ class ParseGraphQLSchema {
     this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
-    this.graphQLUsersQueries = {};
-    this.graphQLUsersMutations = {};
 
     defaultGraphQLTypes.load(this);
 

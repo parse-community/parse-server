@@ -3116,9 +3116,11 @@ describe('ParseGraphQLServer', () => {
 
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation LoginUser($username: String!, $password: String!) {
+              mutation LogInUser($username: String!, $password: String!) {
                 users {
-                  login(username: $username, password: $password)
+                  logIn(username: $username, password: $password) {
+                    sessionToken
+                  }
                 }
               }
             `,
@@ -3128,8 +3130,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.data.users.login).toBeDefined();
-          expect(typeof result.data.users.login).toBe('string');
+          expect(result.data.users.logIn.sessionToken).toBeDefined();
+          expect(typeof result.data.users.logIn.sessionToken).toBe('string');
         });
 
         it('should log the user out', async () => {
@@ -3139,11 +3141,13 @@ describe('ParseGraphQLServer', () => {
           await user.signUp();
           await Parse.User.logOut();
 
-          const login = await apolloClient.mutate({
+          const logIn = await apolloClient.mutate({
             mutation: gql`
-              mutation LoginUser($username: String!, $password: String!) {
+              mutation LogInUser($username: String!, $password: String!) {
                 users {
-                  login(username: $username, password: $password)
+                  logIn(username: $username, password: $password) {
+                    sessionToken
+                  }
                 }
               }
             `,
@@ -3153,13 +3157,13 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const sessionToken = login.data.users.login;
+          const sessionToken = logIn.data.users.logIn.sessionToken;
 
-          const logout = await apolloClient.mutate({
+          const logOut = await apolloClient.mutate({
             mutation: gql`
-              mutation LogoutUser {
+              mutation LogOutUser {
                 users {
-                  logout
+                  logOut
                 }
               }
             `,
@@ -3169,7 +3173,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          expect(logout.data.users.logout).toBeTruthy();
+          expect(logOut.data.users.logOut).toBeTruthy();
 
           await expectAsync(
             apolloClient.query({

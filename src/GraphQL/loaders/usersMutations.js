@@ -6,11 +6,13 @@ import {
 } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
 
+const usersRouter = new UsersRouter();
+
 const load = parseGraphQLSchema => {
   const fields = {};
 
-  fields.login = {
-    description: 'The login mutation can be used to log the user in.',
+  fields.logIn = {
+    description: 'The logIn mutation can be used to log the user in.',
     args: {
       username: {
         description: 'This is the username used to log the user in.',
@@ -21,13 +23,13 @@ const load = parseGraphQLSchema => {
         type: new GraphQLNonNull(GraphQLString),
       },
     },
-    type: new GraphQLNonNull(GraphQLString),
+    type: new GraphQLNonNull(parseGraphQLSchema.meType),
     async resolve(_source, args, context) {
       try {
         const { username, password } = args;
         const { config, auth, info } = context;
 
-        const user = (await new UsersRouter().handleLogIn({
+        return (await usersRouter.handleLogIn({
           body: {
             username,
             password,
@@ -37,21 +39,20 @@ const load = parseGraphQLSchema => {
           auth,
           info,
         })).response;
-        return user.sessionToken;
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
     },
   };
 
-  fields.logout = {
-    description: 'The logout mutation can be used to log the user out.',
+  fields.logOut = {
+    description: 'The logOut mutation can be used to log the user out.',
     type: new GraphQLNonNull(GraphQLBoolean),
-    async resolve(_source, args, context) {
+    async resolve(_source, _args, context) {
       try {
         const { config, auth, info } = context;
 
-        await new UsersRouter().handleLogOut({
+        await usersRouter.handleLogOut({
           config,
           auth,
           info,

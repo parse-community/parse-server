@@ -477,7 +477,7 @@ const CLASS = new GraphQLInterfaceType({
 
 const SESSION_TOKEN_ATT = {
   description: 'The user session token',
-  type: GraphQLString,
+  type: new GraphQLNonNull(GraphQLString),
 };
 
 const KEYS_ATT = {
@@ -991,23 +991,13 @@ const FIND_RESULT = new GraphQLObjectType({
   },
 });
 
-const USER_RESULT = new GraphQLObjectType({
-  name: 'UserResult',
+const SIGN_UP_RESULT = new GraphQLObjectType({
+  name: 'SignUpResult',
   description:
-    'The UserResult object type represents the Parse user used in the users queries.',
+    'The SignUpResult object type is used in the users sign up mutation to return the data of the recent created user.',
   fields: {
-    objectId: {
-      description: 'The user object ID',
-      type: GraphQLString,
-    },
-    username: {
-      description: 'The username',
-      type: new GraphQLNonNull(GraphQLString),
-    },
-    email: {
-      description: 'The user e-mail',
-      type: GraphQLString,
-    },
+    ...CREATE_RESULT_FIELDS,
+    sessionToken: SESSION_TOKEN_ATT,
   },
 });
 
@@ -1046,7 +1036,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(GEO_POINT_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
-  parseGraphQLSchema.graphQLTypes.push(USER_RESULT);
+  parseGraphQLSchema.graphQLTypes.push(SIGN_UP_RESULT);
 };
 
 export {
@@ -1130,6 +1120,6 @@ export {
   GEO_POINT_CONSTRAINT,
   POLYGON_CONSTRAINT,
   FIND_RESULT,
+  SIGN_UP_RESULT,
   load,
-  USER_RESULT,
 };
