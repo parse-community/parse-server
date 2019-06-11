@@ -9,7 +9,26 @@ const {
   parseValue,
   parseListValues,
   parseObjectFields,
+  FILE,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
+
+function createValue(kind, value, values, fields) {
+  return {
+    kind,
+    value,
+    values,
+    fields,
+  };
+}
+
+function createObjectField(name, value) {
+  return {
+    name: {
+      value: name,
+    },
+    value,
+  };
+}
 
 describe('defaultGraphQLTypes', () => {
   describe('TypeValidationError', () => {
@@ -160,24 +179,6 @@ describe('defaultGraphQLTypes', () => {
   });
 
   describe('parseValue', () => {
-    function createValue(kind, value, values, fields) {
-      return {
-        kind,
-        value,
-        values,
-        fields,
-      };
-    }
-
-    function createObjectField(name, value) {
-      return {
-        name: {
-          value: name,
-        },
-        value,
-      };
-    }
-
     const someString = createValue(Kind.STRING, 'somestring');
     const someInt = createValue(Kind.INT, '123');
     const someFloat = createValue(Kind.FLOAT, '123.4');
@@ -364,6 +365,57 @@ describe('defaultGraphQLTypes', () => {
       );
       expect(() => parseObjectFields(123)).toThrow(
         jasmine.stringMatching('is not a valid Object')
+      );
+    });
+  });
+
+  describe('parseFileLiteral', () => {
+    const { parseLiteral } = FILE;
+
+    it('should parse to file if string', () => {
+      expect(parseLiteral(createValue(Kind.STRING, 'parsefile'))).toEqual({
+        __type: 'File',
+        name: 'parsefile',
+      });
+    });
+
+    it('should parse to file if object', () => {
+      expect(
+        parseLiteral(
+          createValue(Kind.OBJECT, undefined, undefined, [
+            createObjectField('__type', { value: 'File' }),
+            createObjectField('name', { value: 'parsefile' }),
+            createObjectField('url', { value: 'myurl' }),
+          ])
+        )
+      ).toEqual({
+        __type: 'File',
+        name: 'parsefile',
+        url: 'myurl',
+      });
+    });
+
+    it('should fail if not an valid object or string', () => {
+      expect(() => parseLiteral()).toThrow(
+        jasmine.stringMatching('is not a valid File')
+      );
+      expect(() => parseLiteral({})).toThrow(
+        jasmine.stringMatching('is not a valid File')
+      );
+      expect(() =>
+        parseLiteral(
+          createValue(Kind.OBJECT, undefined, undefined, [
+            createObjectField('__type', { value: 'Foo' }),
+            createObjectField('name', { value: 'parsefile' }),
+            createObjectField('url', { value: 'myurl' }),
+          ])
+        )
+      ).toThrow(jasmine.stringMatching('is not a valid File'));
+      expect(() => parseLiteral([])).toThrow(
+        jasmine.stringMatching('is not a valid File')
+      );
+      expect(() => parseLiteral(123)).toThrow(
+        jasmine.stringMatching('is not a valid File')
       );
     });
   });
