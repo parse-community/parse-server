@@ -4466,7 +4466,7 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               fields: {
-                someField: someFieldValue,
+                somePolygonField: someFieldValue,
               },
             },
           });
@@ -4474,7 +4474,7 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
           const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('Polygon');
+          expect(schema.fields.somePolygonField.type).toEqual('Polygon');
 
           await apolloClient.mutate({
             mutation: gql`
@@ -4488,7 +4488,7 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               fields: {
-                someField: someFieldValue.coordinates.map(point => ({
+                somePolygonField: someFieldValue.coordinates.map(point => ({
                   latitude: point[0],
                   longitude: point[1],
                 })),
@@ -4501,10 +4501,12 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  findSomeClass(where: { someField: { _exists: true } }) {
+                  findSomeClass(
+                    where: { somePolygonField: { _exists: true } }
+                  ) {
                     results {
                       objectId
-                      someField {
+                      somePolygonField {
                         latitude
                         longitude
                       }
@@ -4518,10 +4520,178 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(typeof getResult.data.objects.get.someField).toEqual('object');
-          expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
+          expect(typeof getResult.data.objects.get.somePolygonField).toEqual(
+            'object'
+          );
+          expect(getResult.data.objects.get.somePolygonField).toEqual(
+            someFieldValue
+          );
           expect(getResult.data.objects.findSomeClass.results.length).toEqual(
             2
+          );
+        });
+
+        it('should support polygon values', async () => {
+          const someFieldValue = {
+            __type: 'Polygon',
+            coordinates: [[1.0, 2.1], [3.2, 4.3], [5.4, 6.5], [1.0, 2.1]],
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object) {
+                objects {
+                  create(className: "SomeClass", fields: $fields) {
+                    objectId
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                somePolygonField: someFieldValue,
+              },
+            },
+          });
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                objects {
+                  getSomeClass(objectId: $objectId) {
+                    somePolygonField {
+                      latitude
+                      longitude
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: createResult.data.objects.create.objectId,
+            },
+          });
+
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.somePolygonField.type).toEqual('Polygon');
+
+          const { somePolygonField } = getResult.data.objects.getSomeClass;
+          expect(Array.isArray(somePolygonField)).toBeTruthy();
+          somePolygonField.forEach((coord, i) => {
+            expect(coord.latitude).toEqual(someFieldValue.coordinates[i][0]);
+            expect(coord.longitude).toEqual(someFieldValue.coordinates[i][1]);
+          });
+        });
+
+        it('should support bytes values', async () => {
+          const SomeClass = Parse.Object.extend('SomeClass');
+          const someClass = new SomeClass();
+          someClass.set('someField', {
+            __type: 'Bytes',
+            base64: 'foo',
+          });
+          await someClass.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          const schema = await new Parse.Schema('SomeClass').get();
+          expect(schema.fields.someField.type).toEqual('Bytes');
+
+          const someFieldValue = {
+            __type: 'Bytes',
+            base64: 'bytesContent',
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: SomeClassFields) {
+                objects {
+                  createSomeClass(fields: $fields) {
+                    objectId
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+            },
+          });
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                objects {
+                  getSomeClass(objectId: $objectId) {
+                    someField
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: createResult.data.objects.createSomeClass.objectId,
+            },
+          });
+
+          expect(getResult.data.objects.getSomeClass.someField).toEqual(
+            someFieldValue.base64
+          );
+
+          const updatedSomeFieldValue = {
+            __type: 'Bytes',
+            base64: 'newBytesContent',
+          };
+
+          const updatedResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation UpdateSomeObject(
+                $objectId: ID!
+                $fields: SomeClassFields
+              ) {
+                objects {
+                  updateSomeClass(objectId: $objectId, fields: $fields) {
+                    updatedAt
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: createResult.data.objects.createSomeClass.objectId,
+              fields: {
+                someField: updatedSomeFieldValue,
+              },
+            },
+          });
+
+          const { updatedAt } = updatedResult.data.objects.updateSomeClass;
+          expect(updatedAt).toBeDefined();
+
+          const findResult = await apolloClient.query({
+            query: gql`
+              query FindSomeObject($where: SomeClassConstraints!) {
+                objects {
+                  findSomeClass(where: $where) {
+                    results {
+                      objectId
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              where: {
+                someField: {
+                  _eq: updatedSomeFieldValue.base64,
+                },
+              },
+            },
+          });
+          const findResults = findResult.data.objects.findSomeClass.results;
+          expect(findResults.length).toBe(1);
+          expect(findResults[0].objectId).toBe(
+            createResult.data.objects.createSomeClass.objectId
           );
         });
       });
