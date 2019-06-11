@@ -43,6 +43,8 @@ class ParseGraphQLSchema {
     this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
+    this.graphQLUsersQueries = {};
+    this.graphQLUsersMutations = {};
 
     defaultGraphQLTypes.load(this);
 
