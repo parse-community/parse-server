@@ -379,7 +379,7 @@ describe('defaultGraphQLTypes', () => {
         const date = '2019-05-09T23:12:00.000Z';
         expect(parseLiteral(createValue(Kind.STRING, date))).toEqual({
           __type: 'Date',
-          iso: date,
+          iso: new Date(date),
         });
       });
 
@@ -389,12 +389,12 @@ describe('defaultGraphQLTypes', () => {
           parseLiteral(
             createValue(Kind.OBJECT, undefined, undefined, [
               createObjectField('__type', { value: 'Date' }),
-              createObjectField('base64', { value: date }),
+              createObjectField('iso', { value: date, kind: Kind.STRING }),
             ])
           )
         ).toEqual({
           __type: 'Date',
-          iso: date,
+          iso: new Date(date),
         });
       });
 
@@ -426,14 +426,14 @@ describe('defaultGraphQLTypes', () => {
         const date = '2019-05-09T23:12:00.000Z';
         expect(parseValue(date)).toEqual({
           __type: 'Date',
-          iso: date,
+          iso: new Date(date),
         });
       });
 
       it('should parse object value', () => {
         const input = {
           __type: 'Date',
-          iso: '2019-05-09T23:12:00.000Z',
+          iso: new Date('2019-05-09T23:12:00.000Z'),
         };
         expect(parseValue(input)).toEqual(input);
       });
@@ -493,12 +493,6 @@ describe('defaultGraphQLTypes', () => {
           serialize({
             __type: 'Foo',
             iso: '2019-05-09T23:12:00.000Z',
-          })
-        ).toThrow(jasmine.stringMatching('is not a valid Date'));
-        expect(() =>
-          serialize({
-            __type: 'Date',
-            iso: 'foo',
           })
         ).toThrow(jasmine.stringMatching('is not a valid Date'));
         expect(() => serialize([])).toThrow(
