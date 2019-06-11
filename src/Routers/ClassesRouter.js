@@ -111,6 +111,9 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
+    delete req.body.id;
+    delete req.body.objectId;
+
     return rest.create(
       req.config,
       req.auth,
