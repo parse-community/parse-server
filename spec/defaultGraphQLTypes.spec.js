@@ -9,6 +9,8 @@ const {
   parseValue,
   parseListValues,
   parseObjectFields,
+  BYTES,
+  DATE,
   FILE,
 } = require('../lib/GraphQL/loaders/defaultGraphQLTypes');
 
@@ -369,51 +371,351 @@ describe('defaultGraphQLTypes', () => {
     });
   });
 
-  describe('parseFileLiteral', () => {
-    const { parseLiteral } = FILE;
+  describe('Date', () => {
+    describe('parse literal', () => {
+      const { parseLiteral } = DATE;
 
-    it('should parse to file if string', () => {
-      expect(parseLiteral(createValue(Kind.STRING, 'parsefile'))).toEqual({
-        __type: 'File',
-        name: 'parsefile',
+      it('should parse to date if string', () => {
+        const date = '2019-05-09T23:12:00.000Z';
+        expect(parseLiteral(createValue(Kind.STRING, date))).toEqual({
+          __type: 'Date',
+          iso: date,
+        });
+      });
+
+      it('should parse to date if object', () => {
+        const date = '2019-05-09T23:12:00.000Z';
+        expect(
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Date' }),
+              createObjectField('base64', { value: date }),
+            ])
+          )
+        ).toEqual({
+          __type: 'Date',
+          iso: date,
+        });
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => parseLiteral({})).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Foo' }),
+              createObjectField('iso', { value: '2019-05-09T23:12:00.000Z' }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => parseLiteral([])).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() => parseLiteral(123)).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
       });
     });
 
-    it('should parse to file if object', () => {
-      expect(
-        parseLiteral(
-          createValue(Kind.OBJECT, undefined, undefined, [
-            createObjectField('__type', { value: 'File' }),
-            createObjectField('name', { value: 'parsefile' }),
-            createObjectField('url', { value: 'myurl' }),
-          ])
-        )
-      ).toEqual({
-        __type: 'File',
-        name: 'parsefile',
-        url: 'myurl',
+    describe('parse value', () => {
+      const { parseValue } = DATE;
+
+      it('should parse string value', () => {
+        const date = '2019-05-09T23:12:00.000Z';
+        expect(parseValue(date)).toEqual({
+          __type: 'Date',
+          iso: date,
+        });
+      });
+
+      it('should parse object value', () => {
+        const input = {
+          __type: 'Date',
+          iso: '2019-05-09T23:12:00.000Z',
+        };
+        expect(parseValue(input)).toEqual(input);
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => parseValue({})).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() =>
+          parseValue({
+            __type: 'Foo',
+            iso: '2019-05-09T23:12:00.000Z',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() =>
+          parseValue({
+            __type: 'Date',
+            iso: 'foo',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => parseValue([])).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() => parseValue(123)).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
       });
     });
 
-    it('should fail if not an valid object or string', () => {
-      expect(() => parseLiteral({})).toThrow(
-        jasmine.stringMatching('is not a valid File')
-      );
-      expect(() =>
-        parseLiteral(
-          createValue(Kind.OBJECT, undefined, undefined, [
-            createObjectField('__type', { value: 'Foo' }),
-            createObjectField('name', { value: 'parsefile' }),
-            createObjectField('url', { value: 'myurl' }),
-          ])
-        )
-      ).toThrow(jasmine.stringMatching('is not a valid File'));
-      expect(() => parseLiteral([])).toThrow(
-        jasmine.stringMatching('is not a valid File')
-      );
-      expect(() => parseLiteral(123)).toThrow(
-        jasmine.stringMatching('is not a valid File')
-      );
+    describe('serialize date type', () => {
+      const { serialize } = DATE;
+
+      it('should do nothing if string', () => {
+        const str = '2019-05-09T23:12:00.000Z';
+        expect(serialize(str)).toBe(str);
+      });
+
+      it('should serialize date', () => {
+        const date = new Date();
+        expect(serialize(date)).toBe(date.toUTCString());
+      });
+
+      it('should return iso value if object', () => {
+        const iso = '2019-05-09T23:12:00.000Z';
+        const date = {
+          __type: 'Date',
+          iso,
+        };
+        expect(serialize(date)).toEqual(iso);
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => serialize({})).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() =>
+          serialize({
+            __type: 'Foo',
+            iso: '2019-05-09T23:12:00.000Z',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() =>
+          serialize({
+            __type: 'Date',
+            iso: 'foo',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => serialize([])).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+        expect(() => serialize(123)).toThrow(
+          jasmine.stringMatching('is not a valid Date')
+        );
+      });
+    });
+  });
+
+  describe('Bytes', () => {
+    describe('parse literal', () => {
+      const { parseLiteral } = BYTES;
+
+      it('should parse to bytes if string', () => {
+        expect(parseLiteral(createValue(Kind.STRING, 'bytesContent'))).toEqual({
+          __type: 'Bytes',
+          base64: 'bytesContent',
+        });
+      });
+
+      it('should parse to bytes if object', () => {
+        expect(
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Bytes' }),
+              createObjectField('base64', { value: 'bytesContent' }),
+            ])
+          )
+        ).toEqual({
+          __type: 'Bytes',
+          base64: 'bytesContent',
+        });
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => parseLiteral({})).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Foo' }),
+              createObjectField('base64', { value: 'bytesContent' }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => parseLiteral([])).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() => parseLiteral(123)).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+      });
+    });
+
+    describe('parse value', () => {
+      const { parseValue } = BYTES;
+
+      it('should parse string value', () => {
+        expect(parseValue('bytesContent')).toEqual({
+          __type: 'Bytes',
+          base64: 'bytesContent',
+        });
+      });
+
+      it('should parse object value', () => {
+        const input = {
+          __type: 'Bytes',
+          base64: 'bytesContent',
+        };
+        expect(parseValue(input)).toEqual(input);
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => parseValue({})).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() =>
+          parseValue({
+            __type: 'Foo',
+            base64: 'bytesContent',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => parseValue([])).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() => parseValue(123)).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+      });
+    });
+
+    describe('serialize bytes type', () => {
+      const { serialize } = BYTES;
+
+      it('should do nothing if string', () => {
+        const str = 'foo';
+        expect(serialize(str)).toBe(str);
+      });
+
+      it('should return base64 value if object', () => {
+        const base64Content = 'bytesContent';
+        const bytes = {
+          __type: 'Bytes',
+          base64: base64Content,
+        };
+        expect(serialize(bytes)).toEqual(base64Content);
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => serialize({})).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() =>
+          serialize({
+            __type: 'Foo',
+            base64: 'bytesContent',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => serialize([])).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+        expect(() => serialize(123)).toThrow(
+          jasmine.stringMatching('is not a valid Bytes')
+        );
+      });
+    });
+  });
+
+  describe('File', () => {
+    describe('parse literal', () => {
+      const { parseLiteral } = FILE;
+
+      it('should parse to file if string', () => {
+        expect(parseLiteral(createValue(Kind.STRING, 'parsefile'))).toEqual({
+          __type: 'File',
+          name: 'parsefile',
+        });
+      });
+
+      it('should parse to file if object', () => {
+        expect(
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'File' }),
+              createObjectField('name', { value: 'parsefile' }),
+              createObjectField('url', { value: 'myurl' }),
+            ])
+          )
+        ).toEqual({
+          __type: 'File',
+          name: 'parsefile',
+          url: 'myurl',
+        });
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => parseLiteral({})).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+        expect(() =>
+          parseLiteral(
+            createValue(Kind.OBJECT, undefined, undefined, [
+              createObjectField('__type', { value: 'Foo' }),
+              createObjectField('name', { value: 'parsefile' }),
+              createObjectField('url', { value: 'myurl' }),
+            ])
+          )
+        ).toThrow(jasmine.stringMatching('is not a valid File'));
+        expect(() => parseLiteral([])).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+        expect(() => parseLiteral(123)).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+      });
+    });
+
+    describe('serialize file type', () => {
+      const { serialize } = FILE;
+
+      it('should do nothing if string', () => {
+        const str = 'foo';
+        expect(serialize(str)).toBe(str);
+      });
+
+      it('should return file name if object', () => {
+        const fileName = 'parsefile';
+        const file = {
+          __type: 'File',
+          name: fileName,
+          url: 'myurl',
+        };
+        expect(serialize(file)).toEqual(fileName);
+      });
+
+      it('should fail if not an valid object or string', () => {
+        expect(() => serialize({})).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+        expect(() =>
+          serialize({
+            __type: 'Foo',
+            name: 'parsefile',
+            url: 'myurl',
+          })
+        ).toThrow(jasmine.stringMatching('is not a valid File'));
+        expect(() => serialize([])).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+        expect(() => serialize(123)).toThrow(
+          jasmine.stringMatching('is not a valid File')
+        );
+      });
     });
   });
 });
