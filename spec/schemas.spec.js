@@ -199,15 +199,14 @@ describe('schemas', () => {
         results: [userSchema, roleSchema],
       };
       expect(
-        dd(
-          response.data.results.sort((s1, s2) => {
-            return s1.className > s2.className ? 1 : -1;
-          }),
-          expected.results.sort((s1, s2) => {
-            return s1.className > s2.className ? 1 : -1;
-          })
+        response.data.results.sort((s1, s2) =>
+          s1.className.localeCompare(s2.className)
         )
-      ).toEqual(undefined);
+      ).toEqual(
+        expected.results.sort((s1, s2) =>
+          s1.className.localeCompare(s2.className)
+        )
+      );
       done();
     });
   });
@@ -238,15 +237,14 @@ describe('schemas', () => {
             ],
           };
           expect(
-            dd(
-              response.data.results.sort((s1, s2) => {
-                return s1.className > s2.className ? 1 : -1;
-              }),
-              expected.results.sort((s1, s2) => {
-                return s1.className > s2.className ? 1 : -1;
-              })
+            response.data.results.sort((s1, s2) =>
+              s1.className.localeCompare(s2.className)
             )
-          ).toEqual(undefined);
+          ).toEqual(
+            expected.results.sort((s1, s2) =>
+              s1.className.localeCompare(s2.className)
+            )
+          );
           done();
         });
       });

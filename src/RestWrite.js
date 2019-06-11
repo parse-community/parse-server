@@ -52,6 +52,12 @@ function RestWrite(
       'objectId is an invalid field name.'
     );
   }
+  if (!query && data.id) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_KEY_NAME,
+      'id is an invalid field name.'
+    );
+  }
 
   // When the operation is complete, this.response may have several
   // fields.
