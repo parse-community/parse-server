@@ -396,9 +396,6 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not an valid object or string', () => {
-      expect(() => parseLiteral()).toThrow(
-        jasmine.stringMatching('is not a valid File')
-      );
       expect(() => parseLiteral({})).toThrow(
         jasmine.stringMatching('is not a valid File')
       );
