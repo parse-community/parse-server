@@ -3673,20 +3673,74 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const schema = await new Parse.Schema('ChildClass').get();
           expect(schema.fields.pointerField.type).toEqual('Pointer');
           expect(schema.fields.pointerField.targetClass).toEqual('ParentClass');
 
+          await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateChildObject(
+                $fields1: ChildClassFields
+                $fields2: ChildClassFields
+              ) {
+                objects {
+                  createChildClass1: createChildClass(fields: $fields1) {
+                    objectId
+                  }
+                  createChildClass2: createChildClass(fields: $fields2) {
+                    objectId
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields1: {
+                pointerField: pointerFieldValue,
+              },
+              fields2: {
+                pointerField: pointerFieldValue.objectId,
+              },
+            },
+          });
+
           const getResult = await apolloClient.query({
             query: gql`
-              query GetChildObject($objectId: ID!) {
+              query GetChildObject(
+                $objectId: ID!
+                $pointerFieldValue1: ParentClassPointer
+                $pointerFieldValue2: ParentClassPointer
+              ) {
                 objects {
                   get(className: "ChildClass", objectId: $objectId)
+                  findChildClass1: findChildClass(
+                    where: { pointerField: { _eq: $pointerFieldValue1 } }
+                  ) {
+                    results {
+                      pointerField {
+                        objectId
+                        createdAt
+                      }
+                    }
+                  }
+                  findChildClass2: findChildClass(
+                    where: { pointerField: { _eq: $pointerFieldValue2 } }
+                  ) {
+                    results {
+                      pointerField {
+                        objectId
+                        createdAt
+                      }
+                    }
+                  }
                 }
               }
             `,
             variables: {
               objectId: createResult.data.objects.create.objectId,
+              pointerFieldValue1: pointerFieldValue,
+              pointerFieldValue2: pointerFieldValue.objectId,
             },
           });
 
@@ -3695,6 +3749,12 @@ describe('ParseGraphQLServer', () => {
           );
           expect(getResult.data.objects.get.pointerField).toEqual(
             pointerFieldValue
+          );
+          expect(getResult.data.objects.findChildClass1.results.length).toEqual(
+            3
+          );
+          expect(getResult.data.objects.findChildClass2.results.length).toEqual(
+            3
           );
         });
 
