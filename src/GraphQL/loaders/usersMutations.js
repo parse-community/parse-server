@@ -5,11 +5,40 @@ import {
   GraphQLString,
 } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
+import * as defaultGraphQLTypes from './defaultGraphQLTypes';
+import * as objectsMutations from './objectsMutations';
 
 const usersRouter = new UsersRouter();
 
 const load = parseGraphQLSchema => {
   const fields = {};
+
+  fields.signUp = {
+    description: 'The signUp mutation can be used to sign the user up.',
+    args: {
+      fields: {
+        descriptions: 'These are the fields of the user.',
+        type: parseGraphQLSchema.parseClassTypes['_User'].classGraphQLInputType,
+      },
+    },
+    type: new GraphQLNonNull(defaultGraphQLTypes.SIGN_UP_RESULT),
+    async resolve(_source, args, context) {
+      try {
+        const { fields } = args;
+        const { config, auth, info } = context;
+
+        return await objectsMutations.createObject(
+          '_User',
+          fields,
+          config,
+          auth,
+          info
+        );
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  };
 
   fields.logIn = {
     description: 'The logIn mutation can be used to log the user in.',
