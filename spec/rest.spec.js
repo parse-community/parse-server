@@ -446,6 +446,28 @@ describe('rest create', () => {
     });
   });
 
+  it('cannot set id', done => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      body: JSON.stringify({
+        foo: 'bar',
+        id: 'hello',
+      }),
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.code).toEqual(105);
+      expect(b.error).toEqual('id is an invalid field name.');
+      done();
+    });
+  });
+
   it('test default session length', done => {
     const user = {
       username: 'asdf',
