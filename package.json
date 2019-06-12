@@ -57,9 +57,9 @@
     "deep-diff": "1.0.2",
     "eslint": "5.16.0",
     "eslint-plugin-flowtype": "3.10.0",
-    "flow-bin": "0.100.0",
+    "flow-bin": "0.101.0",
     "gaze": "1.1.3",
-    "husky": "2.4.0",
+    "husky": "2.4.1",
     "jasmine": "3.4.0",
     "jasmine-spec-reporter": "4.2.1",
     "jsdoc": "3.6.2",
@@ -67,8 +67,8 @@
     "lint-staged": "8.2.0",
     "mongodb-runner": "4.3.2",
     "nyc": "14.1.1",
-    "prettier": "1.18.1",
-    "supports-color": "6.0.0"
+    "prettier": "1.18.2",
+    "supports-color": "7.0.0"
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",

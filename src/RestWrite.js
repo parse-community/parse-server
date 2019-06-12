@@ -52,6 +52,12 @@ function RestWrite(
       'objectId is an invalid field name.'
     );
   }
+  if (!query && data.id) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_KEY_NAME,
+      'id is an invalid field name.'
+    );
+  }
 
   // When the operation is complete, this.response may have several
   // fields.
@@ -781,9 +787,7 @@ RestWrite.prototype._validatePasswordHistory = function() {
               return Promise.reject(
                 new Parse.Error(
                   Parse.Error.VALIDATION_ERROR,
-                  `New password should not be the same as last ${
-                    this.config.passwordPolicy.maxPasswordHistory
-                  } passwords.`
+                  `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
                 )
               );
             throw err;
