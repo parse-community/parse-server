@@ -3,6 +3,7 @@
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
 const dd = require('deep-diff');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -25,6 +26,11 @@ const hasAllPODobject = () => {
 describe('SchemaController', () => {
   beforeEach(() => {
     config = Config.get('test');
+  });
+
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('can validate one object', done => {
