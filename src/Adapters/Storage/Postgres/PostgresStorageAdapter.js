@@ -5,8 +5,7 @@ import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
 import sql from './sql';
-// @flow-disable-next
-import XRegExp from 'xregexp';
+import { XRegExp } from 'xregexp';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -2449,7 +2448,7 @@ function createLiteralRegex(remaining) {
       return c === `'` ? `''` : `\\${c}`;
     })
     .join('');
-}
+ }
 
 function literalizeRegexPart(s: string) {
   const matcher1 = /\\Q((?!\\E).*)\\E$/;
