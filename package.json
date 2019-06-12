@@ -68,7 +68,7 @@
     "mongodb-runner": "4.3.2",
     "nyc": "14.1.1",
     "prettier": "1.18.1",
-    "supports-color": "6.0.0"
+    "supports-color": "7.0.0"
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",
