@@ -151,10 +151,10 @@ class ParseServer {
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
+    api.use(middlewares.allowCrossDomain);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
-      middlewares.allowCrossDomain,
       new FilesRouter().expressRouter({
         maxUploadSize: maxUploadSize,
       })
@@ -173,7 +173,6 @@ class ParseServer {
     );
 
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
-    api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
