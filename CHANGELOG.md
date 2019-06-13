@@ -4,7 +4,7 @@
 
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...master)
 
-### 3.4.3
+### 3.4.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
 Fix: Commit changes
 
