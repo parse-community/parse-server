@@ -33,7 +33,6 @@ const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
-const UNAUTHORIZED_ERROR = 13;
 
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter
@@ -185,7 +184,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   handleError<T>(error: ?(Error | Parse.Error)): Promise<T> {
-    if (error && error.code === UNAUTHORIZED_ERROR) {
+    if (error && error.code === 13) {
       // Unauthorized error
       delete this.client;
       delete this.database;
@@ -971,12 +970,6 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .then(status => {
         this.databaseVersion = status.version;
-      })
-      .catch(error => {
-        if (error && error.code === UNAUTHORIZED_ERROR) {
-          return;
-        }
-        throw error;
       });
   }
 
