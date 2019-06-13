@@ -531,8 +531,6 @@ class DatabaseController {
     var relationUpdates = [];
     var isMaster = acl === undefined;
     var aclGroup = acl || [];
-    const skipMongoDBServer13732Workaround = this
-      .skipMongoDBServer13732Workaround;
 
     return this.loadSchemaIfNeeded(validSchemaController).then(
       schemaController => {
@@ -561,7 +559,7 @@ class DatabaseController {
             if (acl) {
               query = addWriteACL(query, acl);
             }
-            validateQuery(query, skipMongoDBServer13732Workaround);
+            validateQuery(query, this.skipMongoDBServer13732Workaround);
             return schemaController
               .getOneSchema(className, true)
               .catch(error => {
@@ -809,8 +807,6 @@ class DatabaseController {
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
-    const skipMongoDBServer13732Workaround = this
-      .skipMongoDBServer13732Workaround;
 
     return this.loadSchemaIfNeeded(validSchemaController).then(
       schemaController => {
@@ -837,7 +833,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, skipMongoDBServer13732Workaround);
+          validateQuery(query, this.skipMongoDBServer13732Workaround);
           return schemaController
             .getOneSchema(className)
             .catch(error => {
@@ -1236,8 +1232,6 @@ class DatabaseController {
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
-    const skipMongoDBServer13732Workaround = this
-      .skipMongoDBServer13732Workaround;
 
     op =
       op ||
@@ -1339,7 +1333,7 @@ class DatabaseController {
                     query = addReadACL(query, aclGroup);
                   }
                 }
-                validateQuery(query, skipMongoDBServer13732Workaround);
+                validateQuery(query, this.skipMongoDBServer13732Workaround);
                 if (count) {
                   if (!classExists) {
                     return 0;
