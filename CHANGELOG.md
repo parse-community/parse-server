@@ -2,7 +2,16 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...master)
+
+### 3.4.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
+Fix: Commit changes
+
+
+### 3.4.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...3.4.3)
+Fix: Use changes in master to travis configuration to enable pushing to npm and gh_pages.  See diff for details.
 
 ### 3.4.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.1...3.4.2)
