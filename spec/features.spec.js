@@ -17,8 +17,6 @@ describe('features', () => {
     expect(data).toBeDefined();
     expect(data.features).toBeDefined();
     expect(data.parseServerVersion).toBeDefined();
-    expect(data.database).toBeDefined();
-    expect(['MongoDB', 'PostgreSQL']).toContain(data.database.engine);
   });
 
   it('requires the master key to get features', async done => {
