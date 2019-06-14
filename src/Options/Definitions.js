@@ -356,6 +356,22 @@ module.exports.CustomPagesOptions = {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK',
     help: 'invalid link page path',
   },
+  invalidVerificationLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK',
+    help: 'invalid verification link page path',
+  },
+  linkSendFail: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_FAIL',
+    help: 'verification link send fail page path',
+  },
+  linkSendSuccess: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_SUCCESS',
+    help: 'verification link send success page path',
+  },
+  parseFrameURL: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_PARSE_FRAME_URL',
+    help: 'for masking user-facing pages',
+  },
   passwordResetSuccess: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_PASSWORD_RESET_SUCCESS',
     help: 'password reset success page path',
