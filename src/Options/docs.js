@@ -68,6 +68,10 @@
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
  * @property {String} invalidLink invalid link page path
+ * @property {String} invalidVerificationLink invalid verification link page path
+ * @property {String} linkSendFail verification link send fail page path
+ * @property {String} linkSendSuccess verification link send success page path
+ * @property {String} parseFrameURL for masking user-facing pages
  * @property {String} passwordResetSuccess password reset success page path
  * @property {String} verifyEmailSuccess verify email success page path
  */
