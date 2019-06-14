@@ -185,10 +185,18 @@ export interface CustomPagesOptions {
   invalidLink: ?string;
   /* verify email success page path */
   verifyEmailSuccess: ?string;
+  /* invalid verification link page path */
+  invalidVerificationLink: ?string;
+  /* verification link send success page path */
+  linkSendSuccess: ?string;
+  /* verification link send fail page path */
+  linkSendFail: ?string;
   /* choose password page path */
   choosePassword: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+  /* for masking user-facing pages */
+  parseFrameURL: ?string;
 }
 
 export interface LiveQueryOptions {
