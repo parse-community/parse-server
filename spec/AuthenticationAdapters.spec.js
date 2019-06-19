@@ -17,6 +17,7 @@ const responses = {
 
 describe('AuthenticationProviders', function() {
   [
+    'apple-signin',
     'facebook',
     'facebookaccountkit',
     'github',
@@ -50,7 +51,7 @@ describe('AuthenticationProviders', function() {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      if (providerName === 'twitter') {
+      if (providerName === 'twitter' || providerName === 'apple-signin') {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
@@ -1030,6 +1031,86 @@ describe('oauth2 auth adapter', () => {
     } catch (e) {
       // Should not enter here
       fail(e);
+    }
+  });
+});
+
+describe('apple signin auth adapter', () => {
+  const apple = require('../lib/Adapters/Auth/apple-signin');
+  const jwt = require('jsonwebtoken');
+
+  it('should throw error with missing id_token', async () => {
+    try {
+      await apple.validateAuthData({}, { client_id: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('id_token is invalid for this user.');
+    }
+  });
+
+  it('should not verify invalid id_token', async () => {
+    try {
+      await apple.validateAuthData(
+        { id_token: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
+  it('should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'secret',
+      exp: Date.now(),
+    };
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await apple.validateAuthData(
+      { id_token: 'the_token' },
+      { client_id: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.apple.com',
+    };
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await apple.validateAuthData(
+        { id_token: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id_token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
+      );
+    }
+  });
+
+  it('should throw error with with invalid jwt client_id', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'invalid_client_id',
+    };
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await apple.validateAuthData(
+        { id_token: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'jwt aud parameter does not include this client - is: invalid_client_id | expected: secret'
+      );
     }
   });
 });
