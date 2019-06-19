@@ -24,7 +24,6 @@ const verifyIdToken = async (token, clientID) => {
       'id_token is invalid for this user.'
     );
   }
-
   const applePublicKey = await getApplePublicKey();
   const jwtClaims = jwt.verify(token, applePublicKey, { algorithms: 'RS256' });
 
@@ -44,14 +43,7 @@ const verifyIdToken = async (token, clientID) => {
 };
 
 // Returns a promise that fulfills if this id_token is valid
-function validateAuthData(authData, options) {
-  if (!options) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      'Apple SignIn server configuration missing'
-    );
-  }
-
+function validateAuthData(authData, options = {}) {
   return verifyIdToken(authData.id_token, options.client_id);
 }
 

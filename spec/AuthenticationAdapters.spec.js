@@ -1039,15 +1039,6 @@ describe('apple signin auth adapter', () => {
   const apple = require('../lib/Adapters/Auth/apple-signin');
   const jwt = require('jsonwebtoken');
 
-  it('should throw error with missing config', async () => {
-    try {
-      await apple.validateAuthData({ id_token: 'the_token' }, null);
-      fail();
-    } catch (e) {
-      expect(e.message).toBe('Apple SignIn server configuration missing');
-    }
-  });
-
   it('should throw error with missing id_token', async () => {
     try {
       await apple.validateAuthData({}, { client_id: 'secret' });
