@@ -818,9 +818,9 @@ export class MongoStorageAdapter implements StorageAdapter {
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
-            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${
-              pipeline[field]
-            }`;
+            returnValue[
+              `_p_${field}`
+            ] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
         } else if (
           schema.fields[field] &&
