@@ -1,11 +1,27 @@
 // Helper functions for accessing the Facebook Graph API.
 const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
+const crypto = require('crypto');
+
+function getAppSecretPath(authData, options = {}) {
+  const appSecret = options.appSecret;
+  if (!appSecret) {
+    return '';
+  }
+  const appsecret_proof = crypto
+    .createHmac('sha256', appSecret)
+    .update(authData.access_token)
+    .digest('hex');
+
+  return `&appsecret_proof=${appsecret_proof}`;
+}
 
 // Returns a promise that fulfills iff this user id is valid.
-function validateAuthData(authData) {
+function validateAuthData(authData, options) {
   return graphRequest(
-    'me?fields=id&access_token=' + authData.access_token
+    'me?fields=id&access_token=' +
+      authData.access_token +
+      getAppSecretPath(authData, options)
   ).then(data => {
     if (
       (data && data.id == authData.id) ||
@@ -21,7 +37,7 @@ function validateAuthData(authData) {
 }
 
 // Returns a promise that fulfills iff this app id is valid.
-function validateAppId(appIds, authData) {
+function validateAppId(appIds, authData, options) {
   var access_token = authData.access_token;
   if (process.env.TESTING && access_token === 'test') {
     return Promise.resolve();
@@ -32,7 +48,9 @@ function validateAppId(appIds, authData) {
       'Facebook auth is not configured.'
     );
   }
-  return graphRequest('app?access_token=' + access_token).then(data => {
+  return graphRequest(
+    'app?access_token=' + access_token + getAppSecretPath(authData, options)
+  ).then(data => {
     if (data && appIds.indexOf(data.id) != -1) {
       return;
     }
