@@ -393,6 +393,9 @@ class SchemaData {
     this.__data = {};
     this.__protectedFields = protectedFields;
     allSchemas.forEach(schema => {
+      if (volatileClasses.includes(schema.className)) {
+        return;
+      }
       Object.defineProperty(this, schema.className, {
         get: () => {
           if (!this.__data[schema.className]) {
