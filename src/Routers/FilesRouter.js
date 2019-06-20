@@ -19,7 +19,6 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      Middlewares.allowCrossDomain,
       BodyParser.raw({
         type: () => {
           return true;
@@ -32,7 +31,6 @@ export class FilesRouter {
 
     router.delete(
       '/files/:filename',
-      Middlewares.allowCrossDomain,
       Middlewares.handleParseHeaders,
       Middlewares.enforceMasterKeyAccess,
       this.deleteHandler

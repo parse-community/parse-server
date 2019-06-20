@@ -416,6 +416,7 @@ describe('AuthenticationProviders', function() {
     const options = {
       facebook: {
         appIds: ['a', 'b'],
+        appSecret: 'secret',
       },
     };
     const {
@@ -426,6 +427,56 @@ describe('AuthenticationProviders', function() {
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.facebook);
+  });
+
+  it('should handle Facebook appSecret for validating appIds', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'a' });
+    });
+    const options = {
+      facebook: {
+        appIds: ['a', 'b'],
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      access_token: 'badtoken',
+    };
+    const {
+      adapter,
+      appIds,
+      providerOptions,
+    } = authenticationLoader.loadAuthAdapter('facebook', options);
+    await adapter.validateAppId(appIds, authData, providerOptions);
+    expect(
+      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
+    ).toBe(true);
+  });
+
+  it('should handle Facebook appSecret for validating auth data', async () => {
+    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve();
+    });
+    const options = {
+      facebook: {
+        appIds: ['a', 'b'],
+        appSecret: 'secret_sauce',
+      },
+    };
+    const authData = {
+      id: 'test',
+      access_token: 'test',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'facebook',
+      options
+    );
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(
+      httpsRequest.get.calls.first().args[0].includes('appsecret_proof')
+    ).toBe(true);
   });
 
   it('properly loads a custom adapter with options', () => {
