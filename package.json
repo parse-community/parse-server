@@ -64,7 +64,7 @@
     "apollo-client": "2.5.1",
     "apollo-link": "1.2.11",
     "apollo-link-http": "1.5.14",
-    "apollo-link-ws": "1.0.17",
+    "apollo-link-ws": "1.0.18",
     "apollo-upload-client": "10.0.0",
     "apollo-utilities": "1.2.1",
     "babel-eslint": "10.0.2",
