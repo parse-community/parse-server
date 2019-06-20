@@ -24,7 +24,8 @@
       "range": true,
       "jequal": true,
       "create": true,
-      "arrayContains": true
+      "arrayContains": true,
+      "expectAsync": true
     },
     "rules": {
       "no-console": [0],
