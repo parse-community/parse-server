@@ -76,6 +76,18 @@ class ParseGraphQLServer {
           renderPlaygroundPage({
             endpoint: this.config.graphQLPath,
             subscriptionEndpoint: this.config.subscriptionsPath,
+            tabs: [
+              {
+                endpoint: this.config.graphQLPath,
+                query: `query {
+  health
+}`,
+                headers: {
+                  'X-Parse-Application-Id': this.parseServer.config.appId,
+                  'X-Parse-Master-Key': this.parseServer.config.masterKey,
+                },
+              },
+            ],
           })
         );
         res.end();

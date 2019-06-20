@@ -180,6 +180,22 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+  /* Mounts the GraphQL endpoint
+  :ENV: PARSE_SERVER_MOUNT_GRAPHQL
+  :DEFAULT: false */
+  mountGraphQL: ?boolean;
+  /* Mount path for the GraphQL endpoint, defaults to /graphql
+  :ENV: PARSE_SERVER_GRAPHQL_PATH
+  :DEFAULT: /graphql */
+  graphQLPath: ?string;
+  /* Mounts the GraphQL Playground - never use this option in production
+  :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
+  :DEFAULT: false */
+  mountPlayground: ?boolean;
+  /* Mount path for the GraphQL Playground, defaults to /playground
+  :ENV: PARSE_SERVER_PLAYGROUND_PATH
+  :DEFAULT: /playground */
+  playgroundPath: ?string;
 
   serverStartComplete: ?(error: ?Error) => void;
 }
