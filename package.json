@@ -63,7 +63,7 @@
     "apollo-cache-inmemory": "1.6.2",
     "apollo-client": "2.6.3",
     "apollo-link": "1.2.12",
-    "apollo-link-http": "1.5.14",
+    "apollo-link-http": "1.5.15",
     "apollo-link-ws": "1.0.18",
     "apollo-upload-client": "10.0.1",
     "apollo-utilities": "1.2.1",
