@@ -2166,7 +2166,7 @@ describe('Parse.User testing', () => {
   });
 
   describe('case insensitive signup not allowed', () => {
-    it('user should fail with duplicate insensitive username', async () => {
+    it('signup should fail with duplicate case insensitive username with basic setter', async () => {
       const user = new Parse.User();
       user.set('username', 'test1');
       user.set('password', 'test');
@@ -2179,6 +2179,64 @@ describe('Parse.User testing', () => {
         new Parse.Error(
           Parse.Error.USERNAME_TAKEN,
           'Account already exists for this username.'
+        )
+      );
+    });
+
+    it('signup should fail with duplicate case insensitive username with field specific setter', async () => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('Test1');
+      user2.setPassword('test');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
+    });
+
+    it('signup should fail with duplicate case insensitive email', async() => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('test2');
+      user2.setPassword('test');
+      user2.setEmail('Test@Example.Com');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email address.'
+        )
+      );
+    });
+
+    it('edit should fail with duplicate case insensitive email', async() => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('test2');
+      user2.setPassword('test');
+      user2.setEmail('Foo@Example.Com');
+      await user2.signUp();
+
+      user2.setEmail('Test@Example.Com')
+      await expectAsync(user2.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email address.'
         )
       );
     });

@@ -619,8 +619,18 @@ RestWrite.prototype._validateUserName = function() {
     }
     return Promise.resolve();
   }
-  // We need to a find to check for duplicate username in case they are missing the unique index on usernames
-  // TODO: Check if there is a unique index, and if so, skip this query.
+  /*
+    Username's should be unique when compared case insensitively
+
+    User's should be able to make case sensitive usernames and
+    login using the case they entered.  I.e. 'Snoopy' should preclude
+    'snoopy' as a valid username.
+
+    Users that use authentication adapters should enforce unique ids
+    through a unique index on username.  Failure to enforce through an index
+    allows for a potential collision for adapter users (a low probability outcome)
+    but more importantly will have poor performance on this validation.
+  */
   return this.config.database
     .find(
       this.className,
@@ -644,6 +654,18 @@ RestWrite.prototype._validateUserName = function() {
     });
 };
 
+/*
+  As with username's, parse should not allow case insensitive collisions of email
+  unlike with usernames (which can have case insensitive collisions) emails should
+  never have a case insensitive collision.
+
+  This behavior can be enforced through a properly configured index see:
+  https://docs.mongodb.com/manual/core/index-case-insensitive/#create-a-case-insensitive-index
+  which could be implemented instead of this code based validation.
+
+  Given that this lookup should be a relatively low use case and that the case sensitive
+  unique index will be used by the db for the query, this is an adequate solution.
+*/
 RestWrite.prototype._validateEmail = function() {
   if (!this.data.email || this.data.email.__op === 'Delete') {
     return Promise.resolve();
@@ -657,11 +679,13 @@ RestWrite.prototype._validateEmail = function() {
       )
     );
   }
-  // Same problem for email as above for username
+  // Case insensitive match, see note above function.
   return this.config.database
     .find(
       this.className,
-      { email: this.data.email, objectId: { $ne: this.objectId() } },
+      {
+        email: { $regex: `^${this.data.email}$`, $options: 'i' },
+        objectId: { $ne: this.objectId() } },
       { limit: 1 },
       {},
       this.validSchemaController
