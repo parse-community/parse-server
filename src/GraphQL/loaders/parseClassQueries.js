@@ -57,7 +57,6 @@ const load = (parseGraphQLSchema, parseClass) => {
     async resolve(_source, args, context, queryInfo) {
       try {
         const {
-          where,
           order,
           skip,
           limit,
@@ -65,6 +64,7 @@ const load = (parseGraphQLSchema, parseClass) => {
           includeReadPreference,
           subqueryReadPreference,
         } = args;
+        let { where } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
 
@@ -74,6 +74,62 @@ const load = (parseGraphQLSchema, parseClass) => {
             .map(field => field.slice(field.indexOf('.') + 1))
         );
         const parseOrder = order && order.join(',');
+
+        if (where) {
+          const newConstraints = Object.keys(where).reduce(
+            (newConstraints, fieldName) => {
+              // If the field type is Object, we need to transform the constraints to the
+              // format supported by Parse.
+              if (
+                parseClass.fields[fieldName] &&
+                parseClass.fields[fieldName].type === 'Object'
+              ) {
+                const parseNewConstraints = where[fieldName].reduce(
+                  (parseNewConstraints, gqlObjectConstraint) => {
+                    const gqlConstraintEntries = Object.entries(
+                      gqlObjectConstraint
+                    );
+
+                    // Each GraphQL ObjectConstraint should be composed by:
+                    // { <constraintName> : { <objectEntryKey> : <objectEntryValue> } }
+                    // Example: _eq : { 'foo.bar' : 'myobjectfield.foo.bar value' }
+                    gqlConstraintEntries.forEach(
+                      ([constraintName, constraintValue]) => {
+                        const { key, value } = constraintValue; // the object entry (<key, value>)
+
+                        // Transformed to:
+                        // { <fieldName.objectEntryKey> : { <constraintName> : <objectEntryValue> } }
+                        // Example: 'myobjectfield.foo.bar': { _eq: 'myobjectfield.foo.bar value' }
+                        const absoluteFieldKey = `${fieldName}.${key}`;
+                        parseNewConstraints[absoluteFieldKey] = {
+                          ...parseNewConstraints[absoluteFieldKey],
+                          [constraintName]: value,
+                        };
+                      }
+                    );
+                    return parseNewConstraints;
+                  },
+                  {}
+                );
+                // Removes the original field constraint from the where statement, now
+                // that we have extracted the supported constraints from it.
+                delete where[fieldName];
+
+                // Returns the new constraints along with the existing ones.
+                return {
+                  ...newConstraints,
+                  ...parseNewConstraints,
+                };
+              }
+              return newConstraints;
+            },
+            {}
+          );
+          where = {
+            ...where,
+            ...newConstraints,
+          };
+        }
 
         return await objectsQueries.findObjects(
           className,
