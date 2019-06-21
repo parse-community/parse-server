@@ -320,6 +320,12 @@ module.exports.ParseServerOptions = {
     help: 'Disables console output',
     action: parsers.booleanParser,
   },
+  skipMongoDBServer13732Workaround: {
+    env: 'PARSE_SKIP_MONGODB_SERVER_13732_WORKAROUND',
+    help: 'Circumvent Parse workaround for historical MongoDB bug SERVER-13732',
+    action: parsers.booleanParser,
+    default: false,
+  },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
@@ -355,6 +361,22 @@ module.exports.CustomPagesOptions = {
   invalidLink: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK',
     help: 'invalid link page path',
+  },
+  invalidVerificationLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK',
+    help: 'invalid verification link page path',
+  },
+  linkSendFail: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_FAIL',
+    help: 'verification link send fail page path',
+  },
+  linkSendSuccess: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_LINK_SEND_SUCCESS',
+    help: 'verification link send success page path',
+  },
+  parseFrameURL: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_PARSE_FRAME_URL',
+    help: 'for masking user-facing pages',
   },
   passwordResetSuccess: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_PASSWORD_RESET_SUCCESS',

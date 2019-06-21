@@ -2,7 +2,26 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...master)
+
+### 3.4.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
+Fix: Commit changes
+
+
+### 3.4.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...3.4.3)
+Fix: Use changes in master to travis configuration to enable pushing to npm and gh_pages.  See diff for details.
+
+### 3.4.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.1...3.4.2)
+
+Fix: In my haste to get a [Security Fix](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) out, I added [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5) to master instead of to 3.4.1.  This commit fixes that.  [Arthur Cinader](https://github.com/acinader)
+
+### 3.4.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.0...3.4.1)
+
+Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) for details [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5). Big thanks to: [Benjamin Simonsson](https://github.com/BenniPlejd) for identifying the issue and promptly bringing it to the Parse Community's attention and also big thanks to the indefatigable [Diamond Lewis](https://github.com/dplewis) for crafting a failing test and then a solution within an hour of the report.
 
 ### 3.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...3.4.0)

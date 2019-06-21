@@ -35,13 +35,13 @@ describe_only(() => {
   });
 
   it('should expire after ttl', done => {
-    const cache = new RedisCacheAdapter(null, 1);
+    const cache = new RedisCacheAdapter(null, 50);
 
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 5))
+      .then(wait.bind(null, 52))
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(null))
       .then(done);

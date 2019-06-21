@@ -1,6 +1,7 @@
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 const rest = require('../lib/rest');
+const request = require('../lib/request');
 const AudiencesRouter = require('../lib/Routers/AudiencesRouter')
   .AudiencesRouter;
 
@@ -437,5 +438,29 @@ describe('AudiencesRouter', () => {
           done.fail(error);
         });
     });
+  });
+
+  it('should handle _Audience invalid fields via rest', async () => {
+    await reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    try {
+      await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/_Audience',
+        body: { lorem: 'ipsum', _method: 'POST' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+      });
+      expect(true).toBeFalsy();
+    } catch (e) {
+      expect(e.data.code).toBe(107);
+      expect(e.data.error).toBe('Could not add field lorem');
+    }
   });
 });

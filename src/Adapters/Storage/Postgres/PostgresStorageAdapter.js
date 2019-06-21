@@ -778,8 +778,6 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
 
 export class PostgresStorageAdapter implements StorageAdapter {
   canSortOnJoinTables: boolean;
-  databaseVersion: string;
-  engine: string;
 
   // Private
   _collectionPrefix: string;
@@ -792,7 +790,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._client = client;
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
-    this.engine = 'PostgreSQL';
   }
 
   handleShutdown() {
@@ -1399,9 +1396,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
     }
-    const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${
-      where.pattern
-    } RETURNING *) SELECT count(*) FROM deleted`;
+    const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
     debug(qs, values);
     return this._client
       .one(qs, values, a => +a.count)
@@ -2279,12 +2274,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       })
       .then(data => {
         debug(`initializationDone in ${data.duration}`);
-        // databaseVersion
-        return this._client.query('SHOW server_version');
-      })
-      .then(versionData => {
-        // versionData is like [ { server_version: '11.3' } ]
-        this.databaseVersion = versionData[0].server_version;
       })
       .catch(error => {
         /* eslint-disable no-console */

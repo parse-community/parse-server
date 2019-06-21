@@ -57,6 +57,7 @@
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
+ * @property {Boolean} skipMongoDBServer13732Workaround Circumvent Parse workaround for historical MongoDB bug SERVER-13732
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
@@ -68,6 +69,10 @@
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
  * @property {String} invalidLink invalid link page path
+ * @property {String} invalidVerificationLink invalid verification link page path
+ * @property {String} linkSendFail verification link send fail page path
+ * @property {String} linkSendSuccess verification link send success page path
+ * @property {String} parseFrameURL for masking user-facing pages
  * @property {String} passwordResetSuccess password reset success page path
  * @property {String} verifyEmailSuccess verify email success page path
  */

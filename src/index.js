@@ -10,6 +10,7 @@ import { useExternal } from './deprecated';
 import { getLogger } from './logger';
 import { PushWorker } from './Push/PushWorker';
 import { ParseServerOptions } from './Options';
+import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 
 // Factory function
 const _ParseServer = function(options: ParseServerOptions) {
@@ -37,5 +38,6 @@ export {
   LRUCacheAdapter,
   TestUtils,
   PushWorker,
+  ParseGraphQLServer,
   _ParseServer as ParseServer,
 };

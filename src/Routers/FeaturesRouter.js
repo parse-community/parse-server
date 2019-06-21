@@ -52,15 +52,10 @@ export class FeaturesRouter extends PromiseRouter {
           },
         };
 
-        const dbAdapter = config.database.adapter;
         return {
           response: {
             features: features,
             parseServerVersion: version,
-            database: {
-              engine: dbAdapter.engine,
-              version: dbAdapter.databaseVersion,
-            },
           },
         };
       }
