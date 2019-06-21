@@ -83,7 +83,7 @@
     "jsdoc-babel": "0.5.0",
     "lint-staged": "8.2.1",
     "mongodb-runner": "4.3.2",
-    "node-fetch": "2.5.0",
+    "node-fetch": "2.6.0",
     "nyc": "14.1.1",
     "prettier": "1.18.2",
     "supports-color": "7.0.0"
