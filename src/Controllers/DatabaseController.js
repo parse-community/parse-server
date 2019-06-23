@@ -1,4 +1,4 @@
-﻿// @flow
+// @flow
 // A database adapter that works with data exported from the hosted
 // Parse database.
 
@@ -1210,7 +1210,7 @@ class DatabaseController {
   //   acl     restrict this operation with an ACL for the provided array
   //           of user objectIds and roles. acl: null means no user.
   //           when this field is not present, don't do anything regarding ACLs.
-  //  insensitive make string comparisons case insensitive
+  //  caseInsensitive make string comparisons case insensitive
   // TODO: make userIds not needed here. The db adapter shouldn't know
   // anything about users, ideally. Then, improve the format of the ACL
   // arg to work like the others.
@@ -1228,7 +1228,7 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
-      insensitive = false,
+      caseInsensitive = false,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1279,7 +1279,7 @@ class DatabaseController {
               sort,
               keys,
               readPreference,
-              insensitive,
+              caseInsensitive,
             };
             Object.keys(sort).forEach(fieldName => {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {

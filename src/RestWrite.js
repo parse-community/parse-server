@@ -646,7 +646,7 @@ RestWrite.prototype._validateUserName = function() {
         objectId: { $ne: this.objectId() },
         _auth_data_anonymous: null,
       },
-      { limit: 1, insensitive: true },
+      { limit: 1, caseInsensitive: true },
       {},
       this.validSchemaController
     )
@@ -694,7 +694,7 @@ RestWrite.prototype._validateEmail = function() {
         email: this.data.email,
         objectId: { $ne: this.objectId() },
       },
-      { limit: 1, insensitive: true },
+      { limit: 1, caseInsensitive: true },
       {},
       this.validSchemaController
     )

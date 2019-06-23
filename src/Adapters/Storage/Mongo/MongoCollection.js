@@ -15,7 +15,7 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, insensitive } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, caseInsensitive } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -29,7 +29,7 @@ export default class MongoCollection {
       keys,
       maxTimeMS,
       readPreference,
-      insensitive,
+      caseInsensitive,
     }).catch(error => {
       // Check for "no geoindex" error
       if (
@@ -58,7 +58,7 @@ export default class MongoCollection {
               keys,
               maxTimeMS,
               readPreference,
-              insensitive,
+              caseInsensitive,
             })
           )
       );
@@ -67,7 +67,7 @@ export default class MongoCollection {
 
   _rawFind(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, insensitive } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, caseInsensitive } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
@@ -80,7 +80,7 @@ export default class MongoCollection {
       findOperation = findOperation.project(keys);
     }
 
-    if (insensitive) {
+    if (caseInsensitive) {
       findOperation = findOperation.collation({ locale: 'en_US', strength: 2 });
     }
 
