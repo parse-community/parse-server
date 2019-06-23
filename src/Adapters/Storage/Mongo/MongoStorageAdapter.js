@@ -592,7 +592,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference }: QueryOptions
+    { skip, limit, sort, keys, readPreference, insensitive }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -624,6 +624,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          insensitive,
         })
       )
       .then(objects =>

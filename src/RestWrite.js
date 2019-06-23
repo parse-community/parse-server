@@ -642,11 +642,11 @@ RestWrite.prototype._validateUserName = function() {
     .find(
       this.className,
       {
-        username: { $regex: `^${this.data.username}$`, $options: 'i' },
+        username: this.data.username,
         objectId: { $ne: this.objectId() },
         _auth_data_anonymous: null,
       },
-      { limit: 1 },
+      { limit: 1, insensitive: true },
       {},
       this.validSchemaController
     )
@@ -691,10 +691,10 @@ RestWrite.prototype._validateEmail = function() {
     .find(
       this.className,
       {
-        email: { $regex: `^${this.data.email}$`, $options: 'i' },
+        email: this.data.email,
         objectId: { $ne: this.objectId() },
       },
-      { limit: 1 },
+      { limit: 1, insensitive: true },
       {},
       this.validSchemaController
     )
