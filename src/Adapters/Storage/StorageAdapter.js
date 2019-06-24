@@ -13,6 +13,7 @@ export type QueryOptions = {
   op?: string,
   distinct?: boolean,
   pipeline?: any,
+  insensitive?: boolean,
   readPreference?: ?string,
 };
 
