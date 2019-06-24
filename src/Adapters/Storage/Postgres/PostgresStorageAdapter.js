@@ -5,8 +5,6 @@ import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
 import sql from './sql';
-// @flow-disable-next
-import XRegExp from 'xregexp';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -2443,7 +2441,7 @@ function createLiteralRegex(remaining) {
   return remaining
     .split('')
     .map(c => {
-      const regex = XRegExp('[0-9 ]|\\p{L}'); // Support all unicode letter chars
+      const regex = RegExp('[0-9 ]|\\p{L}', 'u'); // Support all unicode letter chars
       if (c.match(regex) !== null) {
         // don't escape alphanumeric characters
         return c;
