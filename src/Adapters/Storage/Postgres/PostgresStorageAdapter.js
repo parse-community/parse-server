@@ -293,7 +293,10 @@ const buildWhereClause = ({
     } else if (fieldName.indexOf('.') >= 0) {
       let name = transformDotField(fieldName);
       if (fieldValue === null) {
-        patterns.push(`${name} IS NULL`);
+        patterns.push(`$${index}:raw IS NULL`);
+        values.push(name);
+        index += 1;
+        continue;
       } else {
         if (fieldValue.$in) {
           const inPatterns = [];
