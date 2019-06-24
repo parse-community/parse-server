@@ -298,7 +298,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           patterns.push(`(${name})::jsonb @> '[${inPatterns.join()}]'::jsonb`);
         } else if (fieldValue.$regex) {
           // Handle later
-        } else {
+        } else if (typeof fieldValue !== 'object') {
           patterns.push(`${name} = '${fieldValue}'`);
         }
       }
@@ -366,8 +366,13 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
                 2}) OR $${index}:name IS NULL)`
             );
           } else {
+            const constraintFieldName =
+              fieldName.indexOf('.') >= 0
+                ? transformDotField(fieldName)
+                : `$${index}:name`;
             patterns.push(
-              `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
+              `(${constraintFieldName} <> $${index +
+                1} OR ${constraintFieldName} IS NULL)`
             );
           }
         }
@@ -388,9 +393,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         values.push(fieldName);
         index += 1;
       } else {
-        patterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue.$eq);
-        index += 2;
+        const constraintFieldName =
+          fieldName.indexOf('.') >= 0
+            ? transformDotField(fieldName)
+            : `$${index}:name`;
+        values.push(fieldValue.$eq);
+        patterns.push(`${constraintFieldName} = $${index++}`);
       }
     }
     const isInOrNin =
@@ -757,9 +765,28 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
-        values.push(fieldName, toPostgresValue(fieldValue[cmp]));
-        index += 2;
+        const postgresValue = toPostgresValue(fieldValue[cmp]);
+        let constraintFieldName;
+        if (fieldName.indexOf('.') >= 0) {
+          let castType;
+          switch (typeof postgresValue) {
+            case 'number':
+              castType = 'double precision';
+              break;
+            case 'boolean':
+              castType = 'boolean';
+              break;
+            default:
+              castType = undefined;
+          }
+          constraintFieldName = castType
+            ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+            : transformDotField(fieldName);
+        } else {
+          constraintFieldName = fieldName;
+        }
+        values.push(postgresValue);
+        patterns.push(`${constraintFieldName} ${pgComparator} $${index++}`);
       }
     });
 

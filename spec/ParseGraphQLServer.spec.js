@@ -4072,7 +4072,11 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support object values', async () => {
-          const someFieldValue = { foo: 'bar', lorem: 'ipsum', number: 10 };
+          const someFieldValue = {
+            foo: { bar: 'baz' },
+            lorem: 'ipsum',
+            number: 10,
+          };
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
@@ -4124,6 +4128,7 @@ describe('ParseGraphQLServer', () => {
                   findSomeClass(where: $where) {
                     results {
                       objectId
+                      someField
                     }
                   }
                 }
@@ -4133,7 +4138,8 @@ describe('ParseGraphQLServer', () => {
               objectId: createResult.data.objects.create.objectId,
               where: {
                 someField: [
-                  { _eq: { key: 'foo', value: 'bar' } },
+                  { _eq: { key: 'foo.bar', value: 'baz' } },
+                  { _ne: { key: 'foo.bar', value: 'bat' } },
                   { _eq: { key: 'lorem', value: 'ipsum' } },
                   { _gt: { key: 'number', value: 9 } },
                   { _lt: { key: 'number', value: 11 } },
@@ -4148,6 +4154,12 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.findSomeClass.results.length).toEqual(
             2
           );
+          expect(
+            getResult.data.objects.findSomeClass.results[0].someField
+          ).toEqual(someFieldValue);
+          expect(
+            getResult.data.objects.findSomeClass.results[1].someField
+          ).toEqual(someFieldValue);
         });
 
         it('should support array values', async () => {
