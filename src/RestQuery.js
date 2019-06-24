@@ -13,6 +13,7 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 //   count
 //   include
 //   keys
+//   excludeKeys
 //   redirectClassNameForKey
 //   readPreference
 //   includeReadPreference
@@ -102,6 +103,13 @@ function RestQuery(
         this.keys = Array.from(new Set(keys));
         break;
       }
+      case 'excludeKeys': {
+        const exclude = restOptions.excludeKeys
+          .split(',')
+          .filter(k => AlwaysSelectedKeys.indexOf(k) < 0);
+        this.excludeKeys = Array.from(new Set(exclude));
+        break;
+      }
       case 'count':
         this.doCount = true;
         break;
@@ -183,6 +191,9 @@ RestQuery.prototype.execute = function(executeOptions) {
     })
     .then(() => {
       return this.handleIncludeAll();
+    })
+    .then(() => {
+      return this.handleExcludeKeys();
     })
     .then(() => {
       return this.runFind(executeOptions);
@@ -700,8 +711,24 @@ RestQuery.prototype.handleIncludeAll = function() {
       this.include = [...new Set([...this.include, ...includeFields])];
       // if this.keys not set, then all keys are already included
       if (this.keys) {
-        this.keys = [...new Set([...this.keys, ...keyFields])];
+        this.keys = [...new Set([...this.keys, ...keyFields])]
+          // Ignore excluded keys
+          .filter(k => !this.excludeKeys || this.excludeKeys.indexOf(k) < 0);
       }
+    });
+};
+
+// Upadates property `this.keys` to contain all keys but the ones unselected.
+RestQuery.prototype.handleExcludeKeys = function() {
+  if (!this.excludeKeys) {
+    return;
+  }
+  return this.config.database
+    .loadSchema()
+    .then(schemaController => schemaController.getOneSchema(this.className))
+    .then(schema => {
+      const fields = this.keys ? this.keys : Object.keys(schema.fields);
+      this.keys = fields.filter(k => this.excludeKeys.indexOf(k) < 0);
     });
 };
 

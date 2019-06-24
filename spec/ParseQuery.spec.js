@@ -3266,8 +3266,8 @@ describe('Parse.Query testing', () => {
       );
   });
 
-  it('select keys query', function(done) {
-    const obj = new TestObject({ foo: 'baz', bar: 1 });
+  it('select/unselect keys query', function(done) {
+    const obj = new TestObject({ foo: 'baz', bar: 1, wooz: [1, 2, 3] });
 
     obj
       .save()
@@ -3288,11 +3288,17 @@ describe('Parse.Query testing', () => {
           undefined,
           "expected 'bar' field to be unset"
         );
+        strictEqual(
+          result.get('wooz'),
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
         return result.fetch();
       })
       .then(function(result) {
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(result.get('wooz')[0], 1);
       })
       .then(function() {
         obj._clearServerData();
@@ -3313,6 +3319,11 @@ describe('Parse.Query testing', () => {
           undefined,
           "expected 'bar' field to be unset"
         );
+        strictEqual(
+          result.get('wooz'),
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
       })
       .then(function() {
         obj._clearServerData();
@@ -3325,6 +3336,11 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(
+          result.get('wooz'),
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
       })
       .then(function() {
         obj._clearServerData();
@@ -3337,6 +3353,60 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(
+          result.get('wooz'),
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
+      })
+      .then(function() {
+        obj._clearServerData();
+        return request({
+          url: Parse.serverURL + '/classes/TestObject',
+          qs: {
+            excludeKeys: 'bar,wooz',
+          },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(function(result) {
+        result = result.data.results[0];
+        strictEqual(result.foo, 'baz');
+        strictEqual(result.bar, undefined, "expected 'bar' field to be unset");
+        strictEqual(
+          result.wooz,
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
+      })
+      .then(function() {
+        obj._clearServerData();
+        return request({
+          url: Parse.serverURL + '/classes/TestObject',
+          qs: {
+            keys: 'foo',
+            excludeKeys: 'foo',
+          },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Javascript-Key': Parse.javaScriptKey,
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(function(result) {
+        result = result.data.results[0];
+        strictEqual(result.foo, undefined, "expected 'foo' field to be unset");
+        strictEqual(result.bar, undefined, "expected 'bar' field to be unset");
+        strictEqual(
+          result.wooz,
+          undefined,
+          "expected 'wooz' field to be unset"
+        );
       })
       .then(
         function() {
