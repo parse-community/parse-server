@@ -4,6 +4,7 @@ const Parse = require('parse/node').Parse;
 const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -143,8 +144,9 @@ describe('schemas', () => {
     config = Config.get('test');
   });
 
-  afterEach(() => {
-    config.database.schemaCache.clear();
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('requires the master key to get all schemas', done => {
@@ -199,11 +201,18 @@ describe('schemas', () => {
         results: [userSchema, roleSchema],
       };
       expect(
-        dd(
-          response.data.results.sort((s1, s2) => s1.className > s2.className),
-          expected.results.sort((s1, s2) => s1.className > s2.className)
+        response.data.results
+          .sort((s1, s2) => s1.className.localeCompare(s2.className))
+          .map(s => {
+            const withoutIndexes = Object.assign({}, s);
+            delete withoutIndexes.indexes;
+            return withoutIndexes;
+          })
+      ).toEqual(
+        expected.results.sort((s1, s2) =>
+          s1.className.localeCompare(s2.className)
         )
-      ).toEqual(undefined);
+      );
       done();
     });
   });
@@ -234,13 +243,18 @@ describe('schemas', () => {
             ],
           };
           expect(
-            dd(
-              response.data.results.sort(
-                (s1, s2) => s1.className > s2.className
-              ),
-              expected.results.sort((s1, s2) => s1.className > s2.className)
+            response.data.results
+              .sort((s1, s2) => s1.className.localeCompare(s2.className))
+              .map(s => {
+                const withoutIndexes = Object.assign({}, s);
+                delete withoutIndexes.indexes;
+                return withoutIndexes;
+              })
+          ).toEqual(
+            expected.results.sort((s1, s2) =>
+              s1.className.localeCompare(s2.className)
             )
-          ).toEqual(undefined);
+          );
           done();
         });
       });

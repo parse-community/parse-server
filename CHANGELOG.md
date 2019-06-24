@@ -2,7 +2,49 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...master)
+
+### 3.4.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
+Fix: Commit changes
+
+
+### 3.4.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...3.4.3)
+Fix: Use changes in master to travis configuration to enable pushing to npm and gh_pages.  See diff for details.
+
+### 3.4.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.1...3.4.2)
+
+Fix: In my haste to get a [Security Fix](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) out, I added [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5) to master instead of to 3.4.1.  This commit fixes that.  [Arthur Cinader](https://github.com/acinader)
+
+### 3.4.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.0...3.4.1)
+
+Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) for details [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5). Big thanks to: [Benjamin Simonsson](https://github.com/BenniPlejd) for identifying the issue and promptly bringing it to the Parse Community's attention and also big thanks to the indefatigable [Diamond Lewis](https://github.com/dplewis) for crafting a failing test and then a solution within an hour of the report.
+
+### 3.4.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...3.4.0)
+- NEW: Aggregate supports group by date fields [#5538](https://github.com/parse-community/parse-server/pull/5538) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: API for Read Preferences [#3963](https://github.com/parse-community/parse-server/pull/3963) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: Add Redis options for LiveQuery [#5584](https://github.com/parse-community/parse-server/pull/5584) thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Add Direct Access option for Server Config [#5550](https://github.com/parse-community/parse-server/pull/5550) thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: updating mixed array in Postgres [#5552](https://github.com/parse-community/parse-server/pull/5552) thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: notEqualTo GeoPoint Query in Postgres [#5549](https://github.com/parse-community/parse-server/pull/5549) thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: put the timestamp back in logs that was lost after Winston upgrade [#5571](https://github.com/parse-community/parse-server/pull/5571), thanks [Steven Rowe](https://github.com/mrowe009) and [Arthur Cinader](https://github.com/acinader)
+- FIX: Validates permission before calling beforeSave [#5546](https://github.com/parse-community/parse-server/pull/5546) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Remove userSensitiveFields default value. [#5588](https://github.com/parse-community/parse-server/pull/5588) thanks to [William George](https://github.com/awgeorge)
+- FIX: Decode Date JSON value in LiveQuery. [#5540](https://github.com/parse-community/parse-server/pull/5540) thanks to [ananfang](https://github.com/ananfang)
+
+
+### 3.3.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...3.3.0)
+- NEW: beforeLogin trigger with support for auth providers ([#5445](https://github.com/parse-community/parse-server/pull/5445)), thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
+- NEW: RFC 7662 compliant OAuth2 auth adapter ([#4910](https://github.com/parse-community/parse-server/pull/4910)), thanks to [Müller Zsolt](https://github.com/zsmuller)
+- FIX: cannot change password when maxPasswordHistory is 1 ([#5191](https://github.com/parse-community/parse-server/pull/5191)), thanks to [Tulsi Sapkota](https://github.com/Tolsee)
+- FIX (Postgres): count being very slow on large Parse Classes' collections ([#5330](https://github.com/parse-community/parse-server/pull/5330)), thanks to [CoderickLamar](https://github.com/CoderickLamar)
+- FIX: using per-key basis queue ([#5420](https://github.com/parse-community/parse-server/pull/5420)), thanks to [Georges Jamous](https://github.com/georgesjamous)
+- FIX: issue on count with Geo constraints and mongo ([#5286](https://github.com/parse-community/parse-server/pull/5286)), thanks to [Julien Quéré](https://github.com/jlnquere)
 
 ### 3.2.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.2...3.2.3)

@@ -16,7 +16,8 @@ VOLUME /parse-server/cloud /parse-server/config
 WORKDIR /parse-server
 
 COPY package*.json ./
-RUN npm ci --production
+
+RUN npm ci --production --ignore-scripts
 
 COPY bin bin
 COPY public_html public_html

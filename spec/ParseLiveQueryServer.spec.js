@@ -158,11 +158,12 @@ describe('ParseLiveQueryServer', function() {
           classNames: ['Yolo'],
         },
         startLiveQueryServer: true,
+        serverStartComplete: () => {
+          expect(parseServer.liveQueryServer).not.toBeUndefined();
+          expect(parseServer.liveQueryServer.server).toBe(parseServer.server);
+          parseServer.server.close(done);
+        },
       });
-
-      expect(parseServer.liveQueryServer).not.toBeUndefined();
-      expect(parseServer.liveQueryServer.server).toBe(parseServer.server);
-      parseServer.server.close(() => done());
     });
 
     it('can be initialized through ParseServer with liveQueryServerOptions', function(done) {
@@ -178,12 +179,16 @@ describe('ParseLiveQueryServer', function() {
         liveQueryServerOptions: {
           port: 22347,
         },
+        serverStartComplete: () => {
+          expect(parseServer.liveQueryServer).not.toBeUndefined();
+          expect(parseServer.liveQueryServer.server).not.toBe(
+            parseServer.server
+          );
+          parseServer.liveQueryServer.server.close(
+            parseServer.server.close.bind(parseServer.server, done)
+          );
+        },
       });
-
-      expect(parseServer.liveQueryServer).not.toBeUndefined();
-      expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
-      parseServer.liveQueryServer.server.close();
-      parseServer.server.close(() => done());
     });
   });
 

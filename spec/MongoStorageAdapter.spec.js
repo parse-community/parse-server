@@ -6,6 +6,11 @@ const { MongoClient } = require('mongodb');
 const databaseURI =
   'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
+const fakeClient = {
+  s: { options: { dbName: null } },
+  db: () => null,
+};
+
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
 describe_only_db('mongo')('MongoStorageAdapter', () => {
@@ -16,7 +21,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('auto-escapes symbols in auth information', () => {
-    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
+    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
       uri:
         'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse',
@@ -28,7 +33,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it("doesn't double escape already URI-encoded information", () => {
-    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
+    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
       uri:
         'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
@@ -41,7 +46,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   // https://github.com/parse-community/parse-server/pull/148#issuecomment-180407057
   it('preserves replica sets', () => {
-    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
+    spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
       uri:
         'mongodb://test:testpass@ds056315-a0.mongolab.com:59325,ds059315-a1.mongolab.com:59315/testDBname?replicaSet=rs-ds059415',
@@ -280,5 +285,28 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       expect(adapter.database.serverConfig.isConnected()).toEqual(false);
       done();
     });
+  });
+
+  it('getClass if exists', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      },
+    };
+
+    await adapter.createClass('MyClass', schema);
+    const myClassSchema = await adapter.getClass('MyClass');
+    expect(myClassSchema).toBeDefined();
+  });
+
+  it('getClass if not exists', async () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
+      undefined
+    );
   });
 });

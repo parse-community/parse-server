@@ -147,6 +147,7 @@ export function getDatabaseController(
   const {
     databaseURI,
     databaseOptions,
+    skipMongoDBServer13732Workaround,
     collectionPrefix,
     schemaCacheTTL,
     enableSingleSchemaCache,
@@ -170,7 +171,8 @@ export function getDatabaseController(
   }
   return new DatabaseController(
     databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
+    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache),
+    skipMongoDBServer13732Workaround
   );
 }
 

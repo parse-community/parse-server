@@ -3,6 +3,7 @@
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
 const dd = require('deep-diff');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -25,6 +26,11 @@ const hasAllPODobject = () => {
 describe('SchemaController', () => {
   beforeEach(() => {
     config = Config.get('test');
+  });
+
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('can validate one object', done => {
@@ -440,13 +446,20 @@ describe('SchemaController', () => {
     // If two callers race to create the same schema, the response to the
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema().then(schema => {
-      const p1 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      const p2 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      Promise.race([p1, p2]).then(actualSchema => {
+      const p1 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      const p2 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      let schemaValidated = false;
+      function validateSchema(actualSchema) {
         const expectedSchema = {
           className: 'NewClass',
           fields: {
@@ -467,10 +480,17 @@ describe('SchemaController', () => {
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
-      });
-      Promise.all([p1, p2]).catch(error => {
+        schemaValidated = true;
+      }
+      let errorValidated = false;
+      function validateError(error) {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
         expect(error.message).toEqual('Class NewClass already exists.');
+        errorValidated = true;
+      }
+      Promise.all([p1, p2]).then(() => {
+        expect(schemaValidated).toEqual(true);
+        expect(errorValidated).toEqual(true);
         done();
       });
     });
@@ -915,6 +935,7 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema
           .addClassIfNotExists('NewClass', {})
+          .then(() => schema.reloadData({ clearCache: true }))
           .then(() => {
             schema
               .hasClass('NewClass')
@@ -1348,6 +1369,47 @@ describe('SchemaController', () => {
       })
       .then(done)
       .catch(done.fail);
+  });
+
+  it('setAllClasses return classes if cache fails', async () => {
+    const schema = await config.database.loadSchema();
+
+    spyOn(schema._cache, 'setAllClasses').and.callFake(() =>
+      Promise.reject('Oops!')
+    );
+    const errorSpy = spyOn(console, 'error').and.callFake(() => {});
+    const allSchema = await schema.setAllClasses();
+
+    expect(allSchema).toBeDefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Error saving schema to cache:',
+      'Oops!'
+    );
+  });
+
+  it('should not throw on null field types', async () => {
+    const schema = await config.database.loadSchema();
+    const result = await schema.enforceFieldExists(
+      'NewClass',
+      'fieldName',
+      null
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('ensureFields should throw when schema is not set', async () => {
+    const schema = await config.database.loadSchema();
+    try {
+      schema.ensureFields([
+        {
+          className: 'NewClass',
+          fieldName: 'fieldName',
+          type: 'String',
+        },
+      ]);
+    } catch (e) {
+      expect(e.message).toBe('Could not add field fieldName');
+    }
   });
 });
 

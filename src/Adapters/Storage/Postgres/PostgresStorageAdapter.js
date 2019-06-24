@@ -362,15 +362,27 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           continue;
         } else {
           // if not null, we need to manually exclude null
-          patterns.push(
-            `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
-          );
+          if (fieldValue.$ne.__type === 'GeoPoint') {
+            patterns.push(
+              `($${index}:name <> POINT($${index + 1}, $${index +
+                2}) OR $${index}:name IS NULL)`
+            );
+          } else {
+            patterns.push(
+              `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
+            );
+          }
         }
       }
-
-      // TODO: support arrays
-      values.push(fieldName, fieldValue.$ne);
-      index += 2;
+      if (fieldValue.$ne.__type === 'GeoPoint') {
+        const point = fieldValue.$ne;
+        values.push(fieldName, point.longitude, point.latitude);
+        index += 3;
+      } else {
+        // TODO: support arrays
+        values.push(fieldName, fieldValue.$ne);
+        index += 2;
+      }
     }
     if (fieldValue.$eq !== undefined) {
       if (fieldValue.$eq === null) {
@@ -732,15 +744,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
 
     if (fieldValue.__type === 'GeoPoint') {
-      patterns.push(
-        '$' +
-          index +
-          ':name ~= POINT($' +
-          (index + 1) +
-          ', $' +
-          (index + 2) +
-          ')'
-      );
+      patterns.push(`$${index}:name ~= POINT($${index + 1}, $${index + 2})`);
       values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
       index += 3;
     }
@@ -1394,9 +1398,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
     }
-    const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${
-      where.pattern
-    } RETURNING *) SELECT count(*) FROM deleted`;
+    const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
     debug(qs, values);
     return this._client
       .one(qs, values, a => +a.count)
@@ -1670,33 +1672,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
           values.push(fieldName, fieldValue);
           index += 2;
         } else {
-          values.push(fieldName);
-          const buildSQLArray = fieldValue => {
-            let pattern = 'json_build_array(';
-            for (let i = 0; i < fieldValue.length; i += 1) {
-              const element = fieldValue[i];
-              let type = '';
-              if (Array.isArray(element)) {
-                pattern += buildSQLArray(element) + ',';
-                continue;
-              } else if (typeof element == 'object') {
-                type = '::json';
-              }
-              values.push(element);
-              pattern += `$${index + 1}${type},`;
-              index += 1;
-            }
-            // remove last comma
-            if (fieldValue.length > 0) {
-              pattern = pattern.slice(0, -1);
-            }
-            pattern += ')';
-            return pattern;
-          };
-          const sql = `$${index}:name = ${buildSQLArray(fieldValue)}`;
-
-          updatePatterns.push(sql);
-          index += 1;
+          updatePatterns.push(`$${index}:name = $${index + 1}::jsonb`);
+          values.push(fieldName, JSON.stringify(fieldValue));
+          index += 2;
         }
       } else {
         debug('Not supported update', fieldName, fieldValue);
@@ -1964,17 +1942,37 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   // Executes a count.
-  count(className: string, schema: SchemaType, query: QueryType) {
-    debug('count', className, query);
+  count(
+    className: string,
+    schema: SchemaType,
+    query: QueryType,
+    readPreference?: string,
+    estimate?: boolean = true
+  ) {
+    debug('count', className, query, readPreference, estimate);
     const values = [className];
     const where = buildWhereClause({ schema, query, index: 2 });
     values.push(...where.values);
 
     const wherePattern =
       where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+    let qs = '';
+
+    if (where.pattern.length > 0 || !estimate) {
+      qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+    } else {
+      qs =
+        'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
+    }
+
     return this._client
-      .one(qs, values, a => +a.count)
+      .one(qs, values, a => {
+        if (a.approximate_row_count != null) {
+          return +a.approximate_row_count;
+        } else {
+          return +a.count;
+        }
+      })
       .catch(error => {
         if (error.code !== PostgresRelationDoesNotExistError) {
           throw error;
@@ -2328,6 +2326,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   updateSchemaWithIndexes(): Promise<void> {
     return Promise.resolve();
+  }
+
+  // Used for testing purposes
+  updateEstimatedCount(className: string) {
+    return this._client.none('ANALYZE $1:name', [className]);
   }
 }
 

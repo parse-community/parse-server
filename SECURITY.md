@@ -2,7 +2,7 @@
 If you believe you have found a security vulnerability on one of parse-community maintained packages,
 we encourage you to let us know right away. 
 We will investigate all legitimate reports and do our best to quickly fix the problem. 
-Before reporting though, please review this page including and those things that should not be reported.
+Before making a report, please review this page to understand our disclosure policy and how to communicate with us.
 
 # Responsible Disclosure Policy
 If you comply with the policies below when reporting a security issue to parse community, 
@@ -16,7 +16,7 @@ We ask that:
 
 # Communicating with us
 
-All vulnerability should be privately reported to either [Node Security](https://nodesecurity.io/report) or directly to us at the following address [security at parseplatform dot org](mailto:security@parseplatform.org)
+All vulnerabilities should be privately reported to either [Node Security](https://nodesecurity.io/report) or directly to us at the following address [security at parseplatform dot org](mailto:security@parseplatform.org)
 
 You can use our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
 

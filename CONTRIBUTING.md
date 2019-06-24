@@ -9,7 +9,7 @@ If you are not familiar with Pull Requests and want to know more about them, you
 ### Recommended setup:
 
 * [vscode](https://code.visualstudio.com), the popular IDE.
-* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), a very practical test exploration plugin which let you run, debug and see the test results inline.
+* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up you local machine:
 
@@ -22,6 +22,8 @@ $ npm install # install all the node dependencies
 $ code . # launch vscode
 $ npm run watch # run babel watching for local file changes
 ```
+
+> To launch VS Code from the terminal with the `code` command you first need to follow the [launching from the command line section](https://code.visualstudio.com/docs/setup/mac#_launching-from-the-command-line) in the VS Code setup documentation.
 
 Once you have babel running in watch mode, you can start making changes to parse-server.
 
@@ -46,12 +48,8 @@ Once you have babel running in watch mode, you can start making changes to parse
 ### Please Do's
 
 * Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
-* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run:
-    * **Windows**: `npm run coverage:win`
-    * **Unix**: `npm run coverage`
-* Run the tests for the file you are working on with the following command:
-    * **Windows**: `npm run test:win spec/MyFile.spec.js`
-    * **Unix**: `npm test spec/MyFile.spec.js`
+* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run: `npm run coverage`
+* Run the tests for the file you are working on with the following command: `npm test spec/MyFile.spec.js`
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
@@ -68,6 +66,17 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_db('mongo')` // will make a test that only runs on mongo
   - `it_exclude_dbs(['postgres'])` // will make a test that runs against all DB's but postgres
 
+### Generate Parse Server Config Definition
+
+If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs]. 
+
+To view docs run `npm run docs` and check the `/out` directory.
+
 ### Code of Conduct
 
 This project adheres to the [Contributor Covenant Code of Conduct](https://github.com/parse-community/parse-server/blob/master/CODE_OF_CONDUCT.md). By participating, you are expected to honor this code.
+
+[config]: http://parseplatform.org/parse-server/api/master/ParseServerOptions.html
+[config-def]: https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js
+[config-docs]: https://github.com/parse-community/parse-server/blob/master/src/Options/docs.js
+[config-index]: https://github.com/parse-community/parse-server/blob/master/src/Options/index.js

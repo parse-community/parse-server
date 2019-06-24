@@ -80,7 +80,7 @@ class ParseServer {
       cloud,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      __indexBuildCompletionCallbackForTests = () => {},
+      serverStartComplete,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -97,12 +97,24 @@ class ParseServer {
 
     logging.setLogger(loggerController);
     const dbInitPromise = databaseController.performInitialization();
-    hooksController.load();
+    const hooksLoadPromise = hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
-    if (process.env.TESTING) {
-      __indexBuildCompletionCallbackForTests(dbInitPromise);
-    }
+    Promise.all([dbInitPromise, hooksLoadPromise])
+      .then(() => {
+        if (serverStartComplete) {
+          serverStartComplete();
+        }
+      })
+      .catch(error => {
+        if (serverStartComplete) {
+          serverStartComplete(error);
+        } else {
+          // eslint-disable-next-line no-console
+          console.error(error);
+          process.exit(1);
+        }
+      });
 
     if (cloud) {
       addParseCloud();
@@ -134,15 +146,15 @@ class ParseServer {
    * @static
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
-  static app({ maxUploadSize = '20mb', appId }) {
+  static app({ maxUploadSize = '20mb', appId, directAccess }) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
+    api.use(middlewares.allowCrossDomain);
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
-      middlewares.allowCrossDomain,
       new FilesRouter().expressRouter({
         maxUploadSize: maxUploadSize,
       })
@@ -161,7 +173,6 @@ class ParseServer {
     );
 
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
-    api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
@@ -191,7 +202,10 @@ class ParseServer {
         ParseServer.verifyServerUrl();
       });
     }
-    if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
+    if (
+      process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1' ||
+      directAccess
+    ) {
       Parse.CoreManager.setRESTController(
         ParseServerRESTController(appId, appRouter)
       );

@@ -9,6 +9,7 @@ import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
 // @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
+type ProtectedFields = any;
 
 export interface ParseServerOptions {
   /* Your Parse Application ID
@@ -57,6 +58,10 @@ export interface ParseServerOptions {
   databaseOptions: ?any;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
+  /* Circumvent Parse workaround for historical MongoDB bug SERVER-13732
+  :ENV: PARSE_SKIP_MONGODB_SERVER_13732_WORKAROUND
+  :DEFAULT: false */
+  skipMongoDBServer13732Workaround: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes
@@ -81,12 +86,11 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PRESERVE_FILE_NAME
   :DEFAULT: false */
   preserveFileName: ?boolean;
-  /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
-  :DEFAULT: ["email"] */
+  /* Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields */
   userSensitiveFields: ?(string[]);
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
-  protectedFields: ?any;
+  protectedFields: ?ProtectedFields;
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
@@ -145,6 +149,10 @@ export interface ParseServerOptions {
   /* Sets the maximum size for the in memory cache, defaults to 10000
   :DEFAULT: 10000 */
   cacheMaxSize: ?number;
+  /* Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
+  :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
+  :DEFAULT: false */
+  directAccess: ?boolean;
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
   :DEFAULT: false */
   enableSingleSchemaCache: ?boolean;
@@ -173,7 +181,7 @@ export interface ParseServerOptions {
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
 
-  __indexBuildCompletionCallbackForTests: ?() => void;
+  serverStartComplete: ?(error: ?Error) => void;
 }
 
 export interface CustomPagesOptions {
@@ -181,16 +189,26 @@ export interface CustomPagesOptions {
   invalidLink: ?string;
   /* verify email success page path */
   verifyEmailSuccess: ?string;
+  /* invalid verification link page path */
+  invalidVerificationLink: ?string;
+  /* verification link send success page path */
+  linkSendSuccess: ?string;
+  /* verification link send fail page path */
+  linkSendFail: ?string;
   /* choose password page path */
   choosePassword: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+  /* for masking user-facing pages */
+  parseFrameURL: ?string;
 }
 
 export interface LiveQueryOptions {
   /* parse-server's LiveQuery classNames
   :ENV: PARSE_SERVER_LIVEQUERY_CLASSNAMES */
   classNames: ?(string[]);
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
@@ -215,6 +233,8 @@ export interface LiveQueryServerOptions {
   /* The port to run the LiveQuery server, defaults to 1337.
   :DEFAULT: 1337 */
   port: ?number;
+  /* parse-server's LiveQuery redisOptions */
+  redisOptions: ?any;
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string;
   /* LiveQuery pubsub adapter */

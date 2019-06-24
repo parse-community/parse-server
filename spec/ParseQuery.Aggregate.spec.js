@@ -379,18 +379,23 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it_exclude_dbs(['postgres'])(
-    'cannot group by date field (excluding createdAt and updatedAt)',
+    'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
     done => {
-      const obj1 = new TestObject({ dateField: new Date(1990, 11, 1) });
-      const obj2 = new TestObject({ dateField: new Date(1990, 5, 1) });
-      const obj3 = new TestObject({ dateField: new Date(1990, 11, 1) });
+      const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
+      const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
+      const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
       const pipeline = [
+        {
+          match: {
+            dateField2019: { $exists: true },
+          },
+        },
         {
           group: {
             objectId: {
-              day: { $dayOfMonth: '$dateField' },
-              month: { $month: '$dateField' },
-              year: { $year: '$dateField' },
+              day: { $dayOfMonth: '$dateField2019' },
+              month: { $month: '$dateField2019' },
+              year: { $year: '$dateField2019' },
             },
             count: { $sum: 1 },
           },
@@ -401,11 +406,46 @@ describe('Parse.Query Aggregate testing', () => {
           const query = new Parse.Query(TestObject);
           return query.aggregate(pipeline);
         })
-        .then(done.fail)
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+        .then(results => {
+          const counts = results.map(result => result.count);
+          expect(counts.length).toBe(2);
+          expect(counts.sort()).toEqual([1, 2]);
           done();
-        });
+        })
+        .catch(done.fail);
+    }
+  );
+
+  it_only_db('postgres')(
+    'can group by any date field (it does not work if you have dirty data)', // rows in your collection with non date data in the field that is supposed to be a date
+    done => {
+      const obj1 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
+      const obj2 = new TestObject({ dateField2019: new Date(1990, 5, 1) });
+      const obj3 = new TestObject({ dateField2019: new Date(1990, 11, 1) });
+      const pipeline = [
+        {
+          group: {
+            objectId: {
+              day: { $dayOfMonth: '$dateField2019' },
+              month: { $month: '$dateField2019' },
+              year: { $year: '$dateField2019' },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ];
+      Parse.Object.saveAll([obj1, obj2, obj3])
+        .then(() => {
+          const query = new Parse.Query(TestObject);
+          return query.aggregate(pipeline);
+        })
+        .then(results => {
+          const counts = results.map(result => result.count);
+          expect(counts.length).toBe(3);
+          expect(counts.sort()).toEqual([1, 2, 4]);
+          done();
+        })
+        .catch(done.fail);
     }
   );
 

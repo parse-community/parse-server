@@ -14,6 +14,9 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 //   include
 //   keys
 //   redirectClassNameForKey
+//   readPreference
+//   includeReadPreference
+//   subqueryReadPreference
 function RestQuery(
   config,
   auth,
@@ -362,6 +365,8 @@ RestQuery.prototype.replaceInQuery = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -421,6 +426,8 @@ RestQuery.prototype.replaceNotInQuery = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -484,6 +491,8 @@ RestQuery.prototype.replaceSelect = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -545,6 +554,8 @@ RestQuery.prototype.replaceDontSelect = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -809,6 +820,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
     includeRestOptions.readPreference = restOptions.includeReadPreference;
     includeRestOptions.includeReadPreference =
       restOptions.includeReadPreference;
+  } else if (restOptions.readPreference) {
+    includeRestOptions.readPreference = restOptions.readPreference;
   }
 
   const queryPromises = Object.keys(pointersHash).map(className => {

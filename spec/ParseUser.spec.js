@@ -440,6 +440,22 @@ describe('Parse.User testing', () => {
       );
   });
 
+  it('should not call beforeLogin with become', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+
+    await Parse.User._logInWith('facebook');
+    const sessionToken = Parse.User.current().getSessionToken();
+    await Parse.User.become(sessionToken);
+    expect(hit).toBe(0);
+    done();
+  });
+
   it('cannot save non-authed user', async done => {
     let user = new Parse.User();
     user.set({
@@ -1401,6 +1417,84 @@ describe('Parse.User testing', () => {
       await Parse.User._logInWith('facebook');
       done();
     });
+  });
+
+  it('signup with provider should not call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+
+    await Parse.User._logInWith('facebook');
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('login with provider should call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      expect(req.object.get('authData')).toBeDefined();
+      expect(req.object.get('name')).toBe('tupac shakur');
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.current().save({ name: 'tupac shakur' });
+    await Parse.User.logOut();
+    await Parse.User._logInWith('facebook');
+    expect(hit).toBe(1);
+    done();
+  });
+
+  it('incorrect login with provider should not call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.logOut();
+    provider.shouldError = true;
+    try {
+      await Parse.User._logInWith('facebook');
+    } catch (e) {
+      expect(e).toBeDefined();
+    }
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('login with provider should be blockable by beforeLogin', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.current().save({ isBanned: true });
+    await Parse.User.logOut();
+
+    try {
+      await Parse.User._logInWith('facebook');
+      throw new Error('should not have continued login.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+
+    expect(hit).toBe(1);
+    done();
   });
 
   it('link with provider', async done => {

@@ -152,10 +152,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(
-      encodedUri,
-      this._mongoOptions
-    )
+    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions)
       .then(client => {
         // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
         // Fortunately, we can get back the options and use them to select the proper DB.
@@ -385,8 +382,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   deleteAllClasses(fast: boolean) {
     return storageAdapterAllCollections(this).then(collections =>
       Promise.all(
-        collections.map(
-          collection => (fast ? collection.deleteMany({}) : collection.drop())
+        collections.map(collection =>
+          fast ? collection.deleteMany({}) : collection.drop()
         )
       )
     );
@@ -693,7 +690,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection =>
-        collection.count(transformWhere(className, query, schema), {
+        collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
         })
@@ -768,12 +765,6 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
         })
       )
-      .catch(error => {
-        if (error.code === 16006) {
-          throw new Parse.Error(Parse.Error.INVALID_QUERY, error.message);
-        }
-        throw error;
-      })
       .then(results => {
         results.forEach(result => {
           if (result.hasOwnProperty('_id')) {
@@ -827,9 +818,9 @@ export class MongoStorageAdapter implements StorageAdapter {
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
             returnValue[`_p_${field}`] = pipeline[field];
           } else {
-            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${
-              pipeline[field]
-            }`;
+            returnValue[
+              `_p_${field}`
+            ] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
         } else if (
           schema.fields[field] &&
@@ -935,6 +926,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   _parseReadPreference(readPreference: ?string): ?string {
+    if (readPreference) {
+      readPreference = readPreference.toUpperCase();
+    }
     switch (readPreference) {
       case 'PRIMARY':
         readPreference = ReadPreference.PRIMARY;
@@ -952,6 +946,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         readPreference = ReadPreference.NEAREST;
         break;
       case undefined:
+      case null:
+      case '':
         break;
       default:
         throw new Parse.Error(

@@ -3,7 +3,13 @@ import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
 
-const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
+const ALLOWED_GET_QUERY_KEYS = [
+  'keys',
+  'include',
+  'readPreference',
+  'includeReadPreference',
+  'subqueryReadPreference',
+];
 
 export class ClassesRouter extends PromiseRouter {
   className(req) {
@@ -57,11 +63,20 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (typeof body.keys == 'string') {
+    if (typeof body.keys === 'string') {
       options.keys = body.keys;
     }
     if (body.include) {
       options.include = String(body.include);
+    }
+    if (typeof body.readPreference === 'string') {
+      options.readPreference = body.readPreference;
+    }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
     }
 
     return rest
@@ -154,6 +169,9 @@ export class ClassesRouter extends PromiseRouter {
       'includeAll',
       'redirectClassNameForKey',
       'where',
+      'readPreference',
+      'includeReadPreference',
+      'subqueryReadPreference',
     ];
 
     for (const key of Object.keys(body)) {
@@ -187,6 +205,15 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.includeAll) {
       options.includeAll = true;
+    }
+    if (typeof body.readPreference === 'string') {
+      options.readPreference = body.readPreference;
+    }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
     }
     return options;
   }
