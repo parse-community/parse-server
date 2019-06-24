@@ -2441,7 +2441,8 @@ function createLiteralRegex(remaining) {
   return remaining
     .split('')
     .map(c => {
-      if (c.match(/[0-9a-zA-Z]/) !== null) {
+      const regex = RegExp('[0-9 ]|\\p{L}', 'u'); // Support all unicode letter chars
+      if (c.match(regex) !== null) {
         // don't escape alphanumeric characters
         return c;
       }

@@ -4638,6 +4638,19 @@ describe('Parse.Query testing', () => {
     equal(results[0].get('array'), data2);
   });
 
+  it('can query regex with unicode', async () => {
+    const object = new TestObject();
+    object.set('field', 'autoöo');
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.contains('field', 'autoöo');
+    const results = await query.find();
+
+    expect(results.length).toBe(1);
+    expect(results[0].get('field')).toBe('autoöo');
+  });
+
   it('can update mixed array more than 100 elements', async () => {
     const array = [0, 1.1, 'hello world', { foo: 'bar' }, null];
     const obj = new TestObject({ array });
