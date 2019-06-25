@@ -34,9 +34,10 @@ import { UsersRouter } from './Routers/UsersRouter';
 import { PurgeRouter } from './Routers/PurgeRouter';
 import { AudiencesRouter } from './Routers/AudiencesRouter';
 import { AggregateRouter } from './Routers/AggregateRouter';
-
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
+import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -264,6 +265,22 @@ class ParseServer {
     }
 
     app.use(options.mountPath, this.app);
+
+    if (options.mountGraphQL === true || options.mountPlayground === true) {
+      const parseGraphQLServer = new ParseGraphQLServer(this, {
+        graphQLPath: options.graphQLPath,
+        playgroundPath: options.playgroundPath,
+      });
+
+      if (options.mountGraphQL) {
+        parseGraphQLServer.applyGraphQL(app);
+      }
+
+      if (options.mountPlayground) {
+        parseGraphQLServer.applyPlayground(app);
+      }
+    }
+
     const server = app.listen(options.port, options.host, callback);
     this.server = server;
 

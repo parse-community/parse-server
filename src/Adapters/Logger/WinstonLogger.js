@@ -32,7 +32,11 @@ function configureTransports(options) {
           {
             filename: 'parse-server.err',
             json: true,
-            format: format.combine(format.timestamp(), format.json()),
+            format: format.combine(
+              format.timestamp(),
+              format.splat(),
+              format.json()
+            ),
           },
           options,
           { level: 'error' }

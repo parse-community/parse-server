@@ -27,6 +27,7 @@
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
+ * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
@@ -40,9 +41,12 @@
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
  * @property {Union} middleware middleware for express server, can be string or function
+ * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
+ * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {Any} passwordPolicy Password policy for enforcing password related rules
+ * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
  * @property {Boolean} preventLoginWithUnverifiedEmail Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false
