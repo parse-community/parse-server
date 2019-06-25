@@ -22,6 +22,8 @@
         "no-multiple-empty-lines": 1,
         "prefer-const": "error",
         "space-infix-ops": "error",
-        "no-useless-escape": "off"
+        "no-useless-escape": "off",
+        "no-prototype-builtins": "off",
+        "require-atomic-updates": "off"
     }
 }
