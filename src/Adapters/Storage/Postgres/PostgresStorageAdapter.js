@@ -366,14 +366,16 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
                 2}) OR $${index}:name IS NULL)`
             );
           } else {
-            const constraintFieldName =
-              fieldName.indexOf('.') >= 0
-                ? transformDotField(fieldName)
-                : `$${index}:name`;
-            patterns.push(
-              `(${constraintFieldName} <> $${index +
-                1} OR ${constraintFieldName} IS NULL)`
-            );
+            if (fieldName.indexOf('.') >= 0) {
+              const constraintFieldName = transformDotField(fieldName);
+              patterns.push(
+                `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
+              );
+            } else {
+              patterns.push(
+                `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
+              );
+            }
           }
         }
       }
@@ -393,12 +395,14 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         values.push(fieldName);
         index += 1;
       } else {
-        const constraintFieldName =
-          fieldName.indexOf('.') >= 0
-            ? transformDotField(fieldName)
-            : `$${index}:name`;
-        values.push(fieldValue.$eq);
-        patterns.push(`${constraintFieldName} = $${index++}`);
+        if (fieldName.indexOf('.') >= 0) {
+          values.push(fieldValue.$eq);
+          patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+        } else {
+          values.push(fieldName, fieldValue.$eq);
+          patterns.push(`$${index}:name = $${index + 1}`);
+          index += 2;
+        }
       }
     }
     const isInOrNin =
