@@ -43,6 +43,22 @@ describe('info logs', () => {
       }
     );
   });
+
+  it('info logs should interpolate string', async () => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('info', 'testing info logs with %s', 'replace');
+    const results = await winstonLoggerAdapter.query({
+      from: new Date(Date.now() - 500),
+      size: 100,
+      level: 'info',
+      order: 'desc',
+    });
+    expect(results.length > 0).toBeTruthy();
+    const log = results.find(
+      x => x.message === 'testing info logs with replace'
+    );
+    expect(log);
+  });
 });
 
 describe('error logs', () => {
@@ -81,6 +97,21 @@ describe('error logs', () => {
         done();
       }
     );
+  });
+
+  it('error logs should interpolate string', async () => {
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('error', 'testing error logs with %s', 'replace');
+    const results = await winstonLoggerAdapter.query({
+      from: new Date(Date.now() - 500),
+      size: 100,
+      level: 'error',
+    });
+    expect(results.length > 0).toBeTruthy();
+    const log = results.find(
+      x => x.message === 'testing error logs with replace'
+    );
+    expect(log);
   });
 });
 
@@ -128,5 +159,25 @@ describe('verbose logs', () => {
         fail(JSON.stringify(err));
         done();
       });
+  });
+
+  it('verbose logs should interpolate string', async () => {
+    await reconfigureServer({ verbose: true });
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log(
+      'verbose',
+      'testing verbose logs with %s',
+      'replace'
+    );
+    const results = await winstonLoggerAdapter.query({
+      from: new Date(Date.now() - 500),
+      size: 100,
+      level: 'verbose',
+    });
+    expect(results.length > 0).toBeTruthy();
+    const log = results.find(
+      x => x.message === 'testing verbose logs with replace'
+    );
+    expect(log);
   });
 });
