@@ -783,7 +783,8 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
             : transformDotField(fieldName);
         } else {
-          constraintFieldName = fieldName;
+          constraintFieldName = `$${index++}:name`;
+          values.push(fieldName);
         }
         values.push(postgresValue);
         patterns.push(`${constraintFieldName} ${pgComparator} $${index++}`);
