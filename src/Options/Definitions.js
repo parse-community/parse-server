@@ -153,6 +153,11 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for the files sub-system',
     action: parsers.moduleOrObjectParser,
   },
+  graphQLPath: {
+    env: 'PARSE_SERVER_GRAPHQL_PATH',
+    help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
+    default: '/graphql',
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',
@@ -219,10 +224,22 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MIDDLEWARE',
     help: 'middleware for express server, can be string or function',
   },
+  mountGraphQL: {
+    env: 'PARSE_SERVER_MOUNT_GRAPHQL',
+    help: 'Mounts the GraphQL endpoint',
+    action: parsers.booleanParser,
+    default: false,
+  },
   mountPath: {
     env: 'PARSE_SERVER_MOUNT_PATH',
     help: 'Mount path for the server, defaults to /parse',
     default: '/parse',
+  },
+  mountPlayground: {
+    env: 'PARSE_SERVER_MOUNT_PLAYGROUND',
+    help: 'Mounts the GraphQL Playground - never use this option in production',
+    action: parsers.booleanParser,
+    default: false,
   },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
@@ -234,6 +251,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'Password policy for enforcing password related rules',
     action: parsers.objectParser,
+  },
+  playgroundPath: {
+    env: 'PARSE_SERVER_PLAYGROUND_PATH',
+    help: 'Mount path for the GraphQL Playground, defaults to /playground',
+    default: '/playground',
   },
   port: {
     env: 'PORT',
