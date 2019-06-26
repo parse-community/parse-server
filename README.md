@@ -37,6 +37,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
         - [Configuring File Adapters](#configuring-file-adapters)
         - [Logging](#logging)
 - [Live Queries](#live-queries)
+- [GraphQL](#graphql)
 - [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
