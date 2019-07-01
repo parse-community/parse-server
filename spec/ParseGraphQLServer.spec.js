@@ -3104,6 +3104,56 @@ describe('ParseGraphQLServer', () => {
           expect(resultUserName).toEqual(userName);
           expect(resultEmail).toEqual(email);
         });
+
+        it('should return logged user including pointer', async () => {
+          const foo = new Parse.Object('Foo');
+          foo.set('bar', 'hello');
+
+          const userName = 'user1',
+            password = 'user1',
+            email = 'emailUser1@parse.com';
+
+          const user = new Parse.User();
+          user.setUsername(userName);
+          user.setPassword(password);
+          user.setEmail(email);
+          user.set('userFoo', foo);
+          await user.signUp();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const session = await Parse.Session.current();
+          const result = await apolloClient.query({
+            query: gql`
+              query GetCurrentUser {
+                users {
+                  me {
+                    objectId
+                    sessionToken
+                    userFoo {
+                      bar
+                    }
+                  }
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Session-Token': session.getSessionToken(),
+              },
+            },
+          });
+
+          const {
+            objectId,
+            sessionToken,
+            userFoo: resultFoo,
+          } = result.data.users.me;
+          expect(objectId).toEqual(user.id);
+          expect(sessionToken).toBeDefined();
+          expect(resultFoo).toBeDefined();
+          expect(resultFoo.bar).toEqual('hello');
+        });
       });
 
       describe('Users Mutations', () => {
