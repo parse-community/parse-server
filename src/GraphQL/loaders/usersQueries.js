@@ -1,7 +1,9 @@
 import { GraphQLNonNull, GraphQLObjectType } from 'graphql';
-import UsersRouter from '../../Routers/UsersRouter';
-
-const usersRouter = new UsersRouter();
+import getFieldNames from 'graphql-list-fields';
+import Parse from 'parse/node';
+import rest from '../../rest';
+import Auth from '../../Auth';
+import { extractKeysAndInclude } from './parseClassTypes';
 
 const load = parseGraphQLSchema => {
   const fields = {};
@@ -9,10 +11,47 @@ const load = parseGraphQLSchema => {
   fields.me = {
     description: 'The Me query can be used to return the current user data.',
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
-    async resolve(_source, _args, context) {
+    async resolve(_source, _args, context, queryInfo) {
       try {
-        const { config, auth, info } = context;
-        return (await usersRouter.handleMe({ config, auth, info })).response;
+        const { config, info } = context;
+
+        if (!info || !info.sessionToken) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token'
+          );
+        }
+        const sessionToken = info.sessionToken;
+        const selectedFields = getFieldNames(queryInfo);
+
+        const { include } = extractKeysAndInclude(selectedFields);
+        const response = await rest.find(
+          config,
+          Auth.master(config),
+          '_Session',
+          { sessionToken },
+          {
+            include: include
+              .split(',')
+              .map(included => `user.${included}`)
+              .join(','),
+          },
+          info.clientVersion
+        );
+        if (
+          !response.results ||
+          response.results.length == 0 ||
+          !response.results[0].user
+        ) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token'
+          );
+        } else {
+          const user = response.results[0].user;
+          user.sessionToken = sessionToken;
+          return user;
+        }
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
