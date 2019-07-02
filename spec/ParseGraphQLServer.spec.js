@@ -3110,7 +3110,7 @@ describe('ParseGraphQLServer', () => {
         it('should sign user up', async () => {
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation SignUp($fields: _UserFields) {
+              mutation SignUp($fields: _UserSignUpFields) {
                 users {
                   signUp(fields: $fields) {
                     sessionToken
