@@ -551,6 +551,43 @@ const load = (parseGraphQLSchema, parseClass) => {
     });
     parseGraphQLSchema.meType = meType;
     parseGraphQLSchema.graphQLTypes.push(meType);
+
+    const userSignUpInputTypeName = `_UserSignUpFields`;
+    const userSignUpInputType = new GraphQLInputObjectType({
+      name: userSignUpInputTypeName,
+      description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${className} class when signing up.`,
+      fields: () =>
+        classCustomFields.reduce(
+          (fields, field) => {
+            const type = mapInputType(
+              parseClass.fields[field].type,
+              parseClass.fields[field].targetClass,
+              parseGraphQLSchema.parseClassTypes
+            );
+            if (type) {
+              return {
+                ...fields,
+                [field]: {
+                  description: `This is the object ${field}.`,
+                  type:
+                    field === 'username' || field === 'password'
+                      ? new GraphQLNonNull(type)
+                      : type,
+                },
+              };
+            } else {
+              return fields;
+            }
+          },
+          {
+            ACL: defaultGraphQLTypes.ACL_ATT,
+          }
+        ),
+    });
+    parseGraphQLSchema.parseClassTypes[
+      '_User'
+    ].signUpInputType = userSignUpInputType;
+    parseGraphQLSchema.graphQLTypes.push(userSignUpInputType);
   }
 };
 
