@@ -2,15 +2,28 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...master)
+
+### 3.5.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...3.5.0)
+
+- NEW: GraphQL Support [#5674](https://github.com/parse-community/parse-server/pull/5674) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+
+[GraphQL Guide](https://github.com/parse-community/parse-server#graphql)
+
+- NEW: Sign in with Apple [#5694](https://github.com/parse-community/parse-server/pull/5694) thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: AppSecret to Facebook Auth [#5695](https://github.com/parse-community/parse-server/pull/5695) thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Postgres: Regex support foreign characters [#5598](https://github.com/parse-community/parse-server/pull/5598) thanks to [Jeff Gu Kang](https://github.com/JeffGuKang)
+- FIX: Winston Logger string interpolation [#5729](https://github.com/parse-community/parse-server/pull/5729) thanks to [Diamond Lewis](https://github.com/dplewis)
 
 ### 3.4.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
-Fix: Commit changes
 
+Fix: Commit changes
 
 ### 3.4.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...3.4.3)
+
 Fix: Use changes in master to travis configuration to enable pushing to npm and gh_pages.  See diff for details.
 
 ### 3.4.2
