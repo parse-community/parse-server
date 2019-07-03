@@ -9,8 +9,7 @@ import { handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
-import { ApolloError } from 'apollo-client';
-import Parse from 'parse/node';
+import { toGraphQLError } from './ParseGraphQLUtils';
 
 class ParseGraphQLServer {
   constructor(parseServer, config) {
@@ -58,12 +57,8 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);
     app.use(this.config.graphQLPath, (err, req, res, next) => {
-      if (err && err instanceof Parse.Error) {
-        res.json(
-          new ApolloError({
-            networkError: err,
-          })
-        );
+      if (err) {
+        res.json(toGraphQLError(err));
       } else {
         next();
       }
