@@ -15,7 +15,6 @@
 - NEW: AppSecret to Facebook Auth [#5695](https://github.com/parse-community/parse-server/pull/5695) thanks to [Diamond Lewis](https://github.com/dplewis)
 - NEW: Postgres: Regex support foreign characters [#5598](https://github.com/parse-community/parse-server/pull/5598) thanks to [Jeff Gu Kang](https://github.com/JeffGuKang)
 - FIX: Winston Logger string interpolation [#5729](https://github.com/parse-community/parse-server/pull/5729) thanks to [Diamond Lewis](https://github.com/dplewis)
-- NEW: Aggregate supports group by date fields [#5538](https://github.com/parse-community/parse-server/pull/5538) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
 ### 3.4.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
