@@ -17,7 +17,7 @@ const responses = {
 
 describe('AuthenticationProviders', function() {
   [
-    'apple-signin',
+    'apple',
     'facebook',
     'facebookaccountkit',
     'github',
@@ -51,7 +51,7 @@ describe('AuthenticationProviders', function() {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      if (providerName === 'twitter' || providerName === 'apple-signin') {
+      if (providerName === 'twitter' || providerName === 'apple') {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
@@ -1087,7 +1087,7 @@ describe('oauth2 auth adapter', () => {
 });
 
 describe('apple signin auth adapter', () => {
-  const apple = require('../lib/Adapters/Auth/apple-signin');
+  const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
 
   it('should throw error with missing id_token', async () => {
@@ -1095,14 +1095,14 @@ describe('apple signin auth adapter', () => {
       await apple.validateAuthData({}, { client_id: 'secret' });
       fail();
     } catch (e) {
-      expect(e.message).toBe('id_token is invalid for this user.');
+      expect(e.message).toBe('id token is invalid for this user.');
     }
   });
 
   it('should not verify invalid id_token', async () => {
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_token' },
         { client_id: 'secret' }
       );
       fail();
@@ -1120,7 +1120,7 @@ describe('apple signin auth adapter', () => {
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
-      { id_token: 'the_token' },
+      { id: 'the_token' },
       { client_id: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
@@ -1134,13 +1134,13 @@ describe('apple signin auth adapter', () => {
 
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_token' },
         { client_id: 'secret' }
       );
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id_token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
+        'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
     }
   });
@@ -1154,7 +1154,7 @@ describe('apple signin auth adapter', () => {
 
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_token' },
         { client_id: 'secret' }
       );
       fail();

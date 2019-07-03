@@ -21,7 +21,7 @@ const verifyIdToken = async (token, clientID) => {
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'id_token is invalid for this user.'
+      'id token is invalid for this user.'
     );
   }
   const applePublicKey = await getApplePublicKey();
@@ -30,7 +30,7 @@ const verifyIdToken = async (token, clientID) => {
   if (jwtClaims.iss !== TOKEN_ISSUER) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `id_token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
+      `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
   if (clientID !== undefined && jwtClaims.aud !== clientID) {
@@ -42,9 +42,9 @@ const verifyIdToken = async (token, clientID) => {
   return jwtClaims;
 };
 
-// Returns a promise that fulfills if this id_token is valid
+// Returns a promise that fulfills if this id token is valid
 function validateAuthData(authData, options = {}) {
-  return verifyIdToken(authData.id_token, options.client_id);
+  return verifyIdToken(authData.id, options.client_id);
 }
 
 // Returns a promise that fulfills if this app id is valid.
@@ -53,6 +53,6 @@ function validateAppId() {
 }
 
 module.exports = {
-  validateAppId: validateAppId,
-  validateAuthData: validateAuthData,
+  validateAppId,
+  validateAuthData,
 };
