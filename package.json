@@ -74,7 +74,7 @@
     "eslint": "6.0.1",
     "eslint-plugin-flowtype": "3.11.1",
     "flow-bin": "0.102.0",
-    "form-data": "2.4.0",
+    "form-data": "2.5.0",
     "gaze": "1.1.3",
     "husky": "3.0.0",
     "jasmine": "3.4.0",
