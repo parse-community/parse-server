@@ -56,7 +56,7 @@
   "devDependencies": {
     "@babel/cli": "7.5.0",
     "@babel/core": "7.5.0",
-    "@babel/plugin-proposal-object-rest-spread": "7.4.4",
+    "@babel/plugin-proposal-object-rest-spread": "7.5.0",
     "@babel/plugin-transform-flow-strip-types": "7.4.4",
     "@babel/preset-env": "7.4.5",
     "@parse/minami": "1.0.0",
