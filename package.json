@@ -58,7 +58,7 @@
     "@babel/core": "7.5.0",
     "@babel/plugin-proposal-object-rest-spread": "7.5.0",
     "@babel/plugin-transform-flow-strip-types": "7.4.4",
-    "@babel/preset-env": "7.4.5",
+    "@babel/preset-env": "7.5.0",
     "@parse/minami": "1.0.0",
     "apollo-cache-inmemory": "1.6.2",
     "apollo-client": "2.6.3",
