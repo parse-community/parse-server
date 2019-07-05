@@ -43,7 +43,7 @@
     "mongodb": "3.2.7",
     "node-rsa": "1.0.5",
     "parse": "2.4.0",
-    "pg-promise": "8.7.2",
+    "pg-promise": "8.7.3",
     "redis": "2.8.0",
     "semver": "6.2.0",
     "subscriptions-transport-ws": "0.9.16",
