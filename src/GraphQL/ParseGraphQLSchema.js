@@ -8,18 +8,23 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
+import { ParseGraphQLSchemaConfig } from '../Options/index';
 
 class ParseGraphQLSchema {
-  constructor(databaseController, log) {
+  constructor(
+    databaseController,
+    log,
+    graphQLSchemaConfig: ?ParseGraphQLSchemaConfig
+  ) {
     this.databaseController =
       databaseController ||
       requiredParameter('You must provide a databaseController instance!');
     this.log = log || requiredParameter('You must provide a log instance!');
+    this.graphQLSchemaConfig = graphQLSchemaConfig || {};
   }
 
   async load() {
-    const schemaController = await this.databaseController.loadSchema();
-    const parseClasses = await schemaController.getAllClasses();
+    const parseClasses = await this._getClassesForSchema();
     const parseClassesString = JSON.stringify(parseClasses);
 
     if (this.graphQLSchema) {
@@ -47,13 +52,13 @@ class ParseGraphQLSchema {
 
     defaultGraphQLTypes.load(this);
 
-    parseClasses.forEach(parseClass => {
-      parseClassTypes.load(this, parseClass);
-
-      parseClassQueries.load(this, parseClass);
-
-      parseClassMutations.load(this, parseClass);
-    });
+    this._getParseClassesWithConfig(parseClasses).forEach(
+      ([parseClass, parseClassConfig]) => {
+        parseClassTypes.load(this, parseClass, parseClassConfig);
+        parseClassQueries.load(this, parseClass, parseClassConfig);
+        parseClassMutations.load(this, parseClass, parseClassConfig);
+      }
+    );
 
     defaultGraphQLQueries.load(this);
 
@@ -111,6 +116,57 @@ class ParseGraphQLSchema {
       message = 'Internal server error.';
     }
     throw new ApolloError(message, code);
+  }
+
+  /**
+   * Gets all classes found by the `schemaController`
+   * minus those filtered out by the app's configuration
+   */
+  async _getClassesForSchema() {
+    const { enabledForClasses, disabledForClasses } = this.graphQLSchemaConfig;
+    const schemaController = await this.databaseController.loadSchema();
+
+    const allClasses = await schemaController.getAllClasses();
+    if (Array.isArray(enabledForClasses) || Array.isArray(disabledForClasses)) {
+      let includedClasses = allClasses;
+      if (enabledForClasses) {
+        includedClasses = allClasses.filter(clazz => {
+          return enabledForClasses.includes(clazz.className);
+        });
+      }
+      if (disabledForClasses) {
+        // Classes included in `enabledForClasses` that
+        // are also present in `disabledForClasses` will
+        // still be filtered out
+        includedClasses = includedClasses.filter(clazz => {
+          return !disabledForClasses.includes(clazz.className);
+        });
+      }
+
+      this.isUsersClassDisabled = !includedClasses.some(clazz => {
+        return clazz.className === '_User';
+      });
+
+      return includedClasses;
+    } else {
+      return allClasses;
+    }
+  }
+
+  /**
+   * This method returns a list of tuples
+   * that provide the parseClass along with
+   * its parseClassConfig where provided.
+   */
+  _getParseClassesWithConfig(parseClasses) {
+    const { parseClassConfigResolver } = this.graphQLSchemaConfig;
+    return parseClasses.map(parseClass => {
+      let parseClassConfig;
+      if (parseClassConfigResolver) {
+        parseClassConfig = parseClassConfigResolver(parseClass.className);
+      }
+      return [parseClass, parseClassConfig];
+    });
   }
 }
 

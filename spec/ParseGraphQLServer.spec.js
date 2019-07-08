@@ -685,12 +685,15 @@ describe('ParseGraphQLServer', () => {
           const expectedTypes = [
             '_RoleClass',
             '_RoleConstraints',
-            '_RoleFields',
+            '_RoleCreateFields',
+            '_RoleUpdateFields',
             '_RoleFindResult',
             '_UserClass',
             '_UserConstraints',
             '_UserFindResult',
-            '_UserFields',
+            '_UserSignUpFields',
+            '_UserCreateFields',
+            '_UserUpdateFields',
           ];
           expect(
             expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)

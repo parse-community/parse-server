@@ -270,6 +270,7 @@ class ParseServer {
       const parseGraphQLServer = new ParseGraphQLServer(this, {
         graphQLPath: options.graphQLPath,
         playgroundPath: options.playgroundPath,
+        graphQLSchemaConfig: options.graphQLSchemaConfig,
       });
 
       if (options.mountGraphQL) {
