@@ -252,7 +252,12 @@ interface WhereClause {
   sorts: Array<any>;
 }
 
-const buildWhereClause = ({ schema, query, index }): WhereClause => {
+const buildWhereClause = ({
+  schema,
+  query,
+  index,
+  insensitive,
+}): WhereClause => {
   const patterns = [];
   let values = [];
   const sorts = [];
@@ -274,10 +279,24 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       }
     }
 
-    if (fieldName.indexOf('.') >= 0) {
+    const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+    if (authDataMatch) {
+      // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
+      continue;
+    } else if (
+      insensitive &&
+      (fieldName === 'username' || fieldName === 'email')
+    ) {
+      patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
+      values.push(fieldName, fieldValue);
+      index += 2;
+    } else if (fieldName.indexOf('.') >= 0) {
       let name = transformDotField(fieldName);
       if (fieldValue === null) {
-        patterns.push(`${name} IS NULL`);
+        patterns.push(`$${index}:raw IS NULL`);
+        values.push(name);
+        index += 1;
+        continue;
       } else {
         if (fieldValue.$in) {
           const inPatterns = [];
@@ -333,7 +352,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach(subQuery => {
-        const clause = buildWhereClause({ schema, query: subQuery, index });
+        const clause = buildWhereClause({
+          schema,
+          query: subQuery,
+          index,
+          insensitive,
+        });
         if (clause.pattern.length > 0) {
           clauses.push(clause.pattern);
           clauseValues.push(...clause.values);
@@ -1391,7 +1415,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('deleteObjectsByQuery', className, query);
     const values = [className];
     const index = 2;
-    const where = buildWhereClause({ schema, index, query });
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      insensitive: false,
+    });
     values.push(...where.values);
     if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
@@ -1685,7 +1714,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     }
 
-    const where = buildWhereClause({ schema, index, query });
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      insensitive: false,
+    });
     values.push(...where.values);
 
     const whereClause =
@@ -1717,13 +1751,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys }: QueryOptions
+    { skip, limit, sort, keys, insensitive }: QueryOptions
   ) {
-    debug('find', className, query, { skip, limit, sort, keys });
+    debug('find', className, query, { skip, limit, sort, keys, insensitive });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
-    const where = buildWhereClause({ schema, query, index: 2 });
+    const where = buildWhereClause({ schema, query, index: 2, insensitive });
     values.push(...where.values);
 
     const wherePattern =
@@ -1949,7 +1983,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ) {
     debug('count', className, query, readPreference, estimate);
     const values = [className];
-    const where = buildWhereClause({ schema, query, index: 2 });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      insensitive: false,
+    });
     values.push(...where.values);
 
     const wherePattern =
@@ -2002,7 +2041,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema.fields[fieldName] &&
       schema.fields[fieldName].type === 'Pointer';
     const values = [field, column, className];
-    const where = buildWhereClause({ schema, query, index: 4 });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 4,
+      insensitive: false,
+    });
     values.push(...where.values);
 
     const wherePattern =

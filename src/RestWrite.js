@@ -644,7 +644,7 @@ RestWrite.prototype._validateUserName = function() {
       {
         username: this.data.username,
         objectId: { $ne: this.objectId() },
-        _auth_data_anonymous: null,
+        'authData.anonymous.id': null,
       },
       { limit: 1, caseInsensitive: true },
       {},
