@@ -55,7 +55,7 @@
   },
   "devDependencies": {
     "@babel/cli": "7.5.0",
-    "@babel/core": "7.5.0",
+    "@babel/core": "7.5.4",
     "@babel/plugin-proposal-object-rest-spread": "7.5.3",
     "@babel/plugin-transform-flow-strip-types": "7.4.4",
     "@babel/preset-env": "7.5.3",
