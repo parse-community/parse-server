@@ -2,7 +2,11 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...master)
+
+### 3.6.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...3.6.0)
+SECURITY FIX: Address (Security Advisory)[https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5] of a potential (Enumeration Attack)[https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)#Description_of_the_Issue] [73b0f9a](https://github.com/parse-community/parse-server/commit/73b0f9a339b81f5d757725dc557955a7b670a3ec) big thanks to (Fabian Strachanski)[https://github.com/fastrde] for identifying the problem, creating a fix and following the (vulnerability disclosure guidelines)[https://github.com/parse-community/parse-server/blob/master/SECURITY.md#parse-community-vulnerability-disclosure-program]
 
 ### 3.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...3.5.0)
