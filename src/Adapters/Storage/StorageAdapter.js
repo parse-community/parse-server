@@ -81,7 +81,8 @@ export interface StorageAdapter {
   ensureUniqueness(
     className: string,
     schema: SchemaType,
-    fieldNames: Array<string>
+    fieldNames: Array<string>,
+    caseInsensitive?: boolean
   ): Promise<void>;
   count(
     className: string,

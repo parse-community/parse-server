@@ -3,6 +3,20 @@ const UserController = require('../lib/Controllers/UserController')
 const emailAdapter = require('./MockEmailAdapter');
 const AppCache = require('../lib/cache').AppCache;
 
+fdescribe('boo', function() {
+  it('boo2', async () => {
+    const user = await Parse.User.signUp('test', 'test');
+    expect(user.getSessionToken).toBeDefined();
+
+    const fetchedUser = await new Parse.Query(Parse.User).get(user.id);
+    expect(fetchedUser.getSessionToken()).toBeUndefined();
+
+    const fetchedUser2 = await new Parse.Query(Parse.User).get(user.id, {
+      sessionToken: user.getSessionToken(),
+    });
+    expect(fetchedUser2.getSessionToken()).toBeDefined();
+  });
+});
 describe('UserController', () => {
   const user = {
     _email_verify_token: 'testToken',

@@ -1,4 +1,4 @@
-// @flow
+﻿// @flow
 // A database adapter that works with data exported from the hosted
 // Parse database.
 
@@ -1566,7 +1566,12 @@ class DatabaseController {
 
     const usernameUniqueness = userClassPromise
       .then(() =>
-        this.adapter.ensureUniqueness('_User', requiredUserFields, ['username'])
+        this.adapter.ensureUniqueness(
+          '_User',
+          requiredUserFields,
+          ['username'],
+          true
+        )
       )
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for usernames: ', error);
@@ -1575,7 +1580,12 @@ class DatabaseController {
 
     const emailUniqueness = userClassPromise
       .then(() =>
-        this.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
+        this.adapter.ensureUniqueness(
+          '_User',
+          requiredUserFields,
+          ['email'],
+          true
+        )
       )
       .catch(error => {
         logger.warn(
