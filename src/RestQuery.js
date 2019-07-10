@@ -711,24 +711,26 @@ RestQuery.prototype.handleIncludeAll = function() {
       this.include = [...new Set([...this.include, ...includeFields])];
       // if this.keys not set, then all keys are already included
       if (this.keys) {
-        this.keys = [...new Set([...this.keys, ...keyFields])]
-          // Ignore excluded keys
-          .filter(k => !this.excludeKeys || this.excludeKeys.indexOf(k) < 0);
+        this.keys = [...new Set([...this.keys, ...keyFields])];
       }
     });
 };
 
-// Upadates property `this.keys` to contain all keys but the ones unselected.
+// Updates property `this.keys` to contain all keys but the ones unselected.
 RestQuery.prototype.handleExcludeKeys = function() {
   if (!this.excludeKeys) {
+    return;
+  }
+  if (this.keys) {
+    this.keys = this.keys.filter(k => !this.excludeKeys.includes(k));
     return;
   }
   return this.config.database
     .loadSchema()
     .then(schemaController => schemaController.getOneSchema(this.className))
     .then(schema => {
-      const fields = this.keys ? this.keys : Object.keys(schema.fields);
-      this.keys = fields.filter(k => this.excludeKeys.indexOf(k) < 0);
+      const fields = Object.keys(schema.fields);
+      this.keys = fields.filter(k => !this.excludeKeys.includes(k));
     });
 };
 

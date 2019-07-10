@@ -3266,8 +3266,8 @@ describe('Parse.Query testing', () => {
       );
   });
 
-  it('select/unselect keys query', function(done) {
-    const obj = new TestObject({ foo: 'baz', bar: 1, wooz: [1, 2, 3] });
+  it('select keys query', function(done) {
+    const obj = new TestObject({ foo: 'baz', bar: 1 });
 
     obj
       .save()
@@ -3288,17 +3288,11 @@ describe('Parse.Query testing', () => {
           undefined,
           "expected 'bar' field to be unset"
         );
-        strictEqual(
-          result.get('wooz'),
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
         return result.fetch();
       })
       .then(function(result) {
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
-        strictEqual(result.get('wooz')[0], 1);
       })
       .then(function() {
         obj._clearServerData();
@@ -3319,11 +3313,6 @@ describe('Parse.Query testing', () => {
           undefined,
           "expected 'bar' field to be unset"
         );
-        strictEqual(
-          result.get('wooz'),
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
       })
       .then(function() {
         obj._clearServerData();
@@ -3336,11 +3325,6 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
-        strictEqual(
-          result.get('wooz'),
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
       })
       .then(function() {
         obj._clearServerData();
@@ -3353,60 +3337,6 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
-        strictEqual(
-          result.get('wooz'),
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
-      })
-      .then(function() {
-        obj._clearServerData();
-        return request({
-          url: Parse.serverURL + '/classes/TestObject',
-          qs: {
-            excludeKeys: 'bar,wooz',
-          },
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Javascript-Key': Parse.javaScriptKey,
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(function(result) {
-        result = result.data.results[0];
-        strictEqual(result.foo, 'baz');
-        strictEqual(result.bar, undefined, "expected 'bar' field to be unset");
-        strictEqual(
-          result.wooz,
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
-      })
-      .then(function() {
-        obj._clearServerData();
-        return request({
-          url: Parse.serverURL + '/classes/TestObject',
-          qs: {
-            keys: 'foo',
-            excludeKeys: 'foo',
-          },
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Javascript-Key': Parse.javaScriptKey,
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(function(result) {
-        result = result.data.results[0];
-        strictEqual(result.foo, undefined, "expected 'foo' field to be unset");
-        strictEqual(result.bar, undefined, "expected 'bar' field to be unset");
-        strictEqual(
-          result.wooz,
-          undefined,
-          "expected 'wooz' field to be unset"
-        );
       })
       .then(
         function() {
@@ -3417,6 +3347,122 @@ describe('Parse.Query testing', () => {
           done();
         }
       );
+  });
+  it('exclude keys', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with select same key', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: 'foo',
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBeUndefined();
+  });
+
+  it('exclude keys with select different key', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: 'foo,hello',
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with include same key', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({ child: pointer, hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        include: 'child',
+        excludeKeys: 'child',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with include different key', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({
+      child1: pointer,
+      child2: pointer,
+      hello: 'world',
+    });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        include: 'child1,child2',
+        excludeKeys: 'child1',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child1).toBeUndefined();
+    expect(response.data.results[0].child2.objectId).toEqual(pointer.id);
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with includeAll', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({
+      child1: pointer,
+      child2: pointer,
+      hello: 'world',
+    });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        includeAll: true,
+        excludeKeys: 'child1',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child).toBeUndefined();
+    expect(response.data.results[0].child2.objectId).toEqual(pointer.id);
+    expect(response.data.results[0].hello).toBe('world');
   });
 
   it('select keys with each query', function(done) {
