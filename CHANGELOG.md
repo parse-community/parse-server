@@ -9,6 +9,10 @@
 
 SECURITY FIX: Address [Security Advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5) of a potential [Enumeration Attack](https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)#Description_of_the_Issue) [73b0f9a](https://github.com/parse-community/parse-server/commit/73b0f9a339b81f5d757725dc557955a7b670a3ec) big thanks to [Fabian Strachanski](https://github.com/fastrde) for identifying the problem, creating a fix and following the [vulnerability disclosure guidelines](https://github.com/parse-community/parse-server/blob/master/SECURITY.md#parse-community-vulnerability-disclosure-program)
 
+NEW: Added rest option: excludeKeys [#5737](https://github.com/parse-community/parse-server/pull/5737) thanks to [Raschid J.F. Rafeally](https://github.com/RaschidJFR)
+FIX: LiveQuery create event with fields [#5790](https://github.com/parse-community/parse-server/pull/5790) thanks to [Diamond Lewis](https://github.com/dplewis)
+FIX: Generate sessionToken with linkWith [#5799](https://github.com/parse-community/parse-server/pull/5799) thanks to [Diamond Lewis](https://github.com/dplewis)
+
 ### 3.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...3.5.0)
 
