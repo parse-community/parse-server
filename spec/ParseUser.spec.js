@@ -1559,7 +1559,9 @@ describe('Parse.User testing', () => {
     const query = new Parse.Query(Parse.User);
     const u2 = await query.get(user.id);
     const model = await u2._linkWith('facebook', {}, { useMasterKey: true });
+    expect(u2.getSessionToken()).toBeDefined();
     expect(model.getSessionToken()).toBeDefined();
+    expect(u2.getSessionToken()).toBe(model.getSessionToken());
   });
 
   it('link with provider failed', async done => {
