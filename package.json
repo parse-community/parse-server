@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "3.6.0",
+  "version": "3.5.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -82,7 +82,7 @@
     "jsdoc": "3.6.2",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "9.1.0",
-    "mongodb-runner": "^4.7.1",
+    "mongodb-runner": "4.3.2",
     "node-fetch": "2.6.0",
     "nyc": "14.1.1",
     "prettier": "1.18.2",
