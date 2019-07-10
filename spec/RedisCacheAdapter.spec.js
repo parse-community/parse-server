@@ -169,11 +169,12 @@ describe_only(() => {
 describe_only(() => {
   return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
 })('Redis Performance', function() {
-  const cacheAdapter = new RedisCacheAdapter();
+  let cacheAdapter;
   let getSpy;
   let putSpy;
 
   beforeEach(async () => {
+    cacheAdapter = new RedisCacheAdapter();
     await cacheAdapter.clear();
     await reconfigureServer({
       cacheAdapter,
