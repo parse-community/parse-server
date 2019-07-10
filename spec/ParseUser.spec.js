@@ -1549,6 +1549,19 @@ describe('Parse.User testing', () => {
     }
   });
 
+  it('link with provider should return sessionToken', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = new Parse.User();
+    user.set('username', 'testLinkWithProvider');
+    user.set('password', 'mypass');
+    await user.signUp();
+    const query = new Parse.Query(Parse.User);
+    const u2 = await query.get(user.id);
+    const model = await u2._linkWith('facebook', {}, { useMasterKey: true });
+    expect(model.getSessionToken()).toBeDefined();
+  });
+
   it('link with provider failed', async done => {
     const provider = getMockFacebookProvider();
     provider.shouldError = true;
