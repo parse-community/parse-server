@@ -96,7 +96,7 @@ class Client {
           fields = this.subscriptionInfos.get(subscriptionId).fields;
         }
         response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
-        if (typeof parseOriginalObjectJSON !== 'undefined') {
+        if (parseOriginalObjectJSON) {
           response['original'] = this._toJSONWithFields(
             parseOriginalObjectJSON,
             fields
