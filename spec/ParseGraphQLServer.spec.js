@@ -3198,8 +3198,8 @@ describe('ParseGraphQLServer', () => {
           });
           expect(logOut.data.users.logOut).toBeTruthy();
 
-          await expectAsync(
-            apolloClient.query({
+          try {
+            await apolloClient.query({
               query: gql`
                 query GetCurrentUser {
                   users {
@@ -3214,8 +3214,13 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Session-Token': sessionToken,
                 },
               },
-            })
-          ).toBeRejected();
+            });
+          } catch (err) {
+            expect(err.networkError.result).toEqual({
+              code: 209,
+              error: 'Invalid session token',
+            });
+          }
         });
       });
 

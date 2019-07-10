@@ -319,6 +319,9 @@ export function handleParseErrors(err, req, res, next) {
       case Parse.Error.OBJECT_NOT_FOUND:
         httpStatus = 404;
         break;
+      case Parse.Error.INVALID_SESSION_TOKEN:
+        httpStatus = 401;
+        break;
       default:
         httpStatus = 400;
     }
