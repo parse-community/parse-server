@@ -3847,4 +3847,41 @@ describe('Parse.User testing', () => {
       }
     );
   });
+
+  it('should validate credentials first and check if account already linked afterwards (GHSA-8w3j-g983-8jh5)', async done => {
+    // Add User to Database with authData
+    const database = Config.get(Parse.applicationId).database;
+    const collection = await database.adapter._adaptiveCollection('_User');
+    await collection.insertOne({
+      _id: 'ABCDEF1234',
+      name: '<some_name>',
+      email: '<some_email>',
+      username: '<some_username>',
+      _hashed_password: '<some_password>',
+      _auth_data_custom: {
+        id: 'linkedID', // Already linked userid
+      },
+      sessionToken: '<some_session_token>',
+    });
+    const provider = {
+      getAuthType: () => 'custom',
+      restoreAuthentication: () => true,
+    }; // AuthProvider checks if password is 'password'
+    Parse.User._registerAuthenticationProvider(provider);
+
+    // Try to link second user with wrong password
+    try {
+      const user = await Parse.AnonymousUtils.logIn();
+      await user._linkWith(provider.getAuthType(), {
+        authData: { id: 'linkedID', password: 'wrong' },
+      });
+    } catch (error) {
+      // This should throw Parse.Error.SESSION_MISSING and not Parse.Error.ACCOUNT_ALREADY_LINKED
+      expect(error.code).toEqual(Parse.Error.SESSION_MISSING);
+      done();
+      return;
+    }
+    fail();
+    done();
+  });
 });
