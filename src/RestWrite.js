@@ -802,7 +802,8 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.className !== '_User') {
     return;
   }
-  if (this.query) {
+  // Don't generate session for updating user (this.query is set) unless authData exists
+  if (this.query && !this.data.authData) {
     return;
   }
   if (
