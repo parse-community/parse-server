@@ -9,8 +9,13 @@ import { handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
+import GraphQLController, {
+  ParseGraphQLConfig,
+} from '../Controllers/GraphQLController';
 
 class ParseGraphQLServer {
+  graphQLController: GraphQLController;
+
   constructor(parseServer, config) {
     this.parseServer =
       parseServer ||
@@ -19,12 +24,14 @@ class ParseGraphQLServer {
       requiredParameter('You must provide a config.graphQLPath!');
     }
     this.config = config;
-    this.parseGraphQLSchema = new ParseGraphQLSchema(
-      this.parseServer.config.databaseController,
-      (this.parseServer.config && this.parseServer.config.loggerController) ||
+    this.graphQLController = this.parseServer.config.graphQLController;
+    this.parseGraphQLSchema = new ParseGraphQLSchema({
+      graphQLController: this.graphQLController,
+      databaseController: this.parseServer.config.databaseController,
+      log:
+        (this.parseServer.config && this.parseServer.config.loggerController) ||
         defaultLogger,
-      config.graphQLSchemaConfig
-    );
+    });
   }
 
   async _getGraphQLOptions(req) {
@@ -109,6 +116,10 @@ class ParseGraphQLServer {
           ),
       }
     );
+  }
+
+  async setGraphQLConfig(graphQLConfig: ParseGraphQLConfig): Promise<void> {
+    await this.graphQLController.updateGraphQLConfig(graphQLConfig);
   }
 }
 
