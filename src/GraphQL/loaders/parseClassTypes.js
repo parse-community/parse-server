@@ -758,7 +758,7 @@ const load = (
           } else {
             return fields;
           }
-        }),
+        }, {}),
     });
     parseGraphQLSchema.parseClassTypes[
       '_User'

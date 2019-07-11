@@ -5,7 +5,6 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
-import { GraphQLSchema } from 'graphql';
 
 // @flow
 type Adapter<T> = string | any | T;
@@ -197,8 +196,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* GraphQL auto-generated schema options; ignored if mountGraphQL is false */
-  graphQLSchemaConfig: ?ParseGraphQLSchemaConfig;
 
   serverStartComplete: ?(error: ?Error) => void;
 }
@@ -258,44 +255,4 @@ export interface LiveQueryServerOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
-}
-
-export interface ParseGraphQLClassConfig {
-  /* The `type` object contains options for how the class types are generated */
-  type: ?{
-    /* Fields that are allowed when creating or updating an object. */
-    inputFields:
-      | ?(string[])
-      | ?{
-          /* Leave blank to allow all available fields in the schema. */
-          create?: string[],
-          update?: string[],
-        },
-    /* Fields on the edges that can be resolved from a query, i.e. the Result Type. */
-    outputFields: ?(string[]),
-    /* Fields by which a query can be filtered, i.e. the `where` object. */
-    constraintFields: ?(string[]),
-    /* Fields by which a query can be sorted; suffix with _ASC or _DESC to enforce direction. */
-    sortFields: ?(string[]),
-  };
-  /* The `query` object contains options for which class queries are generated */
-  query: ?{
-    get: ?boolean,
-    find: ?boolean,
-  };
-  /* The `mutation` object contains options for which class mutations are generated */
-  mutation: ?{
-    create: ?boolean,
-    update: ?boolean,
-    delete: ?boolean,
-  };
-}
-
-export interface ParseGraphQLSchemaConfig {
-  // if empty, all classes in Schema will be enabled
-  enabledForClasses?: string[];
-  // overrides any from `enabledForClasses`
-  disabledForClasses?: string[];
-  parseClassConfigResolver?: (className: string) => ParseGraphQLClassConfig;
-  additionalSchema?: () => GraphQLSchema;
 }

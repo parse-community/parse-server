@@ -8,22 +8,31 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
-import { ParseGraphQLSchemaConfig } from '../Options/index';
+import GraphQLController from '../Controllers/GraphQLController';
+import DatabaseController from '../Controllers/DatabaseController';
 
 class ParseGraphQLSchema {
-  constructor(
-    databaseController,
-    log,
-    graphQLSchemaConfig: ?ParseGraphQLSchemaConfig
-  ) {
+  databaseController: DatabaseController;
+  graphQLController: GraphQLController;
+
+  constructor(params: {
+    databaseController: DatabaseController,
+    graphQLController: GraphQLController,
+    log: any,
+  }) {
+    this.graphQLController =
+      params.graphQLController ||
+      requiredParameter('You must provide a graphQLController instance!');
     this.databaseController =
-      databaseController ||
+      params.databaseController ||
       requiredParameter('You must provide a databaseController instance!');
-    this.log = log || requiredParameter('You must provide a log instance!');
-    this.graphQLSchemaConfig = graphQLSchemaConfig || {};
+    this.log =
+      params.log || requiredParameter('You must provide a log instance!');
   }
 
   async load() {
+    await this._initializeSchemaAndConfig();
+
     const parseClasses = await this._getClassesForSchema();
     const parseClassesString = JSON.stringify(parseClasses);
 
@@ -61,25 +70,26 @@ class ParseGraphQLSchema {
     );
 
     defaultGraphQLQueries.load(this);
-
     defaultGraphQLMutations.load(this);
 
     let graphQLQuery = undefined;
     if (Object.keys(this.graphQLQueries).length > 0) {
+      const fields = this._getAllQueries();
       graphQLQuery = new GraphQLObjectType({
         name: 'Query',
         description: 'Query is the top level type for queries.',
-        fields: this.graphQLQueries,
+        fields,
       });
       this.graphQLTypes.push(graphQLQuery);
     }
 
     let graphQLMutation = undefined;
     if (Object.keys(this.graphQLMutations).length > 0) {
+      const fields = this._getAllMutations();
       graphQLMutation = new GraphQLObjectType({
         name: 'Mutation',
         description: 'Mutation is the top level type for mutations.',
-        fields: this.graphQLMutations,
+        fields,
       });
       this.graphQLTypes.push(graphQLMutation);
     }
@@ -95,7 +105,7 @@ class ParseGraphQLSchema {
     }
 
     this.graphQLSchema = new GraphQLSchema({
-      types: this.graphQLTypes,
+      types: this._mergeAdditionalTypes(this.graphQLTypes),
       query: graphQLQuery,
       mutation: graphQLMutation,
       subscription: graphQLSubscription,
@@ -118,15 +128,24 @@ class ParseGraphQLSchema {
     throw new ApolloError(message, code);
   }
 
+  async _initializeSchemaAndConfig() {
+    const [schemaController, parseGraphQLConfig] = await Promise.all([
+      this.databaseController.loadSchema(),
+      this.graphQLController.getGraphQLConfig(),
+    ]);
+
+    this.schemaController = schemaController;
+    this.parseGraphQLConfig = parseGraphQLConfig || {};
+  }
+
   /**
    * Gets all classes found by the `schemaController`
-   * minus those filtered out by the app's configuration
+   * minus those filtered out by the app's parseGraphQLConfig.
    */
   async _getClassesForSchema() {
-    const { enabledForClasses, disabledForClasses } = this.graphQLSchemaConfig;
-    const schemaController = await this.databaseController.loadSchema();
+    const { enabledForClasses, disabledForClasses } = this.parseGraphQLConfig;
+    const allClasses = await this.schemaController.getAllClasses();
 
-    const allClasses = await schemaController.getAllClasses();
     if (Array.isArray(enabledForClasses) || Array.isArray(disabledForClasses)) {
       let includedClasses = allClasses;
       if (enabledForClasses) {
@@ -159,14 +178,87 @@ class ParseGraphQLSchema {
    * its parseClassConfig where provided.
    */
   _getParseClassesWithConfig(parseClasses) {
-    const { parseClassConfigResolver } = this.graphQLSchemaConfig;
+    const { classConfigs } = this.parseGraphQLConfig;
     return parseClasses.map(parseClass => {
       let parseClassConfig;
-      if (parseClassConfigResolver) {
-        parseClassConfig = parseClassConfigResolver(parseClass.className);
+      if (classConfigs) {
+        parseClassConfig = classConfigs.find(
+          c => c.className === parseClass.className
+        );
       }
       return [parseClass, parseClassConfig];
     });
+  }
+
+  _storeAdditionalSchema() {
+    const { additionalSchemaResolver: resolver } = this.parseGraphQLConfig;
+    if (resolver) {
+      this.additionalSchema = resolver();
+    }
+  }
+
+  _getAllQueries() {
+    const { graphQLQueries: baseQueryFields, additionalSchema } = this;
+    if (additionalSchema && additionalSchema.query) {
+      const { query: additionalQueryFields } = additionalSchema;
+      const reservedKeys = ['users', 'objects', 'health'];
+      if (
+        Object.keys(additionalQueryFields).some(key =>
+          reservedKeys.includes(key)
+        )
+      ) {
+        throw new Error(
+          `Additional graphql schema cannot use reserved query fields: ${reservedKeys}`
+        );
+      }
+      return {
+        ...baseQueryFields,
+        ...additionalQueryFields,
+      };
+    } else {
+      return baseQueryFields;
+    }
+  }
+
+  _getAllMutations() {
+    const { graphQLMutations: baseMutationFields, additionalSchema } = this;
+    if (additionalSchema && additionalSchema.mutation) {
+      const { mutation: additionalMutationFields } = additionalSchema;
+      const reservedKeys = ['users', 'objects'];
+      if (
+        Object.keys(additionalMutationFields).some(key =>
+          reservedKeys.includes(key)
+        )
+      ) {
+        throw new Error(
+          `Additional graphql schema cannot use reserved mutation fields: ${reservedKeys}`
+        );
+      }
+      return {
+        ...baseMutationFields,
+        ...additionalMutationFields,
+      };
+    } else {
+      return baseMutationFields;
+    }
+  }
+
+  _mergeAdditionalTypes(baseTypes) {
+    const { additionalSchema } = this;
+    if (additionalSchema && Array.isArray(additionalSchema.types)) {
+      const { types: additionalTypes } = additionalSchema;
+      if (additionalTypes.length) {
+        const mergedTypes = [...baseTypes];
+        const baseTypeNames = baseTypes.map(type => type.name);
+        additionalTypes.forEach(additionalType => {
+          if (!baseTypeNames.includes(additionalType.name)) {
+            mergedTypes.push(additionalType);
+          }
+        });
+        return mergedTypes;
+      }
+    }
+    return baseTypes;
   }
 }
 
