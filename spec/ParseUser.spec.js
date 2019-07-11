@@ -1564,6 +1564,26 @@ describe('Parse.User testing', () => {
     expect(u2.getSessionToken()).toBe(model.getSessionToken());
   });
 
+  it('link with provider via sessionToken should not create new sessionToken (Regression #5799)', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = new Parse.User();
+    user.set('username', 'testLinkWithProviderNoOverride');
+    user.set('password', 'mypass');
+    await user.signUp();
+    const sessionToken = user.getSessionToken();
+
+    await user._linkWith('facebook', {}, { sessionToken });
+    expect(sessionToken).toBe(user.getSessionToken());
+
+    expect(user._isLinked(provider)).toBe(true);
+    await user._unlinkFrom(provider, { sessionToken });
+    expect(user._isLinked(provider)).toBe(false);
+
+    const become = await Parse.User.become(sessionToken);
+    expect(sessionToken).toBe(become.getSessionToken());
+  });
+
   it('link with provider failed', async done => {
     const provider = getMockFacebookProvider();
     provider.shouldError = true;

@@ -806,6 +806,10 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.query && !this.data.authData) {
     return;
   }
+  // Don't generate new sessionToken if linking via sessionToken
+  if (this.auth.user && this.data.authData) {
+    return;
+  }
   if (
     !this.storage['authProvider'] && // signup call, with
     this.config.preventLoginWithUnverifiedEmail && // no login without verification
