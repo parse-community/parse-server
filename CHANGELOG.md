@@ -2,19 +2,27 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...master)
+
+### 3.6.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...3.6.0)
+
+- SECURITY FIX: Address [Security Advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5) of a potential [Enumeration Attack](https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)#Description_of_the_Issue) [73b0f9a](https://github.com/parse-community/parse-server/commit/73b0f9a339b81f5d757725dc557955a7b670a3ec), big thanks to [Fabian Strachanski](https://github.com/fastrde) for identifying the problem, creating a fix and following the [vulnerability disclosure guidelines](https://github.com/parse-community/parse-server/blob/master/SECURITY.md#parse-community-vulnerability-disclosure-program)
+- NEW: Added rest option: excludeKeys [#5737](https://github.com/parse-community/parse-server/pull/5737), thanks to [Raschid J.F. Rafeally](https://github.com/RaschidJFR)
+- FIX: LiveQuery create event with fields [#5790](https://github.com/parse-community/parse-server/pull/5790), thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: Generate sessionToken with linkWith [#5799](https://github.com/parse-community/parse-server/pull/5799), thanks to [Diamond Lewis](https://github.com/dplewis)
 
 ### 3.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...3.5.0)
 
-- NEW: GraphQL Support [#5674](https://github.com/parse-community/parse-server/pull/5674) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: GraphQL Support [#5674](https://github.com/parse-community/parse-server/pull/5674), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
 [GraphQL Guide](https://github.com/parse-community/parse-server#graphql)
 
-- NEW: Sign in with Apple [#5694](https://github.com/parse-community/parse-server/pull/5694) thanks to [Diamond Lewis](https://github.com/dplewis)
-- NEW: AppSecret to Facebook Auth [#5695](https://github.com/parse-community/parse-server/pull/5695) thanks to [Diamond Lewis](https://github.com/dplewis)
-- NEW: Postgres: Regex support foreign characters [#5598](https://github.com/parse-community/parse-server/pull/5598) thanks to [Jeff Gu Kang](https://github.com/JeffGuKang)
-- FIX: Winston Logger string interpolation [#5729](https://github.com/parse-community/parse-server/pull/5729) thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Sign in with Apple [#5694](https://github.com/parse-community/parse-server/pull/5694), thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: AppSecret to Facebook Auth [#5695](https://github.com/parse-community/parse-server/pull/5695), thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Postgres: Regex support foreign characters [#5598](https://github.com/parse-community/parse-server/pull/5598), thanks to [Jeff Gu Kang](https://github.com/JeffGuKang)
+- FIX: Winston Logger string interpolation [#5729](https://github.com/parse-community/parse-server/pull/5729), thanks to [Diamond Lewis](https://github.com/dplewis)
 
 ### 3.4.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
@@ -43,11 +51,11 @@ Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-commun
 - NEW: Add Redis options for LiveQuery [#5584](https://github.com/parse-community/parse-server/pull/5584) thanks to [Diamond Lewis](https://github.com/dplewis)
 - NEW: Add Direct Access option for Server Config [#5550](https://github.com/parse-community/parse-server/pull/5550) thanks to [Diamond Lewis](https://github.com/dplewis)
 - FIX: updating mixed array in Postgres [#5552](https://github.com/parse-community/parse-server/pull/5552) thanks to [Diamond Lewis](https://github.com/dplewis)
-- FIX: notEqualTo GeoPoint Query in Postgres [#5549](https://github.com/parse-community/parse-server/pull/5549) thanks to [Diamond Lewis](https://github.com/dplewis)
-- FIX: put the timestamp back in logs that was lost after Winston upgrade [#5571](https://github.com/parse-community/parse-server/pull/5571), thanks [Steven Rowe](https://github.com/mrowe009) and [Arthur Cinader](https://github.com/acinader)
-- FIX: Validates permission before calling beforeSave [#5546](https://github.com/parse-community/parse-server/pull/5546) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
-- FIX: Remove userSensitiveFields default value. [#5588](https://github.com/parse-community/parse-server/pull/5588) thanks to [William George](https://github.com/awgeorge)
-- FIX: Decode Date JSON value in LiveQuery. [#5540](https://github.com/parse-community/parse-server/pull/5540) thanks to [ananfang](https://github.com/ananfang)
+- FIX: notEqualTo GeoPoint Query in Postgres [#5549](https://github.com/parse-community/parse-server/pull/5549), thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: put the timestamp back in logs that was lost after Winston upgrade [#5571](https://github.com/parse-community/parse-server/pull/5571), thanks to [Steven Rowe](https://github.com/mrowe009) and [Arthur Cinader](https://github.com/acinader)
+- FIX: Validates permission before calling beforeSave [#5546](https://github.com/parse-community/parse-server/pull/5546), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Remove userSensitiveFields default value. [#5588](https://github.com/parse-community/parse-server/pull/5588), thanks to [William George](https://github.com/awgeorge)
+- FIX: Decode Date JSON value in LiveQuery. [#5540](https://github.com/parse-community/parse-server/pull/5540), thanks to [ananfang](https://github.com/ananfang)
 
 
 ### 3.3.0
