@@ -92,11 +92,11 @@ class GraphQLController {
   }
 
   _validateGraphQLConfig(graphQLConfig: ?ParseGraphQLConfig): void {
-    let errorMessage: string;
+    const errorMessages: string = [];
     if (!graphQLConfig) {
-      errorMessage = 'cannot be undefined, null or empty.';
+      errorMessages.push('cannot be undefined, null or empty.');
     } else if (typeof graphQLConfig !== 'object') {
-      errorMessage = 'must be a valid object.';
+      errorMessages.push('must be a valid object.');
     } else {
       const {
         enabledForClasses,
@@ -106,21 +106,21 @@ class GraphQLController {
       } = graphQLConfig;
 
       if (invalidKeys.length) {
-        errorMessage = `encountered invalid keys: ${invalidKeys}`;
+        errorMessages.push(`encountered invalid keys: ${invalidKeys}`);
       }
-      // TODO use more rigirous structural validations
       if (enabledForClasses && !Array.isArray(enabledForClasses)) {
-        errorMessage = `"enabledForClasses" is not a valid array.`;
+        errorMessages.push(`"enabledForClasses" is not a valid array.`);
       }
       if (disabledForClasses && !Array.isArray(disabledForClasses)) {
-        errorMessage = `"disabledForClasses" is not a valid array.`;
+        errorMessages.push(`"disabledForClasses" is not a valid array.`);
       }
       if (classConfigs && !Array.isArray(classConfigs)) {
-        errorMessage = `"classConfigs" is not a valid array.`;
+        errorMessages.push(`"classConfigs" is not a valid array.`);
       }
+      // TODO use schematic validation to ensure complete validity of data.
     }
-    if (errorMessage) {
-      throw new Error(`Invalid graphQLConfig: ${errorMessage}`);
+    if (errorMessages.length) {
+      throw new Error(`Invalid graphQLConfig: ${errorMessages.join(';')}`);
     }
   }
 }
