@@ -3215,6 +3215,7 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { statusCode, result } = err.networkError;
             expect(statusCode).toBe(400);
@@ -3245,6 +3246,7 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            fail('should not retrieve current user due to session token');
           } catch (err) {
             const { statusCode, result } = err.networkError;
             expect(statusCode).toBe(400);
@@ -3273,13 +3275,11 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            fail('should not retrieve current user due to session token');
           } catch (err) {
-            const { statusCode, result } = err.networkError;
-            expect(statusCode).toBe(400);
-            expect(result).toEqual({
-              code: 209,
-              error: 'Invalid session token',
-            });
+            const { graphQLErrors } = err;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
           }
         });
 
@@ -3313,13 +3313,11 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            fail('should not retrieve current user due to session token');
           } catch (err) {
-            const { statusCode, result } = err.networkError;
-            expect(statusCode).toBe(400);
-            expect(result).toEqual({
-              code: 209,
-              error: 'Invalid session token',
-            });
+            const { graphQLErrors } = err;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
           }
         });
       });

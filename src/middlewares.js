@@ -171,7 +171,7 @@ export function handleParseHeaders(req, res, next) {
     delete info.sessionToken;
   }
 
-  if (info.sessionToken === undefined) {
+  if (!info.sessionToken) {
     req.auth = new auth.Auth({
       config: req.config,
       installationId: info.installationId,

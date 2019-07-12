@@ -7,7 +7,7 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
-import { toGraphQLError } from './ParseGraphQLUtils';
+import { toGraphQLError } from './parseGraphQLUtils';
 
 class ParseGraphQLSchema {
   constructor(databaseController, log) {
