@@ -162,29 +162,16 @@ const extractKeysAndInclude = selectedFields => {
   return { keys, include };
 };
 
-const getParseClassTypeConfig = (
+const getParseClassTypeConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
-) => {
-  if (parseClassConfig) {
-    const { type } = parseClassConfig;
-    const { inputFields } = type;
-    if (Array.isArray(inputFields)) {
-      type.inputFields = {
-        create: inputFields,
-        update: inputFields,
-      };
-    }
-    return type;
-  } else {
-    return {};
-  }
+) {
+  return parseClassConfig || {};
 };
 
 const getInputFieldsAndConstraints = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const { className } = parseClass;
   const classFields = Object.keys(parseClass.fields);
   const {
     inputFields: allowedInputFields,
@@ -208,16 +195,6 @@ const getInputFieldsAndConstraints = function(
     classCreateFields = classCustomFields.filter(field => {
       return allowedInputFields.create.includes(field);
     });
-    if (className === '_User') {
-      // _User createFields is used for Sign Up, and
-      // so username and password must be added to create.
-      if (classCreateFields.indexOf('username') === -1) {
-        classCreateFields.push('username');
-      }
-      if (classCreateFields.indexOf('password') === -1) {
-        classCreateFields.push('password');
-      }
-    }
   } else {
     classCreateFields = classCustomFields;
   }
@@ -246,35 +223,7 @@ const getInputFieldsAndConstraints = function(
   }
 
   if (allowedSortFields) {
-    const getSortFieldAndDirection = (fieldConfig: string): string => {
-      if (fieldConfig.endsWith('_ASC')) {
-        return {
-          field: fieldConfig.substr(fieldConfig.length - 4),
-          asc: true,
-        };
-      } else if (fieldConfig.endsWith('_DESC')) {
-        return {
-          field: fieldConfig.substr(fieldConfig.length - 5),
-          desc: true,
-        };
-      } else {
-        return {
-          field: fieldConfig,
-          asc: true,
-          desc: true,
-        };
-      }
-    };
-    classSortFields = [];
-    allowedSortFields.forEach(fieldConfig => {
-      const { field, ...direction } = getSortFieldAndDirection(fieldConfig);
-      if (classCustomFields.includes(field)) {
-        classSortFields.push({
-          field,
-          ...direction,
-        });
-      }
-    });
+    classSortFields = allowedSortFields;
     if (!classSortFields.length) {
       // must have at least 1 order field
       // otherwise the FindArgs Input Type will throw.
