@@ -49,7 +49,7 @@ class GraphQLController {
       graphQLConfig = results[0][GraphQLConfigKey];
     }
 
-    await this._putCachedGraphQLConfig(graphQLConfig);
+    this._putCachedGraphQLConfig(graphQLConfig);
 
     return graphQLConfig;
   }
@@ -57,7 +57,7 @@ class GraphQLController {
   async updateGraphQLConfig(
     graphQLConfig: ParseGraphQLConfig
   ): Promise<ParseGraphQLConfig> {
-    if(!this.isEnabled) {
+    if (!this.isEnabled) {
       throw new Error('GraphQL is not enabled on this application.');
     }
     // throws if invalid
@@ -76,16 +76,16 @@ class GraphQLController {
       { upsert: true }
     );
 
-    await this._putCachedGraphQLConfig(graphQLConfig);
+    this._putCachedGraphQLConfig(graphQLConfig);
 
     return { response: { result: true } };
   }
 
-  async _getCachedGraphQLConfig() {
+  _getCachedGraphQLConfig() {
     return this.cacheController.graphQL.get(GraphQLConfigKey);
   }
 
-  async _putCachedGraphQLConfig(graphQLConfig: ParseGraphQLConfig) {
+  _putCachedGraphQLConfig(graphQLConfig: ParseGraphQLConfig) {
     return this.cacheController.graphQL.put(
       GraphQLConfigKey,
       graphQLConfig,
