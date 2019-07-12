@@ -3248,8 +3248,8 @@ describe('ParseGraphQLServer', () => {
           });
           expect(logOut.data.users.logOut).toBeTruthy();
 
-          await expectAsync(
-            apolloClient.query({
+          try {
+            await apolloClient.query({
               query: gql`
                 query GetCurrentUser {
                   users {
@@ -3264,8 +3264,111 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Session-Token': sessionToken,
                 },
               },
-            })
-          ).toBeRejected();
+            });
+            fail('should not retrieve current user due to session token');
+          } catch (err) {
+            const { statusCode, result } = err.networkError;
+            expect(statusCode).toBe(400);
+            expect(result).toEqual({
+              code: 209,
+              error: 'Invalid session token',
+            });
+          }
+        });
+      });
+
+      describe('Session Token', () => {
+        it('should fail due to invalid session token', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query GetCurrentUser {
+                  users {
+                    me {
+                      username
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': 'foo',
+                },
+              },
+            });
+            fail('should not retrieve current user due to session token');
+          } catch (err) {
+            const { statusCode, result } = err.networkError;
+            expect(statusCode).toBe(400);
+            expect(result).toEqual({
+              code: 209,
+              error: 'Invalid session token',
+            });
+          }
+        });
+
+        it('should fail due to empty session token', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query GetCurrentUser {
+                  users {
+                    me {
+                      username
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': '',
+                },
+              },
+            });
+            fail('should not retrieve current user due to session token');
+          } catch (err) {
+            const { graphQLErrors } = err;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
+          }
+        });
+
+        it('should find a user and fail due to empty session token', async () => {
+          const car = new Parse.Object('Car');
+          await car.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          try {
+            await apolloClient.query({
+              query: gql`
+                query GetCurrentUser {
+                  users {
+                    me {
+                      username
+                    }
+                  }
+                  objects {
+                    findCar {
+                      results {
+                        objectId
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Session-Token': '',
+                },
+              },
+            });
+            fail('should not retrieve current user due to session token');
+          } catch (err) {
+            const { graphQLErrors } = err;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Invalid session token');
+          }
         });
       });
 
