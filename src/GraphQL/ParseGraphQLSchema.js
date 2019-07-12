@@ -8,12 +8,15 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
-import GraphQLController from '../Controllers/GraphQLController';
+import GraphQLController, {
+  ParseGraphQLConfig,
+} from '../Controllers/GraphQLController';
 import DatabaseController from '../Controllers/DatabaseController';
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
   graphQLController: GraphQLController;
+  parseGraphQLConfig: ParseGraphQLConfig;
 
   constructor(params: {
     databaseController: DatabaseController,
@@ -31,24 +34,25 @@ class ParseGraphQLSchema {
   }
 
   async load() {
-    await this._initializeSchemaAndConfig();
+    const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
 
-    const parseClasses = await this._getClassesForSchema();
+    const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
     const parseClassesString = JSON.stringify(parseClasses);
 
-    if (this.graphQLSchema) {
-      if (this.parseClasses === parseClasses) {
-        return this.graphQLSchema;
-      }
-
-      if (this.parseClassesString === parseClassesString) {
-        this.parseClasses = parseClasses;
-        return this.graphQLSchema;
-      }
+    if (
+      this.graphQLSchema &&
+      !this._hasSchemaInputChanged({
+        parseClasses,
+        parseClassesString,
+        parseGraphQLConfig,
+      })
+    ) {
+      return this.graphQLSchema;
     }
 
     this.parseClasses = parseClasses;
     this.parseClassesString = parseClassesString;
+    this.parseGraphQLConfig = parseGraphQLConfig;
     this.parseClassTypes = {};
     this.meType = null;
     this.graphQLSchema = null;
@@ -61,7 +65,7 @@ class ParseGraphQLSchema {
 
     defaultGraphQLTypes.load(this);
 
-    this._getParseClassesWithConfig(parseClasses).forEach(
+    this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
         parseClassTypes.load(this, parseClass, parseClassConfig);
         parseClassQueries.load(this, parseClass, parseClassConfig);
@@ -133,15 +137,18 @@ class ParseGraphQLSchema {
     ]);
 
     this.schemaController = schemaController;
-    this.parseGraphQLConfig = parseGraphQLConfig || {};
+
+    return {
+      parseGraphQLConfig: parseGraphQLConfig || {},
+    };
   }
 
   /**
    * Gets all classes found by the `schemaController`
    * minus those filtered out by the app's parseGraphQLConfig.
    */
-  async _getClassesForSchema() {
-    const { enabledForClasses, disabledForClasses } = this.parseGraphQLConfig;
+  async _getClassesForSchema(parseGraphQLConfig: ParseGraphQLConfig) {
+    const { enabledForClasses, disabledForClasses } = parseGraphQLConfig;
     const allClasses = await this.schemaController.getAllClasses();
 
     if (Array.isArray(enabledForClasses) || Array.isArray(disabledForClasses)) {
@@ -175,8 +182,11 @@ class ParseGraphQLSchema {
    * that provide the parseClass along with
    * its parseClassConfig where provided.
    */
-  _getParseClassesWithConfig(parseClasses) {
-    const { classConfigs } = this.parseGraphQLConfig;
+  _getParseClassesWithConfig(
+    parseClasses,
+    parseGraphQLConfig: ParseGraphQLConfig
+  ) {
+    const { classConfigs } = parseGraphQLConfig;
     return parseClasses.map(parseClass => {
       let parseClassConfig;
       if (classConfigs) {
@@ -186,6 +196,33 @@ class ParseGraphQLSchema {
       }
       return [parseClass, parseClassConfig];
     });
+  }
+
+  /**
+   * Checks for changes to the parseClasses
+   * objects (i.e. database schema) or to
+   * the parseGraphQLConfig object. If no
+   * changes are found, return true;
+   */
+  _hasSchemaInputChanged(params: {
+    parseClasses: any,
+    parseClassesString: string,
+    parseGraphQLConfig: ?ParseGraphQLConfig,
+  }): boolean {
+    const { parseClasses, parseClassesString, parseGraphQLConfig } = params;
+
+    if (this.parseGraphQLConfig === parseGraphQLConfig) {
+      if (this.parseClasses === parseClasses) {
+        return false;
+      }
+
+      if (this.parseClassesString === parseClassesString) {
+        this.parseClasses = parseClasses;
+        return false;
+      }
+    }
+
+    return true;
   }
 }
 
