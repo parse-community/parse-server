@@ -5,21 +5,17 @@ import * as objectsQueries from './objectsQueries';
 import * as parseClassTypes from './parseClassTypes';
 import { ParseGraphQLClassConfig } from '../../Options/index';
 
-const getParseClassQueryConfig = (
+const getParseClassQueryConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
-) => {
-  if (parseClassConfig) {
-    return parseClassConfig.query || {};
-  } else {
-    return {};
-  }
+) {
+  return parseClassConfig ? parseClassConfig.query : {};
 };
 
-const load = (
+const load = function(
   parseGraphQLSchema,
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
-) => {
+) {
   const { className } = parseClass;
   const {
     get: isGetEnabled = true,

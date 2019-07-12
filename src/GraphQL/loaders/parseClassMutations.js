@@ -3,26 +3,22 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsMutations from './objectsMutations';
 import { ParseGraphQLClassConfig } from '../../Options/index';
 
-const getParseClassMutationConfig = (
+const getParseClassMutationConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
-) => {
-  if (parseClassConfig) {
-    return parseClassConfig.mutation || {};
-  } else {
-    return {};
-  }
+) {
+  return parseClassConfig ? parseClassConfig.mutation : {};
 };
 
-const load = (
+const load = function(
   parseGraphQLSchema,
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
-) => {
+) {
   const { className } = parseClass;
   const {
     create: isCreateEnabled = true,
     update: isUpdateEnabled = true,
-    delete: isDeleteEnabled = true,
+    destroy: isDestroyEnabled = true,
   } = getParseClassMutationConfig(parseClassConfig);
 
   const {
@@ -128,7 +124,7 @@ const load = (
     };
   }
 
-  if (isDeleteEnabled) {
+  if (isDestroyEnabled) {
     const deleteGraphQLMutationName = `delete${className}`;
     parseGraphQLSchema.graphQLObjectsMutations[deleteGraphQLMutationName] = {
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`,

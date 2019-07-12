@@ -95,32 +95,34 @@ class GraphQLController {
     const errorMessages: string = [];
     if (!graphQLConfig) {
       errorMessages.push('cannot be undefined, null or empty');
-    } else if (typeof graphQLConfig !== 'object') {
+    } else if (!isValidSimpleObject(graphQLConfig)) {
       errorMessages.push('must be a valid object');
     } else {
       const {
-        enabledForClasses,
-        disabledForClasses,
-        classConfigs,
+        enabledForClasses = null,
+        disabledForClasses = null,
+        classConfigs = null,
         ...invalidKeys
       } = graphQLConfig;
 
       if (invalidKeys.length) {
-        errorMessages.push(`encountered invalid keys: ${invalidKeys}`);
+        errorMessages.push(
+          `encountered invalid keys: [${Object.keys(invalidKeys)}]`
+        );
       }
-      if (enabledForClasses && !Array.isArray(enabledForClasses)) {
+      if (enabledForClasses !== null && !Array.isArray(enabledForClasses)) {
         errorMessages.push(`"enabledForClasses" is not a valid array`);
       }
-      if (disabledForClasses && !Array.isArray(disabledForClasses)) {
+      if (disabledForClasses !== null && !Array.isArray(disabledForClasses)) {
         errorMessages.push(`"disabledForClasses" is not a valid array`);
       }
-      if (classConfigs) {
+      if (classConfigs !== null) {
         if (Array.isArray(classConfigs)) {
           classConfigs.forEach(classConfig => {
             const errorMessage = this._validateClassConfig(classConfig);
             if (errorMessage) {
               errorMessages.push(
-                `config for ${classConfig.className} is invalid: ${errorMessage}`
+                `classConfig:${classConfig.className} is invalid because ${errorMessage}`
               );
             }
           });
@@ -130,16 +132,13 @@ class GraphQLController {
       }
     }
     if (errorMessages.length) {
-      throw new Error(`Invalid graphQLConfig: ${errorMessages.join(';')}`);
+      throw new Error(`Invalid graphQLConfig: ${errorMessages.join('; ')}`);
     }
   }
 
-  _validateClassConfig(
-    classConfig: ?ParseGraphQLClassConfig
-  ): string | undefined {
-    let errorMessage: string;
-    if (classConfig === null || typeof classConfig !== 'object') {
-      errorMessage = 'must be a valid object';
+  _validateClassConfig(classConfig: ?ParseGraphQLClassConfig): string | void {
+    if (!isValidSimpleObject(classConfig)) {
+      return 'it must be a valid object';
     } else {
       const {
         className,
@@ -149,10 +148,11 @@ class GraphQLController {
       } = classConfig;
       if (typeof className !== 'string' || !className.length) {
         // TODO consider checking class exists in schema?
-        errorMessage = `"className" must be a valid string`;
-      } else if (type !== null) {
-        if (typeof type !== 'object') {
-          errorMessage = `"type" must be a valid object`;
+        return `"className" must be a valid string`;
+      }
+      if (type !== null) {
+        if (!isValidSimpleObject(type)) {
+          return `"type" must be a valid object`;
         }
         const {
           inputFields = null,
@@ -161,25 +161,29 @@ class GraphQLController {
           sortFields = null,
           ...invalidKeys
         } = type;
-        if (invalidKeys.length) {
-          errorMessage = `"type" contains invalid keys: ${invalidKeys}`;
+        if (Object.keys(invalidKeys).length) {
+          return `"type" contains invalid keys, [${Object.keys(invalidKeys)}]`;
         } else if (outputFields !== null && !isValidStringArray(outputFields)) {
-          errorMessage = `"outputFields" must be a valid string array`;
+          return `"outputFields" must be a valid string array`;
         } else if (
           constraintFields !== null &&
           !isValidStringArray(constraintFields)
         ) {
-          errorMessage = `"constraintFields" must be a valid string array`;
-        } else if (sortFields !== null) {
+          return `"constraintFields" must be a valid string array`;
+        }
+        if (sortFields !== null) {
           if (Array.isArray(sortFields)) {
+            let errorMessage;
             sortFields.every((sortField, index) => {
-              if (sortField === null || typeof sortField !== 'object') {
+              if (!isValidSimpleObject(sortField)) {
                 errorMessage = `"sortField" at index ${index} is not a valid object`;
                 return false;
               } else {
                 const { field, asc, desc, ...invalidKeys } = sortField;
-                if (invalidKeys.length) {
-                  errorMessage = `"sortField" at index ${index} contains invalid keys: ${invalidKeys}`;
+                if (Object.keys(invalidKeys).length) {
+                  errorMessage = `"sortField" at index ${index} contains invalid keys, [${Object.keys(
+                    invalidKeys
+                  )}]`;
                   return false;
                 } else {
                   if (typeof field !== 'string') {
@@ -194,81 +198,108 @@ class GraphQLController {
                   }
                 }
               }
+              return true;
             });
+            if (errorMessage) {
+              return errorMessage;
+            }
           } else {
-            errorMessage = `"sortFields" must be a valid array.`;
+            return `"sortFields" must be a valid array.`;
           }
-        } else if (inputFields !== null) {
-          if (typeof inputFields !== 'object') {
+        }
+        if (inputFields !== null) {
+          if (isValidSimpleObject(inputFields)) {
             const {
               create = null,
               update = null,
               ...invalidKeys
             } = inputFields;
-            if (invalidKeys.length) {
-              errorMessage = `"inputFields" contains invalid keys: ${invalidKeys}`;
+            if (Object.keys(invalidKeys).length) {
+              return `"inputFields" contains invalid keys: [${Object.keys(
+                invalidKeys
+              )}]`;
             } else {
               if (update !== null && !isValidStringArray(update)) {
-                errorMessage = `"inputFields.update" must be a valid string array`;
+                return `"inputFields.update" must be a valid string array`;
               } else if (create !== null) {
                 if (!isValidStringArray(create)) {
-                  errorMessage = `"inputFields.create" must be a valid string array`;
+                  return `"inputFields.create" must be a valid string array`;
                 } else if (className === '_User') {
                   if (
                     !create.includes('username') ||
                     !create.includes('password')
                   ) {
-                    errorMessage = `"inputFields.create" must include required fields, username and password`;
+                    return `"inputFields.create" must include required fields, username and password`;
                   }
                 }
               }
             }
           } else {
-            errorMessage = `"inputFields" must be a valid object.`;
+            return `"inputFields" must be a valid object`;
           }
         }
-      } else if (query !== null) {
-        if (typeof query !== 'object') {
+      }
+      if (query !== null) {
+        if (isValidSimpleObject(query)) {
           const { find = null, get = null, ...invalidKeys } = query;
-          if (invalidKeys.length) {
-            errorMessage = `"query" contains invalid keys: ${invalidKeys}`;
+          if (Object.keys(invalidKeys).length) {
+            return `"query" contains invalid keys, [${Object.keys(
+              invalidKeys
+            )}]`;
           } else if (find !== null && typeof find !== 'boolean') {
-            errorMessage = `"query.find" must be a boolean`;
+            return `"query.find" must be a boolean`;
           } else if (get !== null && typeof get !== 'boolean') {
-            errorMessage = `"query.get" must be a boolean`;
+            return `"query.get" must be a boolean`;
           }
         } else {
-          errorMessage = `"query" must be a valid object`;
+          return `"query" must be a valid object`;
         }
-      } else if (mutation !== null) {
-        if (typeof mutation !== 'object') {
+      }
+      if (mutation !== null) {
+        if (isValidSimpleObject(mutation)) {
           const {
             create = null,
             update = null,
             destroy = null,
             ...invalidKeys
           } = mutation;
-          if (invalidKeys.length) {
-            errorMessage = `"query" contains invalid keys: ${invalidKeys}`;
-          } else if (create !== null && typeof create !== 'boolean') {
-            errorMessage = `"query.create" must be a boolean`;
-          } else if (update !== null && typeof update !== 'boolean') {
-            errorMessage = `"query.update" must be a boolean`;
-          } else if (destroy !== null && typeof destroy !== 'boolean') {
-            errorMessage = `"query.destroy" must be a boolean`;
+          if (Object.keys(invalidKeys).length) {
+            return `"mutation" contains invalid keys, [${Object.keys(
+              invalidKeys
+            )}]`;
+          }
+          if (create !== null && typeof create !== 'boolean') {
+            return `"mutation.create" must be a boolean`;
+          }
+          if (update !== null && typeof update !== 'boolean') {
+            return `"mutation.update" must be a boolean`;
+          }
+          if (destroy !== null && typeof destroy !== 'boolean') {
+            return `"mutation.destroy" must be a boolean`;
           }
         } else {
-          errorMessage = `"mutation" must be a valid object`;
+          return `"mutation" must be a valid object`;
         }
       }
     }
-
-    return errorMessage;
   }
 }
 
 const isValidStringArray = function(array): boolean {
   return Array.isArray(array) ? !array.some(s => typeof s !== 'string') : false;
+};
+/**
+ * Ensures the obj is a simple JSON/{}
+ * object, i.e. not an array, null, date
+ * etc.
+ */
+const isValidSimpleObject = function(obj): boolean {
+  return (
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    obj !== null &&
+    obj instanceof Date !== true
+  );
 };
 
 export interface ParseGraphQLConfig {
