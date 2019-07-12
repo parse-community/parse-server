@@ -74,22 +74,20 @@ class ParseGraphQLSchema {
 
     let graphQLQuery = undefined;
     if (Object.keys(this.graphQLQueries).length > 0) {
-      const fields = this._getAllQueries();
       graphQLQuery = new GraphQLObjectType({
         name: 'Query',
         description: 'Query is the top level type for queries.',
-        fields,
+        fields: this.graphQLQueries,
       });
       this.graphQLTypes.push(graphQLQuery);
     }
 
     let graphQLMutation = undefined;
     if (Object.keys(this.graphQLMutations).length > 0) {
-      const fields = this._getAllMutations();
       graphQLMutation = new GraphQLObjectType({
         name: 'Mutation',
         description: 'Mutation is the top level type for mutations.',
-        fields,
+        fields: this.graphQLMutations,
       });
       this.graphQLTypes.push(graphQLMutation);
     }
@@ -105,7 +103,7 @@ class ParseGraphQLSchema {
     }
 
     this.graphQLSchema = new GraphQLSchema({
-      types: this._mergeAdditionalTypes(this.graphQLTypes),
+      types: this.graphQLTypes,
       query: graphQLQuery,
       mutation: graphQLMutation,
       subscription: graphQLSubscription,
@@ -188,77 +186,6 @@ class ParseGraphQLSchema {
       }
       return [parseClass, parseClassConfig];
     });
-  }
-
-  _storeAdditionalSchema() {
-    const { additionalSchemaResolver: resolver } = this.parseGraphQLConfig;
-    if (resolver) {
-      this.additionalSchema = resolver();
-    }
-  }
-
-  _getAllQueries() {
-    const { graphQLQueries: baseQueryFields, additionalSchema } = this;
-    if (additionalSchema && additionalSchema.query) {
-      const { query: additionalQueryFields } = additionalSchema;
-      const reservedKeys = ['users', 'objects', 'health'];
-      if (
-        Object.keys(additionalQueryFields).some(key =>
-          reservedKeys.includes(key)
-        )
-      ) {
-        throw new Error(
-          `Additional graphql schema cannot use reserved query fields: ${reservedKeys}`
-        );
-      }
-      return {
-        ...baseQueryFields,
-        ...additionalQueryFields,
-      };
-    } else {
-      return baseQueryFields;
-    }
-  }
-
-  _getAllMutations() {
-    const { graphQLMutations: baseMutationFields, additionalSchema } = this;
-    if (additionalSchema && additionalSchema.mutation) {
-      const { mutation: additionalMutationFields } = additionalSchema;
-      const reservedKeys = ['users', 'objects'];
-      if (
-        Object.keys(additionalMutationFields).some(key =>
-          reservedKeys.includes(key)
-        )
-      ) {
-        throw new Error(
-          `Additional graphql schema cannot use reserved mutation fields: ${reservedKeys}`
-        );
-      }
-      return {
-        ...baseMutationFields,
-        ...additionalMutationFields,
-      };
-    } else {
-      return baseMutationFields;
-    }
-  }
-
-  _mergeAdditionalTypes(baseTypes) {
-    const { additionalSchema } = this;
-    if (additionalSchema && Array.isArray(additionalSchema.types)) {
-      const { types: additionalTypes } = additionalSchema;
-      if (additionalTypes.length) {
-        const mergedTypes = [...baseTypes];
-        const baseTypeNames = baseTypes.map(type => type.name);
-        additionalTypes.forEach(additionalType => {
-          if (!baseTypeNames.includes(additionalType.name)) {
-            mergedTypes.push(additionalType);
-          }
-        });
-        return mergedTypes;
-      }
-    }
-    return baseTypes;
   }
 }
 
