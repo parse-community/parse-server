@@ -57,6 +57,9 @@ class GraphQLController {
   async updateGraphQLConfig(
     graphQLConfig: ParseGraphQLConfig
   ): Promise<ParseGraphQLConfig> {
+    if(!this.isEnabled) {
+      throw new Error('GraphQL is not enabled on this application.');
+    }
     // throws if invalid
     this._validateGraphQLConfig(graphQLConfig);
 
