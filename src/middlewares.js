@@ -171,7 +171,7 @@ export function handleParseHeaders(req, res, next) {
     delete info.sessionToken;
   }
 
-  if (!info.sessionToken) {
+  if (info.sessionToken === undefined) {
     req.auth = new auth.Auth({
       config: req.config,
       installationId: info.installationId,
@@ -318,9 +318,6 @@ export function handleParseErrors(err, req, res, next) {
         break;
       case Parse.Error.OBJECT_NOT_FOUND:
         httpStatus = 404;
-        break;
-      case Parse.Error.INVALID_SESSION_TOKEN:
-        httpStatus = 401;
         break;
       default:
         httpStatus = 400;
