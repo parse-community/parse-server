@@ -133,10 +133,7 @@ export function getGraphQLController(
   options: ParseServerOptions,
   controllerDeps
 ): GraphQLController {
-  return new GraphQLController({
-    mountGraphQL: options.mountGraphQL,
-    ...controllerDeps,
-  });
+  return new GraphQLController(controllerDeps);
 }
 
 export function getAnalyticsController(
