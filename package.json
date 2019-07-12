@@ -42,7 +42,7 @@
     "mime": "2.4.4",
     "mongodb": "3.2.7",
     "node-rsa": "1.0.5",
-    "parse": "2.4.0",
+    "parse": "2.5.1",
     "pg-promise": "8.7.4",
     "redis": "2.8.0",
     "semver": "6.2.0",
