@@ -9,6 +9,7 @@ const GraphQLConfigKey = 'config';
 class GraphQLController {
   databaseController: DatabaseController;
   cacheController: CacheController;
+  isMounted: boolean;
 
   constructor(params: {
     databaseController: DatabaseController,
@@ -19,17 +20,16 @@ class GraphQLController {
       requiredParameter(
         `GraphQLController requires a "databaseController" to be instantiated.`
       );
-    this.cacheController =
-      params.cacheController ||
-      requiredParameter(
-        `GraphQLController requires a "cacheController" to be instantiated.`
-      );
+    this.cacheController = params.cacheController;
+    this.isMounted = !!params.mountGraphQL;
   }
 
   async getGraphQLConfig(): Promise<ParseGraphQLConfig> {
-    const _cachedConfig = await this._getCachedGraphQLConfig();
-    if (_cachedConfig) {
-      return _cachedConfig;
+    if (this.isMounted) {
+      const _cachedConfig = await this._getCachedGraphQLConfig();
+      if (_cachedConfig) {
+        return _cachedConfig;
+      }
     }
 
     const results = await this.databaseController.find(
@@ -46,7 +46,9 @@ class GraphQLController {
       graphQLConfig = results[0][GraphQLConfigKey];
     }
 
-    this._putCachedGraphQLConfig(graphQLConfig);
+    if (this.isMounted) {
+      this._putCachedGraphQLConfig(graphQLConfig);
+    }
 
     return graphQLConfig;
   }
@@ -70,7 +72,9 @@ class GraphQLController {
       { upsert: true }
     );
 
-    this._putCachedGraphQLConfig(graphQLConfig);
+    if (this.isMounted) {
+      this._putCachedGraphQLConfig(graphQLConfig);
+    }
 
     return { response: { result: true } };
   }
