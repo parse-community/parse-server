@@ -165,7 +165,7 @@ const extractKeysAndInclude = selectedFields => {
 const getParseClassTypeConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  return parseClassConfig ? parseClassConfig.type : {};
+  return (parseClassConfig && parseClassConfig.type) || {};
 };
 
 const getInputFieldsAndConstraints = function(

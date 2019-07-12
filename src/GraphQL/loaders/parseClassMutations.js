@@ -6,7 +6,7 @@ import { ParseGraphQLClassConfig } from '../../Options/index';
 const getParseClassMutationConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  return parseClassConfig ? parseClassConfig.mutation : {};
+  return (parseClassConfig && parseClassConfig.mutation) || {};
 };
 
 const load = function(

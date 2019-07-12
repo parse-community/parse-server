@@ -8,7 +8,7 @@ import { ParseGraphQLClassConfig } from '../../Options/index';
 const getParseClassQueryConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  return parseClassConfig ? parseClassConfig.query : {};
+  return (parseClassConfig && parseClassConfig.query) || {};
 };
 
 const load = function(
