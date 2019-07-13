@@ -363,6 +363,10 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 ## Running
 
+### Using the CLI
+
+The easiest way to run the Parse GraphQL API is through the CLI:
+
 ```
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
@@ -371,7 +375,63 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-***Note:*** Do ***NOT*** use --mountPlayground option in production.
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Docker
+
+You can also run the Parse GraphQL API inside a Docker container:
+
+```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
+$ docker build --tag parse-server .
+$ docker run --name my-mongo -d mongo
+$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --mountGraphQL --mountPlayground
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Express.js
+
+You can also mount the GraphQL API in an Express.js application together with the REST API or solo:
+
+```
+const express = require('express');
+const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+
+const app = express();
+
+const parseServer = new ParseServer({
+  databaseURI: 'mongodb://localhost:27017/test',
+  appId: 'APPLICATION_ID',
+  masterKey: 'MASTER_KEY',
+  serverURL: 'http://localhost:1337/parse'
+});
+
+const parseGraphQLServer = new ParseGraphQLServer(
+  parseServer,
+  {
+    graphQLPath: '/graphql',
+    playgroundPath: '/playground'
+  }
+);
+
+app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
+parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
+parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
+
+app.listen(1337, function() {
+  console.log('REST API running on http://localhost:1337/parse');
+  console.log('GraphQL API running on http://localhost:1337/graphql');
+  console.log('GraphQL Playground running on http://localhost:1337/playground');
+});
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
 ## Checking the API health
 
