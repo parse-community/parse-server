@@ -18,11 +18,13 @@ class ParseGraphQLSchema {
   graphQLController: GraphQLController;
   parseGraphQLConfig: ParseGraphQLConfig;
 
-  constructor(params: {
-    databaseController: DatabaseController,
-    graphQLController: GraphQLController,
-    log: any,
-  }) {
+  constructor(
+    params: {
+      databaseController: DatabaseController,
+      graphQLController: GraphQLController,
+      log: any,
+    } = {}
+  ) {
     this.graphQLController =
       params.graphQLController ||
       requiredParameter('You must provide a graphQLController instance!');
@@ -139,7 +141,7 @@ class ParseGraphQLSchema {
     this.schemaController = schemaController;
 
     return {
-      parseGraphQLConfig: parseGraphQLConfig || {},
+      parseGraphQLConfig,
     };
   }
 
@@ -211,7 +213,10 @@ class ParseGraphQLSchema {
   }): boolean {
     const { parseClasses, parseClassesString, parseGraphQLConfig } = params;
 
-    if (this.parseGraphQLConfig === parseGraphQLConfig) {
+    if (
+      JSON.stringify(this.parseGraphQLConfig) ===
+      JSON.stringify(parseGraphQLConfig)
+    ) {
       if (this.parseClasses === parseClasses) {
         return false;
       }

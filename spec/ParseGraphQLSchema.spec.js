@@ -4,6 +4,7 @@ const { ParseGraphQLSchema } = require('../lib/GraphQL/ParseGraphQLSchema');
 describe('ParseGraphQLSchema', () => {
   let parseServer;
   let databaseController;
+  let graphQLController;
   let parseGraphQLSchema;
 
   beforeAll(async () => {
@@ -11,28 +12,37 @@ describe('ParseGraphQLSchema', () => {
       schemaCacheTTL: 100,
     });
     databaseController = parseServer.config.databaseController;
-    parseGraphQLSchema = new ParseGraphQLSchema(
+    graphQLController = parseServer.config.graphQLController;
+    parseGraphQLSchema = new ParseGraphQLSchema({
       databaseController,
-      defaultLogger
-    );
+      graphQLController,
+      log: defaultLogger,
+    });
   });
 
   describe('constructor', () => {
-    it('should require a databaseController and a log instance', () => {
+    it('should require a graphQLController, databaseController and a log instance', () => {
       expect(() => new ParseGraphQLSchema()).toThrow(
+        'You must provide a graphQLController instance!'
+      );
+      expect(() => new ParseGraphQLSchema({ graphQLController: {} })).toThrow(
         'You must provide a databaseController instance!'
       );
-      expect(() => new ParseGraphQLSchema({})).toThrow(
-        'You must provide a log instance!'
-      );
-      expect(() => new ParseGraphQLSchema({}, {})).not.toThrow();
+      expect(
+        () =>
+          new ParseGraphQLSchema({
+            graphQLController: {},
+            databaseController: {},
+          })
+      ).toThrow('You must provide a log instance!');
     });
   });
 
   describe('load', () => {
     it('should cache schema', async () => {
       const graphQLSchema = await parseGraphQLSchema.load();
-      expect(graphQLSchema).toBe(await parseGraphQLSchema.load());
+      const updatedGraphQLSchema = await parseGraphQLSchema.load();
+      expect(graphQLSchema).toBe(updatedGraphQLSchema);
       await new Promise(resolve => setTimeout(resolve, 200));
       expect(graphQLSchema).toBe(await parseGraphQLSchema.load());
     });
