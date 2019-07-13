@@ -1,17 +1,7 @@
 'use strict';
 // Sets up a Parse API server for testing.
-const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
-const supportsColor = require('supports-color');
 jasmine.DEFAULT_TIMEOUT_INTERVAL =
   process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
-
-jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(
-  new SpecReporter({
-    colors: { enabled: supportsColor.stdout },
-    spec: { displayDuration: true },
-  })
-);
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -118,6 +108,7 @@ const defaultConfiguration = {
   },
   auth: {
     // Override the facebook provider
+    custom: mockCustom(),
     facebook: mockFacebook(),
     myoauth: {
       module: path.resolve(__dirname, 'myoauth'), // relative path as it's run from src
@@ -348,6 +339,24 @@ function range(n) {
   return answer;
 }
 
+function mockCustomAuthenticator(id, password) {
+  const custom = {};
+  custom.validateAuthData = function(authData) {
+    if (authData.id === id && authData.password.startsWith(password)) {
+      return Promise.resolve();
+    }
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'not validated');
+  };
+  custom.validateAppId = function() {
+    return Promise.resolve();
+  };
+  return custom;
+}
+
+function mockCustom() {
+  return mockCustomAuthenticator('fastrde', 'password');
+}
+
 function mockFacebookAuthenticator(id, token) {
   const facebook = {};
   facebook.validateAuthData = function(authData) {
@@ -406,6 +415,7 @@ global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
+global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.jfail = function(err) {
   fail(JSON.stringify(err));

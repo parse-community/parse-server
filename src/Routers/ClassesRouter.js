@@ -165,6 +165,7 @@ export class ClassesRouter extends PromiseRouter {
       'order',
       'count',
       'keys',
+      'excludeKeys',
       'include',
       'includeAll',
       'redirectClassNameForKey',
@@ -199,6 +200,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (typeof body.keys == 'string') {
       options.keys = body.keys;
+    }
+    if (typeof body.excludeKeys == 'string') {
+      options.excludeKeys = body.excludeKeys;
     }
     if (body.include) {
       options.include = String(body.include);

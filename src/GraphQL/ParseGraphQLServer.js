@@ -5,7 +5,7 @@ import { graphqlExpress } from 'apollo-server-express/dist/expressApollo';
 import { renderPlaygroundPage } from '@apollographql/graphql-playground-html';
 import { execute, subscribe } from 'graphql';
 import { SubscriptionServer } from 'subscriptions-transport-ws';
-import { handleParseHeaders } from '../middlewares';
+import { handleParseErrors, handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
@@ -63,6 +63,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);
+    app.use(this.config.graphQLPath, handleParseErrors);
     app.use(
       this.config.graphQLPath,
       graphqlExpress(async req => await this._getGraphQLOptions(req))
