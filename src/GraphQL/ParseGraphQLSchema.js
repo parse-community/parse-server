@@ -8,26 +8,26 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
-import GraphQLController, {
+import ParseGraphQLController, {
   ParseGraphQLConfig,
-} from '../Controllers/GraphQLController';
+} from '../Controllers/ParseGraphQLController';
 import DatabaseController from '../Controllers/DatabaseController';
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
-  graphQLController: GraphQLController;
+  parseGraphQLController: ParseGraphQLController;
   parseGraphQLConfig: ParseGraphQLConfig;
 
   constructor(
     params: {
       databaseController: DatabaseController,
-      graphQLController: GraphQLController,
+      parseGraphQLController: ParseGraphQLController,
       log: any,
     } = {}
   ) {
-    this.graphQLController =
-      params.graphQLController ||
-      requiredParameter('You must provide a graphQLController instance!');
+    this.parseGraphQLController =
+      params.parseGraphQLController ||
+      requiredParameter('You must provide a parseGraphQLController instance!');
     this.databaseController =
       params.databaseController ||
       requiredParameter('You must provide a databaseController instance!');
@@ -135,7 +135,7 @@ class ParseGraphQLSchema {
   async _initializeSchemaAndConfig() {
     const [schemaController, parseGraphQLConfig] = await Promise.all([
       this.databaseController.loadSchema(),
-      this.graphQLController.getGraphQLConfig(),
+      this.parseGraphQLController.getGraphQLConfig(),
     ]);
 
     this.schemaController = schemaController;

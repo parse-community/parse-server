@@ -4,7 +4,7 @@ const { ParseGraphQLSchema } = require('../lib/GraphQL/ParseGraphQLSchema');
 describe('ParseGraphQLSchema', () => {
   let parseServer;
   let databaseController;
-  let graphQLController;
+  let parseGraphQLController;
   let parseGraphQLSchema;
 
   beforeAll(async () => {
@@ -12,26 +12,26 @@ describe('ParseGraphQLSchema', () => {
       schemaCacheTTL: 100,
     });
     databaseController = parseServer.config.databaseController;
-    graphQLController = parseServer.config.graphQLController;
+    parseGraphQLController = parseServer.config.parseGraphQLController;
     parseGraphQLSchema = new ParseGraphQLSchema({
       databaseController,
-      graphQLController,
+      parseGraphQLController,
       log: defaultLogger,
     });
   });
 
   describe('constructor', () => {
-    it('should require a graphQLController, databaseController and a log instance', () => {
+    it('should require a parseGraphQLController, databaseController and a log instance', () => {
       expect(() => new ParseGraphQLSchema()).toThrow(
-        'You must provide a graphQLController instance!'
+        'You must provide a parseGraphQLController instance!'
       );
-      expect(() => new ParseGraphQLSchema({ graphQLController: {} })).toThrow(
-        'You must provide a databaseController instance!'
-      );
+      expect(
+        () => new ParseGraphQLSchema({ parseGraphQLController: {} })
+      ).toThrow('You must provide a databaseController instance!');
       expect(
         () =>
           new ParseGraphQLSchema({
-            graphQLController: {},
+            parseGraphQLController: {},
             databaseController: {},
           })
       ).toThrow('You must provide a log instance!');

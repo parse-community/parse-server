@@ -6,7 +6,7 @@ const GraphQLConfigPath = '/graphql-config';
 
 export class GraphQLRouter extends PromiseRouter {
   async getGraphQLConfig(req) {
-    const result = await req.config.graphQLController.getGraphQLConfig();
+    const result = await req.config.parseGraphQLController.getGraphQLConfig();
     return {
       response: result,
     };
@@ -19,7 +19,7 @@ export class GraphQLRouter extends PromiseRouter {
         "read-only masterKey isn't allowed to update the GraphQL config."
       );
     }
-    const data = await req.config.graphQLController.updateGraphQLConfig(
+    const data = await req.config.parseGraphQLController.updateGraphQLConfig(
       req.body.params
     );
     return {

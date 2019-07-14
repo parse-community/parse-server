@@ -6,7 +6,7 @@ const GraphQLConfigClass = '_GraphQLConfig';
 const GraphQLConfigId = '1';
 const GraphQLConfigKey = 'config';
 
-class GraphQLController {
+class ParseGraphQLController {
   databaseController: DatabaseController;
   cacheController: CacheController;
   isMounted: boolean;
@@ -18,7 +18,7 @@ class GraphQLController {
     this.databaseController =
       params.databaseController ||
       requiredParameter(
-        `GraphQLController requires a "databaseController" to be instantiated.`
+        `ParseGraphQLController requires a "databaseController" to be instantiated.`
       );
     this.cacheController = params.cacheController;
     this.isMounted = !!params.mountGraphQL;
@@ -343,4 +343,4 @@ export interface ParseGraphQLClassConfig {
   };
 }
 
-export default GraphQLController;
+export default ParseGraphQLController;
