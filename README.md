@@ -610,6 +610,7 @@ We really want Parse to be yours, to see it grow and thrive in the open source c
 # Contributors
 
 This project exists thanks to all the people who contribute... we'd love to see your face on this list!
+
 <a href="../../graphs/contributors"><img src="https://opencollective.com/parse-server/contributors.svg?width=890&button=false" /></a>
 
 # Sponsors
