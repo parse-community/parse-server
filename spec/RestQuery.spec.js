@@ -419,4 +419,28 @@ describe('RestQuery.each', () => {
     expect(resultsOne.length).toBe(1);
     expect(resultsTwo.length).toBe(1);
   });
+
+  it('test afterSave response object is return', done => {
+    Parse.Cloud.afterSave('TestObject2', function(req) {
+      const jsonObject = req.object.toJSON();
+      delete jsonObject.todelete;
+      jsonObject.toadd = true;
+
+      req.object = {
+        toJSON: () => jsonObject,
+        equals: () => false,
+      };
+
+      return req.object;
+    });
+
+    rest
+      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
+      .then(response => {
+        expect(response.response.toadd).toBeTruthy();
+        expect(response.response.tokeep).toBeTruthy();
+        expect(response.response.todelete).toBeUndefined();
+        done();
+      });
+  });
 });

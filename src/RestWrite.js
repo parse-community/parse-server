@@ -1578,6 +1578,15 @@ RestWrite.prototype.runAfterSaveTrigger = function() {
       this.config,
       this.context
     )
+    .then(result => {
+      if (
+        result &&
+        result.constructor === Object &&
+        Object.keys(result).length !== 0
+      ) {
+        this.response.response = result;
+      }
+    })
     .catch(function(err) {
       logger.warn('afterSave caught an error', err);
     });
