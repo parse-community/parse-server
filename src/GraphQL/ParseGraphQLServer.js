@@ -118,8 +118,8 @@ class ParseGraphQLServer {
     );
   }
 
-  async setGraphQLConfig(graphQLConfig: ParseGraphQLConfig): Promise<void> {
-    await this.parseGraphQLController.updateGraphQLConfig(graphQLConfig);
+  setGraphQLConfig(graphQLConfig: ParseGraphQLConfig): Promise {
+    return this.parseGraphQLController.updateGraphQLConfig(graphQLConfig);
   }
 }
 
