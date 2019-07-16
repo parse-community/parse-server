@@ -163,6 +163,7 @@ const volatileClasses = Object.freeze([
   '_PushStatus',
   '_Hooks',
   '_GlobalConfig',
+  '_GraphQLConfig',
   '_JobSchedule',
   '_Audience',
 ]);
