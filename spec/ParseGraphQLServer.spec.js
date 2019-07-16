@@ -189,7 +189,9 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('API', () => {
+  describe('Auto API', () => {
+    let httpServer;
+
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
@@ -340,7 +342,7 @@ describe('ParseGraphQLServer', () => {
 
     beforeAll(async () => {
       const expressApp = express();
-      const httpServer = http.createServer(expressApp);
+      httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
       ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
@@ -382,6 +384,10 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
     });
 
     describe('GraphQL', () => {
@@ -5098,6 +5104,80 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.get.objectId).toEqual(audience.id);
         });
       });
+    });
+  });
+
+  describe('Custom API', () => {
+    let httpServer;
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+    };
+    let apolloClient;
+
+    beforeAll(async () => {
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: '/graphql',
+        playgroundPath: '/playground',
+        subscriptionsPath: '/subscriptions',
+        customSchema: gql`
+          schema {
+            query: Query
+          }
+
+          type Query {
+            custom: Custom
+          }
+
+          type Custom {
+            hello: String!
+            hello2: String! @resolve(to: "hello")
+            helloByName(name: String!): String!
+            helloByName2(name: String!): String! @resolve(to: "hello")
+            inexistentQuery: Boolean
+          }
+        `,
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+      const httpLink = createUploadLink({
+        uri: 'http://localhost:13377/graphql',
+        fetch,
+        headers,
+      });
+      apolloClient = new ApolloClient({
+        link: httpLink,
+        cache: new InMemoryCache(),
+        defaultOptions: {
+          query: {
+            fetchPolicy: 'no-cache',
+          },
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
+    });
+
+    fit('can resolve a custom query using default function name', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello).toEqual('Hello world!');
     });
   });
 });
