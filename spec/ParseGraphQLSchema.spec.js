@@ -50,26 +50,72 @@ describe('ParseGraphQLSchema', () => {
     it('should load a brand new GraphQL Schema if Parse Schema changes', async () => {
       await parseGraphQLSchema.load();
       const parseClasses = parseGraphQLSchema.parseClasses;
-      const parseClassesString = parseGraphQLSchema.parseClasses;
-      const parseClassTypes = parseGraphQLSchema.parseClasses;
-      const graphQLSchema = parseGraphQLSchema.parseClasses;
-      const graphQLTypes = parseGraphQLSchema.parseClasses;
-      const graphQLQueries = parseGraphQLSchema.parseClasses;
-      const graphQLMutations = parseGraphQLSchema.parseClasses;
-      const graphQLSubscriptions = parseGraphQLSchema.parseClasses;
+      const parseClassesString = parseGraphQLSchema.parseClassesString;
+      const parseClassTypes = parseGraphQLSchema.parseClassTypes;
+      const graphQLSchema = parseGraphQLSchema.graphQLSchema;
+      const graphQLTypes = parseGraphQLSchema.graphQLTypes;
+      const graphQLQueries = parseGraphQLSchema.graphQLQueries;
+      const graphQLMutations = parseGraphQLSchema.graphQLMutations;
+      const graphQLSubscriptions = parseGraphQLSchema.graphQLSubscriptions;
       const newClassObject = new Parse.Object('NewClass');
       await newClassObject.save();
       await databaseController.schemaCache.clear();
       await new Promise(resolve => setTimeout(resolve, 200));
       await parseGraphQLSchema.load();
       expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(parseClassesString).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(parseClassTypes).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(graphQLSchema).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(graphQLTypes).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(graphQLQueries).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(graphQLMutations).not.toBe(parseGraphQLSchema.parseClasses);
-      expect(graphQLSubscriptions).not.toBe(parseGraphQLSchema.parseClasses);
+      expect(parseClassesString).not.toBe(
+        parseGraphQLSchema.parseClassesString
+      );
+      expect(parseClassTypes).not.toBe(parseGraphQLSchema.parseClassTypes);
+      expect(graphQLSchema).not.toBe(parseGraphQLSchema.graphQLSchema);
+      expect(graphQLTypes).not.toBe(parseGraphQLSchema.graphQLTypes);
+      expect(graphQLQueries).not.toBe(parseGraphQLSchema.graphQLQueries);
+      expect(graphQLMutations).not.toBe(parseGraphQLSchema.graphQLMutations);
+      expect(graphQLSubscriptions).not.toBe(
+        parseGraphQLSchema.graphQLSubscriptions
+      );
+    });
+
+    it('should load a brand new GraphQL Schema if graphQLConfig changes', async () => {
+      const parseGraphQLController = {
+        graphQLConfig: { enabledForClasses: [] },
+        getGraphQLConfig() {
+          return this.graphQLConfig;
+        },
+      };
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+      });
+      await parseGraphQLSchema.load();
+      const parseClasses = parseGraphQLSchema.parseClasses;
+      const parseClassesString = parseGraphQLSchema.parseClassesString;
+      const parseClassTypes = parseGraphQLSchema.parseClassTypes;
+      const graphQLSchema = parseGraphQLSchema.graphQLSchema;
+      const graphQLTypes = parseGraphQLSchema.graphQLTypes;
+      const graphQLQueries = parseGraphQLSchema.graphQLQueries;
+      const graphQLMutations = parseGraphQLSchema.graphQLMutations;
+      const graphQLSubscriptions = parseGraphQLSchema.graphQLSubscriptions;
+
+      parseGraphQLController.graphQLConfig = {
+        enabledForClasses: ['_User'],
+      };
+
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await parseGraphQLSchema.load();
+      expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
+      expect(parseClassesString).not.toBe(
+        parseGraphQLSchema.parseClassesString
+      );
+      expect(parseClassTypes).not.toBe(parseGraphQLSchema.parseClassTypes);
+      expect(graphQLSchema).not.toBe(parseGraphQLSchema.graphQLSchema);
+      expect(graphQLTypes).not.toBe(parseGraphQLSchema.graphQLTypes);
+      expect(graphQLQueries).not.toBe(parseGraphQLSchema.graphQLQueries);
+      expect(graphQLMutations).not.toBe(parseGraphQLSchema.graphQLMutations);
+      expect(graphQLSubscriptions).not.toBe(
+        parseGraphQLSchema.graphQLSubscriptions
+      );
     });
   });
 });
