@@ -2,7 +2,7 @@ import requiredParameter from '../../lib/requiredParameter';
 import DatabaseController from './DatabaseController';
 import CacheController from './CacheController';
 
-const GraphQLConfigClass = '_GraphQLConfig';
+const GraphQLConfigClassName = '_GraphQLConfig';
 const GraphQLConfigId = '1';
 const GraphQLConfigKey = 'config';
 
@@ -10,11 +10,14 @@ class ParseGraphQLController {
   databaseController: DatabaseController;
   cacheController: CacheController;
   isMounted: boolean;
+  configCacheKey: string;
 
-  constructor(params: {
-    databaseController: DatabaseController,
-    cacheController: CacheController,
-  }) {
+  constructor(
+    params: {
+      databaseController: DatabaseController,
+      cacheController: CacheController,
+    } = {}
+  ) {
     this.databaseController =
       params.databaseController ||
       requiredParameter(
@@ -22,6 +25,7 @@ class ParseGraphQLController {
       );
     this.cacheController = params.cacheController;
     this.isMounted = !!params.mountGraphQL;
+    this.configCacheKey = GraphQLConfigKey;
   }
 
   async getGraphQLConfig(): Promise<ParseGraphQLConfig> {
@@ -33,7 +37,7 @@ class ParseGraphQLController {
     }
 
     const results = await this.databaseController.find(
-      GraphQLConfigClass,
+      GraphQLConfigClassName,
       { objectId: GraphQLConfigId },
       { limit: 1 }
     );
@@ -57,16 +61,25 @@ class ParseGraphQLController {
     graphQLConfig: ParseGraphQLConfig
   ): Promise<ParseGraphQLConfig> {
     // throws if invalid
-    this._validateGraphQLConfig(graphQLConfig);
+    this._validateGraphQLConfig(
+      graphQLConfig || requiredParameter('You must provide a graphQLConfig!')
+    );
 
     // Transform in dot notation to make sure it works
-    const update = Object.keys(graphQLConfig).reduce((acc, key) => {
-      acc[`${GraphQLConfigKey}.${key}`] = graphQLConfig[key];
-      return acc;
-    }, {});
+    const update = Object.keys(graphQLConfig).reduce(
+      (acc, key) => {
+        return {
+          ...acc,
+          [GraphQLConfigKey]: {
+            [key]: graphQLConfig[key],
+          },
+        };
+      },
+      { [GraphQLConfigKey]: {} }
+    );
 
     await this.databaseController.update(
-      GraphQLConfigClass,
+      GraphQLConfigClassName,
       { objectId: GraphQLConfigId },
       update,
       { upsert: true }
@@ -80,12 +93,12 @@ class ParseGraphQLController {
   }
 
   _getCachedGraphQLConfig() {
-    return this.cacheController.graphQL.get(GraphQLConfigKey);
+    return this.cacheController.graphQL.get(this.configCacheKey);
   }
 
   _putCachedGraphQLConfig(graphQLConfig: ParseGraphQLConfig) {
     return this.cacheController.graphQL.put(
-      GraphQLConfigKey,
+      this.configCacheKey,
       graphQLConfig,
       60000
     );
@@ -105,15 +118,21 @@ class ParseGraphQLController {
         ...invalidKeys
       } = graphQLConfig;
 
-      if (invalidKeys.length) {
+      if (Object.keys(invalidKeys).length) {
         errorMessages.push(
           `encountered invalid keys: [${Object.keys(invalidKeys)}]`
         );
       }
-      if (enabledForClasses !== null && !Array.isArray(enabledForClasses)) {
+      if (
+        enabledForClasses !== null &&
+        !isValidStringArray(enabledForClasses)
+      ) {
         errorMessages.push(`"enabledForClasses" is not a valid array`);
       }
-      if (disabledForClasses !== null && !Array.isArray(disabledForClasses)) {
+      if (
+        disabledForClasses !== null &&
+        !isValidStringArray(disabledForClasses)
+      ) {
         errorMessages.push(`"disabledForClasses" is not a valid array`);
       }
       if (classConfigs !== null) {
@@ -145,8 +164,14 @@ class ParseGraphQLController {
         type = null,
         query = null,
         mutation = null,
+        ...invalidKeys
       } = classConfig;
-      if (typeof className !== 'string' || !className.length) {
+      if (Object.keys(invalidKeys).length) {
+        return `"invalidKeys" [${Object.keys(
+          invalidKeys
+        )}] should not be present`;
+      }
+      if (typeof className !== 'string' || !className.trim().length) {
         // TODO consider checking class exists in schema?
         return `"className" must be a valid string`;
       }
@@ -186,7 +211,7 @@ class ParseGraphQLController {
                   )}]`;
                   return false;
                 } else {
-                  if (typeof field !== 'string') {
+                  if (typeof field !== 'string' || field.trim().length === 0) {
                     errorMessage = `"sortField" at index ${index} did not provide the "field" as a string`;
                     return false;
                   } else if (
@@ -286,7 +311,9 @@ class ParseGraphQLController {
 }
 
 const isValidStringArray = function(array): boolean {
-  return Array.isArray(array) ? !array.some(s => typeof s !== 'string') : false;
+  return Array.isArray(array)
+    ? !array.some(s => typeof s !== 'string' || s.trim().length < 1)
+    : false;
 };
 /**
  * Ensures the obj is a simple JSON/{}
@@ -298,7 +325,8 @@ const isValidSimpleObject = function(obj): boolean {
     typeof obj === 'object' &&
     !Array.isArray(obj) &&
     obj !== null &&
-    obj instanceof Date !== true
+    obj instanceof Date !== true &&
+    obj instanceof Promise !== true
   );
 };
 
@@ -344,3 +372,4 @@ export interface ParseGraphQLClassConfig {
 }
 
 export default ParseGraphQLController;
+export { GraphQLConfigClassName, GraphQLConfigId, GraphQLConfigKey };
