@@ -32,7 +32,7 @@ const load = parseGraphQLSchema => {
           auth,
           info,
           body: params,
-        })).response;
+        })).response.result;
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }

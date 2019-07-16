@@ -3372,7 +3372,25 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
-      describe('Functions Mutations', () => {});
+      describe('Functions Mutations', () => {
+        fit('can call functions', async () => {
+          Parse.Cloud.define('hello', async () => {
+            return 'Hello world!';
+          });
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation CallFunction {
+                functions {
+                  call(functionName: "hello")
+                }
+              }
+            `,
+          });
+
+          expect(result.data.functions.call).toEqual('Hello world!');
+        });
+      });
 
       describe('Data Types', () => {
         it('should support String', async () => {
