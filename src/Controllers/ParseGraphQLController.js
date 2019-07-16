@@ -69,8 +69,8 @@ class ParseGraphQLController {
     const update = Object.keys(graphQLConfig).reduce(
       (acc, key) => {
         return {
-          ...acc,
           [GraphQLConfigKey]: {
+            ...acc[GraphQLConfigKey],
             [key]: graphQLConfig[key],
           },
         };

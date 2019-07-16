@@ -10,6 +10,7 @@ describe('ParseGraphQLController', () => {
   let parseServer;
   let databaseController;
   let cacheController;
+  let databaseUpdateArgs;
 
   // Holds the graphQLConfig in memory instead of using the db
   let graphQLConfigRecord;
@@ -54,6 +55,7 @@ describe('ParseGraphQLController', () => {
       update,
       fullQueryOptions
     ) => {
+      databaseUpdateArgs = [className, query, update, fullQueryOptions];
       if (
         className === GraphQLConfigClassName &&
         isEqual(query, { objectId: GraphQLConfigId }) &&
@@ -64,9 +66,13 @@ describe('ParseGraphQLController', () => {
       ) {
         setConfigOnDb(update[GraphQLConfigKey]);
       } else {
-        return defaultUpdate(className, query, update, fullQueryOptions);
+        return defaultUpdate(...databaseUpdateArgs);
       }
     };
+  });
+
+  beforeEach(() => {
+    databaseUpdateArgs = null;
   });
 
   describe('constructor', () => {
@@ -199,6 +205,32 @@ describe('ParseGraphQLController', () => {
         parseGraphQLController.updateGraphQLConfig()
       ).toBeRejectedWith('You must provide a graphQLConfig!');
     });
+
+    it('should correct update the graphQLConfig object using the databaseController', async () => {
+      const parseGraphQLController = new ParseGraphQLController({
+        databaseController,
+      });
+      const graphQLConfig = {
+        enabledForClasses: ['ClassA', 'ClassB'],
+        disabledForClasses: [],
+        classConfigs: [
+          { className: 'ClassA', query: { get: false } },
+          { className: 'ClassB', mutation: { destroy: false }, type: {} },
+        ],
+      };
+
+      await parseGraphQLController.updateGraphQLConfig(graphQLConfig);
+
+      expect(databaseUpdateArgs).toBeTruthy();
+      const [className, query, update, op] = databaseUpdateArgs;
+      expect(className).toBe(GraphQLConfigClassName);
+      expect(query).toEqual({ objectId: GraphQLConfigId });
+      expect(update).toEqual({
+        [GraphQLConfigKey]: graphQLConfig,
+      });
+      expect(op).toEqual({ upsert: true });
+    });
+
     it('should throw if graphQLConfig is not an object', async () => {
       const parseGraphQLController = new ParseGraphQLController({
         databaseController,
