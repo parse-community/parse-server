@@ -3373,7 +3373,7 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Functions Mutations', () => {
-        fit('can be called', async () => {
+        it('can be called', async () => {
           Parse.Cloud.define('hello', async () => {
             return 'Hello world!';
           });
@@ -3391,7 +3391,7 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.functions.call).toEqual('Hello world!');
         });
 
-        fit('can throw errors', async () => {
+        it('can throw errors', async () => {
           Parse.Cloud.define('hello', async () => {
             throw new Error('Some error message.');
           });
@@ -3414,7 +3414,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        fit('should accept different params', done => {
+        it('should accept different params', done => {
           Parse.Cloud.define('hello', async req => {
             expect(req.params.date instanceof Date).toBe(true);
             expect(req.params.date.getTime()).toBe(1463907600000);
