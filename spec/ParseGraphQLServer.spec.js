@@ -3372,6 +3372,8 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe('Functions Mutations', () => {});
+
       describe('Data Types', () => {
         it('should support String', async () => {
           const someFieldValue = 'some string';

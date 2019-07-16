@@ -18,7 +18,7 @@ const load = parseGraphQLSchema => {
         type: defaultGraphQLTypes.OBJECT,
       },
     },
-    type: defaultGraphQLTypes.OBJECT,
+    type: defaultGraphQLTypes.ANY,
     async resolve(_source, args, context) {
       try {
         const { functionName, params } = args;
