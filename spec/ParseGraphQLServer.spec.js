@@ -3373,7 +3373,7 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Functions Mutations', () => {
-        fit('can call functions', async () => {
+        fit('can be called', async () => {
           Parse.Cloud.define('hello', async () => {
             return 'Hello world!';
           });
@@ -3389,6 +3389,29 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result.data.functions.call).toEqual('Hello world!');
+        });
+
+        fit('can throw errors', async () => {
+          Parse.Cloud.define('hello', async () => {
+            throw new Error('Some error message.');
+          });
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CallFunction {
+                  functions {
+                    call(functionName: "hello")
+                  }
+                }
+              `,
+            });
+            fail('Should throw an error');
+          } catch (e) {
+            const { graphQLErrors } = e;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Some error message.');
+          }
         });
       });
 
