@@ -1,5 +1,6 @@
 import gql from 'graphql-tag';
 import { SchemaDirectiveVisitor } from 'graphql-tools';
+import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
 export const definitions = gql`
   directive @namespace on FIELD_DEFINITION
@@ -19,8 +20,27 @@ const load = parseGraphQLSchema => {
 
   class ResolveDirectiveVistor extends SchemaDirectiveVisitor {
     visitFieldDefinition(field) {
-      field.resolve = async () => {
-        return 'Hello world!';
+      field.resolve = async (_source, args, context) => {
+        try {
+          const { config, auth, info } = context;
+
+          let functionName = field.name;
+          if (this.args.to) {
+            functionName = this.args.to;
+          }
+
+          return (await FunctionsRouter.handleCloudFunction({
+            params: {
+              functionName,
+            },
+            config,
+            auth,
+            info,
+            body: args,
+          })).response.result;
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
       };
     }
   }
