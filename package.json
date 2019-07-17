@@ -54,11 +54,11 @@
     "ws": "7.1.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.5.0",
-    "@babel/core": "7.5.4",
-    "@babel/plugin-proposal-object-rest-spread": "7.5.4",
+    "@babel/cli": "7.5.5",
+    "@babel/core": "7.5.5",
+    "@babel/plugin-proposal-object-rest-spread": "7.5.5",
     "@babel/plugin-transform-flow-strip-types": "7.4.4",
-    "@babel/preset-env": "7.5.4",
+    "@babel/preset-env": "7.5.5",
     "@parse/minami": "1.0.0",
     "apollo-cache-inmemory": "1.6.2",
     "apollo-client": "2.6.3",
