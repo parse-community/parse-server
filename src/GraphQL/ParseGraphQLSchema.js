@@ -9,8 +9,7 @@ import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 import { toGraphQLError } from './parseGraphQLUtils';
-import parseGraphQLSchemaDirectives from './parseGraphQLSchemaDirectives';
-import { definitions as parseGraphQLSchemaDirectivesDefinitions } from './parseGraphQLSchemaDirectives';
+import * as schemaDirectives from './loaders/schemaDirectives';
 
 class ParseGraphQLSchema {
   constructor(databaseController, log, graphQLCustomTypeDefs) {
@@ -48,6 +47,8 @@ class ParseGraphQLSchema {
     this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
+    this.graphQLSchemaDirectivesDefinitions = null;
+    this.graphQLSchemaDirectives = {};
 
     defaultGraphQLTypes.load(this);
 
@@ -101,12 +102,14 @@ class ParseGraphQLSchema {
     });
 
     if (this.graphQLCustomTypeDefs) {
+      schemaDirectives.load(this);
+
       this.graphQLCustomSchema = makeExecutableSchema({
         typeDefs: [
-          parseGraphQLSchemaDirectivesDefinitions,
+          this.graphQLSchemaDirectivesDefinitions,
           this.graphQLCustomTypeDefs,
         ],
-        schemaDirectives: parseGraphQLSchemaDirectives,
+        schemaDirectives: this.graphQLSchemaDirectives,
       });
 
       this.graphQLSchema = mergeSchemas({
