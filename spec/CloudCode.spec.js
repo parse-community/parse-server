@@ -2451,3 +2451,86 @@ describe('beforeLogin hook', () => {
     done();
   });
 });
+describe('Retrieve subclass objects', () => {
+  it('Retrieve objects with no inited properties', async done => {
+    class SubclassObject extends Parse.Object {
+      constructor(attributes) {
+        super('SubclassObject', attributes);
+      }
+      get name() {
+        return this.get('name');
+      }
+      set name(val) {
+        this.set('name', val);
+      }
+    }
+
+    Parse.Object.registerSubclass('SubclassObject', SubclassObject);
+
+    Parse.Cloud.define('SubclassObject:first', () => {
+      return new Parse.Query(SubclassObject).first();
+    });
+
+    await new SubclassObject({ name: 'Foo' }).save();
+    const result = await Parse.Cloud.run('SubclassObject:first');
+
+    expect(result instanceof SubclassObject).toBeTruthy();
+    expect(result.name).toBe('Foo');
+    done();
+  });
+
+  it('Retrieve objects with simple inited properties', async done => {
+    class SubclassSimpleProp extends Parse.Object {
+      constructor(attributes) {
+        super('SubclassSimpleProp', attributes);
+        this.name = 'Initial';
+      }
+      get name() {
+        return this.get('name');
+      }
+      set name(val) {
+        this.set('name', val);
+      }
+    }
+
+    Parse.Object.registerSubclass('SubclassSimpleProp', SubclassSimpleProp);
+
+    Parse.Cloud.define('SubclassSimpleProp:first', () => {
+      return new Parse.Query(SubclassSimpleProp).first();
+    });
+
+    await new SubclassSimpleProp({ name: 'Foo' }).save();
+    const result = await Parse.Cloud.run('SubclassSimpleProp:first');
+
+    expect(result instanceof SubclassSimpleProp).toBeTruthy();
+    expect(result.name).toBe('Foo');
+    done();
+  });
+
+  it('Retrieve objects with inited array properties', async done => {
+    class SubclassArrayProp extends Parse.Object {
+      constructor(attributes) {
+        super('SubclassArrayProp', attributes);
+        this.myArray = ['some', 'initial', 'values'];
+      }
+      get myArray() {
+        return this.get('myArray');
+      }
+      set myArray(val) {
+        this.set('myArray', val);
+      }
+    }
+
+    Parse.Object.registerSubclass('SubclassArrayProp', SubclassArrayProp);
+    Parse.Cloud.define('SubclassArrayProp:first', () => {
+      return new Parse.Query(SubclassArrayProp).first();
+    });
+
+    await new SubclassArrayProp({ myArray: ['custom', 'value'] }).save();
+    const result = await Parse.Cloud.run('SubclassArrayProp:first');
+
+    expect(result instanceof SubclassArrayProp).toBeTruthy();
+    expect(result.myArray).toContain('custom');
+    done();
+  });
+});
