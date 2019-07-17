@@ -5131,6 +5131,7 @@ describe('ParseGraphQLServer', () => {
 
           type Custom {
             hello: String @resolve
+            hello2: String @resolve(to: "hello")
           }
         `,
       });
@@ -5173,6 +5174,33 @@ describe('ParseGraphQLServer', () => {
         });
 
         expect(result.data.custom.hello).toEqual('Hello world!');
+      } catch (e) {
+        if (e.networkError) {
+          console.log(e.networkError.result);
+        } else {
+          console.log(e);
+        }
+        throw e;
+      }
+    });
+
+    fit('can resolve a custom query using function name set by "to" argument', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      try {
+        const result = await apolloClient.query({
+          query: gql`
+            query Hello {
+              custom {
+                hello2
+              }
+            }
+          `,
+        });
+
+        expect(result.data.custom.hello2).toEqual('Hello world!');
       } catch (e) {
         if (e.networkError) {
           console.log(e.networkError.result);

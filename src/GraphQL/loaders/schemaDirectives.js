@@ -4,7 +4,7 @@ import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
 export const definitions = gql`
   directive @namespace on FIELD_DEFINITION
-  directive @resolve on FIELD_DEFINITION
+  directive @resolve(to: String) on FIELD_DEFINITION
 `;
 
 const load = parseGraphQLSchema => {
