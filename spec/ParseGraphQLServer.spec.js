@@ -5121,11 +5121,7 @@ describe('ParseGraphQLServer', () => {
       parseGraphQLServer = new ParseGraphQLServer(parseServer, {
         graphQLPath: '/graphql',
         graphQLCustomTypeDefs: gql`
-          schema {
-            query: Query
-          }
-
-          type Query {
+          extend type Query {
             custom: Custom @namespace
           }
 

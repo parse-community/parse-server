@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
-import { makeExecutableSchema, mergeSchemas } from 'graphql-tools';
+import { mergeSchemas } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -104,19 +104,16 @@ class ParseGraphQLSchema {
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
 
-      this.graphQLCustomSchema = makeExecutableSchema({
-        typeDefs: [
+      this.graphQLSchema = mergeSchemas({
+        schemas: [
           this.graphQLSchemaDirectivesDefinitions,
+          this.graphQLAutoSchema,
           this.graphQLCustomTypeDefs,
         ],
+        mergeDirectives: true,
         schemaDirectives: this.graphQLSchemaDirectives,
       });
-
-      this.graphQLSchema = mergeSchemas({
-        schemas: [this.graphQLAutoSchema, this.graphQLCustomSchema],
-      });
     } else {
-      this.graphQLCustomSchema = null;
       this.graphQLSchema = this.graphQLAutoSchema;
     }
 
