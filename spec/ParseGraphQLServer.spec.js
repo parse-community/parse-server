@@ -5120,23 +5120,17 @@ describe('ParseGraphQLServer', () => {
       httpServer = http.createServer(expressApp);
       parseGraphQLServer = new ParseGraphQLServer(parseServer, {
         graphQLPath: '/graphql',
-        playgroundPath: '/playground',
-        subscriptionsPath: '/subscriptions',
-        customSchema: gql`
+        graphQLCustomTypeDefs: gql`
           schema {
             query: Query
           }
 
           type Query {
-            custom: Custom
+            custom: Custom @namespace
           }
 
           type Custom {
-            hello: String!
-            hello2: String! @resolve(to: "hello")
-            helloByName(name: String!): String!
-            helloByName2(name: String!): String! @resolve(to: "hello")
-            inexistentQuery: Boolean
+            hello: String @resolve
           }
         `,
       });
@@ -5167,17 +5161,26 @@ describe('ParseGraphQLServer', () => {
         return 'Hello world!';
       });
 
-      const result = await apolloClient.query({
-        query: gql`
-          query Hello {
-            custom {
-              hello
+      try {
+        const result = await apolloClient.query({
+          query: gql`
+            query Hello {
+              custom {
+                hello
+              }
             }
-          }
-        `,
-      });
+          `,
+        });
 
-      expect(result.data.custom.hello).toEqual('Hello world!');
+        expect(result.data.custom.hello).toEqual('Hello world!');
+      } catch (e) {
+        if (e.networkError) {
+          console.log(e.networkError.result);
+        } else {
+          console.log(e);
+        }
+        throw e;
+      }
     });
   });
 });

@@ -1,5 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import { makeExecutableSchema, mergeSchemas } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -8,13 +9,16 @@ import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 import { toGraphQLError } from './parseGraphQLUtils';
+import parseGraphQLSchemaDirectives from './parseGraphQLSchemaDirectives';
+import { definitions as parseGraphQLSchemaDirectivesDefinitions } from './parseGraphQLSchemaDirectives';
 
 class ParseGraphQLSchema {
-  constructor(databaseController, log) {
+  constructor(databaseController, log, graphQLCustomTypeDefs) {
     this.databaseController =
       databaseController ||
       requiredParameter('You must provide a databaseController instance!');
     this.log = log || requiredParameter('You must provide a log instance!');
+    this.graphQLCustomTypeDefs = graphQLCustomTypeDefs;
   }
 
   async load() {
@@ -89,12 +93,29 @@ class ParseGraphQLSchema {
       this.graphQLTypes.push(graphQLSubscription);
     }
 
-    this.graphQLSchema = new GraphQLSchema({
+    this.graphQLAutoSchema = new GraphQLSchema({
       types: this.graphQLTypes,
       query: graphQLQuery,
       mutation: graphQLMutation,
       subscription: graphQLSubscription,
     });
+
+    if (this.graphQLCustomTypeDefs) {
+      this.graphQLCustomSchema = makeExecutableSchema({
+        typeDefs: [
+          parseGraphQLSchemaDirectivesDefinitions,
+          this.graphQLCustomTypeDefs,
+        ],
+        schemaDirectives: parseGraphQLSchemaDirectives,
+      });
+
+      this.graphQLSchema = mergeSchemas({
+        schemas: [this.graphQLAutoSchema, this.graphQLCustomSchema],
+      });
+    } else {
+      this.graphQLCustomSchema = null;
+      this.graphQLSchema = this.graphQLAutoSchema;
+    }
 
     return this.graphQLSchema;
   }
