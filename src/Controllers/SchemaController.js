@@ -1191,14 +1191,14 @@ export default class SchemaController {
     aclGroup: string[],
     operation: string
   ) {
+    // The "count" operation is not mapped by the CLP
+    if (operation == 'count') {
+      operation = 'find';
+    }
     if (
       SchemaController.testPermissions(classPermissions, aclGroup, operation)
     ) {
       return Promise.resolve();
-    }
-
-    if (!classPermissions || !classPermissions[operation]) {
-      return true;
     }
     const perms = classPermissions[operation];
     // If only for authenticated users
@@ -1224,10 +1224,9 @@ export default class SchemaController {
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     const permissionField =
-      ['get', 'find', 'count'].indexOf(operation) > -1
+      ['get', 'find'].indexOf(operation) > -1
         ? 'readUserFields'
         : 'writeUserFields';
-
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
       throw new Parse.Error(

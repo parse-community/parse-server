@@ -265,11 +265,9 @@ describe('SchemaController', () => {
         // Create a valid class
         .then(schema => schema.validateObject('Stuff', { foo: 'bar' }))
         .then(schema => {
-          const count = {};
           return schema.setPermissions('Stuff', {
             create: { '*': true },
-            find: { '*': true },
-            count: count,
+            find: {},
           });
         })
         .then(() => {
@@ -293,7 +291,7 @@ describe('SchemaController', () => {
           },
           err => {
             expect(err.message).toEqual(
-              'Permission denied for action count on class Stuff.'
+              'Permission denied for action find on class Stuff.'
             );
             done();
           }
