@@ -1,6 +1,15 @@
 import Parse from 'parse/node';
-import { GraphQLSchema, GraphQLObjectType } from 'graphql';
-import { mergeSchemas } from 'graphql-tools';
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  buildASTSchema,
+  extendSchema,
+} from 'graphql';
+import {
+  mergeSchemas,
+  extractExtensionDefinitions,
+  SchemaDirectiveVisitor,
+} from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -40,6 +49,8 @@ class ParseGraphQLSchema {
     this.parseClassesString = parseClassesString;
     this.parseClassTypes = {};
     this.meType = null;
+    this.graphQLAutoSchema = null;
+    this.graphQLCustomSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
@@ -104,16 +115,43 @@ class ParseGraphQLSchema {
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
 
+      const buildOptions = {
+        commentDescriptions: true,
+        assumeValid: true,
+      };
+
+      const extensionsDefs = extractExtensionDefinitions(
+        this.graphQLCustomTypeDefs
+      );
+
+      this.graphQLCustomSchema = buildASTSchema(
+        this.graphQLCustomTypeDefs,
+        buildOptions
+      );
+
       this.graphQLSchema = mergeSchemas({
         schemas: [
           this.graphQLSchemaDirectivesDefinitions,
           this.graphQLAutoSchema,
-          this.graphQLCustomTypeDefs,
+          this.graphQLCustomSchema,
         ],
         mergeDirectives: true,
-        schemaDirectives: this.graphQLSchemaDirectives,
       });
+
+      if (extensionsDefs.definitions.length > 0) {
+        this.graphQLSchema = extendSchema(
+          this.graphQLSchema,
+          extensionsDefs,
+          buildOptions
+        );
+      }
+
+      SchemaDirectiveVisitor.visitSchemaDirectives(
+        this.graphQLSchema,
+        this.graphQLSchemaDirectives
+      );
     } else {
+      this.graphQLCustomSchema = null;
       this.graphQLSchema = this.graphQLAutoSchema;
     }
 
