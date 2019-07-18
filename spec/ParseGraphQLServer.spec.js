@@ -3372,6 +3372,149 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe('Functions Mutations', () => {
+        it('can be called', async () => {
+          Parse.Cloud.define('hello', async () => {
+            return 'Hello world!';
+          });
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation CallFunction {
+                functions {
+                  call(functionName: "hello")
+                }
+              }
+            `,
+          });
+
+          expect(result.data.functions.call).toEqual('Hello world!');
+        });
+
+        it('can throw errors', async () => {
+          Parse.Cloud.define('hello', async () => {
+            throw new Error('Some error message.');
+          });
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CallFunction {
+                  functions {
+                    call(functionName: "hello")
+                  }
+                }
+              `,
+            });
+            fail('Should throw an error');
+          } catch (e) {
+            const { graphQLErrors } = e;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Some error message.');
+          }
+        });
+
+        it('should accept different params', done => {
+          Parse.Cloud.define('hello', async req => {
+            expect(req.params.date instanceof Date).toBe(true);
+            expect(req.params.date.getTime()).toBe(1463907600000);
+            expect(req.params.dateList[0] instanceof Date).toBe(true);
+            expect(req.params.dateList[0].getTime()).toBe(1463907600000);
+            expect(req.params.complexStructure.date[0] instanceof Date).toBe(
+              true
+            );
+            expect(req.params.complexStructure.date[0].getTime()).toBe(
+              1463907600000
+            );
+            expect(
+              req.params.complexStructure.deepDate.date[0] instanceof Date
+            ).toBe(true);
+            expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(
+              1463907600000
+            );
+            expect(
+              req.params.complexStructure.deepDate2[0].date instanceof Date
+            ).toBe(true);
+            expect(
+              req.params.complexStructure.deepDate2[0].date.getTime()
+            ).toBe(1463907600000);
+            // Regression for #2294
+            expect(req.params.file instanceof Parse.File).toBe(true);
+            expect(req.params.file.url()).toEqual('https://some.url');
+            // Regression for #2204
+            expect(req.params.array).toEqual(['a', 'b', 'c']);
+            expect(Array.isArray(req.params.array)).toBe(true);
+            expect(req.params.arrayOfArray).toEqual([
+              ['a', 'b', 'c'],
+              ['d', 'e', 'f'],
+            ]);
+            expect(Array.isArray(req.params.arrayOfArray)).toBe(true);
+            expect(Array.isArray(req.params.arrayOfArray[0])).toBe(true);
+            expect(Array.isArray(req.params.arrayOfArray[1])).toBe(true);
+
+            done();
+          });
+
+          const params = {
+            date: {
+              __type: 'Date',
+              iso: '2016-05-22T09:00:00.000Z',
+            },
+            dateList: [
+              {
+                __type: 'Date',
+                iso: '2016-05-22T09:00:00.000Z',
+              },
+            ],
+            lol: 'hello',
+            complexStructure: {
+              date: [
+                {
+                  __type: 'Date',
+                  iso: '2016-05-22T09:00:00.000Z',
+                },
+              ],
+              deepDate: {
+                date: [
+                  {
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
+                  },
+                ],
+              },
+              deepDate2: [
+                {
+                  date: {
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
+                  },
+                },
+              ],
+            },
+            file: Parse.File.fromJSON({
+              __type: 'File',
+              name: 'name',
+              url: 'https://some.url',
+            }),
+            array: ['a', 'b', 'c'],
+            arrayOfArray: [['a', 'b', 'c'], ['d', 'e', 'f']],
+          };
+
+          apolloClient.mutate({
+            mutation: gql`
+              mutation CallFunction($params: Object) {
+                functions {
+                  call(functionName: "hello", params: $params)
+                }
+              }
+            `,
+            variables: {
+              params,
+            },
+          });
+        });
+      });
+
       describe('Data Types', () => {
         it('should support String', async () => {
           const someFieldValue = 'some string';
