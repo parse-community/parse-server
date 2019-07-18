@@ -271,7 +271,6 @@ export function getResponseObject(request, resolve, reject) {
         typeof response === 'object' &&
         request.triggerName === Types.afterSave
       ) {
-        console.log('test');
         return resolve(response);
       }
       if (request.triggerName === Types.afterSave) {
