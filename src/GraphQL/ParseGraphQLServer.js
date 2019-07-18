@@ -22,7 +22,8 @@ class ParseGraphQLServer {
     this.parseGraphQLSchema = new ParseGraphQLSchema(
       this.parseServer.config.databaseController,
       (this.parseServer.config && this.parseServer.config.loggerController) ||
-        defaultLogger
+        defaultLogger,
+      this.config.graphQLCustomTypeDefs
     );
   }
 
