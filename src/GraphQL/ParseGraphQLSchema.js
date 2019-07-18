@@ -1,15 +1,6 @@
 import Parse from 'parse/node';
-import {
-  GraphQLSchema,
-  GraphQLObjectType,
-  buildASTSchema,
-  extendSchema,
-} from 'graphql';
-import {
-  mergeSchemas,
-  extractExtensionDefinitions,
-  SchemaDirectiveVisitor,
-} from 'graphql-tools';
+import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -50,7 +41,6 @@ class ParseGraphQLSchema {
     this.parseClassTypes = {};
     this.meType = null;
     this.graphQLAutoSchema = null;
-    this.graphQLCustomSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
@@ -115,43 +105,47 @@ class ParseGraphQLSchema {
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
 
-      const buildOptions = {
-        commentDescriptions: true,
-        assumeValid: true,
-      };
-
-      const extensionsDefs = extractExtensionDefinitions(
-        this.graphQLCustomTypeDefs
-      );
-
-      this.graphQLCustomSchema = buildASTSchema(
-        this.graphQLCustomTypeDefs,
-        buildOptions
-      );
-
       this.graphQLSchema = mergeSchemas({
         schemas: [
           this.graphQLSchemaDirectivesDefinitions,
           this.graphQLAutoSchema,
-          this.graphQLCustomSchema,
+          this.graphQLCustomTypeDefs,
         ],
         mergeDirectives: true,
       });
 
-      if (extensionsDefs.definitions.length > 0) {
-        this.graphQLSchema = extendSchema(
-          this.graphQLSchema,
-          extensionsDefs,
-          buildOptions
-        );
-      }
+      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
+      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
+        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
+        if (typeof graphQLSchemaType.getFields === 'function') {
+          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
+            definition => definition.name.value === graphQLSchemaTypeName
+          );
+          if (graphQLCustomTypeDef) {
+            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
+            Object.keys(graphQLSchemaTypeFieldMap).forEach(
+              graphQLSchemaTypeFieldName => {
+                const graphQLSchemaTypeField =
+                  graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
+                if (!graphQLSchemaTypeField.astNode) {
+                  const astNode = graphQLCustomTypeDef.fields.find(
+                    field => field.name.value === graphQLSchemaTypeFieldName
+                  );
+                  if (astNode) {
+                    graphQLSchemaTypeField.astNode = astNode;
+                  }
+                }
+              }
+            );
+          }
+        }
+      });
 
       SchemaDirectiveVisitor.visitSchemaDirectives(
         this.graphQLSchema,
         this.graphQLSchemaDirectives
       );
     } else {
-      this.graphQLCustomSchema = null;
       this.graphQLSchema = this.graphQLAutoSchema;
     }
 
