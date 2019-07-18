@@ -189,7 +189,9 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('API', () => {
+  describe('Auto API', () => {
+    let httpServer;
+
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
@@ -340,7 +342,7 @@ describe('ParseGraphQLServer', () => {
 
     beforeAll(async () => {
       const expressApp = express();
-      const httpServer = http.createServer(expressApp);
+      httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
       ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
@@ -382,6 +384,10 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
     });
 
     describe('GraphQL', () => {
@@ -5241,6 +5247,115 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.get.objectId).toEqual(audience.id);
         });
       });
+    });
+  });
+
+  describe('Custom API', () => {
+    let httpServer;
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+    };
+    let apolloClient;
+
+    beforeAll(async () => {
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: '/graphql',
+        graphQLCustomTypeDefs: gql`
+          extend type Query {
+            custom: Custom @namespace
+          }
+
+          type Custom {
+            hello: String @resolve
+            hello2: String @resolve(to: "hello")
+            userEcho(user: _UserFields!): _UserClass! @resolve
+          }
+        `,
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+      const httpLink = createUploadLink({
+        uri: 'http://localhost:13377/graphql',
+        fetch,
+        headers,
+      });
+      apolloClient = new ApolloClient({
+        link: httpLink,
+        cache: new InMemoryCache(),
+        defaultOptions: {
+          query: {
+            fetchPolicy: 'no-cache',
+          },
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
+    });
+
+    it('can resolve a custom query using default function name', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello).toEqual('Hello world!');
+    });
+
+    it('can resolve a custom query using function name set by "to" argument', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello2
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello2).toEqual('Hello world!');
+    });
+
+    it('should resolve auto types', async () => {
+      Parse.Cloud.define('userEcho', async req => {
+        return req.params.user;
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query UserEcho($user: _UserFields!) {
+            custom {
+              userEcho(user: $user) {
+                username
+              }
+            }
+          }
+        `,
+        variables: {
+          user: {
+            username: 'somefolk',
+          },
+        },
+      });
+
+      expect(result.data.custom.userEcho.username).toEqual('somefolk');
     });
   });
 });
