@@ -10,15 +10,15 @@ export const definitions = gql`
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLSchemaDirectivesDefinitions = definitions;
 
-  class NamespaceDirectiveVistor extends SchemaDirectiveVisitor {
+  class NamespaceDirectiveVisitor extends SchemaDirectiveVisitor {
     visitFieldDefinition(field) {
       field.resolve = () => ({});
     }
   }
 
-  parseGraphQLSchema.graphQLSchemaDirectives.namespace = NamespaceDirectiveVistor;
+  parseGraphQLSchema.graphQLSchemaDirectives.namespace = NamespaceDirectiveVisitor;
 
-  class ResolveDirectiveVistor extends SchemaDirectiveVisitor {
+  class ResolveDirectiveVisitor extends SchemaDirectiveVisitor {
     visitFieldDefinition(field) {
       field.resolve = async (_source, args, context) => {
         try {
@@ -45,7 +45,7 @@ const load = parseGraphQLSchema => {
     }
   }
 
-  parseGraphQLSchema.graphQLSchemaDirectives.resolve = ResolveDirectiveVistor;
+  parseGraphQLSchema.graphQLSchemaDirectives.resolve = ResolveDirectiveVisitor;
 };
 
 export { load };
