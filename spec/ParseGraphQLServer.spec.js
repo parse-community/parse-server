@@ -5128,6 +5128,7 @@ describe('ParseGraphQLServer', () => {
           type Custom {
             hello: String @resolve
             hello2: String @resolve(to: "hello")
+            userEcho(user: _UserFields!): _UserClass! @resolve
           }
         `,
       });
@@ -5187,6 +5188,31 @@ describe('ParseGraphQLServer', () => {
       });
 
       expect(result.data.custom.hello2).toEqual('Hello world!');
+    });
+
+    it('should resolve auto types', async () => {
+      Parse.Cloud.define('userEcho', async req => {
+        return req.params.user;
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query UserEcho($user: _UserFields!) {
+            custom {
+              userEcho(user: $user) {
+                username
+              }
+            }
+          }
+        `,
+        variables: {
+          user: {
+            username: 'somefolk',
+          },
+        },
+      });
+
+      expect(result.data.custom.userEcho.username).toEqual('somefolk');
     });
   });
 });
