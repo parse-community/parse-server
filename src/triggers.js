@@ -268,10 +268,11 @@ export function getResponseObject(request, resolve, reject) {
       }
       if (
         response &&
-        typeof response.toJSON === 'function' &&
+        typeof response === 'object' &&
         request.triggerName === Types.afterSave
       ) {
-        return resolve(response.toJSON());
+        console.log('test');
+        return resolve(response);
       }
       if (request.triggerName === Types.afterSave) {
         return resolve();

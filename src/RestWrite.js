@@ -1579,11 +1579,7 @@ RestWrite.prototype.runAfterSaveTrigger = function() {
       this.context
     )
     .then(result => {
-      if (
-        result &&
-        result.constructor === Object &&
-        Object.keys(result).length !== 0
-      ) {
+      if (result && typeof result === 'object') {
         this.response.response = result;
       }
     })
