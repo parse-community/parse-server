@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
-import { ApolloError } from 'apollo-server-core';
+import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -8,13 +8,16 @@ import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
+import { toGraphQLError } from './parseGraphQLUtils';
+import * as schemaDirectives from './loaders/schemaDirectives';
 
 class ParseGraphQLSchema {
-  constructor(databaseController, log) {
+  constructor(databaseController, log, graphQLCustomTypeDefs) {
     this.databaseController =
       databaseController ||
       requiredParameter('You must provide a databaseController instance!');
     this.log = log || requiredParameter('You must provide a log instance!');
+    this.graphQLCustomTypeDefs = graphQLCustomTypeDefs;
   }
 
   async load() {
@@ -37,6 +40,7 @@ class ParseGraphQLSchema {
     this.parseClassesString = parseClassesString;
     this.parseClassTypes = {};
     this.meType = null;
+    this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
@@ -44,6 +48,8 @@ class ParseGraphQLSchema {
     this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
+    this.graphQLSchemaDirectivesDefinitions = null;
+    this.graphQLSchemaDirectives = {};
 
     defaultGraphQLTypes.load(this);
 
@@ -89,28 +95,70 @@ class ParseGraphQLSchema {
       this.graphQLTypes.push(graphQLSubscription);
     }
 
-    this.graphQLSchema = new GraphQLSchema({
+    this.graphQLAutoSchema = new GraphQLSchema({
       types: this.graphQLTypes,
       query: graphQLQuery,
       mutation: graphQLMutation,
       subscription: graphQLSubscription,
     });
 
+    if (this.graphQLCustomTypeDefs) {
+      schemaDirectives.load(this);
+
+      this.graphQLSchema = mergeSchemas({
+        schemas: [
+          this.graphQLSchemaDirectivesDefinitions,
+          this.graphQLAutoSchema,
+          this.graphQLCustomTypeDefs,
+        ],
+        mergeDirectives: true,
+      });
+
+      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
+      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
+        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
+        if (typeof graphQLSchemaType.getFields === 'function') {
+          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
+            definition => definition.name.value === graphQLSchemaTypeName
+          );
+          if (graphQLCustomTypeDef) {
+            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
+            Object.keys(graphQLSchemaTypeFieldMap).forEach(
+              graphQLSchemaTypeFieldName => {
+                const graphQLSchemaTypeField =
+                  graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
+                if (!graphQLSchemaTypeField.astNode) {
+                  const astNode = graphQLCustomTypeDef.fields.find(
+                    field => field.name.value === graphQLSchemaTypeFieldName
+                  );
+                  if (astNode) {
+                    graphQLSchemaTypeField.astNode = astNode;
+                  }
+                }
+              }
+            );
+          }
+        }
+      });
+
+      SchemaDirectiveVisitor.visitSchemaDirectives(
+        this.graphQLSchema,
+        this.graphQLSchemaDirectives
+      );
+    } else {
+      this.graphQLSchema = this.graphQLAutoSchema;
+    }
+
     return this.graphQLSchema;
   }
 
   handleError(error) {
-    let code, message;
     if (error instanceof Parse.Error) {
       this.log.error('Parse error: ', error);
-      code = error.code;
-      message = error.message;
     } else {
       this.log.error('Uncaught internal server error.', error, error.stack);
-      code = Parse.Error.INTERNAL_SERVER_ERROR;
-      message = 'Internal server error.';
     }
-    throw new ApolloError(message, code);
+    throw toGraphQLError(error);
   }
 }
 

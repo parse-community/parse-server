@@ -18,7 +18,7 @@ const load = parseGraphQLSchema => {
     args: {
       fields: {
         descriptions: 'These are the fields of the user.',
-        type: parseGraphQLSchema.parseClassTypes['_User'].classGraphQLInputType,
+        type: parseGraphQLSchema.parseClassTypes['_User'].signUpInputType,
       },
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.SIGN_UP_RESULT),
