@@ -180,6 +180,8 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+  /* Full path to your GraphQL custom schema.graphql file */
+  graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
   :ENV: PARSE_SERVER_MOUNT_GRAPHQL
   :DEFAULT: false */

@@ -158,6 +158,10 @@ module.exports.ParseServerOptions = {
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
     default: '/graphql',
   },
+  graphQLSchema: {
+    env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
+    help: 'Full path to your GraphQL custom schema.graphql file',
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',
