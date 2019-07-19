@@ -38,7 +38,7 @@
     "graphql-upload": "8.0.7",
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
-    "lodash": "4.17.14",
+    "lodash": "4.17.15",
     "lru-cache": "5.1.1",
     "mime": "2.4.4",
     "mongodb": "3.2.7",
