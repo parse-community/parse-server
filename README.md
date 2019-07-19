@@ -361,7 +361,7 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 # GraphQL
 
-[GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema.
+[GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
 
 ## Running
 
@@ -551,6 +551,52 @@ You should receive a response similar to this:
         ]
       }
     }
+  }
+}
+```
+
+## Customizing your GraphQL Schema
+
+Parse GraphQL Server allows you to create a custom GraphQL schema with own queries and mutations to be merged with the auto-generated ones. You can resolve these operations using your regular cloud code functions.
+
+To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
+
+```bash
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground --graphQLSchema ./schema.graphql --cloud ./main.js
+```
+
+### Creating your first custom query
+
+Use the codes below for your `schema.graphql` and `main.js` files. Then restart your Parse Server.
+
+```graphql
+# schema.graphql
+extend type Query {
+  hello: String! @resolve
+}
+```
+
+```js
+// main.js
+Parse.Cloud.define('hello', async () => {
+  return 'Hello world!';
+});
+```
+
+You can now run your custom query using GraphQL Playground:
+
+```graphql
+query {
+  hello
+}
+```
+
+You should receive the response below:
+
+```json
+{
+  "data": {
+    "hello": "Hello world!"
   }
 }
 ```
