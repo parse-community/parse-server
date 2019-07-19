@@ -28,6 +28,7 @@
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
+ * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
