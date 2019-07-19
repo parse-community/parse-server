@@ -189,7 +189,9 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
-  describe('API', () => {
+  describe('Auto API', () => {
+    let httpServer;
+
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
@@ -340,7 +342,7 @@ describe('ParseGraphQLServer', () => {
 
     beforeAll(async () => {
       const expressApp = express();
-      const httpServer = http.createServer(expressApp);
+      httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
       ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
@@ -382,6 +384,10 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
     });
 
     describe('GraphQL', () => {
@@ -3372,6 +3378,149 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe('Functions Mutations', () => {
+        it('can be called', async () => {
+          Parse.Cloud.define('hello', async () => {
+            return 'Hello world!';
+          });
+
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation CallFunction {
+                functions {
+                  call(functionName: "hello")
+                }
+              }
+            `,
+          });
+
+          expect(result.data.functions.call).toEqual('Hello world!');
+        });
+
+        it('can throw errors', async () => {
+          Parse.Cloud.define('hello', async () => {
+            throw new Error('Some error message.');
+          });
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CallFunction {
+                  functions {
+                    call(functionName: "hello")
+                  }
+                }
+              `,
+            });
+            fail('Should throw an error');
+          } catch (e) {
+            const { graphQLErrors } = e;
+            expect(graphQLErrors.length).toBe(1);
+            expect(graphQLErrors[0].message).toBe('Some error message.');
+          }
+        });
+
+        it('should accept different params', done => {
+          Parse.Cloud.define('hello', async req => {
+            expect(req.params.date instanceof Date).toBe(true);
+            expect(req.params.date.getTime()).toBe(1463907600000);
+            expect(req.params.dateList[0] instanceof Date).toBe(true);
+            expect(req.params.dateList[0].getTime()).toBe(1463907600000);
+            expect(req.params.complexStructure.date[0] instanceof Date).toBe(
+              true
+            );
+            expect(req.params.complexStructure.date[0].getTime()).toBe(
+              1463907600000
+            );
+            expect(
+              req.params.complexStructure.deepDate.date[0] instanceof Date
+            ).toBe(true);
+            expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(
+              1463907600000
+            );
+            expect(
+              req.params.complexStructure.deepDate2[0].date instanceof Date
+            ).toBe(true);
+            expect(
+              req.params.complexStructure.deepDate2[0].date.getTime()
+            ).toBe(1463907600000);
+            // Regression for #2294
+            expect(req.params.file instanceof Parse.File).toBe(true);
+            expect(req.params.file.url()).toEqual('https://some.url');
+            // Regression for #2204
+            expect(req.params.array).toEqual(['a', 'b', 'c']);
+            expect(Array.isArray(req.params.array)).toBe(true);
+            expect(req.params.arrayOfArray).toEqual([
+              ['a', 'b', 'c'],
+              ['d', 'e', 'f'],
+            ]);
+            expect(Array.isArray(req.params.arrayOfArray)).toBe(true);
+            expect(Array.isArray(req.params.arrayOfArray[0])).toBe(true);
+            expect(Array.isArray(req.params.arrayOfArray[1])).toBe(true);
+
+            done();
+          });
+
+          const params = {
+            date: {
+              __type: 'Date',
+              iso: '2016-05-22T09:00:00.000Z',
+            },
+            dateList: [
+              {
+                __type: 'Date',
+                iso: '2016-05-22T09:00:00.000Z',
+              },
+            ],
+            lol: 'hello',
+            complexStructure: {
+              date: [
+                {
+                  __type: 'Date',
+                  iso: '2016-05-22T09:00:00.000Z',
+                },
+              ],
+              deepDate: {
+                date: [
+                  {
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
+                  },
+                ],
+              },
+              deepDate2: [
+                {
+                  date: {
+                    __type: 'Date',
+                    iso: '2016-05-22T09:00:00.000Z',
+                  },
+                },
+              ],
+            },
+            file: Parse.File.fromJSON({
+              __type: 'File',
+              name: 'name',
+              url: 'https://some.url',
+            }),
+            array: ['a', 'b', 'c'],
+            arrayOfArray: [['a', 'b', 'c'], ['d', 'e', 'f']],
+          };
+
+          apolloClient.mutate({
+            mutation: gql`
+              mutation CallFunction($params: Object) {
+                functions {
+                  call(functionName: "hello", params: $params)
+                }
+              }
+            `,
+            variables: {
+              params,
+            },
+          });
+        });
+      });
+
       describe('Data Types', () => {
         it('should support String', async () => {
           const someFieldValue = 'some string';
@@ -5098,6 +5247,115 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.get.objectId).toEqual(audience.id);
         });
       });
+    });
+  });
+
+  describe('Custom API', () => {
+    let httpServer;
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test',
+    };
+    let apolloClient;
+
+    beforeAll(async () => {
+      const expressApp = express();
+      httpServer = http.createServer(expressApp);
+      parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+        graphQLPath: '/graphql',
+        graphQLCustomTypeDefs: gql`
+          extend type Query {
+            custom: Custom @namespace
+          }
+
+          type Custom {
+            hello: String @resolve
+            hello2: String @resolve(to: "hello")
+            userEcho(user: _UserFields!): _UserClass! @resolve
+          }
+        `,
+      });
+      parseGraphQLServer.applyGraphQL(expressApp);
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
+      const httpLink = createUploadLink({
+        uri: 'http://localhost:13377/graphql',
+        fetch,
+        headers,
+      });
+      apolloClient = new ApolloClient({
+        link: httpLink,
+        cache: new InMemoryCache(),
+        defaultOptions: {
+          query: {
+            fetchPolicy: 'no-cache',
+          },
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await httpServer.close();
+    });
+
+    it('can resolve a custom query using default function name', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello).toEqual('Hello world!');
+    });
+
+    it('can resolve a custom query using function name set by "to" argument', async () => {
+      Parse.Cloud.define('hello', async () => {
+        return 'Hello world!';
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello2
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello2).toEqual('Hello world!');
+    });
+
+    it('should resolve auto types', async () => {
+      Parse.Cloud.define('userEcho', async req => {
+        return req.params.user;
+      });
+
+      const result = await apolloClient.query({
+        query: gql`
+          query UserEcho($user: _UserFields!) {
+            custom {
+              userEcho(user: $user) {
+                username
+              }
+            }
+          }
+        `,
+        variables: {
+          user: {
+            username: 'somefolk',
+          },
+        },
+      });
+
+      expect(result.data.custom.userEcho.username).toEqual('somefolk');
     });
   });
 });
