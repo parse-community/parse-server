@@ -1162,7 +1162,7 @@ export default class SchemaController {
 
   // Tests that the class level permission let pass the operation for a given aclGroup
   static testPermissions(
-    classPermissions: ?any,
+    classPermissions: ?ClassLevelPermissions,
     aclGroup: string[],
     operation: string
   ): boolean {
@@ -1186,13 +1186,13 @@ export default class SchemaController {
 
   // Validates an operation passes class-level-permissions set in the schema
   static validatePermission(
-    classPermissions: ?any,
+    classPermissions: ?ClassLevelPermissions,
     className: string,
     aclGroup: string[],
     operation: string
   ) {
     // The "count" operation is not mapped by the CLP
-    if (operation == 'count') {
+    if (operation === 'count') {
       operation = 'find';
     }
     if (
@@ -1200,6 +1200,7 @@ export default class SchemaController {
     ) {
       return Promise.resolve();
     }
+    // @flow-disable-next handled by SchemaController.testPermissions above
     const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
@@ -1237,6 +1238,7 @@ export default class SchemaController {
 
     // Process the readUserFields later
     if (
+      // @flow-disable-next handled by SchemaController.testPermissions above
       Array.isArray(classPermissions[permissionField]) &&
       classPermissions[permissionField].length > 0
     ) {
