@@ -160,7 +160,7 @@ module.exports.ParseServerOptions = {
   },
   graphQLSchema: {
     env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
-    help: 'Full path to your GraphQL custom schema.graphql file.',
+    help: 'Full path to your GraphQL custom schema.graphql file',
   },
   host: {
     env: 'PARSE_SERVER_HOST',
