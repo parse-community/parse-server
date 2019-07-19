@@ -292,6 +292,36 @@ describe('rest query', () => {
       });
   });
 
+  it('should fail query with limit = 0, count = 1 and no permissions to read', async () => {
+    const className = 'TestObject';
+
+    await request({
+      method: 'POST',
+      url: `http://localhost:8378/1/schemas/${className}`,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+        'Content-Type': 'application/json',
+      },
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {},
+          create: { '*': true },
+        },
+      },
+    });
+
+    try {
+      await rest.find(config, nobody, 'TestObject', {}, { limit: 0, count: 1 });
+      fail('should not count successfully');
+    } catch (err) {
+      expect(err.message).toBe(
+        'Permission denied for action find on class TestObject.'
+      );
+    }
+  });
+
   it('makes sure null pointers are handed correctly #2189', done => {
     const object = new Parse.Object('AnObject');
     const anotherObject = new Parse.Object('AnotherObject');
