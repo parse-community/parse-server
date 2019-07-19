@@ -567,7 +567,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 ### Creating your first custom query
 
-Use the codes below for your `schema.graphql` and `main.js` files. Then restart your Parse Server.
+Use the code below for your `schema.graphql` and `main.js` files. Then restart your Parse Server.
 
 ```graphql
 # schema.graphql
