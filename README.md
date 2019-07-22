@@ -289,7 +289,7 @@ var server = ParseServer({
 ```
 
 You can also use other email adapters contributed by the community such as:
-- [parse-smtp-template (Multi Languaje and Multi Template)](https://www.npmjs.com/package/parse-smtp-template)
+- [parse-smtp-template (Multi Language and Multi Template)](https://www.npmjs.com/package/parse-smtp-template)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
