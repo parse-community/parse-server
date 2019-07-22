@@ -132,6 +132,10 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     objectId: { type: 'String' },
     params: { type: 'Object' },
   },
+  _GraphQLConfig: {
+    objectId: { type: 'String' },
+    config: { type: 'Object' },
+  },
   _Audience: {
     objectId: { type: 'String' },
     name: { type: 'String' },
@@ -476,6 +480,10 @@ const _GlobalConfigSchema = {
   className: '_GlobalConfig',
   fields: defaultColumns._GlobalConfig,
 };
+const _GraphQLConfigSchema = {
+  className: '_GraphQLConfig',
+  fields: defaultColumns._GraphQLConfig,
+};
 const _PushStatusSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
     className: '_PushStatus',
@@ -510,6 +518,7 @@ const VolatileClassesSchemas = [
   _JobScheduleSchema,
   _PushStatusSchema,
   _GlobalConfigSchema,
+  _GraphQLConfigSchema,
   _AudienceSchema,
 ];
 

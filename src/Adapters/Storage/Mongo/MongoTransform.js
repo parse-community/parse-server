@@ -47,7 +47,7 @@ const transformKeyValueForUpdate = (
   switch (key) {
     case 'objectId':
     case '_id':
-      if (className === '_GlobalConfig') {
+      if (['_GlobalConfig', '_GraphQLConfig'].includes(className)) {
         return {
           key: key,
           value: parseInt(restValue),
@@ -252,7 +252,7 @@ function transformQueryKeyValue(className, key, value, schema, count = false) {
       }
       break;
     case 'objectId': {
-      if (className === '_GlobalConfig') {
+      if (['_GlobalConfig', '_GraphQLConfig'].includes(className)) {
         value = parseInt(value);
       }
       return { key: '_id', value };
