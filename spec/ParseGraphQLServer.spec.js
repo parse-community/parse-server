@@ -5272,6 +5272,8 @@ describe('ParseGraphQLServer', () => {
             hello: String @resolve
             hello2: String @resolve(to: "hello")
             userEcho(user: _UserFields!): _UserClass! @resolve
+            hello3: String! @mock(with: "Hello world!")
+            hello4: _UserClass! @mock(with: { username: "somefolk" })
           }
         `,
       });
@@ -5356,6 +5358,36 @@ describe('ParseGraphQLServer', () => {
       });
 
       expect(result.data.custom.userEcho.username).toEqual('somefolk');
+    });
+
+    it('can mock a custom query with string', async () => {
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello3
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello3).toEqual('Hello world!');
+    });
+
+    it('can mock a custom query with auto type', async () => {
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello4 {
+                username
+              }
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello4.username).toEqual('somefolk');
     });
   });
 });
