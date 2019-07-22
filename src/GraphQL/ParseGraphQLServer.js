@@ -31,6 +31,7 @@ class ParseGraphQLServer {
       log:
         (this.parseServer.config && this.parseServer.config.loggerController) ||
         defaultLogger,
+      graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
     });
   }
 

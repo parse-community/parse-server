@@ -5,7 +5,9 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  path = require('path');
+  { parse } = require('graphql'),
+  path = require('path'),
+  fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
 import defaults from './defaults';
@@ -269,9 +271,17 @@ class ParseServer {
     app.use(options.mountPath, this.app);
 
     if (options.mountGraphQL === true || options.mountPlayground === true) {
+      let graphQLCustomTypeDefs = undefined;
+      if (options.graphQLSchema) {
+        graphQLCustomTypeDefs = parse(
+          fs.readFileSync(options.graphQLSchema, 'utf8')
+        );
+      }
+
       const parseGraphQLServer = new ParseGraphQLServer(this, {
         graphQLPath: options.graphQLPath,
         playgroundPath: options.playgroundPath,
+        graphQLCustomTypeDefs,
       });
 
       if (options.mountGraphQL) {
