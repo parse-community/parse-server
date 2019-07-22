@@ -84,9 +84,19 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
   };
 
   for (const fieldName in fields) {
+    const { type, targetClass, ...fieldOptions } = fields[fieldName];
     mongoObject[
       fieldName
-    ] = MongoSchemaCollection.parseFieldTypeToMongoFieldType(fields[fieldName]);
+    ] = MongoSchemaCollection.parseFieldTypeToMongoFieldType({
+      type,
+      targetClass,
+    });
+    if (fieldOptions && Object.keys(fieldOptions).length > 0) {
+      mongoObject._metadata = mongoObject._metadata || {};
+      mongoObject._metadata.fields_options =
+        mongoObject._metadata.fields_options || {};
+      mongoObject._metadata.fields_options[fieldName] = fieldOptions;
+    }
   }
 
   if (typeof classLevelPermissions !== 'undefined') {
@@ -425,6 +435,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach(name => {
       schemaUpdate['$unset'][name] = null;
+      schemaUpdate['$unset'][`_metadata.fields_options.${name}`] = null;
     });
 
     return this._adaptiveCollection(className)
