@@ -49,12 +49,12 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
     if (
       schema._metadata &&
       schema._metadata.fields_options &&
-      schema._metadata.field_options[fieldName]
+      schema._metadata.fields_options[fieldName]
     ) {
       obj[fieldName] = Object.assign(
         {},
         obj[fieldName],
-        schema._metadata.field_options[fieldName]
+        schema._metadata.fields_options[fieldName]
       );
     }
     return obj;

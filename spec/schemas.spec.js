@@ -737,6 +737,72 @@ describe('schemas', () => {
     });
   });
 
+  fit('lets you add fields with options', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }).then(() => {
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newField: {
+              type: 'String',
+              required: true,
+              defaultValue: 'some value',
+            },
+          },
+        },
+      }).then(response => {
+        expect(
+          dd(response.data, {
+            className: 'NewClass',
+            fields: {
+              ACL: { type: 'ACL' },
+              createdAt: { type: 'Date' },
+              objectId: { type: 'String' },
+              updatedAt: { type: 'Date' },
+              newField: {
+                type: 'String',
+                required: true,
+                defaultValue: 'some value',
+              },
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+          })
+        ).toEqual(undefined);
+        request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }).then(response => {
+          expect(response.data).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: { type: 'ACL' },
+              createdAt: { type: 'Date' },
+              updatedAt: { type: 'Date' },
+              objectId: { type: 'String' },
+              newField: {
+                type: 'String',
+                required: true,
+                defaultValue: 'some value',
+              },
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+          });
+          done();
+        });
+      });
+    });
+  });
+
   it('lets you add fields to system schema', done => {
     request({
       method: 'POST',
