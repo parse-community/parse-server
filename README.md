@@ -302,7 +302,7 @@ You can also use other email adapters contributed by the community such as:
 
 ### Custom Pages
 
-Parse server can let you  change the default pages of the app and redirect the user to other path or domain.
+It’s possible to change the default pages of the app and redirect the user to another path or domain.
 
 ```js
 var server = ParseServer({
