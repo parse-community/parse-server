@@ -737,7 +737,7 @@ describe('schemas', () => {
     });
   });
 
-  fit('lets you add fields with options', done => {
+  it('lets you add fields with options', done => {
     request({
       url: 'http://localhost:8378/1/schemas/NewClass',
       method: 'POST',
@@ -799,6 +799,62 @@ describe('schemas', () => {
           });
           done();
         });
+      });
+    });
+  });
+
+  fit('should validate required fields', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }).then(() => {
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newRequiredField: {
+              type: 'String',
+              required: true,
+            },
+            newRequiredFieldWithDefaultValue: {
+              type: 'String',
+              required: true,
+              defaultValue: 'some value',
+            },
+            newNotRequiredField: {
+              type: 'String',
+              required: false,
+            },
+            newNotRequiredFieldWithDefaultValue: {
+              type: 'String',
+              required: false,
+              defaultValue: 'some value',
+            },
+            newRegularFieldWithDefaultValue: {
+              type: 'String',
+              defaultValue: 'some value',
+            },
+            newRegularField: {
+              type: 'String',
+            },
+          },
+        },
+      }).then(async () => {
+        const obj = new Parse.Object('NewClass');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        done();
       });
     });
   });
