@@ -5,6 +5,7 @@ import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 export const definitions = gql`
   directive @namespace on FIELD_DEFINITION
   directive @resolve(to: String) on FIELD_DEFINITION
+  directive @mock(with: Any!) on FIELD_DEFINITION
 `;
 
 const load = parseGraphQLSchema => {
@@ -46,6 +47,16 @@ const load = parseGraphQLSchema => {
   }
 
   parseGraphQLSchema.graphQLSchemaDirectives.resolve = ResolveDirectiveVisitor;
+
+  class MockDirectiveVisitor extends SchemaDirectiveVisitor {
+    visitFieldDefinition(field) {
+      field.resolve = () => {
+        return this.args.with;
+      };
+    }
+  }
+
+  parseGraphQLSchema.graphQLSchemaDirectives.mock = MockDirectiveVisitor;
 };
 
 export { load };
