@@ -11,6 +11,9 @@ import * as objectsMutations from './objectsMutations';
 const usersRouter = new UsersRouter();
 
 const load = parseGraphQLSchema => {
+  if (parseGraphQLSchema.isUsersClassDisabled) {
+    return;
+  }
   const fields = {};
 
   fields.signUp = {

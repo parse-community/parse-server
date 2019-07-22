@@ -1131,6 +1131,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             '_JobSchedule',
             '_Hooks',
             '_GlobalConfig',
+            '_GraphQLConfig',
             '_Audience',
             ...results.map(result => result.className),
             ...joins,
