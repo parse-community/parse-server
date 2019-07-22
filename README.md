@@ -42,8 +42,10 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
-- [Backers](#backers)
+- [Contributors](#contributors)
 - [Sponsors](#sponsors)
+- [Backers](#backers)
+
 
 # Getting Started
 
@@ -359,9 +361,13 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 # GraphQL
 
-[GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema.
+[GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
 
 ## Running
+
+### Using the CLI
+
+The easiest way to run the Parse GraphQL API is through the CLI:
 
 ```
 $ npm install -g parse-server mongodb-runner
@@ -371,7 +377,63 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
-***Note:*** Do ***NOT*** use --mountPlayground option in production.
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Docker
+
+You can also run the Parse GraphQL API inside a Docker container:
+
+```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
+$ docker build --tag parse-server .
+$ docker run --name my-mongo -d mongo
+$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --mountGraphQL --mountPlayground
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Express.js
+
+You can also mount the GraphQL API in an Express.js application together with the REST API or solo:
+
+```
+const express = require('express');
+const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+
+const app = express();
+
+const parseServer = new ParseServer({
+  databaseURI: 'mongodb://localhost:27017/test',
+  appId: 'APPLICATION_ID',
+  masterKey: 'MASTER_KEY',
+  serverURL: 'http://localhost:1337/parse'
+});
+
+const parseGraphQLServer = new ParseGraphQLServer(
+  parseServer,
+  {
+    graphQLPath: '/graphql',
+    playgroundPath: '/playground'
+  }
+);
+
+app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
+parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
+parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
+
+app.listen(1337, function() {
+  console.log('REST API running on http://localhost:1337/parse');
+  console.log('GraphQL API running on http://localhost:1337/graphql');
+  console.log('GraphQL Playground running on http://localhost:1337/playground');
+});
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
 ## Checking the API health
 
@@ -493,11 +555,59 @@ You should receive a response similar to this:
 }
 ```
 
+## Customizing your GraphQL Schema
+
+Parse GraphQL Server allows you to create a custom GraphQL schema with own queries and mutations to be merged with the auto-generated ones. You can resolve these operations using your regular cloud code functions.
+
+To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
+
+```bash
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground --graphQLSchema ./schema.graphql --cloud ./main.js
+```
+
+### Creating your first custom query
+
+Use the code below for your `schema.graphql` and `main.js` files. Then restart your Parse Server.
+
+```graphql
+# schema.graphql
+extend type Query {
+  hello: String! @resolve
+}
+```
+
+```js
+// main.js
+Parse.Cloud.define('hello', async () => {
+  return 'Hello world!';
+});
+```
+
+You can now run your custom query using GraphQL Playground:
+
+```graphql
+query {
+  hello
+}
+```
+
+You should receive the response below:
+
+```json
+{
+  "data": {
+    "hello": "Hello world!"
+  }
+}
+```
+
 ## Learning more
 
-Please look at the right side of your GraphQL Playground. You will see the `DOCS` and `SCHEMA` menus. They are automatically generated by analysing your application schema. Please refer to them and learn more about everything that you can do with your Parse GraphQL API.
+The [Parse GraphQL Guide](http://docs.parseplatform.org/graphql/guide/) is a very good source for learning how to use the Parse GraphQL API.
 
-Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to start learning about the power of the GraphQL language.
+You also have a very powerful tool inside your GraphQL Playground. Please look at the right side of your GraphQL Playground. You will see the `DOCS` and `SCHEMA` menus. They are automatically generated by analyzing your application schema. Please refer to them and learn more about everything that you can do with your Parse GraphQL API.
+
+Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
 
 # Upgrading to 3.0.0
 
@@ -509,8 +619,7 @@ We have written up a [migration guide](3.0.0.md), hoping this will help you tran
 
 # Support
 
-For implementation related questions or any other questions please refer to [Parse Community's Discourse forum](https://community.parseplatform.org/c/parse-server).
-
+Please take a look at our [support document](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
 
 If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
 
@@ -544,45 +653,15 @@ And don't forget, if you plan to deploy it remotely, you should run `npm install
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
 
-# Backers
+# Contributors
 
-Support us with a monthly donation and help us continue our activities. [[Become a backer](https://opencollective.com/parse-server#backer)]
+This project exists thanks to all the people who contribute... we'd love to see your face on this list!
 
-<a href="https://opencollective.com/parse-server/backer/0/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/0/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/1/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/1/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/2/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/2/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/3/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/3/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/4/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/4/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/5/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/5/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/6/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/6/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/7/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/7/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/8/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/8/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/9/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/9/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/10/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/10/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/11/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/11/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/12/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/12/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/13/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/13/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/14/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/14/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/15/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/15/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/16/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/16/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/17/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/17/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/18/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/18/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/19/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/19/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/20/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/20/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/21/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/21/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/22/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/22/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/23/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/23/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/24/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/24/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/25/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/25/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/26/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/26/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/27/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/27/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/28/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/28/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/29/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/29/avatar.svg"></a>
-
+<a href="../../graphs/contributors"><img src="https://opencollective.com/parse-server/contributors.svg?width=890&button=false" /></a>
 
 # Sponsors
 
-Become a sponsor and get your logo on our README on Github with a link to your site. [[Become a sponsor](https://opencollective.com/parse-server#sponsor)]
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [Become a sponsor!](https://opencollective.com/parse-server#sponsor)
 
 <a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/1/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/1/avatar.svg"></a>
@@ -614,6 +693,12 @@ Become a sponsor and get your logo on our README on Github with a link to your s
 <a href="https://opencollective.com/parse-server/sponsor/27/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/27/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/28/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/28/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/29/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/29/avatar.svg"></a>
+
+# Backers
+
+Support us with a monthly donation and help us continue our activities. [Become a backer!](https://opencollective.com/parse-server#backer)
+
+<a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
 
 -----
 

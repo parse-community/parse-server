@@ -1,5 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -12,11 +13,13 @@ import ParseGraphQLController, {
 } from '../Controllers/ParseGraphQLController';
 import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
+import * as schemaDirectives from './loaders/schemaDirectives';
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
   parseGraphQLController: ParseGraphQLController;
   parseGraphQLConfig: ParseGraphQLConfig;
+  graphQLCustomTypeDefs: any;
 
   constructor(
     params: {
@@ -33,6 +36,7 @@ class ParseGraphQLSchema {
       requiredParameter('You must provide a databaseController instance!');
     this.log =
       params.log || requiredParameter('You must provide a log instance!');
+    this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
   }
 
   async load() {
@@ -57,6 +61,7 @@ class ParseGraphQLSchema {
     this.parseGraphQLConfig = parseGraphQLConfig;
     this.parseClassTypes = {};
     this.meType = null;
+    this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
@@ -64,6 +69,8 @@ class ParseGraphQLSchema {
     this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
+    this.graphQLSchemaDirectivesDefinitions = null;
+    this.graphQLSchemaDirectives = {};
 
     defaultGraphQLTypes.load(this);
 
@@ -108,12 +115,59 @@ class ParseGraphQLSchema {
       this.graphQLTypes.push(graphQLSubscription);
     }
 
-    this.graphQLSchema = new GraphQLSchema({
+    this.graphQLAutoSchema = new GraphQLSchema({
       types: this.graphQLTypes,
       query: graphQLQuery,
       mutation: graphQLMutation,
       subscription: graphQLSubscription,
     });
+
+    if (this.graphQLCustomTypeDefs) {
+      schemaDirectives.load(this);
+
+      this.graphQLSchema = mergeSchemas({
+        schemas: [
+          this.graphQLSchemaDirectivesDefinitions,
+          this.graphQLAutoSchema,
+          this.graphQLCustomTypeDefs,
+        ],
+        mergeDirectives: true,
+      });
+
+      const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
+      Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
+        const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
+        if (typeof graphQLSchemaType.getFields === 'function') {
+          const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
+            definition => definition.name.value === graphQLSchemaTypeName
+          );
+          if (graphQLCustomTypeDef) {
+            const graphQLSchemaTypeFieldMap = graphQLSchemaType.getFields();
+            Object.keys(graphQLSchemaTypeFieldMap).forEach(
+              graphQLSchemaTypeFieldName => {
+                const graphQLSchemaTypeField =
+                  graphQLSchemaTypeFieldMap[graphQLSchemaTypeFieldName];
+                if (!graphQLSchemaTypeField.astNode) {
+                  const astNode = graphQLCustomTypeDef.fields.find(
+                    field => field.name.value === graphQLSchemaTypeFieldName
+                  );
+                  if (astNode) {
+                    graphQLSchemaTypeField.astNode = astNode;
+                  }
+                }
+              }
+            );
+          }
+        }
+      });
+
+      SchemaDirectiveVisitor.visitSchemaDirectives(
+        this.graphQLSchema,
+        this.graphQLSchemaDirectives
+      );
+    } else {
+      this.graphQLSchema = this.graphQLAutoSchema;
+    }
 
     return this.graphQLSchema;
   }
