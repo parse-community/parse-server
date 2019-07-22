@@ -323,16 +323,57 @@ RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
 
 RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
   if (this.data) {
-    // Add default fields
-    this.data.updatedAt = this.updatedAt;
-    if (!this.query) {
-      this.data.createdAt = this.updatedAt;
+    return this.validSchemaController.getAllClasses().then(allClasses => {
+      const schema = allClasses.find(
+        oneClass => oneClass.className === this.className
+      );
 
-      // Only assign new objectId if we are creating new object
-      if (!this.data.objectId) {
-        this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+      const setRequiredFieldIfNeeded = (fieldName, setDefault) => {
+        if (
+          this.data[fieldName] === undefined ||
+          this.data[fieldName] === null ||
+          this.data[fieldName] === '' ||
+          (typeof this.data[fieldName] === 'object' &&
+            this.data[fieldName].__op === 'Delete')
+        ) {
+          if (setDefault && schema.fields[fieldName].defaultValue) {
+            this.data[fieldName] = schema.fields[fieldName].defaultValue;
+            this.storage.fieldsChangedByTrigger =
+              this.storage.fieldsChangedByTrigger || [];
+            if (this.storage.fieldsChangedByTrigger.indexOf(fieldName) < 0) {
+              this.storage.fieldsChangedByTrigger.push(fieldName);
+            }
+          } else if (schema.fields[fieldName].required === true) {
+            throw new Parse.Error(
+              Parse.Error.VALIDATION_ERROR,
+              `${fieldName} is required`
+            );
+          }
+        }
+      };
+
+      // Add default fields
+      this.data.updatedAt = this.updatedAt;
+      if (!this.query) {
+        this.data.createdAt = this.updatedAt;
+
+        // Only assign new objectId if we are creating new object
+        if (!this.data.objectId) {
+          this.data.objectId = cryptoUtils.newObjectId(
+            this.config.objectIdSize
+          );
+        }
+        if (schema) {
+          Object.keys(schema.fields).forEach(fieldName => {
+            setRequiredFieldIfNeeded(fieldName, true);
+          });
+        }
+      } else if (schema) {
+        Object.keys(this.data).forEach(fieldName => {
+          setRequiredFieldIfNeeded(fieldName, false);
+        });
       }
-    }
+    });
   }
   return Promise.resolve();
 };

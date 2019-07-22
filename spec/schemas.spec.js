@@ -803,7 +803,7 @@ describe('schemas', () => {
     });
   });
 
-  fit('should validate required fields', done => {
+  it('should validate required fields', done => {
     request({
       url: 'http://localhost:8378/1/schemas/NewClass',
       method: 'POST',
@@ -846,7 +846,7 @@ describe('schemas', () => {
           },
         },
       }).then(async () => {
-        const obj = new Parse.Object('NewClass');
+        let obj = new Parse.Object('NewClass');
         try {
           await obj.save();
           fail('Should fail');
@@ -854,6 +854,92 @@ describe('schemas', () => {
           expect(e.code).toEqual(142);
           expect(e.message).toEqual('newRequiredField is required');
         }
+        obj.set('newRequiredField', 'some value');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual(undefined);
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj.set('newRequiredField', null);
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        obj.unset('newRequiredField');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        obj.set('newRequiredField', 'some value2');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value2');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual(undefined);
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj.unset('newRequiredFieldWithDefaultValue');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual(
+            'newRequiredFieldWithDefaultValue is required'
+          );
+        }
+        obj.set('newRequiredFieldWithDefaultValue', '');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual(
+            'newRequiredFieldWithDefaultValue is required'
+          );
+        }
+        obj.set('newRequiredFieldWithDefaultValue', 'some value2');
+        obj.set('newNotRequiredField', '');
+        obj.set('newNotRequiredFieldWithDefaultValue', null);
+        obj.unset('newRegularField');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value2');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value2'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual('');
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(null);
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj = new Parse.Object('NewClass');
+        obj.set('newRequiredField', 'some value3');
+        obj.set('newRequiredFieldWithDefaultValue', 'some value3');
+        obj.set('newNotRequiredField', 'some value3');
+        obj.set('newNotRequiredFieldWithDefaultValue', 'some value3');
+        obj.set('newRegularField', 'some value3');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value3');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value3'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual('some value3');
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value3'
+        );
+        expect(obj.get('newRegularField')).toEqual('some value3');
         done();
       });
     });
