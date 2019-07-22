@@ -336,14 +336,22 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
           (typeof this.data[fieldName] === 'object' &&
             this.data[fieldName].__op === 'Delete')
         ) {
-          if (setDefault && schema.fields[fieldName].defaultValue) {
+          if (
+            setDefault &&
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].defaultValue &&
+            this.data[fieldName] === undefined
+          ) {
             this.data[fieldName] = schema.fields[fieldName].defaultValue;
             this.storage.fieldsChangedByTrigger =
               this.storage.fieldsChangedByTrigger || [];
             if (this.storage.fieldsChangedByTrigger.indexOf(fieldName) < 0) {
               this.storage.fieldsChangedByTrigger.push(fieldName);
             }
-          } else if (schema.fields[fieldName].required === true) {
+          } else if (
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].required === true
+          ) {
             throw new Parse.Error(
               Parse.Error.VALIDATION_ERROR,
               `${fieldName} is required`
