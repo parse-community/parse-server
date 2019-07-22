@@ -32,6 +32,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
         - [Basic Options](#basic-options)
         - [Client Key Options](#client-key-options)
         - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Custom Pages](#custom-pages)
         - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
         - [Available Adapters](#available-adapters)
         - [Configuring File Adapters](#configuring-file-adapters)
@@ -288,6 +289,7 @@ var server = ParseServer({
 ```
 
 You can also use other email adapters contributed by the community such as:
+- [parse-smtp-template (Multi Languaje and Multi Template)](https://github.com/macarthuror/parse-smtp-template)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
@@ -297,6 +299,27 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
+
+### Custom Pages
+
+Parse server can let you  change the default pages of the app and redirect the user to other path or domain.
+
+```js
+var server = ParseServer({
+  ...otherOptions,
+  
+  customPages {
+    passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
+    verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
+    parseFrameURL: "http://yourapp.com/parseFrameURL",
+    linkSendSuccess: "http://yourapp.com/linkSendSuccess",
+    linkSendFail: "http://yourapp.com/linkSendFail",
+    invalidLink: "http://yourapp.com/invalidLink",
+    invalidVerificationLink: "http://yourapp.com/invalidVerificationLink",
+    choosePassword: "http://yourapp.com/choosePassword"
+  }
+})
+```
 
 ### Using environment variables to configure Parse Server
 
