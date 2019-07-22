@@ -6132,7 +6132,7 @@ describe('ParseGraphQLServer', () => {
           type Custom {
             hello: String @resolve
             hello2: String @resolve(to: "hello")
-            userEcho(user: _UserFields!): _UserClass! @resolve
+            userEcho(user: _UserCreateFields!): _UserClass! @resolve
             hello3: String! @mock(with: "Hello world!")
             hello4: _UserClass! @mock(with: { username: "somefolk" })
           }
@@ -6203,7 +6203,7 @@ describe('ParseGraphQLServer', () => {
 
       const result = await apolloClient.query({
         query: gql`
-          query UserEcho($user: _UserFields!) {
+          query UserEcho($user: _UserCreateFields!) {
             custom {
               userEcho(user: $user) {
                 username
