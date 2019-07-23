@@ -1523,6 +1523,44 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue3']);
           });
 
+          it('should support _or operation', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query {
+                  objects {
+                    findGraphQLClass(
+                      where: {
+                        _or: [
+                          { someField: { _eq: "someValue1" } }
+                          { someField: { _eq: "someValue2" } }
+                        ]
+                      }
+                    ) {
+                      results {
+                        someField
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(
+              result.data.objects.findGraphQLClass.results
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue2']);
+          });
+
           it('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
