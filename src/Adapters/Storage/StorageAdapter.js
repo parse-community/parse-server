@@ -115,6 +115,6 @@ export interface StorageAdapter {
     conn: ?any
   ): Promise<void>;
   createTransactionalSession(): Promise<any>;
-  commitTransactionalSession(transactionalSession: string): Promise<void>;
-  abortTransactionalSession(transactionalSession: string): Promise<void>;
+  commitTransactionalSession(transactionalSession: any): Promise<void>;
+  abortTransactionalSession(transactionalSession: any): Promise<void>;
 }

@@ -411,7 +411,7 @@ class DatabaseController {
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   skipMongoDBServer13732Workaround: boolean;
-  transactionalSession: ?any;
+  _transactionalSession: ?any;
 
   constructor(
     adapter: StorageAdapter,
@@ -425,6 +425,7 @@ class DatabaseController {
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this.skipMongoDBServer13732Workaround = skipMongoDBServer13732Workaround;
+    this._transactionalSession = null;
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -1533,15 +1534,33 @@ class DatabaseController {
   }
 
   createTransactionalSession() {
-    return this.adapter.createTransactionalSession();
+    return this.adapter
+      .createTransactionalSession()
+      .then(transactionalSession => {
+        this._transactionalSession = transactionalSession;
+      });
   }
 
-  commitTransactionalSession(transactionalSession) {
-    return this.adapter.commitTransactionalSession(transactionalSession);
+  commitTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to commit');
+    }
+    return this.adapter
+      .commitTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
   }
 
-  abortTransactionalSession(transactionalSession) {
-    return this.adapter.abortTransactionalSession(transactionalSession);
+  abortTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to abort');
+    }
+    return this.adapter
+      .abortTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to

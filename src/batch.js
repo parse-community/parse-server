@@ -88,14 +88,10 @@ function handleBatch(router, req) {
     initialPromise = req.config.database.createTransactionalSession();
   }
 
-  return initialPromise.then(transactionalSession => {
+  return initialPromise.then(() => {
     const promises = req.body.requests.map(restRequest => {
       const routablePath = makeRoutablePath(restRequest.path);
       // Construct a request that we can send to a handler
-
-      if (transactionalSession) {
-        req.config.database.transactionalSession = transactionalSession;
-      }
 
       const request = {
         body: restRequest.body,
@@ -118,23 +114,19 @@ function handleBatch(router, req) {
 
     return Promise.all(promises)
       .then(results => {
-        if (transactionalSession) {
-          return req.config.database
-            .commitTransactionalSession(transactionalSession)
-            .then(() => {
-              return { response: results };
-            });
+        if (req.body.transaction) {
+          return req.config.database.commitTransactionalSession().then(() => {
+            return { response: results };
+          });
         } else {
           return { response: results };
         }
       })
       .catch(error => {
-        if (transactionalSession) {
-          return req.config.database
-            .abortTransactionalSession(transactionalSession)
-            .then(() => {
-              throw error;
-            });
+        if (req.body.transaction) {
+          return req.config.database.abortTransactionalSession().then(() => {
+            throw error;
+          });
         } else {
           throw error;
         }
