@@ -119,7 +119,7 @@ const validateQuery = (
          */
         Object.keys(query).forEach(key => {
           const noCollisions = !query.$or.some(subq =>
-            subq.hasOwnProperty(key)
+            Object.hasOwnProperty.call(subq, key)
           );
           let hasNears = false;
           if (query[key] != null && typeof query[key] == 'object') {
