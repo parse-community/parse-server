@@ -119,7 +119,7 @@ const validateQuery = (
          */
         Object.keys(query).forEach(key => {
           const noCollisions = !query.$or.some(subq =>
-            subq.hasOwnProperty(key)
+            Object.hasOwnProperty.call(subq, key)
           );
           let hasNears = false;
           if (query[key] != null && typeof query[key] == 'object') {
@@ -411,6 +411,7 @@ class DatabaseController {
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   skipMongoDBServer13732Workaround: boolean;
+  transactionalSession: ?any;
 
   constructor(
     adapter: StorageAdapter,
@@ -1529,6 +1530,18 @@ class DatabaseController {
     });
 
     return protectedKeys;
+  }
+
+  createTransactionalSession() {
+    return this.adapter.createTransactionalSession();
+  }
+
+  commitTransactionalSession(transactionalSession) {
+    return this.adapter.commitTransactionalSession(transactionalSession);
+  }
+
+  abortTransactionalSession(transactionalSession) {
+    return this.adapter.abortTransactionalSession(transactionalSession);
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to

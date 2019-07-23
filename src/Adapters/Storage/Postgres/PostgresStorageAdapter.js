@@ -2330,6 +2330,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
   updateEstimatedCount(className: string) {
     return this._client.none('ANALYZE $1:name', [className]);
   }
+
+  createTransactionalSession(): Promise<any> {
+    return Promise.resolve();
+  }
+
+  commitTransactionalSession(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  abortTransactionalSession(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 function convertPolygonToSQL(polygon) {

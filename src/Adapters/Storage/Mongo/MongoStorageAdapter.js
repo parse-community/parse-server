@@ -1048,6 +1048,24 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .catch(err => this.handleError(err));
   }
+
+  createTransactionalSession(): Promise<any> {
+    const transactionalSection = this.client.startSession();
+    transactionalSection.startTransaction();
+    return Promise.resolve(transactionalSection);
+  }
+
+  commitTransactionalSession(transactionalSection): Promise<void> {
+    return transactionalSection.commitTransaction().then(() => {
+      transactionalSection.endSession();
+    });
+  }
+
+  abortTransactionalSession(transactionalSection): Promise<void> {
+    return transactionalSection.abortTransaction().then(() => {
+      transactionalSection.endSession();
+    });
+  }
 }
 
 export default MongoStorageAdapter;
