@@ -102,6 +102,7 @@ const transformValue = value => {
 const emptyCLPS = Object.freeze({
   find: {},
   get: {},
+  count: {},
   create: {},
   update: {},
   delete: {},
@@ -112,6 +113,7 @@ const emptyCLPS = Object.freeze({
 const defaultCLPS = Object.freeze({
   find: { '*': true },
   get: { '*': true },
+  count: { '*': true },
   create: { '*': true },
   update: { '*': true },
   delete: { '*': true },

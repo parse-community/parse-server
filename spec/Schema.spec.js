@@ -322,6 +322,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -341,6 +342,7 @@ describe('SchemaController', () => {
     const levelPermissions = {
       find: { '*': true },
       get: { '*': true },
+      count: { '*': true },
       create: { '*': true },
       update: { '*': true },
       delete: { '*': true },
@@ -472,6 +474,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -787,6 +790,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -833,6 +837,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -865,6 +870,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -899,6 +905,7 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
@@ -1088,6 +1095,7 @@ describe('SchemaController', () => {
             classLevelPermissions: {
               find: { '*': true },
               get: { '*': true },
+              count: { '*': true },
               create: { '*': true },
               update: { '*': true },
               delete: { '*': true },
