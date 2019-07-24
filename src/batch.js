@@ -113,15 +113,6 @@ function handleBatch(router, req) {
     });
 
     return Promise.all(promises)
-      .then(results => {
-        if (req.body.transaction) {
-          return req.config.database.commitTransactionalSession().then(() => {
-            return { response: results };
-          });
-        } else {
-          return { response: results };
-        }
-      })
       .catch(error => {
         if (req.body.transaction) {
           return req.config.database.abortTransactionalSession().then(() => {
@@ -129,6 +120,15 @@ function handleBatch(router, req) {
           });
         } else {
           throw error;
+        }
+      })
+      .then(results => {
+        if (req.body.transaction) {
+          return req.config.database.commitTransactionalSession().then(() => {
+            return { response: results };
+          });
+        } else {
+          return { response: results };
         }
       });
   });

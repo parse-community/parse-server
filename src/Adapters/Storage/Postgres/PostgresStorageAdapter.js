@@ -1230,7 +1230,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   // TODO: remove the mongo format dependency in the return value
-  createObject(className: string, schema: SchemaType, object: any) {
+  createObject(
+    className: string,
+    schema: SchemaType,
+    object: any
+    /* transactionalSession: ?any */
+  ) {
     debug('createObject', className, object);
     let columnsArray = [];
     const valuesArray = [];
@@ -1387,6 +1392,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType
+    /* transactionalSession: ?any */
   ) {
     debug('deleteObjectsByQuery', className, query);
     const values = [className];
@@ -1422,12 +1428,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ): Promise<any> {
     debug('findOneAndUpdate', className, query, update);
-    return this.updateObjectsByQuery(className, schema, query, update).then(
-      val => val[0]
-    );
+    return this.updateObjectsByQuery(
+      className,
+      schema,
+      query,
+      update,
+      transactionalSession
+    ).then(val => val[0]);
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -1436,6 +1447,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     update: any
+    /* transactionalSession: ?any */
   ): Promise<[any]> {
     debug('updateObjectsByQuery', className, query, update);
     const updatePatterns = [];
@@ -1700,16 +1712,28 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     debug('upsertOneObject', { className, query, update });
     const createValue = Object.assign({}, query, update);
-    return this.createObject(className, schema, createValue).catch(error => {
+    return this.createObject(
+      className,
+      schema,
+      createValue,
+      transactionalSession
+    ).catch(error => {
       // ignore duplicate value errors as it's upsert
       if (error.code !== Parse.Error.DUPLICATE_VALUE) {
         throw error;
       }
-      return this.findOneAndUpdate(className, schema, query, update);
+      return this.findOneAndUpdate(
+        className,
+        schema,
+        query,
+        update,
+        transactionalSession
+      );
     });
   }
 

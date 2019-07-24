@@ -626,21 +626,24 @@ class DatabaseController {
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else if (upsert) {
                   return this.adapter.upsertOneObject(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else {
                   return this.adapter.findOneAndUpdate(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 }
               });
@@ -762,7 +765,8 @@ class DatabaseController {
       `_Join:${key}:${fromClassName}`,
       relationSchema,
       doc,
-      doc
+      doc,
+      this._transactionalSession
     );
   }
 
@@ -783,7 +787,8 @@ class DatabaseController {
       .deleteObjectsByQuery(
         `_Join:${key}:${fromClassName}`,
         relationSchema,
-        doc
+        doc,
+        this._transactionalSession
       )
       .catch(error => {
         // We don't care if they try to delete a non-existent relation.
@@ -850,7 +855,8 @@ class DatabaseController {
               this.adapter.deleteObjectsByQuery(
                 className,
                 parseFormatSchema,
-                query
+                query,
+                this._transactionalSession
               )
             )
             .catch(error => {
@@ -910,7 +916,8 @@ class DatabaseController {
             return this.adapter.createObject(
               className,
               SchemaController.convertSchemaToAdapterSchema(schema),
-              object
+              object,
+              this._transactionalSession
             );
           })
           .then(result => {
