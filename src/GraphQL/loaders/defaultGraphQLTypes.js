@@ -846,8 +846,8 @@ const ARRAY_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const OBJECT_ENTRY = new GraphQLInputObjectType({
-  name: 'ObjectEntry',
+const KEY_VALUE = new GraphQLInputObjectType({
+  name: 'KeyValue',
   description: 'An entry from an object, i.e., a pair of key and value.',
   fields: {
     key: {
@@ -856,31 +856,29 @@ const OBJECT_ENTRY = new GraphQLInputObjectType({
     },
     value: {
       description: 'The value of the entry. Could be any type of scalar data.',
-      type: ANY,
+      type: new GraphQLNonNull(ANY),
     },
   },
 });
 
-const OBJECT_CONSTRAINT = new GraphQLList(
-  new GraphQLInputObjectType({
-    name: 'ObjectConstraint',
-    description:
-      'The ObjectConstraint input type is used in operations that involve filtering result by a field of type Object.',
-    fields: {
-      _eq: _eq(OBJECT_ENTRY),
-      _ne: _ne(OBJECT_ENTRY),
-      _in: _in(OBJECT_ENTRY),
-      _nin: _nin(OBJECT_ENTRY),
-      _lt: _lt(OBJECT_ENTRY),
-      _lte: _lte(OBJECT_ENTRY),
-      _gt: _gt(OBJECT_ENTRY),
-      _gte: _gte(OBJECT_ENTRY),
-      _exists,
-      _select,
-      _dontSelect,
-    },
-  })
-);
+const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
+  name: 'ObjectConstraint',
+  description:
+    'The ObjectConstraint input type is used in operations that involve filtering result by a field of type Object.',
+  fields: {
+    _eq: _eq(KEY_VALUE),
+    _ne: _ne(KEY_VALUE),
+    _in: _in(KEY_VALUE),
+    _nin: _nin(KEY_VALUE),
+    _lt: _lt(KEY_VALUE),
+    _lte: _lte(KEY_VALUE),
+    _gt: _gt(KEY_VALUE),
+    _gte: _gte(KEY_VALUE),
+    _exists,
+    _select,
+    _dontSelect,
+  },
+});
 
 const DATE_CONSTRAINT = new GraphQLInputObjectType({
   name: 'DateConstraint',

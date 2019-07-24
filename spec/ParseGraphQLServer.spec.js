@@ -4414,7 +4414,6 @@ describe('ParseGraphQLServer', () => {
         it('should support object values', async () => {
           const someFieldValue = {
             foo: { bar: 'baz' },
-            lorem: 'ipsum',
             number: 10,
           };
 
@@ -4477,13 +4476,12 @@ describe('ParseGraphQLServer', () => {
             variables: {
               objectId: createResult.data.objects.create.objectId,
               where: {
-                someField: [
-                  { _eq: { key: 'foo.bar', value: 'baz' } },
-                  { _ne: { key: 'foo.bar', value: 'bat' } },
-                  { _eq: { key: 'lorem', value: 'ipsum' } },
-                  { _gt: { key: 'number', value: 9 } },
-                  { _lt: { key: 'number', value: 11 } },
-                ],
+                someField: {
+                  _eq: { key: 'foo.bar', value: 'baz' },
+                  _ne: { key: 'foo.bar', value: 'bat' },
+                  _gt: { key: 'number', value: 9 },
+                  _lt: { key: 'number', value: 11 },
+                },
               },
             },
           });
@@ -4500,6 +4498,104 @@ describe('ParseGraphQLServer', () => {
           expect(
             getResult.data.objects.findSomeClass.results[1].someField
           ).toEqual(someFieldValue);
+        });
+
+        it('should support object composed queries', async () => {
+          const someFieldValue = {
+            lorem: 'ipsum',
+            number: 10,
+          };
+          const someFieldValue2 = {
+            foo: {
+              test: 'bar',
+            },
+            number: 10,
+          };
+
+          const createResult = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateSomeObject($fields: Object, $fields2: Object) {
+                objects {
+                  create1: create(className: "SomeClass", fields: $fields) {
+                    objectId
+                  }
+                  create2: create(className: "SomeClass", fields: $fields2) {
+                    objectId
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                someField: someFieldValue,
+              },
+              fields2: {
+                someField: someFieldValue2,
+              },
+            },
+          });
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const findResult = await apolloClient.query({
+            query: gql`
+              query FindSomeObject($where: SomeClassConstraints) {
+                objects {
+                  findSomeClass(where: $where) {
+                    results {
+                      objectId
+                      someField
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              where: {
+                _and: [
+                  {
+                    someField: {
+                      _gt: { key: 'number', value: 9 },
+                    },
+                  },
+                  {
+                    someField: {
+                      _lt: { key: 'number', value: 11 },
+                    },
+                  },
+                  {
+                    _or: [
+                      {
+                        someField: {
+                          _eq: { key: 'lorem', value: 'ipsum' },
+                        },
+                      },
+                      {
+                        someField: {
+                          _eq: { key: 'foo.test', value: 'bar' },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          });
+
+          const { results } = findResult.data.objects.findSomeClass;
+          expect(results.length).toEqual(2);
+          expect(
+            results.find(
+              result =>
+                result.objectId === createResult.data.objects.create1.objectId
+            ).someField
+          ).toEqual(someFieldValue);
+          expect(
+            results.find(
+              result =>
+                result.objectId === createResult.data.objects.create2.objectId
+            ).someField
+          ).toEqual(someFieldValue2);
         });
 
         it('should support array values', async () => {
