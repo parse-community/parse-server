@@ -266,6 +266,16 @@ export function getResponseObject(request, resolve, reject) {
       ) {
         return resolve(response);
       }
+      if (
+        response &&
+        typeof response === 'object' &&
+        request.triggerName === Types.afterSave
+      ) {
+        return resolve(response);
+      }
+      if (request.triggerName === Types.afterSave) {
+        return resolve();
+      }
       response = {};
       if (request.triggerName === Types.beforeSave) {
         response['object'] = request.object._getSaveJSON();
