@@ -3,7 +3,7 @@ import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import * as parseClassTypes from './parseClassTypes';
-import { ParseGraphQLClassConfig } from '../../Options/index';
+import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 
 const getParseClassQueryConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig

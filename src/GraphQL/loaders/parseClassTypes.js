@@ -13,7 +13,7 @@ import {
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
-import { ParseGraphQLClassConfig } from '../../Options/index';
+import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 
 const mapInputType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
