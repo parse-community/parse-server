@@ -1,7 +1,7 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsMutations from './objectsMutations';
-import { ParseGraphQLClassConfig } from '../../Options/index';
+import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 
 const getParseClassMutationConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -35,8 +35,12 @@ const load = function(
     type: classGraphQLUpdateType,
   };
 
-  const classGraphQLCreateTypeFields = classGraphQLCreateType.getFields();
-  const classGraphQLUpdateTypeFields = classGraphQLUpdateType.getFields();
+  const classGraphQLCreateTypeFields = isCreateEnabled
+    ? classGraphQLCreateType.getFields()
+    : null;
+  const classGraphQLUpdateTypeFields = isUpdateEnabled
+    ? classGraphQLUpdateType.getFields()
+    : null;
 
   const transformTypes = (inputType: 'create' | 'update', fields) => {
     if (fields) {
