@@ -406,6 +406,68 @@ describe('schemas', () => {
     });
   });
 
+  it('responds with all fields and options when you create a class with field options', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassWithOptions',
+        fields: {
+          foo1: { type: 'Number' },
+          foo2: { type: 'Number', required: true, defaultValue: 10 },
+          foo3: {
+            type: 'String',
+            required: false,
+            defaultValue: 'some string',
+          },
+          foo4: { type: 'Date', required: true },
+          foo5: { type: 'Number', defaultValue: 5 },
+          ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+        },
+      },
+    }).then(async response => {
+      expect(response.data).toEqual({
+        className: 'NewClassWithOptions',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          foo1: { type: 'Number' },
+          foo2: { type: 'Number', required: true, defaultValue: 10 },
+          foo3: {
+            type: 'String',
+            required: false,
+            defaultValue: 'some string',
+          },
+          foo4: { type: 'Date', required: true },
+          foo5: { type: 'Number', defaultValue: 5 },
+          ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+      });
+      const obj = new Parse.Object('NewClassWithOptions');
+      try {
+        await obj.save();
+        fail('should fail');
+      } catch (e) {
+        expect(e.code).toEqual(142);
+      }
+      const date = new Date();
+      obj.set('foo4', date);
+      await obj.save();
+      expect(obj.get('foo1')).toBeUndefined();
+      expect(obj.get('foo2')).toEqual(10);
+      expect(obj.get('foo3')).toEqual('some string');
+      expect(obj.get('foo4')).toEqual(date);
+      expect(obj.get('foo5')).toEqual(5);
+      expect(obj.get('ptr')).toBeUndefined();
+      done();
+    });
+  });
+
   it('responds with all fields when getting incomplete schema', done => {
     config.database
       .loadSchema()
