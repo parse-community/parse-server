@@ -57,6 +57,7 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
 
 const emptyCLPS = Object.freeze({
   find: {},
+  count: {},
   get: {},
   create: {},
   update: {},
@@ -67,6 +68,7 @@ const emptyCLPS = Object.freeze({
 
 const defaultCLPS = Object.freeze({
   find: { '*': true },
+  count: { '*': true },
   get: { '*': true },
   create: { '*': true },
   update: { '*': true },

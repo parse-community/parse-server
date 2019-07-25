@@ -25,6 +25,7 @@ import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
+import ParseGraphQLController from './ParseGraphQLController';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -43,6 +44,10 @@ export function getControllers(options: ParseServerOptions) {
   const databaseController = getDatabaseController(options, cacheController);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
+  const parseGraphQLController = getParseGraphQLController(options, {
+    databaseController,
+    cacheController,
+  });
   return {
     loggerController,
     filesController,
@@ -54,6 +59,7 @@ export function getControllers(options: ParseServerOptions) {
     pushControllerQueue,
     analyticsController,
     cacheController,
+    parseGraphQLController,
     liveQueryController,
     databaseController,
     hooksController,
@@ -121,6 +127,16 @@ export function getCacheController(
     { appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize }
   );
   return new CacheController(cacheControllerAdapter, appId);
+}
+
+export function getParseGraphQLController(
+  options: ParseServerOptions,
+  controllerDeps
+): ParseGraphQLController {
+  return new ParseGraphQLController({
+    mountGraphQL: options.mountGraphQL,
+    ...controllerDeps,
+  });
 }
 
 export function getAnalyticsController(
