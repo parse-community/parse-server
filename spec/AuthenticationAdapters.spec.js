@@ -1099,6 +1099,18 @@ describe('apple signin auth adapter', () => {
     }
   });
 
+  it('should not verify invalid id_token', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt malformed');
+    }
+  });
+
   it('should verify id_token', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
