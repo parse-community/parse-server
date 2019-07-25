@@ -959,7 +959,7 @@ export default class SchemaController {
 
     const expectedType = this.getExpectedType(className, fieldName);
     if (typeof type === 'string') {
-      type = { type };
+      type = { type, defaultValue: undefined };
     }
 
     if (type.defaultValue !== undefined) {
