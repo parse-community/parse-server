@@ -468,6 +468,62 @@ describe('schemas', () => {
     });
   });
 
+  it('validated the data type of default values when creating a new class', async () => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo: { type: 'String', defaultValue: 10 },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.error).toEqual(
+        'schema mismatch for NewClassWithValidation.foo default value; expected String but got Number'
+      );
+    }
+  });
+
+  it('validated the data type of default values when adding new fields', async () => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo: { type: 'String', defaultValue: 'some value' },
+          },
+        },
+      });
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassWithValidation',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo2: { type: 'String', defaultValue: 10 },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.error).toEqual(
+        'schema mismatch for NewClassWithValidation.foo2 default value; expected String but got Number'
+      );
+    }
+  });
+
   it('responds with all fields when getting incomplete schema', done => {
     config.database
       .loadSchema()
