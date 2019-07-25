@@ -21,6 +21,7 @@ import { FeaturesRouter } from './Routers/FeaturesRouter';
 import { FilesRouter } from './Routers/FilesRouter';
 import { FunctionsRouter } from './Routers/FunctionsRouter';
 import { GlobalConfigRouter } from './Routers/GlobalConfigRouter';
+import { GraphQLRouter } from './Routers/GraphQLRouter';
 import { HooksRouter } from './Routers/HooksRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
@@ -231,6 +232,7 @@ class ParseServer {
       new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
+      new GraphQLRouter(),
       new PurgeRouter(),
       new HooksRouter(),
       new CloudCodeRouter(),

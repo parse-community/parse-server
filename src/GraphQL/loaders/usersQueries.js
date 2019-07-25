@@ -6,6 +6,9 @@ import Auth from '../../Auth';
 import { extractKeysAndInclude } from './parseClassTypes';
 
 const load = parseGraphQLSchema => {
+  if (parseGraphQLSchema.isUsersClassDisabled) {
+    return;
+  }
   const fields = {};
 
   fields.me = {
