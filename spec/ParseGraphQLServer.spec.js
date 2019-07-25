@@ -1523,6 +1523,44 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue3']);
           });
 
+          it('should support _or operation', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query {
+                  objects {
+                    findGraphQLClass(
+                      where: {
+                        _or: [
+                          { someField: { _eq: "someValue1" } }
+                          { someField: { _eq: "someValue2" } }
+                        ]
+                      }
+                    ) {
+                      results {
+                        someField
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            expect(
+              result.data.objects.findGraphQLClass.results
+                .map(object => object.someField)
+                .sort()
+            ).toEqual(['someValue1', 'someValue2']);
+          });
+
           it('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
@@ -5272,6 +5310,8 @@ describe('ParseGraphQLServer', () => {
             hello: String @resolve
             hello2: String @resolve(to: "hello")
             userEcho(user: _UserFields!): _UserClass! @resolve
+            hello3: String! @mock(with: "Hello world!")
+            hello4: _UserClass! @mock(with: { username: "somefolk" })
           }
         `,
       });
@@ -5356,6 +5396,36 @@ describe('ParseGraphQLServer', () => {
       });
 
       expect(result.data.custom.userEcho.username).toEqual('somefolk');
+    });
+
+    it('can mock a custom query with string', async () => {
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello3
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello3).toEqual('Hello world!');
+    });
+
+    it('can mock a custom query with auto type', async () => {
+      const result = await apolloClient.query({
+        query: gql`
+          query Hello {
+            custom {
+              hello4 {
+                username
+              }
+            }
+          }
+        `,
+      });
+
+      expect(result.data.custom.hello4.username).toEqual('somefolk');
     });
   });
 });

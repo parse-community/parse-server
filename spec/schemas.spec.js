@@ -31,6 +31,9 @@ const defaultClassLevelPermissions = {
   find: {
     '*': true,
   },
+  count: {
+    '*': true,
+  },
   create: {
     '*': true,
   },
@@ -1368,6 +1371,7 @@ describe('schemas', () => {
             'role:admin': true,
           },
           get: {},
+          count: {},
           update: {},
           delete: {},
           addField: {},
@@ -2245,6 +2249,7 @@ describe('schemas', () => {
       {
         get: { '*': true },
         find: { '*': true },
+        count: { '*': true },
         create: { '*': true },
       },
       true
@@ -2264,6 +2269,7 @@ describe('schemas', () => {
         expect(res.data.classLevelPermissions).toEqual({
           get: { '*': true },
           find: { '*': true },
+          count: { '*': true },
           create: { '*': true },
           update: {},
           delete: {},
