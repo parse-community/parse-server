@@ -1066,6 +1066,111 @@ describe('schemas', () => {
     });
   });
 
+  it('should validate required fields and set default values after before save trigger', async () => {
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForBeforeSaveTest',
+        fields: {
+          foo1: { type: 'String' },
+          foo2: { type: 'String', required: true },
+          foo3: {
+            type: 'String',
+            required: true,
+            defaultValue: 'some default value 3',
+          },
+          foo4: { type: 'String', defaultValue: 'some default value 4' },
+        },
+      },
+    });
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+      req.object.set('foo3', 'some value 3');
+      req.object.set('foo4', 'some value 4');
+    });
+
+    let obj = new Parse.Object('NewClassForBeforeSaveTest');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some value 3');
+    expect(obj.get('foo4')).toEqual('some value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some default value 3');
+    expect(obj.get('foo4')).toEqual('some default value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some default value 3');
+    expect(obj.get('foo4')).toEqual('some default value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', undefined);
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo2', 'some value 2');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+
+    try {
+      await obj.save();
+      fail('should fail');
+    } catch (e) {
+      expect(e.message).toEqual('foo2 is required');
+    }
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.unset('foo2');
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo2', 'some value 2');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+
+    try {
+      await obj.save();
+      fail('should fail');
+    } catch (e) {
+      expect(e.message).toEqual('foo2 is required');
+    }
+  });
+
   it('lets you add fields to system schema', done => {
     request({
       method: 'POST',
