@@ -38,12 +38,15 @@ const load = function(
   const classGraphQLCreateTypeFields = classGraphQLCreateType.getFields();
   const classGraphQLUpdateTypeFields = classGraphQLUpdateType.getFields();
 
-  const transformTypes = fields => {
+  const transformTypes = (inputType: 'create' | 'update', fields) => {
     if (fields) {
       Object.keys(fields).forEach(field => {
-        const inputTypeField =
-          classGraphQLCreateTypeFields[field] ||
-          classGraphQLUpdateTypeFields[field];
+        let inputTypeField;
+        if (inputType === 'create') {
+          inputTypeField = classGraphQLCreateTypeFields[field];
+        } else {
+          inputTypeField = classGraphQLUpdateTypeFields[field];
+        }
         if (inputTypeField) {
           switch (inputTypeField.type) {
             case defaultGraphQLTypes.GEO_POINT:
@@ -77,7 +80,7 @@ const load = function(
           const { fields } = args;
           const { config, auth, info } = context;
 
-          transformTypes(fields);
+          transformTypes('create', fields);
 
           return await objectsMutations.createObject(
             className,
@@ -107,7 +110,7 @@ const load = function(
           const { objectId, fields } = args;
           const { config, auth, info } = context;
 
-          transformTypes(fields);
+          transformTypes('update', fields);
 
           return await objectsMutations.updateObject(
             className,
