@@ -417,6 +417,7 @@ global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
+global.databaseAdapter = databaseAdapter;
 global.jfail = function(err) {
   fail(JSON.stringify(err));
 };

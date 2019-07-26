@@ -70,11 +70,7 @@ describe('batch', () => {
   });
 
   it('should handle a batch request without transaction', done => {
-    let calls = 0;
-    Parse.Cloud.beforeSave('MyObject', ({ database }) => {
-      calls++;
-      expect(database._transactionalSession).toEqual(null);
-    });
+    spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
       method: 'POST',
@@ -102,7 +98,9 @@ describe('batch', () => {
       expect(response.data[1].success.createdAt).toBeDefined();
       const query = new Parse.Query('MyObject');
       query.find().then(results => {
-        expect(calls).toBe(2);
+        expect(databaseAdapter.createObject.calls.count()).toBe(2);
+        expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
+        expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
         expect(results.map(result => result.get('key')).sort()).toEqual([
           'value1',
           'value2',
@@ -113,11 +111,7 @@ describe('batch', () => {
   });
 
   it('should handle a batch request with transaction = false', done => {
-    let calls = 0;
-    Parse.Cloud.beforeSave('MyObject', ({ database }) => {
-      calls++;
-      expect(database._transactionalSession).toEqual(null);
-    });
+    spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
       method: 'POST',
@@ -146,7 +140,9 @@ describe('batch', () => {
       expect(response.data[1].success.createdAt).toBeDefined();
       const query = new Parse.Query('MyObject');
       query.find().then(results => {
-        expect(calls).toBe(2);
+        expect(databaseAdapter.createObject.calls.count()).toBe(2);
+        expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
+        expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
         expect(results.map(result => result.get('key')).sort()).toEqual([
           'value1',
           'value2',
@@ -170,17 +166,7 @@ describe('batch', () => {
       });
 
       it('should handle a batch request with transaction = true', done => {
-        let calls = 0;
-        let transactionalSession = null;
-        Parse.Cloud.beforeSave('MyObject', ({ database }) => {
-          calls++;
-          expect(database._transactionalSession).not.toEqual(null);
-          if (transactionalSession) {
-            expect(database._transactionalSession).toBe(transactionalSession);
-          } else {
-            transactionalSession = database._transactionalSession;
-          }
-        });
+        spyOn(databaseAdapter, 'createObject').and.callThrough();
 
         request({
           method: 'POST',
@@ -209,7 +195,10 @@ describe('batch', () => {
           expect(response.data[1].success.createdAt).toBeDefined();
           const query = new Parse.Query('MyObject');
           query.find().then(results => {
-            expect(calls).toBe(2);
+            expect(databaseAdapter.createObject.calls.count()).toBe(2);
+            expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
+              databaseAdapter.createObject.calls.argsFor(1)[3]
+            );
             expect(results.map(result => result.get('key')).sort()).toEqual([
               'value1',
               'value2',
@@ -219,7 +208,37 @@ describe('batch', () => {
         });
       });
 
-      it('should generate separate session for each call', done => {
+      it('should not save anything when one operation fails in a transaction', done => {
+        request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/batch',
+          body: JSON.stringify({
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject',
+                body: { key: 10 },
+              },
+            ],
+            transaction: true,
+          }),
+        }).catch(error => {
+          expect(error.data.error).toEqual('Could not add field key');
+          const query = new Parse.Query('MyObject');
+          query.find().then(results => {
+            expect(results.length).toBe(0);
+            done();
+          });
+        });
+      });
+
+      xit('should generate separate session for each call', done => {
         let myObjectCalls = 0;
         //let myObjectTransactionalSession = null;
 

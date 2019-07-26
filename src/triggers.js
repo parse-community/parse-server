@@ -179,7 +179,6 @@ export function getRequestObject(
     log: config.loggerController,
     headers: config.headers,
     ip: config.ip,
-    database: config.database,
   };
 
   if (originalParseObject) {
