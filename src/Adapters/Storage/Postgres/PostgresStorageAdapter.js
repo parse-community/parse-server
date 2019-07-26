@@ -282,26 +282,16 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         patterns.push(`${name} IS NULL`);
       } else {
         if (fieldValue.$in) {
-          const inPatterns = [];
           name = transformDotFieldToComponents(fieldName).join('->');
-          fieldValue.$in.forEach(listElem => {
-            if (typeof listElem === 'string') {
-              if (listElem.includes('"') || listElem.includes("'")) {
-                throw new Parse.Error(
-                  Parse.Error.INVALID_JSON,
-                  'bad $in value; Strings with quotes cannot yet be safely escaped'
-                );
-              }
-              inPatterns.push(`"${listElem}"`);
-            } else {
-              inPatterns.push(`${listElem}`);
-            }
-          });
-          patterns.push(`(${name})::jsonb @> '[${inPatterns.join()}]'::jsonb`);
+          patterns.push(`($${index}:raw)::jsonb @> $${index + 1}::jsonb`);
+          values.push(name, JSON.stringify(fieldValue.$in));
+          index += 2;
         } else if (fieldValue.$regex) {
           // Handle later
         } else {
-          patterns.push(`${name} = '${fieldValue}'`);
+          patterns.push(`$${index}:raw = $${index + 1}`);
+          values.push(name, fieldValue);
+          index += 2;
         }
       }
     } else if (fieldValue === null || fieldValue === undefined) {
