@@ -154,14 +154,16 @@ describe('batch', () => {
 
   if (
     (process.env.MONGODB_VERSION === '4.0.4' &&
-      process.env.MONGODB_TOPOLOGY === 'replicaset') ||
+      process.env.MONGODB_TOPOLOGY === 'replicaset' &&
+      process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
       beforeAll(async () => {
         if (
           process.env.MONGODB_VERSION === '4.0.4' &&
-          process.env.MONGODB_TOPOLOGY === 'replicaset'
+          process.env.MONGODB_TOPOLOGY === 'replicaset' &&
+          process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
           await reconfigureServer({
             databaseAdapter: undefined,
