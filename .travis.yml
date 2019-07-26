@@ -23,7 +23,7 @@ env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
-  - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredtiger
+  - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
