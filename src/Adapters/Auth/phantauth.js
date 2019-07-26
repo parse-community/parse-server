@@ -4,7 +4,7 @@
  * PhantAuth was designed to simplify testing for applications using OpenID Connect
  * authentication by making use of random generated users.
  *
- * To learn more, please go to: https://wwww.phantauth.net
+ * To learn more, please go to: https://www.phantauth.net
  */
 
 var Parse = require('parse/node').Parse;
@@ -23,7 +23,7 @@ function validateAuthData(authData) {
   });
 }
 
-// Returns a promise that fulfills iff this app id is valid.
+// Returns a promise that fulfills if this app id is valid.
 function validateAppId() {
   return Promise.resolve();
 }
