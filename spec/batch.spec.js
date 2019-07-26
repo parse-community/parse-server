@@ -153,16 +153,20 @@ describe('batch', () => {
   });
 
   if (
-    process.env.MONGODB_VERSION === '4.0.4' ||
+    (process.env.MONGODB_VERSION === '4.0.4' &&
+      process.env.MONGODB_TOPOLOGY === 'replicaset') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
       beforeAll(async () => {
-        if (process.env.MONGODB_VERSION === '4.0.4') {
+        if (
+          process.env.MONGODB_VERSION === '4.0.4' &&
+          process.env.MONGODB_TOPOLOGY === 'replicaset'
+        ) {
           await reconfigureServer({
             databaseAdapter: undefined,
             databaseURI:
-              'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=rs0',
+              'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
         }
       });
