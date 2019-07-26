@@ -229,7 +229,7 @@ describe('batch', () => {
             transaction: true,
           }),
         }).catch(error => {
-          expect(error.data.error).toEqual('Could not add field key');
+          expect(error.data).toBeDefined();
           const query = new Parse.Query('MyObject');
           query.find().then(results => {
             expect(results.length).toBe(0);
@@ -238,74 +238,46 @@ describe('batch', () => {
         });
       });
 
-      xit('should generate separate session for each call', done => {
+      it('should generate separate session for each call', async () => {
+        spyOn(databaseAdapter, 'createObject').and.callThrough();
+
         let myObjectCalls = 0;
-        //let myObjectTransactionalSession = null;
-
-        Parse.Cloud.afterSave('MyObject', () => {
-          console.log(1);
-        });
-        Parse.Cloud.afterSave('MyObject2', () => {
-          console.log(2);
-        });
-        Parse.Cloud.afterSave('MyObject3', () => {
-          console.log(3);
-        });
-
-        Parse.Cloud.beforeSave('MyObject', (/*{ database }*/) => {
+        Parse.Cloud.beforeSave('MyObject', async () => {
           myObjectCalls++;
-          // expect(database._transactionalSession).not.toEqual(null);
-          // if (myObjectTransactionalSession) {
-          //   expect(database._transactionalSession).toBe(
-          //     myObjectTransactionalSession
-          //   );
-          // } else {
-          //   myObjectTransactionalSession =
-          //     database._transactionalSession;
-          // }
-
-          if (myObjectCalls === 1) {
-            return request({
-              method: 'POST',
-              headers: headers,
-              url: 'http://localhost:8378/1/batch',
-              body: JSON.stringify({
-                requests: [
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject2',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject2',
-                    body: { key: 'value2' },
-                  },
-                ],
-                transaction: false,
-              }),
-            }).then(response => {
-              console.log(response.data[0].error);
-              return Promise.resolve();
-            });
+          if (myObjectCalls === 2) {
+            try {
+              await request({
+                method: 'POST',
+                headers: headers,
+                url: 'http://localhost:8378/1/batch',
+                body: JSON.stringify({
+                  requests: [
+                    {
+                      method: 'POST',
+                      path: '/1/classes/MyObject2',
+                      body: { key: 'value1' },
+                    },
+                    {
+                      method: 'POST',
+                      path: '/1/classes/MyObject2',
+                      body: { key: 10 },
+                    },
+                  ],
+                  transaction: true,
+                }),
+              });
+              fail('should fail');
+            } catch (e) {
+              expect(e).toBeDefined();
+            }
           }
         });
 
         let myObject2Calls = 0;
-        //let myObject2TransactionalSession = null;
-        Parse.Cloud.beforeSave('MyObject2', (/*{ database }*/) => {
+        Parse.Cloud.beforeSave('MyObject2', async () => {
           myObject2Calls++;
-          // expect(database._transactionalSession).not.toEqual(null);
-          // if (myObject2TransactionalSession) {
-          //   expect(database._transactionalSession).toBe(
-          //     myObject2TransactionalSession
-          //   );
-          // } else {
-          //   myObject2TransactionalSession =
-          //     database._transactionalSession;
-          // }
-          if (myObject2Calls === 1) {
-            return request({
+          if (myObject2Calls === 2) {
+            await request({
               method: 'POST',
               headers: headers,
               url: 'http://localhost:8378/1/batch',
@@ -323,20 +295,11 @@ describe('batch', () => {
                   },
                 ],
               }),
-            }).then(response => {
-              console.log(response.data);
-              return Promise.resolve();
             });
           }
         });
 
-        let myObject3Calls = 0;
-        Parse.Cloud.beforeSave('MyObject3', ({ database }) => {
-          myObject3Calls++;
-          expect(database._transactionalSession).toEqual(null);
-        });
-
-        request({
+        const response = await request({
           method: 'POST',
           headers: headers,
           url: 'http://localhost:8378/1/batch',
@@ -355,33 +318,68 @@ describe('batch', () => {
             ],
             transaction: true,
           }),
-        }).then(response => {
-          console.log(response.data);
-          const query = new Parse.Query('MyObject');
-          query.find().then(results => {
-            expect(myObjectCalls).toBe(2);
-            expect(results.map(result => result.get('key')).sort()).toEqual([
-              'value1',
-              'value2',
-            ]);
-            const query = new Parse.Query('MyObject2');
-            query.find().then(results => {
-              expect(myObject2Calls).toBe(2);
-              expect(results.map(result => result.get('key')).sort()).toEqual([
-                'value1',
-                'value2',
-              ]);
-              const query = new Parse.Query('MyObject3');
-              query.find().then(results => {
-                expect(myObject3Calls).toBe(2);
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
-                done();
-              });
-            });
-          });
         });
+
+        expect(response.data.length).toEqual(2);
+        expect(response.data[0].success.objectId).toBeDefined();
+        expect(response.data[0].success.createdAt).toBeDefined();
+        expect(response.data[1].success.objectId).toBeDefined();
+        expect(response.data[1].success.createdAt).toBeDefined();
+
+        const query = new Parse.Query('MyObject');
+        const results = await query.find();
+        expect(results.map(result => result.get('key')).sort()).toEqual([
+          'value1',
+          'value2',
+        ]);
+
+        const query2 = new Parse.Query('MyObject2');
+        const results2 = await query2.find();
+        expect(results2.length).toEqual(0);
+
+        const query3 = new Parse.Query('MyObject3');
+        const results3 = await query3.find();
+        expect(results3.map(result => result.get('key')).sort()).toEqual([
+          'value1',
+          'value2',
+        ]);
+
+        expect(databaseAdapter.createObject.calls.count()).toBe(5);
+        let transactionalSession;
+        let transactionalSession2;
+        let myObjectDBCalls = 0;
+        let myObject2DBCalls = 0;
+        let myObject3DBCalls = 0;
+        for (let i = 0; i < 5; i++) {
+          const args = databaseAdapter.createObject.calls.argsFor(i);
+          switch (args[0]) {
+            case 'MyObject':
+              myObjectDBCalls++;
+              if (!transactionalSession) {
+                transactionalSession = args[3];
+              } else {
+                expect(transactionalSession).toBe(args[3]);
+              }
+              if (transactionalSession2) {
+                expect(transactionalSession2).not.toBe(args[3]);
+              }
+              break;
+            case 'MyObject2':
+              myObject2DBCalls++;
+              transactionalSession2 = args[3];
+              if (transactionalSession) {
+                expect(transactionalSession).not.toBe(args[3]);
+              }
+              break;
+            case 'MyObject3':
+              myObject3DBCalls++;
+              expect(args[3]).toEqual(null);
+              break;
+          }
+        }
+        expect(myObjectDBCalls).toEqual(2);
+        expect(myObject2DBCalls).toEqual(1);
+        expect(myObject3DBCalls).toEqual(2);
       });
     });
   }
