@@ -13,6 +13,7 @@ const responses = {
   wechat: { errcode: 0 },
   weibo: { uid: 'userId' },
   qq: 'callback( {"openid":"userId"} );', // yes it's like that, run eval in the client :P
+  phantauth: { sub: 'userId' },
 };
 
 describe('AuthenticationProviders', function() {
@@ -33,6 +34,7 @@ describe('AuthenticationProviders', function() {
     'spotify',
     'wechat',
     'weibo',
+    'phantauth',
   ].map(function(providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
