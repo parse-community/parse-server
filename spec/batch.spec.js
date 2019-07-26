@@ -152,13 +152,19 @@ describe('batch', () => {
     });
   });
 
-  if (process.env.PARSE_SERVER_TEST_DATABASE_URI_TRANSACTIONS) {
+  if (
+    process.env.MONGODB_VERSION === '4.0.4' ||
+    process.env.PARSE_SERVER_TEST_DB === 'postgres'
+  ) {
     describe('transactions', () => {
       beforeAll(async () => {
-        await reconfigureServer({
-          databaseAdapter: undefined,
-          databaseURI: process.env.PARSE_SERVER_TEST_DATABASE_URI_TRANSACTIONS,
-        });
+        if (process.env.MONGODB_VERSION === '4.0.4') {
+          await reconfigureServer({
+            databaseAdapter: undefined,
+            databaseURI:
+              'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=rs0',
+          });
+        }
       });
 
       beforeEach(async () => {
@@ -239,6 +245,10 @@ describe('batch', () => {
       });
 
       it('should generate separate session for each call', async () => {
+        const myObject = new Parse.Object('MyObject2'); // This is important because transaction only works on pre-existing collections
+        await myObject.save();
+        await myObject.destroy();
+
         spyOn(databaseAdapter, 'createObject').and.callThrough();
 
         let myObjectCalls = 0;
