@@ -1,6 +1,7 @@
 language: node_js
 dist: trusty
 services:
+- mongodb
 - postgresql
 - redis-server
 - docker
@@ -23,8 +24,9 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  - MONGODB_TOPOLOGY=replicaset
   matrix:
-  - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset
+  - MONGODB_VERSION=4.0.4
   - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
