@@ -830,15 +830,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   setClassLevelPermissions(className: string, CLPs: any) {
     const self = this;
-    return this._client.task('set-class-level-permissions', function*(t) {
-      yield self._ensureSchemaCollectionExists(t);
+    return this._client.task('set-class-level-permissions', async (t) => {
+      await self._ensureSchemaCollectionExists(t);
       const values = [
         className,
         'schema',
         'classLevelPermissions',
         JSON.stringify(CLPs),
       ];
-      yield t.none(
+      await t.none(
         `UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1`,
         values
       );
@@ -895,15 +895,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
         });
       }
     });
-    return conn.tx('set-indexes-with-schema-format', function*(t) {
+    return conn.tx('set-indexes-with-schema-format', async (t) => {
       if (insertedIndexes.length > 0) {
-        yield self.createIndexes(className, insertedIndexes, t);
+        await self.createIndexes(className, insertedIndexes, t);
       }
       if (deletedIndexes.length > 0) {
-        yield self.dropIndexes(className, deletedIndexes, t);
+        await self.dropIndexes(className, deletedIndexes, t);
       }
-      yield self._ensureSchemaCollectionExists(t);
-      yield t.none(
+      await self._ensureSchemaCollectionExists(t);
+      await t.none(
         'UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1',
         [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
       );
@@ -991,17 +991,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const values = [className, ...valuesArray];
 
     debug(qs, values);
-    return conn.task('create-table', function*(t) {
+    return conn.task('create-table', async (t) => {
       try {
-        yield self._ensureSchemaCollectionExists(t);
-        yield t.none(qs, values);
+        await self._ensureSchemaCollectionExists(t);
+        await t.none(qs, values);
       } catch (error) {
         if (error.code !== PostgresDuplicateRelationError) {
           throw error;
         }
         // ELSE: Table already exists, must have been created by a different request. Ignore the error.
       }
-      yield t.tx('create-table-tx', tx => {
+      await t.tx('create-table-tx', tx => {
         return tx.batch(
           relations.map(fieldName => {
             return tx.none(
@@ -1019,8 +1019,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     const self = this;
 
-    return conn.tx('schema-upgrade', function*(t) {
-      const columns = yield t.map(
+    return conn.tx('schema-upgrade', async (t) => {
+      const columns = await t.map(
         'SELECT column_name FROM information_schema.columns WHERE table_name = $<className>',
         { className },
         a => a.column_name
@@ -1036,7 +1036,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           )
         );
 
-      yield t.batch(newColumns);
+      await t.batch(newColumns);
     });
   }
 
@@ -1050,10 +1050,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('addFieldIfNotExists', { className, fieldName, type });
     conn = conn || this._client;
     const self = this;
-    return conn.tx('add-field-if-not-exists', function*(t) {
+    return conn.tx('add-field-if-not-exists', async (t) => {
       if (type.type !== 'Relation') {
         try {
-          yield t.none(
+          await t.none(
             'ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>',
             {
               className,
@@ -1063,7 +1063,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           );
         } catch (error) {
           if (error.code === PostgresRelationDoesNotExistError) {
-            return yield self.createClass(
+            return await self.createClass(
               className,
               { fields: { [fieldName]: type } },
               t
@@ -1075,13 +1075,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
           // Column already exists, created by other request. Carry on to see if it's the right type.
         }
       } else {
-        yield t.none(
+        await t.none(
           'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )',
           { joinTable: `_Join:${fieldName}:${className}` }
         );
       }
 
-      const result = yield t.any(
+      const result = await t.any(
         'SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null',
         { className, fieldName }
       );
@@ -1090,7 +1090,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw 'Attempted to add a field that already exists';
       } else {
         const path = `{fields,${fieldName}}`;
-        yield t.none(
+        await t.none(
           'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
           { path, type, className }
         );
@@ -1120,9 +1120,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('deleteAllClasses');
 
     return this._client
-      .task('delete-all-classes', function*(t) {
+      .task('delete-all-classes', async (t) => {
         try {
-          const results = yield t.any('SELECT * FROM "_SCHEMA"');
+          const results = await t.any('SELECT * FROM "_SCHEMA"');
           const joins = results.reduce((list: Array<string>, schema: any) => {
             return list.concat(joinTablesForSchema(schema.schema));
           }, []);
@@ -1142,7 +1142,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             query: 'DROP TABLE IF EXISTS $<className:name>',
             values: { className },
           }));
-          yield t.tx(tx => tx.none(helpers.concat(queries)));
+          await t.tx(tx => tx.none(helpers.concat(queries)));
         } catch (error) {
           if (error.code !== PostgresRelationDoesNotExistError) {
             throw error;
@@ -1190,13 +1190,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
       })
       .join(', DROP COLUMN');
 
-    return this._client.tx('delete-fields', function*(t) {
-      yield t.none(
+    return this._client.tx('delete-fields', async (t) => {
+      await t.none(
         'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
         { schema, className }
       );
       if (values.length > 1) {
-        yield t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values);
+        await t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values);
       }
     });
   }
@@ -1206,9 +1206,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     const self = this;
-    return this._client.task('get-all-classes', function*(t) {
-      yield self._ensureSchemaCollectionExists(t);
-      return yield t.map('SELECT * FROM "_SCHEMA"', null, row =>
+    return this._client.task('get-all-classes', async (t) => {
+      await self._ensureSchemaCollectionExists(t);
+      return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
         toParseSchema({ className: row.className, ...row.schema })
       );
     });
