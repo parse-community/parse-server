@@ -289,7 +289,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         } else if (fieldValue.$regex) {
           // Handle later
         } else {
-          patterns.push(`$${index}:raw = $${index + 1}`);
+          patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
           index += 2;
         }
