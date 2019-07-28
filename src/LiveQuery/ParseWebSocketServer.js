@@ -1,13 +1,7 @@
 import logger from '../logger';
 
 const typeMap = new Map([['disconnect', 'close']]);
-const getWS = function() {
-  try {
-    return require('uws');
-  } catch (e) {
-    return require('ws');
-  }
-};
+const getWS = require('ws');
 
 export class ParseWebSocketServer {
   server: Object;
