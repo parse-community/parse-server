@@ -178,82 +178,101 @@ describe('batch', () => {
       });
 
       it('should handle a batch request with transaction = true', done => {
-        spyOn(databaseAdapter, 'createObject').and.callThrough();
+        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
+        myObject
+          .save()
+          .then(() => {
+            return myObject.destroy();
+          })
+          .then(() => {
+            spyOn(databaseAdapter, 'createObject').and.callThrough();
 
-        request({
-          method: 'POST',
-          headers: headers,
-          url: 'http://localhost:8378/1/batch',
-          body: JSON.stringify({
-            requests: [
-              {
-                method: 'POST',
-                path: '/1/classes/MyObject',
-                body: { key: 'value1' },
-              },
-              {
-                method: 'POST',
-                path: '/1/classes/MyObject',
-                body: { key: 'value2' },
-              },
-            ],
-            transaction: true,
-          }),
-        }).then(response => {
-          expect(response.data.length).toEqual(2);
-          expect(response.data[0].success.objectId).toBeDefined();
-          expect(response.data[0].success.createdAt).toBeDefined();
-          expect(response.data[1].success.objectId).toBeDefined();
-          expect(response.data[1].success.createdAt).toBeDefined();
-          const query = new Parse.Query('MyObject');
-          query.find().then(results => {
-            expect(databaseAdapter.createObject.calls.count()).toBe(2);
-            expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
-              databaseAdapter.createObject.calls.argsFor(1)[3]
-            );
-            expect(results.map(result => result.get('key')).sort()).toEqual([
-              'value1',
-              'value2',
-            ]);
-            done();
+            request({
+              method: 'POST',
+              headers: headers,
+              url: 'http://localhost:8378/1/batch',
+              body: JSON.stringify({
+                requests: [
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject',
+                    body: { key: 'value2' },
+                  },
+                ],
+                transaction: true,
+              }),
+            }).then(response => {
+              expect(response.data.length).toEqual(2);
+              expect(response.data[0].success.objectId).toBeDefined();
+              expect(response.data[0].success.createdAt).toBeDefined();
+              expect(response.data[1].success.objectId).toBeDefined();
+              expect(response.data[1].success.createdAt).toBeDefined();
+              const query = new Parse.Query('MyObject');
+              query.find().then(results => {
+                expect(databaseAdapter.createObject.calls.count()).toBe(2);
+                expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
+                  databaseAdapter.createObject.calls.argsFor(1)[3]
+                );
+                expect(results.map(result => result.get('key')).sort()).toEqual(
+                  ['value1', 'value2']
+                );
+                done();
+              });
+            });
           });
-        });
       });
 
       it('should not save anything when one operation fails in a transaction', done => {
-        request({
-          method: 'POST',
-          headers: headers,
-          url: 'http://localhost:8378/1/batch',
-          body: JSON.stringify({
-            requests: [
-              {
-                method: 'POST',
-                path: '/1/classes/MyObject',
-                body: { key: 'value1' },
-              },
-              {
-                method: 'POST',
-                path: '/1/classes/MyObject',
-                body: { key: 10 },
-              },
-            ],
-            transaction: true,
-          }),
-        }).catch(error => {
-          expect(error.data).toBeDefined();
-          const query = new Parse.Query('MyObject');
-          query.find().then(results => {
-            expect(results.length).toBe(0);
-            done();
+        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
+        myObject
+          .save()
+          .then(() => {
+            return myObject.destroy();
+          })
+          .then(() => {
+            request({
+              method: 'POST',
+              headers: headers,
+              url: 'http://localhost:8378/1/batch',
+              body: JSON.stringify({
+                requests: [
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject',
+                    body: { key: 10 },
+                  },
+                ],
+                transaction: true,
+              }),
+            }).catch(error => {
+              expect(error.data).toBeDefined();
+              const query = new Parse.Query('MyObject');
+              query.find().then(results => {
+                expect(results.length).toBe(0);
+                done();
+              });
+            });
           });
-        });
       });
 
       it('should generate separate session for each call', async () => {
-        const myObject = new Parse.Object('MyObject2'); // This is important because transaction only works on pre-existing collections
+        const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
+
+        const myObject2 = new Parse.Object('MyObject2'); // This is important because transaction only works on pre-existing collections
+        await myObject2.save();
+        await myObject2.destroy();
 
         spyOn(databaseAdapter, 'createObject').and.callThrough();
 
@@ -289,32 +308,6 @@ describe('batch', () => {
           }
         });
 
-        let myObject2Calls = 0;
-        Parse.Cloud.beforeSave('MyObject2', async () => {
-          myObject2Calls++;
-          if (myObject2Calls === 2) {
-            await request({
-              method: 'POST',
-              headers: headers,
-              url: 'http://localhost:8378/1/batch',
-              body: JSON.stringify({
-                requests: [
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject3',
-                    body: { key: 'value1' },
-                  },
-                  {
-                    method: 'POST',
-                    path: '/1/classes/MyObject3',
-                    body: { key: 'value2' },
-                  },
-                ],
-              }),
-            });
-          }
-        });
-
         const response = await request({
           method: 'POST',
           headers: headers,
@@ -341,6 +334,26 @@ describe('batch', () => {
         expect(response.data[0].success.createdAt).toBeDefined();
         expect(response.data[1].success.objectId).toBeDefined();
         expect(response.data[1].success.createdAt).toBeDefined();
+
+        await request({
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/batch',
+          body: JSON.stringify({
+            requests: [
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject3',
+                body: { key: 'value1' },
+              },
+              {
+                method: 'POST',
+                path: '/1/classes/MyObject3',
+                body: { key: 'value2' },
+              },
+            ],
+          }),
+        });
 
         const query = new Parse.Query('MyObject');
         const results = await query.find();
