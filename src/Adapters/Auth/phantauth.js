@@ -1,13 +1,11 @@
 /*
- * Helper functions for authenticating with PhantAuth.
- *
  * PhantAuth was designed to simplify testing for applications using OpenID Connect
  * authentication by making use of random generated users.
  *
  * To learn more, please go to: https://www.phantauth.net
  */
 
-var Parse = require('parse/node').Parse;
+const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills if this user id is valid.

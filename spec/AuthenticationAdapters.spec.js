@@ -1167,3 +1167,23 @@ describe('apple signin auth adapter', () => {
     }
   });
 });
+
+describe('phant auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should throw for invalid auth', async () => {
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
+
+    spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
+    try {
+      await adapter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('PhantAuth auth is invalid for this user.');
+    }
+  });
+});
