@@ -19,6 +19,9 @@
 - FIX: Cache apple public key for the case it fails to fetch again [#5848](https://github.com/parse-community/parse-server/pull/5848), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - NEW: GraphQL Configuration Options [#5782](https://github.com/parse-community/parse-server/pull/5782), thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
 - NEW: Required fields and default values [#5835](https://github.com/parse-community/parse-server/pull/5835), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Postgres safely escape strings in nested objects [#5855](https://github.com/parse-community/parse-server/pull/5855), thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Support PhantAuth authentication [#5850](https://github.com/parse-community/parse-server/pull/5850), thanks to [Ivan SZKIBA](https://github.com/szkiba)
+- FIX: Remove uws package [#5860](https://github.com/parse-community/parse-server/pull/5860), thanks to [Zeal Murapa](https://github.com/GoGross)
 
 ### 3.6.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...3.6.0)
