@@ -8,7 +8,7 @@ const WebSocketServer = require('ws').Server;
 export class WSAdapter extends WSSAdapter {
   constructor(options: any) {
     super(options);
-    const wss = new WebSocketServer(options);
+    const wss = new WebSocketServer({ server: options.server });
     wss.on('listening', this.onListen);
     wss.on('connection', this.onConnection);
   }
