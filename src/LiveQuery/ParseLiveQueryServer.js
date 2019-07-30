@@ -61,7 +61,7 @@ class ParseLiveQueryServer {
     this.parseWebSocketServer = new ParseWebSocketServer(
       server,
       parseWebsocket => this._onConnect(parseWebsocket),
-      config.websocketTimeout
+      config
     );
 
     // Initialize subscriber

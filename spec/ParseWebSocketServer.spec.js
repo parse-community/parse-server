@@ -1,5 +1,5 @@
-const ParseWebSocketServer = require('../lib/LiveQuery/ParseWebSocketServer')
-  .ParseWebSocketServer;
+const { ParseWebSocketServer } = require('../lib/LiveQuery/ParseWebSocketServer');
+const { uWSAdapter } = require('../lib/Adapters/WebSocketServer/uWSAdapter');
 
 describe('ParseWebSocketServer', function() {
   beforeEach(function(done) {
@@ -19,14 +19,14 @@ describe('ParseWebSocketServer', function() {
     const parseWebSocketServer = new ParseWebSocketServer(
       server,
       onConnectCallback,
-      5
+      { websocketTimeout: 5 }
     ).server;
     const ws = {
       readyState: 0,
       OPEN: 0,
       ping: jasmine.createSpy('ping'),
     };
-    parseWebSocketServer.emit('connection', ws);
+    parseWebSocketServer.onConnection(ws);
 
     // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
@@ -36,6 +36,35 @@ describe('ParseWebSocketServer', function() {
       server.close();
       done();
     }, 10);
+  });
+
+  it('can load wssAdapter', async () => {
+    const parseServer = await reconfigureServer({
+      liveQuery: {
+        classNames: ['Yolo'],
+      },
+      liveQueryServerOptions: {
+        port: 9001,
+        wssAdapter: uWSAdapter,
+      },
+    });
+    const wss = parseServer.liveQueryServer.parseWebSocketServer.server;
+    expect(wss instanceof uWSAdapter).toBe(true);
+    spyOn(wss, 'onConnection').and.callThrough();
+    
+    Parse.CoreManager.set('LIVEQUERY_SERVER_URL', 'ws://localhost:9001');
+
+    const obj = new Parse.Object('Yolo');
+    obj.set('foo', 'bar');
+    await obj.save();
+
+    const query = new Parse.Query('Yolo');
+    query.equalTo('foo', 'baz');
+    await query.subscribe();
+    await obj.save({ foo: 'baz' });
+
+    expect(wss.onConnection).toHaveBeenCalled();
+    Parse.CoreManager.set('LIVEQUERY_SERVER_URL', Parse.serverURL);
   });
 
   afterEach(function() {
