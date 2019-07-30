@@ -51,7 +51,7 @@ describe('ParseWebSocketServer', function() {
     const wss = parseServer.liveQueryServer.parseWebSocketServer.server;
     expect(wss instanceof uWSAdapter).toBe(true);
     spyOn(wss, 'onConnection').and.callThrough();
-    
+
     Parse.CoreManager.set('LIVEQUERY_SERVER_URL', 'ws://localhost:9001');
 
     const obj = new Parse.Object('Yolo');
