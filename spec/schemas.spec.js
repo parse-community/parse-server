@@ -425,6 +425,8 @@ describe('schemas', () => {
           foo4: { type: 'Date', required: true },
           foo5: { type: 'Number', defaultValue: 5 },
           ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+          defaultFalse: { type: 'Boolean', required: true, defaultValue: false },
+          defaultZero: { type: 'Number', defaultValue: 0 }
         },
       },
     }).then(async response => {
@@ -445,6 +447,8 @@ describe('schemas', () => {
           foo4: { type: 'Date', required: true },
           foo5: { type: 'Number', defaultValue: 5 },
           ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+          defaultFalse: { type: 'Boolean', required: true, defaultValue: false },
+          defaultZero: { type: 'Number', defaultValue: 0 }
         },
         classLevelPermissions: defaultClassLevelPermissions,
       });
@@ -463,6 +467,9 @@ describe('schemas', () => {
       expect(obj.get('foo3')).toEqual('some string');
       expect(obj.get('foo4')).toEqual(date);
       expect(obj.get('foo5')).toEqual(5);
+      expect(obj.get('ptr')).toBeUndefined();
+      expect(obj.get('defaultFalse')).toEqual(false)
+      expect(obj.get('defaultZero')).toEqual(0)
       expect(obj.get('ptr')).toBeUndefined();
       done();
     });
