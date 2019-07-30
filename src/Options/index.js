@@ -5,6 +5,7 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
+import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 
 // @flow
 type Adapter<T> = string | any | T;
@@ -231,6 +232,8 @@ export interface LiveQueryOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
+  /* Adapter module for the WebSocketServer */
+  wssAdapter: ?Adapter<WSSAdapter>;
 }
 
 export interface LiveQueryServerOptions {
@@ -257,4 +260,6 @@ export interface LiveQueryServerOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
+  /* Adapter module for the WebSocketServer */
+  wssAdapter: ?Adapter<WSSAdapter>;
 }
