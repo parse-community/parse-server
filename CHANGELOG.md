@@ -2,7 +2,26 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.0...master)
+
+### 3.7.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...3.7.0)
+
+- FIX: Prevent linkWith sessionToken from generating new session [#5801](https://github.com/parse-community/parse-server/pull/5801), thanks to [Diamond Lewis](https://github.com/dplewis)
+- GraphQL: Improve session token error messages [#5753](https://github.com/parse-community/parse-server/pull/5753), thanks to [Douglas Muraoka](https://github.com/douglasmuraoka)
+- NEW: GraphQL { functions { call } } generic mutation [#5818](https://github.com/parse-community/parse-server/pull/5818), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: GraphQL Custom Schema [#5821](https://github.com/parse-community/parse-server/pull/5821), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: GraphQL custom schema on CLI [#5828](https://github.com/parse-community/parse-server/pull/5828), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: GraphQL @mock directive [#5836](https://github.com/parse-community/parse-server/pull/5836), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: GraphQL _or operator not working [#5840](https://github.com/parse-community/parse-server/pull/5840), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: Add "count" to CLP initial value [#5841](https://github.com/parse-community/parse-server/pull/5841), thanks to [Douglas Muraoka](https://github.com/douglasmuraoka)
+- NEW: Add ability to alter the response from the after save trigger [#5814](https://github.com/parse-community/parse-server/pull/5814), thanks to [BrunoMaurice](https://github.com/brunoMaurice)
+- FIX: Cache apple public key for the case it fails to fetch again [#5848](https://github.com/parse-community/parse-server/pull/5848), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: GraphQL Configuration Options [#5782](https://github.com/parse-community/parse-server/pull/5782), thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
+- NEW: Required fields and default values [#5835](https://github.com/parse-community/parse-server/pull/5835), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Postgres safely escape strings in nested objects [#5855](https://github.com/parse-community/parse-server/pull/5855), thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Support PhantAuth authentication [#5850](https://github.com/parse-community/parse-server/pull/5850), thanks to [Ivan SZKIBA](https://github.com/szkiba)
+- FIX: Remove uws package [#5860](https://github.com/parse-community/parse-server/pull/5860), thanks to [Zeal Murapa](https://github.com/GoGross)
 
 ### 3.6.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...3.6.0)
