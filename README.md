@@ -28,7 +28,7 @@
 <p align="center">
     <p align="center">Our backers and sponsors help to ensure the quality and timely development of the Parse Platform.</p>
   <details align="center">
-  <summary align="center"><b>🥉 Bronze Sponsors<b></summary>
+  <summary align="center"><b>🥉 Bronze Sponsors</b></summary>
   <a href="WEBSITE LINK HERE" target="_blank"><img src="IMAGE LINK HERE"></a>
   </details>
 
