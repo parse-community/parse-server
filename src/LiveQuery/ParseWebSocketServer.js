@@ -39,7 +39,8 @@ export class ParseWebSocket extends events.EventEmitter {
 
   constructor(ws: any) {
     super();
-    ws.onmessage = request => this.emit('message', request.data);
+    ws.onmessage = request =>
+      this.emit('message', request && request.data ? request.data : request);
     ws.onclose = () => this.emit('disconnect');
     this.ws = ws;
   }
