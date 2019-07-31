@@ -6,21 +6,13 @@ import events from 'events';
 export class ParseWebSocketServer {
   server: Object;
 
-  constructor(
-    server: any,
-    onConnect: Function,
-    config
-  ) {
+  constructor(server: any, onConnect: Function, config) {
     config.server = server;
-    const wss = loadAdapter(
-      config.wssAdapter,
-      WSAdapter,
-      config,
-    );
+    const wss = loadAdapter(config.wssAdapter, WSAdapter, config);
     wss.onListen = () => {
       logger.info('Parse LiveQuery Server starts running');
     };
-    wss.onConnection = (ws) => {
+    wss.onConnection = ws => {
       onConnect(new ParseWebSocket(ws));
       // Send ping to client periodically
       const pingIntervalId = setInterval(() => {
@@ -47,7 +39,7 @@ export class ParseWebSocket extends events.EventEmitter {
 
   constructor(ws: any) {
     super();
-    ws.onmessage = (request) => this.emit('message', request);
+    ws.onmessage = request => this.emit('message', request.data);
     ws.onclose = () => this.emit('disconnect');
     this.ws = ws;
   }
