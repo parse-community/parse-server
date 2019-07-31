@@ -2,7 +2,12 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.1...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.2...master)
+
+### 3.7.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.1...3.7.2)
+
+- FIX: Live Query was failing on release 3.7.1
 
 ### 3.7.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.0...3.7.1)
