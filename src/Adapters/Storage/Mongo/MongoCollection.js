@@ -111,27 +111,30 @@ export default class MongoCollection {
       .toArray();
   }
 
-  insertOne(object) {
-    return this._mongoCollection.insertOne(object);
+  insertOne(object, session) {
+    return this._mongoCollection.insertOne(object, { session });
   }
 
   // Atomically updates data in the database for a single (first) object that matched the query
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
-  upsertOne(query, update) {
-    return this._mongoCollection.updateOne(query, update, { upsert: true });
+  upsertOne(query, update, session) {
+    return this._mongoCollection.updateOne(query, update, {
+      upsert: true,
+      session,
+    });
   }
 
   updateOne(query, update) {
     return this._mongoCollection.updateOne(query, update);
   }
 
-  updateMany(query, update) {
-    return this._mongoCollection.updateMany(query, update);
+  updateMany(query, update, session) {
+    return this._mongoCollection.updateMany(query, update, { session });
   }
 
-  deleteMany(query) {
-    return this._mongoCollection.deleteMany(query);
+  deleteMany(query, session) {
+    return this._mongoCollection.deleteMany(query, { session });
   }
 
   _ensureSparseUniqueIndexInBackground(indexRequest) {

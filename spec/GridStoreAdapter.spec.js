@@ -13,7 +13,7 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
     const config = Config.get(Parse.applicationId);
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
     const db = await gridStoreAdapter._connect();
-    db.dropDatabase();
+    await db.dropDatabase();
     const filesController = new FilesController(
       gridStoreAdapter,
       Parse.applicationId,

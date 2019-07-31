@@ -2,7 +2,19 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.2...master)
+
+### 3.7.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.1...3.7.2)
+
+- FIX: Live Query was failing on release 3.7.1
+
+### 3.7.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.0...3.7.1)
+
+- FIX: Missing APN module
+- FIX: Set falsy values as default to schema fields [#5868](https://github.com/parse-community/parse-server/pull/5868), thanks to [Lucas Alencar](https://github.com/alencarlucas)
+- NEW: Implement WebSocketServer Adapter [#5866](https://github.com/parse-community/parse-server/pull/5866), thanks to [Diamond Lewis](https://github.com/dplewis)
 
 ### 3.7.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...3.7.0)
