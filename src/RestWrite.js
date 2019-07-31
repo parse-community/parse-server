@@ -338,7 +338,8 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
           if (
             setDefault &&
             schema.fields[fieldName] &&
-            schema.fields[fieldName].defaultValue &&
+            schema.fields[fieldName].defaultValue !== null &&
+            schema.fields[fieldName].defaultValue !== undefined &&
             (this.data[fieldName] === undefined ||
               (typeof this.data[fieldName] === 'object' &&
                 this.data[fieldName].__op === 'Delete'))
