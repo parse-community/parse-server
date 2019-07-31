@@ -18,7 +18,7 @@ describe('GridFSBucket and GridStore interop', () => {
   beforeEach(async () => {
     const gsAdapter = new GridStoreAdapter(databaseURI);
     const db = await gsAdapter._connect();
-    db.dropDatabase();
+    await db.dropDatabase();
   });
 
   it('a file created in GridStore should be available in GridFS', async () => {

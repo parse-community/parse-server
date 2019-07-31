@@ -472,7 +472,12 @@ export class MongoStorageAdapter implements StorageAdapter {
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schema only for the legacy mongo format. We'll figure that out later.
-  createObject(className: string, schema: SchemaType, object: any) {
+  createObject(
+    className: string,
+    schema: SchemaType,
+    object: any,
+    transactionalSession: ?any
+  ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(
       className,
@@ -480,7 +485,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       schema
     );
     return this._adaptiveCollection(className)
-      .then(collection => collection.insertOne(mongoObject))
+      .then(collection =>
+        collection.insertOne(mongoObject, transactionalSession)
+      )
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
@@ -510,13 +517,14 @@ export class MongoStorageAdapter implements StorageAdapter {
   deleteObjectsByQuery(
     className: string,
     schema: SchemaType,
-    query: QueryType
+    query: QueryType,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
       .then(collection => {
         const mongoWhere = transformWhere(className, query, schema);
-        return collection.deleteMany(mongoWhere);
+        return collection.deleteMany(mongoWhere, transactionalSession);
       })
       .catch(err => this.handleError(err))
       .then(
@@ -543,13 +551,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.updateMany(mongoWhere, mongoUpdate))
+      .then(collection =>
+        collection.updateMany(mongoWhere, mongoUpdate, transactionalSession)
+      )
       .catch(err => this.handleError(err));
   }
 
@@ -559,7 +570,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
@@ -568,6 +580,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
           returnOriginal: false,
+          session: transactionalSession || undefined,
         })
       )
       .then(result => mongoObjectToParseObject(className, result.value, schema))
@@ -588,13 +601,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.upsertOne(mongoWhere, mongoUpdate))
+      .then(collection =>
+        collection.upsertOne(mongoWhere, mongoUpdate, transactionalSession)
+      )
       .catch(err => this.handleError(err));
   }
 
@@ -1058,6 +1074,24 @@ export class MongoStorageAdapter implements StorageAdapter {
         return Promise.all(promises);
       })
       .catch(err => this.handleError(err));
+  }
+
+  createTransactionalSession(): Promise<any> {
+    const transactionalSection = this.client.startSession();
+    transactionalSection.startTransaction();
+    return Promise.resolve(transactionalSection);
+  }
+
+  commitTransactionalSession(transactionalSection: any): Promise<void> {
+    return transactionalSection.commitTransaction().then(() => {
+      transactionalSection.endSession();
+    });
+  }
+
+  abortTransactionalSession(transactionalSection: any): Promise<void> {
+    return transactionalSection.abortTransaction().then(() => {
+      transactionalSection.endSession();
+    });
   }
 }
 
