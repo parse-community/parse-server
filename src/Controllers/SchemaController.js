@@ -768,7 +768,7 @@ export default class SchemaController {
             })
             .then(results => {
               enforceFields = results.filter(result => !!result);
-              this.setPermissions(className, classLevelPermissions, newSchema);
+              return this.setPermissions(className, classLevelPermissions, newSchema);
             })
             .then(() =>
               this._dbAdapter.setIndexesWithSchemaFormat(
