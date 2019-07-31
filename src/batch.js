@@ -107,7 +107,7 @@ function handleBatch(router, req) {
             return { success: response.response };
           },
           error => {
-            if (req.body.transaction) {
+            if (req.body.transaction === true) {
               return Promise.reject(error);
             }
             return { error: { code: error.code, error: error.message } };
