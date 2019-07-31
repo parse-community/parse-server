@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="babel" src="https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png" width="500">
+    <img alt="Parse Server" src="https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png" width="500">
   </a>
 </p>
 
@@ -37,6 +37,7 @@
   <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/backers/badge.svg" /></a>
   <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/sponsors/badge.svg" /></a>
 </p>
+<br>
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
