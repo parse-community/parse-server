@@ -117,7 +117,7 @@ function handleBatch(router, req) {
 
     return Promise.all(promises)
       .catch(error => {
-        if (req.body.transaction) {
+        if (req.body.transaction === true) {
           return req.config.database.abortTransactionalSession().then(() => {
             throw error;
           });
@@ -126,7 +126,7 @@ function handleBatch(router, req) {
         }
       })
       .then(results => {
-        if (req.body.transaction) {
+        if (req.body.transaction === true) {
           return req.config.database.commitTransactionalSession().then(() => {
             return { response: results };
           });
