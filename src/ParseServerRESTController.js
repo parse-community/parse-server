@@ -64,37 +64,32 @@ function ParseServerRESTController(applicationId, router) {
             config
           ).then(
             response => {
-              return Promise.resolve({ success: response });
+              return { success: response };
             },
             error => {
-              if (data.transaction === true) {
-                return Promise.reject(error);
-              }
-              return Promise.resolve({
+              return {
                 error: { code: error.code, error: error.message },
-              });
+              };
             }
           );
         });
-        return Promise.all(promises)
-          .catch(error => {
-            if (data.transaction === true) {
+        return Promise.all(promises).then(result => {
+          if (data.transaction === true) {
+            if (
+              result.find(resultItem => typeof resultItem.error === 'object')
+            ) {
               return config.database.abortTransactionalSession().then(() => {
-                throw error;
+                return Promise.reject(result);
               });
             } else {
-              throw error;
-            }
-          })
-          .then(result => {
-            if (data.transaction === true) {
               return config.database.commitTransactionalSession().then(() => {
                 return result;
               });
-            } else {
-              return result;
             }
-          });
+          } else {
+            return result;
+          }
+        });
       });
     }
 

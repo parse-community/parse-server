@@ -190,10 +190,90 @@ describe('ParseServerRESTController', () => {
                   path: '/1/classes/MyObject',
                   body: { key: 10 },
                 },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 'value1' },
+                },
+                {
+                  method: 'POST',
+                  path: '/1/classes/MyObject',
+                  body: { key: 10 },
+                },
               ],
               transaction: true,
             }).catch(error => {
-              expect(error.message).toBeDefined();
+              expect(error).toBeDefined();
               const query = new Parse.Query('MyObject');
               query.find().then(results => {
                 expect(results.length).toBe(0);
@@ -221,6 +301,86 @@ describe('ParseServerRESTController', () => {
             try {
               await RESTController.request('POST', 'batch', {
                 requests: [
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 'value1' },
+                  },
+                  {
+                    method: 'POST',
+                    path: '/1/classes/MyObject2',
+                    body: { key: 10 },
+                  },
                   {
                     method: 'POST',
                     path: '/1/classes/MyObject2',
@@ -296,13 +456,13 @@ describe('ParseServerRESTController', () => {
           'value2',
         ]);
 
-        expect(databaseAdapter.createObject.calls.count()).toBe(5);
+        expect(databaseAdapter.createObject.calls.count()).toBe(13);
         let transactionalSession;
         let transactionalSession2;
         let myObjectDBCalls = 0;
         let myObject2DBCalls = 0;
         let myObject3DBCalls = 0;
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 13; i++) {
           const args = databaseAdapter.createObject.calls.argsFor(i);
           switch (args[0]) {
             case 'MyObject':
@@ -318,7 +478,11 @@ describe('ParseServerRESTController', () => {
               break;
             case 'MyObject2':
               myObject2DBCalls++;
-              transactionalSession2 = args[3];
+              if (!transactionalSession2) {
+                transactionalSession2 = args[3];
+              } else {
+                expect(transactionalSession2).toBe(args[3]);
+              }
               if (transactionalSession) {
                 expect(transactionalSession).not.toBe(args[3]);
               }
@@ -330,7 +494,7 @@ describe('ParseServerRESTController', () => {
           }
         }
         expect(myObjectDBCalls).toEqual(2);
-        expect(myObject2DBCalls).toEqual(1);
+        expect(myObject2DBCalls).toEqual(9);
         expect(myObject3DBCalls).toEqual(2);
       });
     });
