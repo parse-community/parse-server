@@ -7,11 +7,11 @@ import * as parseClassTypes from './parseClassTypes';
 const objectTypeConstraintToParse = (fieldName, objectConstraint) => {
   return Object.entries(objectConstraint).reduce(
     (acc, [constraint, keyValue]) => {
-      const { key, value } = keyValue;
+      const { _key, _value } = keyValue;
       return {
         ...acc,
-        [`${fieldName}.${key}`]: {
-          [constraint]: value,
+        [`${fieldName}.${_key}`]: {
+          [constraint]: _value,
         },
       };
     },

@@ -850,11 +850,11 @@ const KEY_VALUE = new GraphQLInputObjectType({
   name: 'KeyValue',
   description: 'An entry from an object, i.e., a pair of key and value.',
   fields: {
-    key: {
+    _key: {
       description: 'The key used to retrieve the value of this entry.',
       type: new GraphQLNonNull(GraphQLString),
     },
-    value: {
+    _value: {
       description: 'The value of the entry. Could be any type of scalar data.',
       type: new GraphQLNonNull(ANY),
     },

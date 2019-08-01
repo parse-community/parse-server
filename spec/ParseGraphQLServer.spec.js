@@ -4477,10 +4477,10 @@ describe('ParseGraphQLServer', () => {
               objectId: createResult.data.objects.create.objectId,
               where: {
                 someField: {
-                  _eq: { key: 'foo.bar', value: 'baz' },
-                  _ne: { key: 'foo.bar', value: 'bat' },
-                  _gt: { key: 'number', value: 9 },
-                  _lt: { key: 'number', value: 11 },
+                  _eq: { _key: 'foo.bar', _value: 'baz' },
+                  _ne: { _key: 'foo.bar', _value: 'bat' },
+                  _gt: { _key: 'number', _value: 9 },
+                  _lt: { _key: 'number', _value: 11 },
                 },
               },
             },
@@ -4555,24 +4555,24 @@ describe('ParseGraphQLServer', () => {
                 _and: [
                   {
                     someField: {
-                      _gt: { key: 'number', value: 9 },
+                      _gt: { _key: 'number', _value: 9 },
                     },
                   },
                   {
                     someField: {
-                      _lt: { key: 'number', value: 11 },
+                      _lt: { _key: 'number', _value: 11 },
                     },
                   },
                   {
                     _or: [
                       {
                         someField: {
-                          _eq: { key: 'lorem', value: 'ipsum' },
+                          _eq: { _key: 'lorem', _value: 'ipsum' },
                         },
                       },
                       {
                         someField: {
-                          _eq: { key: 'foo.test', value: 'bar' },
+                          _eq: { _key: 'foo.test', _value: 'bar' },
                         },
                       },
                     ],
