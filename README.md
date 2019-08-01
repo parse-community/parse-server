@@ -29,7 +29,7 @@
     <p align="center">Our backers and sponsors help to ensure the quality and timely development of the Parse Platform.</p>
   <details align="center">
   <summary align="center"><b>🥉 Bronze Sponsors</b></summary>
-  <a href="WEBSITE LINK HERE" target="_blank"><img src="IMAGE LINK HERE"></a>
+  <a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
   </details>
 
 </p>
