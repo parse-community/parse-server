@@ -107,33 +107,26 @@ function handleBatch(router, req) {
             return { success: response.response };
           },
           error => {
-            if (req.body.transaction === true) {
-              return Promise.reject(error);
-            }
             return { error: { code: error.code, error: error.message } };
           }
         );
     });
 
-    return Promise.all(promises)
-      .catch(error => {
-        if (req.body.transaction === true) {
+    return Promise.all(promises).then(results => {
+      if (req.body.transaction === true) {
+        if (results.find(result => typeof result.error === 'object')) {
           return req.config.database.abortTransactionalSession().then(() => {
-            throw error;
+            return Promise.reject({ response: results });
           });
         } else {
-          throw error;
-        }
-      })
-      .then(results => {
-        if (req.body.transaction === true) {
           return req.config.database.commitTransactionalSession().then(() => {
             return { response: results };
           });
-        } else {
-          return { response: results };
         }
-      });
+      } else {
+        return { response: results };
+      }
+    });
   });
 }
 
