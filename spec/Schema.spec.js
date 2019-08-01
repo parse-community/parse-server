@@ -426,6 +426,42 @@ describe('SchemaController', () => {
     });
   });
 
+  it('can update class level permission', done => {
+    const newLevelPermissions = {
+      find: {},
+      get: { '*': true },
+      count: {},
+      create: { '*': true },
+      update: {},
+      delete: { '*': true },
+      addField: {},
+      protectedFields: { '*': [] },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', { foo: 2 })
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            newLevelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(actualSchema => {
+          expect(dd(actualSchema.classLevelPermissions, newLevelPermissions)).toEqual(undefined);
+          done();
+        })
+        .catch(error => {
+          console.trace(error);
+          done();
+          fail('Error creating class: ' + JSON.stringify(error));
+        });
+    });
+  });
+
   it('will fail to create a class if that class was already created by an object', done => {
     config.database.loadSchema().then(schema => {
       schema
