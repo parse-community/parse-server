@@ -1,4 +1,6 @@
-const { ParseWebSocketServer } = require('../lib/LiveQuery/ParseWebSocketServer');
+const {
+  ParseWebSocketServer,
+} = require('../lib/LiveQuery/ParseWebSocketServer');
 
 describe('ParseWebSocketServer', function() {
   beforeEach(function(done) {

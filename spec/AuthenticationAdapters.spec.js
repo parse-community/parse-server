@@ -1178,7 +1178,9 @@ describe('phant auth adapter', () => {
     };
     const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
 
-    spyOn(httpsRequest, 'get').and.callFake(() => Promise.resolve({ sub: 'invalidID' }));
+    spyOn(httpsRequest, 'get').and.callFake(() =>
+      Promise.resolve({ sub: 'invalidID' })
+    );
     try {
       await adapter.validateAuthData(authData);
       fail();

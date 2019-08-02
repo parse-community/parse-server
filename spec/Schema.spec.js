@@ -451,7 +451,9 @@ describe('SchemaController', () => {
           )
         )
         .then(actualSchema => {
-          expect(dd(actualSchema.classLevelPermissions, newLevelPermissions)).toEqual(undefined);
+          expect(
+            dd(actualSchema.classLevelPermissions, newLevelPermissions)
+          ).toEqual(undefined);
           done();
         })
         .catch(error => {
