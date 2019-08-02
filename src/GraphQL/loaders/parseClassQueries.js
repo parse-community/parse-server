@@ -4,6 +4,7 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import * as parseClassTypes from './parseClassTypes';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { transformClassNameToGraphQL } from '../transformers/className';
 
 const getParseClassQueryConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -16,7 +17,7 @@ const load = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const { className } = parseClass;
+  const className = transformClassNameToGraphQL(parseClass.className);
   const {
     get: isGetEnabled = true,
     find: isFindEnabled = true,
@@ -29,7 +30,8 @@ const load = function(
   } = parseGraphQLSchema.parseClassTypes[className];
 
   if (isGetEnabled) {
-    const getGraphQLQueryName = `get${className}`;
+    const getGraphQLQueryName =
+      className.charAt(0).toLowerCase() + className.slice(1);
     parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${className} class by its id.`,
       args: {
@@ -67,7 +69,8 @@ const load = function(
   }
 
   if (isFindEnabled) {
-    const findGraphQLQueryName = `find${className}`;
+    const findGraphQLQueryName =
+      className.charAt(0).toLowerCase() + className.slice(1) + 's';
     parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
       description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
       args: classGraphQLFindArgs,

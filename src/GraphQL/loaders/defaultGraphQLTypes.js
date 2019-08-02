@@ -759,10 +759,10 @@ const _options = {
   type: GraphQLString,
 };
 
-const STRING_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'StringConstraint',
+const STRING_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'StringWhereInput',
   description:
-    'The StringConstraint input type is used in operations that involve filtering objects by a field of type String.',
+    'The StringWhereInput input type is used in operations that involve filtering objects by a field of type String.',
   fields: {
     _eq: _eq(GraphQLString),
     _ne: _ne(GraphQLString),
@@ -785,10 +785,10 @@ const STRING_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const NUMBER_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'NumberConstraint',
+const NUMBER_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'NumberWhereInput',
   description:
-    'The NumberConstraint input type is used in operations that involve filtering objects by a field of type Number.',
+    'The NumberWhereInput input type is used in operations that involve filtering objects by a field of type Number.',
   fields: {
     _eq: _eq(GraphQLFloat),
     _ne: _ne(GraphQLFloat),
@@ -804,10 +804,10 @@ const NUMBER_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const BOOLEAN_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'BooleanConstraint',
+const BOOLEAN_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'BooleanWhereInput',
   description:
-    'The BooleanConstraint input type is used in operations that involve filtering objects by a field of type Boolean.',
+    'The BooleanWhereInput input type is used in operations that involve filtering objects by a field of type Boolean.',
   fields: {
     _eq: _eq(GraphQLBoolean),
     _ne: _ne(GraphQLBoolean),
@@ -817,10 +817,10 @@ const BOOLEAN_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const ARRAY_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'ArrayConstraint',
+const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'ArrayWhereInput',
   description:
-    'The ArrayConstraint input type is used in operations that involve filtering objects by a field of type Array.',
+    'The ArrayWhereInput input type is used in operations that involve filtering objects by a field of type Array.',
   fields: {
     _eq: _eq(ANY),
     _ne: _ne(ANY),
@@ -861,10 +861,10 @@ const KEY_VALUE = new GraphQLInputObjectType({
   },
 });
 
-const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'ObjectConstraint',
+const OBJECT_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'ObjectWhereInput',
   description:
-    'The ObjectConstraint input type is used in operations that involve filtering result by a field of type Object.',
+    'The ObjectWhereInput input type is used in operations that involve filtering result by a field of type Object.',
   fields: {
     _eq: _eq(KEY_VALUE),
     _ne: _ne(KEY_VALUE),
@@ -880,10 +880,10 @@ const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const DATE_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'DateConstraint',
+const DATE_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'DateWhereInput',
   description:
-    'The DateConstraint input type is used in operations that involve filtering objects by a field of type Date.',
+    'The DateWhereInput input type is used in operations that involve filtering objects by a field of type Date.',
   fields: {
     _eq: _eq(DATE),
     _ne: _ne(DATE),
@@ -899,10 +899,10 @@ const DATE_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const BYTES_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'BytesConstraint',
+const BYTES_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'BytesWhereInput',
   description:
-    'The BytesConstraint input type is used in operations that involve filtering objects by a field of type Bytes.',
+    'The BytesWhereInput input type is used in operations that involve filtering objects by a field of type Bytes.',
   fields: {
     _eq: _eq(BYTES),
     _ne: _ne(BYTES),
@@ -918,10 +918,10 @@ const BYTES_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const FILE_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'FileConstraint',
+const FILE_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'FileWhereInput',
   description:
-    'The FILE_CONSTRAINT input type is used in operations that involve filtering objects by a field of type File.',
+    'The FileWhereInput input type is used in operations that involve filtering objects by a field of type File.',
   fields: {
     _eq: _eq(FILE),
     _ne: _ne(FILE),
@@ -939,10 +939,10 @@ const FILE_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const GEO_POINT_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'GeoPointConstraint',
+const GEO_POINT_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'GeoPointWhereInput',
   description:
-    'The GeoPointConstraint input type is used in operations that involve filtering objects by a field of type GeoPoint.',
+    'The GeoPointWhereInput input type is used in operations that involve filtering objects by a field of type GeoPoint.',
   fields: {
     _exists,
     _nearSphere: {
@@ -983,10 +983,10 @@ const GEO_POINT_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
-const POLYGON_CONSTRAINT = new GraphQLInputObjectType({
-  name: 'PolygonConstraint',
+const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'PolygonWhereInput',
   description:
-    'The PolygonConstraint input type is used in operations that involve filtering objects by a field of type Polygon.',
+    'The PolygonWhereInput input type is used in operations that involve filtering objects by a field of type Polygon.',
   fields: {
     _exists,
     _geoIntersects: {
@@ -1044,16 +1044,16 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(CENTER_SPHERE_OPERATOR);
   parseGraphQLSchema.graphQLTypes.push(GEO_WITHIN_OPERATOR);
   parseGraphQLSchema.graphQLTypes.push(GEO_INTERSECTS);
-  parseGraphQLSchema.graphQLTypes.push(STRING_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(NUMBER_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(BOOLEAN_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(ARRAY_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(OBJECT_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(DATE_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(BYTES_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(FILE_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(GEO_POINT_CONSTRAINT);
-  parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
+  parseGraphQLSchema.graphQLTypes.push(STRING_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(NUMBER_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(BOOLEAN_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(ARRAY_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(OBJECT_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(DATE_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(BYTES_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(FILE_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(GEO_POINT_WHERE_INPUT);
+  parseGraphQLSchema.graphQLTypes.push(POLYGON_WHERE_INPUT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
   parseGraphQLSchema.graphQLTypes.push(SIGN_UP_RESULT);
 };
@@ -1128,16 +1128,16 @@ export {
   _dontSelect,
   _regex,
   _options,
-  STRING_CONSTRAINT,
-  NUMBER_CONSTRAINT,
-  BOOLEAN_CONSTRAINT,
-  ARRAY_CONSTRAINT,
-  OBJECT_CONSTRAINT,
-  DATE_CONSTRAINT,
-  BYTES_CONSTRAINT,
-  FILE_CONSTRAINT,
-  GEO_POINT_CONSTRAINT,
-  POLYGON_CONSTRAINT,
+  STRING_WHERE_INPUT,
+  NUMBER_WHERE_INPUT,
+  BOOLEAN_WHERE_INPUT,
+  ARRAY_WHERE_INPUT,
+  OBJECT_WHERE_INPUT,
+  DATE_WHERE_INPUT,
+  BYTES_WHERE_INPUT,
+  FILE_WHERE_INPUT,
+  GEO_POINT_WHERE_INPUT,
+  POLYGON_WHERE_INPUT,
   FIND_RESULT,
   SIGN_UP_RESULT,
   load,
