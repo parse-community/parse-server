@@ -5,8 +5,19 @@ const jwt = require('jsonwebtoken');
 
 const TOKEN_ISSUER = 'https://appleid.apple.com';
 
+let currentKey;
+
 const getApplePublicKey = async () => {
-  const data = await httpsRequest.get('https://appleid.apple.com/auth/keys');
+  let data;
+  try {
+    data = await httpsRequest.get('https://appleid.apple.com/auth/keys');
+  } catch (e) {
+    if (currentKey) {
+      return currentKey;
+    }
+    throw e;
+  }
+
   const key = data.keys[0];
 
   const pubKey = new NodeRSA();
@@ -14,7 +25,8 @@ const getApplePublicKey = async () => {
     { n: Buffer.from(key.n, 'base64'), e: Buffer.from(key.e, 'base64') },
     'components-public'
   );
-  return pubKey.exportKey(['public']);
+  currentKey = pubKey.exportKey(['public']);
+  return currentKey;
 };
 
 const verifyIdToken = async (token, clientID) => {

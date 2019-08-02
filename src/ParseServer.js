@@ -21,6 +21,7 @@ import { FeaturesRouter } from './Routers/FeaturesRouter';
 import { FilesRouter } from './Routers/FilesRouter';
 import { FunctionsRouter } from './Routers/FunctionsRouter';
 import { GlobalConfigRouter } from './Routers/GlobalConfigRouter';
+import { GraphQLRouter } from './Routers/GraphQLRouter';
 import { HooksRouter } from './Routers/HooksRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
@@ -44,32 +45,7 @@ import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 addParseCloud();
 
 // ParseServer works like a constructor of an express app.
-// The args that we understand are:
-// "analyticsAdapter": an adapter class for analytics
-// "filesAdapter": a class like GridFSBucketAdapter providing create, get,
-//                 and delete
-// "loggerAdapter": a class like WinstonLoggerAdapter providing info, error,
-//                 and query
-// "jsonLogs": log as structured JSON objects
-// "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
-//          what database this Parse API connects to.
-// "cloud": relative location to cloud code to require, or a function
-//          that is given an instance of Parse as a parameter.  Use this instance of Parse
-//          to register your cloud code hooks and functions.
-// "appId": the application id to host
-// "masterKey": the master key for requests to this app
-// "collectionPrefix": optional prefix for database collection names
-// "fileKey": optional key from Parse dashboard for supporting older files
-//            hosted by Parse
-// "clientKey": optional key from Parse dashboard
-// "dotNetKey": optional key from Parse dashboard
-// "restAPIKey": optional key from Parse dashboard
-// "webhookKey": optional key from Parse dashboard
-// "javascriptKey": optional key from Parse dashboard
-// "push": optional key from configure push
-// "sessionLength": optional length in seconds for how long Sessions should be valid for
-// "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
-
+// https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
   /**
    * @constructor
@@ -231,6 +207,7 @@ class ParseServer {
       new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
+      new GraphQLRouter(),
       new PurgeRouter(),
       new HooksRouter(),
       new CloudCodeRouter(),

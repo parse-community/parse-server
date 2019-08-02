@@ -411,6 +411,7 @@ class DatabaseController {
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   skipMongoDBServer13732Workaround: boolean;
+  _transactionalSession: ?any;
 
   constructor(
     adapter: StorageAdapter,
@@ -424,6 +425,7 @@ class DatabaseController {
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this.skipMongoDBServer13732Workaround = skipMongoDBServer13732Workaround;
+    this._transactionalSession = null;
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -624,21 +626,24 @@ class DatabaseController {
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else if (upsert) {
                   return this.adapter.upsertOneObject(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else {
                   return this.adapter.findOneAndUpdate(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 }
               });
@@ -760,7 +765,8 @@ class DatabaseController {
       `_Join:${key}:${fromClassName}`,
       relationSchema,
       doc,
-      doc
+      doc,
+      this._transactionalSession
     );
   }
 
@@ -781,7 +787,8 @@ class DatabaseController {
       .deleteObjectsByQuery(
         `_Join:${key}:${fromClassName}`,
         relationSchema,
-        doc
+        doc,
+        this._transactionalSession
       )
       .catch(error => {
         // We don't care if they try to delete a non-existent relation.
@@ -848,7 +855,8 @@ class DatabaseController {
               this.adapter.deleteObjectsByQuery(
                 className,
                 parseFormatSchema,
-                query
+                query,
+                this._transactionalSession
               )
             )
             .catch(error => {
@@ -908,7 +916,8 @@ class DatabaseController {
             return this.adapter.createObject(
               className,
               SchemaController.convertSchemaToAdapterSchema(schema),
-              object
+              object,
+              this._transactionalSession
             );
           })
           .then(result => {
@@ -1529,6 +1538,36 @@ class DatabaseController {
     });
 
     return protectedKeys;
+  }
+
+  createTransactionalSession() {
+    return this.adapter
+      .createTransactionalSession()
+      .then(transactionalSession => {
+        this._transactionalSession = transactionalSession;
+      });
+  }
+
+  commitTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to commit');
+    }
+    return this.adapter
+      .commitTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
+  }
+
+  abortTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to abort');
+    }
+    return this.adapter
+      .abortTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to

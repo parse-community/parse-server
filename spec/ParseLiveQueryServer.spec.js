@@ -257,6 +257,7 @@ describe('ParseLiveQueryServer', function() {
         expect(saveArgs[0]).toBe('Yolo');
         expect(saveArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -271,6 +272,7 @@ describe('ParseLiveQueryServer', function() {
         expect(deleteArgs[0]).toBe('Yolo');
         expect(deleteArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -1978,6 +1980,7 @@ describe('LiveQueryController', () => {
         expect(saveArgs[0]).toBe('Yolo');
         expect(saveArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -1992,6 +1995,7 @@ describe('LiveQueryController', () => {
         expect(deleteArgs[0]).toBe('Yolo');
         expect(deleteArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},

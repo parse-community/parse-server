@@ -40,20 +40,12 @@ const postgresURI =
 let databaseAdapter;
 // need to bind for mocking mocha
 
-let startDB = () => {};
-let stopDB = () => {};
-
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseAdapter = new PostgresStorageAdapter({
     uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
     collectionPrefix: 'test_',
   });
 } else {
-  startDB = require('mongodb-runner/mocha/before').bind({
-    timeout: () => {},
-    slow: () => {},
-  });
-  stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
@@ -176,11 +168,6 @@ const reconfigureServer = changedConfiguration => {
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
-
-// 10 minutes timeout
-beforeAll(startDB, 10 * 60 * 1000);
-
-afterAll(stopDB);
 
 beforeEach(done => {
   try {
@@ -417,6 +404,7 @@ global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
+global.databaseAdapter = databaseAdapter;
 global.jfail = function(err) {
   fail(JSON.stringify(err));
 };

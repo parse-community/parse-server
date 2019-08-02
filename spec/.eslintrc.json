@@ -25,7 +25,8 @@
       "jequal": true,
       "create": true,
       "arrayContains": true,
-      "expectAsync": true
+      "expectAsync": true,
+      "databaseAdapter": true
     },
     "rules": {
       "no-console": [0],

@@ -433,6 +433,11 @@ module.exports.LiveQueryOptions = {
     env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
+  wssAdapter: {
+    env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
+    help: 'Adapter module for the WebSocketServer',
+    action: parsers.moduleOrObjectParser,
+  },
 };
 module.exports.LiveQueryServerOptions = {
   appId: {
@@ -492,5 +497,10 @@ module.exports.LiveQueryServerOptions = {
     help:
       'Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).',
     action: parsers.numberParser('websocketTimeout'),
+  },
+  wssAdapter: {
+    env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
+    help: 'Adapter module for the WebSocketServer',
+    action: parsers.moduleOrObjectParser,
   },
 };

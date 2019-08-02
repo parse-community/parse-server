@@ -46,6 +46,17 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
   );
   var response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName]);
+    if (
+      schema._metadata &&
+      schema._metadata.fields_options &&
+      schema._metadata.fields_options[fieldName]
+    ) {
+      obj[fieldName] = Object.assign(
+        {},
+        obj[fieldName],
+        schema._metadata.fields_options[fieldName]
+      );
+    }
     return obj;
   }, {});
   response.ACL = { type: 'ACL' };
@@ -57,6 +68,7 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
 
 const emptyCLPS = Object.freeze({
   find: {},
+  count: {},
   get: {},
   create: {},
   update: {},
@@ -67,6 +79,7 @@ const emptyCLPS = Object.freeze({
 
 const defaultCLPS = Object.freeze({
   find: { '*': true },
+  count: { '*': true },
   get: { '*': true },
   create: { '*': true },
   update: { '*': true },
@@ -210,7 +223,7 @@ class MongoSchemaCollection {
   // Support additional types that Mongo doesn't, like Money, or something.
 
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
-  addFieldIfNotExists(className: string, fieldName: string, type: string) {
+  addFieldIfNotExists(className: string, fieldName: string, fieldType: string) {
     return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(
         schema => {
@@ -219,7 +232,7 @@ class MongoSchemaCollection {
             return;
           }
           // The schema exists. Check for existing GeoPoints.
-          if (type.type === 'GeoPoint') {
+          if (fieldType.type === 'GeoPoint') {
             // Make sure there are not other geopoint fields
             if (
               Object.keys(schema.fields).some(
@@ -245,13 +258,37 @@ class MongoSchemaCollection {
         }
       )
       .then(() => {
+        const { type, targetClass, ...fieldOptions } = fieldType;
         // We use $exists and $set to avoid overwriting the field type if it
         // already exists. (it could have added inbetween the last query and the update)
-        return this.upsertSchema(
-          className,
-          { [fieldName]: { $exists: false } },
-          { $set: { [fieldName]: parseFieldTypeToMongoFieldType(type) } }
-        );
+        if (fieldOptions && Object.keys(fieldOptions).length > 0) {
+          return this.upsertSchema(
+            className,
+            { [fieldName]: { $exists: false } },
+            {
+              $set: {
+                [fieldName]: parseFieldTypeToMongoFieldType({
+                  type,
+                  targetClass,
+                }),
+                [`_metadata.fields_options.${fieldName}`]: fieldOptions,
+              },
+            }
+          );
+        } else {
+          return this.upsertSchema(
+            className,
+            { [fieldName]: { $exists: false } },
+            {
+              $set: {
+                [fieldName]: parseFieldTypeToMongoFieldType({
+                  type,
+                  targetClass,
+                }),
+              },
+            }
+          );
+        }
       });
   }
 }

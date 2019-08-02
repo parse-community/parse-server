@@ -359,6 +359,24 @@ describe('Parse.Query testing', () => {
       }, done.fail);
   });
 
+  it('nested equalTo string with single quote', async () => {
+    const obj = new TestObject({ nested: { foo: "single'quote" } });
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('nested.foo', "single'quote");
+    const result = await query.get(obj.id);
+    equal(result.get('nested').foo, "single'quote");
+  });
+
+  it('nested containedIn string with single quote', async () => {
+    const obj = new TestObject({ nested: { foo: ["single'quote"] } });
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    query.containedIn('nested.foo', ["single'quote"]);
+    const result = await query.get(obj.id);
+    equal(result.get('nested').foo[0], "single'quote");
+  });
+
   it('nested containedIn string', done => {
     const sender1 = { group: ['A', 'B'] };
     const sender2 = { group: ['A', 'C'] };

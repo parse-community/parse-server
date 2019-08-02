@@ -323,16 +323,67 @@ RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
 
 RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
   if (this.data) {
-    // Add default fields
-    this.data.updatedAt = this.updatedAt;
-    if (!this.query) {
-      this.data.createdAt = this.updatedAt;
+    return this.validSchemaController.getAllClasses().then(allClasses => {
+      const schema = allClasses.find(
+        oneClass => oneClass.className === this.className
+      );
+      const setRequiredFieldIfNeeded = (fieldName, setDefault) => {
+        if (
+          this.data[fieldName] === undefined ||
+          this.data[fieldName] === null ||
+          this.data[fieldName] === '' ||
+          (typeof this.data[fieldName] === 'object' &&
+            this.data[fieldName].__op === 'Delete')
+        ) {
+          if (
+            setDefault &&
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].defaultValue !== null &&
+            schema.fields[fieldName].defaultValue !== undefined &&
+            (this.data[fieldName] === undefined ||
+              (typeof this.data[fieldName] === 'object' &&
+                this.data[fieldName].__op === 'Delete'))
+          ) {
+            this.data[fieldName] = schema.fields[fieldName].defaultValue;
+            this.storage.fieldsChangedByTrigger =
+              this.storage.fieldsChangedByTrigger || [];
+            if (this.storage.fieldsChangedByTrigger.indexOf(fieldName) < 0) {
+              this.storage.fieldsChangedByTrigger.push(fieldName);
+            }
+          } else if (
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].required === true
+          ) {
+            throw new Parse.Error(
+              Parse.Error.VALIDATION_ERROR,
+              `${fieldName} is required`
+            );
+          }
+        }
+      };
 
-      // Only assign new objectId if we are creating new object
-      if (!this.data.objectId) {
-        this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+      // Add default fields
+      this.data.updatedAt = this.updatedAt;
+      if (!this.query) {
+        this.data.createdAt = this.updatedAt;
+
+        // Only assign new objectId if we are creating new object
+        if (!this.data.objectId) {
+          this.data.objectId = cryptoUtils.newObjectId(
+            this.config.objectIdSize
+          );
+        }
+        if (schema) {
+          Object.keys(schema.fields).forEach(fieldName => {
+            setRequiredFieldIfNeeded(fieldName, true);
+          });
+        }
+      } else if (schema) {
+        Object.keys(this.data).forEach(fieldName => {
+          setRequiredFieldIfNeeded(fieldName, false);
+        });
       }
-    }
+    });
   }
   return Promise.resolve();
 };
@@ -1578,6 +1629,11 @@ RestWrite.prototype.runAfterSaveTrigger = function() {
       this.config,
       this.context
     )
+    .then(result => {
+      if (result && typeof result === 'object') {
+        this.response.response = result;
+      }
+    })
     .catch(function(err) {
       logger.warn('afterSave caught an error', err);
     });

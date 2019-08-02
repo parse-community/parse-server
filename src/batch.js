@@ -83,30 +83,50 @@ function handleBatch(router, req) {
     req.config.publicServerURL
   );
 
-  const promises = req.body.requests.map(restRequest => {
-    const routablePath = makeRoutablePath(restRequest.path);
-    // Construct a request that we can send to a handler
-    const request = {
-      body: restRequest.body,
-      config: req.config,
-      auth: req.auth,
-      info: req.info,
-    };
+  let initialPromise = Promise.resolve();
+  if (req.body.transaction === true) {
+    initialPromise = req.config.database.createTransactionalSession();
+  }
 
-    return router
-      .tryRouteRequest(restRequest.method, routablePath, request)
-      .then(
-        response => {
-          return { success: response.response };
-        },
-        error => {
-          return { error: { code: error.code, error: error.message } };
+  return initialPromise.then(() => {
+    const promises = req.body.requests.map(restRequest => {
+      const routablePath = makeRoutablePath(restRequest.path);
+      // Construct a request that we can send to a handler
+
+      const request = {
+        body: restRequest.body,
+        config: req.config,
+        auth: req.auth,
+        info: req.info,
+      };
+
+      return router
+        .tryRouteRequest(restRequest.method, routablePath, request)
+        .then(
+          response => {
+            return { success: response.response };
+          },
+          error => {
+            return { error: { code: error.code, error: error.message } };
+          }
+        );
+    });
+
+    return Promise.all(promises).then(results => {
+      if (req.body.transaction === true) {
+        if (results.find(result => typeof result.error === 'object')) {
+          return req.config.database.abortTransactionalSession().then(() => {
+            return Promise.reject({ response: results });
+          });
+        } else {
+          return req.config.database.commitTransactionalSession().then(() => {
+            return { response: results };
+          });
         }
-      );
-  });
-
-  return Promise.all(promises).then(results => {
-    return { response: results };
+      } else {
+        return { response: results };
+      }
+    });
   });
 }
 

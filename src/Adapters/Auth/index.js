@@ -18,6 +18,7 @@ const qq = require('./qq');
 const wechat = require('./wechat');
 const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
+const phantauth = require('./phantauth');
 
 const anonymous = {
   validateAuthData: () => {
@@ -47,6 +48,7 @@ const providers = {
   qq,
   wechat,
   weibo,
+  phantauth,
 };
 
 function authDataValidator(adapter, appIds, options) {
