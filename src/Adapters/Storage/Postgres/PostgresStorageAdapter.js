@@ -288,7 +288,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           index += 2;
         } else if (fieldValue.$regex) {
           // Handle later
-        } else {
+        } else if (typeof fieldValue !== 'object') {
           patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
           index += 2;
