@@ -20,8 +20,8 @@ export class WSSAdapter {
    * @param {Object} options - {http.Server|https.Server} server
    */
   constructor(options) {
-    this.onListen = () => {}
-    this.onConnection = () => {}
+    this.onListen = () => {};
+    this.onConnection = () => {};
   }
 
   // /**

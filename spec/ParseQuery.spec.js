@@ -369,7 +369,7 @@ describe('Parse.Query testing', () => {
   });
 
   it('nested containedIn string with single quote', async () => {
-    const obj = new TestObject({ nested: { foo: ["single'quote"]} });
+    const obj = new TestObject({ nested: { foo: ["single'quote"] } });
     await obj.save();
     const query = new Parse.Query(TestObject);
     query.containedIn('nested.foo', ["single'quote"]);

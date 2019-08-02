@@ -96,13 +96,51 @@ const parseMap = {
   _point: '$point',
 };
 
-const transformToParse = constraints => {
+const transformToParse = (constraints, parentFieldName, parentConstraints) => {
   if (!constraints || typeof constraints !== 'object') {
     return;
   }
   Object.keys(constraints).forEach(fieldName => {
     let fieldValue = constraints[fieldName];
-    if (parseMap[fieldName]) {
+
+    /**
+     * If we have a key-value pair, we need to change the way the constraint is structured.
+     *
+     * Example:
+     *   From:
+     *   {
+     *     "someField": {
+     *       "_lt": {
+     *         "_key":"foo.bar",
+     *         "_value": 100
+     *       },
+     *       "_gt": {
+     *         "_key":"foo.bar",
+     *         "_value": 10
+     *       }
+     *     }
+     *   }
+     *
+     *   To:
+     *   {
+     *     "someField.foo.bar": {
+     *       "$lt": 100,
+     *       "$gt": 10
+     *      }
+     *   }
+     */
+    if (
+      fieldValue._key &&
+      fieldValue._value &&
+      parentConstraints &&
+      parentFieldName
+    ) {
+      delete parentConstraints[parentFieldName];
+      parentConstraints[`${parentFieldName}.${fieldValue._key}`] = {
+        ...parentConstraints[`${parentFieldName}.${fieldValue._key}`],
+        [parseMap[fieldName]]: fieldValue._value,
+      };
+    } else if (parseMap[fieldName]) {
       delete constraints[fieldName];
       fieldName = parseMap[fieldName];
       constraints[fieldName] = fieldValue;
@@ -160,7 +198,7 @@ const transformToParse = constraints => {
         break;
     }
     if (typeof fieldValue === 'object') {
-      transformToParse(fieldValue);
+      transformToParse(fieldValue, fieldName, constraints);
     }
   });
 };

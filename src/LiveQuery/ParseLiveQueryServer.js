@@ -678,9 +678,7 @@ class ParseLiveQueryServer {
     client.pushSubscribe(request.requestId);
 
     logger.verbose(
-      `Create client ${parseWebsocket.clientId} new subscription: ${
-        request.requestId
-      }`
+      `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
     );
     logger.verbose('Current client number: %d', this.clients.size);
     runLiveQueryEventHandlers({
@@ -774,9 +772,7 @@ class ParseLiveQueryServer {
     client.pushUnsubscribe(request.requestId);
 
     logger.verbose(
-      `Delete client: ${parseWebsocket.clientId} | subscription: ${
-        request.requestId
-      }`
+      `Delete client: ${parseWebsocket.clientId} | subscription: ${request.requestId}`
     );
   }
 }

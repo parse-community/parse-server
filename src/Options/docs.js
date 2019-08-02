@@ -106,4 +106,3 @@
  * @property {Number} websocketTimeout Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).
  * @property {Adapter<WSSAdapter>} wssAdapter Adapter module for the WebSocketServer
  */
-

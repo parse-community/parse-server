@@ -288,7 +288,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           index += 2;
         } else if (fieldValue.$regex) {
           // Handle later
-        } else {
+        } else if (typeof fieldValue !== 'object') {
           patterns.push(`$${index}:raw = $${index + 1}::text`);
           values.push(name, fieldValue);
           index += 2;
@@ -358,9 +358,16 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
                 2}) OR $${index}:name IS NULL)`
             );
           } else {
-            patterns.push(
-              `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
-            );
+            if (fieldName.indexOf('.') >= 0) {
+              const constraintFieldName = transformDotField(fieldName);
+              patterns.push(
+                `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
+              );
+            } else {
+              patterns.push(
+                `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
+              );
+            }
           }
         }
       }
@@ -380,9 +387,14 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         values.push(fieldName);
         index += 1;
       } else {
-        patterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue.$eq);
-        index += 2;
+        if (fieldName.indexOf('.') >= 0) {
+          values.push(fieldValue.$eq);
+          patterns.push(`${transformDotField(fieldName)} = $${index++}`);
+        } else {
+          values.push(fieldName, fieldValue.$eq);
+          patterns.push(`$${index}:name = $${index + 1}`);
+          index += 2;
+        }
       }
     }
     const isInOrNin =
@@ -749,9 +761,29 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
-        patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
-        values.push(fieldName, toPostgresValue(fieldValue[cmp]));
-        index += 2;
+        const postgresValue = toPostgresValue(fieldValue[cmp]);
+        let constraintFieldName;
+        if (fieldName.indexOf('.') >= 0) {
+          let castType;
+          switch (typeof postgresValue) {
+            case 'number':
+              castType = 'double precision';
+              break;
+            case 'boolean':
+              castType = 'boolean';
+              break;
+            default:
+              castType = undefined;
+          }
+          constraintFieldName = castType
+            ? `CAST ((${transformDotField(fieldName)}) AS ${castType})`
+            : transformDotField(fieldName);
+        } else {
+          constraintFieldName = `$${index++}:name`;
+          values.push(fieldName);
+        }
+        values.push(postgresValue);
+        patterns.push(`${constraintFieldName} ${pgComparator} $${index++}`);
       }
     });
 
@@ -820,7 +852,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   setClassLevelPermissions(className: string, CLPs: any) {
     const self = this;
-    return this._client.task('set-class-level-permissions', async (t) => {
+    return this._client.task('set-class-level-permissions', async t => {
       await self._ensureSchemaCollectionExists(t);
       const values = [
         className,
@@ -885,7 +917,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         });
       }
     });
-    return conn.tx('set-indexes-with-schema-format', async (t) => {
+    return conn.tx('set-indexes-with-schema-format', async t => {
       if (insertedIndexes.length > 0) {
         await self.createIndexes(className, insertedIndexes, t);
       }
@@ -981,7 +1013,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const values = [className, ...valuesArray];
 
     debug(qs, values);
-    return conn.task('create-table', async (t) => {
+    return conn.task('create-table', async t => {
       try {
         await self._ensureSchemaCollectionExists(t);
         await t.none(qs, values);
@@ -1009,7 +1041,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     const self = this;
 
-    return conn.tx('schema-upgrade', async (t) => {
+    return conn.tx('schema-upgrade', async t => {
       const columns = await t.map(
         'SELECT column_name FROM information_schema.columns WHERE table_name = $<className>',
         { className },
@@ -1040,7 +1072,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('addFieldIfNotExists', { className, fieldName, type });
     conn = conn || this._client;
     const self = this;
-    return conn.tx('add-field-if-not-exists', async (t) => {
+    return conn.tx('add-field-if-not-exists', async t => {
       if (type.type !== 'Relation') {
         try {
           await t.none(
@@ -1110,7 +1142,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('deleteAllClasses');
 
     return this._client
-      .task('delete-all-classes', async (t) => {
+      .task('delete-all-classes', async t => {
         try {
           const results = await t.any('SELECT * FROM "_SCHEMA"');
           const joins = results.reduce((list: Array<string>, schema: any) => {
@@ -1180,7 +1212,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       })
       .join(', DROP COLUMN');
 
-    return this._client.tx('delete-fields', async (t) => {
+    return this._client.tx('delete-fields', async t => {
       await t.none(
         'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
         { schema, className }
@@ -1196,7 +1228,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     const self = this;
-    return this._client.task('get-all-classes', async (t) => {
+    return this._client.task('get-all-classes', async t => {
       await self._ensureSchemaCollectionExists(t);
       return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
         toParseSchema({ className: row.className, ...row.schema })

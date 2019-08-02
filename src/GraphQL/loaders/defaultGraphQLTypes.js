@@ -846,15 +846,34 @@ const ARRAY_CONSTRAINT = new GraphQLInputObjectType({
   },
 });
 
+const KEY_VALUE = new GraphQLInputObjectType({
+  name: 'KeyValue',
+  description: 'An entry from an object, i.e., a pair of key and value.',
+  fields: {
+    _key: {
+      description: 'The key used to retrieve the value of this entry.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    _value: {
+      description: 'The value of the entry. Could be any type of scalar data.',
+      type: new GraphQLNonNull(ANY),
+    },
+  },
+});
+
 const OBJECT_CONSTRAINT = new GraphQLInputObjectType({
   name: 'ObjectConstraint',
   description:
-    'The ObjectConstraint input type is used in operations that involve filtering objects by a field of type Object.',
+    'The ObjectConstraint input type is used in operations that involve filtering result by a field of type Object.',
   fields: {
-    _eq: _eq(OBJECT),
-    _ne: _ne(OBJECT),
-    _in: _in(OBJECT),
-    _nin: _nin(OBJECT),
+    _eq: _eq(KEY_VALUE),
+    _ne: _ne(KEY_VALUE),
+    _in: _in(KEY_VALUE),
+    _nin: _nin(KEY_VALUE),
+    _lt: _lt(KEY_VALUE),
+    _lte: _lte(KEY_VALUE),
+    _gt: _gt(KEY_VALUE),
+    _gte: _gte(KEY_VALUE),
     _exists,
     _select,
     _dontSelect,
