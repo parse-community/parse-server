@@ -4,47 +4,6 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import * as parseClassTypes from './parseClassTypes';
 
-const objectTypeConstraintToParse = (fieldName, objectConstraint) => {
-  return Object.entries(objectConstraint).reduce(
-    (acc, [constraint, keyValue]) => {
-      const { _key, _value } = keyValue;
-      return {
-        ...acc,
-        [`${fieldName}.${_key}`]: {
-          [constraint]: _value,
-        },
-      };
-    },
-    {}
-  );
-};
-
-const transformConstraintsToParse = (constraints, fields) => {
-  if (!constraints || typeof constraints !== 'object') {
-    return constraints;
-  }
-  const parseConstraints = {};
-  Object.entries(constraints).forEach(([constraint, fieldValue]) => {
-    // If constraint is a field name, and its type is Object
-    if (fields[constraint] && fields[constraint].type === 'Object') {
-      const objectConstraints = objectTypeConstraintToParse(
-        constraint,
-        fieldValue
-      );
-      Object.entries(objectConstraints).forEach(([key, value]) => {
-        parseConstraints[key] = value;
-      });
-    } else if (['_and', '_or', '_nor'].includes(constraint)) {
-      parseConstraints[constraint] = fieldValue.map(innerConstraints =>
-        transformConstraintsToParse(innerConstraints, fields)
-      );
-    } else {
-      parseConstraints[constraint] = fieldValue;
-    }
-  });
-  return parseConstraints;
-};
-
 const load = (parseGraphQLSchema, parseClass) => {
   const className = parseClass.className;
 
@@ -98,7 +57,7 @@ const load = (parseGraphQLSchema, parseClass) => {
     async resolve(_source, args, context, queryInfo) {
       try {
         const {
-          where: graphQLWhere,
+          where,
           order,
           skip,
           limit,
@@ -108,11 +67,6 @@ const load = (parseGraphQLSchema, parseClass) => {
         } = args;
         const { config, auth, info } = context;
         const selectedFields = getFieldNames(queryInfo);
-
-        const where = transformConstraintsToParse(
-          graphQLWhere,
-          parseClass.fields
-        );
 
         const { keys, include } = parseClassTypes.extractKeysAndInclude(
           selectedFields

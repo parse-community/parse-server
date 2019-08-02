@@ -4456,11 +4456,20 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const getResult = await apolloClient.query({
+          const where = {
+            someField: {
+              _eq: { _key: 'foo.bar', _value: 'baz' },
+              _ne: { _key: 'foo.bar', _value: 'bat' },
+              _gt: { _key: 'number', _value: 9 },
+              _lt: { _key: 'number', _value: 11 },
+            },
+          };
+          const queryResult = await apolloClient.query({
             query: gql`
               query GetSomeObject(
                 $objectId: ID!
                 $where: SomeClassConstraints
+                $genericWhere: Object
               ) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
@@ -4470,34 +4479,38 @@ describe('ParseGraphQLServer', () => {
                       someField
                     }
                   }
+                  find(className: "SomeClass", where: $genericWhere) {
+                    results
+                  }
                 }
               }
             `,
             variables: {
               objectId: createResult.data.objects.create.objectId,
-              where: {
-                someField: {
-                  _eq: { _key: 'foo.bar', _value: 'baz' },
-                  _ne: { _key: 'foo.bar', _value: 'bat' },
-                  _gt: { _key: 'number', _value: 9 },
-                  _lt: { _key: 'number', _value: 11 },
-                },
-              },
+              where,
+              genericWhere: where, // where and genericWhere types are different
             },
           });
 
-          const { someField } = getResult.data.objects.get;
+          const {
+            get: getResult,
+            findSomeClass,
+            find,
+          } = queryResult.data.objects;
+
+          const { someField } = getResult;
           expect(typeof someField).toEqual('object');
           expect(someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.findSomeClass.results.length).toEqual(
-            2
-          );
-          expect(
-            getResult.data.objects.findSomeClass.results[0].someField
-          ).toEqual(someFieldValue);
-          expect(
-            getResult.data.objects.findSomeClass.results[1].someField
-          ).toEqual(someFieldValue);
+
+          // Checks class query results
+          expect(findSomeClass.results.length).toEqual(2);
+          expect(findSomeClass.results[0].someField).toEqual(someFieldValue);
+          expect(findSomeClass.results[1].someField).toEqual(someFieldValue);
+
+          // Checks generic query results
+          expect(find.results.length).toEqual(2);
+          expect(find.results[0].someField).toEqual(someFieldValue);
+          expect(find.results[1].someField).toEqual(someFieldValue);
         });
 
         it('should support object composed queries', async () => {
@@ -4537,9 +4550,40 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
+          const where = {
+            _and: [
+              {
+                someField: {
+                  _gt: { _key: 'number', _value: 9 },
+                },
+              },
+              {
+                someField: {
+                  _lt: { _key: 'number', _value: 11 },
+                },
+              },
+              {
+                _or: [
+                  {
+                    someField: {
+                      _eq: { _key: 'lorem', _value: 'ipsum' },
+                    },
+                  },
+                  {
+                    someField: {
+                      _eq: { _key: 'foo.test', _value: 'bar' },
+                    },
+                  },
+                ],
+              },
+            ],
+          };
           const findResult = await apolloClient.query({
             query: gql`
-              query FindSomeObject($where: SomeClassConstraints) {
+              query FindSomeObject(
+                $where: SomeClassConstraints
+                $genericWhere: Object
+              ) {
                 objects {
                   findSomeClass(where: $where) {
                     results {
@@ -4547,54 +4591,43 @@ describe('ParseGraphQLServer', () => {
                       someField
                     }
                   }
+                  find(className: "SomeClass", where: $genericWhere) {
+                    results
+                  }
                 }
               }
             `,
             variables: {
-              where: {
-                _and: [
-                  {
-                    someField: {
-                      _gt: { _key: 'number', _value: 9 },
-                    },
-                  },
-                  {
-                    someField: {
-                      _lt: { _key: 'number', _value: 11 },
-                    },
-                  },
-                  {
-                    _or: [
-                      {
-                        someField: {
-                          _eq: { _key: 'lorem', _value: 'ipsum' },
-                        },
-                      },
-                      {
-                        someField: {
-                          _eq: { _key: 'foo.test', _value: 'bar' },
-                        },
-                      },
-                    ],
-                  },
-                ],
-              },
+              where,
+              genericWhere: where, // where and genericWhere types are different
             },
           });
 
-          const { results } = findResult.data.objects.findSomeClass;
+          const { create1, create2 } = createResult.data.objects;
+          const { findSomeClass, find } = findResult.data.objects;
+
+          // Checks class query results
+          const { results } = findSomeClass;
           expect(results.length).toEqual(2);
           expect(
-            results.find(
-              result =>
-                result.objectId === createResult.data.objects.create1.objectId
-            ).someField
+            results.find(result => result.objectId === create1.objectId)
+              .someField
           ).toEqual(someFieldValue);
           expect(
-            results.find(
-              result =>
-                result.objectId === createResult.data.objects.create2.objectId
-            ).someField
+            results.find(result => result.objectId === create2.objectId)
+              .someField
+          ).toEqual(someFieldValue2);
+
+          // Checks generic query results
+          const { results: genericResults } = find;
+          expect(genericResults.length).toEqual(2);
+          expect(
+            genericResults.find(result => result.objectId === create1.objectId)
+              .someField
+          ).toEqual(someFieldValue);
+          expect(
+            genericResults.find(result => result.objectId === create2.objectId)
+              .someField
           ).toEqual(someFieldValue2);
         });
 
