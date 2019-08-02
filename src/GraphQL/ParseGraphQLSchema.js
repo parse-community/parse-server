@@ -82,6 +82,7 @@ class ParseGraphQLSchema {
     this.meType = null;
     this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
+    this.graphQLSchemaIsRelayStyle = this.relayStyle;
     this.graphQLTypes = [];
     this.graphQLObjectsQueries = {};
     this.graphQLQueries = {};
@@ -282,9 +283,15 @@ class ParseGraphQLSchema {
     const { parseClasses, parseClassesString, parseGraphQLConfig } = params;
 
     if (
-      JSON.stringify(this.parseGraphQLConfig) ===
-      JSON.stringify(parseGraphQLConfig)
+      this.graphQLSchemaIsRelayStyle === this.relayStyle &&
+      (this.parseGraphQLConfig === parseGraphQLConfig ||
+        JSON.stringify(this.parseGraphQLConfig) ===
+          JSON.stringify(parseGraphQLConfig))
     ) {
+      if (this.parseGraphQLConfig !== parseGraphQLConfig) {
+        this.parseGraphQLConfig = parseGraphQLConfig;
+      }
+
       if (this.parseClasses === parseClasses) {
         return false;
       }
