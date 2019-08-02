@@ -73,7 +73,7 @@
     "cross-env": "5.2.0",
     "deep-diff": "1.0.2",
     "eslint": "6.1.0",
-    "eslint-plugin-flowtype": "3.12.2",
+    "eslint-plugin-flowtype": "3.13.0",
     "flow-bin": "0.104.0",
     "form-data": "2.5.0",
     "gaze": "1.1.3",
