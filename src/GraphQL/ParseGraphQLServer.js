@@ -89,6 +89,7 @@ class ParseGraphQLServer {
             subscriptionEndpoint: this._config.subscriptionsPath,
             headers: {
               'X-Parse-Application-Id': this.parseServer.config.appId,
+              'X-Parse-Client-Key': this.parseServer.config.clientKey,
               'X-Parse-Master-Key': this.parseServer.config.masterKey,
             },
           })
