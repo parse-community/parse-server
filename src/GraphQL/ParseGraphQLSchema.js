@@ -1,5 +1,10 @@
 import Parse from 'parse/node';
-import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  DocumentNode,
+  GraphQLNamedType,
+} from 'graphql';
 import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
@@ -19,13 +24,26 @@ class ParseGraphQLSchema {
   databaseController: DatabaseController;
   parseGraphQLController: ParseGraphQLController;
   parseGraphQLConfig: ParseGraphQLConfig;
-  graphQLCustomTypeDefs: any;
+  graphQLCustomTypeDefs: ?(
+    | string
+    | GraphQLSchema
+    | DocumentNode
+    | GraphQLNamedType[]
+  );
+  relayStyle: boolean;
 
   constructor(
     params: {
       databaseController: DatabaseController,
       parseGraphQLController: ParseGraphQLController,
       log: any,
+      graphQLCustomTypeDefs: ?(
+        | string
+        | GraphQLSchema
+        | DocumentNode
+        | GraphQLNamedType[]
+      ),
+      relayStyle?: boolean,
     } = {}
   ) {
     this.parseGraphQLController =
@@ -37,6 +55,7 @@ class ParseGraphQLSchema {
     this.log =
       params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
+    this.relayStyle = params.relayStyle === true;
   }
 
   async load() {
