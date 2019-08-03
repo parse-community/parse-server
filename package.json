@@ -34,6 +34,7 @@
     "follow-redirects": "1.7.0",
     "graphql": "14.4.2",
     "graphql-list-fields": "2.0.2",
+    "graphql-relay": "^0.6.0",
     "graphql-tools": "^4.0.5",
     "graphql-upload": "8.0.7",
     "intersect": "1.0.1",

@@ -19,6 +19,7 @@ import ParseGraphQLController, {
 import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
+import * as defaultRelaySchema from './loaders/defaultRelaySchema';
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
@@ -93,6 +94,10 @@ class ParseGraphQLSchema {
     this.graphQLSchemaDirectives = {};
 
     defaultGraphQLTypes.load(this);
+
+    if (this.graphQLSchemaIsRelayStyle) {
+      defaultRelaySchema.load(this);
+    }
 
     this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
