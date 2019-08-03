@@ -38,6 +38,7 @@ const load = parseGraphQLSchema => {
     }
   );
 
+  parseGraphQLSchema.relayNodeInterface = nodeInterface;
   parseGraphQLSchema.graphQLTypes.push(nodeInterface);
   parseGraphQLSchema.graphQLQueries.node = nodeField;
 };

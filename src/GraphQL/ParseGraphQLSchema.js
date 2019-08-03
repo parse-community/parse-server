@@ -92,6 +92,7 @@ class ParseGraphQLSchema {
     this.graphQLSubscriptions = {};
     this.graphQLSchemaDirectivesDefinitions = null;
     this.graphQLSchemaDirectives = {};
+    this.relayNodeInterface = null;
 
     defaultGraphQLTypes.load(this);
 

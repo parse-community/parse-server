@@ -10,6 +10,7 @@ import {
   GraphQLScalarType,
   GraphQLEnumType,
 } from 'graphql';
+import { globalIdField } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
@@ -528,8 +529,12 @@ const load = (
   };
 
   const classGraphQLOutputTypeName = `${className}Class`;
+  const interfaces = [defaultGraphQLTypes.CLASS];
+  if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+    interfaces.push(parseGraphQLSchema.relayNodeInterface);
+  }
   const outputFields = () => {
-    return classOutputFields.reduce((fields, field) => {
+    const outputFields = classOutputFields.reduce((fields, field) => {
       const type = mapOutputType(
         parseClass.fields[field].type,
         parseClass.fields[field].targetClass,
@@ -632,11 +637,15 @@ const load = (
         return fields;
       }
     }, defaultGraphQLTypes.CLASS_FIELDS);
+    if (parseGraphQLSchema.relayNodeInterface) {
+      outputFields.id = globalIdField(className, obj => obj.objectId);
+    }
+    return outputFields;
   };
   const classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
-    interfaces: [defaultGraphQLTypes.CLASS],
+    interfaces,
     fields: outputFields,
   });
   parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
@@ -673,7 +682,7 @@ const load = (
     const meType = new GraphQLObjectType({
       name: 'Me',
       description: `The Me object type is used in operations that involve outputting the current user data.`,
-      interfaces: [defaultGraphQLTypes.CLASS],
+      interfaces,
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
