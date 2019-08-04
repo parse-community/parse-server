@@ -62,7 +62,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
         - [Configuring File Adapters](#configuring-file-adapters)
         - [Logging](#logging)
 - [Live Queries](#live-queries)
-- [GraphQL](#graphql)
+- [GraphQL (beta)](#graphql-beta)
 - [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
@@ -406,7 +406,7 @@ Live queries are meant to be used in real-time reactive applications, where just
 
 Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/guide/#live-queries), [Live Query Server Setup Guide](https://docs.parseplatform.org/parse-server/guide/#scalability) and [Live Query Protocol Specification](https://github.com/parse-community/parse-server/wiki/Parse-LiveQuery-Protocol-Specification). You can setup a standalone server or multiple instances for scalability (recommended).
 
-# GraphQL
+# GraphQL (beta)
 
 [GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
 
