@@ -534,7 +534,14 @@ const load = (
     interfaces.push(parseGraphQLSchema.relayNodeInterface);
   }
   const outputFields = () => {
-    const outputFields = classOutputFields.reduce((fields, field) => {
+    let classFields = defaultGraphQLTypes.CLASS_FIELDS;
+    if (parseGraphQLSchema.relayNodeInterface) {
+      classFields = {
+        id: globalIdField(className, obj => obj.objectId),
+        ...classFields,
+      };
+    }
+    return classOutputFields.reduce((fields, field) => {
       const type = mapOutputType(
         parseClass.fields[field].type,
         parseClass.fields[field].targetClass,
@@ -636,11 +643,7 @@ const load = (
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.CLASS_FIELDS);
-    if (parseGraphQLSchema.relayNodeInterface) {
-      outputFields.id = globalIdField(className, obj => obj.objectId);
-    }
-    return outputFields;
+    }, classFields);
   };
   const classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
