@@ -931,4 +931,143 @@ describe('Parse.ACL', () => {
 
     rest.create(config, auth.nobody(config), '_User', anonUser);
   });
+
+  it('acl an object with read access by one user allows reading protectedFields by the same user', async done => {
+    // Add a protected field to the TestObject class
+    await reconfigureServer({
+      protectedFields: {
+        TestObject: {
+          '*': ['protectedInfo'],
+        },
+      },
+    });
+
+    // Create an object readable by Alice.
+    const user = new Parse.User();
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
+    await user.signUp();
+
+    const object = new TestObject();
+    object.set({
+      protectedInfo: 'IAmASecret',
+    });
+    const acl = new Parse.ACL();
+    acl.setReadAccess(user.id, true);
+    object.setACL(acl);
+    await object.save();
+
+    // Check if the logged in user can read the protected fields
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const objectRefetched = await query.find();
+    equal(objectRefetched.length, 1);
+    equal(objectRefetched[0].get('protectedInfo'), 'IAmASecret');
+    done();
+  });
+
+  it('acl an object with read access by one user disallows reading protectedFields by another user', async done => {
+    // Add a protected field to the TestObject class
+    await reconfigureServer({
+      protectedFields: {
+        TestObject: {
+          '*': ['protectedInfo'],
+        },
+      },
+    });
+
+    // Create an object readable by Alice.
+    let user = new Parse.User();
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
+    await user.signUp();
+
+    const object = new TestObject();
+    object.set({
+      protectedInfo: 'IAmASecret',
+    });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setReadAccess(user.id, true);
+    object.setACL(acl);
+    await object.save();
+    await Parse.User.logOut();
+
+    // Signin as an user without ACL read access
+    user = new Parse.User();
+    user.set('username', 'alice2');
+    user.set('password', 'wonderland2');
+    await user.signUp();
+
+    // Check if the logged in user can read the protected fields
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const objectRefetched = await query.find();
+    equal(objectRefetched.length, 1);
+    equal(objectRefetched[0].get('protectedInfo'), undefined);
+    done();
+  });
+
+  it('acl an object with public access and an singedIn user does not allow reading protectedFields', async done => {
+    // Add a protected field to the TestObject class
+    await reconfigureServer({
+      protectedFields: {
+        TestObject: {
+          '*': ['protectedInfo'],
+        },
+      },
+    });
+
+    // Create a dummy user
+    const user = new Parse.User();
+    user.set('username', 'alice');
+    user.set('password', 'wonderland');
+    await user.signUp();
+
+    const object = new TestObject();
+    object.set({
+      protectedInfo: 'IAmASecret',
+    });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    object.setACL(acl);
+    await object.save();
+
+    // Check if the dummy user can read the protected fields
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const objectRefetched = await query.find();
+    equal(objectRefetched.length, 1);
+    equal(objectRefetched[0].get('protectedInfo'), undefined);
+    done();
+  });
+
+  it('acl an object with public access does not allow reading protectedFields', async done => {
+    // Add a protected field to the TestObject class
+    await reconfigureServer({
+      protectedFields: {
+        TestObject: {
+          '*': ['protectedInfo'],
+        },
+      },
+    });
+
+    // Create an object with public read access
+    const object = new TestObject();
+    object.set({
+      protectedInfo: 'IAmASecret',
+    });
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    object.setACL(acl);
+    await object.save();
+
+    // Check if the oublic fields can be read publicly
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const objectRefetched = await query.find();
+    equal(objectRefetched.length, 1);
+    equal(objectRefetched[0].get('protectedInfo'), undefined);
+    done();
+  });
 });

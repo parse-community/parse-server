@@ -198,7 +198,24 @@ const filterSensitiveData = (
   protectedFields,
   object
 ) => {
-  protectedFields && protectedFields.forEach(k => delete object[k]);
+  // Get all users with read access
+  if (protectedFields && protectedFields.length > 0) {
+    const userACLs = aclGroup.filter(acl => {
+      return acl.indexOf('role:') != 0 && acl != '*';
+    });
+
+    var objectCopyWithClassName = {};
+    Object.assign(objectCopyWithClassName, object);
+    objectCopyWithClassName.className = className;
+
+    if (
+      userACLs.length !== 1 ||
+      !Parse.Object.fromJSON(objectCopyWithClassName)
+        .getACL()
+        .getReadAccess(userACLs[0])
+    )
+      protectedFields.forEach(k => delete object[k]);
+  }
 
   if (className !== '_User') {
     return object;
@@ -1315,8 +1332,9 @@ class DatabaseController {
                     query,
                     aclGroup
                   );
-                  // ProtectedFields is generated before executing the query so we
-                  // can optimize the query using Mongo Projection at a later stage.
+                  // Don't use a Mongo Projection for removing the protectedFields from the query.
+                  // The retrieval of the data could be allowed to the user through whitelisting by
+                  // a read ACL. This is determined after querying.
                   protectedFields = this.addProtectedFields(
                     schemaController,
                     className,
