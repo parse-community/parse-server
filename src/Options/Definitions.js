@@ -306,6 +306,12 @@ module.exports.ParseServerOptions = {
     help:
       'Read-only key, which has the same capabilities as MasterKey without writes',
   },
+  relayStyle: {
+    env: 'PARSE_SERVER_RELAY_STYLE',
+    help: 'Mounts the GraphQL API using the relay style',
+    action: parsers.booleanParser,
+    default: false,
+  },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key for REST calls',

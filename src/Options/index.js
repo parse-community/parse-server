@@ -191,6 +191,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
+  /* Mounts the GraphQL API using the relay style
+  :ENV: PARSE_SERVER_RELAY_STYLE
+  :DEFAULT: false */
+  relayStyle: ?boolean;
   /* Mounts the GraphQL Playground - never use this option in production
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */
