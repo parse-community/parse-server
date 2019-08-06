@@ -213,6 +213,12 @@ const getInputFieldsAndConstraints = function(
   } else {
     classOutputFields = classCustomFields;
   }
+  // Filters the "password" field from class _User
+  if (parseClass.className === '_User') {
+    classOutputFields = classOutputFields.filter(
+      outputField => outputField !== 'password'
+    );
+  }
 
   if (allowedConstraintFields) {
     classConstraintFields = classCustomFields.filter(field => {

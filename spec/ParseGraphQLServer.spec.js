@@ -765,6 +765,21 @@ describe('ParseGraphQLServer', () => {
           })).data['__type'].fields.map(field => field.name);
           expect(userFields.indexOf('foo') !== -1).toBeTruthy();
         });
+
+        it('should not contain password field from _User class', async () => {
+          const userFields = (await apolloClient.query({
+            query: gql`
+              query UserType {
+                __type(name: "_UserClass") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields.map(field => field.name);
+          expect(userFields.includes('password')).toBeFalsy();
+        });
       });
 
       describe('Configuration', function() {
