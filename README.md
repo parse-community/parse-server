@@ -410,6 +410,8 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 [GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
 
+⚠️ The Parse GraphQL ```beta``` implementation is fully functional but discussions are taking place on how to improve it. So new versions of Parse Server can bring breaking changes to the current API.
+
 ## Running
 
 ### Using the CLI
