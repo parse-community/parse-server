@@ -4,6 +4,7 @@ const req = require('../lib/request');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
+const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
 const { createHttpLink } = require('apollo-link-http');
@@ -2179,8 +2180,10 @@ describe('ParseGraphQLServer', () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
             async function findObjects(className, headers) {
+              const graphqlClassName = pluralize(
+                className.charAt(0).toLowerCase() + className.slice(1)
+              );
               const result = await apolloClient.query({
                 query: gql`
                   query FindSomeObjects($className: String!) {
@@ -2188,9 +2191,7 @@ describe('ParseGraphQLServer', () => {
                       find(className: $className) {
                         results
                       }
-                      ${className.charAt(0).toLowerCase() +
-                        className.slice(1) +
-                        's'} {
+                      ${graphqlClassName} {
                         results {
                           objectId
                           someField
@@ -2209,11 +2210,7 @@ describe('ParseGraphQLServer', () => {
 
               const genericFindResults = result.data.objects.find.results;
               const specificFindResults =
-                result.data.objects[
-                  `${className.charAt(0).toLowerCase() +
-                    className.slice(1) +
-                    's'}`
-                ].results;
+                result.data.objects[graphqlClassName].results;
               genericFindResults.forEach(({ objectId, someField }) => {
                 expect(
                   specificFindResults.some(
@@ -2344,7 +2341,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObjects($where: GraphQLClassWhereInput) {
                   objects {
-                    graphQLClasss(where: $where) {
+                    graphQLClasses(where: $where) {
                       results {
                         someField
                       }
@@ -2383,7 +2380,7 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.objects.graphQLClasss.results
+              result.data.objects.graphQLClasses.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
@@ -2398,7 +2395,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query {
                   objects {
-                    graphQLClasss(
+                    graphQLClasses(
                       where: {
                         _or: [
                           { someField: { _eq: "someValue1" } }
@@ -2421,7 +2418,7 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.objects.graphQLClasss.results
+              result.data.objects.graphQLClasses.results
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2']);
@@ -2460,7 +2457,7 @@ describe('ParseGraphQLServer', () => {
                     ) {
                       results
                     }
-                    someClasss(
+                    someClasses(
                       where: $whereCustom
                       order: $orderCustom
                       skip: $skip
@@ -2496,7 +2493,7 @@ describe('ParseGraphQLServer', () => {
               result.data.objects.find.results.map(obj => obj.someField)
             ).toEqual(['someValue14', 'someValue17']);
             expect(
-              result.data.objects.someClasss.results.map(obj => obj.someField)
+              result.data.objects.someClasses.results.map(obj => obj.someField)
             ).toEqual(['someValue14', 'someValue17']);
           });
 
@@ -2543,7 +2540,7 @@ describe('ParseGraphQLServer', () => {
                       results
                       count
                     }
-                    graphQLClasss(where: $where2, limit: $limit) {
+                    graphQLClasses(where: $where2, limit: $limit) {
                       results {
                         objectId
                       }
@@ -2566,8 +2563,8 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.data.objects.find.results).toEqual([]);
             expect(result.data.objects.find.count).toEqual(2);
-            expect(result.data.objects.graphQLClasss.results).toEqual([]);
-            expect(result.data.objects.graphQLClasss.count).toEqual(2);
+            expect(result.data.objects.graphQLClasses.results).toEqual([]);
+            expect(result.data.objects.graphQLClasses.count).toEqual(2);
           });
 
           it('should only count', async () => {
@@ -2607,7 +2604,7 @@ describe('ParseGraphQLServer', () => {
                     find(className: "GraphQLClass", where: $where1) {
                       count
                     }
-                    graphQLClasss(where: $where2) {
+                    graphQLClasses(where: $where2) {
                       count
                     }
                   }
@@ -2626,8 +2623,8 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.data.objects.find.results).toBeUndefined();
             expect(result.data.objects.find.count).toEqual(2);
-            expect(result.data.objects.graphQLClasss.results).toBeUndefined();
-            expect(result.data.objects.graphQLClasss.count).toEqual(2);
+            expect(result.data.objects.graphQLClasses.results).toBeUndefined();
+            expect(result.data.objects.graphQLClasses.count).toEqual(2);
           });
 
           it('should respect max limit', async () => {
@@ -2656,7 +2653,7 @@ describe('ParseGraphQLServer', () => {
                       results
                       count
                     }
-                    someClasss(
+                    someClasses(
                       where: { objectId: { _exists: true } }
                       limit: $limit
                     ) {
@@ -2680,8 +2677,8 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.data.objects.find.results.length).toEqual(10);
             expect(result.data.objects.find.count).toEqual(100);
-            expect(result.data.objects.someClasss.results.length).toEqual(10);
-            expect(result.data.objects.someClasss.count).toEqual(100);
+            expect(result.data.objects.someClasses.results.length).toEqual(10);
+            expect(result.data.objects.someClasses.count).toEqual(100);
           });
 
           it('should support keys argument', async () => {
@@ -2800,7 +2797,7 @@ describe('ParseGraphQLServer', () => {
                     ) {
                       results
                     }
-                    graphQLClasss(where: $where2) {
+                    graphQLClasses(where: $where2) {
                       results {
                         pointerToUser {
                           username
@@ -2827,7 +2824,7 @@ describe('ParseGraphQLServer', () => {
               result2.data.objects.find.results[0].pointerToUser.username
             ).toBeDefined();
             expect(
-              result2.data.objects.graphQLClasss.results[0].pointerToUser
+              result2.data.objects.graphQLClasses.results[0].pointerToUser
                 .username
             ).toBeDefined();
           });
@@ -4466,7 +4463,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!, $someFieldValue: String) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
                     }
@@ -4482,7 +4479,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('string');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support Int numbers', async () => {
@@ -4532,7 +4529,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
                     }
@@ -4548,7 +4545,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('number');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support Float numbers', async () => {
@@ -4598,7 +4595,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
                     }
@@ -4614,7 +4611,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('number');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support Boolean', async () => {
@@ -4672,7 +4669,7 @@ describe('ParseGraphQLServer', () => {
               ) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(
+                  someClasses(
                     where: {
                       someFieldTrue: { _eq: $someFieldValueTrue }
                       someFieldFalse: { _eq: $someFieldValueFalse }
@@ -4700,7 +4697,7 @@ describe('ParseGraphQLServer', () => {
           );
           expect(getResult.data.objects.get.someFieldTrue).toEqual(true);
           expect(getResult.data.objects.get.someFieldFalse).toEqual(false);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support Date', async () => {
@@ -4753,7 +4750,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _exists: true } }) {
+                  someClasses(where: { someField: { _exists: true } }) {
                     results {
                       objectId
                     }
@@ -4768,7 +4765,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('object');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support createdAt', async () => {
@@ -4894,7 +4891,7 @@ describe('ParseGraphQLServer', () => {
               ) {
                 objects {
                   get(className: "ChildClass", objectId: $objectId)
-                  findChildClass1: childClasss(
+                  findChildClass1: childClasses(
                     where: { pointerField: { _eq: $pointerFieldValue1 } }
                   ) {
                     results {
@@ -4904,7 +4901,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  findChildClass2: childClasss(
+                  findChildClass2: childClasses(
                     where: { pointerField: { _eq: $pointerFieldValue2 } }
                   ) {
                     results {
@@ -5211,7 +5208,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  findSomeClass1: someClasss(
+                  findSomeClass1: someClasses(
                     where: { someField: { _exists: true } }
                   ) {
                     results {
@@ -5221,7 +5218,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  findSomeClass2: someClasss(
+                  findSomeClass2: someClasses(
                     where: { someField: { _exists: true } }
                   ) {
                     results {
@@ -5316,7 +5313,7 @@ describe('ParseGraphQLServer', () => {
               ) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: $where) {
+                  someClasses(where: $where) {
                     results {
                       objectId
                       someField
@@ -5335,16 +5332,20 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const { get: getResult, someClasss, find } = queryResult.data.objects;
+          const {
+            get: getResult,
+            someClasses,
+            find,
+          } = queryResult.data.objects;
 
           const { someField } = getResult;
           expect(typeof someField).toEqual('object');
           expect(someField).toEqual(someFieldValue);
 
           // Checks class query results
-          expect(someClasss.results.length).toEqual(2);
-          expect(someClasss.results[0].someField).toEqual(someFieldValue);
-          expect(someClasss.results[1].someField).toEqual(someFieldValue);
+          expect(someClasses.results.length).toEqual(2);
+          expect(someClasses.results[0].someField).toEqual(someFieldValue);
+          expect(someClasses.results[1].someField).toEqual(someFieldValue);
 
           // Checks generic query results
           expect(find.results.length).toEqual(2);
@@ -5424,7 +5425,7 @@ describe('ParseGraphQLServer', () => {
                 $genericWhere: Object
               ) {
                 objects {
-                  someClasss(where: $where) {
+                  someClasses(where: $where) {
                     results {
                       objectId
                       someField
@@ -5443,10 +5444,10 @@ describe('ParseGraphQLServer', () => {
           });
 
           const { create1, create2 } = createResult.data.objects;
-          const { someClasss, find } = findResult.data.objects;
+          const { someClasses, find } = findResult.data.objects;
 
           // Checks class query results
-          const { results } = someClasss;
+          const { results } = someClasses;
           expect(results.length).toEqual(2);
           expect(
             results.find(result => result.objectId === create1.objectId)
@@ -5517,7 +5518,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _exists: true } }) {
+                  someClasses(where: { someField: { _exists: true } }) {
                     results {
                       objectId
                       someField
@@ -5534,7 +5535,7 @@ describe('ParseGraphQLServer', () => {
           const { someField } = getResult.data.objects.get;
           expect(Array.isArray(someField)).toBeTruthy();
           expect(someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support null values', async () => {
@@ -5666,7 +5667,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!, $someFieldValue: Bytes) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       objectId
                       someField
@@ -5683,7 +5684,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('object');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(3);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(3);
         });
 
         it('should support Geo Points', async () => {
@@ -5740,7 +5741,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { someField: { _exists: true } }) {
+                  someClasses(where: { someField: { _exists: true } }) {
                     results {
                       objectId
                       someField {
@@ -5759,7 +5760,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(typeof getResult.data.objects.get.someField).toEqual('object');
           expect(getResult.data.objects.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support Polygons', async () => {
@@ -5815,7 +5816,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 objects {
                   get(className: "SomeClass", objectId: $objectId)
-                  someClasss(where: { somePolygonField: { _exists: true } }) {
+                  someClasses(where: { somePolygonField: { _exists: true } }) {
                     results {
                       objectId
                       somePolygonField {
@@ -5838,7 +5839,7 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.get.somePolygonField).toEqual(
             someFieldValue
           );
-          expect(getResult.data.objects.someClasss.results.length).toEqual(2);
+          expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
         it('should support polygon values', async () => {
@@ -5982,7 +5983,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query FindSomeObject($where: SomeClassWhereInput!) {
                 objects {
-                  someClasss(where: $where) {
+                  someClasses(where: $where) {
                     results {
                       objectId
                     }
@@ -5998,7 +5999,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          const findResults = findResult.data.objects.someClasss.results;
+          const findResults = findResult.data.objects.someClasses.results;
           expect(findResults.length).toBe(1);
           expect(findResults[0].objectId).toBe(
             createResult.data.objects.createSomeClass.objectId

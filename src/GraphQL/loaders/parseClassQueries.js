@@ -1,5 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
+import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import * as parseClassTypes from './parseClassTypes';
@@ -69,8 +70,9 @@ const load = function(
   }
 
   if (isFindEnabled) {
-    const findGraphQLQueryName =
-      className.charAt(0).toLowerCase() + className.slice(1) + 's';
+    const findGraphQLQueryName = pluralize(
+      className.charAt(0).toLowerCase() + className.slice(1)
+    );
     parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
       description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
       args: classGraphQLFindArgs,
