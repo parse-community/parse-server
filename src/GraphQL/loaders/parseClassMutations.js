@@ -1,6 +1,9 @@
-import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
+import { GraphQLNonNull } from 'graphql';
+import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
+import * as parseClassTypes from './parseClassTypes';
 import * as objectsMutations from './objectsMutations';
+import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 
 const getParseClassMutationConfig = function(
@@ -24,6 +27,7 @@ const load = function(
   const {
     classGraphQLCreateType,
     classGraphQLUpdateType,
+    classGraphQLOutputType,
   } = parseGraphQLSchema.parseClassTypes[className];
 
   const createFields = {
@@ -78,17 +82,32 @@ const load = function(
       args: {
         fields: createFields,
       },
-      type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
-      async resolve(_source, args, context) {
+      type: new GraphQLNonNull(classGraphQLOutputType),
+      async resolve(_source, args, context, mutationInfo) {
         try {
           const { fields } = args;
           const { config, auth, info } = context;
 
           transformTypes('create', fields);
-
-          return await objectsMutations.createObject(
+          const { objectId } = await objectsMutations.createObject(
             className,
             fields,
+            config,
+            auth,
+            info
+          );
+          const selectedFields = getFieldNames(mutationInfo);
+          const { keys, include } = parseClassTypes.extractKeysAndInclude(
+            selectedFields
+          );
+
+          return await objectsQueries.getObject(
+            className,
+            objectId,
+            keys,
+            include,
+            undefined,
+            undefined,
             config,
             auth,
             info
@@ -108,18 +127,34 @@ const load = function(
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
         fields: updateFields,
       },
-      type: defaultGraphQLTypes.UPDATE_RESULT,
-      async resolve(_source, args, context) {
+      type: new GraphQLNonNull(classGraphQLOutputType),
+      async resolve(_source, args, context, mutationInfo) {
         try {
           const { objectId, fields } = args;
           const { config, auth, info } = context;
 
           transformTypes('update', fields);
 
-          return await objectsMutations.updateObject(
+          await objectsMutations.updateObject(
             className,
             objectId,
             fields,
+            config,
+            auth,
+            info
+          );
+          const selectedFields = getFieldNames(mutationInfo);
+          const { keys, include } = parseClassTypes.extractKeysAndInclude(
+            selectedFields
+          );
+
+          return await objectsQueries.getObject(
+            className,
+            objectId,
+            keys,
+            include,
+            undefined,
+            undefined,
             config,
             auth,
             info
@@ -138,19 +173,34 @@ const load = function(
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
       },
-      type: new GraphQLNonNull(GraphQLBoolean),
-      async resolve(_source, args, context) {
+      type: new GraphQLNonNull(classGraphQLOutputType),
+      async resolve(_source, args, context, mutationInfo) {
         try {
           const { objectId } = args;
           const { config, auth, info } = context;
-
-          return await objectsMutations.deleteObject(
+          const selectedFields = getFieldNames(mutationInfo);
+          const { keys, include } = parseClassTypes.extractKeysAndInclude(
+            selectedFields
+          );
+          const object = await objectsQueries.getObject(
+            className,
+            objectId,
+            keys,
+            include,
+            undefined,
+            undefined,
+            config,
+            auth,
+            info
+          );
+          await objectsMutations.deleteObject(
             className,
             objectId,
             config,
             auth,
             info
           );
+          return object;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
