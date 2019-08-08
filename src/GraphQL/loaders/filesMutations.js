@@ -83,7 +83,9 @@ const load = parseGraphQLSchema => {
       outputFields: {
         fileInfo: { type },
       },
-      mutateAndGetPayload: (object, ctx) => resolve(undefined, object, ctx),
+      mutateAndGetPayload: async (object, ctx) => ({
+        fileInfo: resolve(undefined, object, ctx),
+      }),
     });
     parseGraphQLSchema.graphQLTypes.push(createField.args.input.type);
     parseGraphQLSchema.graphQLTypes.push(createField.type);

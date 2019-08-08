@@ -1,7 +1,9 @@
 const http = require('http');
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 const ws = require('ws');
 const express = require('express');
+const uuidv4 = require('uuid/v4');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const { SubscriptionClient } = require('subscriptions-transport-ws');
@@ -14,6 +16,7 @@ const { InMemoryCache } = require('apollo-cache-inmemory');
 const gql = require('graphql-tag');
 
 describe('ParseGraphQLServer - Relay Style', () => {
+  let parseServer;
   let httpServer;
   let parseLiveQueryServer;
   const headers = {
@@ -24,7 +27,7 @@ describe('ParseGraphQLServer - Relay Style', () => {
   let apolloClient;
 
   beforeAll(async () => {
-    const parseServer = await global.reconfigureServer({});
+    parseServer = await global.reconfigureServer({});
     const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
@@ -193,6 +196,69 @@ describe('ParseGraphQLServer - Relay Style', () => {
       );
       expect(nodeResult.data.node2.objectId).toBe(obj2.id);
       expect(nodeResult.data.node2.someField).toBe('some value 2');
+    });
+  });
+
+  describe('Mutations', () => {
+    it('should create file with clientMutationId', async () => {
+      parseServer = await global.reconfigureServer({
+        publicServerURL: 'http://localhost:13377/parse',
+      });
+
+      const clientMutationId = uuidv4();
+      const body = new FormData();
+      body.append(
+        'operations',
+        JSON.stringify({
+          query: `
+            mutation CreateFile($file: Upload!, $clientMutationId: String) {
+              files {
+                create(input: { file: $file, clientMutationId: $clientMutationId }) {
+                  fileInfo {
+                    name,
+                    url
+                  },
+                  clientMutationId
+                }
+              }
+            }
+          `,
+          variables: {
+            file: null,
+            clientMutationId,
+          },
+        })
+      );
+      body.append('map', JSON.stringify({ 1: ['variables.file'] }));
+      body.append('1', 'My File Content', {
+        filename: 'myFileName.txt',
+        contentType: 'text/plain',
+      });
+
+      let res = await fetch('http://localhost:13377/graphql', {
+        method: 'POST',
+        headers,
+        body,
+      });
+
+      expect(res.status).toEqual(200);
+
+      const result = JSON.parse(await res.text());
+
+      expect(result.data.files.create.fileInfo.name).toEqual(
+        jasmine.stringMatching(/_myFileName.txt$/)
+      );
+      expect(result.data.files.create.fileInfo.url).toEqual(
+        jasmine.stringMatching(/_myFileName.txt$/)
+      );
+      expect(result.data.files.create.clientMutationId).toEqual(
+        clientMutationId
+      );
+
+      res = await fetch(result.data.files.create.fileInfo.url);
+
+      expect(res.status).toEqual(200);
+      expect(await res.text()).toEqual('My File Content');
     });
   });
 });
