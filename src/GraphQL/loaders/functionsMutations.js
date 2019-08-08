@@ -46,8 +46,8 @@ const load = parseGraphQLSchema => {
       outputFields: {
         result: { type },
       },
-      mutateAndGetPayload: async (object, ctx) => ({
-        result: resolve(undefined, object, ctx),
+      mutateAndGetPayload: async (args, context) => ({
+        result: resolve(undefined, args, context),
       }),
     });
   } else {

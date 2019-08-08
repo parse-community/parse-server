@@ -1,4 +1,5 @@
 import { GraphQLNonNull, GraphQLBoolean, GraphQLObjectType } from 'graphql';
+import { mutationWithClientMutationId } from 'graphql-relay';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
@@ -62,26 +63,50 @@ const deleteObject = async (className, objectId, config, auth, info) => {
   return true;
 };
 
-const load = parseGraphQLSchema => {
-  parseGraphQLSchema.graphQLObjectsMutations.create = {
-    description:
-      'The create mutation can be used to create a new object of a certain class.',
-    args: {
-      className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      fields: defaultGraphQLTypes.FIELDS_ATT,
-    },
-    type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
-    async resolve(_source, args, context) {
-      try {
-        const { className, fields } = args;
-        const { config, auth, info } = context;
-
-        return await createObject(className, fields, config, auth, info);
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
+const loadCreate = parseGraphQLSchema => {
+  const description =
+    'The create mutation can be used to create a new object of a certain class.';
+  const args = {
+    className: defaultGraphQLTypes.CLASS_NAME_ATT,
+    fields: defaultGraphQLTypes.FIELDS_ATT,
   };
+  const type = new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT);
+  const resolve = async (_source, args, context) => {
+    try {
+      const { className, fields } = args;
+      const { config, auth, info } = context;
+
+      return await createObject(className, fields, config, auth, info);
+    } catch (e) {
+      parseGraphQLSchema.handleError(e);
+    }
+  };
+
+  let createField;
+  if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+    createField = mutationWithClientMutationId({
+      name: 'CreateObject',
+      inputFields: args,
+      outputFields: {
+        result: { type },
+      },
+      mutateAndGetPayload: async (args, context) => ({
+        result: resolve(undefined, args, context),
+      }),
+    });
+  } else {
+    createField = {
+      description,
+      args,
+      type,
+      resolve,
+    };
+  }
+  parseGraphQLSchema.graphQLObjectsMutations.create = createField;
+};
+
+const load = parseGraphQLSchema => {
+  loadCreate(parseGraphQLSchema);
 
   parseGraphQLSchema.graphQLObjectsMutations.update = {
     description:
