@@ -792,218 +792,260 @@ describe('ParseGraphQLServer', () => {
       });
 
       describe('Relay Specific Types', () => {
-        afterEach(() => {
-          parseGraphQLServer.setRelayStyle(false);
+        describe('when relay style is enabled', () => {
+          beforeAll(async () => {
+            parseGraphQLServer.setRelayStyle(true);
+            await resetGraphQLCache();
+          });
+
+          afterAll(async () => {
+            parseGraphQLServer.setRelayStyle(false);
+            await resetGraphQLCache();
+          });
+
+          it('should have Node interface', async () => {
+            const schemaTypes = (await apolloClient.query({
+              query: gql`
+                query SchemaTypes {
+                  __schema {
+                    types {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__schema'].types.map(type => type.name);
+
+            expect(schemaTypes).toContain('Node');
+          });
+
+          it('should have node query', async () => {
+            const queryFields = (await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "Query") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields.map(field => field.name);
+
+            expect(queryFields).toContain('node');
+          });
+
+          it('should return global id', async () => {
+            const userFields = (await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "_UserClass") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields.map(field => field.name);
+
+            expect(userFields).toContain('id');
+          });
+
+          it('should have clientMutationId in create file input', async () => {
+            const createFileInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFileInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(createFileInputFields).toEqual(['clientMutationId', 'file']);
+          });
+
+          it('should have clientMutationId in create file payload', async () => {
+            const createFilePayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFilePayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(createFilePayloadFields).toEqual([
+              'clientMutationId',
+              'fileInfo',
+            ]);
+          });
+
+          it('should have clientMutationId in call function input', async () => {
+            const callFunctionInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallFunctionInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(callFunctionInputFields).toEqual([
+              'clientMutationId',
+              'functionName',
+              'params',
+            ]);
+          });
+
+          it('should have clientMutationId in call function payload', async () => {
+            const callFunctionPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallFunctionPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(callFunctionPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
         });
 
-        it('should have relay specific types when relay style is enabled', async () => {
-          await parseGraphQLServer.setRelayStyle(true);
-          await resetGraphQLCache();
-
-          const schemaTypes = (await apolloClient.query({
-            query: gql`
-              query SchemaTypes {
-                __schema {
-                  types {
-                    name
+        describe('when relay style is disabled', () => {
+          it('should not Node interface', async () => {
+            const schemaTypes = (await apolloClient.query({
+              query: gql`
+                query SchemaTypes {
+                  __schema {
+                    types {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__schema'].types.map(type => type.name);
+              `,
+            })).data['__schema'].types.map(type => type.name);
 
-          expect(schemaTypes).toContain('Node');
+            expect(schemaTypes).not.toContain('Node');
+          });
 
-          const userFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "_UserClass") {
-                  fields {
-                    name
+          it('should not have node query', async () => {
+            const queryFields = (await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "Query") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
+              `,
+            })).data['__type'].fields.map(field => field.name);
 
-          expect(userFields).toContain('id');
+            expect(queryFields).not.toContain('node');
+          });
 
-          const createFileInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFileInput") {
-                  inputFields {
-                    name
+          it('should not return global id', async () => {
+            const userFields = (await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "_UserClass") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
-            .map(field => field.name)
-            .sort();
+              `,
+            })).data['__type'].fields.map(field => field.name);
 
-          expect(createFileInputFields).toEqual(['clientMutationId', 'file']);
+            expect(userFields).not.toContain('id');
+          });
 
-          const createFilePayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFilePayload") {
-                  fields {
-                    name
+          it('should not have create file input', async () => {
+            const createFileInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFileInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
-            .map(field => field.name)
-            .sort();
+              `,
+            })).data['__type'];
 
-          expect(createFilePayloadFields).toEqual([
-            'clientMutationId',
-            'fileInfo',
-          ]);
+            expect(createFileInputType).toBeNull();
+          });
 
-          const callFunctionInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallFunctionInput") {
-                  inputFields {
-                    name
+          it('should not have create file payload', async () => {
+            const createFilePayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFilePayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
-            .map(field => field.name)
-            .sort();
+              `,
+            })).data['__type'];
 
-          expect(callFunctionInputFields).toEqual([
-            'clientMutationId',
-            'functionName',
-            'params',
-          ]);
+            expect(createFilePayloadType).toBeNull();
+          });
 
-          const callFunctionPayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallFunctionPayload") {
-                  fields {
-                    name
+          it('should not have call function input', async () => {
+            const callFunctionInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallFunctionInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
-            .map(field => field.name)
-            .sort();
+              `,
+            })).data['__type'];
 
-          expect(callFunctionPayloadFields).toEqual([
-            'clientMutationId',
-            'result',
-          ]);
-        });
+            expect(callFunctionInputType).toBeNull();
+          });
 
-        it('should not have relay specific types when relay style is disabled', async () => {
-          await parseGraphQLServer.setRelayStyle(false);
-          await resetGraphQLCache();
-
-          const schemaTypes = (await apolloClient.query({
-            query: gql`
-              query SchemaTypes {
-                __schema {
-                  types {
-                    name
+          it('should not have call function payload', async () => {
+            const callFunctionPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallFunctionPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__schema'].types.map(type => type.name);
+              `,
+            })).data['__type'];
 
-          expect(schemaTypes).not.toContain('Node');
-
-          const queryFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "Query") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
-
-          expect(queryFields).not.toContain('node');
-
-          const userFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "_UserClass") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
-
-          expect(userFields).not.toContain('id');
-
-          const createFileInputType = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFileInput") {
-                  inputFields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-
-          expect(createFileInputType).toBeNull();
-
-          const createFilePayloadType = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFilePayload") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-
-          expect(createFilePayloadType).toBeNull();
-
-          const callFunctionInputType = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallFunctionInput") {
-                  inputFields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-
-          expect(callFunctionInputType).toBeNull();
-
-          const callFunctionPayloadType = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallFunctionPayload") {
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-
-          expect(callFunctionPayloadType).toBeNull();
+            expect(callFunctionPayloadType).toBeNull();
+          });
         });
       });
 
