@@ -232,6 +232,7 @@ describe('ParseGraphQLServer', () => {
 
   describe('Auto API', () => {
     let httpServer;
+    let parseLiveQueryServer;
     const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-Javascript-Key': 'test',
@@ -384,7 +385,7 @@ describe('ParseGraphQLServer', () => {
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
-      ParseServer.createLiveQueryServer(httpServer, {
+      parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {
         port: 1338,
       });
       parseGraphQLServer.applyGraphQL(expressApp);
@@ -427,6 +428,7 @@ describe('ParseGraphQLServer', () => {
     });
 
     afterAll(async () => {
+      await parseLiveQueryServer.server.close();
       await httpServer.close();
     });
 
@@ -512,6 +514,13 @@ describe('ParseGraphQLServer', () => {
     });
 
     describe('Schema', () => {
+      const resetGraphQLCache = async () => {
+        await Promise.all([
+          parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
+          parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
+        ]);
+      };
+
       describe('Default Types', () => {
         it('should have Object scalar type', async () => {
           const objectType = (await apolloClient.query({
@@ -782,14 +791,93 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
-      describe('Configuration', function() {
-        const resetGraphQLCache = async () => {
-          await Promise.all([
-            parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
-            parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
-          ]);
-        };
+      describe('Relay Specific Types', () => {
+        afterEach(() => {
+          parseGraphQLServer.setRelayStyle(false);
+        });
 
+        it('should have relay specific types when relay style is enabled', async () => {
+          await parseGraphQLServer.setRelayStyle(true);
+          await resetGraphQLCache();
+
+          const schemaTypes = (await apolloClient.query({
+            query: gql`
+              query SchemaTypes {
+                __schema {
+                  types {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__schema'].types.map(type => type.name);
+
+          expect(schemaTypes).toContain('Node');
+
+          const userFields = (await apolloClient.query({
+            query: gql`
+              query UserType {
+                __type(name: "_UserClass") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields.map(field => field.name);
+
+          expect(userFields).toContain('id');
+        });
+
+        it('should not have relay specific types when relay style is disabled', async () => {
+          await parseGraphQLServer.setRelayStyle(false);
+          await resetGraphQLCache();
+
+          const schemaTypes = (await apolloClient.query({
+            query: gql`
+              query SchemaTypes {
+                __schema {
+                  types {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__schema'].types.map(type => type.name);
+
+          expect(schemaTypes).not.toContain('Node');
+
+          const queryFields = (await apolloClient.query({
+            query: gql`
+              query UserType {
+                __type(name: "Query") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields.map(field => field.name);
+
+          expect(queryFields).not.toContain('node');
+
+          const userFields = (await apolloClient.query({
+            query: gql`
+              query UserType {
+                __type(name: "_UserClass") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields.map(field => field.name);
+
+          expect(userFields).not.toContain('id');
+        });
+      });
+
+      describe('Configuration', function() {
         beforeEach(async () => {
           await parseGraphQLServer.setGraphQLConfig({});
           await resetGraphQLCache();

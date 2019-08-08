@@ -126,7 +126,7 @@ class ParseGraphQLServer {
     return this.parseGraphQLController.updateGraphQLConfig(graphQLConfig);
   }
 
-  setRelaySyle(relayStyle) {
+  setRelayStyle(relayStyle) {
     this._config.relayStyle = relayStyle;
     this.parseGraphQLSchema.relayStyle = relayStyle;
   }

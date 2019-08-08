@@ -14,6 +14,8 @@ const { InMemoryCache } = require('apollo-cache-inmemory');
 const gql = require('graphql-tag');
 
 describe('ParseGraphQLServer - Relay Style', () => {
+  let httpServer;
+  let parseLiveQueryServer;
   const headers = {
     'X-Parse-Application-Id': 'test',
     'X-Parse-Javascript-Key': 'test',
@@ -30,9 +32,9 @@ describe('ParseGraphQLServer - Relay Style', () => {
       relayStyle: true,
     });
     const expressApp = express();
-    const httpServer = http.createServer(expressApp);
+    httpServer = http.createServer(expressApp);
     expressApp.use('/parse', parseServer.app);
-    ParseServer.createLiveQueryServer(httpServer, {
+    parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {
       port: 1338,
     });
     parseGraphQLServer.applyGraphQL(expressApp);
@@ -70,6 +72,11 @@ describe('ParseGraphQLServer - Relay Style', () => {
         },
       },
     });
+  });
+
+  afterAll(async () => {
+    await parseLiveQueryServer.server.close();
+    await httpServer.close();
   });
 
   describe('Object Identification', () => {
