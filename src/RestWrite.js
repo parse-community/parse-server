@@ -69,7 +69,13 @@ function RestWrite(
   // Processing this operation may mutate our data, so we operate on a
   // copy
   this.query = deepcopy(query);
-  this.data = deepcopy(data);
+
+  // Remove batch data because this should not be stored in the database
+  const { _batchIndex, _batchCount, ...rest } = data;
+  this.context.batchCount = _batchCount;
+  this.context.batchIndex = _batchIndex;
+  this.data = deepcopy(rest);
+
   // We never change originalData, so we do not need a deep copy
   this.originalData = originalData;
 
@@ -109,6 +115,8 @@ RestWrite.prototype.execute = function() {
       return this.deleteEmailResetTokenIfNeeded();
     })
     .then(() => {
+      delete this.data._batchCount;
+      delete this.data._batchIndex;
       return this.validateSchema();
     })
     .then(schemaController => {
