@@ -105,36 +105,59 @@ const loadCreate = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLObjectsMutations.create = createField;
 };
 
+const loadUpdate = parseGraphQLSchema => {
+  const description =
+    'The update mutation can be used to update an object of a certain class.';
+  const args = {
+    className: defaultGraphQLTypes.CLASS_NAME_ATT,
+    objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+    fields: defaultGraphQLTypes.FIELDS_ATT,
+  };
+  const type = new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT);
+  const resolve = async (_source, args, context) => {
+    try {
+      const { className, objectId, fields } = args;
+      const { config, auth, info } = context;
+
+      return await updateObject(
+        className,
+        objectId,
+        fields,
+        config,
+        auth,
+        info
+      );
+    } catch (e) {
+      parseGraphQLSchema.handleError(e);
+    }
+  };
+
+  let updateField;
+  if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+    updateField = mutationWithClientMutationId({
+      name: 'UpdateObject',
+      inputFields: args,
+      outputFields: {
+        result: { type },
+      },
+      mutateAndGetPayload: async (args, context) => ({
+        result: resolve(undefined, args, context),
+      }),
+    });
+  } else {
+    updateField = {
+      description,
+      args,
+      type,
+      resolve,
+    };
+  }
+  parseGraphQLSchema.graphQLObjectsMutations.update = updateField;
+};
+
 const load = parseGraphQLSchema => {
   loadCreate(parseGraphQLSchema);
-
-  parseGraphQLSchema.graphQLObjectsMutations.update = {
-    description:
-      'The update mutation can be used to update an object of a certain class.',
-    args: {
-      className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      fields: defaultGraphQLTypes.FIELDS_ATT,
-    },
-    type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
-    async resolve(_source, args, context) {
-      try {
-        const { className, objectId, fields } = args;
-        const { config, auth, info } = context;
-
-        return await updateObject(
-          className,
-          objectId,
-          fields,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+  loadUpdate(parseGraphQLSchema);
 
   parseGraphQLSchema.graphQLObjectsMutations.delete = {
     description:
