@@ -91,7 +91,7 @@ const loadCreate = parseGraphQLSchema => {
         result: { type },
       },
       mutateAndGetPayload: async (args, context) => ({
-        result: resolve(undefined, args, context),
+        result: await resolve(undefined, args, context),
       }),
     });
   } else {
@@ -141,7 +141,7 @@ const loadUpdate = parseGraphQLSchema => {
         result: { type },
       },
       mutateAndGetPayload: async (args, context) => ({
-        result: resolve(undefined, args, context),
+        result: await resolve(undefined, args, context),
       }),
     });
   } else {
@@ -155,29 +155,52 @@ const loadUpdate = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLObjectsMutations.update = updateField;
 };
 
+const loadDelete = parseGraphQLSchema => {
+  const description =
+    'The delete mutation can be used to delete an object of a certain class.';
+  const args = {
+    className: defaultGraphQLTypes.CLASS_NAME_ATT,
+    objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+  };
+  const type = new GraphQLNonNull(GraphQLBoolean);
+  const resolve = async (_source, args, context) => {
+    try {
+      const { className, objectId } = args;
+      const { config, auth, info } = context;
+
+      return await deleteObject(className, objectId, config, auth, info);
+    } catch (e) {
+      parseGraphQLSchema.handleError(e);
+    }
+  };
+
+  let deleteField;
+  if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+    deleteField = mutationWithClientMutationId({
+      name: 'DeleteObject',
+      inputFields: args,
+      outputFields: {
+        result: { type },
+      },
+      mutateAndGetPayload: async (args, context) => ({
+        result: await resolve(undefined, args, context),
+      }),
+    });
+  } else {
+    deleteField = {
+      description,
+      args,
+      type,
+      resolve,
+    };
+  }
+  parseGraphQLSchema.graphQLObjectsMutations.delete = deleteField;
+};
+
 const load = parseGraphQLSchema => {
   loadCreate(parseGraphQLSchema);
   loadUpdate(parseGraphQLSchema);
-
-  parseGraphQLSchema.graphQLObjectsMutations.delete = {
-    description:
-      'The delete mutation can be used to delete an object of a certain class.',
-    args: {
-      className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-    },
-    type: new GraphQLNonNull(GraphQLBoolean),
-    async resolve(_source, args, context) {
-      try {
-        const { className, objectId } = args;
-        const { config, auth, info } = context;
-
-        return await deleteObject(className, objectId, config, auth, info);
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+  loadDelete(parseGraphQLSchema);
 
   const objectsMutation = new GraphQLObjectType({
     name: 'ObjectsMutation',

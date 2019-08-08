@@ -47,7 +47,7 @@ const load = parseGraphQLSchema => {
         result: { type },
       },
       mutateAndGetPayload: async (args, context) => ({
-        result: resolve(undefined, args, context),
+        result: await resolve(undefined, args, context),
       }),
     });
   } else {
