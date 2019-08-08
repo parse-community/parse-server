@@ -119,5 +119,73 @@ describe('ParseGraphQLServer - Relay Style', () => {
       expect(nodeResult.data.node.objectId).toBe(obj.id);
       expect(nodeResult.data.node.someField).toBe('some value');
     });
+
+    it('Class find custom method should return valid gobal id', async () => {
+      const obj1 = new Parse.Object('SomeClass');
+      obj1.set('someField', 'some value 1');
+      await obj1.save();
+
+      const obj2 = new Parse.Object('SomeClass');
+      obj2.set('someField', 'some value 2');
+      await obj2.save();
+
+      const findResult = await apolloClient.query({
+        query: gql`
+          query FindSomeClass {
+            objects {
+              findSomeClass(order: [createdAt_ASC]) {
+                results {
+                  id
+                  objectId
+                }
+              }
+            }
+          }
+        `,
+      });
+
+      expect(findResult.data.objects.findSomeClass.results[0].objectId).toBe(
+        obj1.id
+      );
+      expect(findResult.data.objects.findSomeClass.results[1].objectId).toBe(
+        obj2.id
+      );
+
+      const nodeResult = await apolloClient.query({
+        query: gql`
+          query Node($id1: ID!, $id2: ID!) {
+            node1: node(id: $id1) {
+              id
+              ... on SomeClassClass {
+                objectId
+                someField
+              }
+            }
+            node2: node(id: $id2) {
+              id
+              ... on SomeClassClass {
+                objectId
+                someField
+              }
+            }
+          }
+        `,
+        variables: {
+          id1: findResult.data.objects.findSomeClass.results[0].id,
+          id2: findResult.data.objects.findSomeClass.results[1].id,
+        },
+      });
+
+      expect(nodeResult.data.node1.id).toBe(
+        findResult.data.objects.findSomeClass.results[0].id
+      );
+      expect(nodeResult.data.node1.objectId).toBe(obj1.id);
+      expect(nodeResult.data.node1.someField).toBe('some value 1');
+      expect(nodeResult.data.node2.id).toBe(
+        findResult.data.objects.findSomeClass.results[1].id
+      );
+      expect(nodeResult.data.node2.objectId).toBe(obj2.id);
+      expect(nodeResult.data.node2.someField).toBe('some value 2');
+    });
   });
 });
