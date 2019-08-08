@@ -827,6 +827,22 @@ describe('ParseGraphQLServer', () => {
           })).data['__type'].fields.map(field => field.name);
 
           expect(userFields).toContain('id');
+
+          const createFileInputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CreateFileInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(createFileInputFields).toEqual(['clientMutationId', 'file']);
         });
 
         it('should not have relay specific types when relay style is disabled', async () => {
@@ -874,6 +890,20 @@ describe('ParseGraphQLServer', () => {
           })).data['__type'].fields.map(field => field.name);
 
           expect(userFields).not.toContain('id');
+
+          const createFileInputType = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CreateFileInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'];
+
+          expect(createFileInputType).toBeNull();
         });
       });
 
