@@ -260,5 +260,40 @@ describe('ParseGraphQLServer - Relay Style', () => {
       expect(res.status).toEqual(200);
       expect(await res.text()).toEqual('My File Content');
     });
+
+    it('should call function with clientMutationId', async () => {
+      const clientMutationId = uuidv4();
+
+      Parse.Cloud.define('hello', req => {
+        return `Hello, ${req.params.name}!!!`;
+      });
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation CallFunction($input: CallFunctionInput!) {
+            functions {
+              call(input: $input) {
+                result
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            functionName: 'hello',
+            params: {
+              name: 'dude',
+            },
+            clientMutationId,
+          },
+        },
+      });
+
+      expect(result.data.functions.call.result).toEqual('Hello, dude!!!');
+      expect(result.data.functions.call.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
   });
 });
