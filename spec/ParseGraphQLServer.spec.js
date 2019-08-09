@@ -1446,7 +1446,7 @@ describe('ParseGraphQLServer', () => {
             expect(callFunctionPayloadType).toBeNull();
           });
 
-          it('should not have create object input', async () => {
+          it('should not have create object input for generic mutation', async () => {
             const createObjectInputType = (await apolloClient.query({
               query: gql`
                 query {
@@ -1462,7 +1462,7 @@ describe('ParseGraphQLServer', () => {
             expect(createObjectInputType).toBeNull();
           });
 
-          it('should not have create object payload', async () => {
+          it('should not have create object payload for generic mutation', async () => {
             const createObjectPayloadType = (await apolloClient.query({
               query: gql`
                 query {
@@ -1478,7 +1478,49 @@ describe('ParseGraphQLServer', () => {
             expect(createObjectPayloadType).toBeNull();
           });
 
-          it('should not have update object input', async () => {
+          it('should not have create object input for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const createObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(createObjectInputType).toBeNull();
+          });
+
+          it('should not have create object payload for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const createObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(createObjectPayloadType).toBeNull();
+          });
+
+          it('should not have update object input for generic mutation', async () => {
             const updateObjectInputType = (await apolloClient.query({
               query: gql`
                 query {
@@ -1494,7 +1536,7 @@ describe('ParseGraphQLServer', () => {
             expect(updateObjectInputType).toBeNull();
           });
 
-          it('should not have update object payload', async () => {
+          it('should not have update object payload for generic mutation', async () => {
             const updateObjectPayloadType = (await apolloClient.query({
               query: gql`
                 query {
@@ -1510,7 +1552,49 @@ describe('ParseGraphQLServer', () => {
             expect(updateObjectPayloadType).toBeNull();
           });
 
-          it('should not have delete object input', async () => {
+          it('should not have update object input for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const updateObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(updateObjectInputType).toBeNull();
+          });
+
+          it('should not have update object payload for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const updateObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(updateObjectPayloadType).toBeNull();
+          });
+
+          it('should not have delete object input for generic mutation', async () => {
             const deleteObjectInputType = (await apolloClient.query({
               query: gql`
                 query {
@@ -1526,11 +1610,53 @@ describe('ParseGraphQLServer', () => {
             expect(deleteObjectInputType).toBeNull();
           });
 
-          it('should not have delete object payload', async () => {
+          it('should not have delete object payload for generic mutation', async () => {
             const deleteObjectPayloadType = (await apolloClient.query({
               query: gql`
                 query {
                   __type(name: "DeleteObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(deleteObjectPayloadType).toBeNull();
+          });
+
+          it('should not have delete object input for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const deleteObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(deleteObjectInputType).toBeNull();
+          });
+
+          it('should not have delete object payload for custom mutation', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const deleteObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassObjectPayload") {
                     fields {
                       name
                     }
