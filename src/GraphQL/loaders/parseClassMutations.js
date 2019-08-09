@@ -110,6 +110,8 @@ const load = function(
           result: await resolve(undefined, args, context),
         }),
       });
+      parseGraphQLSchema.graphQLTypes.push(createField.args.input.type);
+      parseGraphQLSchema.graphQLTypes.push(createField.type);
     } else {
       createField = {
         description,

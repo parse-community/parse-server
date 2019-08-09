@@ -94,6 +94,8 @@ const loadCreate = parseGraphQLSchema => {
         result: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(createField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(createField.type);
   } else {
     createField = {
       description,
@@ -144,6 +146,8 @@ const loadUpdate = parseGraphQLSchema => {
         result: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(updateField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(updateField.type);
   } else {
     updateField = {
       description,
@@ -186,6 +190,8 @@ const loadDelete = parseGraphQLSchema => {
         result: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(deleteField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(deleteField.type);
   } else {
     deleteField = {
       description,

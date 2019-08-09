@@ -49,6 +49,8 @@ const loadSignUp = (parseGraphQLSchema, fields) => {
         result: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(signUpField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(signUpField.type);
   } else {
     signUpField = {
       description,
@@ -105,6 +107,8 @@ const loadLogIn = (parseGraphQLSchema, fields) => {
         me: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(logInField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(logInField.type);
   } else {
     logInField = {
       description,
@@ -146,6 +150,8 @@ const loadLogOut = (parseGraphQLSchema, fields) => {
         result: await resolve(undefined, undefined, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(logOutField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(logOutField.type);
   } else {
     logOutField = {
       description,

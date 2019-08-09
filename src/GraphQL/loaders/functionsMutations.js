@@ -50,6 +50,8 @@ const load = parseGraphQLSchema => {
         result: await resolve(undefined, args, context),
       }),
     });
+    parseGraphQLSchema.graphQLTypes.push(callField.args.input.type);
+    parseGraphQLSchema.graphQLTypes.push(callField.type);
   } else {
     callField = {
       description,
