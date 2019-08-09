@@ -19,6 +19,7 @@ describe('ParseGraphQLServer - Relay Style', () => {
   let parseServer;
   let httpServer;
   let parseLiveQueryServer;
+  let parseGraphQLServer;
   const headers = {
     'X-Parse-Application-Id': 'test',
     'X-Parse-Javascript-Key': 'test',
@@ -28,7 +29,7 @@ describe('ParseGraphQLServer - Relay Style', () => {
 
   beforeAll(async () => {
     parseServer = await global.reconfigureServer({});
-    const parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+    parseGraphQLServer = new ParseGraphQLServer(parseServer, {
       graphQLPath: '/graphql',
       playgroundPath: '/playground',
       subscriptionsPath: '/subscriptions',
@@ -340,6 +341,55 @@ describe('ParseGraphQLServer - Relay Style', () => {
       );
     });
 
+    it('should create object with clientMutationId in the custom mutation', async () => {
+      const clientMutationId = uuidv4();
+
+      const firstobj = new Parse.Object('SomeClass');
+      firstobj.set('someField', 'some value');
+      await firstobj.save();
+
+      await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation CreateSomeClassObject($input: CreateSomeClassObjectInput!) {
+            objects {
+              createSomeClass(input: $input) {
+                result {
+                  objectId
+                  createdAt
+                }
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            fields: {
+              someField: 'some other value',
+            },
+            clientMutationId,
+          },
+        },
+      });
+
+      expect(result.data.objects.createSomeClass.result.objectId).toBeDefined();
+
+      const obj = await new Parse.Query('SomeClass').get(
+        result.data.objects.createSomeClass.result.objectId
+      );
+
+      expect(obj.createdAt).toEqual(
+        new Date(result.data.objects.createSomeClass.result.createdAt)
+      );
+      expect(obj.get('someField')).toEqual('some other value');
+
+      expect(result.data.objects.createSomeClass.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
+
     it('should update object with clientMutationId in the generic mutation', async () => {
       const clientMutationId = uuidv4();
 
@@ -386,6 +436,53 @@ describe('ParseGraphQLServer - Relay Style', () => {
       );
     });
 
+    it('should update object with clientMutationId in the custom mutation', async () => {
+      const clientMutationId = uuidv4();
+
+      const obj = new Parse.Object('SomeClass');
+      obj.set('someField1', 'some field 1 value 1');
+      obj.set('someField2', 'some field 2 value 1');
+      await obj.save();
+
+      await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation UpdateSomeClassObject($input: UpdateSomeClassObjectInput!) {
+            objects {
+              updateSomeClass(input: $input) {
+                result {
+                  updatedAt
+                }
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            objectId: obj.id,
+            fields: {
+              someField1: 'some field 1 value 2',
+            },
+            clientMutationId,
+          },
+        },
+      });
+
+      await obj.fetch();
+
+      expect(obj.updatedAt).toEqual(
+        new Date(result.data.objects.updateSomeClass.result.updatedAt)
+      );
+      expect(obj.get('someField1')).toEqual('some field 1 value 2');
+      expect(obj.get('someField2')).toEqual('some field 2 value 1');
+
+      expect(result.data.objects.updateSomeClass.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
+
     it('should delete object with clientMutationId in the generic mutation', async () => {
       const clientMutationId = uuidv4();
 
@@ -419,6 +516,44 @@ describe('ParseGraphQLServer - Relay Style', () => {
       );
 
       expect(result.data.objects.delete.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
+
+    it('should delete object with clientMutationId in the custom mutation', async () => {
+      const clientMutationId = uuidv4();
+
+      const obj = new Parse.Object('SomeClass');
+      await obj.save();
+
+      await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation DeleteSomeClassObject($input: DeleteSomeClassObjectInput!) {
+            objects {
+              deleteSomeClass(input: $input) {
+                result
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            objectId: obj.id,
+            clientMutationId,
+          },
+        },
+      });
+
+      expect(result.data.objects.deleteSomeClass.result).toEqual(true);
+
+      await expectAsync(obj.fetch({ useMasterKey: true })).toBeRejectedWith(
+        jasmine.stringMatching('Object not found')
+      );
+
+      expect(result.data.objects.deleteSomeClass.clientMutationId).toEqual(
         clientMutationId
       );
     });
