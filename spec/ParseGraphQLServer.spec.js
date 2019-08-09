@@ -1384,6 +1384,102 @@ describe('ParseGraphQLServer', () => {
 
             expect(deleteObjectPayloadType).toBeNull();
           });
+
+          it('should not have sign up input', async () => {
+            const inputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(inputType).toBeNull();
+          });
+
+          it('should not have sign up payload', async () => {
+            const payloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(payloadType).toBeNull();
+          });
+
+          it('should not have log in input', async () => {
+            const inputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(inputType).toBeNull();
+          });
+
+          it('should not have log in payload', async () => {
+            const payloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(payloadType).toBeNull();
+          });
+
+          it('should not have log out input', async () => {
+            const inputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(inputType).toBeNull();
+          });
+
+          it('should not have log out payload', async () => {
+            const payloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(payloadType).toBeNull();
+          });
         });
       });
 
