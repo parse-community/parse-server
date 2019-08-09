@@ -127,60 +127,108 @@ const load = function(
 
   if (isUpdateEnabled) {
     const updateGraphQLMutationName = `update${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[updateGraphQLMutationName] = {
-      description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
-      args: {
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-        fields: updateFields,
-      },
-      type: defaultGraphQLTypes.UPDATE_RESULT,
-      async resolve(_source, args, context) {
-        try {
-          const { objectId, fields } = args;
-          const { config, auth, info } = context;
-
-          transformTypes('update', fields);
-
-          return await objectsMutations.updateObject(
-            className,
-            objectId,
-            fields,
-            config,
-            auth,
-            info
-          );
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
-      },
+    const description = `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`;
+    const args = {
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+      fields: updateFields,
     };
+    const type = defaultGraphQLTypes.UPDATE_RESULT;
+    const resolve = async (_source, args, context) => {
+      try {
+        const { objectId, fields } = args;
+        const { config, auth, info } = context;
+
+        transformTypes('update', fields);
+
+        return await objectsMutations.updateObject(
+          className,
+          objectId,
+          fields,
+          config,
+          auth,
+          info
+        );
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    };
+
+    let updateField;
+    if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+      updateField = mutationWithClientMutationId({
+        name: `Update${className}Object`,
+        inputFields: args,
+        outputFields: {
+          result: { type },
+        },
+        mutateAndGetPayload: async (args, context) => ({
+          result: await resolve(undefined, args, context),
+        }),
+      });
+      parseGraphQLSchema.graphQLTypes.push(updateField.args.input.type);
+      parseGraphQLSchema.graphQLTypes.push(updateField.type);
+    } else {
+      updateField = {
+        description,
+        args,
+        type,
+        resolve,
+      };
+    }
+    parseGraphQLSchema.graphQLObjectsMutations[
+      updateGraphQLMutationName
+    ] = updateField;
   }
 
   if (isDestroyEnabled) {
     const deleteGraphQLMutationName = `delete${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[deleteGraphQLMutationName] = {
-      description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`,
-      args: {
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      },
-      type: new GraphQLNonNull(GraphQLBoolean),
-      async resolve(_source, args, context) {
-        try {
-          const { objectId } = args;
-          const { config, auth, info } = context;
-
-          return await objectsMutations.deleteObject(
-            className,
-            objectId,
-            config,
-            auth,
-            info
-          );
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
-      },
+    const description = `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`;
+    const args = {
+      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
     };
+    const type = new GraphQLNonNull(GraphQLBoolean);
+    const resolve = async (_source, args, context) => {
+      try {
+        const { objectId } = args;
+        const { config, auth, info } = context;
+
+        return await objectsMutations.deleteObject(
+          className,
+          objectId,
+          config,
+          auth,
+          info
+        );
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    };
+
+    let deleteField;
+    if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+      deleteField = mutationWithClientMutationId({
+        name: `Delete${className}Object`,
+        inputFields: args,
+        outputFields: {
+          result: { type },
+        },
+        mutateAndGetPayload: async (args, context) => ({
+          result: await resolve(undefined, args, context),
+        }),
+      });
+      parseGraphQLSchema.graphQLTypes.push(deleteField.args.input.type);
+      parseGraphQLSchema.graphQLTypes.push(deleteField.type);
+    } else {
+      deleteField = {
+        description,
+        args,
+        type,
+        resolve,
+      };
+    }
+    parseGraphQLSchema.graphQLObjectsMutations[
+      deleteGraphQLMutationName
+    ] = deleteField;
   }
 };
 
