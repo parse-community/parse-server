@@ -1,4 +1,5 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
+import { mutationWithClientMutationId } from 'graphql-relay';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsMutations from './objectsMutations';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
@@ -73,31 +74,53 @@ const load = function(
 
   if (isCreateEnabled) {
     const createGraphQLMutationName = `create${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
-      description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
-      args: {
-        fields: createFields,
-      },
-      type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
-      async resolve(_source, args, context) {
-        try {
-          const { fields } = args;
-          const { config, auth, info } = context;
-
-          transformTypes('create', fields);
-
-          return await objectsMutations.createObject(
-            className,
-            fields,
-            config,
-            auth,
-            info
-          );
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
-      },
+    const description = `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`;
+    const args = {
+      fields: createFields,
     };
+    const type = new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT);
+    const resolve = async (_source, args, context) => {
+      try {
+        const { fields } = args;
+        const { config, auth, info } = context;
+
+        transformTypes('create', fields);
+
+        return await objectsMutations.createObject(
+          className,
+          fields,
+          config,
+          auth,
+          info
+        );
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    };
+
+    let createField;
+    if (parseGraphQLSchema.graphQLSchemaIsRelayStyle) {
+      createField = mutationWithClientMutationId({
+        name: `Create${className}Object`,
+        inputFields: args,
+        outputFields: {
+          result: { type },
+        },
+        mutateAndGetPayload: async (args, context) => ({
+          result: await resolve(undefined, args, context),
+        }),
+      });
+    } else {
+      createField = {
+        description,
+        args,
+        type,
+        resolve,
+      };
+    }
+    parseGraphQLSchema.graphQLObjectsMutations[
+      createGraphQLMutationName
+    ] = createField;
   }
 
   if (isUpdateEnabled) {
