@@ -12,6 +12,28 @@ const getParseClassMutationConfig = function(
   return (parseClassConfig && parseClassConfig.mutation) || {};
 };
 
+const getOnlyRequiredFields = (
+  updatedFields,
+  selectedFieldsString,
+  includedFieldsString,
+  nativeObjectFields
+) => {
+  const includedFields = includedFieldsString.split(',');
+  const selectedFields = selectedFieldsString.split(',');
+  const missingFields = selectedFields
+    .filter(
+      field =>
+        (!updatedFields[field] && !nativeObjectFields.includes(field)) ||
+        includedFields.includes(field)
+    )
+    .join(',');
+  if (!missingFields.length) {
+    return { needGet: false, keys: '' };
+  } else {
+    return { needGet: true, keys: missingFields };
+  }
+};
+
 const load = function(
   parseGraphQLSchema,
   parseClass,
@@ -85,11 +107,11 @@ const load = function(
       type: new GraphQLNonNull(classGraphQLOutputType),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { fields } = args;
+          let { fields } = args;
+          if (!fields) fields = {};
           const { config, auth, info } = context;
-
           transformTypes('create', fields);
-          const { objectId } = await objectsMutations.createObject(
+          const createdObject = await objectsMutations.createObject(
             className,
             fields,
             config,
@@ -100,18 +122,32 @@ const load = function(
           const { keys, include } = parseClassTypes.extractKeysAndInclude(
             selectedFields
           );
-
-          return await objectsQueries.getObject(
-            className,
-            objectId,
+          const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+            fields,
             keys,
             include,
-            undefined,
-            undefined,
-            config,
-            auth,
-            info
+            ['objectId', 'createdAt', 'updatedAt']
           );
+          let optimizedObject = {};
+          if (needGet) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              createdObject.objectId,
+              requiredKeys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
+          }
+          return {
+            ...createdObject,
+            updatedAt: createdObject.createdAt,
+            ...fields,
+            ...optimizedObject,
+          };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -135,7 +171,7 @@ const load = function(
 
           transformTypes('update', fields);
 
-          await objectsMutations.updateObject(
+          const updatedObject = await objectsMutations.updateObject(
             className,
             objectId,
             fields,
@@ -148,17 +184,27 @@ const load = function(
             selectedFields
           );
 
-          return await objectsQueries.getObject(
-            className,
-            objectId,
+          const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+            fields,
             keys,
             include,
-            undefined,
-            undefined,
-            config,
-            auth,
-            info
+            ['objectId', 'updatedAt']
           );
+          let optimizedObject = {};
+          if (needGet) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              objectId,
+              requiredKeys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
+          }
+          return { ...updatedObject, ...fields, ...optimizedObject };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -182,17 +228,22 @@ const load = function(
           const { keys, include } = parseClassTypes.extractKeysAndInclude(
             selectedFields
           );
-          const object = await objectsQueries.getObject(
-            className,
-            objectId,
-            keys,
-            include,
-            undefined,
-            undefined,
-            config,
-            auth,
-            info
-          );
+
+          let optimizedObject = {};
+          const splitedKeys = keys.split(',');
+          if (splitedKeys.length > 1 || splitedKeys[0] !== 'objectId') {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              objectId,
+              keys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
+          }
           await objectsMutations.deleteObject(
             className,
             objectId,
@@ -200,7 +251,7 @@ const load = function(
             auth,
             info
           );
-          return object;
+          return { objectId: objectId, ...optimizedObject };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
