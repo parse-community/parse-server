@@ -1,6 +1,7 @@
 import { GraphQLBoolean, GraphQLNonNull, GraphQLObjectType } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from './objectsMutations';
+import { getUserFromSessionToken } from './usersQueries';
 
 const usersRouter = new UsersRouter();
 
@@ -19,12 +20,12 @@ const load = parseGraphQLSchema => {
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
-    async resolve(_source, args, context) {
+    async resolve(_source, args, context, mutationInfo) {
       try {
         const { fields } = args;
         const { config, auth, info } = context;
 
-        await objectsMutations.createObject(
+        const { sessionToken } = await objectsMutations.createObject(
           '_User',
           fields,
           config,
@@ -32,16 +33,9 @@ const load = parseGraphQLSchema => {
           info
         );
 
-        return (await usersRouter.handleLogIn({
-          body: {
-            username: fields.username,
-            password: fields.password,
-          },
-          query: {},
-          config,
-          auth,
-          info,
-        })).response;
+        info.sessionToken = sessionToken;
+
+        return await getUserFromSessionToken(config, info, mutationInfo);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
