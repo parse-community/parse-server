@@ -976,6 +976,58 @@ describe('ParseGraphQLServer', () => {
             ]);
           });
 
+          it('should have clientMutationId in custom create object mutation input', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const createObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(createObjectInputFields).toEqual([
+              'clientMutationId',
+              'fields',
+            ]);
+          });
+
+          it('should have clientMutationId in custom create object mutation payload', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const createObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(createObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
+
           it('should have clientMutationId in generic update object mutation input', async () => {
             const updateObjectInputFields = (await apolloClient.query({
               query: gql`
@@ -1020,6 +1072,59 @@ describe('ParseGraphQLServer', () => {
             ]);
           });
 
+          it('should have clientMutationId in custom update object mutation input', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const updateObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(updateObjectInputFields).toEqual([
+              'clientMutationId',
+              'fields',
+              'objectId',
+            ]);
+          });
+
+          it('should have clientMutationId in custom update object mutation payload', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const updateObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(updateObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
+
           it('should have clientMutationId in generic delete object mutation input', async () => {
             const deleteObjectInputFields = (await apolloClient.query({
               query: gql`
@@ -1047,6 +1152,58 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query {
                   __type(name: "DeleteObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(deleteObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
+
+          it('should have clientMutationId in custom delete object mutation input', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const deleteObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(deleteObjectInputFields).toEqual([
+              'clientMutationId',
+              'objectId',
+            ]);
+          });
+
+          it('should have clientMutationId in custom delete object mutation payload', async () => {
+            const obj = new Parse.Object('SomeClass');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const deleteObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassObjectPayload") {
                     fields {
                       name
                     }
