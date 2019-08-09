@@ -1062,6 +1062,118 @@ describe('ParseGraphQLServer', () => {
               'result',
             ]);
           });
+
+          it('should have clientMutationId in sign up mutation input', async () => {
+            const inputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(inputFields).toEqual(['clientMutationId', 'fields']);
+          });
+
+          it('should have clientMutationId in sign up mutation payload', async () => {
+            const payloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(payloadFields).toEqual(['clientMutationId', 'result']);
+          });
+
+          it('should have clientMutationId in log in mutation input', async () => {
+            const inputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(inputFields).toEqual([
+              'clientMutationId',
+              'password',
+              'username',
+            ]);
+          });
+
+          it('should have clientMutationId in log in mutation payload', async () => {
+            const payloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(payloadFields).toEqual(['clientMutationId', 'me']);
+          });
+
+          it('should have clientMutationId in log out mutation input', async () => {
+            const inputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(inputFields).toEqual(['clientMutationId']);
+          });
+
+          it('should have clientMutationId in log out mutation payload', async () => {
+            const payloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(payloadFields).toEqual(['clientMutationId', 'result']);
+          });
         });
 
         describe('when relay style is disabled', () => {
