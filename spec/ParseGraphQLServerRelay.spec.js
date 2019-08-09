@@ -422,5 +422,122 @@ describe('ParseGraphQLServer - Relay Style', () => {
         clientMutationId
       );
     });
+
+    it('should sign up with clientMutationId', async () => {
+      const clientMutationId = uuidv4();
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation SignUp($input: SignUpInput!) {
+            users {
+              signUp(input: $input) {
+                result {
+                  sessionToken
+                }
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            fields: {
+              username: 'user1',
+              password: 'user1',
+            },
+            clientMutationId,
+          },
+        },
+      });
+
+      expect(result.data.users.signUp.result.sessionToken).toBeDefined();
+      expect(typeof result.data.users.signUp.result.sessionToken).toBe(
+        'string'
+      );
+
+      expect(result.data.users.signUp.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
+
+    it('should log in with clientMutationId', async () => {
+      const clientMutationId = uuidv4();
+
+      const user = new Parse.User();
+      user.setUsername('user1');
+      user.setPassword('user1');
+      await user.signUp();
+      await Parse.User.logOut();
+
+      const result = await apolloClient.mutate({
+        mutation: gql`
+          mutation LogIn($input: LogInInput!) {
+            users {
+              logIn(input: $input) {
+                me {
+                  sessionToken
+                }
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            username: 'user1',
+            password: 'user1',
+            clientMutationId,
+          },
+        },
+      });
+
+      expect(result.data.users.logIn.me.sessionToken).toBeDefined();
+      expect(typeof result.data.users.logIn.me.sessionToken).toBe('string');
+
+      expect(result.data.users.logIn.clientMutationId).toEqual(
+        clientMutationId
+      );
+    });
+
+    it('should log out with clientMutationId', async () => {
+      const clientMutationId = uuidv4();
+
+      const user = new Parse.User();
+      user.setUsername('user1');
+      user.setPassword('user1');
+      await user.signUp();
+      const sessionToken = user.getSessionToken();
+
+      const logOut = await apolloClient.mutate({
+        mutation: gql`
+          mutation LogOutUser($input: LogOutInput!) {
+            users {
+              logOut(input: $input) {
+                result
+                clientMutationId
+              }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            clientMutationId,
+          },
+        },
+        context: {
+          headers: {
+            'X-Parse-Session-Token': sessionToken,
+          },
+        },
+      });
+
+      expect(logOut.data.users.logOut.result).toBeTruthy();
+      expect(logOut.data.users.logOut.clientMutationId).toEqual(
+        clientMutationId
+      );
+      await expectAsync(Parse.User.me({ sessionToken })).toBeRejectedWith(
+        new Error('Invalid session token')
+      );
+    });
   });
 });
