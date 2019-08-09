@@ -932,6 +932,136 @@ describe('ParseGraphQLServer', () => {
               'result',
             ]);
           });
+
+          it('should have clientMutationId in generic create object mutation input', async () => {
+            const createObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(createObjectInputFields).toEqual([
+              'className',
+              'clientMutationId',
+              'fields',
+            ]);
+          });
+
+          it('should have clientMutationId in generic create object mutation payload', async () => {
+            const createObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(createObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
+
+          it('should have clientMutationId in generic update object mutation input', async () => {
+            const updateObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(updateObjectInputFields).toEqual([
+              'className',
+              'clientMutationId',
+              'fields',
+              'objectId',
+            ]);
+          });
+
+          it('should have clientMutationId in generic update object mutation payload', async () => {
+            const updateObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(updateObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
+
+          it('should have clientMutationId in generic delete object mutation input', async () => {
+            const deleteObjectInputFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].inputFields
+              .map(field => field.name)
+              .sort();
+
+            expect(deleteObjectInputFields).toEqual([
+              'className',
+              'clientMutationId',
+              'objectId',
+            ]);
+          });
+
+          it('should have clientMutationId in generic delete object mutation payload', async () => {
+            const deleteObjectPayloadFields = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'].fields
+              .map(field => field.name)
+              .sort();
+
+            expect(deleteObjectPayloadFields).toEqual([
+              'clientMutationId',
+              'result',
+            ]);
+          });
         });
 
         describe('when relay style is disabled', () => {
@@ -1045,6 +1175,102 @@ describe('ParseGraphQLServer', () => {
             })).data['__type'];
 
             expect(callFunctionPayloadType).toBeNull();
+          });
+
+          it('should not have create object input', async () => {
+            const createObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(createObjectInputType).toBeNull();
+          });
+
+          it('should not have create object payload', async () => {
+            const createObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(createObjectPayloadType).toBeNull();
+          });
+
+          it('should not have update object input', async () => {
+            const updateObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(updateObjectInputType).toBeNull();
+          });
+
+          it('should not have update object payload', async () => {
+            const updateObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(updateObjectPayloadType).toBeNull();
+          });
+
+          it('should not have delete object input', async () => {
+            const deleteObjectInputType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteObjectInput") {
+                    inputFields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(deleteObjectInputType).toBeNull();
+          });
+
+          it('should not have delete object payload', async () => {
+            const deleteObjectPayloadType = (await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteObjectPayload") {
+                    fields {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+
+            expect(deleteObjectPayloadType).toBeNull();
           });
         });
       });
