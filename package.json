@@ -61,7 +61,7 @@
     "@babel/plugin-transform-flow-strip-types": "7.4.4",
     "@babel/preset-env": "7.5.5",
     "@parse/minami": "1.0.0",
-    "apollo-cache-inmemory": "1.6.2",
+    "apollo-cache-inmemory": "1.6.3",
     "apollo-client": "2.6.3",
     "apollo-link": "1.2.12",
     "apollo-link-http": "1.5.15",
