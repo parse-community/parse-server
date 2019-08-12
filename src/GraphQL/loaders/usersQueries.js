@@ -5,6 +5,46 @@ import rest from '../../rest';
 import Auth from '../../Auth';
 import { extractKeysAndInclude } from './parseClassTypes';
 
+const getUserFromSessionToken = async (config, info, queryInfo) => {
+  if (!info || !info.sessionToken) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_SESSION_TOKEN,
+      'Invalid session token'
+    );
+  }
+  const sessionToken = info.sessionToken;
+  const selectedFields = getFieldNames(queryInfo);
+
+  const { include } = extractKeysAndInclude(selectedFields);
+  const response = await rest.find(
+    config,
+    Auth.master(config),
+    '_Session',
+    { sessionToken },
+    {
+      include: include
+        .split(',')
+        .map(included => `user.${included}`)
+        .join(','),
+    },
+    info.clientVersion
+  );
+  if (
+    !response.results ||
+    response.results.length == 0 ||
+    !response.results[0].user
+  ) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_SESSION_TOKEN,
+      'Invalid session token'
+    );
+  } else {
+    const user = response.results[0].user;
+    user.sessionToken = sessionToken;
+    return user;
+  }
+};
+
 const load = parseGraphQLSchema => {
   if (parseGraphQLSchema.isUsersClassDisabled) {
     return;
@@ -17,44 +57,7 @@ const load = parseGraphQLSchema => {
     async resolve(_source, _args, context, queryInfo) {
       try {
         const { config, info } = context;
-
-        if (!info || !info.sessionToken) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_SESSION_TOKEN,
-            'Invalid session token'
-          );
-        }
-        const sessionToken = info.sessionToken;
-        const selectedFields = getFieldNames(queryInfo);
-
-        const { include } = extractKeysAndInclude(selectedFields);
-        const response = await rest.find(
-          config,
-          Auth.master(config),
-          '_Session',
-          { sessionToken },
-          {
-            include: include
-              .split(',')
-              .map(included => `user.${included}`)
-              .join(','),
-          },
-          info.clientVersion
-        );
-        if (
-          !response.results ||
-          response.results.length == 0 ||
-          !response.results[0].user
-        ) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_SESSION_TOKEN,
-            'Invalid session token'
-          );
-        } else {
-          const user = response.results[0].user;
-          user.sessionToken = sessionToken;
-          return user;
-        }
+        return await getUserFromSessionToken(config, info, queryInfo);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -75,4 +78,4 @@ const load = parseGraphQLSchema => {
   };
 };
 
-export { load };
+export { load, getUserFromSessionToken };

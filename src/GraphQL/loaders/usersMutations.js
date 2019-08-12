@@ -1,12 +1,7 @@
-import {
-  GraphQLBoolean,
-  GraphQLNonNull,
-  GraphQLObjectType,
-  GraphQLString,
-} from 'graphql';
+import { GraphQLBoolean, GraphQLNonNull, GraphQLObjectType } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
-import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsMutations from './objectsMutations';
+import { getUserFromSessionToken } from './usersQueries';
 
 const usersRouter = new UsersRouter();
 
@@ -24,19 +19,23 @@ const load = parseGraphQLSchema => {
         type: parseGraphQLSchema.parseClassTypes['_User'].signUpInputType,
       },
     },
-    type: new GraphQLNonNull(defaultGraphQLTypes.SIGN_UP_RESULT),
-    async resolve(_source, args, context) {
+    type: new GraphQLNonNull(parseGraphQLSchema.meType),
+    async resolve(_source, args, context, mutationInfo) {
       try {
         const { fields } = args;
         const { config, auth, info } = context;
 
-        return await objectsMutations.createObject(
+        const { sessionToken } = await objectsMutations.createObject(
           '_User',
           fields,
           config,
           auth,
           info
         );
+
+        info.sessionToken = sessionToken;
+
+        return await getUserFromSessionToken(config, info, mutationInfo);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -46,19 +45,17 @@ const load = parseGraphQLSchema => {
   fields.logIn = {
     description: 'The logIn mutation can be used to log the user in.',
     args: {
-      username: {
-        description: 'This is the username used to log the user in.',
-        type: new GraphQLNonNull(GraphQLString),
-      },
-      password: {
-        description: 'This is the password used to log the user in.',
-        type: new GraphQLNonNull(GraphQLString),
+      input: {
+        description: 'This is data needed to login',
+        type: parseGraphQLSchema.parseClassTypes['_User'].logInInputType,
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
     async resolve(_source, args, context) {
       try {
-        const { username, password } = args;
+        const {
+          input: { username, password },
+        } = args;
         const { config, auth, info } = context;
 
         return (await usersRouter.handleLogIn({

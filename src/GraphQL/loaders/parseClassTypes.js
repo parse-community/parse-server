@@ -715,9 +715,28 @@ const load = (
           }
         }, {}),
     });
+
+    const userLogInInputTypeName = '_UserLoginFields';
+    const userLogInInputType = new GraphQLInputObjectType({
+      name: userLogInInputTypeName,
+      description: `The ${userLogInInputTypeName} input type is used to login.`,
+      fields: {
+        username: {
+          description: 'This is the username used to log the user in.',
+          type: new GraphQLNonNull(GraphQLString),
+        },
+        password: {
+          description: 'This is the password used to log the user in.',
+          type: new GraphQLNonNull(GraphQLString),
+        },
+      },
+    });
     parseGraphQLSchema.parseClassTypes[
       '_User'
     ].signUpInputType = userSignUpInputType;
+    parseGraphQLSchema.parseClassTypes[
+      '_User'
+    ].logInInputType = userLogInInputType;
     parseGraphQLSchema.graphQLTypes.push(userSignUpInputType);
   }
 };
