@@ -739,7 +739,7 @@ const load = (
       transformClassNameToGraphQL('_User')
     ].signUpInputType = userSignUpInputType;
     parseGraphQLSchema.parseClassTypes[
-      '_User'
+      transformClassNameToGraphQL('_User')
     ].logInInputType = userLogInInputType;
     parseGraphQLSchema.graphQLTypes.push(userSignUpInputType);
   }

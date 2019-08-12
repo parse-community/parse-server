@@ -771,7 +771,7 @@ describe('ParseGraphQLServer', () => {
           const userFields = (await apolloClient.query({
             query: gql`
               query UserType {
-                __type(name: "_UserClass") {
+                __type(name: "User") {
                   fields {
                     name
                   }

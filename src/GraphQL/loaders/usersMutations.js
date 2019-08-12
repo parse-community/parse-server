@@ -51,7 +51,10 @@ const load = parseGraphQLSchema => {
     args: {
       input: {
         description: 'This is data needed to login',
-        type: parseGraphQLSchema.parseClassTypes['_User'].logInInputType,
+        type:
+          parseGraphQLSchema.parseClassTypes[
+            transformClassNameToGraphQL('_User')
+          ].logInInputType,
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
