@@ -5,6 +5,7 @@ import * as parseClassTypes from './parseClassTypes';
 import * as objectsMutations from './objectsMutations';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { transformClassNameToGraphQL } from '../transformers/className';
 
 const getParseClassMutationConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -39,7 +40,8 @@ const load = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const { className } = parseClass;
+  const className = transformClassNameToGraphQL(parseClass.className);
+
   const {
     create: isCreateEnabled = true,
     update: isUpdateEnabled = true,
@@ -102,12 +104,12 @@ const load = function(
     parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
       description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
       args: {
-        fields: createFields,
+        input: createFields,
       },
       type: new GraphQLNonNull(classGraphQLOutputType),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          let { fields } = args;
+          let { input: fields } = args;
           if (!fields) fields = {};
           const { config, auth, info } = context;
           transformTypes('create', fields);
@@ -161,12 +163,12 @@ const load = function(
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-        fields: updateFields,
+        input: updateFields,
       },
       type: new GraphQLNonNull(classGraphQLOutputType),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { objectId, fields } = args;
+          const { objectId, input: fields } = args;
           const { config, auth, info } = context;
 
           transformTypes('update', fields);

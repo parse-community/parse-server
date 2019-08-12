@@ -45,6 +45,7 @@
     "node-rsa": "1.0.5",
     "parse": "2.6.0",
     "pg-promise": "9.0.0",
+    "pluralize": "^8.0.0",
     "redis": "2.8.0",
     "semver": "6.3.0",
     "subscriptions-transport-ws": "0.9.16",

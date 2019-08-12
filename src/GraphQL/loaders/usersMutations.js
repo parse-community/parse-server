@@ -2,6 +2,7 @@ import { GraphQLBoolean, GraphQLNonNull, GraphQLObjectType } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from './objectsMutations';
 import { getUserFromSessionToken } from './usersQueries';
+import { transformClassNameToGraphQL } from '../transformers/className';
 
 const usersRouter = new UsersRouter();
 
@@ -14,15 +15,18 @@ const load = parseGraphQLSchema => {
   fields.signUp = {
     description: 'The signUp mutation can be used to sign the user up.',
     args: {
-      fields: {
+      input: {
         descriptions: 'These are the fields of the user.',
-        type: parseGraphQLSchema.parseClassTypes['_User'].signUpInputType,
+        type:
+          parseGraphQLSchema.parseClassTypes[
+            transformClassNameToGraphQL('_User')
+          ].signUpInputType,
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
     async resolve(_source, args, context, mutationInfo) {
       try {
-        const { fields } = args;
+        const { input: fields } = args;
         const { config, auth, info } = context;
 
         const { sessionToken } = await objectsMutations.createObject(

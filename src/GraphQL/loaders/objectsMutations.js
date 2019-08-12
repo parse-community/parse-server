@@ -1,33 +1,15 @@
 import { GraphQLNonNull, GraphQLBoolean, GraphQLObjectType } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
-
-const parseMap = {
-  _op: '__op',
-};
-
-const transformToParse = fields => {
-  if (!fields || typeof fields !== 'object') {
-    return;
-  }
-  Object.keys(fields).forEach(fieldName => {
-    const fieldValue = fields[fieldName];
-    if (parseMap[fieldName]) {
-      delete fields[fieldName];
-      fields[parseMap[fieldName]] = fieldValue;
-    }
-    if (typeof fieldValue === 'object') {
-      transformToParse(fieldValue);
-    }
-  });
-};
+import { transformMutationInputToParse } from '../transformers/mutation';
+import { transformClassNameToParse } from '../transformers/className';
 
 const createObject = async (className, fields, config, auth, info) => {
   if (!fields) {
     fields = {};
   }
 
-  transformToParse(fields);
+  transformMutationInputToParse(fields);
 
   return (await rest.create(config, auth, className, fields, info.clientSDK))
     .response;
@@ -45,7 +27,7 @@ const updateObject = async (
     fields = {};
   }
 
-  transformToParse(fields);
+  transformMutationInputToParse(fields);
 
   return (await rest.update(
     config,
@@ -68,13 +50,14 @@ const load = parseGraphQLSchema => {
       'The create mutation can be used to create a new object of a certain class.',
     args: {
       className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      fields: defaultGraphQLTypes.FIELDS_ATT,
+      input: defaultGraphQLTypes.FIELDS_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
     async resolve(_source, args, context) {
       try {
-        const { className, fields } = args;
+        const { className: graphQLClassName, input: fields } = args;
         const { config, auth, info } = context;
+        const className = transformClassNameToParse(graphQLClassName);
 
         return await createObject(className, fields, config, auth, info);
       } catch (e) {
@@ -89,13 +72,14 @@ const load = parseGraphQLSchema => {
     args: {
       className: defaultGraphQLTypes.CLASS_NAME_ATT,
       objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      fields: defaultGraphQLTypes.FIELDS_ATT,
+      input: defaultGraphQLTypes.FIELDS_ATT,
     },
     type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
     async resolve(_source, args, context) {
       try {
-        const { className, objectId, fields } = args;
+        const { className: graphQLClassName, objectId, input: fields } = args;
         const { config, auth, info } = context;
+        const className = transformClassNameToParse(graphQLClassName);
 
         return await updateObject(
           className,
@@ -121,8 +105,9 @@ const load = parseGraphQLSchema => {
     type: new GraphQLNonNull(GraphQLBoolean),
     async resolve(_source, args, context) {
       try {
-        const { className, objectId } = args;
+        const { className: graphQLClassName, objectId } = args;
         const { config, auth, info } = context;
+        const className = transformClassNameToParse(graphQLClassName);
 
         return await deleteObject(className, objectId, config, auth, info);
       } catch (e) {
