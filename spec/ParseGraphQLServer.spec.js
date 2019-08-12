@@ -1004,7 +1004,9 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation DeleteCustomer($objectId: ID!) {
                   objects {
-                    deleteCustomer(objectId: $objectId)
+                    deleteCustomer(objectId: $objectId) {
+                      objectId
+                    }
                   }
                 }
               `,
@@ -1094,7 +1096,9 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation DeleteSuperCar($objectId: ID!) {
                   objects {
-                    deleteSuperCar(objectId: $objectId)
+                    deleteSuperCar(objectId: $objectId) {
+                      objectId
+                    }
                   }
                 }
               `,
@@ -3150,7 +3154,7 @@ describe('ParseGraphQLServer', () => {
             expect(obj.get('someField')).toEqual('someValue');
           });
 
-          it('should return CreateResult object using class specific mutation', async () => {
+          it('should return specific type object using class specific mutation', async () => {
             const customerSchema = new Parse.Schema('Customer');
             customerSchema.addString('someField');
             await customerSchema.save();
@@ -3164,6 +3168,7 @@ describe('ParseGraphQLServer', () => {
                     createCustomer(fields: $fields) {
                       objectId
                       createdAt
+                      someField
                     }
                   }
                 }
@@ -3176,6 +3181,9 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.data.objects.createCustomer.objectId).toBeDefined();
+            expect(result.data.objects.createCustomer.someField).toEqual(
+              'someValue'
+            );
 
             const customer = await new Parse.Query('Customer').get(
               result.data.objects.createCustomer.objectId
@@ -3313,7 +3321,7 @@ describe('ParseGraphQLServer', () => {
             expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
-          it('should return UpdateResult object using class specific mutation', async () => {
+          it('should return specific type object using class specific mutation', async () => {
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
             obj.set('someField2', 'someField2Value1');
@@ -3330,6 +3338,8 @@ describe('ParseGraphQLServer', () => {
                   objects {
                     updateCustomer(objectId: $objectId, fields: $fields) {
                       updatedAt
+                      someField1
+                      someField2
                     }
                   }
                 }
@@ -3343,6 +3353,12 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.data.objects.updateCustomer.updatedAt).toBeDefined();
+            expect(result.data.objects.updateCustomer.someField1).toEqual(
+              'someField1Value2'
+            );
+            expect(result.data.objects.updateCustomer.someField2).toEqual(
+              'someField2Value1'
+            );
 
             await obj.fetch();
 
@@ -3737,8 +3753,10 @@ describe('ParseGraphQLServer', () => {
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
           });
 
-          it('should return a boolean confirmation using class specific mutation', async () => {
+          it('should return a specific type using class specific mutation', async () => {
             const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
             await obj.save();
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -3747,7 +3765,11 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation DeleteCustomer($objectId: ID!) {
                   objects {
-                    deleteCustomer(objectId: $objectId)
+                    deleteCustomer(objectId: $objectId) {
+                      objectId
+                      someField1
+                      someField2
+                    }
                   }
                 }
               `,
@@ -3756,7 +3778,13 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.objects.deleteCustomer).toEqual(true);
+            expect(result.data.objects.deleteCustomer.objectId).toEqual(obj.id);
+            expect(result.data.objects.deleteCustomer.someField1).toEqual(
+              'someField1Value1'
+            );
+            expect(result.data.objects.deleteCustomer.someField2).toEqual(
+              'someField2Value1'
+            );
 
             await expectAsync(
               obj.fetch({ useMasterKey: true })
@@ -3855,7 +3883,9 @@ describe('ParseGraphQLServer', () => {
                     $objectId: ID!
                   ) {
                     objects {
-                      delete${className}(objectId: $objectId)
+                      delete${className}(objectId: $objectId) {
+                        objectId
+                      }
                     }
                   }
                 `,
@@ -3893,32 +3923,32 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object4.className, object4.id)).data.objects[
                 `delete${object4.className}`
-              ]
-            ).toEqual(true);
+              ].objectId
+            ).toEqual(object4.id);
             await expectAsync(
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
-              })).data.objects[`delete${object1.className}`]
-            ).toEqual(true);
+              })).data.objects[`delete${object1.className}`].objectId
+            ).toEqual(object1.id);
             await expectAsync(
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.objects[`delete${object2.className}`]
-            ).toEqual(true);
+              })).data.objects[`delete${object2.className}`].objectId
+            ).toEqual(object2.id);
             await expectAsync(
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.objects[`delete${object3.className}`]
-            ).toEqual(true);
+              })).data.objects[`delete${object3.className}`].objectId
+            ).toEqual(object3.id);
             await expectAsync(
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4078,12 +4108,17 @@ describe('ParseGraphQLServer', () => {
 
       describe('Users Mutations', () => {
         it('should sign user up', async () => {
+          const userSchema = new Parse.Schema('_User');
+          userSchema.addString('someField');
+          await userSchema.update();
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation SignUp($fields: _UserSignUpFields) {
                 users {
                   signUp(fields: $fields) {
                     sessionToken
+                    someField
                   }
                 }
               }
@@ -4092,11 +4127,13 @@ describe('ParseGraphQLServer', () => {
               fields: {
                 username: 'user1',
                 password: 'user1',
+                someField: 'someValue',
               },
             },
           });
 
           expect(result.data.users.signUp.sessionToken).toBeDefined();
+          expect(result.data.users.signUp.someField).toEqual('someValue');
           expect(typeof result.data.users.signUp.sessionToken).toBe('string');
         });
 
@@ -4104,26 +4141,31 @@ describe('ParseGraphQLServer', () => {
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
+          user.set('someField', 'someValue');
           await user.signUp();
           await Parse.User.logOut();
-
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($username: String!, $password: String!) {
+              mutation LogInUser($input: _UserLoginFields) {
                 users {
-                  logIn(username: $username, password: $password) {
+                  logIn(input: $input) {
                     sessionToken
+                    someField
                   }
                 }
               }
             `,
             variables: {
-              username: 'user1',
-              password: 'user1',
+              input: {
+                username: 'user1',
+                password: 'user1',
+              },
             },
           });
 
           expect(result.data.users.logIn.sessionToken).toBeDefined();
+          expect(result.data.users.logIn.someField).toEqual('someValue');
           expect(typeof result.data.users.logIn.sessionToken).toBe('string');
         });
 
@@ -4136,17 +4178,19 @@ describe('ParseGraphQLServer', () => {
 
           const logIn = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($username: String!, $password: String!) {
+              mutation LogInUser($input: _UserLoginFields) {
                 users {
-                  logIn(username: $username, password: $password) {
+                  logIn(input: $input) {
                     sessionToken
                   }
                 }
               }
             `,
             variables: {
-              username: 'user1',
-              password: 'user1',
+              input: {
+                username: 'user1',
+                password: 'user1',
+              },
             },
           });
 
