@@ -539,6 +539,19 @@ describe('ParseGraphQLServer', () => {
           expect(dateType.kind).toEqual('SCALAR');
         });
 
+        it('should have ArrayResult type', async () => {
+          const arrayResultType = (await apolloClient.query({
+            query: gql`
+              query ArrayResultType {
+                __type(name: "ArrayResult") {
+                  kind
+                }
+              }
+            `,
+          })).data['__type'];
+          expect(arrayResultType.kind).toEqual('UNION');
+        });
+
         it('should have File object type', async () => {
           const fileType = (await apolloClient.query({
             query: gql`
@@ -744,6 +757,25 @@ describe('ParseGraphQLServer', () => {
           expect(
             expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
           ).toBeTruthy(JSON.stringify(schemaTypes));
+        });
+
+        it('should ArrayResult contains all types', async () => {
+          const objectType = (await apolloClient.query({
+            query: gql`
+              query ObjectType {
+                __type(name: "ArrayResult") {
+                  kind
+                  possibleTypes {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'];
+          const possibleTypes = objectType.possibleTypes.map(o => o.name);
+          expect(possibleTypes).toContain('_UserClass');
+          expect(possibleTypes).toContain('_RoleClass');
+          expect(possibleTypes).toContain('Any');
         });
 
         it('should update schema when it changes', async () => {
@@ -1659,6 +1691,74 @@ describe('ParseGraphQLServer', () => {
             expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
+          });
+
+          it('should return child objects in array fields', async () => {
+            const obj1 = new Parse.Object('Customer');
+            const obj2 = new Parse.Object('SomeClass');
+            const obj3 = new Parse.Object('Customer');
+
+            obj1.set('someCustomerField', 'imCustomerOne');
+            const arrayField = [42.42, 42, 'string', true];
+            obj1.set('arrayField', arrayField);
+            await obj1.save();
+
+            obj2.set('someClassField', 'imSomeClassTwo');
+            await obj3.save();
+
+            //const obj3Relation = obj3.relation('manyRelations')
+            obj3.set('manyRelations', [obj1, obj2]);
+            await obj3.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = (await apolloClient.query({
+              query: gql`
+                query GetCustomer($objectId: ID!) {
+                  objects {
+                    getCustomer(objectId: $objectId) {
+                      objectId
+                      manyRelations {
+                        ...on CustomerClass {
+                          objectId
+                          someCustomerField
+                          arrayField {
+                            ...on Any
+                          }
+                        }
+                        ...on SomeClassClass {
+                          objectId
+                          someClassField
+                        }
+                      }
+                      createdAt
+                      updatedAt
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj2.id,
+              },
+            })).data.objects.getCustomer;
+
+            expect(result.objectId).toEqual(obj2.id);
+            expect(result.manyRelations.length).toEqual(2);
+
+            const customerSubObject = result.manyRelations.find(
+              o => o.objectId === obj1.id
+            );
+            const someClassSubObject = result.manyRelations.find(
+              o => o.objectId === obj2.id
+            );
+
+            expect(customerSubObject).toBeDefined();
+            expect(someClassSubObject).toBeDefined();
+            expect(customerSubObject.someCustomerField).toEqual(
+              'imCustomerOne'
+            );
+            expect(customerSubObject.arrayField).toEqual(arrayField);
+            expect(someClassSubObject.someClassField).toEqual('imSomeClassTwo');
           });
 
           it('should respect level permissions', async () => {
