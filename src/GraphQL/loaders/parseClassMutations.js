@@ -74,10 +74,10 @@ const load = function(
         }
         if (inputTypeField) {
           switch (inputTypeField.type) {
-            case defaultGraphQLTypes.GEO_POINT:
+            case defaultGraphQLTypes.GEO_POINT_INPUT:
               fields[field].__type = 'GeoPoint';
               break;
-            case defaultGraphQLTypes.POLYGON:
+            case defaultGraphQLTypes.POLYGON_INPUT:
               fields[field] = {
                 __type: 'Polygon',
                 coordinates: fields[field].map(geoPoint => [

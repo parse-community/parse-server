@@ -376,23 +376,23 @@ const GEO_POINT_FIELDS = {
   },
 };
 
-const GEO_POINT = new GraphQLInputObjectType({
+const GEO_POINT_INPUT = new GraphQLInputObjectType({
+  name: 'GeoPointInput',
+  description:
+    'The GeoPointInput type is used in operations that involve inputting fields of type geo point.',
+  fields: GEO_POINT_FIELDS,
+});
+
+const GEO_POINT = new GraphQLObjectType({
   name: 'GeoPoint',
   description:
-    'The GeoPoint input type is used in operations that involve inputting fields of type geo point.',
+    'The GeoPoint object type is used to return the information about geo point fields.',
   fields: GEO_POINT_FIELDS,
 });
 
-const GEO_POINT_INFO = new GraphQLObjectType({
-  name: 'GeoPointInfo',
-  description:
-    'The GeoPointInfo object type is used to return the information about geo points.',
-  fields: GEO_POINT_FIELDS,
-});
+const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
-
-const POLYGON_INFO = new GraphQLList(new GraphQLNonNull(GEO_POINT_INFO));
 
 const RELATION_OP = new GraphQLEnumType({
   name: 'RelationOp',
@@ -541,10 +541,10 @@ const COUNT_ATT = {
   type: new GraphQLNonNull(GraphQLInt),
 };
 
-const SUBQUERY = new GraphQLInputObjectType({
-  name: 'Subquery',
+const SUBQUERY_INPUT = new GraphQLInputObjectType({
+  name: 'SubqueryInput',
   description:
-    'The Subquery input type is used to specific a different query to a different class.',
+    'The SubqueryInput type is used to specific a different query to a different class.',
   fields: {
     className: CLASS_NAME_ATT,
     where: Object.assign({}, WHERE_ATT, {
@@ -553,14 +553,14 @@ const SUBQUERY = new GraphQLInputObjectType({
   },
 });
 
-const SELECT_OPERATOR = new GraphQLInputObjectType({
-  name: 'SelectOperator',
+const SELECT_INPUT = new GraphQLInputObjectType({
+  name: 'SelectInput',
   description:
-    'The SelectOperator input type is used to specify a $select operation on a constraint.',
+    'The SelectInput type is used to specify a $select operation on a constraint.',
   fields: {
     query: {
       description: 'This is the subquery to be executed.',
-      type: new GraphQLNonNull(SUBQUERY),
+      type: new GraphQLNonNull(SUBQUERY_INPUT),
     },
     key: {
       description:
@@ -570,10 +570,10 @@ const SELECT_OPERATOR = new GraphQLInputObjectType({
   },
 });
 
-const SEARCH_OPERATOR = new GraphQLInputObjectType({
-  name: 'SearchOperator',
+const SEARCH_INPUT = new GraphQLInputObjectType({
+  name: 'SearchInput',
   description:
-    'The SearchOperator input type is used to specifiy a $search operation on a full text search.',
+    'The SearchInput type is used to specifiy a $search operation on a full text search.',
   fields: {
     _term: {
       description: 'This is the term to be searched.',
@@ -597,54 +597,54 @@ const SEARCH_OPERATOR = new GraphQLInputObjectType({
   },
 });
 
-const TEXT_OPERATOR = new GraphQLInputObjectType({
-  name: 'TextOperator',
+const TEXT_INPUT = new GraphQLInputObjectType({
+  name: 'TextInput',
   description:
-    'The TextOperator input type is used to specify a $text operation on a constraint.',
+    'The TextInput type is used to specify a $text operation on a constraint.',
   fields: {
     _search: {
       description: 'This is the search to be executed.',
-      type: new GraphQLNonNull(SEARCH_OPERATOR),
+      type: new GraphQLNonNull(SEARCH_INPUT),
     },
   },
 });
 
-const BOX_OPERATOR = new GraphQLInputObjectType({
-  name: 'BoxOperator',
+const BOX_INPUT = new GraphQLInputObjectType({
+  name: 'BoxInput',
   description:
-    'The BoxOperator input type is used to specifiy a $box operation on a within geo query.',
+    'The BoxInput type is used to specifiy a $box operation on a within geo query.',
   fields: {
     bottomLeft: {
       description: 'This is the bottom left coordinates of the box.',
-      type: new GraphQLNonNull(GEO_POINT),
+      type: new GraphQLNonNull(GEO_POINT_INPUT),
     },
     upperRight: {
       description: 'This is the upper right coordinates of the box.',
-      type: new GraphQLNonNull(GEO_POINT),
+      type: new GraphQLNonNull(GEO_POINT_INPUT),
     },
   },
 });
 
-const WITHIN_OPERATOR = new GraphQLInputObjectType({
-  name: 'WithinOperator',
+const WITHIN_INPUT = new GraphQLInputObjectType({
+  name: 'WithinInput',
   description:
-    'The WithinOperator input type is used to specify a $within operation on a constraint.',
+    'The WithinInput type is used to specify a $within operation on a constraint.',
   fields: {
     _box: {
       description: 'This is the box to be specified.',
-      type: new GraphQLNonNull(BOX_OPERATOR),
+      type: new GraphQLNonNull(BOX_INPUT),
     },
   },
 });
 
-const CENTER_SPHERE_OPERATOR = new GraphQLInputObjectType({
-  name: 'CenterSphereOperator',
+const CENTER_SPHERE_INPUT = new GraphQLInputObjectType({
+  name: 'CenterSphereInput',
   description:
-    'The CenterSphereOperator input type is used to specifiy a $centerSphere operation on a geoWithin query.',
+    'The CenterSphereInput type is used to specifiy a $centerSphere operation on a geoWithin query.',
   fields: {
     center: {
       description: 'This is the center of the sphere.',
-      type: new GraphQLNonNull(GEO_POINT),
+      type: new GraphQLNonNull(GEO_POINT_INPUT),
     },
     distance: {
       description: 'This is the radius of the sphere.',
@@ -653,30 +653,30 @@ const CENTER_SPHERE_OPERATOR = new GraphQLInputObjectType({
   },
 });
 
-const GEO_WITHIN_OPERATOR = new GraphQLInputObjectType({
-  name: 'GeoWithinOperator',
+const GEO_WITHIN_INPUT = new GraphQLInputObjectType({
+  name: 'GeoWithinInput',
   description:
-    'The GeoWithinOperator input type is used to specify a $geoWithin operation on a constraint.',
+    'The GeoWithinInput type is used to specify a $geoWithin operation on a constraint.',
   fields: {
     _polygon: {
       description: 'This is the polygon to be specified.',
-      type: POLYGON,
+      type: POLYGON_INPUT,
     },
     _centerSphere: {
       description: 'This is the sphere to be specified.',
-      type: CENTER_SPHERE_OPERATOR,
+      type: CENTER_SPHERE_INPUT,
     },
   },
 });
 
-const GEO_INTERSECTS = new GraphQLInputObjectType({
-  name: 'GeoIntersectsOperator',
+const GEO_INTERSECTS_INPUT = new GraphQLInputObjectType({
+  name: 'GeoIntersectsInput',
   description:
-    'The GeoIntersectsOperator input type is used to specify a $geoIntersects operation on a constraint.',
+    'The GeoIntersectsInput type is used to specify a $geoIntersects operation on a constraint.',
   fields: {
     _point: {
       description: 'This is the point to be specified.',
-      type: GEO_POINT,
+      type: GEO_POINT_INPUT,
     },
   },
 });
@@ -738,13 +738,13 @@ const _exists = {
 const _select = {
   description:
     'This is the $select operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
-  type: SELECT_OPERATOR,
+  type: SELECT_INPUT,
 };
 
 const _dontSelect = {
   description:
     'This is the $dontSelect operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
-  type: SELECT_OPERATOR,
+  type: SELECT_INPUT,
 };
 
 const _regex = {
@@ -780,7 +780,7 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
     _text: {
       description:
         'This is the $text operator to specify a full text search constraint.',
-      type: TEXT_OPERATOR,
+      type: TEXT_INPUT,
     },
   },
 });
@@ -846,8 +846,8 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
   },
 });
 
-const KEY_VALUE = new GraphQLInputObjectType({
-  name: 'KeyValue',
+const KEY_VALUE_INPUT = new GraphQLInputObjectType({
+  name: 'KeyValueInput',
   description: 'An entry from an object, i.e., a pair of key and value.',
   fields: {
     _key: {
@@ -866,14 +866,14 @@ const OBJECT_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The ObjectWhereInput input type is used in operations that involve filtering result by a field of type Object.',
   fields: {
-    _eq: _eq(KEY_VALUE),
-    _ne: _ne(KEY_VALUE),
-    _in: _in(KEY_VALUE),
-    _nin: _nin(KEY_VALUE),
-    _lt: _lt(KEY_VALUE),
-    _lte: _lte(KEY_VALUE),
-    _gt: _gt(KEY_VALUE),
-    _gte: _gte(KEY_VALUE),
+    _eq: _eq(KEY_VALUE_INPUT),
+    _ne: _ne(KEY_VALUE_INPUT),
+    _in: _in(KEY_VALUE_INPUT),
+    _nin: _nin(KEY_VALUE_INPUT),
+    _lt: _lt(KEY_VALUE_INPUT),
+    _lte: _lte(KEY_VALUE_INPUT),
+    _gt: _gt(KEY_VALUE_INPUT),
+    _gte: _gte(KEY_VALUE_INPUT),
     _exists,
     _select,
     _dontSelect,
@@ -948,7 +948,7 @@ const GEO_POINT_WHERE_INPUT = new GraphQLInputObjectType({
     _nearSphere: {
       description:
         'This is the $nearSphere operator to specify a constraint to select the objects where the values of a geo point field is near to another geo point.',
-      type: GEO_POINT,
+      type: GEO_POINT_INPUT,
     },
     _maxDistance: {
       description:
@@ -973,12 +973,12 @@ const GEO_POINT_WHERE_INPUT = new GraphQLInputObjectType({
     _within: {
       description:
         'This is the $within operator to specify a constraint to select the objects where the values of a geo point field is within a specified box.',
-      type: WITHIN_OPERATOR,
+      type: WITHIN_INPUT,
     },
     _geoWithin: {
       description:
         'This is the $geoWithin operator to specify a constraint to select the objects where the values of a geo point field is within a specified polygon or sphere.',
-      type: GEO_WITHIN_OPERATOR,
+      type: GEO_WITHIN_INPUT,
     },
   },
 });
@@ -992,7 +992,7 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
     _geoIntersects: {
       description:
         'This is the $geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
-      type: GEO_INTERSECTS,
+      type: GEO_INTERSECTS_INPUT,
     },
   },
 });
@@ -1028,26 +1028,27 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(BYTES, true);
   parseGraphQLSchema.addGraphQLType(FILE, true);
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
+  parseGraphQLSchema.addGraphQLType(GEO_POINT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
-  parseGraphQLSchema.addGraphQLType(GEO_POINT_INFO, true);
   parseGraphQLSchema.addGraphQLType(RELATION_OP, true);
   parseGraphQLSchema.addGraphQLType(CREATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(UPDATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(CLASS, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
-  parseGraphQLSchema.addGraphQLType(SUBQUERY, true);
-  parseGraphQLSchema.addGraphQLType(SELECT_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(SEARCH_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(TEXT_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(BOX_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(WITHIN_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(CENTER_SPHERE_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(GEO_WITHIN_OPERATOR, true);
-  parseGraphQLSchema.addGraphQLType(GEO_INTERSECTS, true);
+  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SEARCH_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(TEXT_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(BOX_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(WITHIN_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(CENTER_SPHERE_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(GEO_WITHIN_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(GEO_INTERSECTS_INPUT, true);
   parseGraphQLSchema.addGraphQLType(STRING_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(NUMBER_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOOLEAN_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(ARRAY_WHERE_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(KEY_VALUE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(OBJECT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(DATE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BYTES_WHERE_INPUT, true);
@@ -1077,10 +1078,10 @@ export {
   FILE,
   FILE_INFO,
   GEO_POINT_FIELDS,
+  GEO_POINT_INPUT,
   GEO_POINT,
-  GEO_POINT_INFO,
+  POLYGON_INPUT,
   POLYGON,
-  POLYGON_INFO,
   RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
@@ -1106,15 +1107,15 @@ export {
   SKIP_ATT,
   LIMIT_ATT,
   COUNT_ATT,
-  SUBQUERY,
-  SELECT_OPERATOR,
-  SEARCH_OPERATOR,
-  TEXT_OPERATOR,
-  BOX_OPERATOR,
-  WITHIN_OPERATOR,
-  CENTER_SPHERE_OPERATOR,
-  GEO_WITHIN_OPERATOR,
-  GEO_INTERSECTS,
+  SUBQUERY_INPUT,
+  SELECT_INPUT,
+  SEARCH_INPUT,
+  TEXT_INPUT,
+  BOX_INPUT,
+  WITHIN_INPUT,
+  CENTER_SPHERE_INPUT,
+  GEO_WITHIN_INPUT,
+  GEO_INTERSECTS_INPUT,
   _eq,
   _ne,
   _lt,
@@ -1132,6 +1133,7 @@ export {
   NUMBER_WHERE_INPUT,
   BOOLEAN_WHERE_INPUT,
   ARRAY_WHERE_INPUT,
+  KEY_VALUE_INPUT,
   OBJECT_WHERE_INPUT,
   DATE_WHERE_INPUT,
   BYTES_WHERE_INPUT,

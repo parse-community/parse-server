@@ -51,9 +51,9 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
     case 'File':
       return defaultGraphQLTypes.FILE;
     case 'GeoPoint':
-      return defaultGraphQLTypes.GEO_POINT;
+      return defaultGraphQLTypes.GEO_POINT_INPUT;
     case 'Polygon':
-      return defaultGraphQLTypes.POLYGON;
+      return defaultGraphQLTypes.POLYGON_INPUT;
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
@@ -100,9 +100,9 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
     case 'File':
       return defaultGraphQLTypes.FILE_INFO;
     case 'GeoPoint':
-      return defaultGraphQLTypes.GEO_POINT_INFO;
+      return defaultGraphQLTypes.GEO_POINT;
     case 'Polygon':
-      return defaultGraphQLTypes.POLYGON_INFO;
+      return defaultGraphQLTypes.POLYGON;
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
@@ -471,12 +471,12 @@ const load = (
       _inQuery: {
         description:
           'This is the $inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY,
+        type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
       _notInQuery: {
         description:
           'This is the $notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY,
+        type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
     },
   });
