@@ -51,9 +51,10 @@ const load = parseGraphQLSchema => {
   }
   const fields = {};
 
-  fields.me = {
-    description: 'The Me query can be used to return the current user data.',
-    type: new GraphQLNonNull(parseGraphQLSchema.meType),
+  fields.viewer = {
+    description:
+      'The viewer query can be used to return the current user data.',
+    type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
     async resolve(_source, _args, context, queryInfo) {
       try {
         const { config, info } = context;

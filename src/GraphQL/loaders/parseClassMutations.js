@@ -97,7 +97,7 @@ const load = function(
     parseGraphQLSchema.addGraphQLObjectMutation(createGraphQLMutationName, {
       description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
       args: {
-        input: {
+        fields: {
           description: 'These are the fields used to create the object.',
           type: classGraphQLCreateType || defaultGraphQLTypes.OBJECT,
         },
@@ -107,7 +107,7 @@ const load = function(
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          let { input: fields } = args;
+          let { fields } = args;
           if (!fields) fields = {};
           const { config, auth, info } = context;
           transformTypes('create', fields);
@@ -161,7 +161,7 @@ const load = function(
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-        input: {
+        fields: {
           description: 'These are the fields used to update the object.',
           type: classGraphQLUpdateType || defaultGraphQLTypes.OBJECT,
         },
@@ -171,7 +171,7 @@ const load = function(
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { objectId, input: fields } = args;
+          const { objectId, fields } = args;
           const { config, auth, info } = context;
 
           transformTypes('update', fields);

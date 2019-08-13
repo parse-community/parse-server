@@ -30,9 +30,9 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'FilesMutation',
   'UsersMutation',
   'FunctionsMutation',
-  'Me',
-  'SignUpInput',
-  'UserLoginFields',
+  'Viewer',
+  'SignUpFieldsInput',
+  'LogInFieldsInput',
 ];
 const RESERVED_GRAPHQL_OBJECT_QUERY_NAMES = ['get', 'find'];
 const RESERVED_GRAPHQL_OBJECT_MUTATION_NAMES = ['create', 'update', 'delete'];
@@ -82,7 +82,7 @@ class ParseGraphQLSchema {
     this.parseClassesString = parseClassesString;
     this.parseGraphQLConfig = parseGraphQLConfig;
     this.parseClassTypes = {};
-    this.meType = null;
+    this.viewerType = null;
     this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];

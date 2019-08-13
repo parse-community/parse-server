@@ -365,10 +365,10 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLScalarType) ||
     defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLRelationOpTypeName = `${graphQLClassName}RelationOp`;
+  const classGraphQLRelationOpTypeName = `${graphQLClassName}RelationOpInput`;
   let classGraphQLRelationOpType = new GraphQLInputObjectType({
     name: classGraphQLRelationOpTypeName,
-    description: `The ${classGraphQLRelationOpTypeName} input type is used in operations that involve relations with the ${graphQLClassName} class.`,
+    description: `The ${classGraphQLRelationOpTypeName} type is used in operations that involve relations with the ${graphQLClassName} class.`,
     fields: () => ({
       _op: {
         description: 'This is the operation to be executed.',
@@ -390,7 +390,7 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLRelationOpType) ||
     defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLCreateTypeName = `${graphQLClassName}CreateInput`;
+  const classGraphQLCreateTypeName = `Create${graphQLClassName}FieldsInput`;
   let classGraphQLCreateType = new GraphQLInputObjectType({
     name: classGraphQLCreateTypeName,
     description: `The ${classGraphQLCreateTypeName} input type is used in operations that involve creation of objects in the ${graphQLClassName} class.`,
@@ -423,7 +423,7 @@ const load = (
     classGraphQLCreateType
   );
 
-  const classGraphQLUpdateTypeName = `${graphQLClassName}UpdateInput`;
+  const classGraphQLUpdateTypeName = `Update${graphQLClassName}FieldsInput`;
   let classGraphQLUpdateType = new GraphQLInputObjectType({
     name: classGraphQLUpdateTypeName,
     description: `The ${classGraphQLUpdateTypeName} input type is used in operations that involve creation of objects in the ${graphQLClassName} class.`,
@@ -716,19 +716,19 @@ const load = (
   };
 
   if (className === '_User') {
-    const meType = new GraphQLObjectType({
-      name: 'Me',
-      description: `The Me object type is used in operations that involve outputting the current user data.`,
+    const viewerType = new GraphQLObjectType({
+      name: 'Viewer',
+      description: `The Viewer object type is used in operations that involve outputting the current user data.`,
       interfaces: [defaultGraphQLTypes.CLASS],
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
       }),
     });
-    parseGraphQLSchema.meType = meType;
-    parseGraphQLSchema.addGraphQLType(meType, true, true);
+    parseGraphQLSchema.viewerType = viewerType;
+    parseGraphQLSchema.addGraphQLType(viewerType, true, true);
 
-    const userSignUpInputTypeName = 'SignUpInput';
+    const userSignUpInputTypeName = 'SignUpFieldsInput';
     const userSignUpInputType = new GraphQLInputObjectType({
       name: userSignUpInputTypeName,
       description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${graphQLClassName} class when signing up.`,
@@ -757,7 +757,7 @@ const load = (
     });
     parseGraphQLSchema.addGraphQLType(userSignUpInputType, true, true);
 
-    const userLogInInputTypeName = 'UserLoginFields';
+    const userLogInInputTypeName = 'LogInFieldsInput';
     const userLogInInputType = new GraphQLInputObjectType({
       name: userLogInInputTypeName,
       description: `The ${userLogInInputTypeName} input type is used to login.`,

@@ -732,15 +732,15 @@ describe('ParseGraphQLServer', () => {
           const expectedTypes = [
             'Role',
             'RoleWhereInput',
-            'RoleCreateInput',
-            'RoleUpdateInput',
+            'CreateRoleFieldsInput',
+            'UpdateRoleFieldsInput',
             'RoleFindResult',
             'User',
             'UserWhereInput',
             'UserFindResult',
-            'SignUpInput',
-            'UserCreateInput',
-            'UserUpdateInput',
+            'SignUpFieldsInput',
+            'CreateUserFieldsInput',
+            'UpdateUserFieldsInput',
           ];
           expect(
             expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
@@ -987,7 +987,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation UpdateSuperCar($objectId: ID!, $foo: String!) {
                   objects {
-                    updateSuperCar(objectId: $objectId, input: { foo: $foo }) {
+                    updateSuperCar(objectId: $objectId, fields: { foo: $foo }) {
                       updatedAt
                     }
                   }
@@ -1021,7 +1021,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               mutation CreateCustomer($foo: String!) {
                 objects {
-                  createCustomer(input: { foo: $foo }) {
+                  createCustomer(fields: { foo: $foo }) {
                     objectId
                   }
                 }
@@ -1062,7 +1062,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               mutation CreateSuperCar($foo: String!) {
                 objects {
-                  createSuperCar(input: { foo: $foo }) {
+                  createSuperCar(fields: { foo: $foo }) {
                     objectId
                   }
                 }
@@ -1080,7 +1080,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation UpdateSupercar($objectId: ID!, $foo: String!) {
                   objects {
-                    updateSuperCar(objectId: $objectId, input: { foo: $foo }) {
+                    updateSuperCar(objectId: $objectId, fields: { foo: $foo }) {
                       updatedAt
                     }
                   }
@@ -1114,7 +1114,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation CreateCustomer($foo: String!) {
                   objects {
-                    createCustomer(input: { foo: $foo }) {
+                    createCustomer(fields: { foo: $foo }) {
                       objectId
                     }
                   }
@@ -1130,7 +1130,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation UpdateCustomer($objectId: ID!, $foo: String!) {
                   objects {
-                    updateCustomer(objectId: $objectId, input: { foo: $foo }) {
+                    updateCustomer(objectId: $objectId, fields: { foo: $foo }) {
                       updatedAt
                     }
                   }
@@ -1187,7 +1187,9 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation InvalidCreateSuperCar {
                   objects {
-                    createSuperCar(input: { engine: "diesel", mileage: 1000 }) {
+                    createSuperCar(
+                      fields: { engine: "diesel", mileage: 1000 }
+                    ) {
                       objectId
                     }
                   }
@@ -1200,7 +1202,7 @@ describe('ParseGraphQLServer', () => {
               mutation ValidCreateSuperCar {
                 objects {
                   createSuperCar(
-                    input: { engine: "diesel", doors: 5, price: "£10000" }
+                    fields: { engine: "diesel", doors: 5, price: "£10000" }
                   ) {
                     objectId
                   }
@@ -1218,7 +1220,7 @@ describe('ParseGraphQLServer', () => {
                   objects {
                     updateSuperCar(
                       objectId: $objectId
-                      input: { engine: "petrol" }
+                      fields: { engine: "petrol" }
                     ) {
                       updatedAt
                     }
@@ -1237,7 +1239,7 @@ describe('ParseGraphQLServer', () => {
                 objects {
                   updateSuperCar(
                     objectId: $objectId
-                    input: { mileage: 2000 }
+                    fields: { mileage: 2000 }
                   ) {
                     updatedAt
                   }
@@ -3121,9 +3123,9 @@ describe('ParseGraphQLServer', () => {
           it('should return CreateResult object using generic mutation', async () => {
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation CreateSomeObject($input: Object) {
+                mutation CreateSomeObject($fields: Object) {
                   objects {
-                    create(className: "SomeClass", input: $input) {
+                    create(className: "SomeClass", fields: $fields) {
                       objectId
                       createdAt
                     }
@@ -3131,7 +3133,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                input: {
+                fields: {
                   someField: 'someValue',
                 },
               },
@@ -3158,9 +3160,9 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation CreateCustomer($input: CustomerCreateInput) {
+                mutation CreateCustomer($fields: CreateCustomerFieldsInput) {
                   objects {
-                    createCustomer(input: $input) {
+                    createCustomer(fields: $fields) {
                       objectId
                       createdAt
                       someField
@@ -3169,7 +3171,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                input: {
+                fields: {
                   someField: 'someValue',
                 },
               },
@@ -3288,12 +3290,12 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation UpdateSomeObject($objectId: ID!, $input: Object) {
+                mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
                   objects {
                     update(
                       className: "SomeClass"
                       objectId: $objectId
-                      input: $input
+                      fields: $fields
                     ) {
                       updatedAt
                     }
@@ -3302,7 +3304,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 objectId: obj.id,
-                input: {
+                fields: {
                   someField1: 'someField1Value2',
                 },
               },
@@ -3328,10 +3330,10 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation UpdateCustomer(
                   $objectId: ID!
-                  $input: CustomerUpdateInput
+                  $fields: UpdateCustomerFieldsInput
                 ) {
                   objects {
-                    updateCustomer(objectId: $objectId, input: $input) {
+                    updateCustomer(objectId: $objectId, fields: $fields) {
                       updatedAt
                       someField1
                       someField2
@@ -3341,7 +3343,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 objectId: obj.id,
-                input: {
+                fields: {
                   someField1: 'someField1Value2',
                 },
               },
@@ -3370,13 +3372,13 @@ describe('ParseGraphQLServer', () => {
                   mutation UpdateSomeObject(
                     $className: String!
                     $objectId: ID!
-                    $input: Object
+                    $fields: Object
                   ) {
                     objects {
                       update(
                         className: $className
                         objectId: $objectId
-                        input: $input
+                        fields: $fields
                       ) {
                         updatedAt
                       }
@@ -3386,7 +3388,7 @@ describe('ParseGraphQLServer', () => {
                 variables: {
                   className,
                   objectId,
-                  input: fields,
+                  fields,
                 },
                 context: {
                   headers,
@@ -3552,12 +3554,12 @@ describe('ParseGraphQLServer', () => {
                 mutation: gql`
                   mutation UpdateSomeObject(
                     $objectId: ID!
-                    $input: ${className}UpdateInput
+                    $fields: Update${className}FieldsInput
                   ) {
                     objects {
                       update${className}(
                         objectId: $objectId
-                        input: $input
+                        fields: $fields
                       ) {
                         updatedAt
                       }
@@ -3566,7 +3568,7 @@ describe('ParseGraphQLServer', () => {
                 `,
                 variables: {
                   objectId,
-                  input: fields,
+                  fields,
                 },
                 context: {
                   headers,
@@ -3963,9 +3965,9 @@ describe('ParseGraphQLServer', () => {
               'operations',
               JSON.stringify({
                 query: `
-                  mutation CreateFile($input: Upload!) {
+                  mutation CreateFile($upload: Upload!) {
                     files {
-                      create(input: $input) {
+                      create(upload: $upload) {
                         name
                         url
                       }
@@ -3973,11 +3975,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  input: null,
+                  upload: null,
                 },
               })
             );
-            body.append('map', JSON.stringify({ 1: ['variables.input'] }));
+            body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
             body.append('1', 'My File Content', {
               filename: 'myFileName.txt',
               contentType: 'text/plain',
@@ -4025,7 +4027,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 users {
-                  me {
+                  viewer {
                     objectId
                     username
                     email
@@ -4044,7 +4046,7 @@ describe('ParseGraphQLServer', () => {
             objectId,
             username: resultUserName,
             email: resultEmail,
-          } = result.data.users.me;
+          } = result.data.users.viewer;
           expect(objectId).toBeDefined();
           expect(resultUserName).toEqual(userName);
           expect(resultEmail).toEqual(email);
@@ -4072,7 +4074,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 users {
-                  me {
+                  viewer {
                     objectId
                     sessionToken
                     userFoo {
@@ -4093,7 +4095,7 @@ describe('ParseGraphQLServer', () => {
             objectId,
             sessionToken,
             userFoo: resultFoo,
-          } = result.data.users.me;
+          } = result.data.users.viewer;
           expect(objectId).toEqual(user.id);
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
@@ -4109,9 +4111,9 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation SignUp($input: SignUpInput) {
+              mutation SignUp($fields: SignUpFieldsInput) {
                 users {
-                  signUp(input: $input) {
+                  signUp(fields: $fields) {
                     sessionToken
                     someField
                   }
@@ -4119,7 +4121,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              input: {
+              fields: {
                 username: 'user1',
                 password: 'user1',
                 someField: 'someValue',
@@ -4142,9 +4144,9 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($input: UserLoginFields) {
+              mutation LogInUser($fields: LogInFieldsInput) {
                 users {
-                  logIn(input: $input) {
+                  logIn(fields: $fields) {
                     sessionToken
                     someField
                   }
@@ -4152,7 +4154,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              input: {
+              fields: {
                 username: 'user1',
                 password: 'user1',
               },
@@ -4173,16 +4175,16 @@ describe('ParseGraphQLServer', () => {
 
           const logIn = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($input: UserLoginFields) {
+              mutation LogInUser($fields: LogInFieldsInput) {
                 users {
-                  logIn(input: $input) {
+                  logIn(fields: $fields) {
                     sessionToken
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 username: 'user1',
                 password: 'user1',
               },
@@ -4195,7 +4197,9 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation LogOutUser {
                 users {
-                  logOut
+                  logOut {
+                    sessionToken
+                  }
                 }
               }
             `,
@@ -4205,7 +4209,7 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          expect(logOut.data.users.logOut).toBeTruthy();
+          expect(logOut.data.users.logOut).toBeDefined();
 
           try {
             await apolloClient.query({
@@ -4272,7 +4276,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetCurrentUser {
                   users {
-                    me {
+                    viewer {
                       username
                     }
                   }
@@ -4303,7 +4307,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetCurrentUser {
                   users {
-                    me {
+                    viewer {
                       username
                     }
                   }
@@ -4480,16 +4484,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4502,16 +4506,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4546,16 +4550,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4565,16 +4569,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4612,16 +4616,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4634,16 +4638,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4679,16 +4683,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someFieldTrue: someFieldValueTrue,
                 someFieldFalse: someFieldValueFalse,
               },
@@ -4703,16 +4707,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someFieldTrue: someFieldValueTrue,
                 someFieldFalse: someFieldValueFalse,
               },
@@ -4767,16 +4771,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4789,16 +4793,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -4830,9 +4834,9 @@ describe('ParseGraphQLServer', () => {
         it('should support createdAt', async () => {
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     createdAt
                   }
                 }
@@ -4850,9 +4854,9 @@ describe('ParseGraphQLServer', () => {
         it('should support updatedAt', async () => {
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
@@ -4894,16 +4898,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateChildObject($input: Object) {
+              mutation CreateChildObject($fields: Object) {
                 objects {
-                  create(className: "ChildClass", input: $input) {
+                  create(className: "ChildClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 pointerField: pointerFieldValue,
               },
             },
@@ -4918,24 +4922,24 @@ describe('ParseGraphQLServer', () => {
           await apolloClient.mutate({
             mutation: gql`
               mutation CreateChildObject(
-                $input1: ChildClassCreateInput
-                $input2: ChildClassCreateInput
+                $fields1: CreateChildClassFieldsInput
+                $fields2: CreateChildClassFieldsInput
               ) {
                 objects {
-                  createChildClass1: createChildClass(input: $input1) {
+                  createChildClass1: createChildClass(fields: $fields1) {
                     objectId
                   }
-                  createChildClass2: createChildClass(input: $input2) {
+                  createChildClass2: createChildClass(fields: $fields2) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input1: {
+              fields1: {
                 pointerField: pointerFieldValue,
               },
-              input2: {
+              fields2: {
                 pointerField: pointerFieldValue.objectId,
               },
             },
@@ -5013,16 +5017,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateMainObject($input: Object) {
+              mutation CreateMainObject($fields: Object) {
                 objects {
-                  create(className: "MainClass", input: $input) {
+                  create(className: "MainClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 relationField: {
                   __op: 'Batch',
                   ops: [
@@ -5048,16 +5052,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateMainObject($input: MainClassCreateInput) {
+              mutation CreateMainObject($fields: CreateMainClassFieldsInput) {
                 objects {
-                  createMainClass(input: $input) {
+                  createMainClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 relationField: {
                   _op: 'Batch',
                   ops: [
@@ -5171,9 +5175,9 @@ describe('ParseGraphQLServer', () => {
             'operations',
             JSON.stringify({
               query: `
-                mutation CreateFile($input: Upload!) {
+                mutation CreateFile($upload: Upload!) {
                   files {
-                    create(input: $input) {
+                    create(upload: $upload) {
                       name
                       url
                     }
@@ -5181,11 +5185,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                input: null,
+                upload: null,
               },
             })
           );
-          body.append('map', JSON.stringify({ 1: ['variables.input'] }));
+          body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
           body.append('1', 'My File Content', {
             filename: 'myFileName.txt',
             contentType: 'text/plain',
@@ -5216,16 +5220,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5236,24 +5240,24 @@ describe('ParseGraphQLServer', () => {
           await apolloClient.mutate({
             mutation: gql`
               mutation CreateSomeObject(
-                $input1: SomeClassCreateInput
-                $input2: SomeClassCreateInput
+                $fields1: CreateSomeClassFieldsInput
+                $fields2: CreateSomeClassFieldsInput
               ) {
                 objects {
-                  createSomeClass1: createSomeClass(input: $input1) {
+                  createSomeClass1: createSomeClass(fields: $fields1) {
                     objectId
                   }
-                  createSomeClass2: createSomeClass(input: $input2) {
+                  createSomeClass2: createSomeClass(fields: $fields2) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input1: {
+              fields1: {
                 someField: someFieldValue,
               },
-              input2: {
+              fields2: {
                 someField: someFieldValue.name,
               },
             },
@@ -5318,16 +5322,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5340,16 +5344,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5426,22 +5430,22 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input1: Object, $input2: Object) {
+              mutation CreateSomeObject($fields1: Object, $fields2: Object) {
                 objects {
-                  create1: create(className: "SomeClass", input: $input1) {
+                  create1: create(className: "SomeClass", fields: $fields1) {
                     objectId
                   }
-                  create2: create(className: "SomeClass", input: $input2) {
+                  create2: create(className: "SomeClass", fields: $fields2) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input1: {
+              fields1: {
                 someField: someFieldValue,
               },
-              input2: {
+              fields2: {
                 someField: someFieldValue2,
               },
             },
@@ -5535,16 +5539,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5557,16 +5561,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5600,16 +5604,16 @@ describe('ParseGraphQLServer', () => {
         it('should support null values', async () => {
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someStringField: 'some string',
                 someNumberField: 123,
                 someBooleanField: true,
@@ -5621,12 +5625,12 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation UpdateSomeObject($objectId: ID!, $input: Object) {
+              mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
                 objects {
                   update(
                     className: "SomeClass"
                     objectId: $objectId
-                    input: $input
+                    fields: $fields
                   ) {
                     updatedAt
                   }
@@ -5635,7 +5639,7 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               objectId: createResult.data.objects.create.objectId,
-              input: {
+              fields: {
                 someStringField: null,
                 someNumberField: null,
                 someBooleanField: null,
@@ -5675,16 +5679,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5698,24 +5702,24 @@ describe('ParseGraphQLServer', () => {
           await apolloClient.mutate({
             mutation: gql`
               mutation CreateSomeObject(
-                $input1: SomeClassCreateInput
-                $input2: SomeClassCreateInput
+                $fields1: CreateSomeClassFieldsInput
+                $fields2: CreateSomeClassFieldsInput
               ) {
                 objects {
-                  createSomeClass1: createSomeClass(input: $input1) {
+                  createSomeClass1: createSomeClass(fields: $fields1) {
                     objectId
                   }
-                  createSomeClass2: createSomeClass(input: $input2) {
+                  createSomeClass2: createSomeClass(fields: $fields2) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input1: {
+              fields1: {
                 someField: someFieldValue,
               },
-              input2: {
+              fields2: {
                 someField: someFieldValue.base64,
               },
             },
@@ -5755,16 +5759,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -5777,16 +5781,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: {
                   latitude: someFieldValue.latitude,
                   longitude: someFieldValue.longitude,
@@ -5830,16 +5834,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 somePolygonField: someFieldValue,
               },
             },
@@ -5852,16 +5856,16 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 somePolygonField: someFieldValue.coordinates.map(point => ({
                   latitude: point[0],
                   longitude: point[1],
@@ -5909,16 +5913,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: Object) {
+              mutation CreateSomeObject($fields: Object) {
                 objects {
-                  create(className: "SomeClass", input: $input) {
+                  create(className: "SomeClass", fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 somePolygonField: someFieldValue,
               },
             },
@@ -5975,16 +5979,16 @@ describe('ParseGraphQLServer', () => {
 
           const createResult = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($input: SomeClassCreateInput) {
+              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 objects {
-                  createSomeClass(input: $input) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
               }
             `,
             variables: {
-              input: {
+              fields: {
                 someField: someFieldValue,
               },
             },
@@ -6018,10 +6022,10 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation UpdateSomeObject(
                 $objectId: ID!
-                $input: SomeClassUpdateInput
+                $fields: UpdateSomeClassFieldsInput
               ) {
                 objects {
-                  updateSomeClass(objectId: $objectId, input: $input) {
+                  updateSomeClass(objectId: $objectId, fields: $fields) {
                     updatedAt
                   }
                 }
@@ -6029,7 +6033,7 @@ describe('ParseGraphQLServer', () => {
             `,
             variables: {
               objectId: createResult.data.objects.createSomeClass.objectId,
-              input: {
+              fields: {
                 someField: updatedSomeFieldValue,
               },
             },
@@ -6348,7 +6352,7 @@ describe('ParseGraphQLServer', () => {
           type Custom {
             hello: String @resolve
             hello2: String @resolve(to: "hello")
-            userEcho(user: UserCreateInput!): User! @resolve
+            userEcho(user: CreateUserFieldsInput!): User! @resolve
             hello3: String! @mock(with: "Hello world!")
             hello4: User! @mock(with: { username: "somefolk" })
           }
@@ -6419,7 +6423,7 @@ describe('ParseGraphQLServer', () => {
 
       const result = await apolloClient.query({
         query: gql`
-          query UserEcho($user: UserCreateInput!) {
+          query UserEcho($user: CreateUserFieldsInput!) {
             custom {
               userEcho(user: $user) {
                 username
