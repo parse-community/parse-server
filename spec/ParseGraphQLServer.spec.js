@@ -3963,9 +3963,9 @@ describe('ParseGraphQLServer', () => {
               'operations',
               JSON.stringify({
                 query: `
-                  mutation CreateFile($file: Upload!) {
+                  mutation CreateFile($input: Upload!) {
                     files {
-                      create(file: $file) {
+                      create(input: $input) {
                         name
                         url
                       }
@@ -3973,11 +3973,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  file: null,
+                  input: null,
                 },
               })
             );
-            body.append('map', JSON.stringify({ 1: ['variables.file'] }));
+            body.append('map', JSON.stringify({ 1: ['variables.input'] }));
             body.append('1', 'My File Content', {
               filename: 'myFileName.txt',
               contentType: 'text/plain',
@@ -5171,9 +5171,9 @@ describe('ParseGraphQLServer', () => {
             'operations',
             JSON.stringify({
               query: `
-                mutation CreateFile($file: Upload!) {
+                mutation CreateFile($input: Upload!) {
                   files {
-                    create(file: $file) {
+                    create(input: $input) {
                       name
                       url
                     }
@@ -5181,11 +5181,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                file: null,
+                input: null,
               },
             })
           );
-          body.append('map', JSON.stringify({ 1: ['variables.file'] }));
+          body.append('map', JSON.stringify({ 1: ['variables.input'] }));
           body.append('1', 'My File Content', {
             filename: 'myFileName.txt',
             contentType: 'text/plain',
