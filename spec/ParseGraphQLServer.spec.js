@@ -1704,7 +1704,7 @@ describe('ParseGraphQLServer', () => {
             await obj1.save();
 
             obj2.set('someClassField', 'imSomeClassTwo');
-            await obj3.save();
+            await obj2.save();
 
             //const obj3Relation = obj3.relation('manyRelations')
             obj3.set('manyRelations', [obj1, obj2]);
