@@ -27,7 +27,6 @@ describe_only_db('mongo')('Read preference option', () => {
         return query.find().then(results => {
           expect(results.length).toBe(1);
           expect(results[0].get('boolKey')).toBe(false);
-          console.log('aqui');
           let myObjectReadPreference = null;
           databaseAdapter.database.serverConfig.cursor.calls
             .all()
@@ -783,7 +782,6 @@ describe_only_db('mongo')('Read preference option', () => {
           databaseAdapter.database.serverConfig.cursor.calls
             .all()
             .forEach(call => {
-              console.log('aqui');
               if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
                 myObjectReadPreference =
                   call.args[0].options.readPreference.mode;
