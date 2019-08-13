@@ -2,13 +2,33 @@ import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
-import * as parseClassTypes from './parseClassTypes';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
 const getParseClassQueryConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
   return (parseClassConfig && parseClassConfig.query) || {};
+};
+
+const getQuery = async (className, _source, args, context, queryInfo) => {
+  const { objectId, readPreference, includeReadPreference } = args;
+  const { config, auth, info } = context;
+  const selectedFields = getFieldNames(queryInfo);
+
+  const { keys, include } = extractKeysAndInclude(selectedFields);
+
+  return await objectsQueries.getObject(
+    className,
+    objectId,
+    keys,
+    include,
+    readPreference,
+    includeReadPreference,
+    config,
+    auth,
+    info
+  );
 };
 
 const load = function(
@@ -40,25 +60,7 @@ const load = function(
       type: new GraphQLNonNull(classGraphQLOutputType),
       async resolve(_source, args, context, queryInfo) {
         try {
-          const { objectId, readPreference, includeReadPreference } = args;
-          const { config, auth, info } = context;
-          const selectedFields = getFieldNames(queryInfo);
-
-          const { keys, include } = parseClassTypes.extractKeysAndInclude(
-            selectedFields
-          );
-
-          return await objectsQueries.getObject(
-            className,
-            objectId,
-            keys,
-            include,
-            readPreference,
-            includeReadPreference,
-            config,
-            auth,
-            info
-          );
+          return await getQuery(className, _source, args, context, queryInfo);
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -86,7 +88,7 @@ const load = function(
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);
 
-          const { keys, include } = parseClassTypes.extractKeysAndInclude(
+          const { keys, include } = extractKeysAndInclude(
             selectedFields
               .filter(field => field.includes('.'))
               .map(field => field.slice(field.indexOf('.') + 1))
@@ -118,4 +120,4 @@ const load = function(
   }
 };
 
-export { load };
+export { load, getQuery };

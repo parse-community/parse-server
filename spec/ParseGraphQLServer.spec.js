@@ -775,7 +775,7 @@ describe('ParseGraphQLServer', () => {
           const possibleTypes = objectType.possibleTypes.map(o => o.name);
           expect(possibleTypes).toContain('_UserClass');
           expect(possibleTypes).toContain('_RoleClass');
-          expect(possibleTypes).toContain('Any');
+          expect(possibleTypes).toContain('Element');
         });
 
         it('should update schema when it changes', async () => {
@@ -1719,14 +1719,16 @@ describe('ParseGraphQLServer', () => {
                     getCustomer(objectId: $objectId) {
                       objectId
                       manyRelations {
-                        ...on CustomerClass {
+                        ... on CustomerClass {
                           objectId
                           someCustomerField
                           arrayField {
-                            ...on Any
+                            ... on Element {
+                              value
+                            }
                           }
                         }
-                        ...on SomeClassClass {
+                        ... on SomeClassClass {
                           objectId
                           someClassField
                         }
@@ -1738,11 +1740,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: obj2.id,
+                objectId: obj3.id,
               },
             })).data.objects.getCustomer;
 
-            expect(result.objectId).toEqual(obj2.id);
+            expect(result.objectId).toEqual(obj3.id);
             expect(result.manyRelations.length).toEqual(2);
 
             const customerSubObject = result.manyRelations.find(
@@ -1757,7 +1759,10 @@ describe('ParseGraphQLServer', () => {
             expect(customerSubObject.someCustomerField).toEqual(
               'imCustomerOne'
             );
-            expect(customerSubObject.arrayField).toEqual(arrayField);
+            const formatedArrayField = customerSubObject.arrayField.map(
+              elem => elem.value
+            );
+            expect(formatedArrayField).toEqual(arrayField);
             expect(someClassSubObject.someClassField).toEqual('imSomeClassTwo');
           });
 
@@ -5701,7 +5706,11 @@ describe('ParseGraphQLServer', () => {
                   findSomeClass(where: { someField: { _exists: true } }) {
                     results {
                       objectId
-                      someField
+                      someField {
+                        ... on Element {
+                          value
+                        }
+                      }
                     }
                   }
                 }
