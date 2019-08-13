@@ -68,7 +68,7 @@ If your pull request introduces a change that may affect the storage or retrieva
 
 #### Run a Parse Postgres with Docker
 
-To launch the compatible Postgres instance, copy and paste the following line into your shell
+To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```sh
 docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_USER=$USER --rm mdillon/postgis:11-alpine && sleep 5 && docker exec -it parse-postgres psql -U $USER -c 'create database parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U $USER -c 'CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U $USER -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
