@@ -20,9 +20,7 @@ export const extractKeysAndInclude = selectedFields => {
   let keys = undefined;
   let include = undefined;
   if (selectedFields && selectedFields.length > 0) {
-    keys = [...new Set(selectedFields.map(field => field.split('.')[0]))].join(
-      ','
-    );
+    keys = selectedFields.join(',');
     include = selectedFields
       .reduce((fields, field) => {
         fields = fields.slice();

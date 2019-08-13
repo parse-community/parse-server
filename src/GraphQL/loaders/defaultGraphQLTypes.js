@@ -1021,7 +1021,7 @@ const SIGN_UP_RESULT = new GraphQLObjectType({
   },
 });
 
-const ElEMENT = new GraphQLObjectType({
+const ELEMENT = new GraphQLObjectType({
   name: 'Element',
   description:
     'The SignUpResult object type is used in the users sign up mutation to return the data of the recent created user.',
@@ -1038,23 +1038,30 @@ const ARRAY_RESULT = new GraphQLUnionType({
   name: 'ArrayResult',
   description:
     'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
-  types: () => [ElEMENT],
+  types: () => [ELEMENT],
   resolveType: () => {
-    return ElEMENT;
+    return ELEMENT;
   },
 });
 
 const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   const ArrayResultTypeIndex = parseGraphQLSchema.graphQLTypes.findIndex(
-    type => type.name === 'ArrayResult'
+    type => type.name === 'ArrayResult' && type instanceof GraphQLUnionType
   );
-  const classTypes = parseClasses.map(
-    parseClass =>
+  const classTypes = parseClasses
+    .filter(parseClass =>
       parseGraphQLSchema.parseClassTypes[parseClass.className]
         .classGraphQLOutputType
-  );
+        ? true
+        : false
+    )
+    .map(
+      parseClass =>
+        parseGraphQLSchema.parseClassTypes[parseClass.className]
+          .classGraphQLOutputType
+    );
   parseGraphQLSchema.graphQLTypes[ArrayResultTypeIndex]._types = () => [
-    ElEMENT,
+    ELEMENT,
     ...classTypes,
   ];
   parseGraphQLSchema.graphQLTypes[ArrayResultTypeIndex].resolveType = value => {
@@ -1063,10 +1070,10 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
         return parseGraphQLSchema.parseClassTypes[value.className]
           .classGraphQLOutputType;
       } else {
-        return ElEMENT;
+        return ELEMENT;
       }
     } else {
-      return ElEMENT;
+      return ELEMENT;
     }
   };
 };
@@ -1107,7 +1114,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(POLYGON_CONSTRAINT);
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
   parseGraphQLSchema.graphQLTypes.push(SIGN_UP_RESULT);
-  parseGraphQLSchema.graphQLTypes.push(ElEMENT);
+  parseGraphQLSchema.graphQLTypes.push(ELEMENT);
   parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
@@ -1194,7 +1201,7 @@ export {
   FIND_RESULT,
   SIGN_UP_RESULT,
   ARRAY_RESULT,
-  ElEMENT,
+  ELEMENT,
   load,
   loadArrayResult,
 };

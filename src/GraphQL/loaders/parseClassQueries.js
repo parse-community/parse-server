@@ -120,4 +120,4 @@ const load = function(
   }
 };
 
-export { load, getQuery };
+export { load };

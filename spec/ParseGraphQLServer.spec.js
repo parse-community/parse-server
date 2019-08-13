@@ -1693,78 +1693,83 @@ describe('ParseGraphQLServer', () => {
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
           });
 
-          it('should return child objects in array fields', async () => {
-            const obj1 = new Parse.Object('Customer');
-            const obj2 = new Parse.Object('SomeClass');
-            const obj3 = new Parse.Object('Customer');
+          it_only_db('mongo')(
+            'should return child objects in array fields',
+            async () => {
+              const obj1 = new Parse.Object('Customer');
+              const obj2 = new Parse.Object('SomeClass');
+              const obj3 = new Parse.Object('Customer');
 
-            obj1.set('someCustomerField', 'imCustomerOne');
-            const arrayField = [42.42, 42, 'string', true];
-            obj1.set('arrayField', arrayField);
-            await obj1.save();
+              obj1.set('someCustomerField', 'imCustomerOne');
+              const arrayField = [42.42, 42, 'string', true];
+              obj1.set('arrayField', arrayField);
+              await obj1.save();
 
-            obj2.set('someClassField', 'imSomeClassTwo');
-            await obj2.save();
+              obj2.set('someClassField', 'imSomeClassTwo');
+              await obj2.save();
 
-            //const obj3Relation = obj3.relation('manyRelations')
-            obj3.set('manyRelations', [obj1, obj2]);
-            await obj3.save();
+              //const obj3Relation = obj3.relation('manyRelations')
+              obj3.set('manyRelations', [obj1, obj2]);
+              await obj3.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            const result = (await apolloClient.query({
-              query: gql`
-                query GetCustomer($objectId: ID!) {
-                  objects {
-                    getCustomer(objectId: $objectId) {
-                      objectId
-                      manyRelations {
-                        ... on CustomerClass {
-                          objectId
-                          someCustomerField
-                          arrayField {
-                            ... on Element {
-                              value
+              const result = (await apolloClient.query({
+                query: gql`
+                  query GetCustomer($objectId: ID!) {
+                    objects {
+                      getCustomer(objectId: $objectId) {
+                        objectId
+                        manyRelations {
+                          ... on CustomerClass {
+                            objectId
+                            someCustomerField
+                            arrayField {
+                              ... on Element {
+                                value
+                              }
                             }
                           }
+                          ... on SomeClassClass {
+                            objectId
+                            someClassField
+                          }
                         }
-                        ... on SomeClassClass {
-                          objectId
-                          someClassField
-                        }
+                        createdAt
+                        updatedAt
                       }
-                      createdAt
-                      updatedAt
                     }
                   }
-                }
-              `,
-              variables: {
-                objectId: obj3.id,
-              },
-            })).data.objects.getCustomer;
+                `,
+                variables: {
+                  objectId: obj3.id,
+                },
+              })).data.objects.getCustomer;
 
-            expect(result.objectId).toEqual(obj3.id);
-            expect(result.manyRelations.length).toEqual(2);
+              expect(result.objectId).toEqual(obj3.id);
+              expect(result.manyRelations.length).toEqual(2);
 
-            const customerSubObject = result.manyRelations.find(
-              o => o.objectId === obj1.id
-            );
-            const someClassSubObject = result.manyRelations.find(
-              o => o.objectId === obj2.id
-            );
+              const customerSubObject = result.manyRelations.find(
+                o => o.objectId === obj1.id
+              );
+              const someClassSubObject = result.manyRelations.find(
+                o => o.objectId === obj2.id
+              );
 
-            expect(customerSubObject).toBeDefined();
-            expect(someClassSubObject).toBeDefined();
-            expect(customerSubObject.someCustomerField).toEqual(
-              'imCustomerOne'
-            );
-            const formatedArrayField = customerSubObject.arrayField.map(
-              elem => elem.value
-            );
-            expect(formatedArrayField).toEqual(arrayField);
-            expect(someClassSubObject.someClassField).toEqual('imSomeClassTwo');
-          });
+              expect(customerSubObject).toBeDefined();
+              expect(someClassSubObject).toBeDefined();
+              expect(customerSubObject.someCustomerField).toEqual(
+                'imCustomerOne'
+              );
+              const formatedArrayField = customerSubObject.arrayField.map(
+                elem => elem.value
+              );
+              expect(formatedArrayField).toEqual(arrayField);
+              expect(someClassSubObject.someClassField).toEqual(
+                'imSomeClassTwo'
+              );
+            }
+          );
 
           it('should respect level permissions', async () => {
             await prepareData();
