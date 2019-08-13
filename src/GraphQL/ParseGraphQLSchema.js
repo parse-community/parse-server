@@ -15,6 +15,28 @@ import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 
+const RESERVED_GRAPHQL_TYPE_NAMES = [
+  'String',
+  'Boolean',
+  'Int',
+  'Float',
+  'ID',
+  'Query',
+  'Mutation',
+  'Subscription',
+  'ObjectsQuery',
+  'UsersQuery',
+  'ObjectsMutation',
+  'FilesMutation',
+  'UsersMutation',
+  'FunctionsMutation',
+  'Me',
+  'SignUpInput',
+  'UserLoginFields',
+];
+const RESERVED_GRAPHQL_OBJECT_QUERY_NAMES = ['get', 'find'];
+const RESERVED_GRAPHQL_OBJECT_MUTATION_NAMES = ['create', 'update', 'delete'];
+
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
   parseGraphQLController: ParseGraphQLController;
@@ -92,7 +114,7 @@ class ParseGraphQLSchema {
         description: 'Query is the top level type for queries.',
         fields: this.graphQLQueries,
       });
-      this.graphQLTypes.push(graphQLQuery);
+      this.addGraphQLType(graphQLQuery, true, true);
     }
 
     let graphQLMutation = undefined;
@@ -102,7 +124,7 @@ class ParseGraphQLSchema {
         description: 'Mutation is the top level type for mutations.',
         fields: this.graphQLMutations,
       });
-      this.graphQLTypes.push(graphQLMutation);
+      this.addGraphQLType(graphQLMutation, true, true);
     }
 
     let graphQLSubscription = undefined;
@@ -112,7 +134,7 @@ class ParseGraphQLSchema {
         description: 'Subscription is the top level type for subscriptions.',
         fields: this.graphQLSubscriptions,
       });
-      this.graphQLTypes.push(graphQLSubscription);
+      this.addGraphQLType(graphQLSubscription, true, true);
     }
 
     this.graphQLAutoSchema = new GraphQLSchema({
@@ -170,6 +192,66 @@ class ParseGraphQLSchema {
     }
 
     return this.graphQLSchema;
+  }
+
+  addGraphQLType(type, throwError = false, ignoreReserved = false) {
+    if (
+      (!ignoreReserved && RESERVED_GRAPHQL_TYPE_NAMES.includes(type.name)) ||
+      this.graphQLTypes.find(existingType => existingType.name === type.name)
+    ) {
+      const message = `Type ${type.name} could not be added to the auto schema because it collided with an existing type.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLTypes.push(type);
+    return type;
+  }
+
+  addGraphQLObjectQuery(
+    fieldName,
+    field,
+    throwError = false,
+    ignoreReserved = false
+  ) {
+    if (
+      (!ignoreReserved &&
+        RESERVED_GRAPHQL_OBJECT_QUERY_NAMES.includes(fieldName)) ||
+      this.graphQLObjectsQueries[fieldName]
+    ) {
+      const message = `Object query ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLObjectsQueries[fieldName] = field;
+    return field;
+  }
+
+  addGraphQLObjectMutation(
+    fieldName,
+    field,
+    throwError = false,
+    ignoreReserved = false
+  ) {
+    if (
+      (!ignoreReserved &&
+        RESERVED_GRAPHQL_OBJECT_MUTATION_NAMES.includes(fieldName)) ||
+      this.graphQLObjectsMutations[fieldName]
+    ) {
+      const message = `Object mutation ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLObjectsMutations[fieldName] = field;
+    return field;
   }
 
   handleError(error) {
@@ -238,7 +320,32 @@ class ParseGraphQLSchema {
     parseGraphQLConfig: ParseGraphQLConfig
   ) {
     const { classConfigs } = parseGraphQLConfig;
-    return parseClasses.map(parseClass => {
+
+    // Make sures that the default classes and classes that
+    // starts with capitalized letter will be generated first.
+    const sortClasses = (a, b) => {
+      a = a.className;
+      b = b.className;
+      if (a[0] === '_') {
+        if (b[0] !== '_') {
+          return -1;
+        }
+      }
+      if (b[0] === '_') {
+        if (a[0] !== '_') {
+          return 1;
+        }
+      }
+      if (a === b) {
+        return 0;
+      } else if (a < b) {
+        return -1;
+      } else {
+        return 1;
+      }
+    };
+
+    return parseClasses.sort(sortClasses).map(parseClass => {
       let parseClassConfig;
       if (classConfigs) {
         parseClassConfig = classConfigs.find(

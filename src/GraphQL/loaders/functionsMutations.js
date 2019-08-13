@@ -45,7 +45,7 @@ const load = parseGraphQLSchema => {
       'FunctionsMutation is the top level type for functions mutations.',
     fields,
   });
-  parseGraphQLSchema.graphQLTypes.push(functionsMutation);
+  parseGraphQLSchema.addGraphQLType(functionsMutation, true, true);
 
   parseGraphQLSchema.graphQLMutations.functions = {
     description: 'This is the top level for functions mutations.',

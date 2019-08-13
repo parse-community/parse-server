@@ -69,7 +69,7 @@ const load = parseGraphQLSchema => {
     description: 'UsersQuery is the top level type for users queries.',
     fields,
   });
-  parseGraphQLSchema.graphQLTypes.push(usersQuery);
+  parseGraphQLSchema.addGraphQLType(usersQuery, true, true);
 
   parseGraphQLSchema.graphQLQueries.users = {
     description: 'This is the top level for users queries.',

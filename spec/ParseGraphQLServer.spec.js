@@ -698,7 +698,7 @@ describe('ParseGraphQLServer', () => {
             'Class',
             'CreateResult',
             'Date',
-            'File',
+            'FileInfo',
             'FilesMutation',
             'FindResult',
             'ObjectsMutation',
@@ -1808,7 +1808,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetSomeObject($objectId: ID!) {
                   objects {
-                    get(className: "User", objectId: $objectId)
+                    get(className: "_User", objectId: $objectId)
                   }
                 }
               `,
@@ -1831,7 +1831,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetSomeObject($objectId: ID!) {
                   objects {
-                    get(className: "User", objectId: $objectId)
+                    get(className: "_User", objectId: $objectId)
                   }
                 }
               `,
@@ -4142,7 +4142,7 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($input: _UserLoginFields) {
+              mutation LogInUser($input: UserLoginFields) {
                 users {
                   logIn(input: $input) {
                     sessionToken
@@ -4173,7 +4173,7 @@ describe('ParseGraphQLServer', () => {
 
           const logIn = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($input: _UserLoginFields) {
+              mutation LogInUser($input: UserLoginFields) {
                 users {
                   logIn(input: $input) {
                     sessionToken
@@ -6077,7 +6077,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 objects {
-                  get(className: "User", objectId: $objectId)
+                  get(className: "_User", objectId: $objectId)
                 }
               }
             `,
@@ -6121,7 +6121,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 objects {
-                  get(className: "Role", objectId: $objectId)
+                  get(className: "_Role", objectId: $objectId)
                 }
               }
             `,

@@ -2,7 +2,6 @@ import { GraphQLBoolean, GraphQLNonNull, GraphQLObjectType } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from './objectsMutations';
 import { getUserFromSessionToken } from './usersQueries';
-import { transformClassNameToGraphQL } from '../transformers/className';
 
 const usersRouter = new UsersRouter();
 
@@ -17,10 +16,7 @@ const load = parseGraphQLSchema => {
     args: {
       input: {
         descriptions: 'These are the fields of the user.',
-        type:
-          parseGraphQLSchema.parseClassTypes[
-            transformClassNameToGraphQL('_User')
-          ].signUpInputType,
+        type: parseGraphQLSchema.parseClassTypes['_User'].signUpInputType,
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
@@ -51,10 +47,7 @@ const load = parseGraphQLSchema => {
     args: {
       input: {
         description: 'This is data needed to login',
-        type:
-          parseGraphQLSchema.parseClassTypes[
-            transformClassNameToGraphQL('_User')
-          ].logInInputType,
+        type: parseGraphQLSchema.parseClassTypes['_User'].logInInputType,
       },
     },
     type: new GraphQLNonNull(parseGraphQLSchema.meType),
@@ -105,7 +98,7 @@ const load = parseGraphQLSchema => {
     description: 'UsersMutation is the top level type for files mutations.',
     fields,
   });
-  parseGraphQLSchema.graphQLTypes.push(usersMutation);
+  parseGraphQLSchema.addGraphQLType(usersMutation, true, true);
 
   parseGraphQLSchema.graphQLMutations.users = {
     description: 'This is the top level for users mutations.',

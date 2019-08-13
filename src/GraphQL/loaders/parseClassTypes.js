@@ -14,10 +14,7 @@ import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
-import {
-  transformClassNameToGraphQL,
-  transformClassNameToParse,
-} from '../transformers/className';
+import { transformClassNameToGraphQL } from '../transformers/className';
 
 const mapInputType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
@@ -34,13 +31,19 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
     case 'Date':
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
-      if (parseClassTypes[targetClass]) {
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLScalarType
+      ) {
         return parseClassTypes[targetClass].classGraphQLScalarType;
       } else {
         return defaultGraphQLTypes.OBJECT;
       }
     case 'Relation':
-      if (parseClassTypes[targetClass]) {
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLRelationOpType
+      ) {
         return parseClassTypes[targetClass].classGraphQLRelationOpType;
       } else {
         return defaultGraphQLTypes.OBJECT;
@@ -61,7 +64,6 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
 };
 
 const mapOutputType = (parseType, targetClass, parseClassTypes) => {
-  targetClass = transformClassNameToGraphQL(targetClass);
   switch (parseType) {
     case 'String':
       return GraphQLString;
@@ -76,13 +78,19 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
     case 'Date':
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
-      if (parseClassTypes[targetClass]) {
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLOutputType
+      ) {
         return parseClassTypes[targetClass].classGraphQLOutputType;
       } else {
         return defaultGraphQLTypes.OBJECT;
       }
     case 'Relation':
-      if (parseClassTypes[targetClass]) {
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLFindResultType
+      ) {
         return new GraphQLNonNull(
           parseClassTypes[targetClass].classGraphQLFindResultType
         );
@@ -119,7 +127,10 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
     case 'Date':
       return defaultGraphQLTypes.DATE_WHERE_INPUT;
     case 'Pointer':
-      if (parseClassTypes[targetClass]) {
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLConstraintType
+      ) {
         return parseClassTypes[targetClass].classGraphQLConstraintType;
       } else {
         return defaultGraphQLTypes.OBJECT;
@@ -264,7 +275,8 @@ const load = (
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) => {
-  const className = transformClassNameToGraphQL(parseClass.className);
+  const className = parseClass.className;
+  const graphQLClassName = transformClassNameToGraphQL(className);
   const {
     classCreateFields,
     classUpdateFields,
@@ -273,12 +285,12 @@ const load = (
     classSortFields,
   } = getInputFieldsAndConstraints(parseClass, parseClassConfig);
 
-  const classGraphQLScalarTypeName = `${className}Pointer`;
+  const classGraphQLScalarTypeName = `${graphQLClassName}Pointer`;
   const parseScalarValue = value => {
     if (typeof value === 'string') {
       return {
         __type: 'Pointer',
-        className: transformClassNameToParse(className),
+        className: className,
         objectId: value,
       };
     } else if (
@@ -287,7 +299,7 @@ const load = (
       value.className === className &&
       typeof value.objectId === 'string'
     ) {
-      return { ...value, className: transformClassNameToParse(className) };
+      return { ...value, className };
     }
 
     throw new defaultGraphQLTypes.TypeValidationError(
@@ -295,9 +307,9 @@ const load = (
       classGraphQLScalarTypeName
     );
   };
-  const classGraphQLScalarType = new GraphQLScalarType({
+  let classGraphQLScalarType = new GraphQLScalarType({
     name: classGraphQLScalarTypeName,
-    description: `The ${classGraphQLScalarTypeName} is used in operations that involve ${className} pointers.`,
+    description: `The ${classGraphQLScalarTypeName} is used in operations that involve ${graphQLClassName} pointers.`,
     parseValue: parseScalarValue,
     serialize(value) {
       if (typeof value === 'string') {
@@ -305,7 +317,7 @@ const load = (
       } else if (
         typeof value === 'object' &&
         value.__type === 'Pointer' &&
-        transformClassNameToGraphQL(value.className) === className &&
+        value.className === className &&
         typeof value.objectId === 'string'
       ) {
         return value.objectId;
@@ -349,12 +361,14 @@ const load = (
       );
     },
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLScalarType);
+  classGraphQLScalarType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLScalarType) ||
+    defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLRelationOpTypeName = `${className}RelationOp`;
-  const classGraphQLRelationOpType = new GraphQLInputObjectType({
+  const classGraphQLRelationOpTypeName = `${graphQLClassName}RelationOp`;
+  let classGraphQLRelationOpType = new GraphQLInputObjectType({
     name: classGraphQLRelationOpTypeName,
-    description: `The ${classGraphQLRelationOpTypeName} input type is used in operations that involve relations with the ${className} class.`,
+    description: `The ${classGraphQLRelationOpTypeName} input type is used in operations that involve relations with the ${graphQLClassName} class.`,
     fields: () => ({
       _op: {
         description: 'This is the operation to be executed.',
@@ -372,12 +386,14 @@ const load = (
       },
     }),
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLRelationOpType);
+  classGraphQLRelationOpType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLRelationOpType) ||
+    defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLCreateTypeName = `${className}CreateInput`;
-  const classGraphQLCreateType = new GraphQLInputObjectType({
+  const classGraphQLCreateTypeName = `${graphQLClassName}CreateInput`;
+  let classGraphQLCreateType = new GraphQLInputObjectType({
     name: classGraphQLCreateTypeName,
-    description: `The ${classGraphQLCreateTypeName} input type is used in operations that involve creation of objects in the ${className} class.`,
+    description: `The ${classGraphQLCreateTypeName} input type is used in operations that involve creation of objects in the ${graphQLClassName} class.`,
     fields: () =>
       classCreateFields.reduce(
         (fields, field) => {
@@ -403,12 +419,14 @@ const load = (
         }
       ),
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLCreateType);
+  classGraphQLCreateType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLCreateType
+  );
 
-  const classGraphQLUpdateTypeName = `${className}UpdateInput`;
-  const classGraphQLUpdateType = new GraphQLInputObjectType({
+  const classGraphQLUpdateTypeName = `${graphQLClassName}UpdateInput`;
+  let classGraphQLUpdateType = new GraphQLInputObjectType({
     name: classGraphQLUpdateTypeName,
-    description: `The ${classGraphQLUpdateTypeName} input type is used in operations that involve creation of objects in the ${className} class.`,
+    description: `The ${classGraphQLUpdateTypeName} input type is used in operations that involve creation of objects in the ${graphQLClassName} class.`,
     fields: () =>
       classUpdateFields.reduce(
         (fields, field) => {
@@ -434,12 +452,14 @@ const load = (
         }
       ),
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLUpdateType);
+  classGraphQLUpdateType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLUpdateType
+  );
 
-  const classGraphQLConstraintTypeName = `${className}PointerWhereInput`;
-  const classGraphQLConstraintType = new GraphQLInputObjectType({
+  const classGraphQLConstraintTypeName = `${graphQLClassName}PointerWhereInput`;
+  let classGraphQLConstraintType = new GraphQLInputObjectType({
     name: classGraphQLConstraintTypeName,
-    description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${className} class.`,
+    description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
     fields: {
       _eq: defaultGraphQLTypes._eq(classGraphQLScalarType),
       _ne: defaultGraphQLTypes._ne(classGraphQLScalarType),
@@ -460,12 +480,14 @@ const load = (
       },
     },
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintType);
+  classGraphQLConstraintType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLConstraintType
+  );
 
-  const classGraphQLConstraintsTypeName = `${className}WhereInput`;
-  const classGraphQLConstraintsType = new GraphQLInputObjectType({
+  const classGraphQLConstraintsTypeName = `${graphQLClassName}WhereInput`;
+  let classGraphQLConstraintsType = new GraphQLInputObjectType({
     name: classGraphQLConstraintsTypeName,
-    description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${className} class.`,
+    description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
         const type = mapConstraintType(
@@ -499,12 +521,14 @@ const load = (
       },
     }),
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLConstraintsType);
+  classGraphQLConstraintsType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLConstraintsType) ||
+    defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLOrderTypeName = `${className}Order`;
-  const classGraphQLOrderType = new GraphQLEnumType({
+  const classGraphQLOrderTypeName = `${graphQLClassName}Order`;
+  let classGraphQLOrderType = new GraphQLEnumType({
     name: classGraphQLOrderTypeName,
-    description: `The ${classGraphQLOrderTypeName} input type is used when sorting objects of the ${className} class.`,
+    description: `The ${classGraphQLOrderTypeName} input type is used when sorting objects of the ${graphQLClassName} class.`,
     values: classSortFields.reduce((sortFields, fieldConfig) => {
       const { field, asc, desc } = fieldConfig;
       const updatedSortFields = {
@@ -519,7 +543,9 @@ const load = (
       return updatedSortFields;
     }, {}),
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLOrderType);
+  classGraphQLOrderType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLOrderType
+  );
 
   const classGraphQLFindArgs = {
     where: {
@@ -529,7 +555,9 @@ const load = (
     },
     order: {
       description: 'The fields to be used when sorting the data fetched.',
-      type: new GraphQLList(new GraphQLNonNull(classGraphQLOrderType)),
+      type: classGraphQLOrderType
+        ? new GraphQLList(new GraphQLNonNull(classGraphQLOrderType))
+        : GraphQLString,
     },
     skip: defaultGraphQLTypes.SKIP_ATT,
     limit: defaultGraphQLTypes.LIMIT_ATT,
@@ -538,7 +566,7 @@ const load = (
     subqueryReadPreference: defaultGraphQLTypes.SUBQUERY_READ_PREFERENCE_ATT,
   };
 
-  const classGraphQLOutputTypeName = `${className}`;
+  const classGraphQLOutputTypeName = `${graphQLClassName}`;
   const outputFields = () => {
     return classOutputFields.reduce((fields, field) => {
       const type = mapOutputType(
@@ -549,7 +577,7 @@ const load = (
       if (parseClass.fields[field].type === 'Relation') {
         const targetParseClassTypes =
           parseGraphQLSchema.parseClassTypes[
-            transformClassNameToGraphQL(parseClass.fields[field].targetClass)
+            parseClass.fields[field].targetClass
           ];
         const args = targetParseClassTypes
           ? targetParseClassTypes.classGraphQLFindArgs
@@ -585,7 +613,7 @@ const load = (
                     _relatedTo: {
                       object: {
                         __type: 'Pointer',
-                        className: transformClassNameToParse(className),
+                        className: className,
                         objectId: source.objectId,
                       },
                       key: field,
@@ -643,29 +671,37 @@ const load = (
       }
     }, defaultGraphQLTypes.CLASS_FIELDS);
   };
-  const classGraphQLOutputType = new GraphQLObjectType({
+  let classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
-    description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${className} class.`,
+    description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${graphQLClassName} class.`,
     interfaces: [defaultGraphQLTypes.CLASS],
     fields: outputFields,
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLOutputType);
+  classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLOutputType
+  );
 
-  const classGraphQLFindResultTypeName = `${className}FindResult`;
-  const classGraphQLFindResultType = new GraphQLObjectType({
+  const classGraphQLFindResultTypeName = `${graphQLClassName}FindResult`;
+  let classGraphQLFindResultType = new GraphQLObjectType({
     name: classGraphQLFindResultTypeName,
-    description: `The ${classGraphQLFindResultTypeName} object type is used in the ${className} find query to return the data of the matched objects.`,
+    description: `The ${classGraphQLFindResultTypeName} object type is used in the ${graphQLClassName} find query to return the data of the matched objects.`,
     fields: {
       results: {
         description: 'This is the objects returned by the query',
         type: new GraphQLNonNull(
-          new GraphQLList(new GraphQLNonNull(classGraphQLOutputType))
+          new GraphQLList(
+            new GraphQLNonNull(
+              classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+            )
+          )
         ),
       },
       count: defaultGraphQLTypes.COUNT_ATT,
     },
   });
-  parseGraphQLSchema.graphQLTypes.push(classGraphQLFindResultType);
+  classGraphQLFindResultType = parseGraphQLSchema.addGraphQLType(
+    classGraphQLFindResultType
+  );
 
   parseGraphQLSchema.parseClassTypes[className] = {
     classGraphQLScalarType,
@@ -679,7 +715,7 @@ const load = (
     classGraphQLFindResultType,
   };
 
-  if (className === transformClassNameToGraphQL('_User')) {
+  if (className === '_User') {
     const meType = new GraphQLObjectType({
       name: 'Me',
       description: `The Me object type is used in operations that involve outputting the current user data.`,
@@ -690,12 +726,12 @@ const load = (
       }),
     });
     parseGraphQLSchema.meType = meType;
-    parseGraphQLSchema.graphQLTypes.push(meType);
+    parseGraphQLSchema.addGraphQLType(meType, true, true);
 
     const userSignUpInputTypeName = 'SignUpInput';
     const userSignUpInputType = new GraphQLInputObjectType({
       name: userSignUpInputTypeName,
-      description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${className} class when signing up.`,
+      description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${graphQLClassName} class when signing up.`,
       fields: () =>
         classCreateFields.reduce((fields, field) => {
           const type = mapInputType(
@@ -719,8 +755,9 @@ const load = (
           }
         }, {}),
     });
+    parseGraphQLSchema.addGraphQLType(userSignUpInputType, true, true);
 
-    const userLogInInputTypeName = '_UserLoginFields';
+    const userLogInInputTypeName = 'UserLoginFields';
     const userLogInInputType = new GraphQLInputObjectType({
       name: userLogInInputTypeName,
       description: `The ${userLogInInputTypeName} input type is used to login.`,
@@ -735,13 +772,14 @@ const load = (
         },
       },
     });
+    parseGraphQLSchema.addGraphQLType(userLogInInputType, true, true);
+
     parseGraphQLSchema.parseClassTypes[
-      transformClassNameToGraphQL('_User')
+      className
     ].signUpInputType = userSignUpInputType;
     parseGraphQLSchema.parseClassTypes[
-      transformClassNameToGraphQL('_User')
+      className
     ].logInInputType = userLogInInputType;
-    parseGraphQLSchema.graphQLTypes.push(userSignUpInputType);
   }
 };
 

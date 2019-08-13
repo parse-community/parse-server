@@ -40,7 +40,8 @@ const load = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const className = transformClassNameToGraphQL(parseClass.className);
+  const className = parseClass.className;
+  const graphQLClassName = transformClassNameToGraphQL(className);
 
   const {
     create: isCreateEnabled = true,
@@ -54,29 +55,21 @@ const load = function(
     classGraphQLOutputType,
   } = parseGraphQLSchema.parseClassTypes[className];
 
-  const createFields = {
-    description: 'These are the fields used to create the object.',
-    type: classGraphQLCreateType,
-  };
-  const updateFields = {
-    description: 'These are the fields used to update the object.',
-    type: classGraphQLUpdateType,
-  };
-
-  const classGraphQLCreateTypeFields = isCreateEnabled
-    ? classGraphQLCreateType.getFields()
-    : null;
-  const classGraphQLUpdateTypeFields = isUpdateEnabled
-    ? classGraphQLUpdateType.getFields()
-    : null;
-
   const transformTypes = (inputType: 'create' | 'update', fields) => {
     if (fields) {
+      const classGraphQLCreateTypeFields =
+        isCreateEnabled && classGraphQLCreateType
+          ? classGraphQLCreateType.getFields()
+          : null;
+      const classGraphQLUpdateTypeFields =
+        isUpdateEnabled && classGraphQLUpdateType
+          ? classGraphQLUpdateType.getFields()
+          : null;
       Object.keys(fields).forEach(field => {
         let inputTypeField;
-        if (inputType === 'create') {
+        if (inputType === 'create' && classGraphQLCreateTypeFields) {
           inputTypeField = classGraphQLCreateTypeFields[field];
-        } else {
+        } else if (classGraphQLUpdateTypeFields) {
           inputTypeField = classGraphQLUpdateTypeFields[field];
         }
         if (inputTypeField) {
@@ -100,13 +93,18 @@ const load = function(
   };
 
   if (isCreateEnabled) {
-    const createGraphQLMutationName = `create${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
-      description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
+    const createGraphQLMutationName = `create${graphQLClassName}`;
+    parseGraphQLSchema.addGraphQLObjectMutation(createGraphQLMutationName, {
+      description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
       args: {
-        input: createFields,
+        input: {
+          description: 'These are the fields used to create the object.',
+          type: classGraphQLCreateType || defaultGraphQLTypes.OBJECT,
+        },
       },
-      type: new GraphQLNonNull(classGraphQLOutputType),
+      type: new GraphQLNonNull(
+        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+      ),
       async resolve(_source, args, context, mutationInfo) {
         try {
           let { input: fields } = args;
@@ -154,18 +152,23 @@ const load = function(
           parseGraphQLSchema.handleError(e);
         }
       },
-    };
+    });
   }
 
   if (isUpdateEnabled) {
-    const updateGraphQLMutationName = `update${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[updateGraphQLMutationName] = {
-      description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
+    const updateGraphQLMutationName = `update${graphQLClassName}`;
+    parseGraphQLSchema.addGraphQLObjectMutation(updateGraphQLMutationName, {
+      description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-        input: updateFields,
+        input: {
+          description: 'These are the fields used to update the object.',
+          type: classGraphQLUpdateType || defaultGraphQLTypes.OBJECT,
+        },
       },
-      type: new GraphQLNonNull(classGraphQLOutputType),
+      type: new GraphQLNonNull(
+        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+      ),
       async resolve(_source, args, context, mutationInfo) {
         try {
           const { objectId, input: fields } = args;
@@ -211,17 +214,19 @@ const load = function(
           parseGraphQLSchema.handleError(e);
         }
       },
-    };
+    });
   }
 
   if (isDestroyEnabled) {
-    const deleteGraphQLMutationName = `delete${className}`;
-    parseGraphQLSchema.graphQLObjectsMutations[deleteGraphQLMutationName] = {
-      description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`,
+    const deleteGraphQLMutationName = `delete${graphQLClassName}`;
+    parseGraphQLSchema.addGraphQLObjectMutation(deleteGraphQLMutationName, {
+      description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
       },
-      type: new GraphQLNonNull(classGraphQLOutputType),
+      type: new GraphQLNonNull(
+        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+      ),
       async resolve(_source, args, context, mutationInfo) {
         try {
           const { objectId } = args;
@@ -258,7 +263,7 @@ const load = function(
           parseGraphQLSchema.handleError(e);
         }
       },
-    };
+    });
   }
 };
 

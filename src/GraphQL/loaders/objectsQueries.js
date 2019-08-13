@@ -9,7 +9,6 @@ import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
-import { transformClassNameToParse } from '../transformers/className';
 
 const getObject = async (
   className,
@@ -73,7 +72,6 @@ const findObjects = async (
   info,
   selectedFields
 ) => {
-  className = transformClassNameToParse(className);
   if (!where) {
     where = {};
   }
@@ -136,122 +134,131 @@ const findObjects = async (
 };
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.graphQLObjectsQueries.get = {
-    description:
-      'The get query can be used to get an object of a certain class by its objectId.',
-    args: {
-      className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      keys: defaultGraphQLTypes.KEYS_ATT,
-      include: defaultGraphQLTypes.INCLUDE_ATT,
-      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
-      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
-    },
-    type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
-    async resolve(_source, args, context) {
-      try {
-        const {
-          className: graphQLClassName,
-          objectId,
-          keys,
-          include,
-          readPreference,
-          includeReadPreference,
-        } = args;
-
-        const className = transformClassNameToParse(graphQLClassName);
-        const { config, auth, info } = context;
-
-        return await getObject(
-          className,
-          objectId,
-          keys,
-          include,
-          readPreference,
-          includeReadPreference,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
-
-  parseGraphQLSchema.graphQLObjectsQueries.find = {
-    description:
-      'The find query can be used to find objects of a certain class.',
-    args: {
-      className: defaultGraphQLTypes.CLASS_NAME_ATT,
-      where: defaultGraphQLTypes.WHERE_ATT,
-      order: {
-        description:
-          'This is the order in which the objects should be returned',
-        type: GraphQLString,
+  parseGraphQLSchema.addGraphQLObjectQuery(
+    'get',
+    {
+      description:
+        'The get query can be used to get an object of a certain class by its objectId.',
+      args: {
+        className: defaultGraphQLTypes.CLASS_NAME_ATT,
+        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        keys: defaultGraphQLTypes.KEYS_ATT,
+        include: defaultGraphQLTypes.INCLUDE_ATT,
+        readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
+        includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
       },
-      skip: defaultGraphQLTypes.SKIP_ATT,
-      limit: defaultGraphQLTypes.LIMIT_ATT,
-      keys: defaultGraphQLTypes.KEYS_ATT,
-      include: defaultGraphQLTypes.INCLUDE_ATT,
-      includeAll: {
-        description: 'All pointers will be returned',
-        type: GraphQLBoolean,
+      type: new GraphQLNonNull(defaultGraphQLTypes.OBJECT),
+      async resolve(_source, args, context) {
+        try {
+          const {
+            className,
+            objectId,
+            keys,
+            include,
+            readPreference,
+            includeReadPreference,
+          } = args;
+
+          const { config, auth, info } = context;
+
+          return await getObject(
+            className,
+            objectId,
+            keys,
+            include,
+            readPreference,
+            includeReadPreference,
+            config,
+            auth,
+            info
+          );
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
       },
-      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
-      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
-      subqueryReadPreference: defaultGraphQLTypes.SUBQUERY_READ_PREFERENCE_ATT,
     },
-    type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
-    async resolve(_source, args, context, queryInfo) {
-      try {
-        const {
-          className: graphQLClassName,
-          where,
-          order,
-          skip,
-          limit,
-          keys,
-          include,
-          includeAll,
-          readPreference,
-          includeReadPreference,
-          subqueryReadPreference,
-        } = args;
+    true,
+    true
+  );
 
-        const className = transformClassNameToParse(graphQLClassName);
-        const { config, auth, info } = context;
-        const selectedFields = getFieldNames(queryInfo);
+  parseGraphQLSchema.addGraphQLObjectQuery(
+    'find',
+    {
+      description:
+        'The find query can be used to find objects of a certain class.',
+      args: {
+        className: defaultGraphQLTypes.CLASS_NAME_ATT,
+        where: defaultGraphQLTypes.WHERE_ATT,
+        order: {
+          description:
+            'This is the order in which the objects should be returned',
+          type: GraphQLString,
+        },
+        skip: defaultGraphQLTypes.SKIP_ATT,
+        limit: defaultGraphQLTypes.LIMIT_ATT,
+        keys: defaultGraphQLTypes.KEYS_ATT,
+        include: defaultGraphQLTypes.INCLUDE_ATT,
+        includeAll: {
+          description: 'All pointers will be returned',
+          type: GraphQLBoolean,
+        },
+        readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
+        includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
+        subqueryReadPreference:
+          defaultGraphQLTypes.SUBQUERY_READ_PREFERENCE_ATT,
+      },
+      type: new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT),
+      async resolve(_source, args, context, queryInfo) {
+        try {
+          const {
+            className,
+            where,
+            order,
+            skip,
+            limit,
+            keys,
+            include,
+            includeAll,
+            readPreference,
+            includeReadPreference,
+            subqueryReadPreference,
+          } = args;
 
-        return await findObjects(
-          className,
-          where,
-          order,
-          skip,
-          limit,
-          keys,
-          include,
-          includeAll,
-          readPreference,
-          includeReadPreference,
-          subqueryReadPreference,
-          config,
-          auth,
-          info,
-          selectedFields
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
+          const { config, auth, info } = context;
+          const selectedFields = getFieldNames(queryInfo);
+
+          return await findObjects(
+            className,
+            where,
+            order,
+            skip,
+            limit,
+            keys,
+            include,
+            includeAll,
+            readPreference,
+            includeReadPreference,
+            subqueryReadPreference,
+            config,
+            auth,
+            info,
+            selectedFields
+          );
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
     },
-  };
+    true,
+    true
+  );
 
   const objectsQuery = new GraphQLObjectType({
     name: 'ObjectsQuery',
     description: 'ObjectsQuery is the top level type for objects queries.',
     fields: parseGraphQLSchema.graphQLObjectsQueries,
   });
-  parseGraphQLSchema.graphQLTypes.push(objectsQuery);
+  parseGraphQLSchema.addGraphQLType(objectsQuery, true, true);
 
   parseGraphQLSchema.graphQLQueries.objects = {
     description: 'This is the top level for objects queries.',

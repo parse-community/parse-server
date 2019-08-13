@@ -81,7 +81,7 @@ const load = parseGraphQLSchema => {
     description: 'FilesMutation is the top level type for files mutations.',
     fields,
   });
-  parseGraphQLSchema.graphQLTypes.push(filesMutation);
+  parseGraphQLSchema.addGraphQLType(filesMutation, true, true);
 
   parseGraphQLSchema.graphQLMutations.files = {
     description: 'This is the top level for files mutations.',

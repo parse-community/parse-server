@@ -25,25 +25,31 @@ class ParseGraphQLServer {
     }
     this.config = config;
     this.parseGraphQLController = this.parseServer.config.parseGraphQLController;
+    this.log =
+      (this.parseServer.config && this.parseServer.config.loggerController) ||
+      defaultLogger;
     this.parseGraphQLSchema = new ParseGraphQLSchema({
       parseGraphQLController: this.parseGraphQLController,
       databaseController: this.parseServer.config.databaseController,
-      log:
-        (this.parseServer.config && this.parseServer.config.loggerController) ||
-        defaultLogger,
+      log: this.log,
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
     });
   }
 
   async _getGraphQLOptions(req) {
-    return {
-      schema: await this.parseGraphQLSchema.load(),
-      context: {
-        info: req.info,
-        config: req.config,
-        auth: req.auth,
-      },
-    };
+    try {
+      return {
+        schema: await this.parseGraphQLSchema.load(),
+        context: {
+          info: req.info,
+          config: req.config,
+          auth: req.auth,
+        },
+      };
+    } catch (e) {
+      this.log.error(e);
+      throw e;
+    }
   }
 
   applyGraphQL(app) {
