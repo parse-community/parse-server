@@ -14,6 +14,7 @@ import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
 const mapInputType = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
@@ -65,7 +66,7 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
     case 'Boolean':
       return GraphQLBoolean;
     case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.ANY);
+      return new GraphQLList(defaultGraphQLTypes.ARRAY_RESULT);
     case 'Object':
       return defaultGraphQLTypes.OBJECT;
     case 'Date':
@@ -133,33 +134,6 @@ const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
     default:
       return undefined;
   }
-};
-
-const extractKeysAndInclude = selectedFields => {
-  selectedFields = selectedFields.filter(
-    field => !field.includes('__typename')
-  );
-  let keys = undefined;
-  let include = undefined;
-  if (selectedFields && selectedFields.length > 0) {
-    keys = selectedFields.join(',');
-    include = selectedFields
-      .reduce((fields, field) => {
-        fields = fields.slice();
-        let pointIndex = field.lastIndexOf('.');
-        while (pointIndex > 0) {
-          const lastField = field.slice(pointIndex + 1);
-          field = field.slice(0, pointIndex);
-          if (!fields.includes(field) && lastField !== 'objectId') {
-            fields.push(field);
-          }
-          pointIndex = field.lastIndexOf('.');
-        }
-        return fields;
-      }, [])
-      .join(',');
-  }
-  return { keys, include };
 };
 
 const getParseClassTypeConfig = function(
@@ -623,6 +597,27 @@ const load = (
               } else {
                 return null;
               }
+            },
+          },
+        };
+      } else if (parseClass.fields[field].type === 'Array') {
+        return {
+          ...fields,
+          [field]: {
+            description: `Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments`,
+            type,
+            async resolve(source) {
+              return source[field].map(async elem => {
+                if (
+                  elem.className &&
+                  elem.objectId &&
+                  elem.__type === 'Object'
+                ) {
+                  return elem;
+                } else {
+                  return { value: elem };
+                }
+              });
             },
           },
         };
