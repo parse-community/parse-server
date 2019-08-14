@@ -146,6 +146,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
+    this._mongoOptions.useUnifiedTopology = true;
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -203,9 +204,9 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   handleShutdown() {
     if (!this.client) {
-      return;
+      return Promise.resolve();
     }
-    this.client.close(false);
+    return this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
