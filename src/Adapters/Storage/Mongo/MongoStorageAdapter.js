@@ -204,9 +204,9 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   handleShutdown() {
     if (!this.client) {
-      return;
+      return Promise.resolve();
     }
-    this.client.close(false);
+    return this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {

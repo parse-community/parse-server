@@ -117,8 +117,12 @@ class ParseServer {
   handleShutdown() {
     const { adapter } = this.config.databaseController;
     if (adapter && typeof adapter.handleShutdown === 'function') {
-      adapter.handleShutdown();
+      const promise = adapter.handleShutdown();
+      if (promise instanceof Promise) {
+        return promise;
+      }
     }
+    return Promise.resolve();
   }
 
   /**
