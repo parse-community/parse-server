@@ -455,10 +455,18 @@ RestQuery.prototype.replaceNotInQuery = function() {
   });
 };
 
+// Used to get the deepest object from json using dot notation.
+const getDeepestObjectFromKey = (acc, cur, idx, src) => {
+  if (acc[cur]) {
+    return acc[cur];
+  }
+  src.splice(1); // Exit Early
+};
+
 const transformSelect = (selectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete selectObject['$select'];
   if (Array.isArray(selectObject['$in'])) {
@@ -523,7 +531,7 @@ RestQuery.prototype.replaceSelect = function() {
 const transformDontSelect = (dontSelectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete dontSelectObject['$dontSelect'];
   if (Array.isArray(dontSelectObject['$nin'])) {
