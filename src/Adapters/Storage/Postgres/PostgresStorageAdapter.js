@@ -442,7 +442,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
-              if (listElem !== null) {
+              if (listElem != null) {
                 values.push(listElem);
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }

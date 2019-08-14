@@ -2001,12 +2001,16 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference).toBe(null);
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    expect(call.args[0].options.readPreference.mode).toBe(
+                      ReadPreference.PRIMARY
+                    );
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference).toBe(null);
+                    expect(call.args[0].options.readPreference.mode).toBe(
+                      ReadPreference.PRIMARY
+                    );
                   }
                 });
 
@@ -2052,14 +2056,14 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
                   }
@@ -2108,14 +2112,14 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.NEAREST
                     );
                   }
@@ -2934,12 +2938,16 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference).toBe(null);
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                    expect(call.args[0].options.readPreference.mode).toBe(
+                      ReadPreference.PRIMARY
+                    );
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference).toBe(null);
+                    expect(call.args[0].options.readPreference.mode).toBe(
+                      ReadPreference.PRIMARY
+                    );
                   }
                 });
 
@@ -2983,14 +2991,14 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
                   }
@@ -3037,14 +3045,14 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.NEAREST
                     );
                   }
@@ -3074,7 +3082,7 @@ describe('ParseGraphQLServer', () => {
                         readPreference: SECONDARY
                         subqueryReadPreference: NEAREST
                       ) {
-                        count
+                        results
                       }
                     }
                   }
@@ -3098,14 +3106,14 @@ describe('ParseGraphQLServer', () => {
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
                 .forEach(call => {
-                  if (call.args[0].indexOf('GraphQLClass') >= 0) {
+                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.SECONDARY
                     );
-                  } else if (call.args[0].indexOf('_User') >= 0) {
+                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
                     foundUserClassReadPreference = true;
-                    expect(call.args[2].readPreference.preference).toBe(
+                    expect(call.args[0].options.readPreference.mode).toBe(
                       ReadPreference.NEAREST
                     );
                   }

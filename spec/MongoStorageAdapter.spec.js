@@ -280,10 +280,17 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     };
 
     adapter.createObject('MyClass', schema, {}).then(() => {
-      expect(adapter.database.serverConfig.isConnected()).toEqual(true);
-      adapter.handleShutdown();
-      expect(adapter.database.serverConfig.isConnected()).toEqual(false);
-      done();
+      expect(adapter.database.serverConfig.connections().length > 0).toEqual(
+        true
+      );
+      expect(adapter.database.serverConfig.s.connected).toEqual(true);
+      adapter.handleShutdown().then(() => {
+        expect(adapter.database.serverConfig.connections().length > 0).toEqual(
+          false
+        );
+        expect(adapter.database.serverConfig.s.connected).toEqual(false);
+        done();
+      });
     });
   });
 
