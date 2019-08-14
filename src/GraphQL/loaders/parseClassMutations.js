@@ -1,7 +1,7 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as parseClassTypes from './parseClassTypes';
+import { extractKeysAndInclude } from '../parseGraphQLUtils';
 import * as objectsMutations from './objectsMutations';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
@@ -119,9 +119,7 @@ const load = function(
             info
           );
           const selectedFields = getFieldNames(mutationInfo);
-          const { keys, include } = parseClassTypes.extractKeysAndInclude(
-            selectedFields
-          );
+          const { keys, include } = extractKeysAndInclude(selectedFields);
           const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
             fields,
             keys,
@@ -180,9 +178,7 @@ const load = function(
             info
           );
           const selectedFields = getFieldNames(mutationInfo);
-          const { keys, include } = parseClassTypes.extractKeysAndInclude(
-            selectedFields
-          );
+          const { keys, include } = extractKeysAndInclude(selectedFields);
 
           const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
             fields,
@@ -225,9 +221,7 @@ const load = function(
           const { objectId } = args;
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(mutationInfo);
-          const { keys, include } = parseClassTypes.extractKeysAndInclude(
-            selectedFields
-          );
+          const { keys, include } = extractKeysAndInclude(selectedFields);
 
           let optimizedObject = {};
           const splitedKeys = keys.split(',');
