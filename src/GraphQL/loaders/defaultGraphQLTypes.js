@@ -1034,20 +1034,9 @@ const ELEMENT = new GraphQLObjectType({
 });
 
 // Default static union type, we update types and resolveType function later
-const ARRAY_RESULT = new GraphQLUnionType({
-  name: 'ArrayResult',
-  description:
-    'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
-  types: () => [ELEMENT],
-  resolveType: () => {
-    return ELEMENT;
-  },
-});
+let ARRAY_RESULT;
 
 const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
-  const ArrayResultTypeIndex = parseGraphQLSchema.graphQLTypes.findIndex(
-    type => type.name === 'ArrayResult' && type instanceof GraphQLUnionType
-  );
   const classTypes = parseClasses
     .filter(parseClass =>
       parseGraphQLSchema.parseClassTypes[parseClass.className]
@@ -1060,22 +1049,25 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
         parseGraphQLSchema.parseClassTypes[parseClass.className]
           .classGraphQLOutputType
     );
-  parseGraphQLSchema.graphQLTypes[ArrayResultTypeIndex]._types = () => [
-    ELEMENT,
-    ...classTypes,
-  ];
-  parseGraphQLSchema.graphQLTypes[ArrayResultTypeIndex].resolveType = value => {
-    if (value.__type === 'Object' && value.className && value.objectId) {
-      if (parseGraphQLSchema.parseClassTypes[value.className]) {
-        return parseGraphQLSchema.parseClassTypes[value.className]
-          .classGraphQLOutputType;
+  ARRAY_RESULT = new GraphQLUnionType({
+    name: 'ArrayResult',
+    description:
+      'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
+    types: () => [ELEMENT, ...classTypes],
+    resolveType: value => {
+      if (value.__type === 'Object' && value.className && value.objectId) {
+        if (parseGraphQLSchema.parseClassTypes[value.className]) {
+          return parseGraphQLSchema.parseClassTypes[value.className]
+            .classGraphQLOutputType;
+        } else {
+          return ELEMENT;
+        }
       } else {
         return ELEMENT;
       }
-    } else {
-      return ELEMENT;
-    }
-  };
+    },
+  });
+  parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
 const load = parseGraphQLSchema => {
@@ -1115,7 +1107,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLTypes.push(FIND_RESULT);
   parseGraphQLSchema.graphQLTypes.push(SIGN_UP_RESULT);
   parseGraphQLSchema.graphQLTypes.push(ELEMENT);
-  parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
 export {
