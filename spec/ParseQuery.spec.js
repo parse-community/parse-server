@@ -4593,6 +4593,7 @@ describe('Parse.Query testing', () => {
     await Parse.Object.saveAll([role1, role2]);
 
     const rolesOfTypeX = new Parse.Query('Role');
+    rolesOfTypeX.equalTo('type', 'x');
 
     const groupsWithRoleX = new Parse.Query('Group');
     groupsWithRoleX.matchesKeyInQuery(
