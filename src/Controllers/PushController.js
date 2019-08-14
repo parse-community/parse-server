@@ -32,7 +32,10 @@ export class PushController {
     }
 
     // Immediate push
-    if (body.expiration_interval && !body.hasOwnProperty('push_time')) {
+    if (
+      body.expiration_interval &&
+      !Object.prototype.hasOwnProperty.call(body, 'push_time')
+    ) {
       const ttlMs = body.expiration_interval * 1000;
       body.expiration_time = new Date(now.valueOf() + ttlMs).valueOf();
     }
@@ -121,7 +124,7 @@ export class PushController {
       })
       .then(() => {
         if (
-          body.hasOwnProperty('push_time') &&
+          Object.prototype.hasOwnProperty.call(body, 'push_time') &&
           config.hasPushScheduledSupport
         ) {
           return Promise.resolve();
@@ -147,7 +150,10 @@ export class PushController {
    * @returns {Number|undefined} The expiration time if it exists in the request
    */
   static getExpirationTime(body = {}) {
-    var hasExpirationTime = body.hasOwnProperty('expiration_time');
+    var hasExpirationTime = Object.prototype.hasOwnProperty.call(
+      body,
+      'expiration_time'
+    );
     if (!hasExpirationTime) {
       return;
     }
@@ -174,7 +180,10 @@ export class PushController {
   }
 
   static getExpirationInterval(body = {}) {
-    const hasExpirationInterval = body.hasOwnProperty('expiration_interval');
+    const hasExpirationInterval = Object.prototype.hasOwnProperty.call(
+      body,
+      'expiration_interval'
+    );
     if (!hasExpirationInterval) {
       return;
     }
@@ -198,7 +207,7 @@ export class PushController {
    * @returns {Number|undefined} The push time if it exists in the request
    */
   static getPushTime(body = {}) {
-    var hasPushTime = body.hasOwnProperty('push_time');
+    var hasPushTime = Object.prototype.hasOwnProperty.call(body, 'push_time');
     if (!hasPushTime) {
       return;
     }

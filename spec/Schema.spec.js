@@ -1382,19 +1382,29 @@ describe('SchemaController', () => {
 
   it('properly handles volatile _Schemas', done => {
     function validateSchemaStructure(schema) {
-      expect(schema.hasOwnProperty('className')).toBe(true);
-      expect(schema.hasOwnProperty('fields')).toBe(true);
-      expect(schema.hasOwnProperty('classLevelPermissions')).toBe(true);
+      expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(
+        true
+      );
+      expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(true);
+      expect(
+        Object.prototype.hasOwnProperty.call(schema, 'classLevelPermissions')
+      ).toBe(true);
     }
     function validateSchemaDataStructure(schemaData) {
       Object.keys(schemaData).forEach(className => {
         const schema = schemaData[className];
         // Hooks has className...
         if (className != '_Hooks') {
-          expect(schema.hasOwnProperty('className')).toBe(false);
+          expect(
+            Object.prototype.hasOwnProperty.call(schema, 'className')
+          ).toBe(false);
         }
-        expect(schema.hasOwnProperty('fields')).toBe(false);
-        expect(schema.hasOwnProperty('classLevelPermissions')).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(
+          false
+        );
+        expect(
+          Object.prototype.hasOwnProperty.call(schema, 'classLevelPermissions')
+        ).toBe(false);
       });
     }
     let schema;
