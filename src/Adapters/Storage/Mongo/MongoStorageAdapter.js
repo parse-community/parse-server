@@ -279,7 +279,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.hasOwnProperty.call(fields, key)) {
+          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -795,7 +795,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       )
       .then(results => {
         results.forEach(result => {
-          if (Object.hasOwnProperty.call(result, '_id')) {
+          if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
             }
@@ -1024,7 +1024,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       const existingIndexes = schema.indexes;
       for (const key in existingIndexes) {
         const index = existingIndexes[key];
-        if (Object.hasOwnProperty.call(index, fieldName)) {
+        if (Object.prototype.hasOwnProperty.call(index, fieldName)) {
           return Promise.resolve();
         }
       }

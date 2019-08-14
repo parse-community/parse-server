@@ -119,7 +119,7 @@ const validateQuery = (
          */
         Object.keys(query).forEach(key => {
           const noCollisions = !query.$or.some(subq =>
-            Object.hasOwnProperty.call(subq, key)
+            Object.prototype.hasOwnProperty.call(subq, key)
           );
           let hasNears = false;
           if (query[key] != null && typeof query[key] == 'object') {
@@ -1487,7 +1487,7 @@ class DatabaseController {
           [key]: userPointer,
         };
         // if we already have a constraint on the key, use the $and
-        if (Object.hasOwnProperty.call(query, key)) {
+        if (Object.prototype.hasOwnProperty.call(query, key)) {
           return { $and: [q, query] };
         }
         // otherwise just add the constaint

@@ -19,7 +19,7 @@ const { verbose, level } = (() => {
 const DefinitionDefaults = Object.keys(ParseServerOptions).reduce(
   (memo, key) => {
     const def = ParseServerOptions[key];
-    if (Object.hasOwnProperty.call(def, 'default')) {
+    if (Object.prototype.hasOwnProperty.call(def, 'default')) {
       memo[key] = def.default;
     }
     return memo;

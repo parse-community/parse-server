@@ -903,7 +903,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.hasOwnProperty.call(fields, key)) {
+          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -2219,7 +2219,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       if (stage.$match) {
         const patterns = [];
-        const orOrAnd = Object.hasOwnProperty.call(stage.$match, '$or')
+        const orOrAnd = Object.prototype.hasOwnProperty.call(
+          stage.$match,
+          '$or'
+        )
           ? ' OR '
           : ' AND ';
 
@@ -2296,7 +2299,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       )
       .then(results => {
         results.forEach(result => {
-          if (!Object.hasOwnProperty.call(result, 'objectId')) {
+          if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
             result.objectId = null;
           }
           if (groupValues) {

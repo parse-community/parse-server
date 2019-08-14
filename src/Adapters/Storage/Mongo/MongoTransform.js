@@ -1282,7 +1282,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       }
 
       if (
-        Object.hasOwnProperty.call(mongoObject, '__type') &&
+        Object.prototype.hasOwnProperty.call(mongoObject, '__type') &&
         mongoObject.__type == 'Date' &&
         mongoObject.iso instanceof Date
       ) {

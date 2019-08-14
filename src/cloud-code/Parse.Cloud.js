@@ -4,7 +4,7 @@ import * as triggers from '../triggers';
 function isParseObjectConstructor(object) {
   return (
     typeof object === 'function' &&
-    Object.hasOwnProperty.call(object, 'className')
+    Object.prototype.hasOwnProperty.call(object, 'className')
   );
 }
 

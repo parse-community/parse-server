@@ -132,7 +132,7 @@ export function validatePushType(where = {}, validPushTypes = []) {
 
 export function applyDeviceTokenExists(where) {
   where = deepcopy(where);
-  if (!Object.hasOwnProperty.call(where, 'deviceToken')) {
+  if (!Object.prototype.hasOwnProperty.call(where, 'deviceToken')) {
     where['deviceToken'] = { $exists: true };
   }
   return where;

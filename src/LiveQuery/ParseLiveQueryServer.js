@@ -600,7 +600,10 @@ class ParseLiveQueryServer {
     ) {
       return false;
     }
-    if (!request || !Object.hasOwnProperty.call(request, 'masterKey')) {
+    if (
+      !request ||
+      !Object.prototype.hasOwnProperty.call(request, 'masterKey')
+    ) {
       return false;
     }
     return request.masterKey === validKeyPairs.get('masterKey');
@@ -623,7 +626,7 @@ class ParseLiveQueryServer {
 
   _handleSubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
-    if (!Object.hasOwnProperty.call(parseWebsocket, 'clientId')) {
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
         parseWebsocket,
         2,
@@ -699,7 +702,7 @@ class ParseLiveQueryServer {
     notifyClient: boolean = true
   ): any {
     // If we can not find this client, return error to client
-    if (!Object.hasOwnProperty.call(parseWebsocket, 'clientId')) {
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
         parseWebsocket,
         2,
