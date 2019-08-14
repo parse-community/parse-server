@@ -20,7 +20,7 @@ export class UsersRouter extends ClassesRouter {
    */
   static removeHiddenProperties(obj) {
     for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         // Regexp comes from Parse.Object.prototype.validate
         if (key !== '__type' && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
           delete obj[key];

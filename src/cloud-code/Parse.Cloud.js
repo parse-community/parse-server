@@ -2,7 +2,10 @@ import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 
 function isParseObjectConstructor(object) {
-  return typeof object === 'function' && object.hasOwnProperty('className');
+  return (
+    typeof object === 'function' &&
+    Object.prototype.hasOwnProperty.call(object, 'className')
+  );
 }
 
 function getClassName(parseClass) {

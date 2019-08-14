@@ -67,7 +67,7 @@ function loadAuthAdapter(provider, authOptions) {
   const providerOptions = authOptions[provider];
   if (
     providerOptions &&
-    providerOptions.hasOwnProperty('oauth2') &&
+    Object.prototype.hasOwnProperty.call(providerOptions, 'oauth2') &&
     providerOptions['oauth2'] === true
   ) {
     defaultAdapter = oauth2;

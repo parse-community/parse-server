@@ -23,7 +23,6 @@
         "prefer-const": "error",
         "space-infix-ops": "error",
         "no-useless-escape": "off",
-        "no-prototype-builtins": "off",
         "require-atomic-updates": "off"
     }
 }
