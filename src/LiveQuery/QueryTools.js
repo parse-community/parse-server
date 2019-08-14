@@ -13,7 +13,7 @@ var Parse = require('parse/node');
  * Convert $or queries into an array of where conditions
  */
 function flattenOrQueries(where) {
-  if (!where.hasOwnProperty('$or')) {
+  if (!Object.hasOwnProperty.call(where, '$or')) {
     return where;
   }
   var accum = [];

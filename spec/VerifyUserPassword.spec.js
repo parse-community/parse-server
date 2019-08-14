@@ -469,8 +469,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(res.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(res.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       })
       .catch(err => {
@@ -493,8 +493,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(res.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(res.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });
@@ -513,8 +513,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(res.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(res.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });
@@ -544,8 +544,8 @@ describe('Verify User Password', () => {
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
-        expect(body.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(body.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(body, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(body, 'password')).toEqual(false);
         done();
       });
   });
@@ -575,8 +575,8 @@ describe('Verify User Password', () => {
         expect(typeof res).toBe('string');
         const body = JSON.parse(res);
         expect(typeof body['objectId']).toEqual('string');
-        expect(body.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(body.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(body, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(body, 'password')).toEqual(false);
         done();
       });
   });
@@ -603,8 +603,8 @@ describe('Verify User Password', () => {
         const res = response.data;
         expect(typeof res).toBe('object');
         expect(typeof res['objectId']).toEqual('string');
-        expect(res.hasOwnProperty('sessionToken')).toEqual(false);
-        expect(res.hasOwnProperty('password')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'sessionToken')).toEqual(false);
+        expect(Object.hasOwnProperty.call(res, 'password')).toEqual(false);
         done();
       });
   });

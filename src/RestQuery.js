@@ -71,7 +71,7 @@ function RestQuery(
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
-  if (restOptions.hasOwnProperty('keys')) {
+  if (Object.hasOwnProperty.call(restOptions, 'keys')) {
     const keysForInclude = restOptions.keys
       .split(',')
       .filter(key => {

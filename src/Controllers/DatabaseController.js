@@ -1487,7 +1487,7 @@ class DatabaseController {
           [key]: userPointer,
         };
         // if we already have a constraint on the key, use the $and
-        if (query.hasOwnProperty(key)) {
+        if (Object.hasOwnProperty.call(query, key)) {
           return { $and: [q, query] };
         }
         // otherwise just add the constaint

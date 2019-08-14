@@ -356,12 +356,12 @@ function addParseCloud() {
 
 function injectDefaults(options: ParseServerOptions) {
   Object.keys(defaults).forEach(key => {
-    if (!options.hasOwnProperty(key)) {
+    if (!Object.hasOwnProperty.call(options, key)) {
       options[key] = defaults[key];
     }
   });
 
-  if (!options.hasOwnProperty('serverURL')) {
+  if (!Object.hasOwnProperty.call(options, 'serverURL')) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
