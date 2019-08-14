@@ -456,9 +456,9 @@ RestQuery.prototype.replaceNotInQuery = function() {
 };
 
 // Used to get the deepest object from json using dot notation.
-const getDeepestObjectFromKey = (acc, cur, idx, src) => {
-  if (acc[cur]) {
-    return acc[cur];
+const getDeepestObjectFromKey = (json, key, idx, src) => {
+  if (key in json) {
+    return json[key];
   }
   src.splice(1); // Exit Early
 };
