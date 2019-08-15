@@ -5723,6 +5723,42 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
+        it('should support undefined array values', async () => {
+          const schema = await new Parse.Schema('SomeClass');
+          schema.addArray('someArray');
+          await schema.save();
+
+          const obj = new Parse.Object('SomeClass');
+          await obj.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const getResult = await apolloClient.query({
+            query: gql`
+              query GetSomeObject($objectId: ID!) {
+                objects {
+                  someClass(objectId: $objectId) {
+                    objectId
+                    someArray {
+                      ... on Element {
+                        value
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: obj.id,
+            },
+          });
+
+          expect(
+            Array.isArray(getResult.data.objects.someClass.someArray)
+          ).toBeTruthy();
+          expect(getResult.data.objects.someClass.someArray.length).toEqual(0);
+        });
+
         it('should support null values', async () => {
           const createResult = await apolloClient.mutate({
             mutation: gql`
