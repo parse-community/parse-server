@@ -21,6 +21,7 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Int',
   'Float',
   'ID',
+  'ArrayResult',
   'Query',
   'Mutation',
   'Subscription',
