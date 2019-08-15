@@ -5723,7 +5723,7 @@ describe('ParseGraphQLServer', () => {
           expect(getResult.data.objects.someClasses.results.length).toEqual(2);
         });
 
-        it('should support undefined array values', async () => {
+        it('should support undefined array', async () => {
           const schema = await new Parse.Schema('SomeClass');
           schema.addArray('someArray');
           await schema.save();
@@ -5752,11 +5752,7 @@ describe('ParseGraphQLServer', () => {
               objectId: obj.id,
             },
           });
-
-          expect(
-            Array.isArray(getResult.data.objects.someClass.someArray)
-          ).toBeTruthy();
-          expect(getResult.data.objects.someClass.someArray.length).toEqual(0);
+          expect(getResult.data.objects.someClass.someArray).toEqual(null);
         });
 
         it('should support null values', async () => {

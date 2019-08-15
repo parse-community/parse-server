@@ -639,7 +639,7 @@ const load = (
             description: `Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments`,
             type,
             async resolve(source) {
-              if (!source[field]) return [];
+              if (!source[field]) return null;
               return source[field].map(async elem => {
                 if (
                   elem.className &&
