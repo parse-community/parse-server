@@ -11,7 +11,7 @@ const load = parseGraphQLSchema => {
     description:
       'The create mutation can be used to create and upload a new file.',
     args: {
-      file: {
+      upload: {
         description: 'This is the new file to be created and uploaded',
         type: new GraphQLNonNull(GraphQLUpload),
       },
@@ -19,10 +19,10 @@ const load = parseGraphQLSchema => {
     type: new GraphQLNonNull(defaultGraphQLTypes.FILE_INFO),
     async resolve(_source, args, context) {
       try {
-        const { file } = args;
+        const { upload } = args;
         const { config } = context;
 
-        const { createReadStream, filename, mimetype } = await file;
+        const { createReadStream, filename, mimetype } = await upload;
         let data = null;
         if (createReadStream) {
           const stream = createReadStream();
@@ -81,7 +81,7 @@ const load = parseGraphQLSchema => {
     description: 'FilesMutation is the top level type for files mutations.',
     fields,
   });
-  parseGraphQLSchema.graphQLTypes.push(filesMutation);
+  parseGraphQLSchema.addGraphQLType(filesMutation, true, true);
 
   parseGraphQLSchema.graphQLMutations.files = {
     description: 'This is the top level for files mutations.',
