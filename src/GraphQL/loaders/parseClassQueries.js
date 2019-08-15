@@ -1,8 +1,10 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
+import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { transformClassNameToGraphQL } from '../transformers/className';
 import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
 const getParseClassQueryConfig = function(
@@ -36,7 +38,8 @@ const load = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const { className } = parseClass;
+  const className = parseClass.className;
+  const graphQLClassName = transformClassNameToGraphQL(className);
   const {
     get: isGetEnabled = true,
     find: isFindEnabled = true,
@@ -49,15 +52,18 @@ const load = function(
   } = parseGraphQLSchema.parseClassTypes[className];
 
   if (isGetEnabled) {
-    const getGraphQLQueryName = `get${className}`;
-    parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
-      description: `The ${getGraphQLQueryName} query can be used to get an object of the ${className} class by its id.`,
+    const getGraphQLQueryName =
+      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
+    parseGraphQLSchema.addGraphQLObjectQuery(getGraphQLQueryName, {
+      description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
         readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
         includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
       },
-      type: new GraphQLNonNull(classGraphQLOutputType),
+      type: new GraphQLNonNull(
+        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+      ),
       async resolve(_source, args, context, queryInfo) {
         try {
           return await getQuery(className, _source, args, context, queryInfo);
@@ -65,15 +71,19 @@ const load = function(
           parseGraphQLSchema.handleError(e);
         }
       },
-    };
+    });
   }
 
   if (isFindEnabled) {
-    const findGraphQLQueryName = `find${className}`;
-    parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
-      description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
+    const findGraphQLQueryName = pluralize(
+      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1)
+    );
+    parseGraphQLSchema.addGraphQLObjectQuery(findGraphQLQueryName, {
+      description: `The ${findGraphQLQueryName} query can be used to find objects of the ${graphQLClassName} class.`,
       args: classGraphQLFindArgs,
-      type: new GraphQLNonNull(classGraphQLFindResultType),
+      type: new GraphQLNonNull(
+        classGraphQLFindResultType || defaultGraphQLTypes.FIND_RESULT
+      ),
       async resolve(_source, args, context, queryInfo) {
         try {
           const {
@@ -116,7 +126,7 @@ const load = function(
           parseGraphQLSchema.handleError(e);
         }
       },
-    };
+    });
   }
 };
 
