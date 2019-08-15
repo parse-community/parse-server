@@ -1771,6 +1771,121 @@ describe('ParseGraphQLServer', () => {
             }
           );
 
+          it_only_db('mongo')(
+            'should return many child objects in allow cyclic query',
+            async () => {
+              const obj1 = new Parse.Object('Employee');
+              const obj2 = new Parse.Object('Team');
+              const obj3 = new Parse.Object('Company');
+              const obj4 = new Parse.Object('Country');
+
+              obj1.set('name', 'imAnEmployee');
+              await obj1.save();
+
+              obj2.set('name', 'imATeam');
+              obj2.set('employees', [obj1]);
+              await obj2.save();
+
+              obj3.set('name', 'imACompany');
+              obj3.set('teams', [obj2]);
+              obj3.set('employees', [obj1]);
+              await obj3.save();
+
+              obj4.set('name', 'imACountry');
+              obj4.set('companies', [obj3]);
+              await obj4.save();
+
+              obj1.set('country', obj4);
+              await obj1.save();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+              const result = (await apolloClient.query({
+                query: gql`
+                  query DeepComplexGraphQLQuery($objectId: ID!) {
+                    objects {
+                      getCountry(objectId: $objectId) {
+                        objectId
+                        name
+                        companies {
+                          ... on CompanyClass {
+                            objectId
+                            name
+                            employees {
+                              ... on EmployeeClass {
+                                objectId
+                                name
+                              }
+                            }
+                            teams {
+                              ... on TeamClass {
+                                objectId
+                                name
+                                employees {
+                                  ... on EmployeeClass {
+                                    objectId
+                                    name
+                                    country {
+                                      objectId
+                                      name
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  objectId: obj4.id,
+                },
+              })).data.objects.getCountry;
+
+              const expectedResult = {
+                objectId: obj4.id,
+                name: 'imACountry',
+                __typename: 'CountryClass',
+                companies: [
+                  {
+                    objectId: obj3.id,
+                    name: 'imACompany',
+                    __typename: 'CompanyClass',
+                    employees: [
+                      {
+                        objectId: obj1.id,
+                        name: 'imAnEmployee',
+                        __typename: 'EmployeeClass',
+                      },
+                    ],
+                    teams: [
+                      {
+                        objectId: obj2.id,
+                        name: 'imATeam',
+                        __typename: 'TeamClass',
+                        employees: [
+                          {
+                            objectId: obj1.id,
+                            name: 'imAnEmployee',
+                            __typename: 'EmployeeClass',
+                            country: {
+                              objectId: obj4.id,
+                              name: 'imACountry',
+                              __typename: 'CountryClass',
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              };
+              expect(result).toEqual(expectedResult);
+            }
+          );
+
           it('should respect level permissions', async () => {
             await prepareData();
 
