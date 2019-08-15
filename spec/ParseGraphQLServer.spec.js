@@ -774,8 +774,8 @@ describe('ParseGraphQLServer', () => {
             `,
           })).data['__type'];
           const possibleTypes = objectType.possibleTypes.map(o => o.name);
-          expect(possibleTypes).toContain('_UserClass');
-          expect(possibleTypes).toContain('_RoleClass');
+          expect(possibleTypes).toContain('User');
+          expect(possibleTypes).toContain('Role');
           expect(possibleTypes).toContain('Element');
         });
 
@@ -1719,10 +1719,10 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query GetCustomer($objectId: ID!) {
                     objects {
-                      getCustomer(objectId: $objectId) {
+                      customer(objectId: $objectId) {
                         objectId
                         manyRelations {
-                          ... on CustomerClass {
+                          ... on Customer {
                             objectId
                             someCustomerField
                             arrayField {
@@ -1731,7 +1731,7 @@ describe('ParseGraphQLServer', () => {
                               }
                             }
                           }
-                          ... on SomeClassClass {
+                          ... on SomeClass {
                             objectId
                             someClassField
                           }
@@ -1745,7 +1745,7 @@ describe('ParseGraphQLServer', () => {
                 variables: {
                   objectId: obj3.id,
                 },
-              })).data.objects.getCustomer;
+              })).data.objects.customer;
 
               expect(result.objectId).toEqual(obj3.id);
               expect(result.manyRelations.length).toEqual(2);
