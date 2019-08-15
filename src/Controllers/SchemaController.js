@@ -238,9 +238,12 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
       } else {
         perms[operation].forEach(key => {
           if (
-            !fields[key] ||
-            fields[key].type != 'Pointer' ||
-            fields[key].targetClass != '_User'
+            !(
+              fields[key] &&
+              ((fields[key].type == 'Pointer' &&
+                fields[key].targetClass == '_User') ||
+                fields[key].type == 'Array')
+            )
           ) {
             throw new Parse.Error(
               Parse.Error.INVALID_JSON,
