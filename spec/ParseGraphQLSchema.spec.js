@@ -442,4 +442,105 @@ describe('ParseGraphQLSchema', () => {
       ]);
     });
   });
+
+  describe('name collision', () => {
+    it('should not generate duplicate types when colliding to default classes', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+      });
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema1 = await parseGraphQLSchema.load();
+      const types1 = parseGraphQLSchema.graphQLTypes;
+      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const user = new Parse.Object('User');
+      await user.save();
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema2 = await parseGraphQLSchema.load();
+      const types2 = parseGraphQLSchema.graphQLTypes;
+      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      expect(schema1).not.toBe(schema2);
+      expect(types1).not.toBe(types2);
+      expect(types1.map(type => type.name).sort()).toEqual(
+        types2.map(type => type.name).sort()
+      );
+      expect(objectQueries1).not.toBe(objectQueries2);
+      expect(Object.keys(objectQueries1).sort()).toEqual(
+        Object.keys(objectQueries2).sort()
+      );
+      expect(objectMutations1).not.toBe(objectMutations2);
+      expect(Object.keys(objectMutations1).sort()).toEqual(
+        Object.keys(objectMutations2).sort()
+      );
+    });
+
+    it('should not generate duplicate types when colliding the same name', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+      });
+      const car1 = new Parse.Object('Car');
+      await car1.save();
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema1 = await parseGraphQLSchema.load();
+      const types1 = parseGraphQLSchema.graphQLTypes;
+      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const car2 = new Parse.Object('car');
+      await car2.save();
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema2 = await parseGraphQLSchema.load();
+      const types2 = parseGraphQLSchema.graphQLTypes;
+      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      expect(schema1).not.toBe(schema2);
+      expect(types1).not.toBe(types2);
+      expect(types1.map(type => type.name).sort()).toEqual(
+        types2.map(type => type.name).sort()
+      );
+      expect(objectQueries1).not.toBe(objectQueries2);
+      expect(Object.keys(objectQueries1).sort()).toEqual(
+        Object.keys(objectQueries2).sort()
+      );
+      expect(objectMutations1).not.toBe(objectMutations2);
+      expect(Object.keys(objectMutations1).sort()).toEqual(
+        Object.keys(objectMutations2).sort()
+      );
+    });
+
+    it('should not generate duplicate queries when query name collide', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+      });
+      const car = new Parse.Object('Car');
+      await car.save();
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema1 = await parseGraphQLSchema.load();
+      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const cars = new Parse.Object('cars');
+      await cars.save();
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      const schema2 = await parseGraphQLSchema.load();
+      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
+      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      expect(schema1).not.toBe(schema2);
+      expect(objectQueries1).not.toBe(objectQueries2);
+      expect(Object.keys(objectQueries1).sort()).toEqual(
+        Object.keys(objectQueries2).sort()
+      );
+      expect(objectMutations1).not.toBe(objectMutations2);
+      expect(
+        Object.keys(objectMutations1)
+          .concat('createCars', 'updateCars', 'deleteCars')
+          .sort()
+      ).toEqual(Object.keys(objectMutations2).sort());
+    });
+  });
 });
