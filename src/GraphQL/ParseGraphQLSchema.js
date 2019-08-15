@@ -103,7 +103,7 @@ class ParseGraphQLSchema {
         parseClassMutations.load(this, parseClass, parseClassConfig);
       }
     );
-
+    defaultGraphQLTypes.loadArrayResult(this, parseClasses);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
