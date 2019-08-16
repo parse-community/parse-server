@@ -215,7 +215,7 @@ const load = function(
 
   if (isDestroyEnabled) {
     const deleteGraphQLMutationName = `delete${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLObjectMutation(deleteGraphQLMutationName, {
+    parseGraphQLSchema.addGraphQLMutation(deleteGraphQLMutationName, {
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
