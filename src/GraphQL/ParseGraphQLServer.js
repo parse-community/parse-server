@@ -47,7 +47,9 @@ class ParseGraphQLServer {
         },
       };
     } catch (e) {
-      this.log.error(e);
+      this.log.error(
+        e.stack || (typeof e.toString === 'function' && e.toString()) || e
+      );
       throw e;
     }
   }
