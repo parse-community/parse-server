@@ -5417,13 +5417,11 @@ describe('ParseGraphQLServer', () => {
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                objects {
-                  someClass(objectId: $objectId) {
-                    objectId
-                    someArray {
-                      ... on Element {
-                        value
-                      }
+                someClass(objectId: $objectId) {
+                  objectId
+                  someArray {
+                    ... on Element {
+                      value
                     }
                   }
                 }
@@ -5433,7 +5431,7 @@ describe('ParseGraphQLServer', () => {
               objectId: obj.id,
             },
           });
-          expect(getResult.data.objects.someClass.someArray).toEqual(null);
+          expect(getResult.data.someClass.someArray).toEqual(null);
         });
 
         it('should support null values', async () => {
