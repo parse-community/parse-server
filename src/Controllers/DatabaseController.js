@@ -1482,23 +1482,23 @@ class DatabaseController {
       };
 
       const permFields = perms[field];
-      const ors = permFields.map(key => {
+      const ors = permFields.flatMap(key => {
+        // constraint for single pointer setup
         const q = {
           [key]: userPointer,
         };
+        // constraint for users-array setup
+        const qa = {
+          [key]: { $all: [userPointer] },
+        };
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return { $and: [q, query] };
+          return [{ $and: [q, query] }, { $and: [qa, query] }];
         }
         // otherwise just add the constaint
-        return Object.assign({}, query, {
-          [`${key}`]: userPointer,
-        });
+        return [Object.assign({}, query, q), Object.assign({}, query, qa)];
       });
-      if (ors.length > 1) {
-        return { $or: ors };
-      }
-      return ors[0];
+      return { $or: ors };
     } else {
       return query;
     }
