@@ -672,7 +672,7 @@ class ParseLiveQueryServer {
     const subscriptionInfo = {
       subscription: subscription,
     };
-    // Add selected fields, sessionToken, installationId for this subscription if necessary
+    // Add selected fields, sessionToken and installationId for this subscription if necessary
     if (request.query.fields) {
       subscriptionInfo.fields = request.query.fields;
     }
