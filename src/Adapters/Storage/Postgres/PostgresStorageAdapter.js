@@ -268,7 +268,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     const initialPatternsLength = patterns.length;
     const fieldValue = query[fieldName];
 
-    // nothingin the schema, it's gonna blow up
+    // nothing in the schema, it's gonna blow up
     if (!schema.fields[fieldName]) {
       // as it won't exist
       if (fieldValue && fieldValue.$exists === false) {
@@ -499,15 +499,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index += 2;
     } else if (Array.isArray(fieldValue.$all)) {
-      // Handle Pointer permissions
       if (fieldValue.$all.length === 1) {
         patterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue.$all[0].objectId);
-      } else {
-        patterns.push(`array_contains($${index}:name, $${index + 1})`);
-        values.push(fieldName, JSON.stringify(fieldValue.$all));
+        index += 2;
       }
-      index += 2;
     }
 
     if (typeof fieldValue.$exists !== 'undefined') {
