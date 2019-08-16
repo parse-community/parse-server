@@ -3,21 +3,12 @@ import { SchemaDirectiveVisitor } from 'graphql-tools';
 import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
 export const definitions = gql`
-  directive @namespace on FIELD_DEFINITION
   directive @resolve(to: String) on FIELD_DEFINITION
   directive @mock(with: Any!) on FIELD_DEFINITION
 `;
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLSchemaDirectivesDefinitions = definitions;
-
-  class NamespaceDirectiveVisitor extends SchemaDirectiveVisitor {
-    visitFieldDefinition(field) {
-      field.resolve = () => ({});
-    }
-  }
-
-  parseGraphQLSchema.graphQLSchemaDirectives.namespace = NamespaceDirectiveVisitor;
 
   class ResolveDirectiveVisitor extends SchemaDirectiveVisitor {
     visitFieldDefinition(field) {
