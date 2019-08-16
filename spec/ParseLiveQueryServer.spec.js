@@ -293,7 +293,9 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine
       .createSpy('validateKeys')
       .and.returnValue(true);
-    parseLiveQueryServer._handleConnect(parseWebSocket);
+    parseLiveQueryServer._handleConnect(parseWebSocket, {
+      sessionToken: 'token',
+    });
 
     const clientKeys = parseLiveQueryServer.clients.keys();
     expect(parseLiveQueryServer.clients.size).toBe(1);
@@ -335,6 +337,7 @@ describe('ParseLiveQueryServer', function() {
       query: query,
       requestId: requestId,
       sessionToken: 'sessionToken',
+      installationId: 'installationId',
     };
     parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
 
@@ -357,6 +360,7 @@ describe('ParseLiveQueryServer', function() {
     expect(args[0]).toBe(requestId);
     expect(args[1].fields).toBe(query.fields);
     expect(args[1].sessionToken).toBe(request.sessionToken);
+    expect(args[1].installationId).toBe(request.installationId);
     // Make sure we send subscribe response to the client
     expect(client.pushSubscribe).toHaveBeenCalledWith(requestId);
   });
