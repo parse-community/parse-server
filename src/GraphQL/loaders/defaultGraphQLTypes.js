@@ -15,6 +15,7 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { GraphQLUpload } from 'graphql-upload';
+import * as schemaTypes from './schemaTypes';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -1108,6 +1109,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(SIGN_UP_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
+
+  schemaTypes.load(parseGraphQLSchema);
 };
 
 export {

@@ -28,14 +28,16 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Viewer',
   'SignUpFieldsInput',
   'LogInFieldsInput',
+  'CreateClassSchemaInput',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'signUp',
   'logIn',
   'logOut',
-  'createFile',
   'call',
+  'createFile',
+  'createClass',
   'create',
   'update',
   'delete',
