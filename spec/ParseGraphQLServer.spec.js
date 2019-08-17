@@ -4251,12 +4251,12 @@ describe('ParseGraphQLServer', () => {
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation CallFunction {
-                call(functionName: "hello")
+                callCloudCode(functionName: "hello")
               }
             `,
           });
 
-          expect(result.data.call).toEqual('Hello world!');
+          expect(result.data.callCloudCode).toEqual('Hello world!');
         });
 
         it('can throw errors', async () => {
@@ -4268,7 +4268,7 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation CallFunction {
-                  call(functionName: "hello")
+                  callCloudCode(functionName: "hello")
                 }
               `,
             });
@@ -4369,7 +4369,7 @@ describe('ParseGraphQLServer', () => {
           apolloClient.mutate({
             mutation: gql`
               mutation CallFunction($params: Object) {
-                call(functionName: "hello", params: $params)
+                callCloudCode(functionName: "hello", params: $params)
               }
             `,
             variables: {

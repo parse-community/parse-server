@@ -4,7 +4,7 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation(
-    'call',
+    'callCloudCode',
     {
       description:
         'The call mutation can be used to invoke a cloud code function.',

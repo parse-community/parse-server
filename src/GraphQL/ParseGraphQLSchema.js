@@ -35,7 +35,7 @@ const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'logIn',
   'logOut',
   'createFile',
-  'call',
+  'callCloudCode',
   'create',
   'update',
   'delete',
