@@ -94,7 +94,7 @@ const load = function(
 
   if (isCreateEnabled) {
     const createGraphQLMutationName = `create${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLObjectMutation(createGraphQLMutationName, {
+    parseGraphQLSchema.addGraphQLMutation(createGraphQLMutationName, {
       description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
       args: {
         fields: {
@@ -155,7 +155,7 @@ const load = function(
 
   if (isUpdateEnabled) {
     const updateGraphQLMutationName = `update${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLObjectMutation(updateGraphQLMutationName, {
+    parseGraphQLSchema.addGraphQLMutation(updateGraphQLMutationName, {
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
@@ -215,7 +215,7 @@ const load = function(
 
   if (isDestroyEnabled) {
     const deleteGraphQLMutationName = `delete${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLObjectMutation(deleteGraphQLMutationName, {
+    parseGraphQLSchema.addGraphQLMutation(deleteGraphQLMutationName, {
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,

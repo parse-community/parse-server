@@ -25,18 +25,21 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Query',
   'Mutation',
   'Subscription',
-  'ObjectsQuery',
-  'UsersQuery',
-  'ObjectsMutation',
-  'FilesMutation',
-  'UsersMutation',
-  'FunctionsMutation',
   'Viewer',
   'SignUpFieldsInput',
   'LogInFieldsInput',
 ];
-const RESERVED_GRAPHQL_OBJECT_QUERY_NAMES = ['get', 'find'];
-const RESERVED_GRAPHQL_OBJECT_MUTATION_NAMES = ['create', 'update', 'delete'];
+const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
+const RESERVED_GRAPHQL_MUTATION_NAMES = [
+  'signUp',
+  'logIn',
+  'logOut',
+  'createFile',
+  'callCloudCode',
+  'create',
+  'update',
+  'delete',
+];
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
@@ -87,9 +90,7 @@ class ParseGraphQLSchema {
     this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
-    this.graphQLObjectsQueries = {};
     this.graphQLQueries = {};
-    this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
     this.graphQLSchemaDirectivesDefinitions = null;
@@ -104,6 +105,7 @@ class ParseGraphQLSchema {
         parseClassMutations.load(this, parseClass, parseClassConfig);
       }
     );
+
     defaultGraphQLTypes.loadArrayResult(this, parseClasses);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
@@ -211,29 +213,28 @@ class ParseGraphQLSchema {
     return type;
   }
 
-  addGraphQLObjectQuery(
+  addGraphQLQuery(
     fieldName,
     field,
     throwError = false,
     ignoreReserved = false
   ) {
     if (
-      (!ignoreReserved &&
-        RESERVED_GRAPHQL_OBJECT_QUERY_NAMES.includes(fieldName)) ||
-      this.graphQLObjectsQueries[fieldName]
+      (!ignoreReserved && RESERVED_GRAPHQL_QUERY_NAMES.includes(fieldName)) ||
+      this.graphQLQueries[fieldName]
     ) {
-      const message = `Object query ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      const message = `Query ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
       if (throwError) {
         throw new Error(message);
       }
       this.log.warn(message);
       return undefined;
     }
-    this.graphQLObjectsQueries[fieldName] = field;
+    this.graphQLQueries[fieldName] = field;
     return field;
   }
 
-  addGraphQLObjectMutation(
+  addGraphQLMutation(
     fieldName,
     field,
     throwError = false,
@@ -241,17 +242,17 @@ class ParseGraphQLSchema {
   ) {
     if (
       (!ignoreReserved &&
-        RESERVED_GRAPHQL_OBJECT_MUTATION_NAMES.includes(fieldName)) ||
-      this.graphQLObjectsMutations[fieldName]
+        RESERVED_GRAPHQL_MUTATION_NAMES.includes(fieldName)) ||
+      this.graphQLMutations[fieldName]
     ) {
-      const message = `Object mutation ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      const message = `Mutation ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
       if (throwError) {
         throw new Error(message);
       }
       this.log.warn(message);
       return undefined;
     }
-    this.graphQLObjectsMutations[fieldName] = field;
+    this.graphQLMutations[fieldName] = field;
     return field;
   }
 

@@ -54,7 +54,7 @@ const load = function(
   if (isGetEnabled) {
     const getGraphQLQueryName =
       graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
-    parseGraphQLSchema.addGraphQLObjectQuery(getGraphQLQueryName, {
+    parseGraphQLSchema.addGraphQLQuery(getGraphQLQueryName, {
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
         objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
@@ -78,7 +78,7 @@ const load = function(
     const findGraphQLQueryName = pluralize(
       graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1)
     );
-    parseGraphQLSchema.addGraphQLObjectQuery(findGraphQLQueryName, {
+    parseGraphQLSchema.addGraphQLQuery(findGraphQLQueryName, {
       description: `The ${findGraphQLQueryName} query can be used to find objects of the ${graphQLClassName} class.`,
       args: classGraphQLFindArgs,
       type: new GraphQLNonNull(

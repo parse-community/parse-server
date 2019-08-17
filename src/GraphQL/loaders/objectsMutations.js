@@ -1,4 +1,4 @@
-import { GraphQLNonNull, GraphQLBoolean, GraphQLObjectType } from 'graphql';
+import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 import { transformMutationInputToParse } from '../transformers/mutation';
@@ -44,7 +44,7 @@ const deleteObject = async (className, objectId, config, auth, info) => {
 };
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.addGraphQLObjectMutation(
+  parseGraphQLSchema.addGraphQLMutation(
     'create',
     {
       description:
@@ -69,7 +69,7 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  parseGraphQLSchema.addGraphQLObjectMutation(
+  parseGraphQLSchema.addGraphQLMutation(
     'update',
     {
       description:
@@ -102,7 +102,7 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  parseGraphQLSchema.addGraphQLObjectMutation(
+  parseGraphQLSchema.addGraphQLMutation(
     'delete',
     {
       description:
@@ -126,19 +126,6 @@ const load = parseGraphQLSchema => {
     true,
     true
   );
-
-  const objectsMutation = new GraphQLObjectType({
-    name: 'ObjectsMutation',
-    description: 'ObjectsMutation is the top level type for objects mutations.',
-    fields: parseGraphQLSchema.graphQLObjectsMutations,
-  });
-  parseGraphQLSchema.addGraphQLType(objectsMutation, true, true);
-
-  parseGraphQLSchema.graphQLMutations.objects = {
-    description: 'This is the top level for objects mutations.',
-    type: objectsMutation,
-    resolve: () => new Object(),
-  };
 };
 
 export { createObject, updateObject, deleteObject, load };
