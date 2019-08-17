@@ -1,9 +1,4 @@
-import {
-  GraphQLNonNull,
-  GraphQLBoolean,
-  GraphQLString,
-  GraphQLObjectType,
-} from 'graphql';
+import { GraphQLNonNull, GraphQLBoolean, GraphQLString } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -134,7 +129,7 @@ const findObjects = async (
 };
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.addGraphQLObjectQuery(
+  parseGraphQLSchema.addGraphQLQuery(
     'get',
     {
       description:
@@ -181,7 +176,7 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  parseGraphQLSchema.addGraphQLObjectQuery(
+  parseGraphQLSchema.addGraphQLQuery(
     'find',
     {
       description:
@@ -252,19 +247,6 @@ const load = parseGraphQLSchema => {
     true,
     true
   );
-
-  const objectsQuery = new GraphQLObjectType({
-    name: 'ObjectsQuery',
-    description: 'ObjectsQuery is the top level type for objects queries.',
-    fields: parseGraphQLSchema.graphQLObjectsQueries,
-  });
-  parseGraphQLSchema.addGraphQLType(objectsQuery, true, true);
-
-  parseGraphQLSchema.graphQLQueries.objects = {
-    description: 'This is the top level for objects queries.',
-    type: objectsQuery,
-    resolve: () => new Object(),
-  };
 };
 
 export { getObject, findObjects, load };

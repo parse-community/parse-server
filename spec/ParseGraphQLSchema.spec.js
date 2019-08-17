@@ -211,7 +211,7 @@ describe('ParseGraphQLSchema', () => {
     });
   });
 
-  describe('addGraphQLObjectQuery', () => {
+  describe('addGraphQLQuery', () => {
     it('should not load and warn duplicated queries', async () => {
       let logged = false;
       const parseGraphQLSchema = new ParseGraphQLSchema({
@@ -221,21 +221,19 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Object query someClasses could not be added to the auto schema because it collided with an existing field.'
+              'Query someClasses could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
       const field = {};
-      expect(
-        parseGraphQLSchema.addGraphQLObjectQuery('someClasses', field)
-      ).toBe(field);
-      expect(parseGraphQLSchema.graphQLObjectsQueries['someClasses']).toBe(
+      expect(parseGraphQLSchema.addGraphQLQuery('someClasses', field)).toBe(
         field
       );
+      expect(parseGraphQLSchema.graphQLQueries['someClasses']).toBe(field);
       expect(
-        parseGraphQLSchema.addGraphQLObjectQuery('someClasses', {})
+        parseGraphQLSchema.addGraphQLQuery('someClasses', {})
       ).toBeUndefined();
       expect(logged).toBeTruthy();
     });
@@ -252,16 +250,14 @@ describe('ParseGraphQLSchema', () => {
       });
       await parseGraphQLSchema.load();
       const field = {};
-      expect(
-        parseGraphQLSchema.addGraphQLObjectQuery('someClasses', field)
-      ).toBe(field);
-      expect(parseGraphQLSchema.graphQLObjectsQueries['someClasses']).toBe(
+      expect(parseGraphQLSchema.addGraphQLQuery('someClasses', field)).toBe(
         field
       );
+      expect(parseGraphQLSchema.graphQLQueries['someClasses']).toBe(field);
       expect(() =>
-        parseGraphQLSchema.addGraphQLObjectQuery('someClasses', {}, true)
+        parseGraphQLSchema.addGraphQLQuery('someClasses', {}, true)
       ).toThrowError(
-        'Object query someClasses could not be added to the auto schema because it collided with an existing field.'
+        'Query someClasses could not be added to the auto schema because it collided with an existing field.'
       );
     });
 
@@ -274,15 +270,13 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Object query get could not be added to the auto schema because it collided with an existing field.'
+              'Query get could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
-      expect(
-        parseGraphQLSchema.addGraphQLObjectQuery('get', {})
-      ).toBeUndefined();
+      expect(parseGraphQLSchema.addGraphQLQuery('get', {})).toBeUndefined();
       expect(logged).toBeTruthy();
     });
 
@@ -297,16 +291,16 @@ describe('ParseGraphQLSchema', () => {
         },
       });
       await parseGraphQLSchema.load();
-      delete parseGraphQLSchema.graphQLObjectsQueries.get;
+      delete parseGraphQLSchema.graphQLQueries.get;
       const field = {};
-      expect(
-        parseGraphQLSchema.addGraphQLObjectQuery('get', field, true, true)
-      ).toBe(field);
-      expect(parseGraphQLSchema.graphQLObjectsQueries['get']).toBe(field);
+      expect(parseGraphQLSchema.addGraphQLQuery('get', field, true, true)).toBe(
+        field
+      );
+      expect(parseGraphQLSchema.graphQLQueries['get']).toBe(field);
     });
   });
 
-  describe('addGraphQLObjectMutation', () => {
+  describe('addGraphQLMutation', () => {
     it('should not load and warn duplicated mutations', async () => {
       let logged = false;
       const parseGraphQLSchema = new ParseGraphQLSchema({
@@ -316,7 +310,7 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Object mutation createSomeClass could not be added to the auto schema because it collided with an existing field.'
+              'Mutation createSomeClass could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
@@ -324,13 +318,13 @@ describe('ParseGraphQLSchema', () => {
       await parseGraphQLSchema.load();
       const field = {};
       expect(
-        parseGraphQLSchema.addGraphQLObjectMutation('createSomeClass', field)
+        parseGraphQLSchema.addGraphQLMutation('createSomeClass', field)
       ).toBe(field);
+      expect(parseGraphQLSchema.graphQLMutations['createSomeClass']).toBe(
+        field
+      );
       expect(
-        parseGraphQLSchema.graphQLObjectsMutations['createSomeClass']
-      ).toBe(field);
-      expect(
-        parseGraphQLSchema.addGraphQLObjectMutation('createSomeClass', {})
+        parseGraphQLSchema.addGraphQLMutation('createSomeClass', {})
       ).toBeUndefined();
       expect(logged).toBeTruthy();
     });
@@ -348,15 +342,15 @@ describe('ParseGraphQLSchema', () => {
       await parseGraphQLSchema.load();
       const field = {};
       expect(
-        parseGraphQLSchema.addGraphQLObjectMutation('createSomeClass', field)
+        parseGraphQLSchema.addGraphQLMutation('createSomeClass', field)
       ).toBe(field);
-      expect(
-        parseGraphQLSchema.graphQLObjectsMutations['createSomeClass']
-      ).toBe(field);
+      expect(parseGraphQLSchema.graphQLMutations['createSomeClass']).toBe(
+        field
+      );
       expect(() =>
-        parseGraphQLSchema.addGraphQLObjectMutation('createSomeClass', {}, true)
+        parseGraphQLSchema.addGraphQLMutation('createSomeClass', {}, true)
       ).toThrowError(
-        'Object mutation createSomeClass could not be added to the auto schema because it collided with an existing field.'
+        'Mutation createSomeClass could not be added to the auto schema because it collided with an existing field.'
       );
     });
 
@@ -369,14 +363,14 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Object mutation create could not be added to the auto schema because it collided with an existing field.'
+              'Mutation create could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
       expect(
-        parseGraphQLSchema.addGraphQLObjectMutation('create', {})
+        parseGraphQLSchema.addGraphQLMutation('create', {})
       ).toBeUndefined();
       expect(logged).toBeTruthy();
     });
@@ -392,12 +386,12 @@ describe('ParseGraphQLSchema', () => {
         },
       });
       await parseGraphQLSchema.load();
-      delete parseGraphQLSchema.graphQLObjectsMutations.create;
+      delete parseGraphQLSchema.graphQLMutations.create;
       const field = {};
       expect(
-        parseGraphQLSchema.addGraphQLObjectMutation('create', field, true, true)
+        parseGraphQLSchema.addGraphQLMutation('create', field, true, true)
       ).toBe(field);
-      expect(parseGraphQLSchema.graphQLObjectsMutations['create']).toBe(field);
+      expect(parseGraphQLSchema.graphQLMutations['create']).toBe(field);
     });
   });
 
@@ -453,27 +447,27 @@ describe('ParseGraphQLSchema', () => {
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
       const types1 = parseGraphQLSchema.graphQLTypes;
-      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries1 = parseGraphQLSchema.graphQLQueries;
+      const mutations1 = parseGraphQLSchema.graphQLMutations;
       const user = new Parse.Object('User');
       await user.save();
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
       const types2 = parseGraphQLSchema.graphQLTypes;
-      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries2 = parseGraphQLSchema.graphQLQueries;
+      const mutations2 = parseGraphQLSchema.graphQLMutations;
       expect(schema1).not.toBe(schema2);
       expect(types1).not.toBe(types2);
       expect(types1.map(type => type.name).sort()).toEqual(
         types2.map(type => type.name).sort()
       );
-      expect(objectQueries1).not.toBe(objectQueries2);
-      expect(Object.keys(objectQueries1).sort()).toEqual(
-        Object.keys(objectQueries2).sort()
+      expect(queries1).not.toBe(queries2);
+      expect(Object.keys(queries1).sort()).toEqual(
+        Object.keys(queries2).sort()
       );
-      expect(objectMutations1).not.toBe(objectMutations2);
-      expect(Object.keys(objectMutations1).sort()).toEqual(
-        Object.keys(objectMutations2).sort()
+      expect(mutations1).not.toBe(mutations2);
+      expect(Object.keys(mutations1).sort()).toEqual(
+        Object.keys(mutations2).sort()
       );
     });
 
@@ -488,27 +482,27 @@ describe('ParseGraphQLSchema', () => {
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
       const types1 = parseGraphQLSchema.graphQLTypes;
-      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries1 = parseGraphQLSchema.graphQLQueries;
+      const mutations1 = parseGraphQLSchema.graphQLMutations;
       const car2 = new Parse.Object('car');
       await car2.save();
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
       const types2 = parseGraphQLSchema.graphQLTypes;
-      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries2 = parseGraphQLSchema.graphQLQueries;
+      const mutations2 = parseGraphQLSchema.graphQLMutations;
       expect(schema1).not.toBe(schema2);
       expect(types1).not.toBe(types2);
       expect(types1.map(type => type.name).sort()).toEqual(
         types2.map(type => type.name).sort()
       );
-      expect(objectQueries1).not.toBe(objectQueries2);
-      expect(Object.keys(objectQueries1).sort()).toEqual(
-        Object.keys(objectQueries2).sort()
+      expect(queries1).not.toBe(queries2);
+      expect(Object.keys(queries1).sort()).toEqual(
+        Object.keys(queries2).sort()
       );
-      expect(objectMutations1).not.toBe(objectMutations2);
-      expect(Object.keys(objectMutations1).sort()).toEqual(
-        Object.keys(objectMutations2).sort()
+      expect(mutations1).not.toBe(mutations2);
+      expect(Object.keys(mutations1).sort()).toEqual(
+        Object.keys(mutations2).sort()
       );
     });
 
@@ -522,25 +516,25 @@ describe('ParseGraphQLSchema', () => {
       await car.save();
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
-      const objectQueries1 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations1 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries1 = parseGraphQLSchema.graphQLQueries;
+      const mutations1 = parseGraphQLSchema.graphQLMutations;
       const cars = new Parse.Object('cars');
       await cars.save();
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
-      const objectQueries2 = parseGraphQLSchema.graphQLObjectsQueries;
-      const objectMutations2 = parseGraphQLSchema.graphQLObjectsMutations;
+      const queries2 = parseGraphQLSchema.graphQLQueries;
+      const mutations2 = parseGraphQLSchema.graphQLMutations;
       expect(schema1).not.toBe(schema2);
-      expect(objectQueries1).not.toBe(objectQueries2);
-      expect(Object.keys(objectQueries1).sort()).toEqual(
-        Object.keys(objectQueries2).sort()
+      expect(queries1).not.toBe(queries2);
+      expect(Object.keys(queries1).sort()).toEqual(
+        Object.keys(queries2).sort()
       );
-      expect(objectMutations1).not.toBe(objectMutations2);
+      expect(mutations1).not.toBe(mutations2);
       expect(
-        Object.keys(objectMutations1)
+        Object.keys(mutations1)
           .concat('createCars', 'updateCars', 'deleteCars')
           .sort()
-      ).toEqual(Object.keys(objectMutations2).sort());
+      ).toEqual(Object.keys(mutations2).sort());
     });
   });
 });
