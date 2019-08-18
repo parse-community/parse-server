@@ -395,14 +395,14 @@ const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
 
-const RELATION_OP = new GraphQLEnumType({
-  name: 'RelationOp',
-  description:
-    'The RelationOp enum type is used to specify which kind of operation should be executed to a relation.',
-  values: {
-    Batch: { value: 'Batch' },
-    AddRelation: { value: 'AddRelation' },
-    RemoveRelation: { value: 'RemoveRelation' },
+const RELATION_INPUT = new GraphQLInputObjectType({
+  name: 'RelationInput',
+  description: 'Object involved into a relation',
+  fields: {
+    objectId: {
+      description: 'Id of the object involved.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
   },
 });
 
@@ -490,6 +490,17 @@ const INCLUDE_ATT = {
   description: 'The pointers of the objects that will be returned.',
   type: GraphQLString,
 };
+
+const POINTER_INPUT = new GraphQLInputObjectType({
+  name: 'PointerInput',
+  description: 'Allow to link an object to another object',
+  fields: {
+    objectId: {
+      description: 'Id of the object involved.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+  },
+});
 
 const READ_PREFERENCE = new GraphQLEnumType({
   name: 'ReadPreference',
@@ -1080,7 +1091,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
-  parseGraphQLSchema.addGraphQLType(RELATION_OP, true);
   parseGraphQLSchema.addGraphQLType(CREATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(UPDATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(CLASS, true);
@@ -1108,6 +1118,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(SIGN_UP_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
+  parseGraphQLSchema.addGraphQLType(RELATION_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(POINTER_INPUT, true);
 };
 
 export {
@@ -1133,7 +1145,6 @@ export {
   GEO_POINT,
   POLYGON_INPUT,
   POLYGON,
-  RELATION_OP,
   CLASS_NAME_ATT,
   FIELDS_ATT,
   OBJECT_ID_ATT,
@@ -1195,6 +1206,8 @@ export {
   SIGN_UP_RESULT,
   ARRAY_RESULT,
   ELEMENT,
+  POINTER_INPUT,
+  RELATION_INPUT,
   load,
   loadArrayResult,
 };

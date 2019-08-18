@@ -39,3 +39,9 @@ export const extractKeysAndInclude = selectedFields => {
   }
   return { keys, include };
 };
+
+export const getParseClassMutationConfig = function(
+  parseClassConfig: ?ParseGraphQLClassConfig
+) {
+  return (parseClassConfig && parseClassConfig.mutation) || {};
+};

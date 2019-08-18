@@ -1,18 +1,17 @@
 import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import { extractKeysAndInclude } from '../parseGraphQLUtils';
+import {
+  extractKeysAndInclude,
+  getParseClassMutationConfig,
+} from '../parseGraphQLUtils';
 import * as objectsMutations from './objectsMutations';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
+import { transformTypes } from '../transformers/mutation';
 
-const getParseClassMutationConfig = function(
-  parseClassConfig: ?ParseGraphQLClassConfig
-) {
-  return (parseClassConfig && parseClassConfig.mutation) || {};
-};
-
+// TODO: Check if include can contain ".", should always get
 const getOnlyRequiredFields = (
   updatedFields,
   selectedFieldsString,
@@ -55,43 +54,6 @@ const load = function(
     classGraphQLOutputType,
   } = parseGraphQLSchema.parseClassTypes[className];
 
-  const transformTypes = (inputType: 'create' | 'update', fields) => {
-    if (fields) {
-      const classGraphQLCreateTypeFields =
-        isCreateEnabled && classGraphQLCreateType
-          ? classGraphQLCreateType.getFields()
-          : null;
-      const classGraphQLUpdateTypeFields =
-        isUpdateEnabled && classGraphQLUpdateType
-          ? classGraphQLUpdateType.getFields()
-          : null;
-      Object.keys(fields).forEach(field => {
-        let inputTypeField;
-        if (inputType === 'create' && classGraphQLCreateTypeFields) {
-          inputTypeField = classGraphQLCreateTypeFields[field];
-        } else if (classGraphQLUpdateTypeFields) {
-          inputTypeField = classGraphQLUpdateTypeFields[field];
-        }
-        if (inputTypeField) {
-          switch (inputTypeField.type) {
-            case defaultGraphQLTypes.GEO_POINT_INPUT:
-              fields[field].__type = 'GeoPoint';
-              break;
-            case defaultGraphQLTypes.POLYGON_INPUT:
-              fields[field] = {
-                __type: 'Polygon',
-                coordinates: fields[field].map(geoPoint => [
-                  geoPoint.latitude,
-                  geoPoint.longitude,
-                ]),
-              };
-              break;
-          }
-        }
-      });
-    }
-  };
-
   if (isCreateEnabled) {
     const createGraphQLMutationName = `create${graphQLClassName}`;
     parseGraphQLSchema.addGraphQLMutation(createGraphQLMutationName, {
@@ -110,10 +72,20 @@ const load = function(
           let { fields } = args;
           if (!fields) fields = {};
           const { config, auth, info } = context;
-          transformTypes('create', fields);
+          let parseFields;
+          try {
+            parseFields = await transformTypes('create', fields, {
+              className,
+              parseGraphQLSchema,
+              req: { config, auth, info },
+            });
+          } catch (e) {
+            console.log(e);
+            throw e;
+          }
           const createdObject = await objectsMutations.createObject(
             className,
-            fields,
+            parseFields,
             config,
             auth,
             info
@@ -171,13 +143,22 @@ const load = function(
         try {
           const { objectId, fields } = args;
           const { config, auth, info } = context;
-
-          transformTypes('update', fields);
+          let parseFields;
+          try {
+            parseFields = await transformTypes('update', fields, {
+              className,
+              parseGraphQLSchema,
+              req: { config, auth, info },
+            });
+          } catch (e) {
+            console.log(e);
+            throw e;
+          }
 
           const updatedObject = await objectsMutations.updateObject(
             className,
             objectId,
-            fields,
+            parseFields,
             config,
             auth,
             info
