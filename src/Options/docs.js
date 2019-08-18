@@ -59,6 +59,8 @@
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
+ * @property {Function} serverCloseComplete Callback when server has closed
+ * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output

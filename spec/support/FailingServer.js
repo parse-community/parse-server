@@ -7,4 +7,5 @@ ParseServer.start({
   masterKey: 'test',
   databaseURI:
     'mongodb://doesnotexist:27017/parseServerMongoAdapterTestDatabase',
+  serverCloseComplete: () => console.log('serverCloseComplete called'),
 });
