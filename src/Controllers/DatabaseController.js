@@ -192,15 +192,18 @@ const validateQuery = (
 
 // Filters out any data that shouldn't be on this REST-formatted object.
 const filterSensitiveData = (
-  isMaster,
-  aclGroup,
-  className,
-  protectedFields,
-  object
+  isMaster: boolean,
+  aclGroup: any[],
+  auth: any,
+  className: string,
+  protectedFields: null | Array<any>,
+  object: any
 ) => {
-  protectedFields && protectedFields.forEach(k => delete object[k]);
+  const isUserClass = className === '_User';
+  if (!isUserClass || !auth || !auth.user || object.objectId !== auth.user.id)
+    protectedFields && protectedFields.forEach(k => delete object[k]);
 
-  if (className !== '_User') {
+  if (!isUserClass) {
     return object;
   }
 
@@ -1385,6 +1388,7 @@ class DatabaseController {
                         return filterSensitiveData(
                           isMaster,
                           aclGroup,
+                          auth,
                           className,
                           protectedFields,
                           object
@@ -1518,13 +1522,6 @@ class DatabaseController {
     if (!protectedFields) return null;
 
     if (aclGroup.indexOf(query.objectId) > -1) return null;
-    if (
-      Object.keys(query).length === 0 &&
-      auth &&
-      auth.user &&
-      aclGroup.indexOf(auth.user.id) > -1
-    )
-      return null;
 
     let protectedKeys = Object.values(protectedFields).reduce(
       (acc, val) => acc.concat(val),
