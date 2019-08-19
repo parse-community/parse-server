@@ -20,7 +20,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
     super();
     this._databaseURI = mongoDatabaseURI;
 
-    const defaultMongoOptions = { useNewUrlParser: true };
+    const defaultMongoOptions = {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    };
     this._mongoOptions = Object.assign(defaultMongoOptions, mongoOptions);
   }
 
