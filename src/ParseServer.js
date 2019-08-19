@@ -89,14 +89,13 @@ class ParseServer {
       .catch(error => {
         if (serverStartComplete) {
           serverStartComplete(error);
-        } else {
-          if (serverCloseComplete) {
-            serverCloseComplete(error);
-          }
-          // eslint-disable-next-line no-console
-          console.error(error);
-          process.exit(1);
         }
+        if (serverCloseComplete) {
+          serverCloseComplete(error);
+        }
+        // eslint-disable-next-line no-console
+        console.error(error);
+        process.exit(1);
       });
 
     if (cloud) {
