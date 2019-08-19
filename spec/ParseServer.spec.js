@@ -66,7 +66,11 @@ describe('Server Url Checks', () => {
     const newConfiguration = Object.assign({}, defaultConfiguration, {
       databaseAdapter,
       serverStartComplete: () => {
-        parseServer.config.filesController.adapter._connect().then(() => {
+        let promise = Promise.resolve();
+        if (process.env.PARSE_SERVER_TEST_DB !== 'postgres') {
+          promise = parseServer.config.filesController.adapter._connect();
+        }
+        promise.then(() => {
           parseServer.handleShutdown();
           parseServer.server.close(err => {
             if (err) {
