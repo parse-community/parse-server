@@ -27,11 +27,11 @@ const load = parseGraphQLSchema => {
           if (createReadStream) {
             const stream = createReadStream();
             data = await new Promise((resolve, reject) => {
-              let data = '';
+              const chunks = [];
               stream
                 .on('error', reject)
-                .on('data', chunk => (data += chunk))
-                .on('end', () => resolve(data));
+                .on('data', chunk => chunks.push(chunk))
+                .on('end', () => resolve(Buffer.concat(chunks)));
             });
           }
 
