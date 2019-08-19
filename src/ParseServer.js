@@ -93,7 +93,7 @@ class ParseServer {
         if (serverCloseComplete) {
           serverCloseComplete(error);
         }
-        if (!serverStartComplete && !serverCloseComplete) {
+        if (!process.env.TESTING) {
           console.error(error);
           process.exit(1);
         }
