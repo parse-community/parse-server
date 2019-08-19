@@ -44,7 +44,7 @@
     "mongodb": "3.3.0",
     "node-rsa": "1.0.5",
     "parse": "2.6.0",
-    "pg-promise": "9.0.2",
+    "pg-promise": "9.0.3",
     "pluralize": "^8.0.0",
     "redis": "2.8.0",
     "semver": "6.3.0",
