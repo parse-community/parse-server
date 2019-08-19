@@ -60,7 +60,6 @@ class ParseServer {
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
       serverStartComplete,
-      serverCloseComplete,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -89,11 +88,7 @@ class ParseServer {
       .catch(error => {
         if (serverStartComplete) {
           serverStartComplete(error);
-        }
-        if (serverCloseComplete) {
-          serverCloseComplete(error);
-        }
-        if (!process.env.TESTING) {
+        } else {
           console.error(error);
           process.exit(1);
         }

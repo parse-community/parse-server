@@ -202,7 +202,7 @@ export interface ParseServerOptions {
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
-  serverCloseComplete: ?(error: ?Error) => void;
+  serverCloseComplete: ?() => void;
 }
 
 export interface CustomPagesOptions {

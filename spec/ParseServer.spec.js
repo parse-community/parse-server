@@ -85,7 +85,6 @@ describe('Server Url Checks', () => {
   });
 
   it('does not have unhandled promise rejection in the case of load error', done => {
-    delete process.env.TESTING;
     const parseServerProcess = spawn(
       path.resolve(__dirname, './support/FailingServer.js')
     );
@@ -99,9 +98,8 @@ describe('Server Url Checks', () => {
     });
     parseServerProcess.on('close', code => {
       expect(code).toEqual(1);
-      expect(stdout).toContain('serverCloseComplete called');
+      expect(stdout).toBeUndefined();
       expect(stderr).toContain('MongoNetworkError');
-      process.env.TESTING = 1;
       done();
     });
   });
