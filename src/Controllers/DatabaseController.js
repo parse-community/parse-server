@@ -195,12 +195,73 @@ const filterSensitiveData = (
   isMaster: boolean,
   aclGroup: any[],
   auth: any,
+  operation: any,
+  schema: SchemaController.SchemaController,
   className: string,
   protectedFields: null | Array<any>,
   object: any
 ) => {
+  let userId = null;
+  if (auth && auth.user) userId = auth.user.id;
+
+  // replace protectedFields when using pointer-permissions
+  const perms = schema.getClassLevelPermissions(className);
+  if (perms) {
+    const field =
+      ['get', 'find'].indexOf(operation) > -1
+        ? 'readUserFields'
+        : 'writeUserFields';
+    const fieldKeys: string[] = perms[field];
+
+    if (
+      field === 'readUserFields' &&
+      fieldKeys &&
+      fieldKeys.length > 0 &&
+      perms.protectedFields
+    ) {
+      // extract protectedFields added with the pointer-permission prefix
+      const protectedFieldsPointerPerm = Object.keys(perms.protectedFields)
+        .filter(key => key.startsWith('readUserFields:'))
+        .map(key => {
+          return { key: key.substring(15), value: perms.protectedFields[key] };
+        });
+
+      const newProtectedFields: Array<string> = [];
+      let overrideProtectedFields = false;
+
+      // check if the object grants the current user access based on the extracted fields
+      protectedFieldsPointerPerm.forEach(pointerPerm => {
+        if (!fieldKeys.includes(pointerPerm.key)) return;
+        let pointerPermIncludesUser = false;
+        const readUserFieldValue = object[pointerPerm.key];
+        if (readUserFieldValue) {
+          if (Array.isArray(readUserFieldValue)) {
+            pointerPermIncludesUser = readUserFieldValue.some(
+              user => user.objectId && user.objectId === userId
+            );
+          } else {
+            pointerPermIncludesUser =
+              readUserFieldValue.objectId &&
+              readUserFieldValue.objectId === userId;
+          }
+        }
+
+        if (pointerPermIncludesUser) {
+          overrideProtectedFields = true;
+          newProtectedFields.push(...pointerPerm.value);
+        }
+      });
+
+      // if atleast one pointer-permission affected the current user override the protectedFields
+      if (overrideProtectedFields) protectedFields = newProtectedFields;
+    }
+  }
+
   const isUserClass = className === '_User';
-  if (!isUserClass || !auth || !auth.user || object.objectId !== auth.user.id)
+
+  /* special treat for the user class: don't filter protectedFields if currently loggedin user is
+  the retrieved user */
+  if (!(isUserClass && userId && object.objectId === userId))
     protectedFields && protectedFields.forEach(k => delete object[k]);
 
   if (!isUserClass) {
@@ -1318,8 +1379,9 @@ class DatabaseController {
                     query,
                     aclGroup
                   );
-                  // ProtectedFields is generated before executing the query so we
-                  // can optimize the query using Mongo Projection at a later stage.
+                  /* Don't use projections to optimize the protectedFields since the protectedFields
+                  based on pointer-permissions are determined after querying. The filtering can
+                  overwrite the protected fields. */
                   protectedFields = this.addProtectedFields(
                     schemaController,
                     className,
@@ -1389,6 +1451,8 @@ class DatabaseController {
                           isMaster,
                           aclGroup,
                           auth,
+                          op,
+                          schemaController,
                           className,
                           protectedFields,
                           object
