@@ -89,7 +89,6 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete(error);
         } else {
-          // eslint-disable-next-line no-console
           console.error(error);
           process.exit(1);
         }
@@ -119,10 +118,18 @@ class ParseServer {
     if (adapter && typeof adapter.handleShutdown === 'function') {
       const promise = adapter.handleShutdown();
       if (promise instanceof Promise) {
-        return promise;
+        return promise.then(() => {
+          if (this.config.serverCloseComplete) {
+            this.config.serverCloseComplete();
+          }
+        });
       }
     }
-    return Promise.resolve();
+    return Promise.resolve().then(() => {
+      if (this.config.serverCloseComplete) {
+        this.config.serverCloseComplete();
+      }
+    });
   }
 
   /**

@@ -62,6 +62,7 @@ describe('Server Url Checks', () => {
         collectionPrefix: 'test_',
       });
     }
+    let close = false;
     const newConfiguration = Object.assign({}, defaultConfiguration, {
       databaseAdapter,
       serverStartComplete: () => {
@@ -71,9 +72,13 @@ describe('Server Url Checks', () => {
             done.fail('Close Server Error');
           }
           reconfigureServer({}).then(() => {
+            expect(close).toBe(true);
             done();
           });
         });
+      },
+      serverCloseComplete: () => {
+        close = true;
       },
     });
     const parseServer = ParseServer.start(newConfiguration);
