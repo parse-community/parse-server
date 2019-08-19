@@ -111,6 +111,20 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('_transformMaxUploadSizeToBytes', () => {
+    it('should transform to bytes', () => {
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('20mb')).toBe(
+        20971520
+      );
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('333Gb')).toBe(
+        357556027392
+      );
+      expect(
+        parseGraphQLServer._transformMaxUploadSizeToBytes('123456KB')
+      ).toBe(126418944);
+    });
+  });
+
   describe('applyGraphQL', () => {
     it('should require an Express.js app instance', () => {
       expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
