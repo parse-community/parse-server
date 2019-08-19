@@ -32,7 +32,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
       this._connectionPromise = MongoClient.connect(
         this._databaseURI,
         this._mongoOptions
-      ).then(client => client.db(client.s.options.dbName));
+      ).then(client => {
+        this._client = client;
+        return client.db(client.s.options.dbName);
+      });
     }
     return this._connectionPromise;
   }
@@ -97,6 +100,13 @@ export class GridFSBucketAdapter extends FilesAdapter {
   async getDownloadStream(filename: string) {
     const bucket = await this._getBucket();
     return bucket.openDownloadStreamByName(filename);
+  }
+
+  handleShutdown() {
+    if (!this._client) {
+      return Promise.resolve();
+    }
+    return this._client.close(false);
   }
 }
 

@@ -114,18 +114,22 @@ class ParseServer {
   }
 
   handleShutdown() {
-    const { adapter } = this.config.databaseController;
-    if (adapter && typeof adapter.handleShutdown === 'function') {
-      const promise = adapter.handleShutdown();
-      if (promise instanceof Promise) {
-        return promise.then(() => {
-          if (this.config.serverCloseComplete) {
-            this.config.serverCloseComplete();
-          }
-        });
-      }
+    const promises = [];
+    const { adapter: databaseAdapter } = this.config.databaseController;
+    if (
+      databaseAdapter &&
+      typeof databaseAdapter.handleShutdown === 'function'
+    ) {
+      promises.push(databaseAdapter.handleShutdown());
     }
-    return Promise.resolve().then(() => {
+    const { adapter: fileAdapter } = this.config.filesController;
+    if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
+      promises.push(fileAdapter.handleShutdown());
+    }
+    return (promises.length > 0
+      ? Promise.all(promises)
+      : Promise.resolve()
+    ).then(() => {
       if (this.config.serverCloseComplete) {
         this.config.serverCloseComplete();
       }
