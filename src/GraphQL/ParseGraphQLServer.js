@@ -25,25 +25,46 @@ class ParseGraphQLServer {
     }
     this.config = config;
     this.parseGraphQLController = this.parseServer.config.parseGraphQLController;
+    this.log =
+      (this.parseServer.config && this.parseServer.config.loggerController) ||
+      defaultLogger;
     this.parseGraphQLSchema = new ParseGraphQLSchema({
       parseGraphQLController: this.parseGraphQLController,
       databaseController: this.parseServer.config.databaseController,
-      log:
-        (this.parseServer.config && this.parseServer.config.loggerController) ||
-        defaultLogger,
+      log: this.log,
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
     });
   }
 
   async _getGraphQLOptions(req) {
-    return {
-      schema: await this.parseGraphQLSchema.load(),
-      context: {
-        info: req.info,
-        config: req.config,
-        auth: req.auth,
-      },
+    try {
+      return {
+        schema: await this.parseGraphQLSchema.load(),
+        context: {
+          info: req.info,
+          config: req.config,
+          auth: req.auth,
+        },
+      };
+    } catch (e) {
+      this.log.error(
+        e.stack || (typeof e.toString === 'function' && e.toString()) || e
+      );
+      throw e;
+    }
+  }
+
+  _transformMaxUploadSizeToBytes(maxUploadSize) {
+    const unitMap = {
+      kb: 1,
+      mb: 2,
+      gb: 3,
     };
+
+    return (
+      Number(maxUploadSize.slice(0, -2)) *
+      Math.pow(1024, unitMap[maxUploadSize.slice(-2).toLowerCase()])
+    );
   }
 
   applyGraphQL(app) {
@@ -51,16 +72,14 @@ class ParseGraphQLServer {
       requiredParameter('You must provide an Express.js app instance!');
     }
 
-    const maxUploadSize = this.parseServer.config.maxUploadSize || '20mb';
-    const maxFileSize =
-      (Number(maxUploadSize.slice(0, -2)) * 1024) ^
-      {
-        kb: 1,
-        mb: 2,
-        gb: 3,
-      }[maxUploadSize.slice(-2).toLowerCase()];
-
-    app.use(this.config.graphQLPath, graphqlUploadExpress({ maxFileSize }));
+    app.use(
+      this.config.graphQLPath,
+      graphqlUploadExpress({
+        maxFileSize: this._transformMaxUploadSizeToBytes(
+          this.parseServer.config.maxUploadSize || '20mb'
+        ),
+      })
+    );
     app.use(this.config.graphQLPath, corsMiddleware());
     app.use(this.config.graphQLPath, bodyParser.json());
     app.use(this.config.graphQLPath, handleParseHeaders);

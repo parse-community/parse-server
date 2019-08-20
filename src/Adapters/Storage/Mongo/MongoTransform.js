@@ -1282,7 +1282,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       }
 
       if (
-        mongoObject.hasOwnProperty('__type') &&
+        Object.prototype.hasOwnProperty.call(mongoObject, '__type') &&
         mongoObject.__type == 'Date' &&
         mongoObject.iso instanceof Date
       ) {
@@ -1544,7 +1544,7 @@ var BytesCoder = {
   },
 
   JSONToDatabase(json) {
-    return new mongodb.Binary(new Buffer(json.base64, 'base64'));
+    return new mongodb.Binary(Buffer.from(json.base64, 'base64'));
   },
 
   isValidJSON(value) {

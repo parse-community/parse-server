@@ -146,6 +146,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
+    this._mongoOptions.useUnifiedTopology = true;
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -203,9 +204,9 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   handleShutdown() {
     if (!this.client) {
-      return;
+      return Promise.resolve();
     }
-    this.client.close(false);
+    return this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
@@ -278,7 +279,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!fields.hasOwnProperty(key)) {
+          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -794,7 +795,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       )
       .then(results => {
         results.forEach(result => {
-          if (result.hasOwnProperty('_id')) {
+          if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
             }
@@ -1023,7 +1024,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       const existingIndexes = schema.indexes;
       for (const key in existingIndexes) {
         const index = existingIndexes[key];
-        if (index.hasOwnProperty(fieldName)) {
+        if (Object.prototype.hasOwnProperty.call(index, fieldName)) {
           return Promise.resolve();
         }
       }

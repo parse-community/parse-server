@@ -330,6 +330,14 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('schemaCacheTTL'),
     default: 5000,
   },
+  serverCloseComplete: {
+    env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
+    help: 'Callback when server has closed',
+  },
+  serverStartComplete: {
+    env: 'PARSE_SERVER_SERVER_START_COMPLETE',
+    help: 'Callback when server has started',
+  },
   serverURL: {
     env: 'PARSE_SERVER_URL',
     help: 'URL to your parse server with http:// or https://.',

@@ -15,6 +15,32 @@ import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 
+const RESERVED_GRAPHQL_TYPE_NAMES = [
+  'String',
+  'Boolean',
+  'Int',
+  'Float',
+  'ID',
+  'ArrayResult',
+  'Query',
+  'Mutation',
+  'Subscription',
+  'Viewer',
+  'SignUpFieldsInput',
+  'LogInFieldsInput',
+];
+const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
+const RESERVED_GRAPHQL_MUTATION_NAMES = [
+  'signUp',
+  'logIn',
+  'logOut',
+  'createFile',
+  'callCloudCode',
+  'create',
+  'update',
+  'delete',
+];
+
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
   parseGraphQLController: ParseGraphQLController;
@@ -60,13 +86,11 @@ class ParseGraphQLSchema {
     this.parseClassesString = parseClassesString;
     this.parseGraphQLConfig = parseGraphQLConfig;
     this.parseClassTypes = {};
-    this.meType = null;
+    this.viewerType = null;
     this.graphQLAutoSchema = null;
     this.graphQLSchema = null;
     this.graphQLTypes = [];
-    this.graphQLObjectsQueries = {};
     this.graphQLQueries = {};
-    this.graphQLObjectsMutations = {};
     this.graphQLMutations = {};
     this.graphQLSubscriptions = {};
     this.graphQLSchemaDirectivesDefinitions = null;
@@ -82,6 +106,7 @@ class ParseGraphQLSchema {
       }
     );
 
+    defaultGraphQLTypes.loadArrayResult(this, parseClasses);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
@@ -92,7 +117,7 @@ class ParseGraphQLSchema {
         description: 'Query is the top level type for queries.',
         fields: this.graphQLQueries,
       });
-      this.graphQLTypes.push(graphQLQuery);
+      this.addGraphQLType(graphQLQuery, true, true);
     }
 
     let graphQLMutation = undefined;
@@ -102,7 +127,7 @@ class ParseGraphQLSchema {
         description: 'Mutation is the top level type for mutations.',
         fields: this.graphQLMutations,
       });
-      this.graphQLTypes.push(graphQLMutation);
+      this.addGraphQLType(graphQLMutation, true, true);
     }
 
     let graphQLSubscription = undefined;
@@ -112,7 +137,7 @@ class ParseGraphQLSchema {
         description: 'Subscription is the top level type for subscriptions.',
         fields: this.graphQLSubscriptions,
       });
-      this.graphQLTypes.push(graphQLSubscription);
+      this.addGraphQLType(graphQLSubscription, true, true);
     }
 
     this.graphQLAutoSchema = new GraphQLSchema({
@@ -170,6 +195,65 @@ class ParseGraphQLSchema {
     }
 
     return this.graphQLSchema;
+  }
+
+  addGraphQLType(type, throwError = false, ignoreReserved = false) {
+    if (
+      (!ignoreReserved && RESERVED_GRAPHQL_TYPE_NAMES.includes(type.name)) ||
+      this.graphQLTypes.find(existingType => existingType.name === type.name)
+    ) {
+      const message = `Type ${type.name} could not be added to the auto schema because it collided with an existing type.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLTypes.push(type);
+    return type;
+  }
+
+  addGraphQLQuery(
+    fieldName,
+    field,
+    throwError = false,
+    ignoreReserved = false
+  ) {
+    if (
+      (!ignoreReserved && RESERVED_GRAPHQL_QUERY_NAMES.includes(fieldName)) ||
+      this.graphQLQueries[fieldName]
+    ) {
+      const message = `Query ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLQueries[fieldName] = field;
+    return field;
+  }
+
+  addGraphQLMutation(
+    fieldName,
+    field,
+    throwError = false,
+    ignoreReserved = false
+  ) {
+    if (
+      (!ignoreReserved &&
+        RESERVED_GRAPHQL_MUTATION_NAMES.includes(fieldName)) ||
+      this.graphQLMutations[fieldName]
+    ) {
+      const message = `Mutation ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLMutations[fieldName] = field;
+    return field;
   }
 
   handleError(error) {
@@ -238,7 +322,32 @@ class ParseGraphQLSchema {
     parseGraphQLConfig: ParseGraphQLConfig
   ) {
     const { classConfigs } = parseGraphQLConfig;
-    return parseClasses.map(parseClass => {
+
+    // Make sures that the default classes and classes that
+    // starts with capitalized letter will be generated first.
+    const sortClasses = (a, b) => {
+      a = a.className;
+      b = b.className;
+      if (a[0] === '_') {
+        if (b[0] !== '_') {
+          return -1;
+        }
+      }
+      if (b[0] === '_') {
+        if (a[0] !== '_') {
+          return 1;
+        }
+      }
+      if (a === b) {
+        return 0;
+      } else if (a < b) {
+        return -1;
+      } else {
+        return 1;
+      }
+    };
+
+    return parseClasses.sort(sortClasses).map(parseClass => {
       let parseClassConfig;
       if (classConfigs) {
         parseClassConfig = classConfigs.find(

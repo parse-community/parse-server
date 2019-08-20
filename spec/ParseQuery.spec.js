@@ -4575,6 +4575,71 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it('should not throw error with undefined dot notation when using matchesKeyInQuery', async () => {
+    const group = new Parse.Object('Group', { name: 'Group #1' });
+    await group.save();
+
+    const role1 = new Parse.Object('Role', {
+      name: 'Role #1',
+      type: 'x',
+      belongsTo: group,
+    });
+
+    const role2 = new Parse.Object('Role', {
+      name: 'Role #2',
+      type: 'y',
+      belongsTo: undefined,
+    });
+    await Parse.Object.saveAll([role1, role2]);
+
+    const rolesOfTypeX = new Parse.Query('Role');
+    rolesOfTypeX.equalTo('type', 'x');
+
+    const groupsWithRoleX = new Parse.Query('Group');
+    groupsWithRoleX.matchesKeyInQuery(
+      'objectId',
+      'belongsTo.objectId',
+      rolesOfTypeX
+    );
+
+    const results = await groupsWithRoleX.find();
+    equal(results.length, 1);
+    equal(results[0].get('name'), group.get('name'));
+  });
+
+  it('should not throw error with undefined dot notation when using doesNotMatchKeyInQuery', async () => {
+    const group1 = new Parse.Object('Group', { name: 'Group #1' });
+    const group2 = new Parse.Object('Group', { name: 'Group #2' });
+    await Parse.Object.saveAll([group1, group2]);
+
+    const role1 = new Parse.Object('Role', {
+      name: 'Role #1',
+      type: 'x',
+      belongsTo: group1,
+    });
+
+    const role2 = new Parse.Object('Role', {
+      name: 'Role #2',
+      type: 'y',
+      belongsTo: undefined,
+    });
+    await Parse.Object.saveAll([role1, role2]);
+
+    const rolesOfTypeX = new Parse.Query('Role');
+    rolesOfTypeX.equalTo('type', 'x');
+
+    const groupsWithRoleX = new Parse.Query('Group');
+    groupsWithRoleX.doesNotMatchKeyInQuery(
+      'objectId',
+      'belongsTo.objectId',
+      rolesOfTypeX
+    );
+
+    const results = await groupsWithRoleX.find();
+    equal(results.length, 1);
+    equal(results[0].get('name'), group2.get('name'));
+  });
+
   it('withJSON supports geoWithin.centerSphere', done => {
     const inbound = new Parse.GeoPoint(1.5, 1.5);
     const onbound = new Parse.GeoPoint(10, 10);

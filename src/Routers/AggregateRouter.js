@@ -122,13 +122,13 @@ export class AggregateRouter extends ClassesRouter {
       );
     }
     if (stageName === 'group') {
-      if (stage[stageName].hasOwnProperty('_id')) {
+      if (Object.prototype.hasOwnProperty.call(stage[stageName], '_id')) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
           `Invalid parameter for query: group. Please use objectId instead of _id`
         );
       }
-      if (!stage[stageName].hasOwnProperty('objectId')) {
+      if (!Object.prototype.hasOwnProperty.call(stage[stageName], 'objectId')) {
         throw new Parse.Error(
           Parse.Error.INVALID_QUERY,
           `Invalid parameter for query: group. objectId is required`

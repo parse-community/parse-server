@@ -19,7 +19,7 @@ function configureTransports(options) {
           {
             filename: 'parse-server.info',
             json: true,
-            format: format.combine(format.timestamp(), format.json()),
+            format: format.combine(format.timestamp(), format.splat(), format.json()),
           },
           options
         )

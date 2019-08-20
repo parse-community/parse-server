@@ -71,7 +71,7 @@ function RestQuery(
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
-  if (restOptions.hasOwnProperty('keys')) {
+  if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
     const keysForInclude = restOptions.keys
       .split(',')
       .filter(key => {
@@ -455,10 +455,18 @@ RestQuery.prototype.replaceNotInQuery = function() {
   });
 };
 
+// Used to get the deepest object from json using dot notation.
+const getDeepestObjectFromKey = (json, key, idx, src) => {
+  if (key in json) {
+    return json[key];
+  }
+  src.splice(1); // Exit Early
+};
+
 const transformSelect = (selectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete selectObject['$select'];
   if (Array.isArray(selectObject['$in'])) {
@@ -523,7 +531,7 @@ RestQuery.prototype.replaceSelect = function() {
 const transformDontSelect = (dontSelectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete dontSelectObject['$dontSelect'];
   if (Array.isArray(dontSelectObject['$nin'])) {

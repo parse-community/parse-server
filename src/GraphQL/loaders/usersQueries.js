@@ -1,4 +1,4 @@
-import { GraphQLNonNull, GraphQLObjectType } from 'graphql';
+import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import Parse from 'parse/node';
 import rest from '../../rest';
@@ -49,33 +49,25 @@ const load = parseGraphQLSchema => {
   if (parseGraphQLSchema.isUsersClassDisabled) {
     return;
   }
-  const fields = {};
 
-  fields.me = {
-    description: 'The Me query can be used to return the current user data.',
-    type: new GraphQLNonNull(parseGraphQLSchema.meType),
-    async resolve(_source, _args, context, queryInfo) {
-      try {
-        const { config, info } = context;
-        return await getUserFromSessionToken(config, info, queryInfo);
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
+  parseGraphQLSchema.addGraphQLQuery(
+    'viewer',
+    {
+      description:
+        'The viewer query can be used to return the current user data.',
+      type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
+      async resolve(_source, _args, context, queryInfo) {
+        try {
+          const { config, info } = context;
+          return await getUserFromSessionToken(config, info, queryInfo);
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
     },
-  };
-
-  const usersQuery = new GraphQLObjectType({
-    name: 'UsersQuery',
-    description: 'UsersQuery is the top level type for users queries.',
-    fields,
-  });
-  parseGraphQLSchema.graphQLTypes.push(usersQuery);
-
-  parseGraphQLSchema.graphQLQueries.users = {
-    description: 'This is the top level for users queries.',
-    type: usersQuery,
-    resolve: () => new Object(),
-  };
+    true,
+    true
+  );
 };
 
 export { load, getUserFromSessionToken };

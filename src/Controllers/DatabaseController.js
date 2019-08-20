@@ -119,7 +119,7 @@ const validateQuery = (
          */
         Object.keys(query).forEach(key => {
           const noCollisions = !query.$or.some(subq =>
-            Object.hasOwnProperty.call(subq, key)
+            Object.prototype.hasOwnProperty.call(subq, key)
           );
           let hasNears = false;
           if (query[key] != null && typeof query[key] == 'object') {
@@ -1482,23 +1482,23 @@ class DatabaseController {
       };
 
       const permFields = perms[field];
-      const ors = permFields.map(key => {
+      const ors = permFields.flatMap(key => {
+        // constraint for single pointer setup
         const q = {
           [key]: userPointer,
         };
+        // constraint for users-array setup
+        const qa = {
+          [key]: { $all: [userPointer] },
+        };
         // if we already have a constraint on the key, use the $and
-        if (query.hasOwnProperty(key)) {
-          return { $and: [q, query] };
+        if (Object.prototype.hasOwnProperty.call(query, key)) {
+          return [{ $and: [q, query] }, { $and: [qa, query] }];
         }
         // otherwise just add the constaint
-        return Object.assign({}, query, {
-          [`${key}`]: userPointer,
-        });
+        return [Object.assign({}, query, q), Object.assign({}, query, qa)];
       });
-      if (ors.length > 1) {
-        return { $or: ors };
-      }
-      return ors[0];
+      return { $or: ors };
     } else {
       return query;
     }

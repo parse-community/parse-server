@@ -127,9 +127,15 @@ describe('Parse.Query Aggregate testing', () => {
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).not.toBe(undefined);
         expect(resp.results[1].objectId).not.toBe(undefined);
         expect(resp.results[2].objectId).not.toBe(undefined);
@@ -148,9 +154,15 @@ describe('Parse.Query Aggregate testing', () => {
     });
     const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
     expect(resp.results.length).toBe(3);
-    expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
-    expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
-    expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+    ).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+    ).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
+    ).toBe(true);
     expect(resp.results[0].objectId).not.toBe(undefined);
     expect(resp.results[1].objectId).not.toBe(undefined);
     expect(resp.results[2].objectId).not.toBe(undefined);
@@ -371,8 +383,12 @@ describe('Parse.Query Aggregate testing', () => {
       expect(results.length).toEqual(4);
       for (let i = 0; i < results.length; i++) {
         const item = results[i];
-        expect(item.hasOwnProperty('updatedAt')).toEqual(true);
-        expect(item.hasOwnProperty('objectId')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(item, 'updatedAt')).toEqual(
+          true
+        );
+        expect(Object.prototype.hasOwnProperty.call(item, 'objectId')).toEqual(
+          false
+        );
       }
       done();
     });
@@ -482,7 +498,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(50);
         done();
@@ -498,7 +516,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(4);
         done();
@@ -514,7 +534,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].minScore).toBe(10);
         done();
@@ -530,7 +552,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].maxScore).toBe(20);
         done();
@@ -546,7 +570,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].avgScore).toBe(12.5);
         done();
@@ -966,7 +992,9 @@ describe('Parse.Query Aggregate testing', () => {
       .then(resp => {
         expect(resp.results.length).toBe(2);
         resp.results.forEach(result => {
-          expect(result.hasOwnProperty('objectId')).toBe(true);
+          expect(Object.prototype.hasOwnProperty.call(result, 'objectId')).toBe(
+            true
+          );
           expect(result.name).toBe(undefined);
           expect(result.sender).toBe(undefined);
           expect(result.size).toBe(undefined);

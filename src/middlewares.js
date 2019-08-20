@@ -105,7 +105,7 @@ export function handleParseHeaders(req, res, next) {
   if (fileViaJSON) {
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
-    req.body = new Buffer(base64, 'base64');
+    req.body = Buffer.from(base64, 'base64');
   }
 
   const clientIp = getClientIp(req);
@@ -276,7 +276,7 @@ function httpAuth(req) {
 }
 
 function decodeBase64(str) {
-  return new Buffer(str, 'base64').toString();
+  return Buffer.from(str, 'base64').toString();
 }
 
 export function allowCrossDomain(req, res, next) {
