@@ -519,7 +519,7 @@ describe('schemas', () => {
           className: 'NewClassRelationWithOptions',
           fields: {
             foo: { type: 'String' },
-            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { type: 'Relation', targetClass: '_User' } }
+            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
           },
         },
       });
@@ -571,7 +571,7 @@ describe('schemas', () => {
         body: {
           className: 'NewClassRelationWithOptions',
           fields: {
-            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { type: 'Relation', targetClass: '_User' } }
+            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
           },
           _method: "PUT"
         }
