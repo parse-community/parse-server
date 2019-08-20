@@ -23,7 +23,10 @@ describe('a GlobalConfig', () => {
           fields: { objectId: { type: 'Number' }, params: { type: 'Object' } },
         },
         query,
-        { params: { companies: ['US', 'DK'] } }
+        {
+          params: { companies: ['US', 'DK'], internalParam: 'internal' },
+          masterKeyOnly: { internalParam: true },
+        }
       )
       .then(done, err => {
         jfail(err);
@@ -47,6 +50,44 @@ describe('a GlobalConfig', () => {
       try {
         expect(response.status).toEqual(200);
         expect(body.params.companies).toEqual(['US', 'DK']);
+      } catch (e) {
+        jfail(e);
+      }
+      done();
+    });
+  });
+
+  it('internal parameter can be retrieved with master key', done => {
+    request({
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      headers,
+    }).then(response => {
+      const body = response.data;
+      try {
+        expect(response.status).toEqual(200);
+        expect(body.params.internalParam).toEqual('internal');
+      } catch (e) {
+        jfail(e);
+      }
+      done();
+    });
+  });
+
+  it('internal parameter cannot be retrieved without master key', done => {
+    request({
+      url: 'http://localhost:8378/1/config',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    }).then(response => {
+      const body = response.data;
+      try {
+        expect(response.status).toEqual(200);
+        expect(body.params.internalParam).toBeUndefined();
       } catch (e) {
         jfail(e);
       }
@@ -117,7 +158,13 @@ describe('a GlobalConfig', () => {
       method: 'PUT',
       url: 'http://localhost:8378/1/config',
       json: true,
-      body: { params: { companies: { __op: 'Delete' }, foo: 'bar' } },
+      body: {
+        params: {
+          companies: { __op: 'Delete' },
+          internalParam: { __op: 'Delete' },
+          foo: 'bar',
+        },
+      },
       headers,
     }).then(response => {
       const body = response.data;
