@@ -530,6 +530,59 @@ describe('schemas', () => {
     done();
   });
 
+  it('try to update schemas with a relation field with options', async (done) => {
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassRelationWithOptions',
+        fields: {
+          foo: { type: 'String' }
+        },
+      },
+    });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: { type: 'Relation', targetClass: 'SomeClass', required: true }
+          },
+          _method: "PUT"
+        }
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { type: 'Relation', targetClass: '_User' } }
+          },
+          _method: "PUT"
+        }
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
   it('validated the data type of default values when creating a new class', async () => {
     try {
       await request({
