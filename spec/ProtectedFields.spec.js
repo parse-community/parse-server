@@ -1,3 +1,6 @@
+const Config = require('../lib/Config');
+const Parse = require('parse/node');
+
 describe('ProtectedFields', function() {
   it('should handle and empty protectedFields', async function() {
     const protectedFields = {};
@@ -136,6 +139,248 @@ describe('ProtectedFields', function() {
       expect(fetchedUser.has('email')).toBeFalsy();
       expect(fetchedUser.has('phoneNumber')).toBeFalsy();
       expect(fetchedUser.has('favoriteColor')).toBeTruthy();
+    });
+  });
+
+  describe('using the pointer-permission variant', () => {
+    let user1, user2;
+    beforeEach(async () => {
+      Config.get(Parse.applicationId).database.schemaCache.clear();
+      user1 = await Parse.User.signUp('user1', 'password');
+      user2 = await Parse.User.signUp('user2', 'password');
+      await Parse.User.logOut();
+    });
+
+    it('should allow access using single user pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owner', user1);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owner'],
+          protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+        }
+      );
+
+      await Parse.User.logIn('user1', 'password');
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owner').id).toBe(user1.id);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should deny access to other users using single user pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owner', user1);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owner'],
+          protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+        }
+      );
+
+      await Parse.User.logIn('user2', 'password');
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owner')).toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should deny access to public using single user pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owner', user1);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owner'],
+          protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+        }
+      );
+
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owner')).toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      await Parse.User.logIn('user1', 'password');
+      done();
+    });
+
+    it('should allow access using user array pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owners', [user1, user2]);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owners'],
+          protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+        }
+      );
+
+      await Parse.User.logIn('user1', 'password');
+      let objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')[0].id).toBe(user1.id);
+      expect(objectAgain.get('test')).toBe('test');
+      await Parse.User.logIn('user1', 'password');
+      objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')[1].id).toBe(user2.id);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should deny access to other users using user array pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owners', [user1]);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owners'],
+          protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+        }
+      );
+
+      await Parse.User.logIn('user2', 'password');
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')).toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should deny access to public using user array pointer-permissions', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owners', [user1, user2]);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owners'],
+          protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+        }
+      );
+
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')).toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should create merge protected fields when using multiple pointer-permission fields', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owners', [user1]);
+      obj.set('owner', user1);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: ['owners', 'owner'],
+          protectedFields: {
+            '*': [],
+            'readUserFields:owners': ['owners'],
+            'readUserFields:owner': ['owner'],
+          },
+        }
+      );
+
+      // Check if protectFields from pointer-permissions got combined
+      await Parse.User.logIn('user1', 'password');
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')).toBe(undefined);
+      expect(objectAgain.get('owner')).toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
+    });
+
+    it('should ignore pointer-permission fields not declared in the readUserFields', async done => {
+      const config = Config.get(Parse.applicationId);
+      const obj = new Parse.Object('AnObject');
+
+      obj.set('owners', [user1]);
+      obj.set('owner', user1);
+      obj.set('test', 'test');
+      await obj.save();
+
+      const schema = await config.database.loadSchema();
+      await schema.updateClass(
+        'AnObject',
+        {},
+        {
+          get: { '*': true },
+          find: { '*': true },
+          readUserFields: [],
+          protectedFields: {
+            '*': [],
+            'readUserFields:owners': ['idontexist'],
+            'readUserFields:owner': ['idontexist2'],
+          },
+        }
+      );
+
+      await Parse.User.logIn('user1', 'password');
+      const objectAgain = await obj.fetch();
+      expect(objectAgain.get('owners')).not.toBe(undefined);
+      expect(objectAgain.get('owner')).not.toBe(undefined);
+      expect(objectAgain.get('test')).toBe('test');
+      done();
     });
   });
 });
