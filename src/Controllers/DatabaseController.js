@@ -221,9 +221,9 @@ const filterSensitiveData = (
     ) {
       // extract protectedFields added with the pointer-permission prefix
       const protectedFieldsPointerPerm = Object.keys(perms.protectedFields)
-        .filter(key => key.startsWith('readUserFields:'))
+        .filter(key => key.startsWith('userField:'))
         .map(key => {
-          return { key: key.substring(15), value: perms.protectedFields[key] };
+          return { key: key.substring(10), value: perms.protectedFields[key] };
         });
 
       const newProtectedFields: Array<string> = [];

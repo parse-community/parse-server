@@ -176,8 +176,8 @@ const volatileClasses = Object.freeze([
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
 // Anything that start with role
 const roleRegex = /^role:.*/;
-// Anything that starts with readUserFields
-const pointerPermissionRegex = /^readUserFields:.*/;
+// Anything that starts with userField
+const pointerPermissionRegex = /^userField:.*/;
 // * permission
 const publicRegex = /^\*$/;
 

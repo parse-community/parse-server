@@ -168,7 +168,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -195,7 +195,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -222,7 +222,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -248,7 +248,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -279,7 +279,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -306,7 +306,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -335,8 +335,8 @@ describe('ProtectedFields', function() {
             readUserFields: ['owners', 'owner'],
             protectedFields: {
               '*': [],
-              'readUserFields:owners': ['owners'],
-              'readUserFields:owner': ['owner'],
+              'userField:owners': ['owners'],
+              'userField:owner': ['owner'],
             },
           }
         );
@@ -369,8 +369,8 @@ describe('ProtectedFields', function() {
             readUserFields: [],
             protectedFields: {
               '*': [],
-              'readUserFields:owners': ['idontexist'],
-              'readUserFields:owner': ['idontexist2'],
+              'userField:owners': ['idontexist'],
+              'userField:owner': ['idontexist2'],
             },
           }
         );
@@ -404,7 +404,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -442,7 +442,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -479,7 +479,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owner'],
-            protectedFields: { '*': ['owner'], 'readUserFields:owner': [] },
+            protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
 
@@ -515,7 +515,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -565,7 +565,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -602,7 +602,7 @@ describe('ProtectedFields', function() {
             get: { '*': true },
             find: { '*': true },
             readUserFields: ['owners'],
-            protectedFields: { '*': ['owners'], 'readUserFields:owners': [] },
+            protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
 
@@ -642,8 +642,8 @@ describe('ProtectedFields', function() {
             readUserFields: ['owners', 'owner'],
             protectedFields: {
               '*': [],
-              'readUserFields:owners': ['owners'],
-              'readUserFields:owner': ['owner'],
+              'userField:owners': ['owners'],
+              'userField:owner': ['owner'],
             },
           }
         );
@@ -689,8 +689,8 @@ describe('ProtectedFields', function() {
             readUserFields: [],
             protectedFields: {
               '*': [],
-              'readUserFields:owners': ['idontexist'],
-              'readUserFields:owner': ['idontexist2'],
+              'userField:owners': ['idontexist'],
+              'userField:owner': ['idontexist2'],
             },
           }
         );
@@ -736,7 +736,7 @@ describe('ProtectedFields', function() {
             readUserFields: ['owner'],
             protectedFields: {
               '*': ['owner'],
-              'readUserFields:owner': [],
+              'userField:owner': [],
             },
           }
         );
