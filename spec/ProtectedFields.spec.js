@@ -256,7 +256,7 @@ describe('ProtectedFields', function() {
       let objectAgain = await obj.fetch();
       expect(objectAgain.get('owners')[0].id).toBe(user1.id);
       expect(objectAgain.get('test')).toBe('test');
-      await Parse.User.logIn('user1', 'password');
+      await Parse.User.logIn('user2', 'password');
       objectAgain = await obj.fetch();
       expect(objectAgain.get('owners')[1].id).toBe(user2.id);
       expect(objectAgain.get('test')).toBe('test');
