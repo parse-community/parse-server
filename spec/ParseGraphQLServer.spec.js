@@ -3419,6 +3419,41 @@ describe('ParseGraphQLServer', () => {
             expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
+          it('should return only objectId using class specific mutation', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation UpdateCustomer(
+                  $objectId: ID!
+                  $fields: UpdateCustomerFieldsInput
+                ) {
+                  updateCustomer(objectId: $objectId, fields: $fields) {
+                    objectId
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+                fields: {
+                  someField1: 'someField1Value2',
+                },
+              },
+            });
+
+            expect(result.data.updateCustomer.objectId).toEqual(obj.id);
+
+            await obj.fetch();
+
+            expect(obj.get('someField1')).toEqual('someField1Value2');
+            expect(obj.get('someField2')).toEqual('someField2Value1');
+          });
+
           it('should respect level permissions', async () => {
             await prepareData();
 

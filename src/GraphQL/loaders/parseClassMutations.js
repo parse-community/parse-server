@@ -176,7 +176,12 @@ const load = function(
               info
             );
           }
-          return { ...updatedObject, ...fields, ...optimizedObject };
+          return {
+            objectId: objectId,
+            ...updatedObject,
+            ...fields,
+            ...optimizedObject,
+          };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
