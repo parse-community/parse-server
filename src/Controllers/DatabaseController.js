@@ -207,18 +207,9 @@ const filterSensitiveData = (
   // replace protectedFields when using pointer-permissions
   const perms = schema.getClassLevelPermissions(className);
   if (perms) {
-    const field =
-      ['get', 'find'].indexOf(operation) > -1
-        ? 'readUserFields'
-        : 'writeUserFields';
-    const fieldKeys: string[] = perms[field];
+    const isReadOperation = ['get', 'find'].indexOf(operation) > -1;
 
-    if (
-      field === 'readUserFields' &&
-      fieldKeys &&
-      fieldKeys.length > 0 &&
-      perms.protectedFields
-    ) {
+    if (isReadOperation && perms.protectedFields) {
       // extract protectedFields added with the pointer-permission prefix
       const protectedFieldsPointerPerm = Object.keys(perms.protectedFields)
         .filter(key => key.startsWith('userField:'))
@@ -231,7 +222,6 @@ const filterSensitiveData = (
 
       // check if the object grants the current user access based on the extracted fields
       protectedFieldsPointerPerm.forEach(pointerPerm => {
-        if (!fieldKeys.includes(pointerPerm.key)) return;
         let pointerPermIncludesUser = false;
         const readUserFieldValue = object[pointerPerm.key];
         if (readUserFieldValue) {
@@ -1587,10 +1577,12 @@ class DatabaseController {
 
     if (aclGroup.indexOf(query.objectId) > -1) return null;
 
-    let protectedKeys = Object.values(protectedFields).reduce(
-      (acc, val) => acc.concat(val),
-      []
-    ); //.flat();
+    // remove userField keys since they are filtered after querying
+    let protectedKeys = Object.keys(protectedFields).reduce((acc, val) => {
+      if (val.startsWith('userField:')) return acc;
+      return acc.concat(protectedFields[val]);
+    }, []);
+
     [...(auth.userRoles || [])].forEach(role => {
       const fields = protectedFields[role];
       if (fields) {
