@@ -176,7 +176,7 @@ const volatileClasses = Object.freeze([
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
 // Anything that start with role
 const roleRegex = /^role:.*/;
-// Anything that start with readUserFields
+// Anything that starts with readUserFields
 const pointerPermissionRegex = /^readUserFields:.*/;
 // * permission
 const publicRegex = /^\*$/;
@@ -908,10 +908,15 @@ export default class SchemaController {
           let defaultValueType = getType(fieldType.defaultValue);
           if (typeof defaultValueType === 'string') {
             defaultValueType = { type: defaultValueType };
-          } else if (typeof defaultValueType === 'object' && fieldType.type === 'Relation') {
+          } else if (
+            typeof defaultValueType === 'object' &&
+            fieldType.type === 'Relation'
+          ) {
             return {
               code: Parse.Error.INCORRECT_TYPE,
-              error: `The 'default value' option is not applicable for ${typeToString(fieldType)}`
+              error: `The 'default value' option is not applicable for ${typeToString(
+                fieldType
+              )}`,
             };
           }
           if (!dbTypeMatchesObjectType(fieldType, defaultValueType)) {
@@ -926,7 +931,9 @@ export default class SchemaController {
           if (typeof fieldType === 'object' && fieldType.type === 'Relation') {
             return {
               code: Parse.Error.INCORRECT_TYPE,
-              error: `The 'required' option is not applicable for ${typeToString(fieldType)}`
+              error: `The 'required' option is not applicable for ${typeToString(
+                fieldType
+              )}`,
             };
           }
         }
