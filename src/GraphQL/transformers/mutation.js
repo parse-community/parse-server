@@ -91,10 +91,6 @@ const transformers = {
     };
     let nestedObjectsToAdd = [];
 
-    if (Object.keys(value).length > 1) {
-      op['__op'] = 'Batch';
-    }
-
     if (value.createAndAdd) {
       nestedObjectsToAdd = (await Promise.all(
         value.createAndAdd.map(async input => {
