@@ -131,6 +131,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   _GlobalConfig: {
     objectId: { type: 'String' },
     params: { type: 'Object' },
+    masterKeyOnly: { type: 'Object' },
   },
   _GraphQLConfig: {
     objectId: { type: 'String' },

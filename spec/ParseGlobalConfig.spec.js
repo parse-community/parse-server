@@ -20,7 +20,11 @@ describe('a GlobalConfig', () => {
       .upsertOneObject(
         '_GlobalConfig',
         {
-          fields: { objectId: { type: 'Number' }, params: { type: 'Object' } },
+          fields: {
+            objectId: { type: 'Number' },
+            params: { type: 'Object' },
+            masterKeyOnly: { type: 'Object' },
+          },
         },
         query,
         {
