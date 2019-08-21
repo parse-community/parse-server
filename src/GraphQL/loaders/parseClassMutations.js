@@ -11,7 +11,6 @@ import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLControlle
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';
 
-// TODO: Check if include can contain ".", should always get
 const getOnlyRequiredFields = (
   updatedFields,
   selectedFieldsString,
@@ -72,17 +71,13 @@ const load = function(
           let { fields } = args;
           if (!fields) fields = {};
           const { config, auth, info } = context;
-          let parseFields;
-          try {
-            parseFields = await transformTypes('create', fields, {
-              className,
-              parseGraphQLSchema,
-              req: { config, auth, info },
-            });
-          } catch (e) {
-            console.log(e);
-            throw e;
-          }
+
+          const parseFields = await transformTypes('create', fields, {
+            className,
+            parseGraphQLSchema,
+            req: { config, auth, info },
+          });
+
           const createdObject = await objectsMutations.createObject(
             className,
             parseFields,
@@ -143,17 +138,12 @@ const load = function(
         try {
           const { objectId, fields } = args;
           const { config, auth, info } = context;
-          let parseFields;
-          try {
-            parseFields = await transformTypes('update', fields, {
-              className,
-              parseGraphQLSchema,
-              req: { config, auth, info },
-            });
-          } catch (e) {
-            console.log(e);
-            throw e;
-          }
+
+          const parseFields = await transformTypes('update', fields, {
+            className,
+            parseGraphQLSchema,
+            req: { config, auth, info },
+          });
 
           const updatedObject = await objectsMutations.updateObject(
             className,

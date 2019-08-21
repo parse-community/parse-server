@@ -1,11 +1,6 @@
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../loaders/objectsMutations';
 
-// TODO:
-// * Handle Add/Remove on Relation
-// * Handle Link on Pointer
-// * Handle deep nestedMutation on Pointer and link
-
 const transformTypes = async (
   inputType: 'create' | 'update',
   fields,
@@ -91,7 +86,6 @@ const transformers = {
       );
 
     const op = {
-      // Always batch, simplify code, no performance drawbacks
       __op: 'Batch',
       ops: [],
     };
