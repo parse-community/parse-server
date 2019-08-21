@@ -167,7 +167,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -194,7 +193,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -221,7 +219,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -247,7 +244,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -278,7 +274,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -305,7 +300,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -332,7 +326,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners', 'owner'],
             protectedFields: {
               '*': [],
               'userField:owners': ['owners'],
@@ -350,7 +343,7 @@ describe('ProtectedFields', function() {
         done();
       });
 
-      it('should ignore pointer-permission fields not declared in the readUserFields', async done => {
+      it('should ignore pointer-permission fields not present in object', async done => {
         const config = Config.get(Parse.applicationId);
         const obj = new Parse.Object('AnObject');
 
@@ -366,11 +359,10 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: [],
             protectedFields: {
               '*': [],
-              'userField:owners': ['idontexist'],
-              'userField:owner': ['idontexist2'],
+              'userField:idontexist': ['owner'],
+              'userField:idontexist2': ['owners'],
             },
           }
         );
@@ -403,7 +395,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -441,7 +432,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -478,7 +468,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: { '*': ['owner'], 'userField:owner': [] },
           }
         );
@@ -514,7 +503,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -564,7 +552,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -601,7 +588,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners'],
             protectedFields: { '*': ['owners'], 'userField:owners': [] },
           }
         );
@@ -639,7 +625,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owners', 'owner'],
             protectedFields: {
               '*': [],
               'userField:owners': ['owners'],
@@ -666,7 +651,7 @@ describe('ProtectedFields', function() {
         done();
       });
 
-      it('should ignore pointer-permission fields not declared in the readUserFields', async done => {
+      it('should ignore pointer-permission fields not present in object', async done => {
         const config = Config.get(Parse.applicationId);
         const obj = new Parse.Object('AnObject');
         const obj2 = new Parse.Object('AnObject');
@@ -686,11 +671,10 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: [],
             protectedFields: {
               '*': [],
-              'userField:owners': ['idontexist'],
-              'userField:owner': ['idontexist2'],
+              'userField:idontexist': ['owner'],
+              'userField:idontexist2': ['owners'],
             },
           }
         );
@@ -733,7 +717,6 @@ describe('ProtectedFields', function() {
           {
             get: { '*': true },
             find: { '*': true },
-            readUserFields: ['owner'],
             protectedFields: {
               '*': ['owner'],
               'userField:owner': [],
