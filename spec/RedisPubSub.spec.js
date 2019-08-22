@@ -9,19 +9,27 @@ describe('RedisPubSub', function() {
   });
 
   it('can create publisher', function() {
-    RedisPubSub.createPublisher({ redisURL: 'redisAddress' });
+    RedisPubSub.createPublisher({
+      redisURL: 'redisAddress',
+      redisOptions: { socket_keepalive: true },
+    });
 
     const redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', {
+      socket_keepalive: true,
       no_ready_check: true,
     });
   });
 
   it('can create subscriber', function() {
-    RedisPubSub.createSubscriber({ redisURL: 'redisAddress' });
+    RedisPubSub.createSubscriber({
+      redisURL: 'redisAddress',
+      redisOptions: { socket_keepalive: true },
+    });
 
     const redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', {
+      socket_keepalive: true,
       no_ready_check: true,
     });
   });

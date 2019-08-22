@@ -28,8 +28,10 @@ function createParseServer(options) {
     const parseServer = new ParseServer.default(
       Object.assign({}, defaultConfiguration, options, {
         serverURL: 'http://localhost:12666/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
-          promise.then(() => {
+        serverStartComplete: error => {
+          if (error) {
+            reject(error);
+          } else {
             expect(Parse.applicationId).toEqual('test');
             const app = express();
             app.use('/parse', parseServer.app);
@@ -37,7 +39,7 @@ function createParseServer(options) {
             const server = app.listen(12666);
             Parse.serverURL = 'http://localhost:12666/parse';
             resolve(server);
-          }, reject);
+          }
         },
       })
     );

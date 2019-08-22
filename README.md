@@ -1,15 +1,47 @@
-![Parse Server logo](https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png)
+<p align="center">
+    <img alt="Parse Server" src="https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png" width="500">
+  </a>
+</p>
 
-[![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)](#sponsors)
-[![Build Status](https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat)](https://travis-ci.org/parse-community/parse-server)
-[![Coverage Status](https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg)](https://codecov.io/github/parse-community/parse-server?branch=master)
-[![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
-[![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
-[![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
+<p align="center">
+  Parse Server is an open source backend that can be deployed to any infrastructure that can run Node.js.
+</p>
 
-Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
+
+<p align="center">
+    <a href="https://twitter.com/intent/follow?screen_name=parseplatform"><img alt="Follow on Twitter" src="https://img.shields.io/twitter/follow/parseplatform?style=social&label=Follow"></a>
+  <a href="https://travis-ci.org/parse-community/parse-server"><img alt="Build status" src="https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat"></a>
+    <a href="https://codecov.io/github/parse-community/parse-server?branch=master"><img alt="Coverage status" src="https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg"></a>
+    <a href="https://www.npmjs.com/package/parse-server"><img alt="npm version" src="https://img.shields.io/npm/v/parse-server.svg?style=flat"></a>
+    <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
+    <a href="https://greenkeeper.io/"><img alt="Greenkeeper badge" src="https://badges.greenkeeper.io/parse-community/parse-server.svg"></a>
+</p>
+
+<p align="center">
+    <img alt="MongoDB 3.2" src="https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 3.4" src="https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
+</p>
+
+<h2 align="center">Our Sponsors</h2>
+<p align="center">
+    <p align="center">Our backers and sponsors help to ensure the quality and timely development of the Parse Platform.</p>
+  <details align="center">
+  <summary align="center"><b>🥉 Bronze Sponsors</b></summary>
+  <a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
+  </details>
+
+</p>
+<p align="center">
+  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/backers/badge.svg" /></a>
+  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/sponsors/badge.svg" /></a>
+</p>
+<br>
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
+
+The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) and [Cloud Code guide](https://docs.parseplatform.org/cloudcode/guide/) are also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
 
 - [Getting Started](#getting-started)
     - [Running Parse Server](#running-parse-server)
@@ -20,27 +52,27 @@ Parse Server works with the Express web application framework. It can be added t
     - [Running elsewhere](#running-parse-server-elsewhere)
         - [Sample Application](#parse-server-sample-application)
         - [Parse Server + Express](#parse-server--express)
-    - [Logging](#logging)
-- [Documentation](#documentation)
     - [Configuration](#configuration)
         - [Basic Options](#basic-options)
         - [Client Key Options](#client-key-options)
-        - [Advanced Options](#advanced-options)
-            - [Logging](#logging-1)
-            - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Custom Pages](#custom-pages)
         - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
         - [Available Adapters](#available-adapters)
         - [Configuring File Adapters](#configuring-file-adapters)
+        - [Logging](#logging)
+- [Live Queries](#live-queries)
+- [GraphQL (beta)](#graphql-beta)
+- [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
 - [Contributing](#contributing)
-- [Backers](#backers)
-- [Upgrading to 3.0.0](#upgrading-to-300)
+- [Contributors](#contributors)
 - [Sponsors](#sponsors)
+- [Backers](#backers)
+
 
 # Getting Started
-
-April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/](http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/)
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
@@ -53,14 +85,16 @@ $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
 ***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
- 
+
 
 ### Inside a Docker container
 ```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
-```  
+```
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
@@ -136,7 +170,7 @@ To learn more about using saving and querying objects on Parse Server, check out
 
 ### Connect your app to Parse Server
 
-Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://github.com/parse-community/parse-server/wiki/Parse-Server-Guide#using-parse-sdks-with-parse-server).
+Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://docs.parseplatform.org/parse-server/guide/#using-parse-sdks-with-parse-server).
 
 ## Running Parse Server elsewhere
 
@@ -183,35 +217,15 @@ app.listen(1337, function() {
 });
 ```
 
-For a full list of available options, run `parse-server --help`.
-
-## Logging
-
-Parse Server will, by default, log:
-* to the console
-* daily rotating files as new line delimited JSON
-
-Logs are also be viewable in Parse Dashboard.
-
-**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-**Want logs to be in placed in other folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
-
-**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
-# Documentation
-
-The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
+For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
 ## Configuration
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
-For the full list of available options, run `parse-server --help`.
+For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-#### Basic options
+### Basic options
 
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
@@ -221,7 +235,7 @@ For the full list of available options, run `parse-server --help`.
 * `cloud` - The absolute path to your cloud code `main.js` file.
 * `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
 
-#### Client key options
+### Client key options
 
 The client keys used with Parse are no longer necessary with Parse Server. If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time. Setting any of these keys will require all requests to provide one of the configured keys.
 
@@ -230,41 +244,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `restAPIKey`
 * `dotNetKey`
 
-#### Advanced options
-
-* `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
-* `preserveFileName` - Set to true to remove the unique hash added to the file names. Defaults to false.
-* `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
-* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
-* `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).
-* `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
-* `mountPath` - Mount path for the server. Defaults to `/parse`.
-* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
-* `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
-* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
-* `logLevel` - Set the specific level you want to log. Defaults to `info`. The default logger uses the npm log levels as defined by the underlying winston logger. Check [Winston logging levels](https://github.com/winstonjs/winston#logging-levels) for details on values to specify.
-* `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
-* `maxLimit` - The maximum value supported for the limit option on queries. Defaults to unlimited.
-* `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
-* `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
-* `passwordPolicy` - Optional password policy rules to enforce.
-* `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
-* `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
-* `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
-* `readOnlyMasterKey` -  A masterKey that has full read access to the data, but no write access. This key should be treated the same way as your masterKey, keeping it private.
-* `objectIdSize` - The string length of the newly generated object's ids.
-
-##### Logging
-
-Use the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server` to save your server logfiles to the specified folder.
-
-Usage:
-
-```
-PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
-```
-
-##### Email verification and password reset
+### Email verification and password reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
 
@@ -316,14 +296,15 @@ var server = ParseServer({
   },
   // optional settings to enforce password policies
   passwordPolicy: {
-    // Two optional settings to enforce strong passwords. Either one or both can be specified. 
+    // Two optional settings to enforce strong passwords. Either one or both can be specified.
     // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp object or a regex string representing the pattern to enforce 
+    // 1. a RegExp object or a regex string representing the pattern to enforce
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
-    // 2. a callback function to be invoked to validate the password  
-    validatorCallback: (password) => { return validatePassword(password) }, 
+    // 2. a callback function to be invoked to validate the password
+    validatorCallback: (password) => { return validatePassword(password) },
+    validationError: 'Password must contain at least 1 digit.' // optional error message to be sent instead of the default "Password does not meet the Password Policy requirements." message.
     doNotAllowUsername: true, // optional setting to disallow username in passwords
-    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset. 
+    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset.
     maxPasswordHistory: 5, // optional setting to prevent reuse of previous n passwords. Maximum value that can be specified is 20. Not specifying it or specifying 0 will not enforce history.
     //optional setting to set a validity duration for password reset links (in seconds)
     resetTokenValidityDuration: 24*60*60, // expire after 24 hours
@@ -332,6 +313,7 @@ var server = ParseServer({
 ```
 
 You can also use other email adapters contributed by the community such as:
+- [parse-smtp-template (Multi Language and Multi Template)](https://www.npmjs.com/package/parse-smtp-template)
 - [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
 - [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
@@ -341,6 +323,27 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
+
+### Custom Pages
+
+It’s possible to change the default pages of the app and redirect the user to another path or domain.
+
+```js
+var server = ParseServer({
+  ...otherOptions,
+  
+  customPages {
+    passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
+    verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
+    parseFrameURL: "http://yourapp.com/parseFrameURL",
+    linkSendSuccess: "http://yourapp.com/linkSendSuccess",
+    linkSendFail: "http://yourapp.com/linkSendFail",
+    invalidLink: "http://yourapp.com/invalidLink",
+    invalidVerificationLink: "http://yourapp.com/invalidVerificationLink",
+    choosePassword: "http://yourapp.com/choosePassword"
+  }
+})
+```
 
 ### Using environment variables to configure Parse Server
 
@@ -361,7 +364,7 @@ The default port is 1337, to use a different port set the PORT environment varia
 $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
 
-For the full list of configurable environment variables, run `parse-server --help`.
+For the full list of configurable environment variables, run `parse-server --help` or take a look at [Parse Server Configuration](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
 
 ### Available Adapters
 
@@ -381,9 +384,283 @@ Parse Server allows developers to choose from several options when hosting files
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
+### Logging
+
+Parse Server will, by default, log:
+* to the console
+* daily rotating files as new line delimited JSON
+
+Logs are also viewable in Parse Dashboard.
+
+**Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+**Want logs to be in placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
+
+**Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+
+# Live Queries
+
+Live queries are meant to be used in real-time reactive applications, where just using the traditional query paradigm could cause several problems, like increased response time and high network and server usage. Live queries should be used in cases where you need to continuously update a page with fresh data coming from the database, which often happens in (but is not limited to) online games, messaging clients and shared to-do lists.
+
+Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/guide/#live-queries), [Live Query Server Setup Guide](https://docs.parseplatform.org/parse-server/guide/#scalability) and [Live Query Protocol Specification](https://github.com/parse-community/parse-server/wiki/Parse-LiveQuery-Protocol-Specification). You can setup a standalone server or multiple instances for scalability (recommended).
+
+# GraphQL (beta)
+
+[GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
+
+⚠️ The Parse GraphQL ```beta``` implementation is fully functional but discussions are taking place on how to improve it. So new versions of Parse Server can bring breaking changes to the current API.
+
+## Running
+
+### Using the CLI
+
+The easiest way to run the Parse GraphQL API is through the CLI:
+
+```
+$ npm install -g parse-server mongodb-runner
+$ mongodb-runner start
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Docker
+
+You can also run the Parse GraphQL API inside a Docker container:
+
+```
+$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
+$ docker build --tag parse-server .
+$ docker run --name my-mongo -d mongo
+$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --mountGraphQL --mountPlayground
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** use --mountPlayground option in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+### Using Express.js
+
+You can also mount the GraphQL API in an Express.js application together with the REST API or solo:
+
+```
+const express = require('express');
+const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
+
+const app = express();
+
+const parseServer = new ParseServer({
+  databaseURI: 'mongodb://localhost:27017/test',
+  appId: 'APPLICATION_ID',
+  masterKey: 'MASTER_KEY',
+  serverURL: 'http://localhost:1337/parse'
+});
+
+const parseGraphQLServer = new ParseGraphQLServer(
+  parseServer,
+  {
+    graphQLPath: '/graphql',
+    playgroundPath: '/playground'
+  }
+);
+
+app.use('/parse', parseServer.app); // (Optional) Mounts the REST API
+parseGraphQLServer.applyGraphQL(app); // Mounts the GraphQL API
+parseGraphQLServer.applyPlayground(app); // (Optional) Mounts the GraphQL Playground - do NOT use in Production
+
+app.listen(1337, function() {
+  console.log('REST API running on http://localhost:1337/parse');
+  console.log('GraphQL API running on http://localhost:1337/graphql');
+  console.log('GraphQL Playground running on http://localhost:1337/playground');
+});
+```
+
+After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+
+***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
+
+## Checking the API health
+
+Run the following:
+
+```graphql
+query Health {
+  health
+}
+```
+
+You should receive the following response:
+
+```json
+{
+  "data": {
+    "health": true
+  }
+}
+```
+
+## Creating your first object
+
+Since your application does not have a schema yet, you can use the generic `create` mutation to create your first object. Run the following:
+
+```graphql
+mutation CreateObject {
+  objects {
+    create(className: "GameScore" fields: { score: 1337 playerName: "Sean Plott" cheatMode: false }) {
+      objectId
+      createdAt
+    }
+  }
+}
+```
+
+You should receive a response similar to this:
+
+```json
+{
+  "data": {
+    "objects": {
+      "create": {
+        "objectId": "7jfBmbGgyF",
+        "createdAt": "2019-06-20T23:50:50.825Z"
+      }
+    }
+  }
+}
+```
+
+## Using automatically generated operations
+
+Parse Server learned from the first object that you created and now you have the `GameScore` class in your schema. You can now start using the automatically generated operations!
+
+Run the following to create a second object:
+
+```graphql
+mutation CreateGameScore {
+  objects {
+    createGameScore(fields: { score: 2558 playerName: "Luke Skywalker" cheatMode: false }) {
+      objectId
+      createdAt
+    }
+  }
+}
+```
+
+You should receive a response similar to this:
+
+```json
+{
+  "data": {
+    "objects": {
+      "createGameScore": {
+        "objectId": "gySYolb2CL",
+        "createdAt": "2019-06-20T23:56:37.114Z"
+      }
+    }
+  }
+}
+```
+
+You can also run a query to this new class:
+
+```graphql
+query FindGameScore {
+  objects {
+    findGameScore {
+      results {
+        playerName
+        score
+      }
+    }
+  }
+}
+```
+
+You should receive a response similar to this:
+
+```json
+{
+  "data": {
+    "objects": {
+      "findGameScore": {
+        "results": [
+          {
+            "playerName": "Sean Plott",
+            "score": 1337
+          },
+          {
+            "playerName": "Luke Skywalker",
+            "score": 2558
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+## Customizing your GraphQL Schema
+
+Parse GraphQL Server allows you to create a custom GraphQL schema with own queries and mutations to be merged with the auto-generated ones. You can resolve these operations using your regular cloud code functions.
+
+To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
+
+```bash
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground --graphQLSchema ./schema.graphql --cloud ./main.js
+```
+
+### Creating your first custom query
+
+Use the code below for your `schema.graphql` and `main.js` files. Then restart your Parse Server.
+
+```graphql
+# schema.graphql
+extend type Query {
+  hello: String! @resolve
+}
+```
+
+```js
+// main.js
+Parse.Cloud.define('hello', async () => {
+  return 'Hello world!';
+});
+```
+
+You can now run your custom query using GraphQL Playground:
+
+```graphql
+query {
+  hello
+}
+```
+
+You should receive the response below:
+
+```json
+{
+  "data": {
+    "hello": "Hello world!"
+  }
+}
+```
+
+## Learning more
+
+The [Parse GraphQL Guide](http://docs.parseplatform.org/graphql/guide/) is a very good source for learning how to use the Parse GraphQL API.
+
+You also have a very powerful tool inside your GraphQL Playground. Please look at the right side of your GraphQL Playground. You will see the `DOCS` and `SCHEMA` menus. They are automatically generated by analyzing your application schema. Please refer to them and learn more about everything that you can do with your Parse GraphQL API.
+
+Additionally, the [GraphQL Learn Section](https://graphql.org/learn/) is a very good source to learn more about the power of the GraphQL language.
+
 # Upgrading to 3.0.0
 
-Starting 3.0.0, parse-server uses the JS SDK version 2.0. 
+Starting 3.0.0, parse-server uses the JS SDK version 2.0.
 In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
 All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
 
@@ -391,7 +668,7 @@ We have written up a [migration guide](3.0.0.md), hoping this will help you tran
 
 # Support
 
-For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
+Please take a look at our [support document](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
 
 If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
 
@@ -419,56 +696,21 @@ You can also use your own forks, and work in progress branches by specifying the
 npm install github:myUsername/parse-server#my-awesome-feature
 ```
 
-And don't forget, if you plan to deploy it remotely, you should run `npm install` with the `--save` option.
+And don't forget, if you plan to deploy it remotely, you should run `npm install` with the `--save` option.
 
 # Contributing
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
 
------
+# Contributors
 
-As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
+This project exists thanks to all the people who contribute... we'd love to see your face on this list!
 
-
-# Backers
-
-Support us with a monthly donation and help us continue our activities. [[Become a backer](https://opencollective.com/parse-server#backer)]
-
-<a href="https://opencollective.com/parse-server/backer/0/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/0/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/1/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/1/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/2/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/2/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/3/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/3/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/4/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/4/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/5/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/5/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/6/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/6/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/7/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/7/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/8/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/8/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/9/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/9/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/10/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/10/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/11/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/11/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/12/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/12/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/13/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/13/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/14/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/14/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/15/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/15/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/16/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/16/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/17/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/17/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/18/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/18/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/19/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/19/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/20/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/20/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/21/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/21/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/22/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/22/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/23/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/23/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/24/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/24/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/25/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/25/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/26/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/26/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/27/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/27/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/28/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/28/avatar.svg"></a>
-<a href="https://opencollective.com/parse-server/backer/29/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/29/avatar.svg"></a>
-
+<a href="../../graphs/contributors"><img src="https://opencollective.com/parse-server/contributors.svg?width=890&button=false" /></a>
 
 # Sponsors
 
-Become a sponsor and get your logo on our README on Github with a link to your site. [[Become a sponsor](https://opencollective.com/parse-server#sponsor)]
+Support this project by becoming a sponsor. Your logo will show up here with a link to your website. [Become a sponsor!](https://opencollective.com/parse-server#sponsor)
 
 <a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/1/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/1/avatar.svg"></a>
@@ -501,3 +743,12 @@ Become a sponsor and get your logo on our README on Github with a link to your s
 <a href="https://opencollective.com/parse-server/sponsor/28/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/28/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/29/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/29/avatar.svg"></a>
 
+# Backers
+
+Support us with a monthly donation and help us continue our activities. [Become a backer!](https://opencollective.com/parse-server#backer)
+
+<a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
+
+-----
+
+As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.

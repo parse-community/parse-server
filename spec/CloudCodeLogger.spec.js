@@ -101,7 +101,7 @@ describe('Cloud Code Logger', () => {
       expect(cloudTriggerMessage[0]).toBe('info');
       expect(cloudTriggerMessage[2].triggerType).toEqual('beforeSave');
       expect(cloudTriggerMessage[1]).toMatch(
-        /beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {}/
+        /beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {"object":{}}/
       );
       expect(cloudTriggerMessage[2].user).toBe(user.id);
       expect(errorMessage[0]).toBe('error');
@@ -203,7 +203,9 @@ describe('Cloud Code Logger', () => {
       .catch(() => {})
       .then(() => {
         const logs = spy.calls.all().reverse();
-        expect(logs[0].args[1]).toBe('it failed!');
+        expect(logs[0].args[1]).toBe('Parse error: ');
+        expect(logs[0].args[2].message).toBe('it failed!');
+
         const log = logs[1].args;
         expect(log[0]).toEqual('error');
         expect(log[1]).toMatch(
@@ -268,6 +270,7 @@ describe('Cloud Code Logger', () => {
     expect(spy).toHaveBeenCalled();
     expect(spy.calls.count()).toBe(1);
     const { args } = spy.calls.mostRecent();
-    expect(args[0]).toBe('Object not found.');
+    expect(args[0]).toBe('Parse error: ');
+    expect(args[1].message).toBe('Object not found.');
   });
 });

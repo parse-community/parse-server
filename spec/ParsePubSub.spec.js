@@ -28,6 +28,7 @@ describe('ParsePubSub', function() {
   it('can create redis publisher', function() {
     ParsePubSub.createPublisher({
       redisURL: 'redisURL',
+      redisOptions: { socket_keepalive: true },
     });
 
     const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub')
@@ -36,6 +37,7 @@ describe('ParsePubSub', function() {
       .EventEmitterPubSub;
     expect(RedisPubSub.createPublisher).toHaveBeenCalledWith({
       redisURL: 'redisURL',
+      redisOptions: { socket_keepalive: true },
     });
     expect(EventEmitterPubSub.createPublisher).not.toHaveBeenCalled();
   });
@@ -54,6 +56,7 @@ describe('ParsePubSub', function() {
   it('can create redis subscriber', function() {
     ParsePubSub.createSubscriber({
       redisURL: 'redisURL',
+      redisOptions: { socket_keepalive: true },
     });
 
     const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub')
@@ -62,6 +65,7 @@ describe('ParsePubSub', function() {
       .EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).toHaveBeenCalledWith({
       redisURL: 'redisURL',
+      redisOptions: { socket_keepalive: true },
     });
     expect(EventEmitterPubSub.createSubscriber).not.toHaveBeenCalled();
   });

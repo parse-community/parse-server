@@ -148,7 +148,7 @@ export function pushStatusHandler(config, existingObjectId) {
     const now = new Date();
     let pushTime = now.toISOString();
     let status = 'pending';
-    if (body.hasOwnProperty('push_time')) {
+    if (Object.prototype.hasOwnProperty.call(body, 'push_time')) {
       if (config.hasPushScheduledSupport) {
         pushTime = body.push_time;
         status = 'scheduled';

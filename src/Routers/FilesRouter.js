@@ -19,7 +19,6 @@ export class FilesRouter {
 
     router.post(
       '/files/:filename',
-      Middlewares.allowCrossDomain,
       BodyParser.raw({
         type: () => {
           return true;
@@ -32,7 +31,6 @@ export class FilesRouter {
 
     router.delete(
       '/files/:filename',
-      Middlewares.allowCrossDomain,
       Middlewares.handleParseHeaders,
       Middlewares.enforceMasterKeyAccess,
       this.deleteHandler
@@ -111,9 +109,12 @@ export class FilesRouter {
         res.json(result);
       })
       .catch(e => {
-        logger.error(e.message, e);
+        logger.error('Error creating a file: ', e);
         next(
-          new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.')
+          new Parse.Error(
+            Parse.Error.FILE_SAVE_ERROR,
+            `Could not store file: ${filename}.`
+          )
         );
       });
   }

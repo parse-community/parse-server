@@ -3,6 +3,7 @@
 const Config = require('../lib/Config');
 const SchemaController = require('../lib/Controllers/SchemaController');
 const dd = require('deep-diff');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -25,6 +26,11 @@ const hasAllPODobject = () => {
 describe('SchemaController', () => {
   beforeEach(() => {
     config = Config.get('test');
+  });
+
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('can validate one object', done => {
@@ -316,10 +322,12 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -334,10 +342,12 @@ describe('SchemaController', () => {
     const levelPermissions = {
       find: { '*': true },
       get: { '*': true },
+      count: { '*': true },
       create: { '*': true },
       update: { '*': true },
       delete: { '*': true },
       addField: { '*': true },
+      protectedFields: { '*': [] },
     };
     config.database.loadSchema().then(schema => {
       schema
@@ -416,6 +426,44 @@ describe('SchemaController', () => {
     });
   });
 
+  it('can update class level permission', done => {
+    const newLevelPermissions = {
+      find: {},
+      get: { '*': true },
+      count: {},
+      create: { '*': true },
+      update: {},
+      delete: { '*': true },
+      addField: {},
+      protectedFields: { '*': [] },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', { foo: 2 })
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            newLevelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(actualSchema => {
+          expect(
+            dd(actualSchema.classLevelPermissions, newLevelPermissions)
+          ).toEqual(undefined);
+          done();
+        })
+        .catch(error => {
+          console.trace(error);
+          done();
+          fail('Error creating class: ' + JSON.stringify(error));
+        });
+    });
+  });
+
   it('will fail to create a class if that class was already created by an object', done => {
     config.database.loadSchema().then(schema => {
       schema
@@ -438,13 +486,20 @@ describe('SchemaController', () => {
     // If two callers race to create the same schema, the response to the
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema().then(schema => {
-      const p1 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      const p2 = schema.addClassIfNotExists('NewClass', {
-        foo: { type: 'String' },
-      });
-      Promise.race([p1, p2]).then(actualSchema => {
+      const p1 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      const p2 = schema
+        .addClassIfNotExists('NewClass', {
+          foo: { type: 'String' },
+        })
+        .then(validateSchema)
+        .catch(validateError);
+      let schemaValidated = false;
+      function validateSchema(actualSchema) {
         const expectedSchema = {
           className: 'NewClass',
           fields: {
@@ -457,17 +512,26 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
-      });
-      Promise.all([p1, p2]).catch(error => {
+        schemaValidated = true;
+      }
+      let errorValidated = false;
+      function validateError(error) {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
         expect(error.message).toEqual('Class NewClass already exists.');
+        errorValidated = true;
+      }
+      Promise.all([p1, p2]).then(() => {
+        expect(schemaValidated).toEqual(true);
+        expect(errorValidated).toEqual(true);
         done();
       });
     });
@@ -478,7 +542,7 @@ describe('SchemaController', () => {
       schema
         .addClassIfNotExists('_InvalidName', { foo: { type: 'String' } })
         .catch(error => {
-          expect(error.error).toEqual(
+          expect(error.message).toEqual(
             'Invalid classname: _InvalidName, classnames can only have alphanumeric characters and _, and must start with an alpha character '
           );
           done();
@@ -496,7 +560,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_KEY_NAME);
-        expect(error.error).toEqual('invalid field name: 0InvalidName');
+        expect(error.message).toEqual('invalid field name: 0InvalidName');
         done();
       });
   });
@@ -509,7 +573,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(136);
-        expect(error.error).toEqual('field objectId cannot be added');
+        expect(error.message).toEqual('field objectId cannot be added');
         done();
       });
   });
@@ -524,7 +588,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(136);
-        expect(error.error).toEqual('field localeIdentifier cannot be added');
+        expect(error.message).toEqual('field localeIdentifier cannot be added');
         done();
       });
   });
@@ -539,7 +603,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_JSON);
-        expect(error.error).toEqual('invalid JSON');
+        expect(error.message).toEqual('invalid JSON');
         done();
       });
   });
@@ -554,7 +618,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(135);
-        expect(error.error).toEqual('type Pointer needs a class name');
+        expect(error.message).toEqual('type Pointer needs a class name');
         done();
       });
   });
@@ -569,7 +633,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_JSON);
-        expect(error.error).toEqual('invalid JSON');
+        expect(error.message).toEqual('invalid JSON');
         done();
       });
   });
@@ -584,7 +648,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(135);
-        expect(error.error).toEqual('type Relation needs a class name');
+        expect(error.message).toEqual('type Relation needs a class name');
         done();
       });
   });
@@ -599,7 +663,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_JSON);
-        expect(error.error).toEqual('invalid JSON');
+        expect(error.message).toEqual('invalid JSON');
         done();
       });
   });
@@ -614,7 +678,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-        expect(error.error).toEqual(
+        expect(error.message).toEqual(
           'Invalid classname: not a valid class name, classnames can only have alphanumeric characters and _, and must start with an alpha character '
         );
         done();
@@ -631,7 +695,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-        expect(error.error).toEqual(
+        expect(error.message).toEqual(
           'Invalid classname: not a valid class name, classnames can only have alphanumeric characters and _, and must start with an alpha character '
         );
         done();
@@ -648,9 +712,71 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
-        expect(error.error).toEqual('invalid field type: Unknown');
+        expect(error.message).toEqual('invalid field type: Unknown');
         done();
       });
+  });
+
+  it('refuses to add CLP with incorrect find', done => {
+    const levelPermissions = {
+      find: { '*': false },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': ['email'] },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', {})
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            levelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(done.fail)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+          done();
+        });
+    });
+  });
+
+  it('refuses to add CLP when incorrectly sending a string to protectedFields object value instead of an array', done => {
+    const levelPermissions = {
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+      protectedFields: { '*': 'email' },
+    };
+    config.database.loadSchema().then(schema => {
+      schema
+        .validateObject('NewClass', {})
+        .then(() => schema.reloadData())
+        .then(() =>
+          schema.updateClass(
+            'NewClass',
+            {},
+            levelPermissions,
+            {},
+            config.database
+          )
+        )
+        .then(done.fail)
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+          done();
+        });
+    });
   });
 
   it('will create classes', done => {
@@ -702,10 +828,12 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -747,10 +875,12 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -778,10 +908,12 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -811,10 +943,12 @@ describe('SchemaController', () => {
           classLevelPermissions: {
             find: { '*': true },
             get: { '*': true },
+            count: { '*': true },
             create: { '*': true },
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -833,7 +967,7 @@ describe('SchemaController', () => {
       )
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
-        expect(error.error).toEqual(
+        expect(error.message).toEqual(
           'currently, only one GeoPoint field may exist in an object. Adding geo2 when geo1 already exists.'
         );
         done();
@@ -846,6 +980,7 @@ describe('SchemaController', () => {
       .then(schema => {
         return schema
           .addClassIfNotExists('NewClass', {})
+          .then(() => schema.reloadData({ clearCache: true }))
           .then(() => {
             schema
               .hasClass('NewClass')
@@ -998,10 +1133,12 @@ describe('SchemaController', () => {
             classLevelPermissions: {
               find: { '*': true },
               get: { '*': true },
+              count: { '*': true },
               create: { '*': true },
               update: { '*': true },
               delete: { '*': true },
               addField: { '*': true },
+              protectedFields: { '*': [] },
             },
           };
           expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -1066,7 +1203,6 @@ describe('SchemaController', () => {
           .then(obj2reloaded => {
             expect(obj2reloaded.get('aString')).toEqual(undefined);
             done();
-            Parse.Object.enableSingleInstance();
           });
       })
       .catch(error => {
@@ -1100,7 +1236,6 @@ describe('SchemaController', () => {
       .then(obj1 => {
         expect(obj1.get('aPointer')).toEqual('Now a string');
         done();
-        Parse.Object.enableSingleInstance();
       });
   });
 
@@ -1247,19 +1382,29 @@ describe('SchemaController', () => {
 
   it('properly handles volatile _Schemas', done => {
     function validateSchemaStructure(schema) {
-      expect(schema.hasOwnProperty('className')).toBe(true);
-      expect(schema.hasOwnProperty('fields')).toBe(true);
-      expect(schema.hasOwnProperty('classLevelPermissions')).toBe(true);
+      expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(
+        true
+      );
+      expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(true);
+      expect(
+        Object.prototype.hasOwnProperty.call(schema, 'classLevelPermissions')
+      ).toBe(true);
     }
     function validateSchemaDataStructure(schemaData) {
       Object.keys(schemaData).forEach(className => {
         const schema = schemaData[className];
         // Hooks has className...
         if (className != '_Hooks') {
-          expect(schema.hasOwnProperty('className')).toBe(false);
+          expect(
+            Object.prototype.hasOwnProperty.call(schema, 'className')
+          ).toBe(false);
         }
-        expect(schema.hasOwnProperty('fields')).toBe(false);
-        expect(schema.hasOwnProperty('classLevelPermissions')).toBe(false);
+        expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(
+          false
+        );
+        expect(
+          Object.prototype.hasOwnProperty.call(schema, 'classLevelPermissions')
+        ).toBe(false);
       });
     }
     let schema;
@@ -1280,6 +1425,47 @@ describe('SchemaController', () => {
       })
       .then(done)
       .catch(done.fail);
+  });
+
+  it('setAllClasses return classes if cache fails', async () => {
+    const schema = await config.database.loadSchema();
+
+    spyOn(schema._cache, 'setAllClasses').and.callFake(() =>
+      Promise.reject('Oops!')
+    );
+    const errorSpy = spyOn(console, 'error').and.callFake(() => {});
+    const allSchema = await schema.setAllClasses();
+
+    expect(allSchema).toBeDefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Error saving schema to cache:',
+      'Oops!'
+    );
+  });
+
+  it('should not throw on null field types', async () => {
+    const schema = await config.database.loadSchema();
+    const result = await schema.enforceFieldExists(
+      'NewClass',
+      'fieldName',
+      null
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('ensureFields should throw when schema is not set', async () => {
+    const schema = await config.database.loadSchema();
+    try {
+      schema.ensureFields([
+        {
+          className: 'NewClass',
+          fieldName: 'fieldName',
+          type: 'String',
+        },
+      ]);
+    } catch (e) {
+      expect(e.message).toBe('Could not add field fieldName');
+    }
   });
 });
 

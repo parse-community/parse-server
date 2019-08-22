@@ -181,31 +181,26 @@ describe('rest query', () => {
       );
   });
 
-  it('query existent class when disabled client class creation', done => {
+  it('query existent class when disabled client class creation', async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    config.database
-      .loadSchema()
-      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-      .then(actualSchema => {
-        expect(actualSchema.className).toEqual('ClientClassCreation');
-        return rest.find(
-          customConfig,
-          auth.nobody(customConfig),
-          'ClientClassCreation',
-          {}
-        );
-      })
-      .then(
-        result => {
-          expect(result.results.length).toEqual(0);
-          done();
-        },
-        () => {
-          fail('Should not throw error');
-        }
-      );
+    const schema = await config.database.loadSchema();
+    const actualSchema = await schema.addClassIfNotExists(
+      'ClientClassCreation',
+      {}
+    );
+    expect(actualSchema.className).toEqual('ClientClassCreation');
+
+    await schema.reloadData({ clearCache: true });
+    // Should not throw
+    const result = await rest.find(
+      customConfig,
+      auth.nobody(customConfig),
+      'ClientClassCreation',
+      {}
+    );
+    expect(result.results.length).toEqual(0);
   });
 
   it('query with wrongly encoded parameter', done => {
@@ -362,5 +357,93 @@ describe('RestQuery.each', () => {
     expect(spy.calls.count()).toBe(0);
     expect(classSpy.calls.count()).toBe(4);
     expect(results.length).toBe(7);
+  });
+
+  it('should work with query on relations', async () => {
+    const objectA = new Parse.Object('Letter', { value: 'A' });
+    const objectB = new Parse.Object('Letter', { value: 'B' });
+
+    const object1 = new Parse.Object('Number', { value: '1' });
+    const object2 = new Parse.Object('Number', { value: '2' });
+    const object3 = new Parse.Object('Number', { value: '3' });
+    const object4 = new Parse.Object('Number', { value: '4' });
+    await Parse.Object.saveAll([object1, object2, object3, object4]);
+
+    objectA.relation('numbers').add(object1);
+    objectB.relation('numbers').add(object2);
+    await Parse.Object.saveAll([objectA, objectB]);
+
+    const config = Config.get('test');
+
+    /**
+     * Two queries needed since objectId are sorted and we can't know which one
+     * going to be the first and then skip by the $gt added by each
+     */
+    const queryOne = new RestQuery(
+      config,
+      auth.master(config),
+      'Letter',
+      {
+        numbers: {
+          __type: 'Pointer',
+          className: 'Number',
+          objectId: object1.id,
+        },
+      },
+      { limit: 1 }
+    );
+    const queryTwo = new RestQuery(
+      config,
+      auth.master(config),
+      'Letter',
+      {
+        numbers: {
+          __type: 'Pointer',
+          className: 'Number',
+          objectId: object2.id,
+        },
+      },
+      { limit: 1 }
+    );
+
+    const classSpy = spyOn(RestQuery.prototype, 'execute').and.callThrough();
+    const resultsOne = [];
+    const resultsTwo = [];
+    await queryOne.each(result => {
+      resultsOne.push(result);
+    });
+    await queryTwo.each(result => {
+      resultsTwo.push(result);
+    });
+    expect(classSpy.calls.count()).toBe(4);
+    expect(resultsOne.length).toBe(1);
+    expect(resultsTwo.length).toBe(1);
+  });
+
+  it('test afterSave response object is return', done => {
+    Parse.Cloud.beforeSave('TestObject2', function(req) {
+      req.object.set('tobeaddbefore', true);
+      req.object.set('tobeaddbeforeandremoveafter', true);
+    });
+
+    Parse.Cloud.afterSave('TestObject2', function(req) {
+      const jsonObject = req.object.toJSON();
+      delete jsonObject.todelete;
+      delete jsonObject.tobeaddbeforeandremoveafter;
+      jsonObject.toadd = true;
+
+      return jsonObject;
+    });
+
+    rest
+      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
+      .then(response => {
+        expect(response.response.toadd).toBeTruthy();
+        expect(response.response.tokeep).toBeTruthy();
+        expect(response.response.tobeaddbefore).toBeTruthy();
+        expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
+        expect(response.response.todelete).toBeUndefined();
+        done();
+      });
   });
 });

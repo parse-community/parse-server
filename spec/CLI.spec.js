@@ -3,6 +3,8 @@ const commander = require('../lib/cli/utils/commander').default;
 const definitions = require('../lib/cli/definitions/parse-server').default;
 const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server')
   .default;
+const path = require('path');
+const { spawn } = require('child_process');
 
 const testDefinitions = {
   arg0: 'PROGRAM_ARG_0',
@@ -229,5 +231,86 @@ describe('LiveQuery definitions', () => {
         expect(typeof definition.action).toBe('function');
       }
     }
+  });
+});
+
+describe('execution', () => {
+  const binPath = path.resolve(__dirname, '../bin/parse-server');
+  let childProcess;
+
+  afterEach(async () => {
+    if (childProcess) {
+      childProcess.kill();
+    }
+  });
+
+  it('shoud start Parse Server', done => {
+    childProcess = spawn(binPath, [
+      '--appId',
+      'test',
+      '--masterKey',
+      'test',
+      '--databaseURI',
+      'mongodb://localhost/test',
+    ]);
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      if (data.includes('parse-server running on')) {
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
+  });
+
+  it('shoud start Parse Server with GraphQL', done => {
+    childProcess = spawn(binPath, [
+      '--appId',
+      'test',
+      '--masterKey',
+      'test',
+      '--databaseURI',
+      'mongodb://localhost/test',
+      '--mountGraphQL',
+    ]);
+    let output = '';
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      output += data;
+      if (data.includes('GraphQL running on')) {
+        expect(output).toMatch('parse-server running on');
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
+  });
+
+  it('shoud start Parse Server with GraphQL and Playground', done => {
+    childProcess = spawn(binPath, [
+      '--appId',
+      'test',
+      '--masterKey',
+      'test',
+      '--databaseURI',
+      'mongodb://localhost/test',
+      '--mountGraphQL',
+      '--mountPlayground',
+    ]);
+    let output = '';
+    childProcess.stdout.on('data', data => {
+      data = data.toString();
+      output += data;
+      if (data.includes('Playground running on')) {
+        expect(output).toMatch('GraphQL running on');
+        expect(output).toMatch('parse-server running on');
+        done();
+      }
+    });
+    childProcess.stderr.on('data', data => {
+      done.fail(data.toString());
+    });
   });
 });

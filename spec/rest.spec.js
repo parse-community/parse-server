@@ -181,30 +181,25 @@ describe('rest create', () => {
       );
   });
 
-  it('handles create on existent class when disabled client class creation', done => {
+  it('handles create on existent class when disabled client class creation', async () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    config.database
-      .loadSchema()
-      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-      .then(actualSchema => {
-        expect(actualSchema.className).toEqual('ClientClassCreation');
-        return rest.create(
-          customConfig,
-          auth.nobody(customConfig),
-          'ClientClassCreation',
-          {}
-        );
-      })
-      .then(
-        () => {
-          done();
-        },
-        () => {
-          fail('Should not throw error');
-        }
-      );
+    const schema = await config.database.loadSchema();
+    const actualSchema = await schema.addClassIfNotExists(
+      'ClientClassCreation',
+      {}
+    );
+    expect(actualSchema.className).toEqual('ClientClassCreation');
+
+    await schema.reloadData({ clearCache: true });
+    // Should not throw
+    await rest.create(
+      customConfig,
+      auth.nobody(customConfig),
+      'ClientClassCreation',
+      {}
+    );
   });
 
   it('handles user signup', done => {
@@ -447,6 +442,28 @@ describe('rest create', () => {
       const b = response.data;
       expect(b.code).toEqual(105);
       expect(b.error).toEqual('objectId is an invalid field name.');
+      done();
+    });
+  });
+
+  it('cannot set id', done => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      body: JSON.stringify({
+        foo: 'bar',
+        id: 'hello',
+      }),
+    }).then(fail, response => {
+      const b = response.data;
+      expect(b.code).toEqual(105);
+      expect(b.error).toEqual('id is an invalid field name.');
       done();
     });
   });

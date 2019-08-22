@@ -2068,4 +2068,19 @@ describe('Parse.Object testing', () => {
 
     done();
   });
+
+  it('isNew in cloud code', async () => {
+    Parse.Cloud.beforeSave('CloudCodeIsNew', req => {
+      expect(req.object.isNew()).toBeTruthy();
+      expect(req.object.id).toBeUndefined();
+    });
+
+    Parse.Cloud.afterSave('CloudCodeIsNew', req => {
+      expect(req.object.isNew()).toBeFalsy();
+      expect(req.object.id).toBeDefined();
+    });
+
+    const object = new Parse.Object('CloudCodeIsNew');
+    await object.save();
+  });
 });

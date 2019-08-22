@@ -106,6 +106,7 @@ function processProperty(property, iface) {
 
 function doInterface(iface) {
   return iface.body.properties
+    .sort((a, b) => a.key.name.localeCompare(b.key.name))
     .map((prop) => processProperty(prop, iface))
     .filter((e) => e !== undefined);
 }
@@ -135,18 +136,18 @@ function mapperFor(elt, t) {
 }
 
 function parseDefaultValue(elt, value, t) {
-  let litteralValue;
+  let literalValue;
   if (t.isStringTypeAnnotation(elt)) {
     if (value == '""' || value == "''") {
-      litteralValue = t.stringLiteral('');
+      literalValue = t.stringLiteral('');
     } else {
-      litteralValue = t.stringLiteral(value);
+      literalValue = t.stringLiteral(value);
     }
   } else if (t.isNumberTypeAnnotation(elt)) {
-    litteralValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
+    literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
   } else if (t.isArrayTypeAnnotation(elt)) {
     const array = parsers.objectParser(value);
-    litteralValue = t.arrayExpression(array.map((value) => {
+    literalValue = t.arrayExpression(array.map((value) => {
       if (typeof value == 'string') {
         return t.stringLiteral(value);
       } else {
@@ -154,23 +155,31 @@ function parseDefaultValue(elt, value, t) {
       }
     }));
   } else if (t.isAnyTypeAnnotation(elt)) {
-    litteralValue = t.arrayExpression([]);
+    literalValue = t.arrayExpression([]);
   } else if (t.isBooleanTypeAnnotation(elt)) {
-    litteralValue = t.booleanLiteral(parsers.booleanParser(value));
+    literalValue = t.booleanLiteral(parsers.booleanParser(value));
   } else if (t.isGenericTypeAnnotation(elt)) {
     const type = elt.typeAnnotation.id.name;
     if (type == 'NumberOrBoolean') {
-      litteralValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
+      literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
     if (type == 'CustomPagesOptions') {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);
       });
-      litteralValue = t.objectExpression(props);
+      literalValue = t.objectExpression(props);
+    }
+    if (type == 'ProtectedFields') {
+      const prop = t.objectProperty(
+        t.stringLiteral('_User'), t.objectPattern([
+          t.objectProperty(t.stringLiteral('*'), t.arrayExpression([t.stringLiteral('email')]))
+        ])
+      );
+      literalValue = t.objectExpression([prop]);
     }
   }
-  return litteralValue;
+  return literalValue;
 }
 
 function inject(t, list) {

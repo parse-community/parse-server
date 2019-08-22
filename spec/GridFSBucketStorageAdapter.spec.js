@@ -18,7 +18,7 @@ describe('GridFSBucket and GridStore interop', () => {
   beforeEach(async () => {
     const gsAdapter = new GridStoreAdapter(databaseURI);
     const db = await gsAdapter._connect();
-    db.dropDatabase();
+    await db.dropDatabase();
   });
 
   it('a file created in GridStore should be available in GridFS', async () => {
@@ -41,16 +41,12 @@ describe('GridFSBucket and GridStore interop', () => {
     expect(gfsResult.toString('utf8')).toBe(twoMegabytesFile);
   });
 
-  it(
-    'properly deletes a file from GridFS',
-    async () => {
-      const gfsAdapter = new GridFSBucketAdapter(databaseURI);
-      await gfsAdapter.createFile('myFileName', 'a simple file');
-      await gfsAdapter.deleteFile('myFileName');
-      await expectMissingFile(gfsAdapter, 'myFileName');
-    },
-    1000000
-  );
+  it('properly deletes a file from GridFS', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await gfsAdapter.createFile('myFileName', 'a simple file');
+    await gfsAdapter.deleteFile('myFileName');
+    await expectMissingFile(gfsAdapter, 'myFileName');
+  }, 1000000);
 
   it('properly overrides files', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
@@ -63,5 +59,20 @@ describe('GridFSBucket and GridStore interop', () => {
     expect(documents.length).toBe(2);
     await gfsAdapter.deleteFile('myFileName');
     await expectMissingFile(gfsAdapter, 'myFileName');
+  });
+
+  it('handleShutdown, close connection', done => {
+    const databaseURI = 'mongodb://localhost:27017/parse';
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+
+    gfsAdapter._connect().then(db => {
+      expect(db.serverConfig.connections().length > 0).toEqual(true);
+      expect(db.serverConfig.s.connected).toEqual(true);
+      gfsAdapter.handleShutdown().then(() => {
+        expect(db.serverConfig.connections().length > 0).toEqual(false);
+        expect(db.serverConfig.s.connected).toEqual(false);
+        done();
+      });
+    });
   });
 });

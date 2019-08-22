@@ -13,7 +13,7 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
     const config = Config.get(Parse.applicationId);
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
     const db = await gridStoreAdapter._connect();
-    db.dropDatabase();
+    await db.dropDatabase();
     const filesController = new FilesController(
       gridStoreAdapter,
       Parse.applicationId,
@@ -95,5 +95,20 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
         done();
       })
       .catch(fail);
+  });
+
+  it('handleShutdown, close connection', done => {
+    const databaseURI = 'mongodb://localhost:27017/parse';
+    const gridStoreAdapter = new GridStoreAdapter(databaseURI);
+
+    gridStoreAdapter._connect().then(db => {
+      expect(db.serverConfig.connections().length > 0).toEqual(true);
+      expect(db.serverConfig.s.connected).toEqual(true);
+      gridStoreAdapter.handleShutdown().then(() => {
+        expect(db.serverConfig.connections().length > 0).toEqual(false);
+        expect(db.serverConfig.s.connected).toEqual(false);
+        done();
+      });
+    });
   });
 });

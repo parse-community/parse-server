@@ -295,30 +295,28 @@ describe('server', () => {
         appId: 'aTestApp',
         masterKey: 'aTestMasterKey',
         serverURL: 'http://localhost:12666/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
-          promise.then(() => {
-            expect(Parse.applicationId).toEqual('aTestApp');
-            const app = express();
-            app.use('/parse', parseServer.app);
+        serverStartComplete: () => {
+          expect(Parse.applicationId).toEqual('aTestApp');
+          const app = express();
+          app.use('/parse', parseServer.app);
 
-            const server = app.listen(12666);
-            const obj = new Parse.Object('AnObject');
-            let objId;
-            obj
-              .save()
-              .then(obj => {
-                objId = obj.id;
-                const q = new Parse.Query('AnObject');
-                return q.first();
-              })
-              .then(obj => {
-                expect(obj.id).toEqual(objId);
-                server.close(done);
-              })
-              .catch(() => {
-                server.close(done);
-              });
-          });
+          const server = app.listen(12666);
+          const obj = new Parse.Object('AnObject');
+          let objId;
+          obj
+            .save()
+            .then(obj => {
+              objId = obj.id;
+              const q = new Parse.Query('AnObject');
+              return q.first();
+            })
+            .then(obj => {
+              expect(obj.id).toEqual(objId);
+              server.close(done);
+            })
+            .catch(() => {
+              server.close(done);
+            });
         },
       })
     );
@@ -332,7 +330,8 @@ describe('server', () => {
         appId: 'anOtherTestApp',
         masterKey: 'anOtherTestMasterKey',
         serverURL: 'http://localhost:12667/parse',
-        __indexBuildCompletionCallbackForTests: promise => {
+        serverStartComplete: error => {
+          const promise = error ? Promise.reject(error) : Promise.resolve();
           promise
             .then(() => {
               expect(Parse.applicationId).toEqual('anOtherTestApp');
@@ -496,6 +495,16 @@ describe('server', () => {
         done();
       })
       .catch(done.fail);
+  });
+
+  it('should allow direct access', async () => {
+    const RESTController = Parse.CoreManager.getRESTController();
+    const spy = spyOn(Parse.CoreManager, 'setRESTController').and.callThrough();
+    await reconfigureServer({
+      directAccess: true,
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    Parse.CoreManager.setRESTController(RESTController);
   });
 
   it('should load a middleware from string', done => {

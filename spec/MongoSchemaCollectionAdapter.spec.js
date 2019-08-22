@@ -11,6 +11,7 @@ describe('MongoSchemaCollection', () => {
         _client_permissions: {
           get: true,
           find: true,
+          count: true,
           update: true,
           create: true,
           delete: true,
@@ -19,10 +20,12 @@ describe('MongoSchemaCollection', () => {
           class_permissions: {
             get: { '*': true },
             find: { '*': true },
+            count: { '*': true },
             update: { '*': true },
             create: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+            protectedFields: { '*': [] },
           },
           indexes: {
             name1: { deviceToken: 1 },
@@ -68,10 +71,12 @@ describe('MongoSchemaCollection', () => {
       classLevelPermissions: {
         find: { '*': true },
         get: { '*': true },
+        count: { '*': true },
         create: { '*': true },
         update: { '*': true },
         delete: { '*': true },
         addField: { '*': true },
+        protectedFields: { '*': [] },
       },
       indexes: {
         name1: { deviceToken: 1 },

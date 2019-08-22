@@ -52,6 +52,12 @@ function RestWrite(
       'objectId is an invalid field name.'
     );
   }
+  if (!query && data.id) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_KEY_NAME,
+      'id is an invalid field name.'
+    );
+  }
 
   // When the operation is complete, this.response may have several
   // fields.
@@ -69,6 +75,10 @@ function RestWrite(
 
   // The timestamp we'll use for this whole operation
   this.updatedAt = Parse._encode(new Date()).iso;
+
+  // Shared SchemaController to be reused to reduce the number of loadSchema() calls per request
+  // Once set the schemaData should be immutable
+  this.validSchemaController = null;
 }
 
 // A convenient method to perform all the steps of processing the
@@ -93,7 +103,7 @@ RestWrite.prototype.execute = function() {
       return this.validateAuthData();
     })
     .then(() => {
-      return this.runBeforeTrigger();
+      return this.runBeforeSaveTrigger();
     })
     .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
@@ -101,7 +111,8 @@ RestWrite.prototype.execute = function() {
     .then(() => {
       return this.validateSchema();
     })
-    .then(() => {
+    .then(schemaController => {
+      this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
     })
     .then(() => {
@@ -123,7 +134,7 @@ RestWrite.prototype.execute = function() {
       return this.handleFollowup();
     })
     .then(() => {
-      return this.runAfterTrigger();
+      return this.runAfterSaveTrigger();
     })
     .then(() => {
       return this.cleanUserAuthData();
@@ -190,7 +201,7 @@ RestWrite.prototype.validateSchema = function() {
 
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
-RestWrite.prototype.runBeforeTrigger = function() {
+RestWrite.prototype.runBeforeSaveTrigger = function() {
   if (this.response) {
     return;
   }
@@ -220,6 +231,38 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }
 
   return Promise.resolve()
+    .then(() => {
+      // Before calling the trigger, validate the permissions for the save operation
+      let databasePromise = null;
+      if (this.query) {
+        // Validate for updating
+        databasePromise = this.config.database.update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          true
+        );
+      } else {
+        // Validate for creating
+        databasePromise = this.config.database.create(
+          this.className,
+          this.data,
+          this.runOptions,
+          true
+        );
+      }
+      // In the case that there is no permission for the operation, it throws an error
+      return databasePromise.then(result => {
+        if (!result || result.length <= 0) {
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found.'
+          );
+        }
+      });
+    })
     .then(() => {
       return triggers.maybeRunTrigger(
         triggers.Types.beforeSave,
@@ -251,18 +294,96 @@ RestWrite.prototype.runBeforeTrigger = function() {
     });
 };
 
+RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
+  // Avoid doing any setup for triggers if there is no 'beforeLogin' trigger
+  if (
+    !triggers.triggerExists(
+      this.className,
+      triggers.Types.beforeLogin,
+      this.config.applicationId
+    )
+  ) {
+    return;
+  }
+
+  // Cloud code gets a bit of extra data for its objects
+  const extraData = { className: this.className };
+  const user = triggers.inflate(extraData, userData);
+
+  // no need to return a response
+  await triggers.maybeRunTrigger(
+    triggers.Types.beforeLogin,
+    this.auth,
+    user,
+    null,
+    this.config,
+    this.context
+  );
+};
+
 RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
   if (this.data) {
-    // Add default fields
-    this.data.updatedAt = this.updatedAt;
-    if (!this.query) {
-      this.data.createdAt = this.updatedAt;
+    return this.validSchemaController.getAllClasses().then(allClasses => {
+      const schema = allClasses.find(
+        oneClass => oneClass.className === this.className
+      );
+      const setRequiredFieldIfNeeded = (fieldName, setDefault) => {
+        if (
+          this.data[fieldName] === undefined ||
+          this.data[fieldName] === null ||
+          this.data[fieldName] === '' ||
+          (typeof this.data[fieldName] === 'object' &&
+            this.data[fieldName].__op === 'Delete')
+        ) {
+          if (
+            setDefault &&
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].defaultValue !== null &&
+            schema.fields[fieldName].defaultValue !== undefined &&
+            (this.data[fieldName] === undefined ||
+              (typeof this.data[fieldName] === 'object' &&
+                this.data[fieldName].__op === 'Delete'))
+          ) {
+            this.data[fieldName] = schema.fields[fieldName].defaultValue;
+            this.storage.fieldsChangedByTrigger =
+              this.storage.fieldsChangedByTrigger || [];
+            if (this.storage.fieldsChangedByTrigger.indexOf(fieldName) < 0) {
+              this.storage.fieldsChangedByTrigger.push(fieldName);
+            }
+          } else if (
+            schema.fields[fieldName] &&
+            schema.fields[fieldName].required === true
+          ) {
+            throw new Parse.Error(
+              Parse.Error.VALIDATION_ERROR,
+              `${fieldName} is required`
+            );
+          }
+        }
+      };
 
-      // Only assign new objectId if we are creating new object
-      if (!this.data.objectId) {
-        this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
+      // Add default fields
+      this.data.updatedAt = this.updatedAt;
+      if (!this.query) {
+        this.data.createdAt = this.updatedAt;
+
+        // Only assign new objectId if we are creating new object
+        if (!this.data.objectId) {
+          this.data.objectId = cryptoUtils.newObjectId(
+            this.config.objectIdSize
+          );
+        }
+        if (schema) {
+          Object.keys(schema.fields).forEach(fieldName => {
+            setRequiredFieldIfNeeded(fieldName, true);
+          });
+        }
+      } else if (schema) {
+        Object.keys(this.data).forEach(fieldName => {
+          setRequiredFieldIfNeeded(fieldName, false);
+        });
       }
-    }
+    });
   }
   return Promise.resolve();
 };
@@ -377,19 +498,12 @@ RestWrite.prototype.filteredObjectsByACL = function(objects) {
 
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
-  return this.findUsersWithAuthData(authData).then(r => {
+  return this.findUsersWithAuthData(authData).then(async r => {
     results = this.filteredObjectsByACL(r);
-    if (results.length > 1) {
-      // More than 1 user with the passed id's
-      throw new Parse.Error(
-        Parse.Error.ACCOUNT_ALREADY_LINKED,
-        'this auth is already used'
-      );
-    }
 
-    this.storage['authProvider'] = Object.keys(authData).join(',');
+    if (results.length == 1) {
+      this.storage['authProvider'] = Object.keys(authData).join(',');
 
-    if (results.length > 0) {
       const userResult = results[0];
       const mutatedAuthData = {};
       Object.keys(authData).forEach(provider => {
@@ -421,7 +535,12 @@ RestWrite.prototype.handleAuthData = function(authData) {
             response: userResult,
             location: this.location(),
           };
+          // Run beforeLogin hook before storing any updates
+          // to authData on the db; changes to userResult
+          // will be ignored.
+          await this.runBeforeLoginTrigger(deepcopy(userResult));
         }
+
         // If we didn't change the auth data, just keep going
         if (!hasMutatedAuthData) {
           return;
@@ -430,7 +549,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // that can happen when token are refreshed,
         // We should update the token and let the user in
         // We should only check the mutated keys
-        return this.handleAuthDataValidation(mutatedAuthData).then(() => {
+        return this.handleAuthDataValidation(mutatedAuthData).then(async () => {
           // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
           // we need to set it up there.
           // We are supposed to have a response only on LOGIN with authData, so we skip those
@@ -441,6 +560,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
               this.response.response.authData[provider] =
                 mutatedAuthData[provider];
             });
+
             // Run the DB update directly, as 'master'
             // Just update the authData part
             // Then we're good for the user, early exit of sorts
@@ -467,7 +587,15 @@ RestWrite.prototype.handleAuthData = function(authData) {
         }
       }
     }
-    return this.handleAuthDataValidation(authData);
+    return this.handleAuthDataValidation(authData).then(() => {
+      if (results.length > 1) {
+        // More than 1 user with the passed id's
+        throw new Parse.Error(
+          Parse.Error.ACCOUNT_ALREADY_LINKED,
+          'this auth is already used'
+        );
+      }
+    });
   });
 };
 
@@ -549,7 +677,9 @@ RestWrite.prototype._validateUserName = function() {
     .find(
       this.className,
       { username: this.data.username, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -580,7 +710,9 @@ RestWrite.prototype._validateEmail = function() {
     .find(
       this.className,
       { email: this.data.email, objectId: { $ne: this.objectId() } },
-      { limit: 1 }
+      { limit: 1 },
+      {},
+      this.validSchemaController
     )
     .then(results => {
       if (results.length > 0) {
@@ -611,8 +743,17 @@ RestWrite.prototype._validatePasswordPolicy = function() {
 
 RestWrite.prototype._validatePasswordRequirements = function() {
   // check if the password conforms to the defined password policy if configured
-  const policyError =
-    'Password does not meet the Password Policy requirements.';
+  // If we specified a custom error in our configuration use it.
+  // Example: "Passwords must include a Capital Letter, Lowercase Letter, and a number."
+  //
+  // This is especially useful on the generic "password reset" page,
+  // as it allows the programmer to communicate specific requirements instead of:
+  // a. making the user guess whats wrong
+  // b. making a custom password reset page that shows the requirements
+  const policyError = this.config.passwordPolicy.validationError
+    ? this.config.passwordPolicy.validationError
+    : 'Password does not meet the Password Policy requirements.';
+  const containsUsernameError = 'Password cannot contain your username.';
 
   // check whether the password meets the password strength requirements
   if (
@@ -632,7 +773,7 @@ RestWrite.prototype._validatePasswordRequirements = function() {
       // username is not passed during password reset
       if (this.data.password.indexOf(this.data.username) >= 0)
         return Promise.reject(
-          new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError)
+          new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError)
         );
     } else {
       // retrieve the User object using objectId during password reset
@@ -644,7 +785,10 @@ RestWrite.prototype._validatePasswordRequirements = function() {
           }
           if (this.data.password.indexOf(results[0].username) >= 0)
             return Promise.reject(
-              new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError)
+              new Parse.Error(
+                Parse.Error.VALIDATION_ERROR,
+                containsUsernameError
+              )
             );
           return Promise.resolve();
         });
@@ -695,9 +839,7 @@ RestWrite.prototype._validatePasswordHistory = function() {
               return Promise.reject(
                 new Parse.Error(
                   Parse.Error.VALIDATION_ERROR,
-                  `New password should not be the same as last ${
-                    this.config.passwordPolicy.maxPasswordHistory
-                  } passwords.`
+                  `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`
                 )
               );
             throw err;
@@ -711,7 +853,12 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.className !== '_User') {
     return;
   }
-  if (this.query) {
+  // Don't generate session for updating user (this.query is set) unless authData exists
+  if (this.query && !this.data.authData) {
+    return;
+  }
+  // Don't generate new sessionToken if linking via sessionToken
+  if (this.auth.user && this.data.authData) {
     return;
   }
   if (
@@ -777,11 +924,16 @@ RestWrite.prototype.destroyDuplicatedSessions = function() {
   if (!user.objectId) {
     return;
   }
-  this.config.database.destroy('_Session', {
-    user,
-    installationId,
-    sessionToken: { $ne: sessionToken },
-  });
+  this.config.database.destroy(
+    '_Session',
+    {
+      user,
+      installationId,
+      sessionToken: { $ne: sessionToken },
+    },
+    {},
+    this.validSchemaController
+  );
 };
 
 // Handles any followup logic
@@ -1272,7 +1424,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
           //n-1 passwords go into history including last password
           while (
             oldPasswords.length >
-            this.config.passwordPolicy.maxPasswordHistory - 2
+            Math.max(0, this.config.passwordPolicy.maxPasswordHistory - 2)
           ) {
             oldPasswords.shift();
           }
@@ -1284,7 +1436,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return defer.then(() => {
       // Run an update
       return this.config.database
-        .update(this.className, this.query, this.data, this.runOptions)
+        .update(
+          this.className,
+          this.query,
+          this.data,
+          this.runOptions,
+          false,
+          false,
+          this.validSchemaController
+        )
         .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
@@ -1314,7 +1474,13 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database
-      .create(this.className, this.data, this.runOptions)
+      .create(
+        this.className,
+        this.data,
+        this.runOptions,
+        false,
+        this.validSchemaController
+      )
       .catch(error => {
         if (
           this.className !== '_User' ||
@@ -1403,7 +1569,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
 };
 
 // Returns nothing - doesn't wait for the trigger.
-RestWrite.prototype.runAfterTrigger = function() {
+RestWrite.prototype.runAfterSaveTrigger = function() {
   if (!this.response || !this.response.response) {
     return;
   }
@@ -1463,6 +1629,11 @@ RestWrite.prototype.runAfterTrigger = function() {
       this.config,
       this.context
     )
+    .then(result => {
+      if (result && typeof result === 'object') {
+        this.response.response = result;
+      }
+    })
     .catch(function(err) {
       logger.warn('afterSave caught an error', err);
     });
@@ -1540,7 +1711,7 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
 
-    if (!response.hasOwnProperty(fieldName)) {
+    if (!Object.prototype.hasOwnProperty.call(response, fieldName)) {
       response[fieldName] = dataValue;
     }
 

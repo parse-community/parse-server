@@ -13,6 +13,7 @@
       "Item": true,
       "Container": true,
       "equal": true,
+      "expectAsync": true,
       "notEqual": true,
       "it_only_db": true,
       "it_exclude_dbs": true,
@@ -23,7 +24,9 @@
       "range": true,
       "jequal": true,
       "create": true,
-      "arrayContains": true
+      "arrayContains": true,
+      "expectAsync": true,
+      "databaseAdapter": true
     },
     "rules": {
       "no-console": [0],

@@ -151,7 +151,6 @@ describe('Auth', () => {
   });
 
   describe('getRolesForUser', () => {
-
     const rolesNumber = 300;
 
     it('should load all roles without config', async () => {
@@ -165,11 +164,11 @@ describe('Auth', () => {
         sessionToken: user.getSessionToken(),
       });
       const roles = [];
-      for(let i = 0; i < rolesNumber;i++){
+      for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role("roleloadtest" + i, acl);
+        const role = new Parse.Role('roleloadtest' + i, acl);
         role.getUsers().add([user]);
-        roles.push(role.save())
+        roles.push(role.save());
       }
       const savedRoles = await Promise.all(roles);
       expect(savedRoles.length).toBe(rolesNumber);
@@ -189,16 +188,56 @@ describe('Auth', () => {
         config: Config.get('test'),
       });
       const roles = [];
-      for(let i = 0; i < rolesNumber;i++){
+      for (let i = 0; i < rolesNumber; i++) {
         const acl = new Parse.ACL();
-        const role = new Parse.Role("roleloadtest" + i, acl);
+        const role = new Parse.Role('roleloadtest' + i, acl);
         role.getUsers().add([user]);
-        roles.push(role.save())
+        roles.push(role.save());
       }
       const savedRoles = await Promise.all(roles);
       expect(savedRoles.length).toBe(rolesNumber);
       const cloudRoles = await userAuth.getRolesForUser();
       expect(cloudRoles.length).toBe(rolesNumber);
+    });
+
+    it('should load all roles for different users with config', async () => {
+      const rolesNumber = 100;
+      const user = new Parse.User();
+      await user.signUp({
+        username: 'hello',
+        password: 'password',
+      });
+      const user2 = new Parse.User();
+      await user2.signUp({
+        username: 'world',
+        password: '1234',
+      });
+      expect(user.getSessionToken()).not.toBeUndefined();
+      const userAuth = await getAuthForSessionToken({
+        sessionToken: user.getSessionToken(),
+        config: Config.get('test'),
+      });
+      const user2Auth = await getAuthForSessionToken({
+        sessionToken: user2.getSessionToken(),
+        config: Config.get('test'),
+      });
+      const roles = [];
+      for (let i = 0; i < rolesNumber; i += 1) {
+        const acl = new Parse.ACL();
+        const acl2 = new Parse.ACL();
+        const role = new Parse.Role('roleloadtest' + i, acl);
+        const role2 = new Parse.Role('role2loadtest' + i, acl2);
+        role.getUsers().add([user]);
+        role2.getUsers().add([user2]);
+        roles.push(role.save());
+        roles.push(role2.save());
+      }
+      const savedRoles = await Promise.all(roles);
+      expect(savedRoles.length).toBe(rolesNumber * 2);
+      const cloudRoles = await userAuth.getRolesForUser();
+      const cloudRoles2 = await user2Auth.getRolesForUser();
+      expect(cloudRoles.length).toBe(rolesNumber);
+      expect(cloudRoles2.length).toBe(rolesNumber);
     });
   });
 });

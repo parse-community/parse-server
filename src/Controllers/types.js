@@ -5,6 +5,8 @@ export type LoadSchemaOptions = {
 export type SchemaField = {
   type: string,
   targetClass?: ?string,
+  required?: ?boolean,
+  defaultValue?: ?any,
 };
 
 export type SchemaFields = { [string]: SchemaField };
@@ -26,4 +28,5 @@ export type ClassLevelPermissions = {
   addField?: { [string]: boolean },
   readUserFields?: string[],
   writeUserFields?: string[],
+  protectedFields?: { [string]: string[] },
 };

@@ -105,7 +105,7 @@ export function handleParseHeaders(req, res, next) {
   if (fileViaJSON) {
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
-    req.body = new Buffer(base64, 'base64');
+    req.body = Buffer.from(base64, 'base64');
   }
 
   const clientIp = getClientIp(req);
@@ -276,7 +276,7 @@ function httpAuth(req) {
 }
 
 function decodeBase64(str) {
-  return new Buffer(str, 'base64').toString();
+  return Buffer.from(str, 'base64').toString();
 }
 
 export function allowCrossDomain(req, res, next) {
@@ -284,7 +284,7 @@ export function allowCrossDomain(req, res, next) {
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header(
     'Access-Control-Allow-Headers',
-    'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type'
+    'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control'
   );
   res.header(
     'Access-Control-Expose-Headers',
@@ -325,7 +325,7 @@ export function handleParseErrors(err, req, res, next) {
 
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
-    log.error(err.message, err);
+    log.error('Parse error: ', err);
     if (req.config && req.config.enableExpressErrorHandler) {
       next(err);
     }

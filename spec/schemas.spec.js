@@ -4,6 +4,7 @@ const Parse = require('parse/node').Parse;
 const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -30,6 +31,9 @@ const defaultClassLevelPermissions = {
   find: {
     '*': true,
   },
+  count: {
+    '*': true,
+  },
   create: {
     '*': true,
   },
@@ -44,6 +48,9 @@ const defaultClassLevelPermissions = {
   },
   delete: {
     '*': true,
+  },
+  protectedFields: {
+    '*': [],
   },
 };
 
@@ -140,8 +147,9 @@ describe('schemas', () => {
     config = Config.get('test');
   });
 
-  afterEach(() => {
-    config.database.schemaCache.clear();
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('requires the master key to get all schemas', done => {
@@ -196,11 +204,18 @@ describe('schemas', () => {
         results: [userSchema, roleSchema],
       };
       expect(
-        dd(
-          response.data.results.sort((s1, s2) => s1.className > s2.className),
-          expected.results.sort((s1, s2) => s1.className > s2.className)
+        response.data.results
+          .sort((s1, s2) => s1.className.localeCompare(s2.className))
+          .map(s => {
+            const withoutIndexes = Object.assign({}, s);
+            delete withoutIndexes.indexes;
+            return withoutIndexes;
+          })
+      ).toEqual(
+        expected.results.sort((s1, s2) =>
+          s1.className.localeCompare(s2.className)
         )
-      ).toEqual(undefined);
+      );
       done();
     });
   });
@@ -231,13 +246,18 @@ describe('schemas', () => {
             ],
           };
           expect(
-            dd(
-              response.data.results.sort(
-                (s1, s2) => s1.className > s2.className
-              ),
-              expected.results.sort((s1, s2) => s1.className > s2.className)
+            response.data.results
+              .sort((s1, s2) => s1.className.localeCompare(s2.className))
+              .map(s => {
+                const withoutIndexes = Object.assign({}, s);
+                delete withoutIndexes.indexes;
+                return withoutIndexes;
+              })
+          ).toEqual(
+            expected.results.sort((s1, s2) =>
+              s1.className.localeCompare(s2.className)
             )
-          ).toEqual(undefined);
+          );
           done();
         });
       });
@@ -384,6 +404,239 @@ describe('schemas', () => {
       });
       done();
     });
+  });
+
+  it('responds with all fields and options when you create a class with field options', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassWithOptions',
+        fields: {
+          foo1: { type: 'Number' },
+          foo2: { type: 'Number', required: true, defaultValue: 10 },
+          foo3: {
+            type: 'String',
+            required: false,
+            defaultValue: 'some string',
+          },
+          foo4: { type: 'Date', required: true },
+          foo5: { type: 'Number', defaultValue: 5 },
+          ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+          defaultFalse: {
+            type: 'Boolean',
+            required: true,
+            defaultValue: false,
+          },
+          defaultZero: { type: 'Number', defaultValue: 0 },
+          relation: { type: 'Relation', targetClass: 'SomeClass' }
+        },
+      },
+    }).then(async response => {
+      expect(response.data).toEqual({
+        className: 'NewClassWithOptions',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          foo1: { type: 'Number' },
+          foo2: { type: 'Number', required: true, defaultValue: 10 },
+          foo3: {
+            type: 'String',
+            required: false,
+            defaultValue: 'some string',
+          },
+          foo4: { type: 'Date', required: true },
+          foo5: { type: 'Number', defaultValue: 5 },
+          ptr: { type: 'Pointer', targetClass: 'SomeClass', required: false },
+          defaultFalse: {
+            type: 'Boolean',
+            required: true,
+            defaultValue: false,
+          },
+          defaultZero: { type: 'Number', defaultValue: 0 },
+          relation: { type: 'Relation', targetClass: 'SomeClass' }
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+      });
+      const obj = new Parse.Object('NewClassWithOptions');
+      try {
+        await obj.save();
+        fail('should fail');
+      } catch (e) {
+        expect(e.code).toEqual(142);
+      }
+      const date = new Date();
+      obj.set('foo4', date);
+      await obj.save();
+      expect(obj.get('foo1')).toBeUndefined();
+      expect(obj.get('foo2')).toEqual(10);
+      expect(obj.get('foo3')).toEqual('some string');
+      expect(obj.get('foo4')).toEqual(date);
+      expect(obj.get('foo5')).toEqual(5);
+      expect(obj.get('ptr')).toBeUndefined();
+      expect(obj.get('defaultFalse')).toEqual(false);
+      expect(obj.get('defaultZero')).toEqual(0);
+      expect(obj.get('ptr')).toBeUndefined();
+      expect(obj.get('relation')).toBeUndefined();
+      done();
+    });
+  });
+
+  it('try to set a relation field as a required field', async (done) => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithRelationRequired',
+          fields: {
+            foo: { type: 'String' },
+            relation: { type: 'Relation', targetClass: 'SomeClass', required: true }
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
+  it('try to set a relation field with a default value', async (done) => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            foo: { type: 'String' },
+            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
+  it('try to update schemas with a relation field with options', async (done) => {
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassRelationWithOptions',
+        fields: {
+          foo: { type: 'String' }
+        },
+      },
+    });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: { type: 'Relation', targetClass: 'SomeClass', required: true }
+          },
+          _method: "PUT"
+        }
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
+          },
+          _method: "PUT"
+        }
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
+  it('validated the data type of default values when creating a new class', async () => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo: { type: 'String', defaultValue: 10 },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.error).toEqual(
+        'schema mismatch for NewClassWithValidation.foo default value; expected String but got Number'
+      );
+    }
+  });
+
+  it('validated the data type of default values when adding new fields', async () => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo: { type: 'String', defaultValue: 'some value' },
+          },
+        },
+      });
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassWithValidation',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithValidation',
+          fields: {
+            foo2: { type: 'String', defaultValue: 10 },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.error).toEqual(
+        'schema mismatch for NewClassWithValidation.foo2 default value; expected String but got Number'
+      );
+    }
   });
 
   it('responds with all fields when getting incomplete schema', done => {
@@ -720,6 +973,319 @@ describe('schemas', () => {
     });
   });
 
+  it('lets you add fields with options', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }).then(() => {
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newField: {
+              type: 'String',
+              required: true,
+              defaultValue: 'some value',
+            },
+          },
+        },
+      }).then(response => {
+        expect(
+          dd(response.data, {
+            className: 'NewClass',
+            fields: {
+              ACL: { type: 'ACL' },
+              createdAt: { type: 'Date' },
+              objectId: { type: 'String' },
+              updatedAt: { type: 'Date' },
+              newField: {
+                type: 'String',
+                required: true,
+                defaultValue: 'some value',
+              },
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+          })
+        ).toEqual(undefined);
+        request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }).then(response => {
+          expect(response.data).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: { type: 'ACL' },
+              createdAt: { type: 'Date' },
+              updatedAt: { type: 'Date' },
+              objectId: { type: 'String' },
+              newField: {
+                type: 'String',
+                required: true,
+                defaultValue: 'some value',
+              },
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+          });
+          done();
+        });
+      });
+    });
+  });
+
+  it('should validate required fields', done => {
+    request({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }).then(() => {
+      request({
+        method: 'PUT',
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newRequiredField: {
+              type: 'String',
+              required: true,
+            },
+            newRequiredFieldWithDefaultValue: {
+              type: 'String',
+              required: true,
+              defaultValue: 'some value',
+            },
+            newNotRequiredField: {
+              type: 'String',
+              required: false,
+            },
+            newNotRequiredFieldWithDefaultValue: {
+              type: 'String',
+              required: false,
+              defaultValue: 'some value',
+            },
+            newRegularFieldWithDefaultValue: {
+              type: 'String',
+              defaultValue: 'some value',
+            },
+            newRegularField: {
+              type: 'String',
+            },
+          },
+        },
+      }).then(async () => {
+        let obj = new Parse.Object('NewClass');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        obj.set('newRequiredField', 'some value');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual(undefined);
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj.set('newRequiredField', null);
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        obj.unset('newRequiredField');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual('newRequiredField is required');
+        }
+        obj.set('newRequiredField', 'some value2');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value2');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual(undefined);
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value'
+        );
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj.unset('newRequiredFieldWithDefaultValue');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual(
+            'newRequiredFieldWithDefaultValue is required'
+          );
+        }
+        obj.set('newRequiredFieldWithDefaultValue', '');
+        try {
+          await obj.save();
+          fail('Should fail');
+        } catch (e) {
+          expect(e.code).toEqual(142);
+          expect(e.message).toEqual(
+            'newRequiredFieldWithDefaultValue is required'
+          );
+        }
+        obj.set('newRequiredFieldWithDefaultValue', 'some value2');
+        obj.set('newNotRequiredField', '');
+        obj.set('newNotRequiredFieldWithDefaultValue', null);
+        obj.unset('newRegularField');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value2');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value2'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual('');
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(null);
+        expect(obj.get('newRegularField')).toEqual(undefined);
+        obj = new Parse.Object('NewClass');
+        obj.set('newRequiredField', 'some value3');
+        obj.set('newRequiredFieldWithDefaultValue', 'some value3');
+        obj.set('newNotRequiredField', 'some value3');
+        obj.set('newNotRequiredFieldWithDefaultValue', 'some value3');
+        obj.set('newRegularField', 'some value3');
+        await obj.save();
+        expect(obj.get('newRequiredField')).toEqual('some value3');
+        expect(obj.get('newRequiredFieldWithDefaultValue')).toEqual(
+          'some value3'
+        );
+        expect(obj.get('newNotRequiredField')).toEqual('some value3');
+        expect(obj.get('newNotRequiredFieldWithDefaultValue')).toEqual(
+          'some value3'
+        );
+        expect(obj.get('newRegularField')).toEqual('some value3');
+        done();
+      });
+    });
+  });
+
+  it('should validate required fields and set default values after before save trigger', async () => {
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForBeforeSaveTest',
+        fields: {
+          foo1: { type: 'String' },
+          foo2: { type: 'String', required: true },
+          foo3: {
+            type: 'String',
+            required: true,
+            defaultValue: 'some default value 3',
+          },
+          foo4: { type: 'String', defaultValue: 'some default value 4' },
+        },
+      },
+    });
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+      req.object.set('foo3', 'some value 3');
+      req.object.set('foo4', 'some value 4');
+    });
+
+    let obj = new Parse.Object('NewClassForBeforeSaveTest');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some value 3');
+    expect(obj.get('foo4')).toEqual('some value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some default value 3');
+    expect(obj.get('foo4')).toEqual('some default value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', 'some value 2');
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+    await obj.save();
+
+    expect(obj.get('foo1')).toEqual('some value 1');
+    expect(obj.get('foo2')).toEqual('some value 2');
+    expect(obj.get('foo3')).toEqual('some default value 3');
+    expect(obj.get('foo4')).toEqual('some default value 4');
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.set('foo2', undefined);
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo2', 'some value 2');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+
+    try {
+      await obj.save();
+      fail('should fail');
+    } catch (e) {
+      expect(e.message).toEqual('foo2 is required');
+    }
+
+    Parse.Cloud.beforeSave('NewClassForBeforeSaveTest', req => {
+      req.object.set('foo1', 'some value 1');
+      req.object.unset('foo2');
+      req.object.set('foo3', undefined);
+      req.object.unset('foo4');
+    });
+
+    obj = new Parse.Object('NewClassForBeforeSaveTest');
+    obj.set('foo2', 'some value 2');
+    obj.set('foo3', 'some value 3');
+    obj.set('foo4', 'some value 4');
+
+    try {
+      await obj.save();
+      fail('should fail');
+    } catch (e) {
+      expect(e.message).toEqual('foo2 is required');
+    }
+  });
+
   it('lets you add fields to system schema', done => {
     request({
       method: 'POST',
@@ -753,7 +1319,12 @@ describe('schemas', () => {
               newField: { type: 'String' },
               ACL: { type: 'ACL' },
             },
-            classLevelPermissions: defaultClassLevelPermissions,
+            classLevelPermissions: {
+              ...defaultClassLevelPermissions,
+              protectedFields: {
+                '*': ['email'],
+              },
+            },
           })
         ).toBeUndefined();
         request({
@@ -1138,9 +1709,11 @@ describe('schemas', () => {
             'role:admin': true,
           },
           get: {},
+          count: {},
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
         done();
       });
@@ -2014,6 +2587,7 @@ describe('schemas', () => {
       {
         get: { '*': true },
         find: { '*': true },
+        count: { '*': true },
         create: { '*': true },
       },
       true
@@ -2033,14 +2607,33 @@ describe('schemas', () => {
         expect(res.data.classLevelPermissions).toEqual({
           get: { '*': true },
           find: { '*': true },
+          count: { '*': true },
           create: { '*': true },
           update: {},
           delete: {},
           addField: {},
+          protectedFields: {},
         });
       })
       .then(done)
       .catch(done.fail);
+  });
+
+  it('regression test for #5177', async () => {
+    Parse.Object.disableSingleInstance();
+    Parse.Cloud.beforeSave('AClass', () => {});
+    await setPermissionsOnClass(
+      'AClass',
+      {
+        update: { '*': true },
+      },
+      false
+    );
+    const obj = new Parse.Object('AClass');
+    await obj.save({ key: 1 }, { useMasterKey: true });
+    obj.increment('key', 10);
+    const objectAgain = await obj.save();
+    expect(objectAgain.get('key')).toBe(11);
   });
 
   it('regression test for #2246', done => {

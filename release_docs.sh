@@ -22,6 +22,7 @@ then
   echo "<meta http-equiv='refresh' content='0; url=/parse-server/api/${DEST}'>" > "docs/api/index.html"
 fi
 
+npm run definitions
 npm run docs
 
 mkdir -p "docs/api/${DEST}"

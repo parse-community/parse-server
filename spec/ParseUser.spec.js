@@ -440,6 +440,22 @@ describe('Parse.User testing', () => {
       );
   });
 
+  it('should not call beforeLogin with become', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+
+    await Parse.User._logInWith('facebook');
+    const sessionToken = Parse.User.current().getSessionToken();
+    await Parse.User.become(sessionToken);
+    expect(hit).toBe(0);
+    done();
+  });
+
   it('cannot save non-authed user', async done => {
     let user = new Parse.User();
     user.set({
@@ -834,7 +850,6 @@ describe('Parse.User testing', () => {
       query.get(user.id).then(freshUser => {
         equal(freshUser.id, user.id);
         equal(freshUser.get('username'), 'alice');
-        Parse.Object.enableSingleInstance();
         done();
       });
     });
@@ -860,7 +875,6 @@ describe('Parse.User testing', () => {
         equal(freshUser.id, user.id);
         // Should be alice, but it depends on batch support.
         equal(freshUser.get('username'), 'bob');
-        Parse.Object.enableSingleInstance();
         done();
       });
     });
@@ -1275,14 +1289,12 @@ describe('Parse.User testing', () => {
   });
 
   it('returns authData when authed and logged in with provider (regression test for #1498)', async done => {
-    Parse.Object.enableSingleInstance();
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = await Parse.User._logInWith('facebook');
     const userQuery = new Parse.Query(Parse.User);
     userQuery.get(user.id).then(user => {
       expect(user.get('authData')).not.toBeUndefined();
-      Parse.Object.disableSingleInstance();
       done();
     });
   });
@@ -1407,6 +1419,84 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('signup with provider should not call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+
+    await Parse.User._logInWith('facebook');
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('login with provider should call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      expect(req.object.get('authData')).toBeDefined();
+      expect(req.object.get('name')).toBe('tupac shakur');
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.current().save({ name: 'tupac shakur' });
+    await Parse.User.logOut();
+    await Parse.User._logInWith('facebook');
+    expect(hit).toBe(1);
+    done();
+  });
+
+  it('incorrect login with provider should not call beforeLogin trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(() => {
+      hit++;
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.logOut();
+    provider.shouldError = true;
+    try {
+      await Parse.User._logInWith('facebook');
+    } catch (e) {
+      expect(e).toBeDefined();
+    }
+    expect(hit).toBe(0);
+    done();
+  });
+
+  it('login with provider should be blockable by beforeLogin', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+    await Parse.User._logInWith('facebook');
+    await Parse.User.current().save({ isBanned: true });
+    await Parse.User.logOut();
+
+    try {
+      await Parse.User._logInWith('facebook');
+      throw new Error('should not have continued login.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+
+    expect(hit).toBe(1);
+    done();
+  });
+
   it('link with provider', async done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1457,6 +1547,41 @@ describe('Parse.User testing', () => {
       expect(error.code).toEqual(Parse.Error.ACCOUNT_ALREADY_LINKED);
       done();
     }
+  });
+
+  it('link with provider should return sessionToken', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = new Parse.User();
+    user.set('username', 'testLinkWithProvider');
+    user.set('password', 'mypass');
+    await user.signUp();
+    const query = new Parse.Query(Parse.User);
+    const u2 = await query.get(user.id);
+    const model = await u2._linkWith('facebook', {}, { useMasterKey: true });
+    expect(u2.getSessionToken()).toBeDefined();
+    expect(model.getSessionToken()).toBeDefined();
+    expect(u2.getSessionToken()).toBe(model.getSessionToken());
+  });
+
+  it('link with provider via sessionToken should not create new sessionToken (Regression #5799)', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = new Parse.User();
+    user.set('username', 'testLinkWithProviderNoOverride');
+    user.set('password', 'mypass');
+    await user.signUp();
+    const sessionToken = user.getSessionToken();
+
+    await user._linkWith('facebook', {}, { sessionToken });
+    expect(sessionToken).toBe(user.getSessionToken());
+
+    expect(user._isLinked(provider)).toBe(true);
+    await user._unlinkFrom(provider, { sessionToken });
+    expect(user._isLinked(provider)).toBe(false);
+
+    const become = await Parse.User.become(sessionToken);
+    expect(sessionToken).toBe(become.getSessionToken());
   });
 
   it('link with provider failed', async done => {
@@ -3757,4 +3882,46 @@ describe('Parse.User testing', () => {
       }
     );
   });
+});
+
+describe('Security Advisory GHSA-8w3j-g983-8jh5', function() {
+  it_only_db('mongo')(
+    'should validate credentials first and check if account already linked afterwards ()',
+    async done => {
+      // Add User to Database with authData
+      const database = Config.get(Parse.applicationId).database;
+      const collection = await database.adapter._adaptiveCollection('_User');
+      await collection.insertOne({
+        _id: 'ABCDEF1234',
+        name: '<some_name>',
+        email: '<some_email>',
+        username: '<some_username>',
+        _hashed_password: '<some_password>',
+        _auth_data_custom: {
+          id: 'linkedID', // Already linked userid
+        },
+        sessionToken: '<some_session_token>',
+      });
+      const provider = {
+        getAuthType: () => 'custom',
+        restoreAuthentication: () => true,
+      }; // AuthProvider checks if password is 'password'
+      Parse.User._registerAuthenticationProvider(provider);
+
+      // Try to link second user with wrong password
+      try {
+        const user = await Parse.AnonymousUtils.logIn();
+        await user._linkWith(provider.getAuthType(), {
+          authData: { id: 'linkedID', password: 'wrong' },
+        });
+      } catch (error) {
+        // This should throw Parse.Error.SESSION_MISSING and not Parse.Error.ACCOUNT_ALREADY_LINKED
+        expect(error.code).toEqual(Parse.Error.SESSION_MISSING);
+        done();
+        return;
+      }
+      fail();
+      done();
+    }
+  );
 });

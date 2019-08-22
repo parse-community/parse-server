@@ -13,7 +13,11 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 //   count
 //   include
 //   keys
+//   excludeKeys
 //   redirectClassNameForKey
+//   readPreference
+//   includeReadPreference
+//   subqueryReadPreference
 function RestQuery(
   config,
   auth,
@@ -30,7 +34,6 @@ function RestQuery(
   this.clientSDK = clientSDK;
   this.response = null;
   this.findOptions = {};
-  this.isWrite = false;
 
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
@@ -68,7 +71,7 @@ function RestQuery(
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
-  if (restOptions.hasOwnProperty('keys')) {
+  if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
     const keysForInclude = restOptions.keys
       .split(',')
       .filter(key => {
@@ -98,6 +101,13 @@ function RestQuery(
       case 'keys': {
         const keys = restOptions.keys.split(',').concat(AlwaysSelectedKeys);
         this.keys = Array.from(new Set(keys));
+        break;
+      }
+      case 'excludeKeys': {
+        const exclude = restOptions.excludeKeys
+          .split(',')
+          .filter(k => AlwaysSelectedKeys.indexOf(k) < 0);
+        this.excludeKeys = Array.from(new Set(exclude));
         break;
       }
       case 'count':
@@ -183,6 +193,9 @@ RestQuery.prototype.execute = function(executeOptions) {
       return this.handleIncludeAll();
     })
     .then(() => {
+      return this.handleExcludeKeys();
+    })
+    .then(() => {
       return this.runFind(executeOptions);
     })
     .then(() => {
@@ -223,7 +236,9 @@ RestQuery.prototype.each = function(callback) {
       results.forEach(callback);
       finished = results.length < restOptions.limit;
       if (!finished) {
-        restWhere.objectId = { $gt: results[results.length - 1].objectId };
+        restWhere.objectId = Object.assign({}, restWhere.objectId, {
+          $gt: results[results.length - 1].objectId,
+        });
       }
     }
   );
@@ -255,12 +270,6 @@ RestQuery.prototype.buildRestWhere = function() {
     .then(() => {
       return this.replaceEquality();
     });
-};
-
-// Marks the query for a write attempt, so we read the proper ACL (write instead of read)
-RestQuery.prototype.forWrite = function() {
-  this.isWrite = true;
-  return this;
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
@@ -367,6 +376,8 @@ RestQuery.prototype.replaceInQuery = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -426,6 +437,8 @@ RestQuery.prototype.replaceNotInQuery = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -442,10 +455,18 @@ RestQuery.prototype.replaceNotInQuery = function() {
   });
 };
 
+// Used to get the deepest object from json using dot notation.
+const getDeepestObjectFromKey = (json, key, idx, src) => {
+  if (key in json) {
+    return json[key];
+  }
+  src.splice(1); // Exit Early
+};
+
 const transformSelect = (selectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete selectObject['$select'];
   if (Array.isArray(selectObject['$in'])) {
@@ -489,6 +510,8 @@ RestQuery.prototype.replaceSelect = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -508,7 +531,7 @@ RestQuery.prototype.replaceSelect = function() {
 const transformDontSelect = (dontSelectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(key.split('.').reduce((o, i) => o[i], result));
+    values.push(key.split('.').reduce(getDeepestObjectFromKey, result));
   }
   delete dontSelectObject['$dontSelect'];
   if (Array.isArray(dontSelectObject['$nin'])) {
@@ -550,6 +573,8 @@ RestQuery.prototype.replaceDontSelect = function() {
   if (this.restOptions.subqueryReadPreference) {
     additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
     additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  } else if (this.restOptions.readPreference) {
+    additionalOptions.readPreference = this.restOptions.readPreference;
   }
 
   var subquery = new RestQuery(
@@ -570,19 +595,8 @@ RestQuery.prototype.replaceDontSelect = function() {
   });
 };
 
-const cleanResultOfSensitiveUserInfo = function(result, auth, config) {
-  delete result.password;
-
-  if (auth.isMaster || (auth.user && auth.user.id === result.objectId)) {
-    return;
-  }
-
-  for (const field of config.userSensitiveFields) {
-    delete result[field];
-  }
-};
-
 const cleanResultAuthData = function(result) {
+  delete result.password;
   if (result.authData) {
     Object.keys(result.authData).forEach(provider => {
       if (result.authData[provider] === null) {
@@ -645,15 +659,11 @@ RestQuery.prototype.runFind = function(options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  if (this.isWrite) {
-    findOptions.isWrite = true;
-  }
   return this.config.database
-    .find(this.className, this.restWhere, findOptions)
+    .find(this.className, this.restWhere, findOptions, this.auth)
     .then(results => {
       if (this.className === '_User') {
         for (var result of results) {
-          cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
           cleanResultAuthData(result);
         }
       }
@@ -711,6 +721,24 @@ RestQuery.prototype.handleIncludeAll = function() {
       if (this.keys) {
         this.keys = [...new Set([...this.keys, ...keyFields])];
       }
+    });
+};
+
+// Updates property `this.keys` to contain all keys but the ones unselected.
+RestQuery.prototype.handleExcludeKeys = function() {
+  if (!this.excludeKeys) {
+    return;
+  }
+  if (this.keys) {
+    this.keys = this.keys.filter(k => !this.excludeKeys.includes(k));
+    return;
+  }
+  return this.config.database
+    .loadSchema()
+    .then(schemaController => schemaController.getOneSchema(this.className))
+    .then(schema => {
+      const fields = Object.keys(schema.fields);
+      this.keys = fields.filter(k => !this.excludeKeys.includes(k));
     });
 };
 
@@ -829,6 +857,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
     includeRestOptions.readPreference = restOptions.includeReadPreference;
     includeRestOptions.includeReadPreference =
       restOptions.includeReadPreference;
+  } else if (restOptions.readPreference) {
+    includeRestOptions.readPreference = restOptions.readPreference;
   }
 
   const queryPromises = Object.keys(pointersHash).map(className => {

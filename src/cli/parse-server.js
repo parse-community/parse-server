@@ -60,6 +60,11 @@ runner({
       options.liveQuery.redisURL = options['liveQuery.redisURL'];
       delete options['liveQuery.redisURL'];
     }
+    if (options['liveQuery.redisOptions']) {
+      options.liveQuery = options.liveQuery || {};
+      options.liveQuery.redisOptions = options['liveQuery.redisOptions'];
+      delete options['liveQuery.redisOptions'];
+    }
 
     if (options.cluster) {
       const numCPUs =
@@ -79,19 +84,39 @@ runner({
         });
       } else {
         ParseServer.start(options, () => {
-          console.log(
-            '[' + process.pid + '] parse-server running on ' + options.serverURL
-          );
+          printSuccessMessage();
         });
       }
     } else {
       ParseServer.start(options, () => {
         logOptions();
         console.log('');
-        console.log(
-          '[' + process.pid + '] parse-server running on ' + options.serverURL
-        );
+        printSuccessMessage();
       });
+    }
+
+    function printSuccessMessage() {
+      console.log(
+        '[' + process.pid + '] parse-server running on ' + options.serverURL
+      );
+      if (options.mountGraphQL) {
+        console.log(
+          '[' +
+            process.pid +
+            '] GraphQL running on http://localhost:' +
+            options.port +
+            options.graphQLPath
+        );
+      }
+      if (options.mountPlayground) {
+        console.log(
+          '[' +
+            process.pid +
+            '] Playground running on http://localhost:' +
+            options.port +
+            options.playgroundPath
+        );
+      }
     }
   },
 });

@@ -13,7 +13,7 @@ var Parse = require('parse/node');
  * Convert $or queries into an array of where conditions
  */
 function flattenOrQueries(where) {
-  if (!where.hasOwnProperty('$or')) {
+  if (!Object.prototype.hasOwnProperty.call(where, '$or')) {
     return where;
   }
   var accum = [];
@@ -176,6 +176,10 @@ function matchesKeyConstraints(object, key, constraints) {
   if (key === '$relatedTo') {
     // Bail! We can't handle relational queries locally
     return false;
+  }
+  // Decode Date JSON value
+  if (object[key] && object[key].__type == 'Date') {
+    object[key] = new Date(object[key].iso);
   }
   // Equality (or Array contains) cases
   if (typeof constraints !== 'object') {

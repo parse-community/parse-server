@@ -1,41 +1,36 @@
 language: node_js
 dist: trusty
 services:
-  - mongodb
-  - postgresql
-  - redis-server
-  - docker
+- postgresql
+- redis-server
+- docker
 addons:
   postgresql: '9.5'
   apt:
     packages:
-      - postgresql-9.5-postgis-2.3
+    - postgresql-9.5-postgis-2.3
 branches:
   only:
   - master
-  - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
+  - "/^[0-9]+.[0-9]+.[0-9]+(-.*)?$/"
   - 3.x
-  - /^greenkeeper/.*$/
+  - "/^greenkeeper/.*$/"
 cache:
   directories:
-  - node_modules
-  - "$HOME/.mongodb/versions"
-
-# Test stage
+  - "$HOME/.npm"
 stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - NODE_VERSION=8.11.2
   matrix:
-  - MONGODB_VERSION=3.2.13
-  - MONGODB_VERSION=3.4.4
+  - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
+  - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=stable
+  - NODE_VERSION=11.4.0
 matrix:
   allow_failures:
-    - env: NODE_VERSION=stable
+  - env: NODE_VERSION=11.4.0
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
@@ -45,39 +40,37 @@ before_script:
 - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
 - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
-- silent=1 mongodb-runner --start
 - greenkeeper-lockfile-update
 script:
 - npm run lint
-- npm run coverage
+- npm run pretest && npm run coverage
 after_script:
 - greenkeeper-lockfile-upload
 - bash <(curl -s https://codecov.io/bash)
-
 jobs:
   include:
-    # release on npm on tags
-    - stage: release
-      node_js: '8.10'
-      env: 
-      before_script: skip
-      after_script: skip
-      script: 
-        - ./release_docs.sh
-      deploy:
-        - provider: pages
-          skip_cleanup: true
-          github_token: $GITHUB_TOKEN # Set in travis-ci.org dashboard
-          local_dir: docs/
-          on:
-            all_branches: true
-        - provider: npm
-          skip_cleanup: true
-          email:
-            secure: "YweTGc22uqFWpzbfiUa5ptBLRAy6tt6d9TZLwEkPtmnsWzN9dguGyKWmXiw0qL+848FWQ5PWzUgBn5XdigV9tF3rJY6RGs8i38WulNjwSoGuRZa3AChsQHAb1KenANcJybzhnwgEj9gRsrGZPEsyI2whfake/xLDtG91kHjpJANsd4gseOh6fdS4FIYCbyXvSbC7S0yZzIJkgSkMqJO7RJ8r0HYQ7srYIw31dM3ZXSmUYu+GaMDUUu3RLAGYoKaROxhDRnzkjdeLLiwZH8hQ/6CaqwqX54iJ6OS+MOQU3fi5ZXalA7RZvtC4RmrcCkaTf3i0f+5xejYIFgzXdYGMVm8DUc82tDw1s4b6Pb19bgi1xXOQ0IKzRmZuGxnvkRN61dnYdnpnnNuG97HXgVjiOigZXVLZkWazUdnf9zXqmkC+KxPfa4Ldqg0TMjQ9J14n6TXxRti8Tt0xMa1Uzho7VdsxdJy35Bghy398O6X8VdX6parfzEkX7c/JzcA3TIMJ9+S1dy3J4Tb2URB5367W6h7cDeXtGmwLTFu75Q1CNqRJkUGbSrX2NyMqG5tc8oaTM+OWvLxcbKPRy9T6qN7x2JmCHHaapf8/8VR9wCy2PwE5j+KWhmctEHqqOgrtG5gsjC0eCPJsposxZWyM7M6aUpXe3w+olBfKq9apUGStUSU="
-          api_key:
-            secure: "QprkaqQ+WCvZQR4qIEs5iS6peMCbRd8Hgt0s6HfdmhavNXwDFY8Bkdf6zJwWHLiqs4pyClXDZ2f6QiOs7y9IvJZ+wOIbsf4N5V6s06zOxJ0NAOwhe0mgWS3Us0zgXIfmW4BpmGnU4ql/qGL+9vNfyQJ7wxEJxVK7hiYh9Epu49E2jmefDqTX+SNSrDCg4HkRcxerxYGnAJDCP50QaNlyLSciODD6wHaddrSYkdvmISLMnLHug61OkE4OBIOWXfYV+e31kDj+zgczAfVQgekDKtaimCQclHFrmaEPl0KIm6wsDQAw5HWkepA/WZfv4SbCrDaKJDZw+LBI7dR0ezmiOH/zmWWrRW7D4wjkDGiumWjA8etuf8I4GRyC/d1RS+hnlvPr0Bu+WljuVxLoK3nhZOdiK5t4QlVDoGankkRjLylwFQgo8tzu5N0dc26z3ClowTwcKsjStmFr53gjCD7l3qoFjyPot1JlW3LPhG9Nch7rK33/7ONqVai3zxb1xB9ynd8TSzKi4/66LeYEDcGVM5A9Vmkp+egCnOhkOAXdI8O4jid98NANir+U4xmUYZ2PAMNmSeHlpSpwH2pC1/BHpDKA9RZEuEdr3sgmtuXXwwOCp+xvuVwxZZ6+gVEjG4nGTqSNxUIq1fzjGih8ElJtbM1Uhh2dVE9uxW7EC/oCuuk="
-          on:
-            tags: true
-            all_branches: true
-            repo: parse-community/parse-server
+  - stage: release
+    node_js: '10'
+    env:
+    before_script: skip
+    after_script: skip
+    script:
+    - "./release_docs.sh"
+    deploy:
+    - provider: pages
+      skip_cleanup: true
+      github_token:
+        secure: YU2lUqmW036AHBRu7xO/AwEeQ900Q/5O6FL96ZqWEfD7Gadaq4iapkNvhPR0HcZYRHqQV2/2LCHVnhd0dbj0ShkmVIHdQE7O+MF+j0v0GIVc8FPTPe1/d2Hy4apSWNe6FeCrYKVeliAu+ZqvNuFLhVmYvIeJdlJrMGOb6P76UZXRDv2srXhq4uBcCVUJuTajyyd5ttJfcNapymTP+xzEDYc7Hr4LJaubmv/wVD/xwPBbvfYFuBqysUpkPKi/ODlQbB0ybYh2fFnX71WUyFUGbtB5xI9ma951Zp4v3t73c31uUl27dJaHzO62EtVTdcUKAa804EtAtsvpeJWMVWKUgigm9UZcXdEwKa79fl5nLaq34lrSktAYOkexwPqYj+vbS6sn52JrluSxLE+4cEke7tYbnJ9X12SAQXKgcXY3n30+6gKf9RVqYdlNsYpEAqKVIDb6SlEkk86dP+uIg/XXb5RKEwxbDXnb6xdl9JRc+GTbeeY3/vg2h9QTdmFVblPtBhHrNenQYP/BS0n+EfUnAIBKqRmQgyhao3SiY5FMACM8higI2Lvvhpq46pDhXqsexYCz5F008C6YXGDh5gC93rJFec0pjh55DNdQu6uw3YMQ5jtf3QUXoPAoMFud3cTulMlnjC1WZG8QbqER8dzUZ4TcaQUdzribJI/mRriheBg=
+      local_dir: docs/
+      on:
+        all_branches: true
+    - provider: npm
+      api_key:
+        secure: Yrng6jsnMAtzrrln9DwRuY4xpcxl/WYS/1A5fckyQF6DsLmNlvqVtu3MWF+zdJgANF63G3jIee11tNBpYRecHl8FjPGwO0kc1vEgvIRVnveyR0bwIIDH6s/mR9dg4rZikflwG4XExsLyaQd7ko8aTIOIayfxJiv/u0yqwuBuBW2bFrL/41b1cKGK5+Iq2a+PdFENUPenKXISkACGaMnQF4Y/KVF98UwCiGLf957yFWc2sD6TFbjNDbAENSccvg1J3fBb+djbtzKzldl29ntp2mKVGSVASiKCRa6hSfgQulHiidFqFIKgpYJ1uATRr3UFr/NRVt1WbrgLnzY74OCX7y02c/xiYQMMEPRl/P8hHJu+KjQ3PBWsBvmsRN0QMUJv3PEjUPE3AY8sw49NoxiJZzJr7574vUBuM/dk0byYI6K/gwmUrPIhQjljzZqinS8JJJ4FjGjCdzXRhT5Q+PZvt5bF1rMOZXayNJZa+cICtmiJoU3vO2Yf6TXC3wY1veKvmcs24nws5lp4keJePTKAi1Ig7VoSxwAlgs3EGANIh7oBKx9zWnXQYMdmxbYsvLXAWcnnM+PcSCvooLmXWso3BQBeRuUUSS2oLaBpsFMsiniLNbA1cW4fwMkgUGz4oEDRi8wTD89E/1J2oNxzqtWRPawcVKpMpnBbDJHrWJPEHMw=
+      email:
+        secure: lomzDl71N995SzRczm7VE9OZE+PzMo4X8t3zU97agu/FMH5Qcj8BLwE+uVDTnA9Vblyj62ZsFKsNjP2Qp53Vcd+jHM4EJNWNRZYpEMIRO3LngX43r83qoFEHUvPu9s1oaa04a6FojcsJx0wl6B6Ke2AX74MXnJDLb9iZBy1mkpLUMVccVhSfhdoIzhkq3dhUw+6d8C024tNMHcgDW3VnRAsWFtiL7dCMpjLOdI+UxlkeGkQkxXXuRsZ0ZdjoSoM8NSkiYMc8x6EnekyRDoHTujX3OFxuU6+GAjrUmVzNmJWrBIqHVb0DXBQxjEaG3d/cNu5UsQyZYq5sxRRH0BaLs7F4oIQg95etasEtTtUkmsZ3pshVlsweiLU366UdbfuAf5hrJjqLrU12BKZyLjaAwyeKz031r8dA4sJtGIp5uVdXobQQTH6r958A88byJ20uaYSqhqjhZo3hkWXIQP0WQN2Ej/g57HbVNLB/nPKkMILfk/tpp7nBDLT0QrjbZxeo1dwCHqsBEV6z7ZyWyFf4xwpDsir4txL4t8ElzeGdlACjCqAJvIh5w9YzfrwijtoVMvvP6pWvn/iI640d4rsdIDe8egxgqZ1R/TMd/tdHYX+eI+ZfFmCVGj36/uXwdG7KIoIZVjRQ2tvWr9ZuydEPWPSRVGT4ycFeu6wbm3elM3I=
+      skip_cleanup: true
+      on:
+        tags: true
+        all_branches: true
+        repo: parse-community/parse-server

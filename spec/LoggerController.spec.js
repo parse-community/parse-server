@@ -44,7 +44,7 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can process an ascending query without throwing', done => {
+  it('can parse an ascending query without throwing', done => {
     // Make mock request
     const query = {
       from: '2016-01-01Z00:00:00',
@@ -65,11 +65,53 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can process a descending query without throwing', done => {
+  it('can process an ascending query without throwing', done => {
+    const query = {
+      size: 5,
+      order: 'asc',
+      level: 'error',
+    };
+
+    const loggerController = new LoggerController(new WinstonLoggerAdapter());
+
+    expect(() => {
+      loggerController
+        .getLogs(query)
+        .then(function(res) {
+          expect(res.length).not.toBe(0);
+          done();
+        })
+        .catch(err => {
+          jfail(err);
+          fail('should not fail');
+          done();
+        });
+    }).not.toThrow();
+  });
+
+  it('can parse a descending query without throwing', done => {
     // Make mock request
     const query = {
-      from: '2016-01-01',
-      until: '2016-01-30',
+      from: '2016-01-01Z00:00:00',
+      until: '2016-01-01Z00:00:00',
+      size: 5,
+      order: 'desc',
+      level: 'error',
+    };
+
+    const result = LoggerController.parseOptions(query);
+
+    expect(result.from.getTime()).toEqual(1451606400000);
+    expect(result.until.getTime()).toEqual(1451606400000);
+    expect(result.size).toEqual(5);
+    expect(result.order).toEqual('desc');
+    expect(result.level).toEqual('error');
+
+    done();
+  });
+
+  it('can process a descending query without throwing', done => {
+    const query = {
       size: 5,
       order: 'desc',
       level: 'error',
@@ -81,7 +123,7 @@ describe('LoggerController', () => {
       loggerController
         .getLogs(query)
         .then(function(res) {
-          expect(res.length).toBe(0);
+          expect(res.length).not.toBe(0);
           done();
         })
         .catch(err => {

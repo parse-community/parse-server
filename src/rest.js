@@ -102,6 +102,7 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   let inflatedObject;
+  let schemaController;
 
   return Promise.resolve()
     .then(() => {
@@ -112,7 +113,6 @@ function del(config, auth, className, objectId) {
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
-          .forWrite()
           .execute({ op: 'delete' })
           .then(response => {
             if (response && response.results && response.results.length) {
@@ -152,8 +152,10 @@ function del(config, auth, className, objectId) {
         return;
       }
     })
-    .then(() => {
-      var options = {};
+    .then(() => config.database.loadSchema())
+    .then(s => {
+      schemaController = s;
+      const options = {};
       if (!auth.isMaster) {
         options.acl = ['*'];
         if (auth.user) {
@@ -167,20 +169,19 @@ function del(config, auth, className, objectId) {
         {
           objectId: objectId,
         },
-        options
+        options,
+        schemaController
       );
     })
     .then(() => {
       // Notify LiveQuery server if possible
-      config.database.loadSchema().then(schemaController => {
-        const perms = schemaController.getClassLevelPermissions(className);
-        config.liveQueryController.onAfterDelete(
-          className,
-          inflatedObject,
-          null,
-          perms
-        );
-      });
+      const perms = schemaController.getClassLevelPermissions(className);
+      config.liveQueryController.onAfterDelete(
+        className,
+        inflatedObject,
+        null,
+        perms
+      );
       return triggers.maybeRunTrigger(
         triggers.Types.afterDelete,
         auth,
@@ -224,9 +225,9 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
-        return new RestQuery(config, auth, className, restWhere)
-          .forWrite()
-          .execute();
+        return new RestQuery(config, auth, className, restWhere).execute({
+          op: 'update',
+        });
       }
       return Promise.resolve({});
     })
