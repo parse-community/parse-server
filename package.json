@@ -75,7 +75,7 @@
     "deep-diff": "1.0.2",
     "eslint": "6.1.0",
     "eslint-plugin-flowtype": "4.2.0",
-    "flow-bin": "0.105.2",
+    "flow-bin": "0.106.0",
     "form-data": "2.5.0",
     "gaze": "1.1.3",
     "graphql-tag": "^2.10.1",
