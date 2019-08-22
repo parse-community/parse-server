@@ -32,12 +32,13 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'CreateClassSchemaInput',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
+
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'signUp',
   'logIn',
   'logOut',
-  'call',
   'createFile',
+  'callCloudCode',
   'createClass',
   'create',
   'update',

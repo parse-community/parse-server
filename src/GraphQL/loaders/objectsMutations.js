@@ -1,14 +1,11 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
-import { transformMutationInputToParse } from '../transformers/mutation';
 
 const createObject = async (className, fields, config, auth, info) => {
   if (!fields) {
     fields = {};
   }
-
-  transformMutationInputToParse(fields);
 
   return (await rest.create(config, auth, className, fields, info.clientSDK))
     .response;
@@ -25,8 +22,6 @@ const updateObject = async (
   if (!fields) {
     fields = {};
   }
-
-  transformMutationInputToParse(fields);
 
   return (await rest.update(
     config,

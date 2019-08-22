@@ -13,7 +13,20 @@ export class GlobalConfigRouter extends PromiseRouter {
           return { response: { params: {} } };
         }
         const globalConfig = results[0];
-        return { response: { params: globalConfig.params } };
+        if (!req.auth.isMaster && globalConfig.masterKeyOnly !== undefined) {
+          for (const param in globalConfig.params) {
+            if (globalConfig.masterKeyOnly[param]) {
+              delete globalConfig.params[param];
+              delete globalConfig.masterKeyOnly[param];
+            }
+          }
+        }
+        return {
+          response: {
+            params: globalConfig.params,
+            masterKeyOnly: globalConfig.masterKeyOnly,
+          },
+        };
       });
   }
 
@@ -25,9 +38,11 @@ export class GlobalConfigRouter extends PromiseRouter {
       );
     }
     const params = req.body.params;
+    const masterKeyOnly = req.body.masterKeyOnly || {};
     // Transform in dot notation to make sure it works
     const update = Object.keys(params).reduce((acc, key) => {
       acc[`params.${key}`] = params[key];
+      acc[`masterKeyOnly.${key}`] = masterKeyOnly[key] || false;
       return acc;
     }, {});
     return req.config.database

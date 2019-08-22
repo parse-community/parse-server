@@ -431,6 +431,7 @@ describe('schemas', () => {
             defaultValue: false,
           },
           defaultZero: { type: 'Number', defaultValue: 0 },
+          relation: { type: 'Relation', targetClass: 'SomeClass' },
         },
       },
     }).then(async response => {
@@ -457,6 +458,7 @@ describe('schemas', () => {
             defaultValue: false,
           },
           defaultZero: { type: 'Number', defaultValue: 0 },
+          relation: { type: 'Relation', targetClass: 'SomeClass' },
         },
         classLevelPermissions: defaultClassLevelPermissions,
       });
@@ -479,8 +481,122 @@ describe('schemas', () => {
       expect(obj.get('defaultFalse')).toEqual(false);
       expect(obj.get('defaultZero')).toEqual(0);
       expect(obj.get('ptr')).toBeUndefined();
+      expect(obj.get('relation')).toBeUndefined();
       done();
     });
+  });
+
+  it('try to set a relation field as a required field', async done => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassWithRelationRequired',
+          fields: {
+            foo: { type: 'String' },
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              required: true,
+            },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
+  it('try to set a relation field with a default value', async done => {
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            foo: { type: 'String' },
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              defaultValue: { __type: 'Relation', className: '_User' },
+            },
+          },
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
+  });
+
+  it('try to update schemas with a relation field with options', async done => {
+    await request({
+      url: 'http://localhost:8378/1/schemas',
+      method: 'POST',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassRelationWithOptions',
+        fields: {
+          foo: { type: 'String' },
+        },
+      },
+    });
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              required: true,
+            },
+          },
+          _method: 'PUT',
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+
+    try {
+      await request({
+        url: 'http://localhost:8378/1/schemas/NewClassRelationWithOptions',
+        method: 'POST',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          className: 'NewClassRelationWithOptions',
+          fields: {
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              defaultValue: { __type: 'Relation', className: '_User' },
+            },
+          },
+          _method: 'PUT',
+        },
+      });
+      fail('should fail');
+    } catch (e) {
+      expect(e.data.code).toEqual(111);
+    }
+    done();
   });
 
   it('validated the data type of default values when creating a new class', async () => {

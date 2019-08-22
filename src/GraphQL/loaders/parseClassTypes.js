@@ -13,10 +13,13 @@ import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
-import { extractKeysAndInclude } from '../parseGraphQLUtils';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
 import { transformOutputTypeToGraphQL } from '../transformers/inputType';
 import { transformConstraintTypeToGraphQL } from '../transformers/inputType';
+import {
+  extractKeysAndInclude,
+  getParseClassMutationConfig,
+} from '../parseGraphQLUtils';
 
 const getParseClassTypeConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -125,6 +128,11 @@ const load = (
     classSortFields,
   } = getInputFieldsAndConstraints(parseClass, parseClassConfig);
 
+  const {
+    create: isCreateEnabled = true,
+    update: isUpdateEnabled = true,
+  } = getParseClassMutationConfig(parseClassConfig);
+
   const classGraphQLScalarTypeName = `${graphQLClassName}Pointer`;
   const parseScalarValue = value => {
     if (typeof value === 'string') {
@@ -205,31 +213,6 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLScalarType) ||
     defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLRelationOpTypeName = `${graphQLClassName}RelationOpInput`;
-  let classGraphQLRelationOpType = new GraphQLInputObjectType({
-    name: classGraphQLRelationOpTypeName,
-    description: `The ${classGraphQLRelationOpTypeName} type is used in operations that involve relations with the ${graphQLClassName} class.`,
-    fields: () => ({
-      _op: {
-        description: 'This is the operation to be executed.',
-        type: new GraphQLNonNull(defaultGraphQLTypes.RELATION_OP),
-      },
-      ops: {
-        description:
-          'In the case of a Batch operation, this is the list of operations to be executed.',
-        type: new GraphQLList(new GraphQLNonNull(classGraphQLRelationOpType)),
-      },
-      objects: {
-        description:
-          'In the case of a AddRelation or RemoveRelation operation, this is the list of objects to be added/removed.',
-        type: new GraphQLList(new GraphQLNonNull(classGraphQLScalarType)),
-      },
-    }),
-  });
-  classGraphQLRelationOpType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLRelationOpType) ||
-    defaultGraphQLTypes.OBJECT;
-
   const classGraphQLCreateTypeName = `Create${graphQLClassName}FieldsInput`;
   let classGraphQLCreateType = new GraphQLInputObjectType({
     name: classGraphQLCreateTypeName,
@@ -295,6 +278,62 @@ const load = (
   classGraphQLUpdateType = parseGraphQLSchema.addGraphQLType(
     classGraphQLUpdateType
   );
+
+  const classGraphQLPointerTypeName = `${graphQLClassName}PointerInput`;
+  let classGraphQLPointerType = new GraphQLInputObjectType({
+    name: classGraphQLPointerTypeName,
+    description: `Allow to link OR add and link an object of the ${graphQLClassName} class.`,
+    fields: () => {
+      const fields = {
+        link: {
+          description: `Link an existing object from ${graphQLClassName} class.`,
+          type: defaultGraphQLTypes.POINTER_INPUT,
+        },
+      };
+      if (isCreateEnabled) {
+        fields['createAndLink'] = {
+          description: `Create and link an object from ${graphQLClassName} class.`,
+          type: classGraphQLCreateType,
+        };
+      }
+      return fields;
+    },
+  });
+  classGraphQLPointerType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLPointerType) ||
+    defaultGraphQLTypes.OBJECT;
+
+  const classGraphQLRelationTypeName = `${graphQLClassName}RelationInput`;
+  let classGraphQLRelationType = new GraphQLInputObjectType({
+    name: classGraphQLRelationTypeName,
+    description: `Allow to add, remove, createAndAdd objects of the ${graphQLClassName} class into a relation field.`,
+    fields: () => {
+      const fields = {
+        add: {
+          description: `Add an existing object from the ${graphQLClassName} class into the relation.`,
+          type: new GraphQLList(
+            new GraphQLNonNull(defaultGraphQLTypes.RELATION_INPUT)
+          ),
+        },
+        remove: {
+          description: `Remove an existing object from the ${graphQLClassName} class out of the relation.`,
+          type: new GraphQLList(
+            new GraphQLNonNull(defaultGraphQLTypes.RELATION_INPUT)
+          ),
+        },
+      };
+      if (isCreateEnabled) {
+        fields['createAndAdd'] = {
+          description: `Create and add an object of the ${graphQLClassName} class into the relation.`,
+          type: new GraphQLList(new GraphQLNonNull(classGraphQLCreateType)),
+        };
+      }
+      return fields;
+    },
+  });
+  classGraphQLRelationType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLRelationType) ||
+    defaultGraphQLTypes.OBJECT;
 
   const classGraphQLConstraintTypeName = `${graphQLClassName}PointerWhereInput`;
   let classGraphQLConstraintType = new GraphQLInputObjectType({
@@ -566,8 +605,9 @@ const load = (
   );
 
   parseGraphQLSchema.parseClassTypes[className] = {
+    classGraphQLPointerType,
+    classGraphQLRelationType,
     classGraphQLScalarType,
-    classGraphQLRelationOpType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
     classGraphQLConstraintType,
@@ -575,6 +615,11 @@ const load = (
     classGraphQLFindArgs,
     classGraphQLOutputType,
     classGraphQLFindResultType,
+    config: {
+      parseClassConfig,
+      isCreateEnabled,
+      isUpdateEnabled,
+    },
   };
 
   if (className === '_User') {

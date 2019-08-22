@@ -111,6 +111,20 @@ describe('ParseGraphQLServer', () => {
     });
   });
 
+  describe('_transformMaxUploadSizeToBytes', () => {
+    it('should transform to bytes', () => {
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('20mb')).toBe(
+        20971520
+      );
+      expect(parseGraphQLServer._transformMaxUploadSizeToBytes('333Gb')).toBe(
+        357556027392
+      );
+      expect(
+        parseGraphQLServer._transformMaxUploadSizeToBytes('123456KB')
+      ).toBe(126418944);
+    });
+  });
+
   describe('applyGraphQL', () => {
     it('should require an Express.js app instance', () => {
       expect(() => parseGraphQLServer.applyGraphQL()).toThrow(
@@ -1629,7 +1643,6 @@ describe('ParseGraphQLServer', () => {
               obj2.set('someClassField', 'imSomeClassTwo');
               await obj2.save();
 
-              //const obj3Relation = obj3.relation('manyRelations')
               obj3.set('manyRelations', [obj1, obj2]);
               await obj3.save();
 
@@ -1687,6 +1700,119 @@ describe('ParseGraphQLServer', () => {
               expect(someClassSubObject.someClassField).toEqual(
                 'imSomeClassTwo'
               );
+            }
+          );
+
+          it_only_db('mongo')(
+            'should return many child objects in allow cyclic query',
+            async () => {
+              const obj1 = new Parse.Object('Employee');
+              const obj2 = new Parse.Object('Team');
+              const obj3 = new Parse.Object('Company');
+              const obj4 = new Parse.Object('Country');
+
+              obj1.set('name', 'imAnEmployee');
+              await obj1.save();
+
+              obj2.set('name', 'imATeam');
+              obj2.set('employees', [obj1]);
+              await obj2.save();
+
+              obj3.set('name', 'imACompany');
+              obj3.set('teams', [obj2]);
+              obj3.set('employees', [obj1]);
+              await obj3.save();
+
+              obj4.set('name', 'imACountry');
+              obj4.set('companies', [obj3]);
+              await obj4.save();
+
+              obj1.set('country', obj4);
+              await obj1.save();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+              const result = (await apolloClient.query({
+                query: gql`
+                  query DeepComplexGraphQLQuery($objectId: ID!) {
+                    country(objectId: $objectId) {
+                      objectId
+                      name
+                      companies {
+                        ... on Company {
+                          objectId
+                          name
+                          employees {
+                            ... on Employee {
+                              objectId
+                              name
+                            }
+                          }
+                          teams {
+                            ... on Team {
+                              objectId
+                              name
+                              employees {
+                                ... on Employee {
+                                  objectId
+                                  name
+                                  country {
+                                    objectId
+                                    name
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  objectId: obj4.id,
+                },
+              })).data.country;
+
+              const expectedResult = {
+                objectId: obj4.id,
+                name: 'imACountry',
+                __typename: 'Country',
+                companies: [
+                  {
+                    objectId: obj3.id,
+                    name: 'imACompany',
+                    __typename: 'Company',
+                    employees: [
+                      {
+                        objectId: obj1.id,
+                        name: 'imAnEmployee',
+                        __typename: 'Employee',
+                      },
+                    ],
+                    teams: [
+                      {
+                        objectId: obj2.id,
+                        name: 'imATeam',
+                        __typename: 'Team',
+                        employees: [
+                          {
+                            objectId: obj1.id,
+                            name: 'imAnEmployee',
+                            __typename: 'Employee',
+                            country: {
+                              objectId: obj4.id,
+                              name: 'imACountry',
+                              __typename: 'Country',
+                            },
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              };
+              expect(result).toEqual(expectedResult);
             }
           );
 
@@ -3307,6 +3433,41 @@ describe('ParseGraphQLServer', () => {
             expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
+          it('should return only objectId using class specific mutation', async () => {
+            const obj = new Parse.Object('Customer');
+            obj.set('someField1', 'someField1Value1');
+            obj.set('someField2', 'someField2Value1');
+            await obj.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation UpdateCustomer(
+                  $objectId: ID!
+                  $fields: UpdateCustomerFieldsInput
+                ) {
+                  updateCustomer(objectId: $objectId, fields: $fields) {
+                    objectId
+                  }
+                }
+              `,
+              variables: {
+                objectId: obj.id,
+                fields: {
+                  someField1: 'someField1Value2',
+                },
+              },
+            });
+
+            expect(result.data.updateCustomer.objectId).toEqual(obj.id);
+
+            await obj.fetch();
+
+            expect(obj.get('someField1')).toEqual('someField1Value2');
+            expect(obj.get('someField2')).toEqual('someField2Value1');
+          });
+
           it('should respect level permissions', async () => {
             await prepareData();
 
@@ -4251,12 +4412,12 @@ describe('ParseGraphQLServer', () => {
           const result = await apolloClient.mutate({
             mutation: gql`
               mutation CallFunction {
-                call(functionName: "hello")
+                callCloudCode(functionName: "hello")
               }
             `,
           });
 
-          expect(result.data.call).toEqual('Hello world!');
+          expect(result.data.callCloudCode).toEqual('Hello world!');
         });
 
         it('can throw errors', async () => {
@@ -4268,7 +4429,7 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation CallFunction {
-                  call(functionName: "hello")
+                  callCloudCode(functionName: "hello")
                 }
               `,
             });
@@ -4369,7 +4530,7 @@ describe('ParseGraphQLServer', () => {
           apolloClient.mutate({
             mutation: gql`
               mutation CallFunction($params: Object) {
-                call(functionName: "hello", params: $params)
+                callCloudCode(functionName: "hello", params: $params)
               }
             `,
             variables: {
@@ -4745,178 +4906,308 @@ describe('ParseGraphQLServer', () => {
           expect(Date.parse(getResult.data.get.updatedAt)).not.toEqual(NaN);
         });
 
-        it('should support pointer values', async () => {
-          const parent = new Parse.Object('ParentClass');
-          await parent.save();
+        it('should support pointer on create', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          await company.save();
 
-          const pointerFieldValue = {
-            __type: 'Pointer',
-            className: 'ParentClass',
-            objectId: parent.id,
-          };
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
+          await country.save();
 
-          const createResult = await apolloClient.mutate({
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
+          await company2.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const {
+            data: { createCountry: result },
+          } = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateChildObject($fields: Object) {
-                create(className: "ChildClass", fields: $fields) {
+              mutation Create($fields: CreateCountryFieldsInput) {
+                createCountry(fields: $fields) {
                   objectId
+                  company {
+                    objectId
+                    name
+                  }
                 }
               }
             `,
             variables: {
               fields: {
-                pointerField: pointerFieldValue,
+                name: 'imCountry2',
+                company: { link: { objectId: company2.id } },
               },
             },
           });
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const schema = await new Parse.Schema('ChildClass').get();
-          expect(schema.fields.pointerField.type).toEqual('Pointer');
-          expect(schema.fields.pointerField.targetClass).toEqual('ParentClass');
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateChildObject(
-                $fields1: CreateChildClassFieldsInput
-                $fields2: CreateChildClassFieldsInput
-              ) {
-                createChildClass1: createChildClass(fields: $fields1) {
-                  objectId
-                }
-                createChildClass2: createChildClass(fields: $fields2) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields1: {
-                pointerField: pointerFieldValue,
-              },
-              fields2: {
-                pointerField: pointerFieldValue.objectId,
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetChildObject(
-                $objectId: ID!
-                $pointerFieldValue1: ParentClassPointer
-                $pointerFieldValue2: ParentClassPointer
-              ) {
-                get(className: "ChildClass", objectId: $objectId)
-                findChildClass1: childClasses(
-                  where: { pointerField: { _eq: $pointerFieldValue1 } }
-                ) {
-                  results {
-                    pointerField {
-                      objectId
-                      createdAt
-                    }
-                  }
-                }
-                findChildClass2: childClasses(
-                  where: { pointerField: { _eq: $pointerFieldValue2 } }
-                ) {
-                  results {
-                    pointerField {
-                      objectId
-                      createdAt
-                    }
-                  }
-                }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-              pointerFieldValue1: pointerFieldValue,
-              pointerFieldValue2: pointerFieldValue.objectId,
-            },
-          });
-
-          expect(typeof getResult.data.get.pointerField).toEqual('object');
-          expect(getResult.data.get.pointerField).toEqual(pointerFieldValue);
-          expect(getResult.data.findChildClass1.results.length).toEqual(3);
-          expect(getResult.data.findChildClass2.results.length).toEqual(3);
+          expect(result.objectId).toBeDefined();
+          expect(result.company.objectId).toEqual(company2.id);
+          expect(result.company.name).toEqual('imACompany2');
         });
 
-        it_only_db('mongo')('should support relation', async () => {
-          const someObject1 = new Parse.Object('SomeClass');
-          await someObject1.save();
-          const someObject2 = new Parse.Object('SomeClass');
-          await someObject2.save();
+        it('should support nested pointer on create', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          await company.save();
 
-          const pointerValue1 = {
-            __type: 'Pointer',
-            className: 'SomeClass',
-            objectId: someObject1.id,
-          };
-          const pointerValue2 = {
-            __type: 'Pointer',
-            className: 'SomeClass',
-            objectId: someObject2.id,
-          };
-
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateMainObject($fields: Object) {
-                create(className: "MainClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                relationField: {
-                  __op: 'Batch',
-                  ops: [
-                    {
-                      __op: 'AddRelation',
-                      objects: [pointerValue1],
-                    },
-                    {
-                      __op: 'AddRelation',
-                      objects: [pointerValue2],
-                    },
-                  ],
-                },
-              },
-            },
-          });
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
+          await country.save();
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const schema = await new Parse.Schema('MainClass').get();
-          expect(schema.fields.relationField.type).toEqual('Relation');
-          expect(schema.fields.relationField.targetClass).toEqual('SomeClass');
-
-          await apolloClient.mutate({
+          const {
+            data: { createCountry: result },
+          } = await apolloClient.mutate({
             mutation: gql`
-              mutation CreateMainObject($fields: CreateMainClassFieldsInput) {
-                createMainClass(fields: $fields) {
+              mutation Create($fields: CreateCountryFieldsInput) {
+                createCountry(fields: $fields) {
                   objectId
+                  company {
+                    objectId
+                    name
+                  }
                 }
               }
             `,
             variables: {
               fields: {
-                relationField: {
-                  _op: 'Batch',
-                  ops: [
+                name: 'imCountry2',
+                company: {
+                  createAndLink: {
+                    name: 'imACompany2',
+                  },
+                },
+              },
+            },
+          });
+
+          expect(result.objectId).toBeDefined();
+          expect(result.company.objectId).toBeDefined();
+          expect(result.company.name).toEqual('imACompany2');
+        });
+
+        it('should support pointer on update', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          await company.save();
+
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
+          await country.save();
+
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
+          await company2.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const {
+            data: { updateCountry: result },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation Update(
+                $objectId: ID!
+                $fields: UpdateCountryFieldsInput
+              ) {
+                updateCountry(objectId: $objectId, fields: $fields) {
+                  objectId
+                  company {
+                    objectId
+                    name
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: country.id,
+              fields: {
+                company: { link: { objectId: company2.id } },
+              },
+            },
+          });
+
+          expect(result.objectId).toBeDefined();
+          expect(result.company.objectId).toEqual(company2.id);
+          expect(result.company.name).toEqual('imACompany2');
+        });
+
+        it('should support nested pointer on update', async () => {
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          await company.save();
+
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.set('company', company);
+          await country.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const {
+            data: { updateCountry: result },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation Update(
+                $objectId: ID!
+                $fields: UpdateCountryFieldsInput
+              ) {
+                updateCountry(objectId: $objectId, fields: $fields) {
+                  objectId
+                  company {
+                    objectId
+                    name
+                  }
+                }
+              }
+            `,
+            variables: {
+              objectId: country.id,
+              fields: {
+                company: {
+                  createAndLink: {
+                    name: 'imACompany2',
+                  },
+                },
+              },
+            },
+          });
+
+          expect(result.objectId).toBeDefined();
+          expect(result.company.objectId).toBeDefined();
+          expect(result.company.name).toEqual('imACompany2');
+        });
+
+        it_only_db('mongo')(
+          'should support relation and nested relation on create',
+          async () => {
+            const company = new Parse.Object('Company');
+            company.set('name', 'imACompany1');
+            await company.save();
+
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company);
+            await country.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const {
+              data: { createCountry: result },
+            } = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateCountry($fields: CreateCountryFieldsInput) {
+                  createCountry(fields: $fields) {
+                    objectId
+                    name
+                    companies {
+                      results {
+                        objectId
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  name: 'imACountry2',
+                  companies: {
+                    add: [{ objectId: company.id }],
+                    createAndAdd: [
+                      {
+                        name: 'imACompany2',
+                      },
+                      {
+                        name: 'imACompany3',
+                      },
+                    ],
+                  },
+                },
+              },
+            });
+
+            expect(result.objectId).toBeDefined();
+            expect(result.name).toEqual('imACountry2');
+            expect(result.companies.results.length).toEqual(3);
+            expect(
+              result.companies.results.some(o => o.objectId === company.id)
+            ).toBeTruthy();
+            expect(
+              result.companies.results.some(o => o.name === 'imACompany2')
+            ).toBeTruthy();
+            expect(
+              result.companies.results.some(o => o.name === 'imACompany3')
+            ).toBeTruthy();
+          }
+        );
+
+        it_only_db('mongo')('should support deep nested creation', async () => {
+          const team = new Parse.Object('Team');
+          team.set('name', 'imATeam1');
+          await team.save();
+
+          const company = new Parse.Object('Company');
+          company.set('name', 'imACompany1');
+          company.relation('teams').add(team);
+          await company.save();
+
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.relation('companies').add(company);
+          await country.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const {
+            data: { createCountry: result },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation CreateCountry($fields: CreateCountryFieldsInput) {
+                createCountry(fields: $fields) {
+                  objectId
+                  name
+                  companies {
+                    results {
+                      objectId
+                      name
+                      teams {
+                        results {
+                          objectId
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                name: 'imACountry2',
+                companies: {
+                  createAndAdd: [
                     {
-                      _op: 'AddRelation',
-                      objects: [pointerValue1],
+                      name: 'imACompany2',
+                      teams: {
+                        createAndAdd: {
+                          name: 'imATeam2',
+                        },
+                      },
                     },
                     {
-                      _op: 'RemoveRelation',
-                      objects: [pointerValue1],
-                    },
-                    {
-                      _op: 'AddRelation',
-                      objects: [pointerValue2],
+                      name: 'imACompany3',
+                      teams: {
+                        createAndAdd: {
+                          name: 'imATeam3',
+                        },
+                      },
                     },
                   ],
                 },
@@ -4924,15 +5215,186 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const getResult = await apolloClient.query({
+          expect(result.objectId).toBeDefined();
+          expect(result.name).toEqual('imACountry2');
+          expect(result.companies.results.length).toEqual(2);
+          expect(
+            result.companies.results.some(
+              c =>
+                c.name === 'imACompany2' &&
+                c.teams.results.some(t => t.name === 'imATeam2')
+            )
+          ).toBeTruthy();
+          expect(
+            result.companies.results.some(
+              c =>
+                c.name === 'imACompany3' &&
+                c.teams.results.some(t => t.name === 'imATeam3')
+            )
+          ).toBeTruthy();
+        });
+
+        it_only_db('mongo')(
+          'should support relation and nested relation on update',
+          async () => {
+            const company1 = new Parse.Object('Company');
+            company1.set('name', 'imACompany1');
+            await company1.save();
+
+            const company2 = new Parse.Object('Company');
+            company2.set('name', 'imACompany2');
+            await company2.save();
+
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company1);
+            await country.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const {
+              data: { updateCountry: result },
+            } = await apolloClient.mutate({
+              mutation: gql`
+                mutation UpdateCountry(
+                  $objectId: ID!
+                  $fields: UpdateCountryFieldsInput
+                ) {
+                  updateCountry(objectId: $objectId, fields: $fields) {
+                    objectId
+                    companies {
+                      results {
+                        objectId
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: country.id,
+                fields: {
+                  companies: {
+                    add: [{ objectId: company2.id }],
+                    remove: [{ objectId: company1.id }],
+                    createAndAdd: [
+                      {
+                        name: 'imACompany3',
+                      },
+                    ],
+                  },
+                },
+              },
+            });
+
+            expect(result.objectId).toEqual(country.id);
+            expect(result.companies.results.length).toEqual(2);
+            expect(
+              result.companies.results.some(o => o.objectId === company2.id)
+            ).toBeTruthy();
+            expect(
+              result.companies.results.some(o => o.name === 'imACompany3')
+            ).toBeTruthy();
+            expect(
+              result.companies.results.some(o => o.objectId === company1.id)
+            ).toBeFalsy();
+          }
+        );
+
+        it_only_db('mongo')(
+          'should support nested relation on create with filter',
+          async () => {
+            const company = new Parse.Object('Company');
+            company.set('name', 'imACompany1');
+            await company.save();
+
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add(company);
+            await country.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const {
+              data: { createCountry: result },
+            } = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateCountry(
+                  $fields: CreateCountryFieldsInput
+                  $where: CompanyWhereInput
+                ) {
+                  createCountry(fields: $fields) {
+                    objectId
+                    name
+                    companies(where: $where) {
+                      results {
+                        objectId
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  name: {
+                    _eq: 'imACompany2',
+                  },
+                },
+                fields: {
+                  name: 'imACountry2',
+                  companies: {
+                    add: [{ objectId: company.id }],
+                    createAndAdd: [
+                      {
+                        name: 'imACompany2',
+                      },
+                      {
+                        name: 'imACompany3',
+                      },
+                    ],
+                  },
+                },
+              },
+            });
+
+            expect(result.objectId).toBeDefined();
+            expect(result.name).toEqual('imACountry2');
+            expect(result.companies.results.length).toEqual(1);
+            expect(
+              result.companies.results.some(o => o.name === 'imACompany2')
+            ).toBeTruthy();
+          }
+        );
+
+        it_only_db('mongo')('should support relation on query', async () => {
+          const company1 = new Parse.Object('Company');
+          company1.set('name', 'imACompany1');
+          await company1.save();
+
+          const company2 = new Parse.Object('Company');
+          company2.set('name', 'imACompany2');
+          await company2.save();
+
+          const country = new Parse.Object('Country');
+          country.set('name', 'imACountry');
+          country.relation('companies').add([company1, company2]);
+          await country.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          // Without where
+          const {
+            data: { country: result1 },
+          } = await apolloClient.query({
             query: gql`
-              query GetMainObject($objectId: ID!) {
-                get(className: "MainClass", objectId: $objectId)
-                mainClass(objectId: $objectId) {
-                  relationField {
+              query getCountry($objectId: ID!) {
+                country(objectId: $objectId) {
+                  objectId
+                  companies {
                     results {
                       objectId
-                      createdAt
+                      name
                     }
                     count
                   }
@@ -4940,60 +5402,46 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              objectId: country.id,
             },
           });
 
-          expect(typeof getResult.data.get.relationField).toEqual('object');
-          expect(getResult.data.get.relationField).toEqual({
-            __type: 'Relation',
-            className: 'SomeClass',
-          });
-          expect(getResult.data.mainClass.relationField.results.length).toEqual(
-            2
-          );
-          expect(getResult.data.mainClass.relationField.count).toEqual(2);
+          expect(result1.objectId).toEqual(country.id);
+          expect(result1.companies.results.length).toEqual(2);
+          expect(
+            result1.companies.results.some(o => o.objectId === company1.id)
+          ).toBeTruthy();
+          expect(
+            result1.companies.results.some(o => o.objectId === company2.id)
+          ).toBeTruthy();
 
-          const findResult = await apolloClient.query({
+          // With where
+          const {
+            data: { country: result2 },
+          } = await apolloClient.query({
             query: gql`
-              query FindSomeObjects($where: Object) {
-                find(className: "SomeClass", where: $where) {
-                  results
+              query getCountry($objectId: ID!, $where: CompanyWhereInput) {
+                country(objectId: $objectId) {
+                  objectId
+                  companies(where: $where) {
+                    results {
+                      objectId
+                      name
+                    }
+                  }
                 }
               }
             `,
             variables: {
+              objectId: country.id,
               where: {
-                $relatedTo: {
-                  object: {
-                    __type: 'Pointer',
-                    className: 'MainClass',
-                    objectId: createResult.data.create.objectId,
-                  },
-                  key: 'relationField',
-                },
+                name: { _eq: 'imACompany1' },
               },
             },
           });
-
-          const compare = (obj1, obj2) =>
-            obj1.createdAt > obj2.createdAt ? 1 : -1;
-
-          expect(findResult.data.find.results).toEqual(jasmine.any(Array));
-          expect(findResult.data.find.results.sort(compare)).toEqual(
-            [
-              {
-                objectId: someObject1.id,
-                createdAt: someObject1.createdAt.toISOString(),
-                updatedAt: someObject1.updatedAt.toISOString(),
-              },
-              {
-                objectId: someObject2.id,
-                createdAt: someObject2.createdAt.toISOString(),
-                updatedAt: someObject2.updatedAt.toISOString(),
-              },
-            ].sort(compare)
-          );
+          expect(result2.objectId).toEqual(country.id);
+          expect(result2.companies.results.length).toEqual(1);
+          expect(result2.companies.results[0].objectId).toEqual(company1.id);
         });
 
         it('should support files', async () => {
