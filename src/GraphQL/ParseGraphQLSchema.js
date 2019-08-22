@@ -100,6 +100,7 @@ class ParseGraphQLSchema {
     this.graphQLSchemaDirectives = {};
 
     defaultGraphQLTypes.load(this);
+    classSchemaTypes.load(this);
 
     this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(
       ([parseClass, parseClassConfig]) => {
@@ -110,7 +111,6 @@ class ParseGraphQLSchema {
     );
 
     defaultGraphQLTypes.loadArrayResult(this, parseClasses);
-    classSchemaTypes.load(this);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
