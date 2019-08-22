@@ -1,6 +1,6 @@
 import { GraphQLNonNull, GraphQLInputObjectType, GraphQLList } from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as schemaTypes from './schemaTypes';
+import * as classSchemaTypes from './classSchemaTypes';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation('createClass', {
@@ -19,7 +19,7 @@ const load = parseGraphQLSchema => {
                 description:
                   'These are the String fields to be added to the new class',
                 type: new GraphQLList(
-                  new GraphQLNonNull(schemaTypes.SCHEMA_STRING_FIELD_INPUT)
+                  new GraphQLNonNull(classSchemaTypes.SCHEMA_STRING_FIELD_INPUT)
                 ),
               },
             },

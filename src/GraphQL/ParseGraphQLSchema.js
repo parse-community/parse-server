@@ -14,7 +14,7 @@ import ParseGraphQLController, {
 import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
-import * as schemaTypes from './loaders/schemaTypes';
+import * as classSchemaTypes from './loaders/classSchemaTypes';
 
 const RESERVED_GRAPHQL_TYPE_NAMES = [
   'String',
@@ -32,7 +32,6 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'CreateClassSchemaInput',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
-
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'signUp',
   'logIn',
@@ -111,7 +110,7 @@ class ParseGraphQLSchema {
     );
 
     defaultGraphQLTypes.loadArrayResult(this, parseClasses);
-    schemaTypes.load(this);
+    classSchemaTypes.load(this);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
