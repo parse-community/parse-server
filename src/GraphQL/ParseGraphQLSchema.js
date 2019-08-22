@@ -14,6 +14,7 @@ import ParseGraphQLController, {
 import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
+import * as schemaTypes from './loaders/schemaTypes';
 
 const RESERVED_GRAPHQL_TYPE_NAMES = [
   'String',
@@ -109,6 +110,7 @@ class ParseGraphQLSchema {
     );
 
     defaultGraphQLTypes.loadArrayResult(this, parseClasses);
+    schemaTypes.load(this);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 
