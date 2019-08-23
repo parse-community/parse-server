@@ -14,8 +14,8 @@ import * as objectsQueries from './objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
-import { transformOutputTypeToGraphQL } from '../transformers/inputType';
-import { transformConstraintTypeToGraphQL } from '../transformers/inputType';
+import { transformOutputTypeToGraphQL } from '../transformers/outputType';
+import { transformConstraintTypeToGraphQL } from '../transformers/constraintType';
 import {
   extractKeysAndInclude,
   getParseClassMutationConfig,

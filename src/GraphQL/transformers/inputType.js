@@ -27,18 +27,18 @@ const transformInputTypeToGraphQL = (
     case 'Pointer':
       if (
         parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLScalarType
+        parseClassTypes[targetClass].classGraphQLPointerType
       ) {
-        return parseClassTypes[targetClass].classGraphQLScalarType;
+        return parseClassTypes[targetClass].classGraphQLPointerType;
       } else {
         return defaultGraphQLTypes.OBJECT;
       }
     case 'Relation':
       if (
         parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLRelationOpType
+        parseClassTypes[targetClass].classGraphQLRelationType
       ) {
-        return parseClassTypes[targetClass].classGraphQLRelationOpType;
+        return parseClassTypes[targetClass].classGraphQLRelationType;
       } else {
         return defaultGraphQLTypes.OBJECT;
       }

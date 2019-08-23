@@ -24,7 +24,10 @@ const SCHEMA_STRING_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('String'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('String'),
+    },
   },
 });
 
@@ -35,7 +38,10 @@ const SCHEMA_NUMBER_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Number'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Number'),
+    },
   },
 });
 
@@ -46,7 +52,10 @@ const SCHEMA_BOOLEAN_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Booleam'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Boolean'),
+    },
   },
 });
 
@@ -57,7 +66,10 @@ const SCHEMA_ARRAY_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Array'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Array'),
+    },
   },
 });
 
@@ -68,7 +80,10 @@ const SCHEMA_OBJECT_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Object'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Object'),
+    },
   },
 });
 
@@ -79,7 +94,10 @@ const SCHEMA_DATE_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Date'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Date'),
+    },
   },
 });
 
@@ -90,7 +108,10 @@ const SCHEMA_FILE_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('File'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('File'),
+    },
   },
 });
 
@@ -101,7 +122,10 @@ const SCHEMA_GEO_POINT_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('GeoPoint'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('GeoPoint'),
+    },
   },
 });
 
@@ -112,7 +136,10 @@ const SCHEMA_POLYGON_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Polygon'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Polygon'),
+    },
   },
 });
 
@@ -123,7 +150,10 @@ const SCHEMA_BYTES_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: transformInputTypeToGraphQL('Bytes'),
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: transformInputTypeToGraphQL('Bytes'),
+    },
   },
 });
 
