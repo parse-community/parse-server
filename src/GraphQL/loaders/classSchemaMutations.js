@@ -1,4 +1,9 @@
-import { GraphQLNonNull, GraphQLInputObjectType, GraphQLList } from 'graphql';
+import {
+  GraphQLNonNull,
+  GraphQLInputObjectType,
+  GraphQLList,
+  GraphQLBoolean,
+} from 'graphql';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as classSchemaTypes from './classSchemaTypes';
 
@@ -26,6 +31,83 @@ const load = parseGraphQLSchema => {
                     )
                   ),
                 },
+                numberFields: {
+                  description:
+                    'These are the Number fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_NUMBER_FIELD_INPUT
+                    )
+                  ),
+                },
+                booleanFields: {
+                  description:
+                    'These are the Boolean fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_BOOLEAN_FIELD_INPUT
+                    )
+                  ),
+                },
+                arrayFields: {
+                  description:
+                    'These are the Array fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_ARRAY_FIELD_INPUT
+                    )
+                  ),
+                },
+                objectFields: {
+                  description:
+                    'These are the Object fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_OBJECT_FIELD_INPUT
+                    )
+                  ),
+                },
+                dateFields: {
+                  description:
+                    'These are the Date fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(classSchemaTypes.SCHEMA_DATE_FIELD_INPUT)
+                  ),
+                },
+                fileFields: {
+                  description:
+                    'These are the File fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(classSchemaTypes.SCHEMA_FILE_FIELD_INPUT)
+                  ),
+                },
+                geoPointFields: {
+                  description:
+                    'These are the Geo Point fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_GEO_POINT_FIELD_INPUT
+                    )
+                  ),
+                },
+                polygonFields: {
+                  description:
+                    'These are the Polygon fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_POLYGON_FIELD_INPUT
+                    )
+                  ),
+                },
+                bytesFields: {
+                  description:
+                    'These are the Bytes fields to be added to the new class',
+                  type: new GraphQLList(
+                    new GraphQLNonNull(
+                      classSchemaTypes.SCHEMA_BYTES_FIELD_INPUT
+                    )
+                  ),
+                },
               },
             }),
             true,
@@ -33,6 +115,8 @@ const load = parseGraphQLSchema => {
           ),
         },
       },
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: () => true,
     },
     true,
     true

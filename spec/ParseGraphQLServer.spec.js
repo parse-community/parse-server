@@ -447,14 +447,18 @@ describe('ParseGraphQLServer', () => {
 
     describe('GraphQL', () => {
       it('should be healthy', async () => {
-        const health = (await apolloClient.query({
-          query: gql`
-            query Health {
-              health
-            }
-          `,
-        })).data.health;
-        expect(health).toBeTruthy();
+        try {
+          const health = (await apolloClient.query({
+            query: gql`
+              query Health {
+                health
+              }
+            `,
+          })).data.health;
+          expect(health).toBeTruthy();
+        } catch (e) {
+          fail(e.networkError.result.errors);
+        }
       });
 
       it('should be cors enabled', async () => {
