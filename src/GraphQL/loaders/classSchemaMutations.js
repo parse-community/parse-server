@@ -3,8 +3,8 @@ import {
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLBoolean,
+  GraphQLString,
 } from 'graphql';
-import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as classSchemaTypes from './classSchemaTypes';
 
 const load = parseGraphQLSchema => {
@@ -14,94 +14,97 @@ const load = parseGraphQLSchema => {
       description:
         'The createClass mutation can be used to create the schema for a new object class.',
       args: {
-        className: defaultGraphQLTypes.CLASS_NAME_ATT,
+        name: {
+          description: 'This is the name of the object class.',
+          type: new GraphQLNonNull(GraphQLString),
+        },
         schema: {
-          description: 'This is the schema for the class',
+          description: 'This is the schema of the object class.',
           type: parseGraphQLSchema.addGraphQLType(
             new GraphQLInputObjectType({
               name: 'CreateClassSchemaInput',
               description: `The CreateClassSchemaInput type is used to specify the schema for a new object class to be created.`,
               fields: {
-                stringFields: {
+                addStringFields: {
                   description:
-                    'These are the String fields to be added to the new class',
+                    'These are the String fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_STRING_FIELD_INPUT
                     )
                   ),
                 },
-                numberFields: {
+                addNumberFields: {
                   description:
-                    'These are the Number fields to be added to the new class',
+                    'These are the Number fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_NUMBER_FIELD_INPUT
                     )
                   ),
                 },
-                booleanFields: {
+                addBooleanFields: {
                   description:
-                    'These are the Boolean fields to be added to the new class',
+                    'These are the Boolean fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_BOOLEAN_FIELD_INPUT
                     )
                   ),
                 },
-                arrayFields: {
+                addArrayFields: {
                   description:
-                    'These are the Array fields to be added to the new class',
+                    'These are the Array fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_ARRAY_FIELD_INPUT
                     )
                   ),
                 },
-                objectFields: {
+                addObjectFields: {
                   description:
-                    'These are the Object fields to be added to the new class',
+                    'These are the Object fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_OBJECT_FIELD_INPUT
                     )
                   ),
                 },
-                dateFields: {
+                addDateFields: {
                   description:
-                    'These are the Date fields to be added to the new class',
+                    'These are the Date fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(classSchemaTypes.SCHEMA_DATE_FIELD_INPUT)
                   ),
                 },
-                fileFields: {
+                addFileFields: {
                   description:
-                    'These are the File fields to be added to the new class',
+                    'These are the File fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(classSchemaTypes.SCHEMA_FILE_FIELD_INPUT)
                   ),
                 },
-                geoPointFields: {
+                addGeoPointFields: {
                   description:
-                    'These are the Geo Point fields to be added to the new class',
+                    'These are the Geo Point fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_GEO_POINT_FIELD_INPUT
                     )
                   ),
                 },
-                polygonFields: {
+                addPolygonFields: {
                   description:
-                    'These are the Polygon fields to be added to the new class',
+                    'These are the Polygon fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_POLYGON_FIELD_INPUT
                     )
                   ),
                 },
-                bytesFields: {
+                addBytesFields: {
                   description:
-                    'These are the Bytes fields to be added to the new class',
+                    'These are the Bytes fields to be added to the class schema.',
                   type: new GraphQLList(
                     new GraphQLNonNull(
                       classSchemaTypes.SCHEMA_BYTES_FIELD_INPUT
