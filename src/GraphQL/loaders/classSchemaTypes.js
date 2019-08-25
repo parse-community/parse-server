@@ -5,7 +5,6 @@ import {
   GraphQLInputObjectType,
   GraphQLList,
 } from 'graphql';
-import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
 
 const SCHEMA_FIELD_NAME_ATT = {
@@ -183,7 +182,7 @@ const SCHEMA_POINTER_FIELD_INPUT = new GraphQLInputObjectType({
     isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
     defaultValue: {
       description: 'This is the field default value.',
-      type: defaultGraphQLTypes.POINTER_INPUT,
+      type: transformInputTypeToGraphQL('Pointer'),
     },
   },
 });

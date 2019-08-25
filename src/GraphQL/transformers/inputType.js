@@ -26,6 +26,7 @@ const transformInputTypeToGraphQL = (
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
       if (
+        parseClassTypes &&
         parseClassTypes[targetClass] &&
         parseClassTypes[targetClass].classGraphQLPointerType
       ) {
@@ -35,6 +36,7 @@ const transformInputTypeToGraphQL = (
       }
     case 'Relation':
       if (
+        parseClassTypes &&
         parseClassTypes[targetClass] &&
         parseClassTypes[targetClass].classGraphQLRelationType
       ) {
