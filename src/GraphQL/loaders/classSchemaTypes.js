@@ -5,6 +5,7 @@ import {
   GraphQLInputObjectType,
   GraphQLList,
 } from 'graphql';
+import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
 
 const SCHEMA_FIELD_NAME_ATT = {
@@ -167,6 +168,36 @@ const SCHEMA_BYTES_FIELD_INPUT = new GraphQLInputObjectType({
   },
 });
 
+const TARGET_CLASS_ATT = {
+  description: 'This is the name of the target class for the field.',
+  type: new GraphQLNonNull(GraphQLString),
+};
+
+const SCHEMA_POINTER_FIELD_INPUT = new GraphQLInputObjectType({
+  name: 'PointerFieldInput',
+  description:
+    'The PointerFieldInput is used to specify a field of type pointer for an object class schema.',
+  fields: {
+    name: SCHEMA_FIELD_NAME_ATT,
+    targetClassName: TARGET_CLASS_ATT,
+    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
+    defaultValue: {
+      description: 'This is the field default value.',
+      type: defaultGraphQLTypes.POINTER_INPUT,
+    },
+  },
+});
+
+const SCHEMA_RELATION_FIELD_INPUT = new GraphQLInputObjectType({
+  name: 'RelationFieldInput',
+  description:
+    'The RelationFieldInput is used to specify a field of type relation for an object class schema.',
+  fields: {
+    name: SCHEMA_FIELD_NAME_ATT,
+    targetClassName: TARGET_CLASS_ATT,
+  },
+});
+
 const SCHEMA_INPUT = new GraphQLInputObjectType({
   name: 'SchemaInput',
   description: `The CreateClassSchemaInput type is used to specify the schema for a new object class to be created.`,
@@ -219,6 +250,16 @@ const SCHEMA_INPUT = new GraphQLInputObjectType({
         'These are the Bytes fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_BYTES_FIELD_INPUT)),
     },
+    addPointerFields: {
+      description:
+        'These are the Pointer fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_POINTER_FIELD_INPUT)),
+    },
+    addRelationFields: {
+      description:
+        'These are the Relation fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_RELATION_FIELD_INPUT)),
+    },
     removeFields: {
       description: 'These are the fields to be removed from the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_FIELD_INPUT)),
@@ -238,6 +279,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(SCHEMA_GEO_POINT_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_POLYGON_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_BYTES_FIELD_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SCHEMA_POINTER_FIELD_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SCHEMA_RELATION_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_INPUT, true);
 };
 
@@ -255,6 +298,9 @@ export {
   SCHEMA_GEO_POINT_FIELD_INPUT,
   SCHEMA_POLYGON_FIELD_INPUT,
   SCHEMA_BYTES_FIELD_INPUT,
+  TARGET_CLASS_ATT,
+  SCHEMA_POINTER_FIELD_INPUT,
+  SCHEMA_RELATION_FIELD_INPUT,
   SCHEMA_INPUT,
   load,
 };
