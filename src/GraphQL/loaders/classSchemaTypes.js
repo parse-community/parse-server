@@ -3,6 +3,7 @@ import {
   GraphQLString,
   GraphQLBoolean,
   GraphQLInputObjectType,
+  GraphQLList,
 } from 'graphql';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
 
@@ -16,6 +17,15 @@ const SCHEMA_FIELD_IS_REQUIRED_ATT = {
     'This is the flag to specify whether the field is required or not.',
   type: GraphQLBoolean,
 };
+
+const SCHEMA_FIELD_INPUT = new GraphQLInputObjectType({
+  name: 'SchemaFieldInput',
+  description:
+    'The SchemaFieldInput is used to specify a field of an object class schema.',
+  fields: {
+    name: SCHEMA_FIELD_NAME_ATT,
+  },
+});
 
 const SCHEMA_STRING_FIELD_INPUT = new GraphQLInputObjectType({
   name: 'SchemaStringFieldInput',
@@ -157,7 +167,67 @@ const SCHEMA_BYTES_FIELD_INPUT = new GraphQLInputObjectType({
   },
 });
 
+const SCHEMA_INPUT = new GraphQLInputObjectType({
+  name: 'SchemaInput',
+  description: `The CreateClassSchemaInput type is used to specify the schema for a new object class to be created.`,
+  fields: {
+    addStringFields: {
+      description:
+        'These are the String fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_STRING_FIELD_INPUT)),
+    },
+    addNumberFields: {
+      description:
+        'These are the Number fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_NUMBER_FIELD_INPUT)),
+    },
+    addBooleanFields: {
+      description:
+        'These are the Boolean fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_BOOLEAN_FIELD_INPUT)),
+    },
+    addArrayFields: {
+      description:
+        'These are the Array fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_ARRAY_FIELD_INPUT)),
+    },
+    addObjectFields: {
+      description:
+        'These are the Object fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_OBJECT_FIELD_INPUT)),
+    },
+    addDateFields: {
+      description: 'These are the Date fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_DATE_FIELD_INPUT)),
+    },
+    addFileFields: {
+      description: 'These are the File fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_FILE_FIELD_INPUT)),
+    },
+    addGeoPointFields: {
+      description:
+        'These are the Geo Point fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_GEO_POINT_FIELD_INPUT)),
+    },
+    addPolygonFields: {
+      description:
+        'These are the Polygon fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_POLYGON_FIELD_INPUT)),
+    },
+    addBytesFields: {
+      description:
+        'These are the Bytes fields to be added to the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_BYTES_FIELD_INPUT)),
+    },
+    removeFields: {
+      description: 'These are the fields to be removed from the class schema.',
+      type: new GraphQLList(new GraphQLNonNull(SCHEMA_FIELD_INPUT)),
+    },
+  },
+});
+
 const load = parseGraphQLSchema => {
+  parseGraphQLSchema.addGraphQLType(SCHEMA_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_STRING_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_NUMBER_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_BOOLEAN_FIELD_INPUT, true);
@@ -168,11 +238,13 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(SCHEMA_GEO_POINT_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_POLYGON_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_BYTES_FIELD_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SCHEMA_INPUT, true);
 };
 
 export {
   SCHEMA_FIELD_NAME_ATT,
   SCHEMA_FIELD_IS_REQUIRED_ATT,
+  SCHEMA_FIELD_INPUT,
   SCHEMA_STRING_FIELD_INPUT,
   SCHEMA_NUMBER_FIELD_INPUT,
   SCHEMA_BOOLEAN_FIELD_INPUT,
@@ -183,5 +255,6 @@ export {
   SCHEMA_GEO_POINT_FIELD_INPUT,
   SCHEMA_POLYGON_FIELD_INPUT,
   SCHEMA_BYTES_FIELD_INPUT,
+  SCHEMA_INPUT,
   load,
 };
