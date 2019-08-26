@@ -27,6 +27,7 @@ const transformOutputTypeToGraphQL = (
       return defaultGraphQLTypes.DATE;
     case 'Pointer':
       if (
+        parseClassTypes &&
         parseClassTypes[targetClass] &&
         parseClassTypes[targetClass].classGraphQLOutputType
       ) {
@@ -36,6 +37,7 @@ const transformOutputTypeToGraphQL = (
       }
     case 'Relation':
       if (
+        parseClassTypes &&
         parseClassTypes[targetClass] &&
         parseClassTypes[targetClass].classGraphQLFindResultType
       ) {

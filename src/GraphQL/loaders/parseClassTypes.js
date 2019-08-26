@@ -47,7 +47,9 @@ const getInputFieldsAndConstraints = function(
 
   // All allowed customs fields
   const classCustomFields = classFields.filter(field => {
-    return !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field);
+    return !Object.keys(defaultGraphQLTypes.CLASS_OBJECT_FIELDS).includes(
+      field
+    );
   });
 
   if (allowedInputFields && allowedInputFields.create) {
@@ -570,12 +572,12 @@ const load = (
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.CLASS_FIELDS);
+    }, defaultGraphQLTypes.CLASS_OBJECT_FIELDS);
   };
   let classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${graphQLClassName} class.`,
-    interfaces: [defaultGraphQLTypes.CLASS],
+    interfaces: [defaultGraphQLTypes.CLASS_OBJECT],
     fields: outputFields,
   });
   classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
@@ -626,7 +628,7 @@ const load = (
     const viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: `The Viewer object type is used in operations that involve outputting the current user data.`,
-      interfaces: [defaultGraphQLTypes.CLASS],
+      interfaces: [defaultGraphQLTypes.CLASS_OBJECT],
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,

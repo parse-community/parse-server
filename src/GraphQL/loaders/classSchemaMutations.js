@@ -1,4 +1,4 @@
-import { GraphQLNonNull, GraphQLBoolean, GraphQLString } from 'graphql';
+import { GraphQLNonNull } from 'graphql';
 import * as classSchemaTypes from './classSchemaTypes';
 
 const load = parseGraphQLSchema => {
@@ -8,17 +8,14 @@ const load = parseGraphQLSchema => {
       description:
         'The createClass mutation can be used to create the schema for a new object class.',
       args: {
-        name: {
-          description: 'This is the name of the object class.',
-          type: new GraphQLNonNull(GraphQLString),
-        },
-        schema: {
-          description: 'This is the schema of the object class.',
-          type: classSchemaTypes.SCHEMA_INPUT,
+        name: classSchemaTypes.CLASS_NAME_ATT,
+        schemaFields: {
+          description: "These are the schema's fields of the object class.",
+          type: classSchemaTypes.SCHEMA_FIELDS_INPUT,
         },
       },
-      type: new GraphQLNonNull(GraphQLBoolean),
-      resolve: () => true,
+      type: new GraphQLNonNull(classSchemaTypes.CLASS),
+      resolve: () => ({}),
     },
     true,
     true

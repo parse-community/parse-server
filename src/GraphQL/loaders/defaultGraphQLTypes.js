@@ -463,17 +463,17 @@ const UPDATE_RESULT = new GraphQLObjectType({
   fields: UPDATE_RESULT_FIELDS,
 });
 
-const CLASS_FIELDS = {
+const CLASS_OBJECT_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
   ...INPUT_FIELDS,
 };
 
-const CLASS = new GraphQLInterfaceType({
-  name: 'Class',
+const CLASS_OBJECT = new GraphQLInterfaceType({
+  name: 'ClassObject',
   description:
-    'The Class interface type is used as a base type for the auto generated class types.',
-  fields: CLASS_FIELDS,
+    'The ClassObject interface type is used as a base type for the auto generated class object types.',
+  fields: CLASS_OBJECT_FIELDS,
 });
 
 const SESSION_TOKEN_ATT = {
@@ -1093,7 +1093,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
   parseGraphQLSchema.addGraphQLType(CREATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(UPDATE_RESULT, true);
-  parseGraphQLSchema.addGraphQLType(CLASS, true);
+  parseGraphQLSchema.addGraphQLType(CLASS_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
@@ -1156,8 +1156,8 @@ export {
   CREATE_RESULT,
   UPDATE_RESULT_FIELDS,
   UPDATE_RESULT,
-  CLASS_FIELDS,
-  CLASS,
+  CLASS_OBJECT_FIELDS,
+  CLASS_OBJECT,
   SESSION_TOKEN_ATT,
   KEYS_ATT,
   INCLUDE_ATT,
