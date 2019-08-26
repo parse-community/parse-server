@@ -4833,65 +4833,69 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support Date', async () => {
-          const someFieldValue = {
-            __type: 'Date',
-            iso: new Date().toISOString(),
-          };
+          try {
+            const someFieldValue = new Date();
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
+                  }
                 }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
+              `,
+              variables: {
+                schemaFields: {
+                  addDates: [{ name: 'someField' }],
+                },
               },
-            },
-          });
+            });
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('Date');
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Date');
 
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
-                  results {
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
+              `,
+              variables: {
+                fields: {
+                  someField: someFieldValue,
+                },
+              },
+            });
 
-          expect(typeof getResult.data.get.someField).toEqual('object');
-          expect(getResult.data.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  someClass(objectId: $objectId) {
+                    someField
+                  }
+                  someClasses(where: { someField: { _exists: true } }) {
+                    results {
+                      objectId
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+              },
+            });
+
+            expect(new Date(getResult.data.someClass.someField)).toEqual(
+              someFieldValue
+            );
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support createdAt', async () => {
