@@ -4751,79 +4751,85 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support Boolean', async () => {
-          const someFieldValueTrue = true;
-          const someFieldValueFalse = false;
+          try {
+            const someFieldValueTrue = true;
+            const someFieldValueFalse = false;
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someFieldTrue: someFieldValueTrue,
-                someFieldFalse: someFieldValueFalse,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someFieldTrue.type).toEqual('Boolean');
-          expect(schema.fields.someFieldFalse.type).toEqual('Boolean');
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someFieldTrue: someFieldValueTrue,
-                someFieldFalse: someFieldValueFalse,
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject(
-                $objectId: ID!
-                $someFieldValueTrue: Boolean
-                $someFieldValueFalse: Boolean
-              ) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(
-                  where: {
-                    someFieldTrue: { _eq: $someFieldValueTrue }
-                    someFieldFalse: { _eq: $someFieldValueFalse }
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
                   }
-                ) {
-                  results {
+                }
+              `,
+              variables: {
+                schemaFields: {
+                  addBooleans: [
+                    { name: 'someFieldTrue' },
+                    { name: 'someFieldFalse' },
+                  ],
+                },
+              },
+            });
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someFieldTrue.type).toEqual('Boolean');
+            expect(schema.fields.someFieldFalse.type).toEqual('Boolean');
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
                     objectId
                   }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-              someFieldValueTrue,
-              someFieldValueFalse,
-            },
-          });
+              `,
+              variables: {
+                fields: {
+                  someFieldTrue: someFieldValueTrue,
+                  someFieldFalse: someFieldValueFalse,
+                },
+              },
+            });
 
-          expect(typeof getResult.data.get.someFieldTrue).toEqual('boolean');
-          expect(typeof getResult.data.get.someFieldFalse).toEqual('boolean');
-          expect(getResult.data.get.someFieldTrue).toEqual(true);
-          expect(getResult.data.get.someFieldFalse).toEqual(false);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject(
+                  $objectId: ID!
+                  $someFieldValueTrue: Boolean
+                  $someFieldValueFalse: Boolean
+                ) {
+                  get(className: "SomeClass", objectId: $objectId)
+                  someClasses(
+                    where: {
+                      someFieldTrue: { _eq: $someFieldValueTrue }
+                      someFieldFalse: { _eq: $someFieldValueFalse }
+                    }
+                  ) {
+                    results {
+                      objectId
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+                someFieldValueTrue,
+                someFieldValueFalse,
+              },
+            });
+
+            expect(typeof getResult.data.get.someFieldTrue).toEqual('boolean');
+            expect(typeof getResult.data.get.someFieldFalse).toEqual('boolean');
+            expect(getResult.data.get.someFieldTrue).toEqual(true);
+            expect(getResult.data.get.someFieldFalse).toEqual(false);
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support Date', async () => {
