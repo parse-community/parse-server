@@ -4600,7 +4600,9 @@ describe('ParseGraphQLServer', () => {
             const getResult = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!, $someFieldValue: String) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    someField
+                  }
                   someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
@@ -4614,8 +4616,8 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(typeof getResult.data.get.someField).toEqual('string');
-            expect(getResult.data.get.someField).toEqual(someFieldValue);
+            expect(typeof getResult.data.someClass.someField).toEqual('string');
+            expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.results.length).toEqual(1);
           } catch (e) {
             handleError(e);
@@ -4664,7 +4666,9 @@ describe('ParseGraphQLServer', () => {
             const getResult = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    someField
+                  }
                   someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
@@ -4678,8 +4682,8 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(typeof getResult.data.get.someField).toEqual('number');
-            expect(getResult.data.get.someField).toEqual(someFieldValue);
+            expect(typeof getResult.data.someClass.someField).toEqual('number');
+            expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.results.length).toEqual(1);
           } catch (e) {
             handleError(e);
@@ -4728,7 +4732,9 @@ describe('ParseGraphQLServer', () => {
             const getResult = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    someField
+                  }
                   someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
                       someField
@@ -4742,8 +4748,8 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(typeof getResult.data.get.someField).toEqual('number');
-            expect(getResult.data.get.someField).toEqual(someFieldValue);
+            expect(typeof getResult.data.someClass.someField).toEqual('number');
+            expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.results.length).toEqual(1);
           } catch (e) {
             handleError(e);
@@ -4802,7 +4808,10 @@ describe('ParseGraphQLServer', () => {
                   $someFieldValueTrue: Boolean
                   $someFieldValueFalse: Boolean
                 ) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    someFieldTrue
+                    someFieldFalse
+                  }
                   someClasses(
                     where: {
                       someFieldTrue: { _eq: $someFieldValueTrue }
@@ -4822,10 +4831,14 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(typeof getResult.data.get.someFieldTrue).toEqual('boolean');
-            expect(typeof getResult.data.get.someFieldFalse).toEqual('boolean');
-            expect(getResult.data.get.someFieldTrue).toEqual(true);
-            expect(getResult.data.get.someFieldFalse).toEqual(false);
+            expect(typeof getResult.data.someClass.someFieldTrue).toEqual(
+              'boolean'
+            );
+            expect(typeof getResult.data.someClass.someFieldFalse).toEqual(
+              'boolean'
+            );
+            expect(getResult.data.someClass.someFieldTrue).toEqual(true);
+            expect(getResult.data.someClass.someFieldFalse).toEqual(false);
             expect(getResult.data.someClasses.results.length).toEqual(1);
           } catch (e) {
             handleError(e);
