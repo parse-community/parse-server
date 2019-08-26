@@ -4911,12 +4911,12 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should support createdAt', async () => {
-          const createResult = await apolloClient.mutate({
+        it('should support createdAt and updatedAt', async () => {
+          await apolloClient.mutate({
             mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  createdAt
+              mutation CreateClass {
+                createClass(name: "SomeClass") {
+                  name
                 }
               }
             `,
@@ -4924,38 +4924,7 @@ describe('ParseGraphQLServer', () => {
 
           const schema = await new Parse.Schema('SomeClass').get();
           expect(schema.fields.createdAt.type).toEqual('Date');
-
-          const { createdAt } = createResult.data.create;
-          expect(Date.parse(createdAt)).not.toEqual(NaN);
-        });
-
-        it('should support updatedAt', async () => {
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-          });
-
-          const schema = await new Parse.Schema('SomeClass').get();
           expect(schema.fields.updatedAt.type).toEqual('Date');
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
-
-          expect(typeof getResult.data.get.updatedAt).toEqual('string');
-          expect(Date.parse(getResult.data.get.updatedAt)).not.toEqual(NaN);
         });
 
         it('should support pointer on create', async () => {
