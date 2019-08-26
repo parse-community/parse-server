@@ -5466,140 +5466,144 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support files', async () => {
-          parseServer = await global.reconfigureServer({
-            publicServerURL: 'http://localhost:13377/parse',
-          });
+          try {
+            parseServer = await global.reconfigureServer({
+              publicServerURL: 'http://localhost:13377/parse',
+            });
 
-          const body = new FormData();
-          body.append(
-            'operations',
-            JSON.stringify({
-              query: `
-                mutation CreateFile($upload: Upload!) {
-                  createFile(upload: $upload) {
+            const body = new FormData();
+            body.append(
+              'operations',
+              JSON.stringify({
+                query: `
+                  mutation CreateFile($upload: Upload!) {
+                    createFile(upload: $upload) {
+                      name
+                      url
+                    }
+                  }
+                `,
+                variables: {
+                  upload: null,
+                },
+              })
+            );
+            body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
+            body.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
+            });
+
+            let res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body,
+            });
+
+            expect(res.status).toEqual(200);
+
+            const result = JSON.parse(await res.text());
+
+            expect(result.data.createFile.name).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+            expect(result.data.createFile.url).toEqual(
+              jasmine.stringMatching(/_myFileName.txt$/)
+            );
+
+            const someFieldValue = {
+              __type: 'File',
+              name: result.data.createFile.name,
+              url: result.data.createFile.url,
+            };
+
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreaClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
                     name
-                    url
                   }
                 }
               `,
               variables: {
-                upload: null,
+                schemaFields: {
+                  addFiles: [{ name: 'someField' }],
+                },
               },
-            })
-          );
-          body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
-          body.append('1', 'My File Content', {
-            filename: 'myFileName.txt',
-            contentType: 'text/plain',
-          });
+            });
 
-          let res = await fetch('http://localhost:13377/graphql', {
-            method: 'POST',
-            headers,
-            body,
-          });
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          expect(res.status).toEqual(200);
-
-          const result = JSON.parse(await res.text());
-
-          expect(result.data.createFile.name).toEqual(
-            jasmine.stringMatching(/_myFileName.txt$/)
-          );
-          expect(result.data.createFile.url).toEqual(
-            jasmine.stringMatching(/_myFileName.txt$/)
-          );
-
-          const someFieldValue = {
-            __type: 'File',
-            name: result.data.createFile.name,
-            url: result.data.createFile.url,
-          };
-
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject(
-                $fields1: CreateSomeClassFieldsInput
-                $fields2: CreateSomeClassFieldsInput
-              ) {
-                createSomeClass1: createSomeClass(fields: $fields1) {
-                  objectId
-                }
-                createSomeClass2: createSomeClass(fields: $fields2) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields1: {
-                someField: someFieldValue,
-              },
-              fields2: {
-                someField: someFieldValue.name,
-              },
-            },
-          });
-
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('File');
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-                findSomeClass1: someClasses(
-                  where: { someField: { _exists: true } }
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject(
+                  $fields1: CreateSomeClassFieldsInput
+                  $fields2: CreateSomeClassFieldsInput
                 ) {
-                  results {
-                    someField {
-                      name
-                      url
+                  createSomeClass1: createSomeClass(fields: $fields1) {
+                    objectId
+                  }
+                  createSomeClass2: createSomeClass(fields: $fields2) {
+                    objectId
+                  }
+                }
+              `,
+              variables: {
+                fields1: {
+                  someField: someFieldValue,
+                },
+                fields2: {
+                  someField: someFieldValue.name,
+                },
+              },
+            });
+
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('File');
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  get(className: "SomeClass", objectId: $objectId)
+                  findSomeClass1: someClasses(
+                    where: { someField: { _exists: true } }
+                  ) {
+                    results {
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                  findSomeClass2: someClasses(
+                    where: { someField: { _exists: true } }
+                  ) {
+                    results {
+                      someField {
+                        name
+                        url
+                      }
                     }
                   }
                 }
-                findSomeClass2: someClasses(
-                  where: { someField: { _exists: true } }
-                ) {
-                  results {
-                    someField {
-                      name
-                      url
-                    }
-                  }
-                }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass1.objectId,
+              },
+            });
 
-          expect(typeof getResult.data.get.someField).toEqual('object');
-          expect(getResult.data.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.findSomeClass1.results.length).toEqual(3);
-          expect(getResult.data.findSomeClass2.results.length).toEqual(3);
+            expect(typeof getResult.data.get.someField).toEqual('object');
+            expect(getResult.data.get.someField).toEqual(someFieldValue);
+            expect(getResult.data.findSomeClass1.results.length).toEqual(2);
+            expect(getResult.data.findSomeClass2.results.length).toEqual(2);
 
-          res = await fetch(getResult.data.get.someField.url);
+            res = await fetch(getResult.data.get.someField.url);
 
-          expect(res.status).toEqual(200);
-          expect(await res.text()).toEqual('My File Content');
+            expect(res.status).toEqual(200);
+            expect(await res.text()).toEqual('My File Content');
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support object values', async () => {
