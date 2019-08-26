@@ -1,4 +1,8 @@
 const transformToParse = graphQLSchemaFields => {
+  if (!graphQLSchemaFields) {
+    return {};
+  }
+
   let parseSchemaFields = {};
 
   const reducerFabric = type => (parseSchemaFields, field) => {

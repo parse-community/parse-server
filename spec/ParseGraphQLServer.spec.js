@@ -18,6 +18,19 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
 
+function handleError(e) {
+  if (
+    e &&
+    e.networkError &&
+    e.networkError.result &&
+    e.networkError.result.errors
+  ) {
+    fail(e.networkError.result.errors);
+  } else {
+    fail(e);
+  }
+}
+
 describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
@@ -457,7 +470,7 @@ describe('ParseGraphQLServer', () => {
           })).data.health;
           expect(health).toBeTruthy();
         } catch (e) {
-          fail(e.networkError.result.errors);
+          handleError(e);
         }
       });
 
@@ -4546,63 +4559,67 @@ describe('ParseGraphQLServer', () => {
 
       describe('Data Types', () => {
         it('should support String', async () => {
-          const someFieldValue = 'some string';
+          try {
+            const someFieldValue = 'some string';
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('String');
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: String) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _eq: $someFieldValue } }) {
-                  results {
-                    someField
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
                   }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-              someFieldValue,
-            },
-          });
+              `,
+              variables: {
+                schemaFields: {
+                  addStrings: [{ name: 'someField' }],
+                },
+              },
+            });
 
-          expect(typeof getResult.data.get.someField).toEqual('string');
-          expect(getResult.data.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('String');
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
+                    objectId
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: someFieldValue,
+                },
+              },
+            });
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!, $someFieldValue: String) {
+                  get(className: "SomeClass", objectId: $objectId)
+                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                    results {
+                      someField
+                    }
+                  }
+                }
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+                someFieldValue,
+              },
+            });
+
+            expect(typeof getResult.data.get.someField).toEqual('string');
+            expect(getResult.data.get.someField).toEqual(someFieldValue);
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support Int numbers', async () => {
