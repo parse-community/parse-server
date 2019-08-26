@@ -33,12 +33,14 @@ const load = parseGraphQLSchema => {
           }
 
           const schema = await config.database.loadSchema({ clearCache: true });
-          return transformToGraphQL(
-            await schema.addClassIfNotExists(
-              name,
-              transformToParse(schemaFields)
-            )
+          const parseClass = await schema.addClassIfNotExists(
+            name,
+            transformToParse(schemaFields)
           );
+          return {
+            name: parseClass.className,
+            schemaFields: transformToGraphQL(parseClass.fields),
+          };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

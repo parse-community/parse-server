@@ -51,6 +51,7 @@ const SCHEMA_FIELD = new GraphQLInterfaceType({
       Bytes: SCHEMA_BYTES_FIELD,
       Pointer: SCHEMA_POINTER_FIELD,
       Relation: SCHEMA_RELATION_FIELD,
+      ACL: SCHEMA_ACL_FIELD,
     }[value.type]),
 });
 
@@ -386,6 +387,16 @@ const SCHEMA_RELATION_FIELD = new GraphQLObjectType({
   },
 });
 
+const SCHEMA_ACL_FIELD = new GraphQLObjectType({
+  name: 'SchemaACLField',
+  description:
+    'The SchemaACLField is used to return information of an ACL field.',
+  interfaces: [SCHEMA_FIELD],
+  fields: {
+    name: SCHEMA_FIELD_NAME_ATT,
+  },
+});
+
 const SCHEMA_FIELDS_INPUT = new GraphQLInputObjectType({
   name: 'SchemaFieldsInput',
   description: `The CreateClassSchemaInput type is used to specify the schema for a new object class to be created.`,
@@ -499,6 +510,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(SCHEMA_POINTER_FIELD, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_RELATION_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_RELATION_FIELD, true);
+  parseGraphQLSchema.addGraphQLType(SCHEMA_ACL_FIELD, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_FIELDS_INPUT, true);
   parseGraphQLSchema.addGraphQLType(CLASS, true);
 };
@@ -550,6 +562,7 @@ export {
   SCHEMA_POINTER_FIELD,
   SCHEMA_RELATION_FIELD_INPUT,
   SCHEMA_RELATION_FIELD,
+  SCHEMA_ACL_FIELD,
   SCHEMA_FIELDS_INPUT,
   CLASS_NAME_ATT,
   CLASS,
