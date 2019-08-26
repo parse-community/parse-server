@@ -1,5 +1,10 @@
+import Parse from 'parse/node';
 import { GraphQLNonNull } from 'graphql';
 import * as classSchemaTypes from './classSchemaTypes';
+import {
+  transformToParse,
+  transformToGraphQL,
+} from '../transformers/schemaFields';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation(
@@ -15,7 +20,29 @@ const load = parseGraphQLSchema => {
         },
       },
       type: new GraphQLNonNull(classSchemaTypes.CLASS),
-      resolve: () => ({}),
+      resolve: async (_source, args, context) => {
+        try {
+          const { name, schemaFields } = args;
+          const { config, auth } = context;
+
+          if (auth.isReadOnly) {
+            throw new Parse.Error(
+              Parse.Error.OPERATION_FORBIDDEN,
+              "read-only masterKey isn't allowed to create a schema."
+            );
+          }
+
+          const schema = await config.database.loadSchema({ clearCache: true });
+          return transformToGraphQL(
+            await schema.addClassIfNotExists(
+              name,
+              transformToParse(schemaFields)
+            )
+          );
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
     },
     true,
     true
