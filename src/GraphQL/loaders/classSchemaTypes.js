@@ -37,6 +37,21 @@ const SCHEMA_FIELD = new GraphQLInterfaceType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
   },
+  resolveType: value =>
+    ({
+      String: SCHEMA_STRING_FIELD,
+      Number: SCHEMA_NUMBER_FIELD,
+      Boolean: SCHEMA_BOOLEAN_FIELD,
+      Array: SCHEMA_ARRAY_FIELD,
+      Object: SCHEMA_OBJECT_FIELD,
+      Date: SCHEMA_DATE_FIELD,
+      File: SCHEMA_FILE_FIELD,
+      GeoPoint: SCHEMA_GEO_POINT_FIELD,
+      Polygon: SCHEMA_POLYGON_FIELD,
+      Bytes: SCHEMA_BYTES_FIELD,
+      Pointer: SCHEMA_POINTER_FIELD,
+      Relation: SCHEMA_RELATION_FIELD,
+    }[value.type]),
 });
 
 const SCHEMA_STRING_FIELD_INPUT = new GraphQLInputObjectType({
