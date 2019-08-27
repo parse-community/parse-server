@@ -5607,95 +5607,97 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support object values', async () => {
-          const someFieldValue = {
-            foo: { bar: 'baz' },
-            number: 10,
-          };
+          try {
+            const someFieldValue = {
+              foo: { bar: 'baz' },
+              number: 10,
+            };
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('Object');
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          const where = {
-            someField: {
-              _eq: { _key: 'foo.bar', _value: 'baz' },
-              _ne: { _key: 'foo.bar', _value: 'bat' },
-              _gt: { _key: 'number', _value: 9 },
-              _lt: { _key: 'number', _value: 11 },
-            },
-          };
-          const queryResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject(
-                $objectId: ID!
-                $where: SomeClassWhereInput
-                $genericWhere: Object
-              ) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: $where) {
-                  results {
-                    objectId
-                    someField
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
                   }
                 }
-                find(className: "SomeClass", where: $genericWhere) {
-                  results
+              `,
+              variables: {
+                schemaFields: {
+                  addObjects: [{ name: 'someField' }],
+                },
+              },
+            });
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Object');
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
+                    objectId
+                  }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-              where,
-              genericWhere: where, // where and genericWhere types are different
-            },
-          });
+              `,
+              variables: {
+                fields: {
+                  someField: someFieldValue,
+                },
+              },
+            });
 
-          const { get: getResult, someClasses, find } = queryResult.data;
+            const where = {
+              someField: {
+                _eq: { _key: 'foo.bar', _value: 'baz' },
+                _ne: { _key: 'foo.bar', _value: 'bat' },
+                _gt: { _key: 'number', _value: 9 },
+                _lt: { _key: 'number', _value: 11 },
+              },
+            };
+            const queryResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject(
+                  $objectId: ID!
+                  $where: SomeClassWhereInput
+                  $genericWhere: Object
+                ) {
+                  get(className: "SomeClass", objectId: $objectId)
+                  someClasses(where: $where) {
+                    results {
+                      objectId
+                      someField
+                    }
+                  }
+                  find(className: "SomeClass", where: $genericWhere) {
+                    results
+                  }
+                }
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+                where,
+                genericWhere: where, // where and genericWhere types are different
+              },
+            });
 
-          const { someField } = getResult;
-          expect(typeof someField).toEqual('object');
-          expect(someField).toEqual(someFieldValue);
+            const { get: getResult, someClasses, find } = queryResult.data;
 
-          // Checks class query results
-          expect(someClasses.results.length).toEqual(2);
-          expect(someClasses.results[0].someField).toEqual(someFieldValue);
-          expect(someClasses.results[1].someField).toEqual(someFieldValue);
+            const { someField } = getResult;
+            expect(typeof someField).toEqual('object');
+            expect(someField).toEqual(someFieldValue);
 
-          // Checks generic query results
-          expect(find.results.length).toEqual(2);
-          expect(find.results[0].someField).toEqual(someFieldValue);
-          expect(find.results[1].someField).toEqual(someFieldValue);
+            // Checks class query results
+            expect(someClasses.results.length).toEqual(1);
+            expect(someClasses.results[0].someField).toEqual(someFieldValue);
+
+            // Checks generic query results
+            expect(find.results.length).toEqual(1);
+            expect(find.results[0].someField).toEqual(someFieldValue);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support object composed queries', async () => {
