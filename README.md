@@ -510,11 +510,9 @@ Since your application does not have a schema yet, you can use the generic `crea
 
 ```graphql
 mutation CreateObject {
-  objects {
-    create(className: "GameScore" fields: { score: 1337 playerName: "Sean Plott" cheatMode: false }) {
-      objectId
-      createdAt
-    }
+  create(className: "GameScore" fields: { score: 1337 playerName: "Sean Plott" cheatMode: false }) {
+    objectId
+    createdAt
   }
 }
 ```
@@ -524,11 +522,9 @@ You should receive a response similar to this:
 ```json
 {
   "data": {
-    "objects": {
-      "create": {
-        "objectId": "7jfBmbGgyF",
-        "createdAt": "2019-06-20T23:50:50.825Z"
-      }
+    "create": {
+      "objectId": "CVuh0o0ioY",
+      "createdAt": "2019-08-27T06:35:15.641Z"
     }
   }
 }
@@ -542,11 +538,9 @@ Run the following to create a second object:
 
 ```graphql
 mutation CreateGameScore {
-  objects {
-    createGameScore(fields: { score: 2558 playerName: "Luke Skywalker" cheatMode: false }) {
-      objectId
-      createdAt
-    }
+  createGameScore(fields: { score: 2558 playerName: "Luke Skywalker" cheatMode: false }) {
+    objectId
+    createdAt
   }
 }
 ```
@@ -556,11 +550,9 @@ You should receive a response similar to this:
 ```json
 {
   "data": {
-    "objects": {
-      "createGameScore": {
-        "objectId": "gySYolb2CL",
-        "createdAt": "2019-06-20T23:56:37.114Z"
-      }
+    "createGameScore": {
+      "objectId": "XyvErLoJ2O",
+      "createdAt": "2019-08-27T06:37:32.078Z"
     }
   }
 }
@@ -569,13 +561,11 @@ You should receive a response similar to this:
 You can also run a query to this new class:
 
 ```graphql
-query FindGameScore {
-  objects {
-    findGameScore {
-      results {
-        playerName
-        score
-      }
+query GameScores {
+  gameScores {
+    results {
+      playerName
+      score
     }
   }
 }
@@ -586,19 +576,17 @@ You should receive a response similar to this:
 ```json
 {
   "data": {
-    "objects": {
-      "findGameScore": {
-        "results": [
-          {
-            "playerName": "Sean Plott",
-            "score": 1337
-          },
-          {
-            "playerName": "Luke Skywalker",
-            "score": 2558
-          }
-        ]
-      }
+    "gameScores": {
+      "results": [
+        {
+          "playerName": "Sean Plott",
+          "score": 1337
+        },
+        {
+          "playerName": "Luke Skywalker",
+          "score": 2558
+        }
+      ]
     }
   }
 }
