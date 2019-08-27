@@ -28,7 +28,7 @@ export const extractKeysAndInclude = selectedFields => {
         while (pointIndex > 0) {
           const lastField = field.slice(pointIndex + 1);
           field = field.slice(0, pointIndex);
-          if (!fields.includes(field) && lastField !== 'objectId') {
+          if (!fields.includes(field) && lastField !== 'id') {
             fields.push(field);
           }
           pointIndex = field.lastIndexOf('.');

@@ -7,8 +7,17 @@ const createObject = async (className, fields, config, auth, info) => {
     fields = {};
   }
 
-  return (await rest.create(config, auth, className, fields, info.clientSDK))
-    .response;
+  const object = (await rest.create(
+    config,
+    auth,
+    className,
+    fields,
+    info.clientSDK
+  )).response;
+  object.id = object.objectId;
+  delete object.objectId;
+
+  return object;
 };
 
 const updateObject = async (
@@ -71,23 +80,16 @@ const load = parseGraphQLSchema => {
         'The update mutation can be used to update an object of a certain class.',
       args: {
         className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
         fields: defaultGraphQLTypes.FIELDS_ATT,
       },
       type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
       async resolve(_source, args, context) {
         try {
-          const { className, objectId, fields } = args;
+          const { className, id, fields } = args;
           const { config, auth, info } = context;
 
-          return await updateObject(
-            className,
-            objectId,
-            fields,
-            config,
-            auth,
-            info
-          );
+          return await updateObject(className, id, fields, config, auth, info);
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -104,15 +106,15 @@ const load = parseGraphQLSchema => {
         'The delete mutation can be used to delete an object of a certain class.',
       args: {
         className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
       },
       type: new GraphQLNonNull(GraphQLBoolean),
       async resolve(_source, args, context) {
         try {
-          const { className, objectId } = args;
+          const { className, id } = args;
           const { config, auth, info } = context;
 
-          return await deleteObject(className, objectId, config, auth, info);
+          return await deleteObject(className, id, config, auth, info);
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

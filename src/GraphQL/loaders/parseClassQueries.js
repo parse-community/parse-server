@@ -14,7 +14,7 @@ const getParseClassQueryConfig = function(
 };
 
 const getQuery = async (className, _source, args, context, queryInfo) => {
-  const { objectId, readPreference, includeReadPreference } = args;
+  const { id, readPreference, includeReadPreference } = args;
   const { config, auth, info } = context;
   const selectedFields = getFieldNames(queryInfo);
 
@@ -22,7 +22,7 @@ const getQuery = async (className, _source, args, context, queryInfo) => {
 
   return await objectsQueries.getObject(
     className,
-    objectId,
+    id,
     keys,
     include,
     readPreference,
@@ -57,7 +57,7 @@ const load = function(
     parseGraphQLSchema.addGraphQLQuery(getGraphQLQueryName, {
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
         readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
         includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
       },

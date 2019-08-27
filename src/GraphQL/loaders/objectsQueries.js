@@ -43,11 +43,15 @@ const getObject = async (
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
 
+  const object = response.results[0];
   if (className === '_User') {
-    delete response.results[0].sessionToken;
+    delete object.sessionToken;
   }
 
-  return response.results[0];
+  object.id = object.objectId;
+  delete object.objectId;
+
+  return object;
 };
 
 const findObjects = async (
@@ -70,7 +74,6 @@ const findObjects = async (
   if (!where) {
     where = {};
   }
-
   transformQueryInputToParse(where);
 
   const options = {};
@@ -118,7 +121,7 @@ const findObjects = async (
     options.subqueryReadPreference = subqueryReadPreference;
   }
 
-  return await rest.find(
+  const objects = await rest.find(
     config,
     auth,
     className,
@@ -126,6 +129,12 @@ const findObjects = async (
     options,
     info.clientSDK
   );
+  objects.results.forEach(object => {
+    object.id = object.objectId;
+    delete object.objectId;
+  });
+
+  return objects;
 };
 
 const load = parseGraphQLSchema => {
@@ -136,7 +145,7 @@ const load = parseGraphQLSchema => {
         'The get query can be used to get an object of a certain class by its objectId.',
       args: {
         className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
         keys: defaultGraphQLTypes.KEYS_ATT,
         include: defaultGraphQLTypes.INCLUDE_ATT,
         readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
@@ -147,7 +156,7 @@ const load = parseGraphQLSchema => {
         try {
           const {
             className,
-            objectId,
+            id,
             keys,
             include,
             readPreference,
@@ -158,7 +167,7 @@ const load = parseGraphQLSchema => {
 
           return await getObject(
             className,
-            objectId,
+            id,
             keys,
             include,
             readPreference,

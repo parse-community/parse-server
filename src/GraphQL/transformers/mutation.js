@@ -110,7 +110,7 @@ const transformers = {
       )).map(object => ({
         __type: 'Pointer',
         className: targetClass,
-        objectId: object.objectId,
+        objectId: object.id,
       }));
     }
 
@@ -119,7 +119,7 @@ const transformers = {
       value.add = value.add.map(input => ({
         __type: 'Pointer',
         className: targetClass,
-        objectId: input.objectId,
+        objectId: input,
       }));
       op.ops.push({
         __op: 'AddRelation',
@@ -133,7 +133,7 @@ const transformers = {
         objects: value.remove.map(input => ({
           __type: 'Pointer',
           className: targetClass,
-          objectId: input.objectId,
+          objectId: input,
         })),
       });
     }
@@ -168,14 +168,14 @@ const transformers = {
       return {
         __type: 'Pointer',
         className: targetClass,
-        objectId: nestedObjectToAdd.objectId,
+        objectId: nestedObjectToAdd.id,
       };
     }
-    if (value.link && value.link.objectId) {
+    if (value.link) {
       return {
         __type: 'Pointer',
         className: targetClass,
-        objectId: value.link.objectId,
+        objectId: value.link,
       };
     }
   },
