@@ -5850,68 +5850,86 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support array values', async () => {
-          const someFieldValue = [1, 'foo', ['bar'], { lorem: 'ipsum' }, true];
+          try {
+            const someFieldValue = [
+              1,
+              'foo',
+              ['bar'],
+              { lorem: 'ipsum' },
+              true,
+            ];
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
+                  }
                 }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
+              `,
+              variables: {
+                schemaFields: {
+                  addArrays: [{ name: 'someField' }],
+                },
               },
-            },
-          });
+            });
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('Array');
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('Array');
 
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
-                  results {
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
                     objectId
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: someFieldValue,
+                },
+              },
+            });
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  someClass(objectId: $objectId) {
                     someField {
                       ... on Element {
                         value
                       }
                     }
                   }
+                  someClasses(where: { someField: { _exists: true } }) {
+                    results {
+                      objectId
+                      someField {
+                        ... on Element {
+                          value
+                        }
+                      }
+                    }
+                  }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+              },
+            });
 
-          const { someField } = getResult.data.get;
-          expect(Array.isArray(someField)).toBeTruthy();
-          expect(someField).toEqual(someFieldValue);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
+            const { someField } = getResult.data.someClass;
+            expect(Array.isArray(someField)).toBeTruthy();
+            expect(someField.map(element => element.value)).toEqual(
+              someFieldValue
+            );
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support undefined array', async () => {
