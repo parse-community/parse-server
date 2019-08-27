@@ -5511,11 +5511,7 @@ describe('ParseGraphQLServer', () => {
               jasmine.stringMatching(/_myFileName.txt$/)
             );
 
-            const someFieldValue = {
-              __type: 'File',
-              name: result.data.createFile.name,
-              url: result.data.createFile.url,
-            };
+            const someFieldValue = result.data.createFile.name;
 
             await apolloClient.mutate({
               mutation: gql`
@@ -5564,7 +5560,12 @@ describe('ParseGraphQLServer', () => {
             const getResult = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    someField {
+                      name
+                      url
+                    }
+                  }
                   findSomeClass1: someClasses(
                     where: { someField: { _exists: true } }
                   ) {
@@ -5592,12 +5593,17 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(typeof getResult.data.get.someField).toEqual('object');
-            expect(getResult.data.get.someField).toEqual(someFieldValue);
-            expect(getResult.data.findSomeClass1.results.length).toEqual(2);
-            expect(getResult.data.findSomeClass2.results.length).toEqual(2);
+            expect(typeof getResult.data.someClass.someField).toEqual('object');
+            expect(getResult.data.someClass.someField.name).toEqual(
+              result.data.createFile.name
+            );
+            expect(getResult.data.someClass.someField.url).toEqual(
+              result.data.createFile.url
+            );
+            expect(getResult.data.findSomeClass1.results.length).toEqual(1);
+            expect(getResult.data.findSomeClass2.results.length).toEqual(1);
 
-            res = await fetch(getResult.data.get.someField.url);
+            res = await fetch(getResult.data.someClass.someField.url);
 
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
@@ -5663,7 +5669,10 @@ describe('ParseGraphQLServer', () => {
                   $where: SomeClassWhereInput
                   $genericWhere: Object
                 ) {
-                  get(className: "SomeClass", objectId: $objectId)
+                  someClass(objectId: $objectId) {
+                    objectId
+                    someField
+                  }
                   someClasses(where: $where) {
                     results {
                       objectId
@@ -5682,7 +5691,11 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            const { get: getResult, someClasses, find } = queryResult.data;
+            const {
+              someClass: getResult,
+              someClasses,
+              find,
+            } = queryResult.data;
 
             const { someField } = getResult;
             expect(typeof someField).toEqual('object');
