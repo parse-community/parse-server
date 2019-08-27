@@ -5,7 +5,7 @@ const transformToParse = graphQLSchemaFields => {
 
   let parseSchemaFields = {};
 
-  const reducerFabric = type => (parseSchemaFields, field) => {
+  const reducerGenerator = type => (parseSchemaFields, field) => {
     if (
       graphQLSchemaFields.remove &&
       graphQLSchemaFields.remove.find(
@@ -46,73 +46,73 @@ const transformToParse = graphQLSchemaFields => {
 
   if (graphQLSchemaFields.addStrings) {
     parseSchemaFields = graphQLSchemaFields.addStrings.reduce(
-      reducerFabric('String'),
+      reducerGenerator('String'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addNumbers) {
     parseSchemaFields = graphQLSchemaFields.addNumbers.reduce(
-      reducerFabric('Number'),
+      reducerGenerator('Number'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addBooleans) {
     parseSchemaFields = graphQLSchemaFields.addBooleans.reduce(
-      reducerFabric('Boolean'),
+      reducerGenerator('Boolean'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addArrays) {
     parseSchemaFields = graphQLSchemaFields.addArrays.reduce(
-      reducerFabric('Array'),
+      reducerGenerator('Array'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addObjects) {
     parseSchemaFields = graphQLSchemaFields.addObjects.reduce(
-      reducerFabric('Object'),
+      reducerGenerator('Object'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addDates) {
     parseSchemaFields = graphQLSchemaFields.addDates.reduce(
-      reducerFabric('Date'),
+      reducerGenerator('Date'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addFiles) {
     parseSchemaFields = graphQLSchemaFields.addFiles.reduce(
-      reducerFabric('File'),
+      reducerGenerator('File'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addGeoPoints) {
     parseSchemaFields = graphQLSchemaFields.addGeoPoints.reduce(
-      reducerFabric('GeoPoint'),
+      reducerGenerator('GeoPoint'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addPolygons) {
     parseSchemaFields = graphQLSchemaFields.addPolygons.reduce(
-      reducerFabric('Polygon'),
+      reducerGenerator('Polygon'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addBytes) {
     parseSchemaFields = graphQLSchemaFields.addBytes.reduce(
-      reducerFabric('Byte'),
+      reducerGenerator('Byte'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addPointers) {
     parseSchemaFields = graphQLSchemaFields.addPointers.reduce(
-      reducerFabric('Pointer'),
+      reducerGenerator('Pointer'),
       parseSchemaFields
     );
   }
   if (graphQLSchemaFields.addRelations) {
     parseSchemaFields = graphQLSchemaFields.addRelations.reduce(
-      reducerFabric('Relation'),
+      reducerGenerator('Relation'),
       parseSchemaFields
     );
   }
