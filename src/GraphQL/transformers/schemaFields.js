@@ -100,7 +100,7 @@ const transformToParse = graphQLSchemaFields => {
   }
   if (graphQLSchemaFields.addBytes) {
     parseSchemaFields = graphQLSchemaFields.addBytes.reduce(
-      reducerGenerator('Byte'),
+      reducerGenerator('Bytes'),
       parseSchemaFields
     );
   }
