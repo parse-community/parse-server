@@ -6214,122 +6214,90 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support Polygons', async () => {
-          const someFieldValue = {
-            __type: 'Polygon',
-            coordinates: [[44, 45], [46, 47], [48, 49], [44, 45]],
-          };
+          try {
+            const somePolygonFieldValue = [
+              [44, 45],
+              [46, 47],
+              [48, 49],
+              [44, 45],
+            ].map(point => ({
+              latitude: point[0],
+              longitude: point[1],
+            }));
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
+                  }
                 }
-              }
-            `,
-            variables: {
-              fields: {
-                somePolygonField: someFieldValue,
+              `,
+              variables: {
+                schemaFields: {
+                  addPolygons: [{ name: 'somePolygonField' }],
+                },
               },
-            },
-          });
+            });
 
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.somePolygonField.type).toEqual('Polygon');
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.somePolygonField.type).toEqual('Polygon');
 
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                somePolygonField: someFieldValue.coordinates.map(point => ({
-                  latitude: point[0],
-                  longitude: point[1],
-                })),
-              },
-            },
-          });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { somePolygonField: { _exists: true } }) {
-                  results {
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
                     objectId
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  somePolygonField: somePolygonFieldValue,
+                },
+              },
+            });
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  someClass(objectId: $objectId) {
                     somePolygonField {
                       latitude
                       longitude
                     }
                   }
-                }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
-
-          expect(typeof getResult.data.get.somePolygonField).toEqual('object');
-          expect(getResult.data.get.somePolygonField).toEqual(someFieldValue);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
-        });
-
-        it('should support polygon values', async () => {
-          const someFieldValue = {
-            __type: 'Polygon',
-            coordinates: [[1.0, 2.1], [3.2, 4.3], [5.4, 6.5], [1.0, 2.1]],
-          };
-
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                somePolygonField: someFieldValue,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                someClass(objectId: $objectId) {
-                  somePolygonField {
-                    latitude
-                    longitude
+                  someClasses(where: { somePolygonField: { _exists: true } }) {
+                    results {
+                      objectId
+                      somePolygonField {
+                        latitude
+                        longitude
+                      }
+                    }
                   }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+              },
+            });
 
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.somePolygonField.type).toEqual('Polygon');
-
-          const { somePolygonField } = getResult.data.someClass;
-          expect(Array.isArray(somePolygonField)).toBeTruthy();
-          somePolygonField.forEach((coord, i) => {
-            expect(coord.latitude).toEqual(someFieldValue.coordinates[i][0]);
-            expect(coord.longitude).toEqual(someFieldValue.coordinates[i][1]);
-          });
+            expect(typeof getResult.data.someClass.somePolygonField).toEqual(
+              'object'
+            );
+            expect(getResult.data.someClass.somePolygonField).toEqual(
+              somePolygonFieldValue.map(geoPoint => ({
+                ...geoPoint,
+                __typename: 'GeoPoint',
+              }))
+            );
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it_only_db('mongo')('should support bytes values', async () => {
