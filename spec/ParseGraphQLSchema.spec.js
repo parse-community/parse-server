@@ -363,14 +363,14 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Mutation create could not be added to the auto schema because it collided with an existing field.'
+              'Mutation signUp could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
       expect(
-        parseGraphQLSchema.addGraphQLMutation('create', {})
+        parseGraphQLSchema.addGraphQLMutation('signUp', {})
       ).toBeUndefined();
       expect(logged).toBeTruthy();
     });

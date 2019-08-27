@@ -3219,35 +3219,6 @@ describe('ParseGraphQLServer', () => {
 
       describe('Objects Mutations', () => {
         describe('Create', () => {
-          it('should return CreateResult object using generic mutation', async () => {
-            const result = await apolloClient.mutate({
-              mutation: gql`
-                mutation CreateSomeObject($fields: Object) {
-                  create(className: "SomeClass", fields: $fields) {
-                    objectId
-                    createdAt
-                  }
-                }
-              `,
-              variables: {
-                fields: {
-                  someField: 'someValue',
-                },
-              },
-            });
-
-            expect(result.data.create.objectId).toBeDefined();
-
-            const obj = await new Parse.Query('SomeClass').get(
-              result.data.create.objectId
-            );
-
-            expect(obj.createdAt).toEqual(
-              new Date(result.data.create.createdAt)
-            );
-            expect(obj.get('someField')).toEqual('someValue');
-          });
-
           it('should return specific type object using class specific mutation', async () => {
             const customerSchema = new Parse.Schema('Customer');
             customerSchema.addString('someField');
@@ -3293,28 +3264,17 @@ describe('ParseGraphQLServer', () => {
             async function createObject(className, headers) {
               const result = await apolloClient.mutate({
                 mutation: gql`
-                  mutation CreateSomeObject($className: String!) {
-                    create(className: $className) {
-                      objectId
-                      createdAt
-                    }
+                  mutation CreateSomeObject {
                     create${className} {
                       objectId
                       createdAt
                     }
                   }
                 `,
-                variables: {
-                  className,
-                },
                 context: {
                   headers,
                 },
               });
-
-              const { create } = result.data;
-              expect(create.objectId).toBeDefined();
-              expect(create.createdAt).toBeDefined();
 
               const specificCreate = result.data[`create${className}`];
               expect(specificCreate.objectId).toBeDefined();
