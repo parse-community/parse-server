@@ -6135,73 +6135,82 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should support Geo Points', async () => {
-          const someFieldValue = {
-            __type: 'GeoPoint',
-            latitude: 45,
-            longitude: 45,
-          };
+          try {
+            const someFieldValue = {
+              __typename: 'GeoPoint',
+              latitude: 45,
+              longitude: 45,
+            };
 
-          const createResult = await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: Object) {
-                create(className: "SomeClass", fields: $fields) {
-                  objectId
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateClass($schemaFields: SchemaFieldsInput) {
+                  createClass(name: "SomeClass", schemaFields: $schemaFields) {
+                    name
+                  }
                 }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: someFieldValue,
-              },
-            },
-          });
-
-          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
-
-          const schema = await new Parse.Schema('SomeClass').get();
-          expect(schema.fields.someField.type).toEqual('GeoPoint');
-
-          await apolloClient.mutate({
-            mutation: gql`
-              mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
-                createSomeClass(fields: $fields) {
-                  objectId
-                }
-              }
-            `,
-            variables: {
-              fields: {
-                someField: {
-                  latitude: someFieldValue.latitude,
-                  longitude: someFieldValue.longitude,
+              `,
+              variables: {
+                schemaFields: {
+                  addGeoPoints: [{ name: 'someField' }],
                 },
               },
-            },
-          });
+            });
 
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
-                  results {
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const schema = await new Parse.Schema('SomeClass').get();
+            expect(schema.fields.someField.type).toEqual('GeoPoint');
+
+            const createResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
+                  createSomeClass(fields: $fields) {
                     objectId
+                  }
+                }
+              `,
+              variables: {
+                fields: {
+                  someField: {
+                    latitude: someFieldValue.latitude,
+                    longitude: someFieldValue.longitude,
+                  },
+                },
+              },
+            });
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query GetSomeObject($objectId: ID!) {
+                  someClass(objectId: $objectId) {
                     someField {
                       latitude
                       longitude
                     }
                   }
+                  someClasses(where: { someField: { _exists: true } }) {
+                    results {
+                      objectId
+                      someField {
+                        latitude
+                        longitude
+                      }
+                    }
+                  }
                 }
-              }
-            `,
-            variables: {
-              objectId: createResult.data.create.objectId,
-            },
-          });
+              `,
+              variables: {
+                objectId: createResult.data.createSomeClass.objectId,
+              },
+            });
 
-          expect(typeof getResult.data.get.someField).toEqual('object');
-          expect(getResult.data.get.someField).toEqual(someFieldValue);
-          expect(getResult.data.someClasses.results.length).toEqual(2);
+            expect(typeof getResult.data.someClass.someField).toEqual('object');
+            expect(getResult.data.someClass.someField).toEqual(someFieldValue);
+            expect(getResult.data.someClasses.results.length).toEqual(1);
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('should support Polygons', async () => {
