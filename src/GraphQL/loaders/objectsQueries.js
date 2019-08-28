@@ -47,10 +47,6 @@ const getObject = async (
   if (className === '_User') {
     delete object.sessionToken;
   }
-
-  object.id = object.objectId;
-  delete object.objectId;
-
   return object;
 };
 
@@ -121,7 +117,7 @@ const findObjects = async (
     options.subqueryReadPreference = subqueryReadPreference;
   }
 
-  const objects = await rest.find(
+  return await rest.find(
     config,
     auth,
     className,
@@ -129,12 +125,6 @@ const findObjects = async (
     options,
     info.clientSDK
   );
-  objects.results.forEach(object => {
-    object.id = object.objectId;
-    delete object.objectId;
-  });
-
-  return objects;
 };
 
 const load = parseGraphQLSchema => {
@@ -165,7 +155,7 @@ const load = parseGraphQLSchema => {
 
           const { config, auth, info } = context;
 
-          return await getObject(
+          const object = await getObject(
             className,
             id,
             keys,
@@ -176,6 +166,10 @@ const load = parseGraphQLSchema => {
             auth,
             info
           );
+          object.id = object.objectId;
+          delete object.objectId;
+
+          return object;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -231,7 +225,7 @@ const load = parseGraphQLSchema => {
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);
 
-          return await findObjects(
+          const objects = await findObjects(
             className,
             where,
             order,
@@ -248,6 +242,11 @@ const load = parseGraphQLSchema => {
             info,
             selectedFields
           );
+          objects.results.forEach(obj => {
+            obj.id = obj.objectId;
+            delete obj.objectId;
+          });
+          return objects;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

@@ -41,8 +41,6 @@ const getUserFromSessionToken = async (config, info, queryInfo) => {
   } else {
     const user = response.results[0].user;
     user.sessionToken = sessionToken;
-    user.id = user.objectId;
-    delete user.objectId;
     return user;
   }
 };

@@ -627,7 +627,7 @@ const load = (
                       object: {
                         __type: 'Pointer',
                         className: className,
-                        objectId: source.id,
+                        objectId: source.objectId,
                       },
                       key: field,
                     },
@@ -685,27 +685,11 @@ const load = (
                   elem.objectId &&
                   elem.__type === 'Object'
                 ) {
-                  elem.id = elem.objectId;
-                  delete elem.objectId;
                   return elem;
                 } else {
                   return { value: elem };
                 }
               });
-            },
-          },
-        };
-      } else if (parseClass.fields[field].type === 'Pointer') {
-        return {
-          ...fields,
-          [field]: {
-            description: `This is the object ${field}.`,
-            type,
-            async resolve(source) {
-              const targetObject = source[field];
-              targetObject.id = targetObject.objectId;
-              delete targetObject.objectId;
-              return targetObject;
             },
           },
         };

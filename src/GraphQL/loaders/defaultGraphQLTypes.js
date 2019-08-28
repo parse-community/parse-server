@@ -410,6 +410,7 @@ const FIELDS_ATT = {
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: ID_INPUT,
+  resolve: async ({ id, objectId }) => objectId || id, // id when handling input, objectId when handling output
 };
 
 const CREATED_AT_ATT = {
@@ -1046,7 +1047,7 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
       'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
     types: () => [ELEMENT, ...classTypes],
     resolveType: value => {
-      if (value.__type === 'Object' && value.className && value.id) {
+      if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
           return parseGraphQLSchema.parseClassTypes[value.className]
             .classGraphQLOutputType;
