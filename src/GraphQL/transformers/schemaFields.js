@@ -1,3 +1,5 @@
+import Parse from 'parse/node';
+
 const transformToParse = graphQLSchemaFields => {
   if (!graphQLSchemaFields) {
     return {};
@@ -14,23 +16,18 @@ const transformToParse = graphQLSchemaFields => {
     ) {
       return parseSchemaFields;
     }
-    if (type === 'Relation') {
-      return {
-        ...parseSchemaFields,
-        [field.name]: {
-          type,
-          targetClass: field.targetClassName,
-        },
-      };
+    if (parseSchemaFields[field.name]) {
+      throw new Parse.Error(
+        Parse.Error.InvalidFieldName,
+        `Duplicated field name: ${field.name}`
+      );
     }
-    if (type === 'Pointer') {
+    if (type === 'Relation' || type === 'Pointer') {
       return {
         ...parseSchemaFields,
         [field.name]: {
           type,
           targetClass: field.targetClassName,
-          isRequired: field.isRequired,
-          defaultValue: field.defaultValue,
         },
       };
     }
@@ -38,8 +35,6 @@ const transformToParse = graphQLSchemaFields => {
       ...parseSchemaFields,
       [field.name]: {
         type,
-        isRequired: field.isRequired,
-        defaultValue: field.defaultValue,
       },
     };
   };
@@ -86,8 +81,8 @@ const transformToParse = graphQLSchemaFields => {
       parseSchemaFields
     );
   }
-  if (graphQLSchemaFields.addGeoPoints) {
-    parseSchemaFields = graphQLSchemaFields.addGeoPoints.reduce(
+  if (graphQLSchemaFields.addGeoPoint) {
+    parseSchemaFields = [graphQLSchemaFields.addGeoPoint].reduce(
       reducerGenerator('GeoPoint'),
       parseSchemaFields
     );
@@ -124,9 +119,7 @@ const transformToGraphQL = parseSchemaFields => {
   return Object.keys(parseSchemaFields).map(name => ({
     name,
     type: parseSchemaFields[name].type,
-    targetClass: parseSchemaFields[name].targetClass,
-    isRequired: parseSchemaFields[name].isRequired,
-    defaultValue: parseSchemaFields[name].defaultValue,
+    targetClassName: parseSchemaFields[name].targetClass,
   }));
 };
 

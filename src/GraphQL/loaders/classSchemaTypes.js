@@ -1,24 +1,15 @@
 import {
   GraphQLNonNull,
   GraphQLString,
-  GraphQLBoolean,
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLObjectType,
   GraphQLInterfaceType,
 } from 'graphql';
-import { transformInputTypeToGraphQL } from '../transformers/inputType';
-import { transformOutputTypeToGraphQL } from '../transformers/outputType';
 
 const SCHEMA_FIELD_NAME_ATT = {
   description: 'This is the field name.',
   type: new GraphQLNonNull(GraphQLString),
-};
-
-const SCHEMA_FIELD_IS_REQUIRED_ATT = {
-  description:
-    'This is the flag to specify whether the field is required or not.',
-  type: GraphQLBoolean,
 };
 
 const SCHEMA_FIELD_INPUT = new GraphQLInputObjectType({
@@ -61,11 +52,6 @@ const SCHEMA_STRING_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaStringFieldInput is used to specify a field of type string for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('String'),
-    },
   },
 });
 
@@ -76,11 +62,6 @@ const SCHEMA_STRING_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('String'),
-    },
   },
 });
 
@@ -90,11 +71,6 @@ const SCHEMA_NUMBER_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaNumberFieldInput is used to specify a field of type number for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Number'),
-    },
   },
 });
 
@@ -105,11 +81,6 @@ const SCHEMA_NUMBER_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Number'),
-    },
   },
 });
 
@@ -119,11 +90,6 @@ const SCHEMA_BOOLEAN_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaBooleanFieldInput is used to specify a field of type boolean for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Boolean'),
-    },
   },
 });
 
@@ -134,11 +100,6 @@ const SCHEMA_BOOLEAN_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Boolean'),
-    },
   },
 });
 
@@ -148,11 +109,16 @@ const SCHEMA_ARRAY_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaArrayFieldInput is used to specify a field of type array for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Array'),
-    },
+  },
+});
+
+const SCHEMA_ARRAY_FIELD = new GraphQLObjectType({
+  name: 'SchemaArrayField',
+  description:
+    'The SchemaArrayField is used to return information of an Array field.',
+  interfaces: [SCHEMA_FIELD],
+  fields: {
+    name: SCHEMA_FIELD_NAME_ATT,
   },
 });
 
@@ -162,11 +128,6 @@ const SCHEMA_OBJECT_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaObjectFieldInput is used to specify a field of type object for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Object'),
-    },
   },
 });
 
@@ -177,11 +138,6 @@ const SCHEMA_OBJECT_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Object'),
-    },
   },
 });
 
@@ -191,11 +147,6 @@ const SCHEMA_DATE_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaDateFieldInput is used to specify a field of type date for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Date'),
-    },
   },
 });
 
@@ -206,11 +157,6 @@ const SCHEMA_DATE_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Date'),
-    },
   },
 });
 
@@ -220,11 +166,6 @@ const SCHEMA_FILE_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaFileFieldInput is used to specify a field of type file for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('File'),
-    },
   },
 });
 
@@ -235,11 +176,6 @@ const SCHEMA_FILE_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('File'),
-    },
   },
 });
 
@@ -249,11 +185,6 @@ const SCHEMA_GEO_POINT_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaGeoPointFieldInput is used to specify a field of type geo point for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('GeoPoint'),
-    },
   },
 });
 
@@ -264,11 +195,6 @@ const SCHEMA_GEO_POINT_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('GeoPoint'),
-    },
   },
 });
 
@@ -278,11 +204,6 @@ const SCHEMA_POLYGON_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaPolygonFieldInput is used to specify a field of type polygon for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Polygon'),
-    },
   },
 });
 
@@ -293,11 +214,6 @@ const SCHEMA_POLYGON_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Polygon'),
-    },
   },
 });
 
@@ -307,11 +223,6 @@ const SCHEMA_BYTES_FIELD_INPUT = new GraphQLInputObjectType({
     'The SchemaBytesFieldInput is used to specify a field of type bytes for an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Bytes'),
-    },
   },
 });
 
@@ -322,11 +233,6 @@ const SCHEMA_BYTES_FIELD = new GraphQLObjectType({
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Bytes'),
-    },
   },
 });
 
@@ -342,11 +248,6 @@ const SCHEMA_POINTER_FIELD_INPUT = new GraphQLInputObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     targetClassName: TARGET_CLASS_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformInputTypeToGraphQL('Pointer'),
-    },
   },
 });
 
@@ -358,11 +259,6 @@ const SCHEMA_POINTER_FIELD = new GraphQLObjectType({
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
     targetClassName: TARGET_CLASS_ATT,
-    isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-    defaultValue: {
-      description: 'This is the field default value.',
-      type: transformOutputTypeToGraphQL('Pointer'),
-    },
   },
 });
 
@@ -434,10 +330,10 @@ const SCHEMA_FIELDS_INPUT = new GraphQLInputObjectType({
       description: 'These are the File fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_FILE_FIELD_INPUT)),
     },
-    addGeoPoints: {
+    addGeoPoint: {
       description:
-        'These are the Geo Point fields to be added to the class schema.',
-      type: new GraphQLList(new GraphQLNonNull(SCHEMA_GEO_POINT_FIELD_INPUT)),
+        'This is the Geo Point field to be added to the class schema. Currently it is supported only one GeoPoint field per Class.',
+      type: SCHEMA_GEO_POINT_FIELD_INPUT,
     },
     addPolygons: {
       description:
@@ -494,6 +390,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(SCHEMA_BOOLEAN_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_BOOLEAN_FIELD, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_ARRAY_FIELD_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SCHEMA_ARRAY_FIELD, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_OBJECT_FIELD_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_OBJECT_FIELD, true);
   parseGraphQLSchema.addGraphQLType(SCHEMA_DATE_FIELD_INPUT, true);
@@ -515,28 +412,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(CLASS, true);
 };
 
-let SCHEMA_ARRAY_FIELD;
-
-const loadSchemaArrayField = parseGraphQLSchema => {
-  SCHEMA_ARRAY_FIELD = new GraphQLObjectType({
-    name: 'SchemaArrayField',
-    description:
-      'The SchemaArrayField is used to return information of an Array field.',
-    fields: {
-      name: SCHEMA_FIELD_NAME_ATT,
-      isRequired: SCHEMA_FIELD_IS_REQUIRED_ATT,
-      defaultValue: {
-        description: 'This is the field default value.',
-        type: transformOutputTypeToGraphQL('Array'),
-      },
-    },
-  });
-  parseGraphQLSchema.addGraphQLType(SCHEMA_ARRAY_FIELD, true, true);
-};
-
 export {
   SCHEMA_FIELD_NAME_ATT,
-  SCHEMA_FIELD_IS_REQUIRED_ATT,
   SCHEMA_FIELD_INPUT,
   SCHEMA_STRING_FIELD_INPUT,
   SCHEMA_STRING_FIELD,
@@ -545,6 +422,7 @@ export {
   SCHEMA_BOOLEAN_FIELD_INPUT,
   SCHEMA_BOOLEAN_FIELD,
   SCHEMA_ARRAY_FIELD_INPUT,
+  SCHEMA_ARRAY_FIELD,
   SCHEMA_OBJECT_FIELD_INPUT,
   SCHEMA_OBJECT_FIELD,
   SCHEMA_DATE_FIELD_INPUT,
@@ -567,6 +445,4 @@ export {
   CLASS_NAME_ATT,
   CLASS,
   load,
-  SCHEMA_ARRAY_FIELD,
-  loadSchemaArrayField,
 };

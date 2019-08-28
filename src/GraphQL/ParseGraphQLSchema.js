@@ -23,7 +23,6 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Float',
   'ID',
   'ArrayResult',
-  'SchemaArrayField',
   'Query',
   'Mutation',
   'Subscription',
@@ -110,7 +109,6 @@ class ParseGraphQLSchema {
     );
 
     defaultGraphQLTypes.loadArrayResult(this, parseClasses);
-    classSchemaTypes.loadSchemaArrayField(this);
     defaultGraphQLQueries.load(this);
     defaultGraphQLMutations.load(this);
 

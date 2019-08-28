@@ -1592,6 +1592,295 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
+      describe('Class Schema Mutations', () => {
+        it('should create a new class', async () => {
+          try {
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  class1: createClass(name: "Class1") {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  class2: createClass(name: "Class2", schemaFields: null) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  class3: createClass(name: "Class3", schemaFields: {}) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  class4: createClass(
+                    name: "Class4"
+                    schemaFields: {
+                      addStrings: null
+                      addNumbers: null
+                      addBooleans: null
+                      addArrays: null
+                      addObjects: null
+                      addDates: null
+                      addFiles: null
+                      addGeoPoint: null
+                      addPolygons: null
+                      addBytes: null
+                      addPointers: null
+                      addRelations: null
+                    }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  class5: createClass(
+                    name: "Class5"
+                    schemaFields: {
+                      addStrings: []
+                      addNumbers: []
+                      addBooleans: []
+                      addArrays: []
+                      addObjects: []
+                      addDates: []
+                      addFiles: []
+                      addPolygons: []
+                      addBytes: []
+                      addPointers: []
+                      addRelations: []
+                    }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  class6: createClass(
+                    name: "Class6"
+                    schemaFields: {
+                      addStrings: [
+                        { name: "stringField1" }
+                        { name: "stringField2" }
+                        { name: "stringField3" }
+                      ]
+                      addNumbers: [
+                        { name: "numberField1" }
+                        { name: "numberField2" }
+                        { name: "numberField3" }
+                      ]
+                      addBooleans: [
+                        { name: "booleanField1" }
+                        { name: "booleanField2" }
+                        { name: "booleanField3" }
+                      ]
+                      addArrays: [
+                        { name: "arrayField1" }
+                        { name: "arrayField2" }
+                        { name: "arrayField3" }
+                      ]
+                      addObjects: [
+                        { name: "objectField1" }
+                        { name: "objectField2" }
+                        { name: "objectField3" }
+                      ]
+                      addDates: [
+                        { name: "dateField1" }
+                        { name: "dateField2" }
+                        { name: "dateField3" }
+                      ]
+                      addFiles: [
+                        { name: "fileField1" }
+                        { name: "fileField2" }
+                        { name: "fileField3" }
+                      ]
+                      addGeoPoint: { name: "geoPointField" }
+                      addPolygons: [
+                        { name: "polygonField1" }
+                        { name: "polygonField2" }
+                        { name: "polygonField3" }
+                      ]
+                      addBytes: [
+                        { name: "bytesField1" }
+                        { name: "bytesField2" }
+                        { name: "bytesField3" }
+                      ]
+                      addPointers: [
+                        { name: "pointerField1", targetClassName: "Class1" }
+                        { name: "pointerField2", targetClassName: "Class6" }
+                        { name: "pointerField3", targetClassName: "Class2" }
+                      ]
+                      addRelations: [
+                        { name: "relationField1", targetClassName: "Class1" }
+                        { name: "relationField2", targetClassName: "Class6" }
+                        { name: "relationField3", targetClassName: "Class2" }
+                      ]
+                      remove: [
+                        { name: "stringField3" }
+                        { name: "numberField3" }
+                        { name: "booleanField3" }
+                        { name: "arrayField3" }
+                        { name: "objectField3" }
+                        { name: "dateField3" }
+                        { name: "fileField3" }
+                        { name: "polygonField3" }
+                        { name: "bytesField3" }
+                        { name: "pointerField3" }
+                        { name: "relationField3" }
+                      ]
+                    }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                      ... on SchemaPointerField {
+                        targetClassName
+                      }
+                      ... on SchemaRelationField {
+                        targetClassName
+                      }
+                    }
+                  }
+                }
+              `,
+            });
+            expect(result).toEqual({
+              data: {
+                class1: {
+                  name: 'Class1',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                class2: {
+                  name: 'Class2',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                class3: {
+                  name: 'Class3',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                class4: {
+                  name: 'Class4',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                class5: {
+                  name: 'Class5',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                class6: {
+                  name: 'Class6',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'stringField1', __typename: 'SchemaStringField' },
+                    { name: 'stringField2', __typename: 'SchemaStringField' },
+                    { name: 'numberField1', __typename: 'SchemaNumberField' },
+                    { name: 'numberField2', __typename: 'SchemaNumberField' },
+                    { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                    { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                    { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                    { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                    { name: 'objectField1', __typename: 'SchemaObjectField' },
+                    { name: 'objectField2', __typename: 'SchemaObjectField' },
+                    { name: 'dateField1', __typename: 'SchemaDateField' },
+                    { name: 'dateField2', __typename: 'SchemaDateField' },
+                    { name: 'fileField1', __typename: 'SchemaFileField' },
+                    { name: 'fileField2', __typename: 'SchemaFileField' },
+                    {
+                      name: 'geoPointField',
+                      __typename: 'SchemaGeoPointField',
+                    },
+                    { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                    { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                    { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                    { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                    {
+                      name: 'pointerField1',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class1',
+                    },
+                    {
+                      name: 'pointerField2',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class6',
+                    },
+                    {
+                      name: 'relationField1',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class1',
+                    },
+                    {
+                      name: 'relationField2',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class6',
+                    },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should require master key to create a new class', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(name: "SomeClass") {
+                    name
+                  }
+                }
+              `,
+            });
+          } catch (e) {
+            handleError(e);
+          }
+        });
+      });
+
       describe('Objects Queries', () => {
         describe('Get', () => {
           it('should return a class object using generic query', async () => {
@@ -6112,7 +6401,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 schemaFields: {
-                  addGeoPoints: [{ name: 'someField' }],
+                  addGeoPoint: { name: 'someField' },
                 },
               },
             });
