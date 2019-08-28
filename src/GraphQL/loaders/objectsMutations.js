@@ -40,39 +40,6 @@ const deleteObject = async (className, objectId, config, auth, info) => {
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation(
-    'update',
-    {
-      description:
-        'The update mutation can be used to update an object of a certain class.',
-      args: {
-        className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-        fields: defaultGraphQLTypes.FIELDS_ATT,
-      },
-      type: new GraphQLNonNull(defaultGraphQLTypes.UPDATE_RESULT),
-      async resolve(_source, args, context) {
-        try {
-          const { className, objectId, fields } = args;
-          const { config, auth, info } = context;
-
-          return await updateObject(
-            className,
-            objectId,
-            fields,
-            config,
-            auth,
-            info
-          );
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
-      },
-    },
-    true,
-    true
-  );
-
-  parseGraphQLSchema.addGraphQLMutation(
     'delete',
     {
       description:
