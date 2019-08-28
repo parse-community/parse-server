@@ -43,7 +43,7 @@
     "mime": "2.4.4",
     "mongodb": "3.3.2",
     "node-rsa": "1.0.5",
-    "parse": "2.6.0",
+    "parse": "2.7.0",
     "pg-promise": "9.1.1",
     "pluralize": "^8.0.0",
     "redis": "2.8.0",
