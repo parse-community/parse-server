@@ -1,6 +1,15 @@
 import Parse from 'parse/node';
 import { ApolloError } from 'apollo-server-core';
 
+export function enforceMasterKeyAccess(auth) {
+  if (!auth.isMaster) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      'unauthorized: master key is required'
+    );
+  }
+}
+
 export function toGraphQLError(error) {
   let code, message;
   if (error instanceof Parse.Error) {

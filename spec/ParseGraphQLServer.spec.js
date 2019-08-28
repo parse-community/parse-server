@@ -1875,8 +1875,14 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             });
+            fail('should fail');
           } catch (e) {
-            handleError(e);
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.OPERATION_FORBIDDEN
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'unauthorized: master key is required'
+            );
           }
         });
       });

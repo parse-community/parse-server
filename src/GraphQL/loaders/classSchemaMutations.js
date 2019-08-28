@@ -5,6 +5,7 @@ import {
   transformToParse,
   transformToGraphQL,
 } from '../transformers/schemaFields';
+import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation(
@@ -24,6 +25,8 @@ const load = parseGraphQLSchema => {
         try {
           const { name, schemaFields } = args;
           const { config, auth } = context;
+
+          enforceMasterKeyAccess(auth);
 
           if (auth.isReadOnly) {
             throw new Parse.Error(
