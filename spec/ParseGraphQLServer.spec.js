@@ -2657,28 +2657,6 @@ describe('ParseGraphQLServer', () => {
 
       describe('Objects Queries', () => {
         describe('Get', () => {
-          it('should return a class object using generic query', async () => {
-            const obj = new Parse.Object('SomeClass');
-            obj.set('someField', 'someValue');
-            await obj.save();
-
-            const result = (await apolloClient.query({
-              query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "SomeClass", objectId: $objectId)
-                }
-              `,
-              variables: {
-                objectId: obj.id,
-              },
-            })).data.get;
-
-            expect(result.objectId).toEqual(obj.id);
-            expect(result.someField).toEqual('someValue');
-            expect(new Date(result.createdAt)).toEqual(obj.createdAt);
-            expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
-          });
-
           it('should return a class object using class specific query', async () => {
             const obj = new Parse.Object('Customer');
             obj.set('someField', 'someValue');
@@ -2905,10 +2883,11 @@ describe('ParseGraphQLServer', () => {
               const specificQueryResult = await apolloClient.query({
                 query: gql`
                   query GetSomeObject($objectId: ID!) {
-                    ${className.charAt(0).toLowerCase() +
+                    get: ${className.charAt(0).toLowerCase() +
                       className.slice(1)}(objectId: $objectId) {
                       objectId
                       createdAt
+                      someField
                     }
                   }
                 `,
@@ -2920,28 +2899,7 @@ describe('ParseGraphQLServer', () => {
                 },
               });
 
-              const genericQueryResult = await apolloClient.query({
-                query: gql`
-                  query GetSomeObject($className: String!, $objectId: ID!) {
-                    get(className: $className, objectId: $objectId)
-                  }
-                `,
-                variables: {
-                  className,
-                  objectId,
-                },
-                context: {
-                  headers,
-                },
-              });
-
-              expect(genericQueryResult.objectId).toEqual(
-                specificQueryResult.objectId
-              );
-              expect(genericQueryResult.createdAt).toEqual(
-                specificQueryResult.createdAt
-              );
-              return genericQueryResult;
+              return specificQueryResult;
             }
 
             await Promise.all(
@@ -3033,59 +2991,15 @@ describe('ParseGraphQLServer', () => {
             ).toEqual('someValue4');
           });
 
-          it('should not bring session token of another user', async () => {
-            await prepareData();
-
-            const result = await apolloClient.query({
-              query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "_User", objectId: $objectId)
-                }
-              `,
-              variables: {
-                objectId: user2.id,
-              },
-              context: {
-                headers: {
-                  'X-Parse-Session-Token': user1.getSessionToken(),
-                },
-              },
-            });
-            expect(result.data.get.sessionToken).toBeUndefined();
-          });
-
-          it('should not bring session token of current user', async () => {
-            await prepareData();
-
-            const result = await apolloClient.query({
-              query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "_User", objectId: $objectId)
-                }
-              `,
-              variables: {
-                objectId: user1.id,
-              },
-              context: {
-                headers: {
-                  'X-Parse-Session-Token': user1.getSessionToken(),
-                },
-              },
-            });
-            expect(result.data.get.sessionToken).toBeUndefined();
-          });
-
           it('should support keys argument', async () => {
             await prepareData();
 
             const result1 = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!) {
-                  get(
-                    className: "GraphQLClass"
-                    objectId: $objectId
-                    keys: "someField"
-                  )
+                  get: graphQLClass(objectId: $objectId) {
+                    someField
+                  }
                 }
               `,
               variables: {
@@ -3101,11 +3015,12 @@ describe('ParseGraphQLServer', () => {
             const result2 = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!) {
-                  get(
-                    className: "GraphQLClass"
-                    objectId: $objectId
-                    keys: "someField,pointerToUser"
-                  )
+                  get: graphQLClass(objectId: $objectId) {
+                    someField
+                    pointerToUser {
+                      objectId
+                    }
+                  }
                 }
               `,
               variables: {
@@ -3132,7 +3047,11 @@ describe('ParseGraphQLServer', () => {
             const result1 = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!) {
-                  get(className: "GraphQLClass", objectId: $objectId)
+                  get: graphQLClass(objectId: $objectId) {
+                    pointerToUser {
+                      objectId
+                    }
+                  }
                 }
               `,
               variables: {
@@ -3148,11 +3067,6 @@ describe('ParseGraphQLServer', () => {
             const result2 = await apolloClient.query({
               query: gql`
                 query GetSomeObject($objectId: ID!) {
-                  get(
-                    className: "GraphQLClass"
-                    objectId: $objectId
-                    include: "pointerToUser"
-                  )
                   graphQLClass(objectId: $objectId) {
                     pointerToUser {
                       username
@@ -3171,7 +3085,6 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result1.data.get.pointerToUser.username).toBeUndefined();
-            expect(result2.data.get.pointerToUser.username).toBeDefined();
             expect(
               result2.data.graphQLClass.pointerToUser.username
             ).toBeDefined();
@@ -3191,11 +3104,11 @@ describe('ParseGraphQLServer', () => {
               await apolloClient.query({
                 query: gql`
                   query GetSomeObject($objectId: ID!) {
-                    get(
-                      className: "GraphQLClass"
-                      objectId: $objectId
-                      include: "pointerToUser"
-                    )
+                    graphQLClass(objectId: $objectId) {
+                      pointerToUser {
+                        username
+                      }
+                    }
                   }
                 `,
                 variables: {
@@ -3243,12 +3156,14 @@ describe('ParseGraphQLServer', () => {
               await apolloClient.query({
                 query: gql`
                   query GetSomeObject($objectId: ID!) {
-                    get(
-                      className: "GraphQLClass"
+                    graphQLClass(
                       objectId: $objectId
-                      include: "pointerToUser"
                       readPreference: SECONDARY
-                    )
+                    ) {
+                      pointerToUser {
+                        username
+                      }
+                    }
                   }
                 `,
                 variables: {
@@ -3296,13 +3211,15 @@ describe('ParseGraphQLServer', () => {
               await apolloClient.query({
                 query: gql`
                   query GetSomeObject($objectId: ID!) {
-                    get(
-                      className: "GraphQLClass"
+                    graphQLClass(
                       objectId: $objectId
-                      include: "pointerToUser"
                       readPreference: SECONDARY
                       includeReadPreference: NEAREST
-                    )
+                    ) {
+                      pointerToUser {
+                        username
+                      }
+                    }
                   }
                 `,
                 variables: {
@@ -7448,10 +7365,14 @@ describe('ParseGraphQLServer', () => {
           user.setPassword('user1');
           await user.signUp();
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                get(className: "_User", objectId: $objectId)
+                get: user(objectId: $objectId) {
+                  objectId
+                }
               }
             `,
             variables: {
@@ -7468,10 +7389,14 @@ describe('ParseGraphQLServer', () => {
             deviceType: 'foo',
           });
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                get(className: "_Installation", objectId: $objectId)
+                get: installation(objectId: $objectId) {
+                  objectId
+                }
               }
             `,
             variables: {
@@ -7488,10 +7413,14 @@ describe('ParseGraphQLServer', () => {
           const role = new Parse.Role('MyRole', roleACL);
           await role.save();
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                get(className: "_Role", objectId: $objectId)
+                get: role(objectId: $objectId) {
+                  objectId
+                }
               }
             `,
             variables: {
@@ -7508,11 +7437,15 @@ describe('ParseGraphQLServer', () => {
           user.setPassword('user1');
           await user.signUp();
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const session = await Parse.Session.current();
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                get(className: "_Session", objectId: $objectId)
+                get: session(objectId: $objectId) {
+                  objectId
+                }
               }
             `,
             variables: {
@@ -7542,10 +7475,14 @@ describe('ParseGraphQLServer', () => {
             { useMasterKey: true }
           );
 
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject($objectId: ID!) {
-                get(className: "_Product", objectId: $objectId)
+                get: product(objectId: $objectId) {
+                  objectId
+                }
               }
             `,
             variables: {
@@ -7559,78 +7496,6 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(getResult.data.get.objectId).toEqual(product.id);
-        });
-
-        it('should support PushStatus class', async () => {
-          const PushStatus = Parse.Object.extend('_PushStatus');
-          const pushStatus = new PushStatus();
-          await pushStatus.save(undefined, { useMasterKey: true });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_PushStatus", objectId: $objectId)
-              }
-            `,
-            variables: {
-              objectId: pushStatus.id,
-            },
-            context: {
-              headers: {
-                'X-Parse-Master-Key': 'test',
-              },
-            },
-          });
-
-          expect(getResult.data.get.objectId).toEqual(pushStatus.id);
-        });
-
-        it('should support JobStatus class', async () => {
-          const JobStatus = Parse.Object.extend('_JobStatus');
-          const jobStatus = new JobStatus();
-          await jobStatus.save(undefined, { useMasterKey: true });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_JobStatus", objectId: $objectId)
-              }
-            `,
-            variables: {
-              objectId: jobStatus.id,
-            },
-            context: {
-              headers: {
-                'X-Parse-Master-Key': 'test',
-              },
-            },
-          });
-
-          expect(getResult.data.get.objectId).toEqual(jobStatus.id);
-        });
-
-        it('should support JobSchedule class', async () => {
-          const JobSchedule = Parse.Object.extend('_JobSchedule');
-          const jobSchedule = new JobSchedule();
-          await jobSchedule.save(undefined, { useMasterKey: true });
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_JobSchedule", objectId: $objectId)
-              }
-            `,
-            variables: {
-              objectId: jobSchedule.id,
-            },
-            context: {
-              headers: {
-                'X-Parse-Master-Key': 'test',
-              },
-            },
-          });
-
-          expect(getResult.data.get.objectId).toEqual(jobSchedule.id);
         });
 
         it('should support Hooks class', async () => {
@@ -7658,25 +7523,6 @@ describe('ParseGraphQLServer', () => {
           const { results } = getResult.data.find;
           expect(results.length).toEqual(1);
           expect(results[0].functionName).toEqual(functionName);
-        });
-
-        it('should support Audience class', async () => {
-          const Audience = Parse.Object.extend('_Audience');
-          const audience = new Audience();
-          await audience.save();
-
-          const getResult = await apolloClient.query({
-            query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Audience", objectId: $objectId)
-              }
-            `,
-            variables: {
-              objectId: audience.id,
-            },
-          });
-
-          expect(getResult.data.get.objectId).toEqual(audience.id);
         });
       });
     });
