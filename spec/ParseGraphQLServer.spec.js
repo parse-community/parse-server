@@ -1752,6 +1752,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
             expect(result).toEqual({
               data: {
@@ -4830,6 +4835,11 @@ describe('ParseGraphQLServer', () => {
                   addStrings: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -4896,6 +4906,11 @@ describe('ParseGraphQLServer', () => {
                   addNumbers: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -4960,6 +4975,11 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 schemaFields: {
                   addNumbers: [{ name: 'someField' }],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5030,6 +5050,11 @@ describe('ParseGraphQLServer', () => {
                     { name: 'someFieldTrue' },
                     { name: 'someFieldFalse' },
                   ],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5117,6 +5142,11 @@ describe('ParseGraphQLServer', () => {
                   addDates: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -5175,6 +5205,11 @@ describe('ParseGraphQLServer', () => {
                 }
               }
             `,
+            context: {
+              headers: {
+                'X-Parse-Master-Key': 'test',
+              },
+            },
           });
 
           const schema = await new Parse.Schema('SomeClass').get();
@@ -5781,6 +5816,11 @@ describe('ParseGraphQLServer', () => {
                   addFiles: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -5885,6 +5925,11 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 schemaFields: {
                   addObjects: [{ name: 'someField' }],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -5992,6 +6037,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -6127,6 +6177,11 @@ describe('ParseGraphQLServer', () => {
                   addArrays: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -6238,6 +6293,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
               `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -6330,6 +6390,11 @@ describe('ParseGraphQLServer', () => {
                   addBytes: [{ name: 'someField' }],
                 },
               },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
             });
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -6408,6 +6473,11 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 schemaFields: {
                   addGeoPoint: { name: 'someField' },
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
@@ -6491,6 +6561,11 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 schemaFields: {
                   addPolygons: [{ name: 'somePolygonField' }],
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
                 },
               },
             });
