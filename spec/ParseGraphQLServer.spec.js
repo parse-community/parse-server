@@ -3976,40 +3976,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         describe('Update', () => {
-          it('should return UpdateResult object using generic mutation', async () => {
-            const obj = new Parse.Object('SomeClass');
-            obj.set('someField1', 'someField1Value1');
-            obj.set('someField2', 'someField2Value1');
-            await obj.save();
-
-            const result = await apolloClient.mutate({
-              mutation: gql`
-                mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
-                  update(
-                    className: "SomeClass"
-                    objectId: $objectId
-                    fields: $fields
-                  ) {
-                    updatedAt
-                  }
-                }
-              `,
-              variables: {
-                objectId: obj.id,
-                fields: {
-                  someField1: 'someField1Value2',
-                },
-              },
-            });
-
-            expect(result.data.update.updatedAt).toBeDefined();
-
-            await obj.fetch();
-
-            expect(obj.get('someField1')).toEqual('someField1Value2');
-            expect(obj.get('someField2')).toEqual('someField2Value1');
-          });
-
           it('should return specific type object using class specific mutation', async () => {
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
@@ -4091,16 +4057,16 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            function updateObject(className, objectId, fields, headers) {
-              return apolloClient.mutate({
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            async function updateObject(className, objectId, fields, headers) {
+              return await apolloClient.mutate({
                 mutation: gql`
                   mutation UpdateSomeObject(
-                    $className: String!
                     $objectId: ID!
-                    $fields: Object
+                    $fields: Update${className}FieldsInput
                   ) {
-                    update(
-                      className: $className
+                    update: update${className}(
                       objectId: $objectId
                       fields: $fields
                     ) {
@@ -4109,7 +4075,6 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  className,
                   objectId,
                   fields,
                 },
