@@ -1890,6 +1890,39 @@ describe('ParseGraphQLServer', () => {
             );
           }
         });
+
+        it('should not allow duplicated field names', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(
+                    name: "SomeClass"
+                    schemaFields: {
+                      addStrings: [{ name: "someField" }]
+                      addNumbers: [{ name: "someField" }]
+                    }
+                  ) {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.INVALID_KEY_NAME
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'Duplicated field name: someField'
+            );
+          }
+        });
       });
 
       describe('Objects Queries', () => {

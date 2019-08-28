@@ -18,7 +18,7 @@ const transformToParse = graphQLSchemaFields => {
     }
     if (parseSchemaFields[field.name]) {
       throw new Parse.Error(
-        Parse.Error.InvalidFieldName,
+        Parse.Error.INVALID_KEY_NAME,
         `Duplicated field name: ${field.name}`
       );
     }
