@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import { GraphQLNonNull } from 'graphql';
+import { GraphQLNonNull, GraphQLList } from 'graphql';
 import { transformToGraphQL } from '../transformers/schemaFields';
 import * as classSchemaTypes from './classSchemaTypes';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
@@ -45,6 +45,34 @@ const load = parseGraphQLSchema => {
             name: parseClass.className,
             schemaFields: transformToGraphQL(parseClass.fields),
           };
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
+    },
+    true,
+    true
+  );
+
+  parseGraphQLSchema.addGraphQLQuery(
+    'classes',
+    {
+      description:
+        'The classes query can be used to retrieve the existing object classes.',
+      type: new GraphQLNonNull(
+        new GraphQLList(new GraphQLNonNull(classSchemaTypes.CLASS))
+      ),
+      resolve: async (_source, _args, context) => {
+        try {
+          const { config, auth } = context;
+
+          enforceMasterKeyAccess(auth);
+
+          const schema = await config.database.loadSchema({ clearCache: true });
+          return (await schema.getAllClasses(true)).map(parseClass => ({
+            name: parseClass.className,
+            schemaFields: transformToGraphQL(parseClass.fields),
+          }));
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
