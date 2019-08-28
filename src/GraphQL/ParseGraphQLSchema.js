@@ -39,6 +39,7 @@ const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'callCloudCode',
   'createClass',
   'updateClass',
+  'deleteClass',
   'delete',
 ];
 

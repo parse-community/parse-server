@@ -2233,6 +2233,137 @@ describe('ParseGraphQLServer', () => {
             );
           }
         });
+
+        it('should delete an existing class', async () => {
+          try {
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(
+                    name: "MyNewClass"
+                    schemaFields: { addStrings: [{ name: "willBeRemoved" }] }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  deleteClass(name: "MyNewClass") {
+                    name
+                    schemaFields {
+                      name
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            result.data.deleteClass.schemaFields = result.data.deleteClass.schemaFields.sort(
+              (a, b) => (a.name > b.name ? 1 : -1)
+            );
+            expect(result).toEqual({
+              data: {
+                createClass: {
+                  name: 'MyNewClass',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'willBeRemoved', __typename: 'SchemaStringField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                deleteClass: {
+                  name: 'MyNewClass',
+                  schemaFields: [
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'willBeRemoved', __typename: 'SchemaStringField' },
+                  ],
+                  __typename: 'Class',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should require master key to delete an existing class', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(name: "SomeClass") {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  deleteClass(name: "SomeClass") {
+                    name
+                  }
+                }
+              `,
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.OPERATION_FORBIDDEN
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'unauthorized: master key is required'
+            );
+          }
+        });
+
+        it('should fail if deleting an inexistent class', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  deleteClass(name: "SomeInexistentClass") {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.INVALID_CLASS_NAME
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'Class SomeInexistentClass does not exist.'
+            );
+          }
+        });
       });
 
       describe('Objects Queries', () => {
