@@ -110,7 +110,7 @@ const transformers = {
       )).map(object => ({
         __type: 'Pointer',
         className: targetClass,
-        objectId: object.id,
+        objectId: object.objectId,
       }));
     }
 
@@ -168,7 +168,7 @@ const transformers = {
       return {
         __type: 'Pointer',
         className: targetClass,
-        objectId: nestedObjectToAdd.id,
+        objectId: nestedObjectToAdd.objectId,
       };
     }
     if (value.link) {

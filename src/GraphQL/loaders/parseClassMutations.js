@@ -97,7 +97,7 @@ const load = function(
           if (needGet) {
             optimizedObject = await objectsQueries.getObject(
               className,
-              createdObject.id,
+              createdObject.objectId,
               requiredKeys,
               include,
               undefined,

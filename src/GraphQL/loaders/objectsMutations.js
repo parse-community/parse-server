@@ -7,17 +7,8 @@ const createObject = async (className, fields, config, auth, info) => {
     fields = {};
   }
 
-  const object = (await rest.create(
-    config,
-    auth,
-    className,
-    fields,
-    info.clientSDK
-  )).response;
-  object.id = object.objectId;
-  delete object.objectId;
-
-  return object;
+  return (await rest.create(config, auth, className, fields, info.clientSDK))
+    .response;
 };
 
 const updateObject = async (
@@ -63,7 +54,17 @@ const load = parseGraphQLSchema => {
           const { className, fields } = args;
           const { config, auth, info } = context;
 
-          return await createObject(className, fields, config, auth, info);
+          const object = await createObject(
+            className,
+            fields,
+            config,
+            auth,
+            info
+          );
+          object.id = object.objectId;
+          delete object.objectId;
+
+          return object;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
