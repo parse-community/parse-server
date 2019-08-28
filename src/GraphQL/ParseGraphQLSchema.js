@@ -40,7 +40,6 @@ const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'createClass',
   'updateClass',
   'deleteClass',
-  'delete',
 ];
 
 class ParseGraphQLSchema {

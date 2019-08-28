@@ -1,5 +1,3 @@
-import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
-import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import rest from '../../rest';
 
 const createObject = async (className, fields, config, auth, info) => {
@@ -38,31 +36,4 @@ const deleteObject = async (className, objectId, config, auth, info) => {
   return true;
 };
 
-const load = parseGraphQLSchema => {
-  parseGraphQLSchema.addGraphQLMutation(
-    'delete',
-    {
-      description:
-        'The delete mutation can be used to delete an object of a certain class.',
-      args: {
-        className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      },
-      type: new GraphQLNonNull(GraphQLBoolean),
-      async resolve(_source, args, context) {
-        try {
-          const { className, objectId } = args;
-          const { config, auth, info } = context;
-
-          return await deleteObject(className, objectId, config, auth, info);
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
-      },
-    },
-    true,
-    true
-  );
-};
-
-export { createObject, updateObject, deleteObject, load };
+export { createObject, updateObject, deleteObject };
