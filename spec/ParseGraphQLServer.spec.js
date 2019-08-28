@@ -4543,28 +4543,6 @@ describe('ParseGraphQLServer', () => {
         });
 
         describe('Delete', () => {
-          it('should return a boolean confirmation using generic mutation', async () => {
-            const obj = new Parse.Object('SomeClass');
-            await obj.save();
-
-            const result = await apolloClient.mutate({
-              mutation: gql`
-                mutation DeleteSomeObject($objectId: ID!) {
-                  delete(className: "SomeClass", objectId: $objectId)
-                }
-              `,
-              variables: {
-                objectId: obj.id,
-              },
-            });
-
-            expect(result.data.delete).toEqual(true);
-
-            await expectAsync(
-              obj.fetch({ useMasterKey: true })
-            ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
-          });
-
           it('should return a specific type using class specific mutation', async () => {
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
@@ -4604,18 +4582,20 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
             function deleteObject(className, objectId, headers) {
               return apolloClient.mutate({
                 mutation: gql`
                   mutation DeleteSomeObject(
-                    $className: String!
                     $objectId: ID!
                   ) {
-                    delete(className: $className, objectId: $objectId)
+                    delete: delete${className}(objectId: $objectId) {
+                      objectId
+                    }
                   }
                 `,
                 variables: {
-                  className,
                   objectId,
                 },
                 context: {
@@ -4648,7 +4628,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete
-            ).toEqual(true);
+            ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4656,7 +4636,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
               })).data.delete
-            ).toEqual(true);
+            ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4664,7 +4644,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
               })).data.delete
-            ).toEqual(true);
+            ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4672,7 +4652,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
               })).data.delete
-            ).toEqual(true);
+            ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
