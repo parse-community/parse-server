@@ -1735,6 +1735,7 @@ describe('ParseGraphQLServer', () => {
                         { name: "bytesField3" }
                         { name: "pointerField3" }
                         { name: "relationField3" }
+                        { name: "doesNotExist" }
                       ]
                     }
                   ) {
@@ -1891,7 +1892,7 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should not allow duplicated field names', async () => {
+        it('should not allow duplicated field names when creating', async () => {
           try {
             await apolloClient.mutate({
               mutation: gql`
@@ -1920,6 +1921,315 @@ describe('ParseGraphQLServer', () => {
             );
             expect(e.graphQLErrors[0].message).toEqual(
               'Duplicated field name: someField'
+            );
+          }
+        });
+
+        it('should update an existing class', async () => {
+          try {
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(
+                    name: "MyNewClass"
+                    schemaFields: { addStrings: [{ name: "willBeRemoved" }] }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                    }
+                  }
+                  updateClass(
+                    name: "MyNewClass"
+                    schemaFields: {
+                      addStrings: [
+                        { name: "stringField1" }
+                        { name: "stringField2" }
+                        { name: "stringField3" }
+                      ]
+                      addNumbers: [
+                        { name: "numberField1" }
+                        { name: "numberField2" }
+                        { name: "numberField3" }
+                      ]
+                      addBooleans: [
+                        { name: "booleanField1" }
+                        { name: "booleanField2" }
+                        { name: "booleanField3" }
+                      ]
+                      addArrays: [
+                        { name: "arrayField1" }
+                        { name: "arrayField2" }
+                        { name: "arrayField3" }
+                      ]
+                      addObjects: [
+                        { name: "objectField1" }
+                        { name: "objectField2" }
+                        { name: "objectField3" }
+                      ]
+                      addDates: [
+                        { name: "dateField1" }
+                        { name: "dateField2" }
+                        { name: "dateField3" }
+                      ]
+                      addFiles: [
+                        { name: "fileField1" }
+                        { name: "fileField2" }
+                        { name: "fileField3" }
+                      ]
+                      addGeoPoint: { name: "geoPointField" }
+                      addPolygons: [
+                        { name: "polygonField1" }
+                        { name: "polygonField2" }
+                        { name: "polygonField3" }
+                      ]
+                      addBytes: [
+                        { name: "bytesField1" }
+                        { name: "bytesField2" }
+                        { name: "bytesField3" }
+                      ]
+                      addPointers: [
+                        { name: "pointerField1", targetClassName: "Class1" }
+                        { name: "pointerField2", targetClassName: "Class6" }
+                        { name: "pointerField3", targetClassName: "Class2" }
+                      ]
+                      addRelations: [
+                        { name: "relationField1", targetClassName: "Class1" }
+                        { name: "relationField2", targetClassName: "Class6" }
+                        { name: "relationField3", targetClassName: "Class2" }
+                      ]
+                      remove: [
+                        { name: "willBeRemoved" }
+                        { name: "stringField3" }
+                        { name: "numberField3" }
+                        { name: "booleanField3" }
+                        { name: "arrayField3" }
+                        { name: "objectField3" }
+                        { name: "dateField3" }
+                        { name: "fileField3" }
+                        { name: "polygonField3" }
+                        { name: "bytesField3" }
+                        { name: "pointerField3" }
+                        { name: "relationField3" }
+                        { name: "doesNotExist" }
+                      ]
+                    }
+                  ) {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                      ... on SchemaPointerField {
+                        targetClassName
+                      }
+                      ... on SchemaRelationField {
+                        targetClassName
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            result.data.updateClass.schemaFields = result.data.updateClass.schemaFields.sort(
+              (a, b) => (a.name > b.name ? 1 : -1)
+            );
+            expect(result).toEqual({
+              data: {
+                createClass: {
+                  name: 'MyNewClass',
+                  schemaFields: [
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'willBeRemoved', __typename: 'SchemaStringField' },
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                  ],
+                  __typename: 'Class',
+                },
+                updateClass: {
+                  name: 'MyNewClass',
+                  schemaFields: [
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                    { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                    { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                    { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                    { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                    { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
+                    { name: 'dateField1', __typename: 'SchemaDateField' },
+                    { name: 'dateField2', __typename: 'SchemaDateField' },
+                    { name: 'fileField1', __typename: 'SchemaFileField' },
+                    { name: 'fileField2', __typename: 'SchemaFileField' },
+                    {
+                      name: 'geoPointField',
+                      __typename: 'SchemaGeoPointField',
+                    },
+                    { name: 'numberField1', __typename: 'SchemaNumberField' },
+                    { name: 'numberField2', __typename: 'SchemaNumberField' },
+                    { name: 'objectField1', __typename: 'SchemaObjectField' },
+                    { name: 'objectField2', __typename: 'SchemaObjectField' },
+                    { name: 'objectId', __typename: 'SchemaStringField' },
+                    {
+                      name: 'pointerField1',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class1',
+                    },
+                    {
+                      name: 'pointerField2',
+                      __typename: 'SchemaPointerField',
+                      targetClassName: 'Class6',
+                    },
+                    { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                    { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                    {
+                      name: 'relationField1',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class1',
+                    },
+                    {
+                      name: 'relationField2',
+                      __typename: 'SchemaRelationField',
+                      targetClassName: 'Class6',
+                    },
+                    { name: 'stringField1', __typename: 'SchemaStringField' },
+                    { name: 'stringField2', __typename: 'SchemaStringField' },
+                    { name: 'updatedAt', __typename: 'SchemaDateField' },
+                  ],
+                  __typename: 'Class',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should require master key to update an existing class', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(name: "SomeClass") {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  updateClass(name: "SomeClass") {
+                    name
+                  }
+                }
+              `,
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.OPERATION_FORBIDDEN
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'unauthorized: master key is required'
+            );
+          }
+        });
+
+        it('should not allow duplicated field names when updating', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  createClass(
+                    name: "SomeClass"
+                    schemaFields: { addStrings: [{ name: "someField" }] }
+                  ) {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+          } catch (e) {
+            handleError(e);
+          }
+
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  updateClass(
+                    name: "SomeClass"
+                    schemaFields: { addNumbers: [{ name: "someField" }] }
+                  ) {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.INVALID_KEY_NAME
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'Duplicated field name: someField'
+            );
+          }
+        });
+
+        it('should fail if updating an inexistent class', async () => {
+          try {
+            await apolloClient.mutate({
+              mutation: gql`
+                mutation {
+                  updateClass(
+                    name: "SomeInexistentClass"
+                    schemaFields: { addNumbers: [{ name: "someField" }] }
+                  ) {
+                    name
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.INVALID_CLASS_NAME
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'Class SomeInexistentClass does not exist.'
             );
           }
         });

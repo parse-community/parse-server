@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 
-const transformToParse = graphQLSchemaFields => {
+const transformToParse = (graphQLSchemaFields, existingFields) => {
   if (!graphQLSchemaFields) {
     return {};
   }
@@ -8,6 +8,18 @@ const transformToParse = graphQLSchemaFields => {
   let parseSchemaFields = {};
 
   const reducerGenerator = type => (parseSchemaFields, field) => {
+    if (type === 'Remove') {
+      if (existingFields[field.name]) {
+        return {
+          ...parseSchemaFields,
+          [field.name]: {
+            __op: 'Delete',
+          },
+        };
+      } else {
+        return parseSchemaFields;
+      }
+    }
     if (
       graphQLSchemaFields.remove &&
       graphQLSchemaFields.remove.find(
@@ -16,7 +28,10 @@ const transformToParse = graphQLSchemaFields => {
     ) {
       return parseSchemaFields;
     }
-    if (parseSchemaFields[field.name]) {
+    if (
+      parseSchemaFields[field.name] ||
+      (existingFields && existingFields[field.name])
+    ) {
       throw new Parse.Error(
         Parse.Error.INVALID_KEY_NAME,
         `Duplicated field name: ${field.name}`
@@ -108,6 +123,12 @@ const transformToParse = graphQLSchemaFields => {
   if (graphQLSchemaFields.addRelations) {
     parseSchemaFields = graphQLSchemaFields.addRelations.reduce(
       reducerGenerator('Relation'),
+      parseSchemaFields
+    );
+  }
+  if (existingFields && graphQLSchemaFields.remove) {
+    parseSchemaFields = graphQLSchemaFields.remove.reduce(
+      reducerGenerator('Remove'),
       parseSchemaFields
     );
   }
