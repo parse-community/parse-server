@@ -1,6 +1,7 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
 import * as objectsQueries from './objectsQueries';
 import * as usersQueries from './usersQueries';
+import * as classSchemaQueries from './classSchemaQueries';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLQuery(
@@ -17,6 +18,7 @@ const load = parseGraphQLSchema => {
 
   objectsQueries.load(parseGraphQLSchema);
   usersQueries.load(parseGraphQLSchema);
+  classSchemaQueries.load(parseGraphQLSchema);
 };
 
 export { load };

@@ -30,7 +30,7 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'SignUpFieldsInput',
   'LogInFieldsInput',
 ];
-const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'get', 'find'];
+const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'signUp',
   'logIn',

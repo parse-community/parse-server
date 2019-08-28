@@ -2106,6 +2106,88 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+
+            const getResult = await apolloClient.query({
+              query: gql`
+                query {
+                  class(name: "MyNewClass") {
+                    name
+                    schemaFields {
+                      name
+                      __typename
+                      ... on SchemaPointerField {
+                        targetClassName
+                      }
+                      ... on SchemaRelationField {
+                        targetClassName
+                      }
+                    }
+                  }
+                }
+              `,
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+            getResult.data.class.schemaFields = getResult.data.class.schemaFields.sort(
+              (a, b) => (a.name > b.name ? 1 : -1)
+            );
+            expect(getResult.data).toEqual({
+              class: {
+                name: 'MyNewClass',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                  { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                  { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                  { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                  { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                  { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'dateField1', __typename: 'SchemaDateField' },
+                  { name: 'dateField2', __typename: 'SchemaDateField' },
+                  { name: 'fileField1', __typename: 'SchemaFileField' },
+                  { name: 'fileField2', __typename: 'SchemaFileField' },
+                  {
+                    name: 'geoPointField',
+                    __typename: 'SchemaGeoPointField',
+                  },
+                  { name: 'numberField1', __typename: 'SchemaNumberField' },
+                  { name: 'numberField2', __typename: 'SchemaNumberField' },
+                  { name: 'objectField1', __typename: 'SchemaObjectField' },
+                  { name: 'objectField2', __typename: 'SchemaObjectField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  {
+                    name: 'pointerField1',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'pointerField2',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                  { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                  {
+                    name: 'relationField1',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'relationField2',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'stringField1', __typename: 'SchemaStringField' },
+                  { name: 'stringField2', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+            });
           } catch (e) {
             handleError(e);
           }
@@ -2292,6 +2374,31 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+
+            try {
+              await apolloClient.query({
+                query: gql`
+                  query {
+                    class(name: "MyNewClass") {
+                      name
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+              fail('should fail');
+            } catch (e) {
+              expect(e.graphQLErrors[0].extensions.code).toEqual(
+                Parse.Error.INVALID_CLASS_NAME
+              );
+              expect(e.graphQLErrors[0].message).toEqual(
+                'Class MyNewClass does not exist.'
+              );
+            }
           } catch (e) {
             handleError(e);
           }
@@ -2361,6 +2468,28 @@ describe('ParseGraphQLServer', () => {
             );
             expect(e.graphQLErrors[0].message).toEqual(
               'Class SomeInexistentClass does not exist.'
+            );
+          }
+        });
+
+        it('should require master key to get an existing class', async () => {
+          try {
+            await apolloClient.query({
+              query: gql`
+                query {
+                  class(name: "_User") {
+                    name
+                  }
+                }
+              `,
+            });
+            fail('should fail');
+          } catch (e) {
+            expect(e.graphQLErrors[0].extensions.code).toEqual(
+              Parse.Error.OPERATION_FORBIDDEN
+            );
+            expect(e.graphQLErrors[0].message).toEqual(
+              'unauthorized: master key is required'
             );
           }
         });
