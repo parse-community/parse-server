@@ -289,7 +289,6 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         group: { objectId: '$score' },
-        sort: { _id: 1 },
       },
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -301,8 +300,9 @@ describe('Parse.Query Aggregate testing', () => {
         expect(
           Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
         ).toBe(true);
-        expect(resp.results[0].objectId).toBe(10);
-        expect(resp.results[1].objectId).toBe(20);
+        expect(
+          resp.results.sort((a, b) => (a.objectId > b.objectId ? 1 : -1))
+        ).toEqual([{ objectId: 10 }, { objectId: 20 }]);
         done();
       })
       .catch(done.fail);
