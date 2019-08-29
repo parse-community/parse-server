@@ -801,7 +801,9 @@ export class MongoStorageAdapter implements StorageAdapter {
             }
             if (
               result._id == null ||
-              (typeof result._id === 'object' && _.isEmpty(result._id))
+              result._id == undefined ||
+              (['object', 'string'].includes(typeof result._id) &&
+                _.isEmpty(result._id))
             ) {
               result._id = null;
             }
