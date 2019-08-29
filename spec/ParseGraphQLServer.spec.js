@@ -3096,6 +3096,8 @@ describe('ParseGraphQLServer', () => {
             it('should read from primary by default', async () => {
               await prepareData();
 
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
               spyOn(
@@ -3147,6 +3149,8 @@ describe('ParseGraphQLServer', () => {
 
             it('should support readPreference argument', async () => {
               await prepareData();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
@@ -3202,6 +3206,8 @@ describe('ParseGraphQLServer', () => {
 
             it('should support includeReadPreference argument', async () => {
               await prepareData();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
@@ -3792,6 +3798,8 @@ describe('ParseGraphQLServer', () => {
             it('should read from primary by default', async () => {
               await prepareData();
 
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
               spyOn(
@@ -3843,6 +3851,8 @@ describe('ParseGraphQLServer', () => {
             it('should support readPreference argument', async () => {
               await prepareData();
 
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
               spyOn(
@@ -3893,6 +3903,8 @@ describe('ParseGraphQLServer', () => {
 
             it('should support includeReadPreference argument', async () => {
               await prepareData();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
               const databaseAdapter =
                 parseServer.config.databaseController.adapter;
