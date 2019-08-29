@@ -3945,7 +3945,7 @@ describe('ParseGraphQLServer', () => {
               expect(foundUserClassReadPreference).toBe(true);
             });
 
-            xit('should support subqueryReadPreference argument', async () => {
+            it('should support subqueryReadPreference argument', async () => {
               try {
                 await prepareData();
 
@@ -3967,9 +3967,7 @@ describe('ParseGraphQLServer', () => {
                         subqueryReadPreference: NEAREST
                       ) {
                         results {
-                          pointerToUser {
-                            username
-                          }
+                          objectId
                         }
                       }
                     }
