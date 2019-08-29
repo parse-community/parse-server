@@ -1759,112 +1759,117 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-            expect(result).toEqual({
-              data: {
-                class1: {
-                  name: 'Class1',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
-                class2: {
-                  name: 'Class2',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
-                class3: {
-                  name: 'Class3',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
-                class4: {
-                  name: 'Class4',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
-                class5: {
-                  name: 'Class5',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
-                class6: {
-                  name: 'Class6',
-                  schemaFields: [
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'stringField1', __typename: 'SchemaStringField' },
-                    { name: 'stringField2', __typename: 'SchemaStringField' },
-                    { name: 'numberField1', __typename: 'SchemaNumberField' },
-                    { name: 'numberField2', __typename: 'SchemaNumberField' },
-                    { name: 'booleanField1', __typename: 'SchemaBooleanField' },
-                    { name: 'booleanField2', __typename: 'SchemaBooleanField' },
-                    { name: 'arrayField1', __typename: 'SchemaArrayField' },
-                    { name: 'arrayField2', __typename: 'SchemaArrayField' },
-                    { name: 'objectField1', __typename: 'SchemaObjectField' },
-                    { name: 'objectField2', __typename: 'SchemaObjectField' },
-                    { name: 'dateField1', __typename: 'SchemaDateField' },
-                    { name: 'dateField2', __typename: 'SchemaDateField' },
-                    { name: 'fileField1', __typename: 'SchemaFileField' },
-                    { name: 'fileField2', __typename: 'SchemaFileField' },
-                    {
-                      name: 'geoPointField',
-                      __typename: 'SchemaGeoPointField',
-                    },
-                    { name: 'polygonField1', __typename: 'SchemaPolygonField' },
-                    { name: 'polygonField2', __typename: 'SchemaPolygonField' },
-                    { name: 'bytesField1', __typename: 'SchemaBytesField' },
-                    { name: 'bytesField2', __typename: 'SchemaBytesField' },
-                    {
-                      name: 'pointerField1',
-                      __typename: 'SchemaPointerField',
-                      targetClassName: 'Class1',
-                    },
-                    {
-                      name: 'pointerField2',
-                      __typename: 'SchemaPointerField',
-                      targetClassName: 'Class6',
-                    },
-                    {
-                      name: 'relationField1',
-                      __typename: 'SchemaRelationField',
-                      targetClassName: 'Class1',
-                    },
-                    {
-                      name: 'relationField2',
-                      __typename: 'SchemaRelationField',
-                      targetClassName: 'Class6',
-                    },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                  ],
-                  __typename: 'Class',
-                },
+            const classes = Object.keys(result.data).map(fieldName => ({
+              name: result.data[fieldName].name,
+              schemaFields: result.data[fieldName].schemaFields.sort((a, b) =>
+                a.name > b.name ? 1 : -1
+              ),
+              __typename: result.data[fieldName].__typename,
+            }));
+            expect(classes).toEqual([
+              {
+                name: 'Class1',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
               },
-            });
+              {
+                name: 'Class2',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+              {
+                name: 'Class3',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+              {
+                name: 'Class4',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+              {
+                name: 'Class5',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+              {
+                name: 'Class6',
+                schemaFields: [
+                  { name: 'ACL', __typename: 'SchemaACLField' },
+                  { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                  { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                  { name: 'booleanField1', __typename: 'SchemaBooleanField' },
+                  { name: 'booleanField2', __typename: 'SchemaBooleanField' },
+                  { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                  { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                  { name: 'createdAt', __typename: 'SchemaDateField' },
+                  { name: 'dateField1', __typename: 'SchemaDateField' },
+                  { name: 'dateField2', __typename: 'SchemaDateField' },
+                  { name: 'fileField1', __typename: 'SchemaFileField' },
+                  { name: 'fileField2', __typename: 'SchemaFileField' },
+                  {
+                    name: 'geoPointField',
+                    __typename: 'SchemaGeoPointField',
+                  },
+                  { name: 'numberField1', __typename: 'SchemaNumberField' },
+                  { name: 'numberField2', __typename: 'SchemaNumberField' },
+                  { name: 'objectField1', __typename: 'SchemaObjectField' },
+                  { name: 'objectField2', __typename: 'SchemaObjectField' },
+                  { name: 'objectId', __typename: 'SchemaStringField' },
+                  {
+                    name: 'pointerField1',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'pointerField2',
+                    __typename: 'SchemaPointerField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'polygonField1', __typename: 'SchemaPolygonField' },
+                  { name: 'polygonField2', __typename: 'SchemaPolygonField' },
+                  {
+                    name: 'relationField1',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class1',
+                  },
+                  {
+                    name: 'relationField2',
+                    __typename: 'SchemaRelationField',
+                    targetClassName: 'Class6',
+                  },
+                  { name: 'stringField1', __typename: 'SchemaStringField' },
+                  { name: 'stringField2', __typename: 'SchemaStringField' },
+                  { name: 'updatedAt', __typename: 'SchemaDateField' },
+                ],
+                __typename: 'Class',
+              },
+            ]);
 
             const findResult = await apolloClient.query({
               query: gql`
@@ -1890,7 +1895,6 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-            console.log(findResult.data);
             findResult.data.classes = findResult.data.classes
               .filter(schemaClass => !schemaClass.name.startsWith('_'))
               .sort((a, b) => (a.name > b.name ? 1 : -1));
@@ -2174,6 +2178,9 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            result.data.createClass.schemaFields = result.data.createClass.schemaFields.sort(
+              (a, b) => (a.name > b.name ? 1 : -1)
+            );
             result.data.updateClass.schemaFields = result.data.updateClass.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
@@ -2182,11 +2189,11 @@ describe('ParseGraphQLServer', () => {
                 createClass: {
                   name: 'MyNewClass',
                   schemaFields: [
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
                     { name: 'objectId', __typename: 'SchemaStringField' },
                     { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
                     { name: 'willBeRemoved', __typename: 'SchemaStringField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
                   ],
                   __typename: 'Class',
                 },
@@ -2483,6 +2490,9 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
+            result.data.createClass.schemaFields = result.data.createClass.schemaFields.sort(
+              (a, b) => (a.name > b.name ? 1 : -1)
+            );
             result.data.deleteClass.schemaFields = result.data.deleteClass.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
@@ -2491,11 +2501,11 @@ describe('ParseGraphQLServer', () => {
                 createClass: {
                   name: 'MyNewClass',
                   schemaFields: [
+                    { name: 'ACL', __typename: 'SchemaACLField' },
+                    { name: 'createdAt', __typename: 'SchemaDateField' },
                     { name: 'objectId', __typename: 'SchemaStringField' },
                     { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
                     { name: 'willBeRemoved', __typename: 'SchemaStringField' },
-                    { name: 'ACL', __typename: 'SchemaACLField' },
                   ],
                   __typename: 'Class',
                 },
