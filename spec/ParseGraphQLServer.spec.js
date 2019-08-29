@@ -2494,7 +2494,7 @@ describe('ParseGraphQLServer', () => {
                   someField: {
                     _in: ['someValue1', 'someValue2', 'someValue3'],
                   },
-                  _or: [
+                  OR: [
                     {
                       pointerToUser: {
                         _eq: {
@@ -2526,7 +2526,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue3']);
           });
 
-          it('should support _or operation', async () => {
+          it('should support OR operation', async () => {
             await prepareData();
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -2536,7 +2536,7 @@ describe('ParseGraphQLServer', () => {
                 query {
                   graphQLClasses(
                     where: {
-                      _or: [
+                      OR: [
                         { someField: { _eq: "someValue1" } }
                         { someField: { _eq: "someValue2" } }
                       ]
@@ -2643,7 +2643,7 @@ describe('ParseGraphQLServer', () => {
               someField: {
                 _in: ['someValue1', 'someValue2', 'someValue3'],
               },
-              _or: [
+              OR: [
                 {
                   pointerToUser: {
                     _eq: {
@@ -2711,7 +2711,7 @@ describe('ParseGraphQLServer', () => {
               someField: {
                 _in: ['someValue1', 'someValue2', 'someValue3'],
               },
-              _or: [
+              OR: [
                 {
                   pointerToUser: {
                     _eq: {
@@ -5708,7 +5708,7 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
           const where = {
-            _and: [
+            AND: [
               {
                 someField: {
                   _gt: { _key: 'number', _value: 9 },
@@ -5720,7 +5720,7 @@ describe('ParseGraphQLServer', () => {
                 },
               },
               {
-                _or: [
+                OR: [
                   {
                     someField: {
                       _eq: { _key: 'lorem', _value: 'ipsum' },

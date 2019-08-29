@@ -1,7 +1,7 @@
 const parseMap = {
-  _or: '$or',
-  _and: '$and',
-  _nor: '$nor',
+  OR: '$or',
+  AND: '$and',
+  NOR: '$nor',
   _relatedTo: '$relatedTo',
   _eq: '$eq',
   _ne: '$ne',

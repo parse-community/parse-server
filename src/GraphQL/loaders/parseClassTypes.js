@@ -503,6 +503,12 @@ const load = (
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
+        if (['OR', 'AND', 'NOR'].includes(field)) {
+          parseGraphQLSchema.log.warn(
+            `Field ${field} could not be added to the auto schema ${classGraphQLConstraintsTypeName} because it collided with an existing one.`
+          );
+          return fields;
+        }
         const type = mapConstraintType(
           parseClass.fields[field].type,
           parseClass.fields[field].targetClass,
@@ -520,16 +526,16 @@ const load = (
           return fields;
         }
       }, {}),
-      _or: {
-        description: 'This is the $or operator to compound constraints.',
+      OR: {
+        description: 'This is the OR operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
-      _and: {
-        description: 'This is the $and operator to compound constraints.',
+      AND: {
+        description: 'This is the AND operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
-      _nor: {
-        description: 'This is the $nor operator to compound constraints.',
+      NOR: {
+        description: 'This is the NOR operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
     }),
