@@ -241,6 +241,8 @@ export class UsersRouter extends ClassesRouter {
     // Remove hidden properties.
     UsersRouter.removeHiddenProperties(user);
 
+    req.config.filesController.expandFilesInObject(req.config, user);
+
     // Before login trigger; throws if failure
     await maybeRunTrigger(
       TriggerTypes.beforeLogin,
@@ -260,8 +262,6 @@ export class UsersRouter extends ClassesRouter {
     });
 
     user.sessionToken = sessionData.sessionToken;
-
-    req.config.filesController.expandFilesInObject(req.config, user);
 
     await createSession();
     return { response: user };
