@@ -603,7 +603,7 @@ describe('ParseGraphQLServer', () => {
           expect(createResultType.kind).toEqual('OBJECT');
           expect(
             createResultType.fields.map(field => field.name).sort()
-          ).toEqual(['createdAt', 'objectId']);
+          ).toEqual(['createdAt', 'id']);
         });
 
         it('should have UpdateResult object type', async () => {
@@ -642,7 +642,7 @@ describe('ParseGraphQLServer', () => {
           expect(classType.fields.map(field => field.name).sort()).toEqual([
             'ACL',
             'createdAt',
-            'objectId',
+            'id',
             'updatedAt',
           ]);
         });
@@ -910,14 +910,14 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                query GetSuperCar($objectId: ID!) {
-                  superCar(objectId: $objectId) {
-                    objectId
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: superCar.id,
+                id: superCar.id,
               },
             })
           ).toBeResolved();
@@ -958,28 +958,28 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                query GetSuperCar($objectId: ID!) {
-                  superCar(objectId: $objectId) {
-                    objectId
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: superCar.id,
+                id: superCar.id,
               },
             })
           ).toBeRejected();
           await expectAsync(
             apolloClient.query({
               query: gql`
-                query GetCustomer($objectId: ID!) {
-                  customer(objectId: $objectId) {
-                    objectId
+                query GetCustomer($id: ID!) {
+                  customer(id: $id) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: customer.id,
+                id: customer.id,
               },
             })
           ).toBeResolved();
@@ -1016,14 +1016,14 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation UpdateSuperCar($objectId: ID!, $foo: String!) {
-                  updateSuperCar(objectId: $objectId, fields: { foo: $foo }) {
+                mutation UpdateSuperCar($id: ID!, $foo: String!) {
+                  updateSuperCar(id: $id, fields: { foo: $foo }) {
                     updatedAt
                   }
                 }
               `,
               variables: {
-                objectId: superCar1.id,
+                id: superCar1.id,
                 foo: 'lah',
               },
             })
@@ -1032,14 +1032,14 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation DeleteCustomer($objectId: ID!) {
-                  deleteCustomer(objectId: $objectId) {
-                    objectId
+                mutation DeleteCustomer($id: ID!) {
+                  deleteCustomer(id: $id) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: customer1.id,
+                id: customer1.id,
               },
             })
           ).toBeResolved();
@@ -1048,7 +1048,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               mutation CreateCustomer($foo: String!) {
                 createCustomer(fields: { foo: $foo }) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -1059,7 +1059,7 @@ describe('ParseGraphQLServer', () => {
           expect(customerData.createCustomer).toBeTruthy();
 
           // used later
-          const customer2Id = customerData.createCustomer.objectId;
+          const customer2Id = customerData.createCustomer.id;
 
           await parseGraphQLServer.setGraphQLConfig({
             classConfigs: [
@@ -1087,7 +1087,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               mutation CreateSuperCar($foo: String!) {
                 createSuperCar(fields: { foo: $foo }) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -1096,19 +1096,19 @@ describe('ParseGraphQLServer', () => {
             },
           });
           expect(superCarData.createSuperCar).toBeTruthy();
-          const superCar3Id = superCarData.createSuperCar.objectId;
+          const superCar3Id = superCarData.createSuperCar.id;
 
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation UpdateSupercar($objectId: ID!, $foo: String!) {
-                  updateSuperCar(objectId: $objectId, fields: { foo: $foo }) {
+                mutation UpdateSupercar($id: ID!, $foo: String!) {
+                  updateSuperCar(id: $id, fields: { foo: $foo }) {
                     updatedAt
                   }
                 }
               `,
               variables: {
-                objectId: superCar3Id,
+                id: superCar3Id,
               },
             })
           ).toBeRejected();
@@ -1116,14 +1116,14 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation DeleteSuperCar($objectId: ID!) {
-                  deleteSuperCar(objectId: $objectId) {
-                    objectId
+                mutation DeleteSuperCar($id: ID!) {
+                  deleteSuperCar(id: $id) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: superCar3Id,
+                id: superCar3Id,
               },
             })
           ).toBeResolved();
@@ -1133,7 +1133,7 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation CreateCustomer($foo: String!) {
                   createCustomer(fields: { foo: $foo }) {
-                    objectId
+                    id
                   }
                 }
               `,
@@ -1145,14 +1145,14 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation UpdateCustomer($objectId: ID!, $foo: String!) {
-                  updateCustomer(objectId: $objectId, fields: { foo: $foo }) {
+                mutation UpdateCustomer($id: ID!, $foo: String!) {
+                  updateCustomer(id: $id, fields: { foo: $foo }) {
                     updatedAt
                   }
                 }
               `,
               variables: {
-                objectId: customer2Id,
+                id: customer2Id,
                 foo: 'tah',
               },
             })
@@ -1160,12 +1160,12 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation DeleteCustomer($objectId: ID!, $foo: String!) {
-                  deleteCustomer(objectId: $objectId)
+                mutation DeleteCustomer($id: ID!, $foo: String!) {
+                  deleteCustomer(id: $id)
                 }
               `,
               variables: {
-                objectId: customer2Id,
+                id: customer2Id,
               },
             })
           ).toBeRejected();
@@ -1200,19 +1200,19 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 mutation InvalidCreateSuperCar {
                   createSuperCar(fields: { engine: "diesel", mileage: 1000 }) {
-                    objectId
+                    id
                   }
                 }
               `,
             })
           ).toBeRejected();
-          const { objectId: superCarId } = (await apolloClient.query({
+          const { id: superCarId } = (await apolloClient.query({
             query: gql`
               mutation ValidCreateSuperCar {
                 createSuperCar(
                   fields: { engine: "diesel", doors: 5, price: "£10000" }
                 ) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -1223,31 +1223,28 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                mutation InvalidUpdateSuperCar($objectId: ID!) {
-                  updateSuperCar(
-                    objectId: $objectId
-                    fields: { engine: "petrol" }
-                  ) {
+                mutation InvalidUpdateSuperCar($id: ID!) {
+                  updateSuperCar(id: $id, fields: { engine: "petrol" }) {
                     updatedAt
                   }
                 }
               `,
               variables: {
-                objectId: superCarId,
+                id: superCarId,
               },
             })
           ).toBeRejected();
 
           const updatedSuperCar = (await apolloClient.query({
             query: gql`
-              mutation ValidUpdateSuperCar($objectId: ID!) {
-                updateSuperCar(objectId: $objectId, fields: { mileage: 2000 }) {
+              mutation ValidUpdateSuperCar($id: ID!) {
+                updateSuperCar(id: $id, fields: { mileage: 2000 }) {
                   updatedAt
                 }
               }
             `,
             variables: {
-              objectId: superCarId,
+              id: superCarId,
             },
           })).data.updateSuperCar;
           expect(updatedSuperCar).toBeTruthy();
@@ -1288,9 +1285,9 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                query GetSuperCar($objectId: ID!) {
-                  superCar(objectId: $objectId) {
-                    objectId
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
+                    id
                     engine
                     doors
                     price
@@ -1300,15 +1297,15 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: superCar.id,
+                id: superCar.id,
               },
             })
           ).toBeRejected();
           let getSuperCar = (await apolloClient.query({
             query: gql`
-              query GetSuperCar($objectId: ID!) {
-                superCar(objectId: $objectId) {
-                  objectId
+              query GetSuperCar($id: ID!) {
+                superCar(id: $id) {
+                  id
                   engine
                   doors
                   price
@@ -1317,7 +1314,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: superCar.id,
+              id: superCar.id,
             },
           })).data.superCar;
           expect(getSuperCar).toBeTruthy();
@@ -1337,30 +1334,30 @@ describe('ParseGraphQLServer', () => {
           await expectAsync(
             apolloClient.query({
               query: gql`
-                query GetSuperCar($objectId: ID!) {
-                  superCar(objectId: $objectId) {
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
                     engine
                   }
                 }
               `,
               variables: {
-                objectId: superCar.id,
+                id: superCar.id,
               },
             })
           ).toBeRejected();
           getSuperCar = (await apolloClient.query({
             query: gql`
-              query GetSuperCar($objectId: ID!) {
-                superCar(objectId: $objectId) {
-                  objectId
+              query GetSuperCar($id: ID!) {
+                superCar(id: $id) {
+                  id
                 }
               }
             `,
             variables: {
-              objectId: superCar.id,
+              id: superCar.id,
             },
           })).data.superCar;
-          expect(getSuperCar.objectId).toBe(superCar.id);
+          expect(getSuperCar.id).toBe(superCar.id);
         });
         it('should only allow the supplied constraint fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
@@ -1486,7 +1483,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [engine_ASC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1499,7 +1496,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [engine_DESC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1512,7 +1509,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [mileage_DESC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1526,7 +1523,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [mileage_ASC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1539,7 +1536,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [doors_ASC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1552,7 +1549,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [price_DESC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1565,7 +1562,7 @@ describe('ParseGraphQLServer', () => {
                 query FindSuperCar {
                   superCars(order: [price_ASC, doors_DESC]) {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -1584,16 +1581,16 @@ describe('ParseGraphQLServer', () => {
 
             const result = (await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "SomeClass", objectId: $objectId)
+                query GetSomeObject($id: ID!) {
+                  get(className: "SomeClass", id: $id)
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
               },
             })).data.get;
 
-            expect(result.objectId).toEqual(obj.id);
+            expect(result.id).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
@@ -1608,9 +1605,9 @@ describe('ParseGraphQLServer', () => {
 
             const result = (await apolloClient.query({
               query: gql`
-                query GetCustomer($objectId: ID!) {
-                  customer(objectId: $objectId) {
-                    objectId
+                query GetCustomer($id: ID!) {
+                  customer(id: $id) {
+                    id
                     someField
                     createdAt
                     updatedAt
@@ -1618,11 +1615,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
               },
             })).data.customer;
 
-            expect(result.objectId).toEqual(obj.id);
+            expect(result.id).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
@@ -1650,12 +1647,12 @@ describe('ParseGraphQLServer', () => {
 
               const result = (await apolloClient.query({
                 query: gql`
-                  query GetCustomer($objectId: ID!) {
-                    customer(objectId: $objectId) {
-                      objectId
+                  query GetCustomer($id: ID!) {
+                    customer(id: $id) {
+                      id
                       manyRelations {
                         ... on Customer {
-                          objectId
+                          id
                           someCustomerField
                           arrayField {
                             ... on Element {
@@ -1664,7 +1661,7 @@ describe('ParseGraphQLServer', () => {
                           }
                         }
                         ... on SomeClass {
-                          objectId
+                          id
                           someClassField
                         }
                       }
@@ -1674,18 +1671,18 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  objectId: obj3.id,
+                  id: obj3.id,
                 },
               })).data.customer;
 
-              expect(result.objectId).toEqual(obj3.id);
+              expect(result.id).toEqual(obj3.id);
               expect(result.manyRelations.length).toEqual(2);
 
               const customerSubObject = result.manyRelations.find(
-                o => o.objectId === obj1.id
+                o => o.id === obj1.id
               );
               const someClassSubObject = result.manyRelations.find(
-                o => o.objectId === obj2.id
+                o => o.id === obj2.id
               );
 
               expect(customerSubObject).toBeDefined();
@@ -1734,30 +1731,30 @@ describe('ParseGraphQLServer', () => {
 
               const result = (await apolloClient.query({
                 query: gql`
-                  query DeepComplexGraphQLQuery($objectId: ID!) {
-                    country(objectId: $objectId) {
-                      objectId
+                  query DeepComplexGraphQLQuery($id: ID!) {
+                    country(id: $id) {
+                      id
                       name
                       companies {
                         ... on Company {
-                          objectId
+                          id
                           name
                           employees {
                             ... on Employee {
-                              objectId
+                              id
                               name
                             }
                           }
                           teams {
                             ... on Team {
-                              objectId
+                              id
                               name
                               employees {
                                 ... on Employee {
-                                  objectId
+                                  id
                                   name
                                   country {
-                                    objectId
+                                    id
                                     name
                                   }
                                 }
@@ -1770,38 +1767,38 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  objectId: obj4.id,
+                  id: obj4.id,
                 },
               })).data.country;
 
               const expectedResult = {
-                objectId: obj4.id,
+                id: obj4.id,
                 name: 'imACountry',
                 __typename: 'Country',
                 companies: [
                   {
-                    objectId: obj3.id,
+                    id: obj3.id,
                     name: 'imACompany',
                     __typename: 'Company',
                     employees: [
                       {
-                        objectId: obj1.id,
+                        id: obj1.id,
                         name: 'imAnEmployee',
                         __typename: 'Employee',
                       },
                     ],
                     teams: [
                       {
-                        objectId: obj2.id,
+                        id: obj2.id,
                         name: 'imATeam',
                         __typename: 'Team',
                         employees: [
                           {
-                            objectId: obj1.id,
+                            id: obj1.id,
                             name: 'imAnEmployee',
                             __typename: 'Employee',
                             country: {
-                              objectId: obj4.id,
+                              id: obj4.id,
                               name: 'imACountry',
                               __typename: 'Country',
                             },
@@ -1821,19 +1818,19 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            async function getObject(className, objectId, headers) {
+            async function getObject(className, id, headers) {
               const specificQueryResult = await apolloClient.query({
                 query: gql`
-                  query GetSomeObject($objectId: ID!) {
+                  query GetSomeObject($id: ID!) {
                     ${className.charAt(0).toLowerCase() +
-                      className.slice(1)}(objectId: $objectId) {
-                      objectId
+                      className.slice(1)}(id: $id) {
+                      id
                       createdAt
                     }
                   }
                 `,
                 variables: {
-                  objectId,
+                  id,
                 },
                 context: {
                   headers,
@@ -1842,22 +1839,20 @@ describe('ParseGraphQLServer', () => {
 
               const genericQueryResult = await apolloClient.query({
                 query: gql`
-                  query GetSomeObject($className: String!, $objectId: ID!) {
-                    get(className: $className, objectId: $objectId)
+                  query GetSomeObject($className: String!, $id: ID!) {
+                    get(className: $className, id: $id)
                   }
                 `,
                 variables: {
                   className,
-                  objectId,
+                  id,
                 },
                 context: {
                   headers,
                 },
               });
 
-              expect(genericQueryResult.objectId).toEqual(
-                specificQueryResult.objectId
-              );
+              expect(genericQueryResult.id).toEqual(specificQueryResult.id);
               expect(genericQueryResult.createdAt).toEqual(
                 specificQueryResult.createdAt
               );
@@ -1958,12 +1953,12 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "_User", objectId: $objectId)
+                query GetSomeObject($id: ID!) {
+                  get(className: "_User", id: $id)
                 }
               `,
               variables: {
-                objectId: user2.id,
+                id: user2.id,
               },
               context: {
                 headers: {
@@ -1979,12 +1974,12 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "_User", objectId: $objectId)
+                query GetSomeObject($id: ID!) {
+                  get(className: "_User", id: $id)
                 }
               `,
               variables: {
-                objectId: user1.id,
+                id: user1.id,
               },
               context: {
                 headers: {
@@ -2000,16 +1995,12 @@ describe('ParseGraphQLServer', () => {
 
             const result1 = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(
-                    className: "GraphQLClass"
-                    objectId: $objectId
-                    keys: "someField"
-                  )
+                query GetSomeObject($id: ID!) {
+                  get(className: "GraphQLClass", id: $id, keys: "someField")
                 }
               `,
               variables: {
-                objectId: object3.id,
+                id: object3.id,
               },
               context: {
                 headers: {
@@ -2020,16 +2011,16 @@ describe('ParseGraphQLServer', () => {
 
             const result2 = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
+                query GetSomeObject($id: ID!) {
                   get(
                     className: "GraphQLClass"
-                    objectId: $objectId
+                    id: $id
                     keys: "someField,pointerToUser"
                   )
                 }
               `,
               variables: {
-                objectId: object3.id,
+                id: object3.id,
               },
               context: {
                 headers: {
@@ -2051,12 +2042,12 @@ describe('ParseGraphQLServer', () => {
 
             const result1 = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
-                  get(className: "GraphQLClass", objectId: $objectId)
+                query GetSomeObject($id: ID!) {
+                  get(className: "GraphQLClass", id: $id)
                 }
               `,
               variables: {
-                objectId: object3.id,
+                id: object3.id,
               },
               context: {
                 headers: {
@@ -2067,13 +2058,13 @@ describe('ParseGraphQLServer', () => {
 
             const result2 = await apolloClient.query({
               query: gql`
-                query GetSomeObject($objectId: ID!) {
+                query GetSomeObject($id: ID!) {
                   get(
                     className: "GraphQLClass"
-                    objectId: $objectId
+                    id: $id
                     include: "pointerToUser"
                   )
-                  graphQLClass(objectId: $objectId) {
+                  graphQLClass(id: $id) {
                     pointerToUser {
                       username
                     }
@@ -2081,7 +2072,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: object3.id,
+                id: object3.id,
               },
               context: {
                 headers: {
@@ -2110,16 +2101,16 @@ describe('ParseGraphQLServer', () => {
 
               await apolloClient.query({
                 query: gql`
-                  query GetSomeObject($objectId: ID!) {
+                  query GetSomeObject($id: ID!) {
                     get(
                       className: "GraphQLClass"
-                      objectId: $objectId
+                      id: $id
                       include: "pointerToUser"
                     )
                   }
                 `,
                 variables: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
                 context: {
                   headers: {
@@ -2162,17 +2153,17 @@ describe('ParseGraphQLServer', () => {
 
               await apolloClient.query({
                 query: gql`
-                  query GetSomeObject($objectId: ID!) {
+                  query GetSomeObject($id: ID!) {
                     get(
                       className: "GraphQLClass"
-                      objectId: $objectId
+                      id: $id
                       include: "pointerToUser"
                       readPreference: SECONDARY
                     )
                   }
                 `,
                 variables: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
                 context: {
                   headers: {
@@ -2215,10 +2206,10 @@ describe('ParseGraphQLServer', () => {
 
               await apolloClient.query({
                 query: gql`
-                  query GetSomeObject($objectId: ID!) {
+                  query GetSomeObject($id: ID!) {
                     get(
                       className: "GraphQLClass"
-                      objectId: $objectId
+                      id: $id
                       include: "pointerToUser"
                       readPreference: SECONDARY
                       includeReadPreference: NEAREST
@@ -2226,7 +2217,7 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
                 context: {
                   headers: {
@@ -2281,8 +2272,8 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.find.results.length).toEqual(2);
 
             result.data.find.results.forEach(resultObj => {
-              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
-              expect(resultObj.objectId).toEqual(obj.id);
+              const obj = resultObj.id === obj1.id ? obj1 : obj2;
+              expect(resultObj.id).toEqual(obj.id);
               expect(resultObj.someField).toEqual(obj.get('someField'));
               expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
               expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
@@ -2304,7 +2295,7 @@ describe('ParseGraphQLServer', () => {
                 query FindCustomer {
                   customers {
                     results {
-                      objectId
+                      id
                       someField
                       createdAt
                       updatedAt
@@ -2317,8 +2308,8 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.customers.results.length).toEqual(2);
 
             result.data.customers.results.forEach(resultObj => {
-              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
-              expect(resultObj.objectId).toEqual(obj.id);
+              const obj = resultObj.id === obj1.id ? obj1 : obj2;
+              expect(resultObj.id).toEqual(obj.id);
               expect(resultObj.someField).toEqual(obj.get('someField'));
               expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
               expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
@@ -2341,7 +2332,7 @@ describe('ParseGraphQLServer', () => {
                     }
                     ${graphqlClassName} {
                       results {
-                        objectId
+                        id
                         someField
                       }
                     }
@@ -2357,15 +2348,11 @@ describe('ParseGraphQLServer', () => {
 
               const genericFindResults = result.data.find.results;
               const specificFindResults = result.data[graphqlClassName].results;
-              genericFindResults.forEach(({ objectId, someField }) => {
+              genericFindResults.forEach(({ id, someField }) => {
                 expect(
                   specificFindResults.some(
-                    ({
-                      objectId: specificObjectId,
-                      someField: specificSomeField,
-                    }) =>
-                      objectId === specificObjectId &&
-                      someField === specificSomeField
+                    ({ id: specificid, someField: specificSomeField }) =>
+                      id === specificid && someField === specificSomeField
                   )
                 );
               });
@@ -2457,7 +2444,7 @@ describe('ParseGraphQLServer', () => {
                       },
                     },
                     {
-                      objectId: object1.id,
+                      id: object1.id,
                     },
                   ],
                 },
@@ -2505,7 +2492,7 @@ describe('ParseGraphQLServer', () => {
                       },
                     },
                     {
-                      objectId: {
+                      id: {
                         _eq: object1.id,
                       },
                     },
@@ -2654,7 +2641,7 @@ describe('ParseGraphQLServer', () => {
                   },
                 },
                 {
-                  objectId: {
+                  id: {
                     _eq: object1.id,
                   },
                 },
@@ -2678,7 +2665,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   graphQLClasses(where: $where2, limit: $limit) {
                     results {
-                      objectId
+                      id
                     }
                     count
                   }
@@ -2722,7 +2709,7 @@ describe('ParseGraphQLServer', () => {
                   },
                 },
                 {
-                  objectId: {
+                  id: {
                     _eq: object1.id,
                   },
                 },
@@ -2779,18 +2766,15 @@ describe('ParseGraphQLServer', () => {
                 query FindSomeObjects($limit: Int) {
                   find(
                     className: "SomeClass"
-                    where: { objectId: { _exists: true } }
+                    where: { id: { _exists: true } }
                     limit: $limit
                   ) {
                     results
                     count
                   }
-                  someClasses(
-                    where: { objectId: { _exists: true } }
-                    limit: $limit
-                  ) {
+                  someClasses(where: { id: { _exists: true } }, limit: $limit) {
                     results {
-                      objectId
+                      id
                     }
                     count
                   }
@@ -2829,7 +2813,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
               },
               context: {
@@ -2853,7 +2837,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
               },
               context: {
@@ -2884,7 +2868,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  objectId: object3.id,
+                  id: object3.id,
                 },
               },
               context: {
@@ -2895,7 +2879,7 @@ describe('ParseGraphQLServer', () => {
             });
 
             const where = {
-              objectId: {
+              id: {
                 _eq: object3.id,
               },
             };
@@ -3207,7 +3191,7 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation CreateSomeObject($fields: Object) {
                   create(className: "SomeClass", fields: $fields) {
-                    objectId
+                    id
                     createdAt
                   }
                 }
@@ -3219,10 +3203,10 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.create.objectId).toBeDefined();
+            expect(result.data.create.id).toBeDefined();
 
             const obj = await new Parse.Query('SomeClass').get(
-              result.data.create.objectId
+              result.data.create.id
             );
 
             expect(obj.createdAt).toEqual(
@@ -3242,7 +3226,7 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation CreateCustomer($fields: CreateCustomerFieldsInput) {
                   createCustomer(fields: $fields) {
-                    objectId
+                    id
                     createdAt
                     someField
                   }
@@ -3255,11 +3239,11 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.createCustomer.objectId).toBeDefined();
+            expect(result.data.createCustomer.id).toBeDefined();
             expect(result.data.createCustomer.someField).toEqual('someValue');
 
             const customer = await new Parse.Query('Customer').get(
-              result.data.createCustomer.objectId
+              result.data.createCustomer.id
             );
 
             expect(customer.createdAt).toEqual(
@@ -3278,11 +3262,11 @@ describe('ParseGraphQLServer', () => {
                 mutation: gql`
                   mutation CreateSomeObject($className: String!) {
                     create(className: $className) {
-                      objectId
+                      id
                       createdAt
                     }
                     create${className} {
-                      objectId
+                      id
                       createdAt
                     }
                   }
@@ -3296,11 +3280,11 @@ describe('ParseGraphQLServer', () => {
               });
 
               const { create } = result.data;
-              expect(create.objectId).toBeDefined();
+              expect(create.id).toBeDefined();
               expect(create.createdAt).toBeDefined();
 
               const specificCreate = result.data[`create${className}`];
-              expect(specificCreate.objectId).toBeDefined();
+              expect(specificCreate.id).toBeDefined();
               expect(specificCreate.createdAt).toBeDefined();
 
               return result;
@@ -3364,18 +3348,14 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
-                  update(
-                    className: "SomeClass"
-                    objectId: $objectId
-                    fields: $fields
-                  ) {
+                mutation UpdateSomeObject($id: ID!, $fields: Object) {
+                  update(className: "SomeClass", id: $id, fields: $fields) {
                     updatedAt
                   }
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
                 fields: {
                   someField1: 'someField1Value2',
                 },
@@ -3401,10 +3381,10 @@ describe('ParseGraphQLServer', () => {
             const result = await apolloClient.mutate({
               mutation: gql`
                 mutation UpdateCustomer(
-                  $objectId: ID!
+                  $id: ID!
                   $fields: UpdateCustomerFieldsInput
                 ) {
-                  updateCustomer(objectId: $objectId, fields: $fields) {
+                  updateCustomer(id: $id, fields: $fields) {
                     updatedAt
                     someField1
                     someField2
@@ -3412,7 +3392,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
                 fields: {
                   someField1: 'someField1Value2',
                 },
@@ -3433,7 +3413,7 @@ describe('ParseGraphQLServer', () => {
             expect(obj.get('someField2')).toEqual('someField2Value1');
           });
 
-          it('should return only objectId using class specific mutation', async () => {
+          it('should return only id using class specific mutation', async () => {
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
             obj.set('someField2', 'someField2Value1');
@@ -3444,23 +3424,23 @@ describe('ParseGraphQLServer', () => {
             const result = await apolloClient.mutate({
               mutation: gql`
                 mutation UpdateCustomer(
-                  $objectId: ID!
+                  $id: ID!
                   $fields: UpdateCustomerFieldsInput
                 ) {
-                  updateCustomer(objectId: $objectId, fields: $fields) {
-                    objectId
+                  updateCustomer(id: $id, fields: $fields) {
+                    id
                   }
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
                 fields: {
                   someField1: 'someField1Value2',
                 },
               },
             });
 
-            expect(result.data.updateCustomer.objectId).toEqual(obj.id);
+            expect(result.data.updateCustomer.id).toEqual(obj.id);
 
             await obj.fetch();
 
@@ -3471,26 +3451,22 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            function updateObject(className, objectId, fields, headers) {
+            function updateObject(className, id, fields, headers) {
               return apolloClient.mutate({
                 mutation: gql`
                   mutation UpdateSomeObject(
                     $className: String!
-                    $objectId: ID!
+                    $id: ID!
                     $fields: Object
                   ) {
-                    update(
-                      className: $className
-                      objectId: $objectId
-                      fields: $fields
-                    ) {
+                    update(className: $className, id: $id, fields: $fields) {
                       updatedAt
                     }
                   }
                 `,
                 variables: {
                   className,
-                  objectId,
+                  id,
                   fields,
                 },
                 context: {
@@ -3652,15 +3628,15 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            function updateObject(className, objectId, fields, headers) {
+            function updateObject(className, id, fields, headers) {
               return apolloClient.mutate({
                 mutation: gql`
                   mutation UpdateSomeObject(
-                    $objectId: ID!
+                    $id: ID!
                     $fields: Update${className}FieldsInput
                   ) {
                     update${className}(
-                      objectId: $objectId
+                      id: $id
                       fields: $fields
                     ) {
                       updatedAt
@@ -3668,7 +3644,7 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  objectId,
+                  id,
                   fields,
                 },
                 context: {
@@ -3833,12 +3809,12 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation DeleteSomeObject($objectId: ID!) {
-                  delete(className: "SomeClass", objectId: $objectId)
+                mutation DeleteSomeObject($id: ID!) {
+                  delete(className: "SomeClass", id: $id)
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
               },
             });
 
@@ -3859,20 +3835,20 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation DeleteCustomer($objectId: ID!) {
-                  deleteCustomer(objectId: $objectId) {
-                    objectId
+                mutation DeleteCustomer($id: ID!) {
+                  deleteCustomer(id: $id) {
+                    id
                     someField1
                     someField2
                   }
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
               },
             });
 
-            expect(result.data.deleteCustomer.objectId).toEqual(obj.id);
+            expect(result.data.deleteCustomer.id).toEqual(obj.id);
             expect(result.data.deleteCustomer.someField1).toEqual(
               'someField1Value1'
             );
@@ -3888,19 +3864,16 @@ describe('ParseGraphQLServer', () => {
           it('should respect level permissions', async () => {
             await prepareData();
 
-            function deleteObject(className, objectId, headers) {
+            function deleteObject(className, id, headers) {
               return apolloClient.mutate({
                 mutation: gql`
-                  mutation DeleteSomeObject(
-                    $className: String!
-                    $objectId: ID!
-                  ) {
-                    delete(className: $className, objectId: $objectId)
+                  mutation DeleteSomeObject($className: String!, $id: ID!) {
+                    delete(className: $className, id: $id)
                   }
                 `,
                 variables: {
                   className,
-                  objectId,
+                  id,
                 },
                 context: {
                   headers,
@@ -3967,19 +3940,19 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            function deleteObject(className, objectId, headers) {
+            function deleteObject(className, id, headers) {
               return apolloClient.mutate({
                 mutation: gql`
                   mutation DeleteSomeObject(
-                    $objectId: ID!
+                    $id: ID!
                   ) {
-                    delete${className}(objectId: $objectId) {
-                      objectId
+                    delete${className}(id: $id) {
+                      id
                     }
                   }
                 `,
                 variables: {
-                  objectId,
+                  id,
                 },
                 context: {
                   headers,
@@ -4012,7 +3985,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object4.className, object4.id)).data[
                 `delete${object4.className}`
-              ].objectId
+              ].id
             ).toEqual(object4.id);
             await expectAsync(
               object4.fetch({ useMasterKey: true })
@@ -4020,7 +3993,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
-              })).data[`delete${object1.className}`].objectId
+              })).data[`delete${object1.className}`].id
             ).toEqual(object1.id);
             await expectAsync(
               object1.fetch({ useMasterKey: true })
@@ -4028,7 +4001,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data[`delete${object2.className}`].objectId
+              })).data[`delete${object2.className}`].id
             ).toEqual(object2.id);
             await expectAsync(
               object2.fetch({ useMasterKey: true })
@@ -4036,7 +4009,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data[`delete${object3.className}`].objectId
+              })).data[`delete${object3.className}`].id
             ).toEqual(object3.id);
             await expectAsync(
               object3.fetch({ useMasterKey: true })
@@ -4117,7 +4090,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 viewer {
-                  objectId
+                  id
                   username
                   email
                 }
@@ -4131,11 +4104,11 @@ describe('ParseGraphQLServer', () => {
           });
 
           const {
-            objectId,
+            id,
             username: resultUserName,
             email: resultEmail,
           } = result.data.viewer;
-          expect(objectId).toBeDefined();
+          expect(id).toBeDefined();
           expect(resultUserName).toEqual(userName);
           expect(resultEmail).toEqual(email);
         });
@@ -4162,7 +4135,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 viewer {
-                  objectId
+                  id
                   sessionToken
                   userFoo {
                     bar
@@ -4177,12 +4150,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const {
-            objectId,
-            sessionToken,
-            userFoo: resultFoo,
-          } = result.data.viewer;
-          expect(objectId).toEqual(user.id);
+          const { id, sessionToken, userFoo: resultFoo } = result.data.viewer;
+          expect(id).toEqual(user.id);
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
           expect(resultFoo.bar).toEqual('hello');
@@ -4383,7 +4352,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   cars {
                     results {
-                      objectId
+                      id
                     }
                   }
                 }
@@ -4548,7 +4517,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4568,7 +4537,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4581,8 +4550,8 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: String) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!, $someFieldValue: String) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _eq: $someFieldValue } }) {
                   results {
                     someField
@@ -4591,7 +4560,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               someFieldValue,
             },
           });
@@ -4608,7 +4577,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4625,7 +4594,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4641,8 +4610,8 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!, $someFieldValue: Float) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _eq: $someFieldValue } }) {
                   results {
                     someField
@@ -4651,7 +4620,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               someFieldValue,
             },
           });
@@ -4668,7 +4637,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4688,7 +4657,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4701,8 +4670,8 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!, $someFieldValue: Float) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _eq: $someFieldValue } }) {
                   results {
                     someField
@@ -4711,7 +4680,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               someFieldValue,
             },
           });
@@ -4729,7 +4698,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4751,7 +4720,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4766,11 +4735,11 @@ describe('ParseGraphQLServer', () => {
           const getResult = await apolloClient.query({
             query: gql`
               query GetSomeObject(
-                $objectId: ID!
+                $id: ID!
                 $someFieldValueTrue: Boolean
                 $someFieldValueFalse: Boolean
               ) {
-                get(className: "SomeClass", objectId: $objectId)
+                get(className: "SomeClass", id: $id)
                 someClasses(
                   where: {
                     someFieldTrue: { _eq: $someFieldValueTrue }
@@ -4778,13 +4747,13 @@ describe('ParseGraphQLServer', () => {
                   }
                 ) {
                   results {
-                    objectId
+                    id
                   }
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               someFieldValueTrue,
               someFieldValueFalse,
             },
@@ -4807,7 +4776,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4827,7 +4796,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4840,17 +4809,17 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _exists: true } }) {
                   results {
-                    objectId
+                    id
                   }
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -4882,7 +4851,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -4893,12 +4862,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -4928,9 +4897,9 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation Create($fields: CreateCountryFieldsInput) {
                 createCountry(fields: $fields) {
-                  objectId
+                  id
                   company {
-                    objectId
+                    id
                     name
                   }
                 }
@@ -4939,13 +4908,13 @@ describe('ParseGraphQLServer', () => {
             variables: {
               fields: {
                 name: 'imCountry2',
-                company: { link: { objectId: company2.id } },
+                company: { link: company2.id },
               },
             },
           });
 
-          expect(result.objectId).toBeDefined();
-          expect(result.company.objectId).toEqual(company2.id);
+          expect(result.id).toBeDefined();
+          expect(result.company.id).toEqual(company2.id);
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -4967,9 +4936,9 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation Create($fields: CreateCountryFieldsInput) {
                 createCountry(fields: $fields) {
-                  objectId
+                  id
                   company {
-                    objectId
+                    id
                     name
                   }
                 }
@@ -4987,8 +4956,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.objectId).toBeDefined();
-          expect(result.company.objectId).toBeDefined();
+          expect(result.id).toBeDefined();
+          expect(result.company.id).toBeDefined();
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -5012,29 +4981,26 @@ describe('ParseGraphQLServer', () => {
             data: { updateCountry: result },
           } = await apolloClient.mutate({
             mutation: gql`
-              mutation Update(
-                $objectId: ID!
-                $fields: UpdateCountryFieldsInput
-              ) {
-                updateCountry(objectId: $objectId, fields: $fields) {
-                  objectId
+              mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
+                updateCountry(id: $id, fields: $fields) {
+                  id
                   company {
-                    objectId
+                    id
                     name
                   }
                 }
               }
             `,
             variables: {
-              objectId: country.id,
+              id: country.id,
               fields: {
-                company: { link: { objectId: company2.id } },
+                company: { link: company2.id },
               },
             },
           });
 
-          expect(result.objectId).toBeDefined();
-          expect(result.company.objectId).toEqual(company2.id);
+          expect(result.id).toBeDefined();
+          expect(result.company.id).toEqual(company2.id);
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -5054,21 +5020,18 @@ describe('ParseGraphQLServer', () => {
             data: { updateCountry: result },
           } = await apolloClient.mutate({
             mutation: gql`
-              mutation Update(
-                $objectId: ID!
-                $fields: UpdateCountryFieldsInput
-              ) {
-                updateCountry(objectId: $objectId, fields: $fields) {
-                  objectId
+              mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
+                updateCountry(id: $id, fields: $fields) {
+                  id
                   company {
-                    objectId
+                    id
                     name
                   }
                 }
               }
             `,
             variables: {
-              objectId: country.id,
+              id: country.id,
               fields: {
                 company: {
                   createAndLink: {
@@ -5079,8 +5042,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.objectId).toBeDefined();
-          expect(result.company.objectId).toBeDefined();
+          expect(result.id).toBeDefined();
+          expect(result.company.id).toBeDefined();
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -5104,11 +5067,11 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation CreateCountry($fields: CreateCountryFieldsInput) {
                   createCountry(fields: $fields) {
-                    objectId
+                    id
                     name
                     companies {
                       results {
-                        objectId
+                        id
                         name
                       }
                     }
@@ -5119,7 +5082,7 @@ describe('ParseGraphQLServer', () => {
                 fields: {
                   name: 'imACountry2',
                   companies: {
-                    add: [{ objectId: company.id }],
+                    add: [company.id],
                     createAndAdd: [
                       {
                         name: 'imACompany2',
@@ -5133,11 +5096,11 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.objectId).toBeDefined();
+            expect(result.id).toBeDefined();
             expect(result.name).toEqual('imACountry2');
             expect(result.companies.results.length).toEqual(3);
             expect(
-              result.companies.results.some(o => o.objectId === company.id)
+              result.companies.results.some(o => o.id === company.id)
             ).toBeTruthy();
             expect(
               result.companies.results.some(o => o.name === 'imACompany2')
@@ -5171,15 +5134,15 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateCountry($fields: CreateCountryFieldsInput) {
                 createCountry(fields: $fields) {
-                  objectId
+                  id
                   name
                   companies {
                     results {
-                      objectId
+                      id
                       name
                       teams {
                         results {
-                          objectId
+                          id
                           name
                         }
                       }
@@ -5215,7 +5178,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result.objectId).toBeDefined();
+          expect(result.id).toBeDefined();
           expect(result.name).toEqual('imACountry2');
           expect(result.companies.results.length).toEqual(2);
           expect(
@@ -5257,14 +5220,14 @@ describe('ParseGraphQLServer', () => {
             } = await apolloClient.mutate({
               mutation: gql`
                 mutation UpdateCountry(
-                  $objectId: ID!
+                  $id: ID!
                   $fields: UpdateCountryFieldsInput
                 ) {
-                  updateCountry(objectId: $objectId, fields: $fields) {
-                    objectId
+                  updateCountry(id: $id, fields: $fields) {
+                    id
                     companies {
                       results {
-                        objectId
+                        id
                         name
                       }
                     }
@@ -5272,11 +5235,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: country.id,
+                id: country.id,
                 fields: {
                   companies: {
-                    add: [{ objectId: company2.id }],
-                    remove: [{ objectId: company1.id }],
+                    add: [company2.id],
+                    remove: [company1.id],
                     createAndAdd: [
                       {
                         name: 'imACompany3',
@@ -5287,16 +5250,16 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.objectId).toEqual(country.id);
+            expect(result.id).toEqual(country.id);
             expect(result.companies.results.length).toEqual(2);
             expect(
-              result.companies.results.some(o => o.objectId === company2.id)
+              result.companies.results.some(o => o.id === company2.id)
             ).toBeTruthy();
             expect(
               result.companies.results.some(o => o.name === 'imACompany3')
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.objectId === company1.id)
+              result.companies.results.some(o => o.id === company1.id)
             ).toBeFalsy();
           }
         );
@@ -5324,11 +5287,11 @@ describe('ParseGraphQLServer', () => {
                   $where: CompanyWhereInput
                 ) {
                   createCountry(fields: $fields) {
-                    objectId
+                    id
                     name
                     companies(where: $where) {
                       results {
-                        objectId
+                        id
                         name
                       }
                     }
@@ -5344,7 +5307,7 @@ describe('ParseGraphQLServer', () => {
                 fields: {
                   name: 'imACountry2',
                   companies: {
-                    add: [{ objectId: company.id }],
+                    add: [company.id],
                     createAndAdd: [
                       {
                         name: 'imACompany2',
@@ -5358,7 +5321,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.objectId).toBeDefined();
+            expect(result.id).toBeDefined();
             expect(result.name).toEqual('imACountry2');
             expect(result.companies.results.length).toEqual(1);
             expect(
@@ -5388,12 +5351,12 @@ describe('ParseGraphQLServer', () => {
             data: { country: result1 },
           } = await apolloClient.query({
             query: gql`
-              query getCountry($objectId: ID!) {
-                country(objectId: $objectId) {
-                  objectId
+              query getCountry($id: ID!) {
+                country(id: $id) {
+                  id
                   companies {
                     results {
-                      objectId
+                      id
                       name
                     }
                   }
@@ -5401,17 +5364,17 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: country.id,
+              id: country.id,
             },
           });
 
-          expect(result1.objectId).toEqual(country.id);
+          expect(result1.id).toEqual(country.id);
           expect(result1.companies.results.length).toEqual(2);
           expect(
-            result1.companies.results.some(o => o.objectId === company1.id)
+            result1.companies.results.some(o => o.id === company1.id)
           ).toBeTruthy();
           expect(
-            result1.companies.results.some(o => o.objectId === company2.id)
+            result1.companies.results.some(o => o.id === company2.id)
           ).toBeTruthy();
 
           // With where
@@ -5419,12 +5382,12 @@ describe('ParseGraphQLServer', () => {
             data: { country: result2 },
           } = await apolloClient.query({
             query: gql`
-              query getCountry($objectId: ID!, $where: CompanyWhereInput) {
-                country(objectId: $objectId) {
-                  objectId
+              query getCountry($id: ID!, $where: CompanyWhereInput) {
+                country(id: $id) {
+                  id
                   companies(where: $where) {
                     results {
-                      objectId
+                      id
                       name
                     }
                   }
@@ -5432,15 +5395,15 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: country.id,
+              id: country.id,
               where: {
                 name: { _eq: 'imACompany1' },
               },
             },
           });
-          expect(result2.objectId).toEqual(country.id);
+          expect(result2.id).toEqual(country.id);
           expect(result2.companies.results.length).toEqual(1);
-          expect(result2.companies.results[0].objectId).toEqual(company1.id);
+          expect(result2.companies.results[0].id).toEqual(company1.id);
         });
 
         it('should support files', async () => {
@@ -5498,7 +5461,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5518,10 +5481,10 @@ describe('ParseGraphQLServer', () => {
                 $fields2: CreateSomeClassFieldsInput
               ) {
                 createSomeClass1: createSomeClass(fields: $fields1) {
-                  objectId
+                  id
                 }
                 createSomeClass2: createSomeClass(fields: $fields2) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5540,8 +5503,8 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
                 findSomeClass1: someClasses(
                   where: { someField: { _exists: true } }
                 ) {
@@ -5565,7 +5528,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -5590,7 +5553,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5610,7 +5573,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5632,14 +5595,14 @@ describe('ParseGraphQLServer', () => {
           const queryResult = await apolloClient.query({
             query: gql`
               query GetSomeObject(
-                $objectId: ID!
+                $id: ID!
                 $where: SomeClassWhereInput
                 $genericWhere: Object
               ) {
-                get(className: "SomeClass", objectId: $objectId)
+                get(className: "SomeClass", id: $id)
                 someClasses(where: $where) {
                   results {
-                    objectId
+                    id
                     someField
                   }
                 }
@@ -5649,7 +5612,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               where,
               genericWhere: where, // where and genericWhere types are different
             },
@@ -5688,10 +5651,10 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields1: Object, $fields2: Object) {
                 create1: create(className: "SomeClass", fields: $fields1) {
-                  objectId
+                  id
                 }
                 create2: create(className: "SomeClass", fields: $fields2) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5743,7 +5706,7 @@ describe('ParseGraphQLServer', () => {
               ) {
                 someClasses(where: $where) {
                   results {
-                    objectId
+                    id
                     someField
                   }
                 }
@@ -5765,24 +5728,20 @@ describe('ParseGraphQLServer', () => {
           const { results } = someClasses;
           expect(results.length).toEqual(2);
           expect(
-            results.find(result => result.objectId === create1.objectId)
-              .someField
+            results.find(result => result.id === create1.id).someField
           ).toEqual(someFieldValue);
           expect(
-            results.find(result => result.objectId === create2.objectId)
-              .someField
+            results.find(result => result.id === create2.id).someField
           ).toEqual(someFieldValue2);
 
           // Checks generic query results
           const { results: genericResults } = find;
           expect(genericResults.length).toEqual(2);
           expect(
-            genericResults.find(result => result.objectId === create1.objectId)
-              .someField
+            genericResults.find(result => result.id === create1.id).someField
           ).toEqual(someFieldValue);
           expect(
-            genericResults.find(result => result.objectId === create2.objectId)
-              .someField
+            genericResults.find(result => result.id === create2.id).someField
           ).toEqual(someFieldValue2);
         });
 
@@ -5793,7 +5752,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5813,7 +5772,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5826,11 +5785,11 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _exists: true } }) {
                   results {
-                    objectId
+                    id
                     someField {
                       ... on Element {
                         value
@@ -5841,7 +5800,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -5863,9 +5822,9 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                someClass(objectId: $objectId) {
-                  objectId
+              query GetSomeObject($id: ID!) {
+                someClass(id: $id) {
+                  id
                   someArray {
                     ... on Element {
                       value
@@ -5875,7 +5834,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: obj.id,
+              id: obj.id,
             },
           });
           expect(getResult.data.someClass.someArray).toEqual(null);
@@ -5886,7 +5845,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5903,18 +5862,14 @@ describe('ParseGraphQLServer', () => {
 
           await apolloClient.mutate({
             mutation: gql`
-              mutation UpdateSomeObject($objectId: ID!, $fields: Object) {
-                update(
-                  className: "SomeClass"
-                  objectId: $objectId
-                  fields: $fields
-                ) {
+              mutation UpdateSomeObject($id: ID!, $fields: Object) {
+                update(className: "SomeClass", id: $id, fields: $fields) {
                   updatedAt
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               fields: {
                 someStringField: null,
                 someNumberField: null,
@@ -5927,12 +5882,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -5955,7 +5910,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5978,10 +5933,10 @@ describe('ParseGraphQLServer', () => {
                 $fields2: CreateSomeClassFieldsInput
               ) {
                 createSomeClass1: createSomeClass(fields: $fields1) {
-                  objectId
+                  id
                 }
                 createSomeClass2: createSomeClass(fields: $fields2) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -5997,18 +5952,18 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!, $someFieldValue: Bytes) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!, $someFieldValue: Bytes) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _eq: $someFieldValue } }) {
                   results {
-                    objectId
+                    id
                     someField
                   }
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
               someFieldValue,
             },
           });
@@ -6029,7 +5984,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6049,7 +6004,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6065,11 +6020,11 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { someField: { _exists: true } }) {
                   results {
-                    objectId
+                    id
                     someField {
                       latitude
                       longitude
@@ -6079,7 +6034,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -6098,7 +6053,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6118,7 +6073,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6134,11 +6089,11 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "SomeClass", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "SomeClass", id: $id)
                 someClasses(where: { somePolygonField: { _exists: true } }) {
                   results {
-                    objectId
+                    id
                     somePolygonField {
                       latitude
                       longitude
@@ -6148,7 +6103,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -6167,7 +6122,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: Object) {
                 create(className: "SomeClass", fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6182,8 +6137,8 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                someClass(objectId: $objectId) {
+              query GetSomeObject($id: ID!) {
+                someClass(id: $id) {
                   somePolygonField {
                     latitude
                     longitude
@@ -6192,7 +6147,7 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createResult.data.create.objectId,
+              id: createResult.data.create.id,
             },
           });
 
@@ -6229,7 +6184,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                 }
               }
             `,
@@ -6242,14 +6197,14 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                someClass(objectId: $objectId) {
+              query GetSomeObject($id: ID!) {
+                someClass(id: $id) {
                   someField
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.createSomeClass.objectId,
+              id: createResult.data.createSomeClass.id,
             },
           });
 
@@ -6265,16 +6220,16 @@ describe('ParseGraphQLServer', () => {
           const updatedResult = await apolloClient.mutate({
             mutation: gql`
               mutation UpdateSomeObject(
-                $objectId: ID!
+                $id: ID!
                 $fields: UpdateSomeClassFieldsInput
               ) {
-                updateSomeClass(objectId: $objectId, fields: $fields) {
+                updateSomeClass(id: $id, fields: $fields) {
                   updatedAt
                 }
               }
             `,
             variables: {
-              objectId: createResult.data.createSomeClass.objectId,
+              id: createResult.data.createSomeClass.id,
               fields: {
                 someField: updatedSomeFieldValue,
               },
@@ -6289,7 +6244,7 @@ describe('ParseGraphQLServer', () => {
               query FindSomeObject($where: SomeClassWhereInput!) {
                 someClasses(where: $where) {
                   results {
-                    objectId
+                    id
                   }
                 }
               }
@@ -6304,9 +6259,7 @@ describe('ParseGraphQLServer', () => {
           });
           const findResults = findResult.data.someClasses.results;
           expect(findResults.length).toBe(1);
-          expect(findResults[0].objectId).toBe(
-            createResult.data.createSomeClass.objectId
-          );
+          expect(findResults[0].id).toBe(createResult.data.createSomeClass.id);
         });
       });
 
@@ -6319,16 +6272,16 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_User", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_User", id: $id)
               }
             `,
             variables: {
-              objectId: user.id,
+              id: user.id,
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(user.id);
+          expect(getResult.data.get.id).toEqual(user.id);
         });
 
         it('should support Installation class', async () => {
@@ -6339,16 +6292,16 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Installation", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_Installation", id: $id)
               }
             `,
             variables: {
-              objectId: installation.id,
+              id: installation.id,
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(installation.id);
+          expect(getResult.data.get.id).toEqual(installation.id);
         });
 
         it('should support Role class', async () => {
@@ -6359,16 +6312,16 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Role", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_Role", id: $id)
               }
             `,
             variables: {
-              objectId: role.id,
+              id: role.id,
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(role.id);
+          expect(getResult.data.get.id).toEqual(role.id);
         });
 
         it('should support Session class', async () => {
@@ -6380,12 +6333,12 @@ describe('ParseGraphQLServer', () => {
           const session = await Parse.Session.current();
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Session", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_Session", id: $id)
               }
             `,
             variables: {
-              objectId: session.id,
+              id: session.id,
             },
             context: {
               headers: {
@@ -6394,7 +6347,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(session.id);
+          expect(getResult.data.get.id).toEqual(session.id);
         });
 
         it('should support Product class', async () => {
@@ -6413,12 +6366,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Product", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_Product", id: $id)
               }
             `,
             variables: {
-              objectId: product.id,
+              id: product.id,
             },
             context: {
               headers: {
@@ -6427,7 +6380,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(product.id);
+          expect(getResult.data.get.id).toEqual(product.id);
         });
 
         it('should support PushStatus class', async () => {
@@ -6437,12 +6390,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_PushStatus", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_PushStatus", id: $id)
               }
             `,
             variables: {
-              objectId: pushStatus.id,
+              id: pushStatus.id,
             },
             context: {
               headers: {
@@ -6451,7 +6404,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(pushStatus.id);
+          expect(getResult.data.get.id).toEqual(pushStatus.id);
         });
 
         it('should support JobStatus class', async () => {
@@ -6461,12 +6414,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_JobStatus", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_JobStatus", id: $id)
               }
             `,
             variables: {
-              objectId: jobStatus.id,
+              id: jobStatus.id,
             },
             context: {
               headers: {
@@ -6475,7 +6428,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(jobStatus.id);
+          expect(getResult.data.get.id).toEqual(jobStatus.id);
         });
 
         it('should support JobSchedule class', async () => {
@@ -6485,12 +6438,12 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_JobSchedule", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_JobSchedule", id: $id)
               }
             `,
             variables: {
-              objectId: jobSchedule.id,
+              id: jobSchedule.id,
             },
             context: {
               headers: {
@@ -6499,7 +6452,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(jobSchedule.id);
+          expect(getResult.data.get.id).toEqual(jobSchedule.id);
         });
 
         it('should support Hooks class', async () => {
@@ -6536,16 +6489,16 @@ describe('ParseGraphQLServer', () => {
 
           const getResult = await apolloClient.query({
             query: gql`
-              query GetSomeObject($objectId: ID!) {
-                get(className: "_Audience", objectId: $objectId)
+              query GetSomeObject($id: ID!) {
+                get(className: "_Audience", id: $id)
               }
             `,
             variables: {
-              objectId: audience.id,
+              id: audience.id,
             },
           });
 
-          expect(getResult.data.get.objectId).toEqual(audience.id);
+          expect(getResult.data.get.id).toEqual(audience.id);
         });
       });
     });

@@ -1,4 +1,5 @@
 const parseMap = {
+  id: 'objectId',
   _or: '$or',
   _and: '$and',
   _nor: '$nor',
