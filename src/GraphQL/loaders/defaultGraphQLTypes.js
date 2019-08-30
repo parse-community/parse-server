@@ -395,7 +395,7 @@ const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
 
-const ID_INPUT = new GraphQLNonNull(GraphQLID);
+const OBJECT_ID = new GraphQLNonNull(GraphQLID);
 
 const CLASS_NAME_ATT = {
   description: 'This is the class name of the object.',
@@ -409,8 +409,8 @@ const FIELDS_ATT = {
 
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
-  type: ID_INPUT,
-  resolve: async ({ id, objectId }) => objectId || id, // id when handling input, objectId when handling output
+  type: OBJECT_ID,
+  resolve: ({ objectId }) => objectId,
 };
 
 const CREATED_AT_ATT = {
@@ -1099,7 +1099,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(SIGN_UP_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
-  parseGraphQLSchema.addGraphQLType(ID_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
 };
 
 export {
@@ -1125,7 +1125,7 @@ export {
   GEO_POINT,
   POLYGON_INPUT,
   POLYGON,
-  ID_INPUT,
+  OBJECT_ID,
   CLASS_NAME_ATT,
   FIELDS_ATT,
   OBJECT_ID_ATT,

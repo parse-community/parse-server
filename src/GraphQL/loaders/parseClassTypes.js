@@ -448,11 +448,11 @@ const load = (
       const fields = {
         add: {
           description: `Add an existing object from the ${graphQLClassName} class into the relation.`,
-          type: new GraphQLList(defaultGraphQLTypes.ID_INPUT),
+          type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
         remove: {
           description: `Remove an existing object from the ${graphQLClassName} class out of the relation.`,
-          type: new GraphQLList(defaultGraphQLTypes.ID_INPUT),
+          type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
       };
       if (isCreateEnabled) {

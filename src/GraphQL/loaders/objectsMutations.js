@@ -61,8 +61,6 @@ const load = parseGraphQLSchema => {
             auth,
             info
           );
-          object.id = object.objectId;
-          delete object.objectId;
 
           return object;
         } catch (e) {
