@@ -40,11 +40,11 @@ const getObject = async (
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
 
+  const object = response.results[0];
   if (className === '_User') {
-    delete response.results[0].sessionToken;
+    delete object.sessionToken;
   }
-
-  return response.results[0];
+  return object;
 };
 
 const findObjects = async (
@@ -67,7 +67,6 @@ const findObjects = async (
   if (!where) {
     where = {};
   }
-
   transformQueryInputToParse(where);
 
   const options = {};
