@@ -43,11 +43,11 @@ const getObject = async (
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
   }
 
+  const object = response.results[0];
   if (className === '_User') {
-    delete response.results[0].sessionToken;
+    delete object.sessionToken;
   }
-
-  return response.results[0];
+  return object;
 };
 
 const findObjects = async (
@@ -70,7 +70,6 @@ const findObjects = async (
   if (!where) {
     where = {};
   }
-
   transformQueryInputToParse(where);
 
   const options = {};
@@ -136,7 +135,7 @@ const load = parseGraphQLSchema => {
         'The get query can be used to get an object of a certain class by its objectId.',
       args: {
         className: defaultGraphQLTypes.CLASS_NAME_ATT,
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
         keys: defaultGraphQLTypes.KEYS_ATT,
         include: defaultGraphQLTypes.INCLUDE_ATT,
         readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
@@ -147,7 +146,7 @@ const load = parseGraphQLSchema => {
         try {
           const {
             className,
-            objectId,
+            id,
             keys,
             include,
             readPreference,
@@ -156,9 +155,9 @@ const load = parseGraphQLSchema => {
 
           const { config, auth, info } = context;
 
-          return await getObject(
+          const object = await getObject(
             className,
-            objectId,
+            id,
             keys,
             include,
             readPreference,
@@ -167,6 +166,10 @@ const load = parseGraphQLSchema => {
             auth,
             info
           );
+          object.id = object.objectId;
+          delete object.objectId;
+
+          return object;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -222,7 +225,7 @@ const load = parseGraphQLSchema => {
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);
 
-          return await findObjects(
+          const objects = await findObjects(
             className,
             where,
             order,
@@ -239,6 +242,11 @@ const load = parseGraphQLSchema => {
             info,
             selectedFields
           );
+          objects.results.forEach(obj => {
+            obj.id = obj.objectId;
+            delete obj.objectId;
+          });
+          return objects;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
