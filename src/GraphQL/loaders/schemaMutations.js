@@ -6,7 +6,7 @@ import {
   transformToGraphQL,
 } from '../transformers/schemaFields';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
-import { getClass } from './classSchemaQueries';
+import { getClass } from './schemaQueries';
 
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLMutation(
