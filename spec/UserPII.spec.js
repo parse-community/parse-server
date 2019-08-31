@@ -1122,11 +1122,19 @@ describe('Personally Identifiable Information', () => {
       // Even with an authenticated user, Public read ACL should never expose sensitive data.
       describe('with another authenticated user', () => {
         let anotherUser;
+        const ANOTHER_EMAIL = 'another@bar.com';
 
         beforeEach(async done => {
           return Parse.User.signUp('another', 'abc')
             .then(loggedInUser => (anotherUser = loggedInUser))
             .then(() => Parse.User.logIn(anotherUser.get('username'), 'abc'))
+            .then(() =>
+              anotherUser
+                .set('email', ANOTHER_EMAIL)
+                .set('zip', ZIP)
+                .set('ssn', SSN)
+                .save()
+            )
             .then(() => done());
         });
 
@@ -1151,6 +1159,36 @@ describe('Personally Identifiable Information', () => {
               expect(fetchedUser.get('email')).toBe(undefined);
               expect(fetchedUser.get('zip')).toBe(undefined);
               expect(fetchedUser.get('ssn')).toBe(undefined);
+              done();
+            })
+            .catch(done.fail);
+        });
+
+        it('should not be able to get user PII via API with Find without constraints', done => {
+          new Parse.Query(Parse.User)
+            .find()
+            .then(fetchedUsers => {
+              const notCurrentUser = fetchedUsers.find(
+                u => u.id !== anotherUser.id
+              );
+              expect(notCurrentUser.get('email')).toBe(undefined);
+              expect(notCurrentUser.get('zip')).toBe(undefined);
+              expect(notCurrentUser.get('ssn')).toBe(undefined);
+              done();
+            })
+            .catch(done.fail);
+        });
+
+        it('should be able to get own PII via API with Find without constraints', done => {
+          new Parse.Query(Parse.User)
+            .find()
+            .then(fetchedUsers => {
+              const currentUser = fetchedUsers.find(
+                u => u.id === anotherUser.id
+              );
+              expect(currentUser.get('email')).toBe(ANOTHER_EMAIL);
+              expect(currentUser.get('zip')).toBe(ZIP);
+              expect(currentUser.get('ssn')).toBe(SSN);
               done();
             })
             .catch(done.fail);

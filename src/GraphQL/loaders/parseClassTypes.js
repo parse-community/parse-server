@@ -1,5 +1,6 @@
 import {
   Kind,
+  GraphQLID,
   GraphQLObjectType,
   GraphQLString,
   GraphQLFloat,
@@ -165,7 +166,9 @@ const getInputFieldsAndConstraints = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const classFields = Object.keys(parseClass.fields);
+  const classFields = Object.keys(parseClass.fields)
+    .filter(field => field !== 'objectId')
+    .concat('id');
   const {
     inputFields: allowedInputFields,
     outputFields: allowedOutputFields,
@@ -227,7 +230,7 @@ const getInputFieldsAndConstraints = function(
       // must have at least 1 order field
       // otherwise the FindArgs Input Type will throw.
       classSortFields.push({
-        field: 'objectId',
+        field: 'id',
         asc: true,
         desc: true,
       });
@@ -421,7 +424,7 @@ const load = (
       const fields = {
         link: {
           description: `Link an existing object from ${graphQLClassName} class.`,
-          type: defaultGraphQLTypes.POINTER_INPUT,
+          type: GraphQLID,
         },
       };
       if (isCreateEnabled) {
@@ -445,15 +448,11 @@ const load = (
       const fields = {
         add: {
           description: `Add an existing object from the ${graphQLClassName} class into the relation.`,
-          type: new GraphQLList(
-            new GraphQLNonNull(defaultGraphQLTypes.RELATION_INPUT)
-          ),
+          type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
         remove: {
           description: `Remove an existing object from the ${graphQLClassName} class out of the relation.`,
-          type: new GraphQLList(
-            new GraphQLNonNull(defaultGraphQLTypes.RELATION_INPUT)
-          ),
+          type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
       };
       if (isCreateEnabled) {
@@ -503,9 +502,10 @@ const load = (
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
+        const parseField = field === 'id' ? 'objectId' : field;
         const type = mapConstraintType(
-          parseClass.fields[field].type,
-          parseClass.fields[field].targetClass,
+          parseClass.fields[parseField].type,
+          parseClass.fields[parseField].targetClass,
           parseGraphQLSchema.parseClassTypes
         );
         if (type) {
