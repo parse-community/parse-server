@@ -110,7 +110,7 @@ const load = function(
           return {
             ...createdObject,
             updatedAt: createdObject.createdAt,
-            ...fields,
+            ...parseFields,
             ...optimizedObject,
           };
         } catch (e) {
@@ -153,6 +153,7 @@ const load = function(
             auth,
             info
           );
+
           const selectedFields = getFieldNames(mutationInfo);
           const { keys, include } = extractKeysAndInclude(selectedFields);
 
@@ -179,7 +180,7 @@ const load = function(
           return {
             id,
             ...updatedObject,
-            ...fields,
+            ...parseFields,
             ...optimizedObject,
           };
         } catch (e) {

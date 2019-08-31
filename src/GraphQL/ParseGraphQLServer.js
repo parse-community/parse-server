@@ -45,6 +45,10 @@ class ParseGraphQLServer {
           config: req.config,
           auth: req.auth,
         },
+        formatError: error => {
+          // Allow to console.log here to debug
+          return error;
+        },
       };
     } catch (e) {
       this.log.error(

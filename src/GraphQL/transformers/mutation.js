@@ -60,6 +60,7 @@ const transformTypes = async (
       }
     });
     await Promise.all(promises);
+    if (fields.ACL) fields.ACL = transformers.ACL(fields.ACL);
   }
   return fields;
 };
@@ -73,6 +74,44 @@ const transformers = {
     ...value,
     __type: 'GeoPoint',
   }),
+  ACL: value => {
+    const parseACL = {};
+    if (value.public) {
+      parseACL['*'] = {};
+      if (value.public.read) parseACL['*'].read = value.public.read;
+      if (value.public.write) {
+        parseACL['*'] = {
+          read: true,
+          write: true,
+        };
+      }
+    }
+    if (value.users) {
+      value.users.forEach(rule => {
+        parseACL[rule.userId] = {};
+        if (rule.read) parseACL[rule.userId].read = rule.read;
+        if ((!rule.read && !rule.read) || rule.write) {
+          parseACL[rule.userId] = {
+            read: true,
+            write: true,
+          };
+        }
+      });
+    }
+    if (value.roles) {
+      value.roles.forEach(rule => {
+        parseACL[`role:${rule.roleName}`] = {};
+        if (rule.read) parseACL[`role:${rule.roleName}`].read = rule.read;
+        if ((!rule.read && !rule.read) || rule.write) {
+          parseACL[`role:${rule.roleName}`] = {
+            read: true,
+            write: true,
+          };
+        }
+      });
+    }
+    return parseACL;
+  },
   relation: async (
     targetClass,
     field,

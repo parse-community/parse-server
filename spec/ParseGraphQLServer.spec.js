@@ -4884,9 +4884,19 @@ describe('ParseGraphQLServer', () => {
           user.set('password', 'password');
           await user.signUp();
 
-          const role = new Parse.Role();
-          role.set('name', 'aRole');
+          const user2 = new Parse.User();
+          user2.set('username', 'username2');
+          user2.set('password', 'password2');
+          await user2.signUp();
+
+          const roleACL = new Parse.ACL();
+          roleACL.setPublicReadAccess(true);
+
+          const role = new Parse.Role('aRole', roleACL);
           await role.save();
+
+          const role2 = new Parse.Role('aRole2', roleACL);
+          await role2.save();
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
@@ -4896,7 +4906,7 @@ describe('ParseGraphQLServer', () => {
             mutation: gql`
               mutation Create($fields: CreateSomeClassFieldsInput) {
                 createSomeClass(fields: $fields) {
-                  objectId
+                  id
                   ACL {
                     users {
                       userId
@@ -4919,45 +4929,72 @@ describe('ParseGraphQLServer', () => {
             variables: {
               fields: {
                 ACL: {
-                  users: [{ userId: user.id, read: true, write: true }],
-                  roles: [{ roleName: 'aRole', read: true }],
-                  public: { read: true },
+                  users: [
+                    { userId: user.id, read: true, write: true },
+                    { userId: user2.id },
+                  ],
+                  roles: [
+                    { roleName: 'aRole', read: true },
+                    { roleName: 'aRole2' },
+                  ],
+                  public: { read: true, write: true },
                 },
               },
             },
           });
 
           const expectedCreateACL = {
-            users: [{ userId: user.id, read: true, write: true }],
-            roles: [{ roleName: 'aRole', read: true, write: null }],
-            public: { read: true, write: null },
+            __typename: 'ACL',
+            users: [
+              {
+                userId: user.id,
+                read: true,
+                write: true,
+                __typename: 'UserACL',
+              },
+              {
+                userId: user2.id,
+                read: true,
+                write: true,
+                __typename: 'UserACL',
+              },
+            ],
+            roles: [
+              {
+                roleName: 'aRole',
+                read: true,
+                write: false,
+                __typename: 'RoleACL',
+              },
+              {
+                roleName: 'aRole2',
+                read: true,
+                write: true,
+                __typename: 'RoleACL',
+              },
+            ],
+            public: { read: true, write: true, __typename: 'PublicACL' },
           };
 
           const query1 = new Parse.Query('SomeClass');
-          const obj1 = (await query1.get(createSomeClass.objectId, {
+          const obj1 = (await query1.get(createSomeClass.id, {
             useMasterKey: true,
           })).toJSON();
 
-          expect(obj1.ACL['role:aRole']).toBeDefined();
           expect(obj1.ACL['role:aRole']).toEqual({ read: true });
-          expect(obj1.ACL[user.id]).toBeDefined();
+          expect(obj1.ACL['role:aRole2']).toEqual({ read: true, write: true });
           expect(obj1.ACL[user.id]).toEqual({ read: true, write: true });
-          expect(obj1.ACL['*']).toBeDefined();
-          expect(obj1.ACL['*']).toEqual({ read: true });
-
-          expect(createSomeClass.objectId).toBeDefined();
+          expect(obj1.ACL[user2.id]).toEqual({ read: true, write: true });
+          expect(obj1.ACL['*']).toEqual({ read: true, write: true });
           expect(createSomeClass.ACL).toEqual(expectedCreateACL);
 
           const {
             data: { updateSomeClass },
           } = await apolloClient.mutate({
             mutation: gql`
-              mutation Update(
-                $objectId: ID
-                $fields: CreateSomeClassFieldsInput
-              ) {
-                updateSomeClass(objectId: $objectId, fields: $fields) {
-                  objectId
+              mutation Update($id: ID!, $fields: UpdateSomeClassFieldsInput) {
+                updateSomeClass(id: $id, fields: $fields) {
+                  id
                   ACL {
                     users {
                       userId
@@ -4978,32 +5015,38 @@ describe('ParseGraphQLServer', () => {
               }
             `,
             variables: {
-              objectId: createSomeClass.objectId,
+              id: createSomeClass.id,
               fields: {
                 ACL: {
-                  roles: [{ roleName: 'aRole', read: true, write: true }],
+                  roles: [{ roleName: 'aRole', write: true }],
+                  public: { read: true },
                 },
               },
             },
           });
 
           const expectedUpdateACL = {
+            __typename: 'ACL',
             users: null,
-            roles: [{ roleName: 'aRole', read: true, write: true }],
-            public: null,
+            roles: [
+              {
+                roleName: 'aRole',
+                read: true,
+                write: true,
+                __typename: 'RoleACL',
+              },
+            ],
+            public: { read: true, write: false, __typename: 'PublicACL' },
           };
 
           const query2 = new Parse.Query('SomeClass');
-          const obj2 = (await query2.get(createSomeClass.objectId, {
+          const obj2 = (await query2.get(createSomeClass.id, {
             useMasterKey: true,
           })).toJSON();
 
-          expect(obj2.ACL['role:aRole']).toBeDefined();
-          expect(obj2.ACL['role:aRole']).toEqual({ read: true, write: true });
+          expect(obj2.ACL['role:aRole']).toEqual({ write: true, read: true });
           expect(obj2.ACL[user.id]).toBeUndefined();
-          expect(obj2.ACL['*']).toBeUndefined();
-
-          expect(updateSomeClass.objectId).toBeDefined();
+          expect(obj2.ACL['*']).toEqual({ read: true });
           expect(updateSomeClass.ACL).toEqual(expectedUpdateACL);
         });
 

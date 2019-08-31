@@ -62,7 +62,7 @@ const mapInputType = (parseType, targetClass, parseClassTypes) => {
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.ACL_INPUT;
     default:
       return undefined;
   }
@@ -111,7 +111,7 @@ const mapOutputType = (parseType, targetClass, parseClassTypes) => {
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.ACL;
     default:
       return undefined;
   }
@@ -351,7 +351,7 @@ const load = (
     defaultGraphQLTypes.OBJECT;
 
   const classGraphQLCreateTypeName = `Create${graphQLClassName}FieldsInput`;
-  let classGraphQLCreateType = new GraphQLInputObjectType({
+  const classGraphQLCreateType = new GraphQLInputObjectType({
     name: classGraphQLCreateTypeName,
     description: `The ${classGraphQLCreateTypeName} input type is used in operations that involve creation of objects in the ${graphQLClassName} class.`,
     fields: () =>
@@ -375,13 +375,12 @@ const load = (
           }
         },
         {
-          ACL: defaultGraphQLTypes.ACL_ATT,
+          ACL: {
+            type: defaultGraphQLTypes.ACL_INPUT,
+          },
         }
       ),
   });
-  classGraphQLCreateType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLCreateType
-  );
 
   const classGraphQLUpdateTypeName = `Update${graphQLClassName}FieldsInput`;
   let classGraphQLUpdateType = new GraphQLInputObjectType({
@@ -408,7 +407,9 @@ const load = (
           }
         },
         {
-          ACL: defaultGraphQLTypes.ACL_ATT,
+          ACL: {
+            type: defaultGraphQLTypes.ACL_INPUT,
+          },
         }
       ),
   });
