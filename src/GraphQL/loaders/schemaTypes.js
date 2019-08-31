@@ -24,7 +24,7 @@ const SCHEMA_FIELD_INPUT = new GraphQLInputObjectType({
 const SCHEMA_FIELD = new GraphQLInterfaceType({
   name: 'SchemaField',
   description:
-    'The ClassObject interface type is used as a base type for the auto generated class object types.',
+    'The SchemaField interface type is used as a base type for the different supported fields of an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
   },

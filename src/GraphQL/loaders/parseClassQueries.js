@@ -2,7 +2,7 @@ import { GraphQLNonNull } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsQueries from './objectsQueries';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { extractKeysAndInclude } from '../parseGraphQLUtils';

@@ -646,7 +646,7 @@ describe('ParseGraphQLServer', () => {
           const classType = (await apolloClient.query({
             query: gql`
               query ClassType {
-                __type(name: "ClassObject") {
+                __type(name: "ParseObject") {
                   kind
                   fields {
                     name
@@ -739,7 +739,7 @@ describe('ParseGraphQLServer', () => {
           })).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
-            'ClassObject',
+            'ParseObject',
             'CreateResult',
             'Date',
             'FileInfo',

@@ -11,7 +11,7 @@ import {
 } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsQueries from './objectsQueries';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
@@ -50,7 +50,7 @@ const getInputFieldsAndConstraints = function(
 
   // All allowed customs fields
   const classCustomFields = classFields.filter(field => {
-    return !Object.keys(defaultGraphQLTypes.CLASS_OBJECT_FIELDS).includes(
+    return !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(
       field
     );
   });
@@ -572,12 +572,12 @@ const load = (
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.CLASS_OBJECT_FIELDS);
+    }, defaultGraphQLTypes.PARSE_OBJECT_FIELDS);
   };
   let classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${graphQLClassName} class.`,
-    interfaces: [defaultGraphQLTypes.CLASS_OBJECT],
+    interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
     fields: outputFields,
   });
   classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
@@ -628,7 +628,7 @@ const load = (
     const viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: `The Viewer object type is used in operations that involve outputting the current user data.`,
-      interfaces: [defaultGraphQLTypes.CLASS_OBJECT],
+      interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
