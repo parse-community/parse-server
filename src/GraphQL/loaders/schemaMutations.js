@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLNonNull } from 'graphql';
-import * as classSchemaTypes from './classSchemaTypes';
+import * as schemaTypes from './schemaTypes';
 import {
   transformToParse,
   transformToGraphQL,
@@ -15,13 +15,13 @@ const load = parseGraphQLSchema => {
       description:
         'The createClass mutation can be used to create the schema for a new object class.',
       args: {
-        name: classSchemaTypes.CLASS_NAME_ATT,
+        name: schemaTypes.CLASS_NAME_ATT,
         schemaFields: {
           description: "These are the schema's fields of the object class.",
-          type: classSchemaTypes.SCHEMA_FIELDS_INPUT,
+          type: schemaTypes.SCHEMA_FIELDS_INPUT,
         },
       },
-      type: new GraphQLNonNull(classSchemaTypes.CLASS),
+      type: new GraphQLNonNull(schemaTypes.CLASS),
       resolve: async (_source, args, context) => {
         try {
           const { name, schemaFields } = args;
@@ -60,13 +60,13 @@ const load = parseGraphQLSchema => {
       description:
         'The updateClass mutation can be used to update the schema for an existing object class.',
       args: {
-        name: classSchemaTypes.CLASS_NAME_ATT,
+        name: schemaTypes.CLASS_NAME_ATT,
         schemaFields: {
           description: "These are the schema's fields of the object class.",
-          type: classSchemaTypes.SCHEMA_FIELDS_INPUT,
+          type: schemaTypes.SCHEMA_FIELDS_INPUT,
         },
       },
-      type: new GraphQLNonNull(classSchemaTypes.CLASS),
+      type: new GraphQLNonNull(schemaTypes.CLASS),
       resolve: async (_source, args, context) => {
         try {
           const { name, schemaFields } = args;
@@ -109,9 +109,9 @@ const load = parseGraphQLSchema => {
       description:
         'The deleteClass mutation can be used to delete an existing object class.',
       args: {
-        name: classSchemaTypes.CLASS_NAME_ATT,
+        name: schemaTypes.CLASS_NAME_ATT,
       },
-      type: new GraphQLNonNull(classSchemaTypes.CLASS),
+      type: new GraphQLNonNull(schemaTypes.CLASS),
       resolve: async (_source, args, context) => {
         try {
           const { name } = args;

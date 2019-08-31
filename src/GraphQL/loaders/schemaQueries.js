@@ -1,7 +1,7 @@
 import Parse from 'parse/node';
 import { GraphQLNonNull, GraphQLList } from 'graphql';
 import { transformToGraphQL } from '../transformers/schemaFields';
-import * as classSchemaTypes from './classSchemaTypes';
+import * as schemaTypes from './schemaTypes';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 
 const getClass = async (name, schema) => {
@@ -29,9 +29,9 @@ const load = parseGraphQLSchema => {
       description:
         'The class query can be used to retrieve an existing object class.',
       args: {
-        name: classSchemaTypes.CLASS_NAME_ATT,
+        name: schemaTypes.CLASS_NAME_ATT,
       },
-      type: new GraphQLNonNull(classSchemaTypes.CLASS),
+      type: new GraphQLNonNull(schemaTypes.CLASS),
       resolve: async (_source, args, context) => {
         try {
           const { name } = args;
@@ -60,7 +60,7 @@ const load = parseGraphQLSchema => {
       description:
         'The classes query can be used to retrieve the existing object classes.',
       type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(classSchemaTypes.CLASS))
+        new GraphQLList(new GraphQLNonNull(schemaTypes.CLASS))
       ),
       resolve: async (_source, _args, context) => {
         try {
