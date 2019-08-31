@@ -2,7 +2,7 @@
 var Parse = require('parse/node').Parse;
 const httpsRequest = require('./httpsRequest');
 
-// Returns a promise that fulfills iff this user id is valid.
+// Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
   return request('profile', authData.access_token).then(response => {
     if (response && response.userId && response.userId === authData.id) {
