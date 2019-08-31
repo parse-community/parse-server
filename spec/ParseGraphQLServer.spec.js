@@ -2673,9 +2673,9 @@ describe('ParseGraphQLServer', () => {
 
             const result = (await apolloClient.query({
               query: gql`
-                query GetCustomer($objectId: ID!) {
-                  customer(objectId: $objectId) {
-                    objectId
+                query GetCustomer($id: ID!) {
+                  customer(id: $id) {
+                    id
                     someField
                     createdAt
                     updatedAt
@@ -2683,11 +2683,11 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: obj.id,
+                id: obj.id,
               },
             })).data.customer;
 
-            expect(result.objectId).toEqual(obj.id);
+            expect(result.id).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
@@ -2715,12 +2715,12 @@ describe('ParseGraphQLServer', () => {
 
               const result = (await apolloClient.query({
                 query: gql`
-                  query GetCustomer($objectId: ID!) {
-                    customer(objectId: $objectId) {
-                      objectId
+                  query GetCustomer($id: ID!) {
+                    customer(id: $id) {
+                      id
                       manyRelations {
                         ... on Customer {
-                          objectId
+                          id
                           someCustomerField
                           arrayField {
                             ... on Element {
@@ -2729,7 +2729,7 @@ describe('ParseGraphQLServer', () => {
                           }
                         }
                         ... on SomeClass {
-                          objectId
+                          id
                           someClassField
                         }
                       }
@@ -2739,11 +2739,11 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  objectId: obj3.id,
+                  id: obj3.id,
                 },
               })).data.customer;
 
-              expect(result.objectId).toEqual(obj3.id);
+              expect(result.id).toEqual(obj3.id);
               expect(result.manyRelations.length).toEqual(2);
 
               const customerSubObject = result.manyRelations.find(
@@ -3742,7 +3742,7 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const where = {
-              objectId: {
+              id: {
                 _eq: object3.id,
               },
             };
@@ -3753,7 +3753,7 @@ describe('ParseGraphQLServer', () => {
                   find: graphQLClasses(where: $where) {
                     results {
                       pointerToUser {
-                        objectId
+                        id
                       }
                     }
                   }
@@ -3983,7 +3983,7 @@ describe('ParseGraphQLServer', () => {
                         subqueryReadPreference: NEAREST
                       ) {
                         results {
-                          objectId
+                          id
                         }
                       }
                     }
@@ -4671,7 +4671,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete
-            ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
+            ).toEqual({ id: object4.id, __typename: 'PublicClass' });
             await expectAsync(
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4679,7 +4679,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
               })).data.delete
-            ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
+            ).toEqual({ id: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4687,7 +4687,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
               })).data.delete
-            ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
+            ).toEqual({ id: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4695,7 +4695,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
               })).data.delete
-            ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
+            ).toEqual({ id: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -5546,7 +5546,7 @@ describe('ParseGraphQLServer', () => {
                   $someFieldValueTrue: Boolean
                   $someFieldValueFalse: Boolean
                 ) {
-                  someClass(objectId: $objectId) {
+                  someClass(id: $id) {
                     someFieldTrue
                     someFieldFalse
                   }
@@ -6423,7 +6423,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   someClasses(where: $where) {
                     results {
-                      objectId
+                      id
                       someField
                     }
                   }
@@ -6489,10 +6489,10 @@ describe('ParseGraphQLServer', () => {
                   $fields2: CreateSomeClassFieldsInput
                 ) {
                   create1: createSomeClass(fields: $fields1) {
-                    objectId
+                    id
                   }
                   create2: createSomeClass(fields: $fields2) {
-                    objectId
+                    id
                   }
                 }
               `,
@@ -6629,7 +6629,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   someClasses(where: { someField: { _exists: true } }) {
                     results {
-                      objectId
+                      id
                       someField {
                         ... on Element {
                           value
@@ -6746,7 +6746,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: createResult.data.createSomeClass.objectId,
+                id: createResult.data.createSomeClass.id,
                 fields: {
                   someStringField: null,
                   someNumberField: null,
@@ -6847,7 +6847,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   someClasses(where: { someField: { _eq: $someFieldValue } }) {
                     results {
-                      objectId
+                      id
                       someField
                     }
                   }
@@ -6904,7 +6904,7 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation CreateSomeObject($fields: CreateSomeClassFieldsInput) {
                   createSomeClass(fields: $fields) {
-                    objectId
+                    id
                   }
                 }
               `,
@@ -6929,7 +6929,7 @@ describe('ParseGraphQLServer', () => {
                   }
                   someClasses(where: { someField: { _exists: true } }) {
                     results {
-                      objectId
+                      id
                       someField {
                         latitude
                         longitude
@@ -7024,7 +7024,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                objectId: createResult.data.createSomeClass.objectId,
+                id: createResult.data.createSomeClass.id,
               },
             });
 
