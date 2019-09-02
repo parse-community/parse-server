@@ -285,6 +285,29 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it('group by number', done => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { objectId: '$score' },
+      },
+    });
+    get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then(resp => {
+        expect(resp.results.length).toBe(2);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+        ).toBe(true);
+        expect(
+          resp.results.sort((a, b) => (a.objectId > b.objectId ? 1 : -1))
+        ).toEqual([{ objectId: 10 }, { objectId: 20 }]);
+        done();
+      })
+      .catch(done.fail);
+  });
+
   it_exclude_dbs(['postgres'])('group and multiply transform', done => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
