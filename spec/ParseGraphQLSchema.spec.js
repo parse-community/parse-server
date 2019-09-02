@@ -270,13 +270,13 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Query get could not be added to the auto schema because it collided with an existing field.'
+              'Query viewer could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
-      expect(parseGraphQLSchema.addGraphQLQuery('get', {})).toBeUndefined();
+      expect(parseGraphQLSchema.addGraphQLQuery('viewer', {})).toBeUndefined();
       expect(logged).toBeTruthy();
     });
 
@@ -291,12 +291,12 @@ describe('ParseGraphQLSchema', () => {
         },
       });
       await parseGraphQLSchema.load();
-      delete parseGraphQLSchema.graphQLQueries.get;
+      delete parseGraphQLSchema.graphQLQueries.viewer;
       const field = {};
-      expect(parseGraphQLSchema.addGraphQLQuery('get', field, true, true)).toBe(
-        field
-      );
-      expect(parseGraphQLSchema.graphQLQueries['get']).toBe(field);
+      expect(
+        parseGraphQLSchema.addGraphQLQuery('viewer', field, true, true)
+      ).toBe(field);
+      expect(parseGraphQLSchema.graphQLQueries['viewer']).toBe(field);
     });
   });
 
@@ -363,14 +363,14 @@ describe('ParseGraphQLSchema', () => {
           warn: message => {
             logged = true;
             expect(message).toEqual(
-              'Mutation create could not be added to the auto schema because it collided with an existing field.'
+              'Mutation signUp could not be added to the auto schema because it collided with an existing field.'
             );
           },
         },
       });
       await parseGraphQLSchema.load();
       expect(
-        parseGraphQLSchema.addGraphQLMutation('create', {})
+        parseGraphQLSchema.addGraphQLMutation('signUp', {})
       ).toBeUndefined();
       expect(logged).toBeTruthy();
     });
@@ -386,12 +386,12 @@ describe('ParseGraphQLSchema', () => {
         },
       });
       await parseGraphQLSchema.load();
-      delete parseGraphQLSchema.graphQLMutations.create;
+      delete parseGraphQLSchema.graphQLMutations.signUp;
       const field = {};
       expect(
-        parseGraphQLSchema.addGraphQLMutation('create', field, true, true)
+        parseGraphQLSchema.addGraphQLMutation('signUp', field, true, true)
       ).toBe(field);
-      expect(parseGraphQLSchema.graphQLMutations['create']).toBe(field);
+      expect(parseGraphQLSchema.graphQLMutations['signUp']).toBe(field);
     });
   });
 

@@ -1,5 +1,5 @@
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
-import * as objectsMutations from '../loaders/objectsMutations';
+import * as objectsMutations from '../helpers/objectsMutations';
 
 const transformTypes = async (
   inputType: 'create' | 'update',

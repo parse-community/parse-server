@@ -1,6 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import UsersRouter from '../../Routers/UsersRouter';
-import * as objectsMutations from './objectsMutations';
+import * as objectsMutations from '../helpers/objectsMutations';
 import { getUserFromSessionToken } from './usersQueries';
 
 const usersRouter = new UsersRouter();

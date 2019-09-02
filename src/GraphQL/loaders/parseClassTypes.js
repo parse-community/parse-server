@@ -3,8 +3,6 @@ import {
   GraphQLID,
   GraphQLObjectType,
   GraphQLString,
-  GraphQLFloat,
-  GraphQLBoolean,
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLNonNull,
@@ -13,148 +11,16 @@ import {
 } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsQueries from './objectsQueries';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
+import { transformInputTypeToGraphQL } from '../transformers/inputType';
+import { transformOutputTypeToGraphQL } from '../transformers/outputType';
+import { transformConstraintTypeToGraphQL } from '../transformers/constraintType';
 import {
   extractKeysAndInclude,
   getParseClassMutationConfig,
 } from '../parseGraphQLUtils';
-
-const mapInputType = (parseType, targetClass, parseClassTypes) => {
-  switch (parseType) {
-    case 'String':
-      return GraphQLString;
-    case 'Number':
-      return GraphQLFloat;
-    case 'Boolean':
-      return GraphQLBoolean;
-    case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.ANY);
-    case 'Object':
-      return defaultGraphQLTypes.OBJECT;
-    case 'Date':
-      return defaultGraphQLTypes.DATE;
-    case 'Pointer':
-      if (
-        parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLPointerType
-      ) {
-        return parseClassTypes[targetClass].classGraphQLPointerType;
-      } else {
-        return defaultGraphQLTypes.OBJECT;
-      }
-    case 'Relation':
-      if (
-        parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLRelationType
-      ) {
-        return parseClassTypes[targetClass].classGraphQLRelationType;
-      } else {
-        return defaultGraphQLTypes.OBJECT;
-      }
-    case 'File':
-      return defaultGraphQLTypes.FILE;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.GEO_POINT_INPUT;
-    case 'Polygon':
-      return defaultGraphQLTypes.POLYGON_INPUT;
-    case 'Bytes':
-      return defaultGraphQLTypes.BYTES;
-    case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
-    default:
-      return undefined;
-  }
-};
-
-const mapOutputType = (parseType, targetClass, parseClassTypes) => {
-  switch (parseType) {
-    case 'String':
-      return GraphQLString;
-    case 'Number':
-      return GraphQLFloat;
-    case 'Boolean':
-      return GraphQLBoolean;
-    case 'Array':
-      return new GraphQLList(defaultGraphQLTypes.ARRAY_RESULT);
-    case 'Object':
-      return defaultGraphQLTypes.OBJECT;
-    case 'Date':
-      return defaultGraphQLTypes.DATE;
-    case 'Pointer':
-      if (
-        parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLOutputType
-      ) {
-        return parseClassTypes[targetClass].classGraphQLOutputType;
-      } else {
-        return defaultGraphQLTypes.OBJECT;
-      }
-    case 'Relation':
-      if (
-        parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLFindResultType
-      ) {
-        return new GraphQLNonNull(
-          parseClassTypes[targetClass].classGraphQLFindResultType
-        );
-      } else {
-        return new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT);
-      }
-    case 'File':
-      return defaultGraphQLTypes.FILE_INFO;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.GEO_POINT;
-    case 'Polygon':
-      return defaultGraphQLTypes.POLYGON;
-    case 'Bytes':
-      return defaultGraphQLTypes.BYTES;
-    case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
-    default:
-      return undefined;
-  }
-};
-
-const mapConstraintType = (parseType, targetClass, parseClassTypes) => {
-  switch (parseType) {
-    case 'String':
-      return defaultGraphQLTypes.STRING_WHERE_INPUT;
-    case 'Number':
-      return defaultGraphQLTypes.NUMBER_WHERE_INPUT;
-    case 'Boolean':
-      return defaultGraphQLTypes.BOOLEAN_WHERE_INPUT;
-    case 'Array':
-      return defaultGraphQLTypes.ARRAY_WHERE_INPUT;
-    case 'Object':
-      return defaultGraphQLTypes.OBJECT_WHERE_INPUT;
-    case 'Date':
-      return defaultGraphQLTypes.DATE_WHERE_INPUT;
-    case 'Pointer':
-      if (
-        parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLConstraintType
-      ) {
-        return parseClassTypes[targetClass].classGraphQLConstraintType;
-      } else {
-        return defaultGraphQLTypes.OBJECT;
-      }
-    case 'File':
-      return defaultGraphQLTypes.FILE_WHERE_INPUT;
-    case 'GeoPoint':
-      return defaultGraphQLTypes.GEO_POINT_WHERE_INPUT;
-    case 'Polygon':
-      return defaultGraphQLTypes.POLYGON_WHERE_INPUT;
-    case 'Bytes':
-      return defaultGraphQLTypes.BYTES_WHERE_INPUT;
-    case 'ACL':
-      return defaultGraphQLTypes.OBJECT_WHERE_INPUT;
-    case 'Relation':
-    default:
-      return undefined;
-  }
-};
 
 const getParseClassTypeConfig = function(
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -184,7 +50,9 @@ const getInputFieldsAndConstraints = function(
 
   // All allowed customs fields
   const classCustomFields = classFields.filter(field => {
-    return !Object.keys(defaultGraphQLTypes.CLASS_FIELDS).includes(field);
+    return !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(
+      field
+    );
   });
 
   if (allowedInputFields && allowedInputFields.create) {
@@ -357,7 +225,7 @@ const load = (
     fields: () =>
       classCreateFields.reduce(
         (fields, field) => {
-          const type = mapInputType(
+          const type = transformInputTypeToGraphQL(
             parseClass.fields[field].type,
             parseClass.fields[field].targetClass,
             parseGraphQLSchema.parseClassTypes
@@ -390,7 +258,7 @@ const load = (
     fields: () =>
       classUpdateFields.reduce(
         (fields, field) => {
-          const type = mapInputType(
+          const type = transformInputTypeToGraphQL(
             parseClass.fields[field].type,
             parseClass.fields[field].targetClass,
             parseGraphQLSchema.parseClassTypes
@@ -503,7 +371,7 @@ const load = (
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
         const parseField = field === 'id' ? 'objectId' : field;
-        const type = mapConstraintType(
+        const type = transformConstraintTypeToGraphQL(
           parseClass.fields[parseField].type,
           parseClass.fields[parseField].targetClass,
           parseGraphQLSchema.parseClassTypes
@@ -582,7 +450,7 @@ const load = (
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
   const outputFields = () => {
     return classOutputFields.reduce((fields, field) => {
-      const type = mapOutputType(
+      const type = transformOutputTypeToGraphQL(
         parseClass.fields[field].type,
         parseClass.fields[field].targetClass,
         parseGraphQLSchema.parseClassTypes
@@ -704,12 +572,12 @@ const load = (
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.CLASS_FIELDS);
+    }, defaultGraphQLTypes.PARSE_OBJECT_FIELDS);
   };
   let classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${graphQLClassName} class.`,
-    interfaces: [defaultGraphQLTypes.CLASS],
+    interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
     fields: outputFields,
   });
   classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
@@ -760,7 +628,7 @@ const load = (
     const viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: `The Viewer object type is used in operations that involve outputting the current user data.`,
-      interfaces: [defaultGraphQLTypes.CLASS],
+      interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
@@ -775,7 +643,7 @@ const load = (
       description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${graphQLClassName} class when signing up.`,
       fields: () =>
         classCreateFields.reduce((fields, field) => {
-          const type = mapInputType(
+          const type = transformInputTypeToGraphQL(
             parseClass.fields[field].type,
             parseClass.fields[field].targetClass,
             parseGraphQLSchema.parseClassTypes
