@@ -203,7 +203,7 @@ describe('Cloud Code Logger', () => {
       .catch(() => {})
       .then(() => {
         const logs = spy.calls.all().reverse();
-        expect(logs[0].args[1]).toBe('Parse error: ');
+        expect(logs[0].args[1]).toBe('ParseError: 141 it failed!');
         expect(logs[0].args[2].message).toBe('it failed!');
 
         const log = logs[1].args;
@@ -270,7 +270,7 @@ describe('Cloud Code Logger', () => {
     expect(spy).toHaveBeenCalled();
     expect(spy.calls.count()).toBe(1);
     const { args } = spy.calls.mostRecent();
-    expect(args[0]).toBe('Parse error: ');
+    expect(args[0]).toBe('ParseError: 101 Object not found.');
     expect(args[1].message).toBe('Object not found.');
   });
 });
