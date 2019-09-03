@@ -43,6 +43,7 @@ const parseMap = {
 
 const transformQueryInputToParse = (
   constraints,
+  fields,
   parentFieldName,
   parentConstraints
 ) => {
@@ -93,6 +94,21 @@ const transformQueryInputToParse = (
       delete constraints[fieldName];
       fieldName = parseMap[fieldName];
       constraints[fieldName] = fieldValue;
+
+      // If parent field type is Pointer, changes constraint value to format expected
+      // by Parse.
+      if (
+        fields[parentFieldName] &&
+        fields[parentFieldName].type === 'Pointer' &&
+        typeof fieldValue === 'string'
+      ) {
+        const { targetClass } = fields[parentFieldName];
+        constraints[fieldName] = {
+          __type: 'Pointer',
+          className: targetClass,
+          objectId: fieldValue,
+        };
+      }
     }
     switch (fieldName) {
       case '$point':
@@ -147,7 +163,7 @@ const transformQueryInputToParse = (
         break;
     }
     if (typeof fieldValue === 'object') {
-      transformQueryInputToParse(fieldValue, fieldName, constraints);
+      transformQueryInputToParse(fieldValue, fields, fieldName, constraints);
     }
   });
 };

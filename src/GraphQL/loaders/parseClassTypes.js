@@ -1,12 +1,10 @@
 import {
-  Kind,
   GraphQLID,
   GraphQLObjectType,
   GraphQLString,
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLNonNull,
-  GraphQLScalarType,
   GraphQLEnumType,
 } from 'graphql';
 import getFieldNames from 'graphql-list-fields';
@@ -138,86 +136,6 @@ const load = (
     update: isUpdateEnabled = true,
   } = getParseClassMutationConfig(parseClassConfig);
 
-  const classGraphQLScalarTypeName = `${graphQLClassName}Pointer`;
-  const parseScalarValue = value => {
-    if (typeof value === 'string') {
-      return {
-        __type: 'Pointer',
-        className: className,
-        objectId: value,
-      };
-    } else if (
-      typeof value === 'object' &&
-      value.__type === 'Pointer' &&
-      value.className === className &&
-      typeof value.objectId === 'string'
-    ) {
-      return { ...value, className };
-    }
-
-    throw new defaultGraphQLTypes.TypeValidationError(
-      value,
-      classGraphQLScalarTypeName
-    );
-  };
-  let classGraphQLScalarType = new GraphQLScalarType({
-    name: classGraphQLScalarTypeName,
-    description: `The ${classGraphQLScalarTypeName} is used in operations that involve ${graphQLClassName} pointers.`,
-    parseValue: parseScalarValue,
-    serialize(value) {
-      if (typeof value === 'string') {
-        return value;
-      } else if (
-        typeof value === 'object' &&
-        value.__type === 'Pointer' &&
-        value.className === className &&
-        typeof value.objectId === 'string'
-      ) {
-        return value.objectId;
-      }
-
-      throw new defaultGraphQLTypes.TypeValidationError(
-        value,
-        classGraphQLScalarTypeName
-      );
-    },
-    parseLiteral(ast) {
-      if (ast.kind === Kind.STRING) {
-        return parseScalarValue(ast.value);
-      } else if (ast.kind === Kind.OBJECT) {
-        const __type = ast.fields.find(field => field.name.value === '__type');
-        const className = ast.fields.find(
-          field => field.name.value === 'className'
-        );
-        const objectId = ast.fields.find(
-          field => field.name.value === 'objectId'
-        );
-        if (
-          __type &&
-          __type.value &&
-          className &&
-          className.value &&
-          objectId &&
-          objectId.value
-        ) {
-          return parseScalarValue({
-            __type: __type.value.value,
-            className: className.value.value,
-            objectId: objectId.value.value,
-          });
-        }
-      }
-
-      throw new defaultGraphQLTypes.TypeValidationError(
-        ast.kind,
-        classGraphQLScalarTypeName
-      );
-    },
-  });
-  classGraphQLScalarType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLScalarType) ||
-    defaultGraphQLTypes.OBJECT;
-
   const classGraphQLCreateTypeName = `Create${graphQLClassName}FieldsInput`;
   let classGraphQLCreateType = new GraphQLInputObjectType({
     name: classGraphQLCreateTypeName,
@@ -284,30 +202,6 @@ const load = (
     classGraphQLUpdateType
   );
 
-  const classGraphQLPointerTypeName = `${graphQLClassName}PointerInput`;
-  let classGraphQLPointerType = new GraphQLInputObjectType({
-    name: classGraphQLPointerTypeName,
-    description: `Allow to link OR add and link an object of the ${graphQLClassName} class.`,
-    fields: () => {
-      const fields = {
-        link: {
-          description: `Link an existing object from ${graphQLClassName} class.`,
-          type: GraphQLID,
-        },
-      };
-      if (isCreateEnabled) {
-        fields['createAndLink'] = {
-          description: `Create and link an object from ${graphQLClassName} class.`,
-          type: classGraphQLCreateType,
-        };
-      }
-      return fields;
-    },
-  });
-  classGraphQLPointerType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLPointerType) ||
-    defaultGraphQLTypes.OBJECT;
-
   const classGraphQLRelationTypeName = `${graphQLClassName}RelationInput`;
   let classGraphQLRelationType = new GraphQLInputObjectType({
     name: classGraphQLRelationTypeName,
@@ -341,10 +235,14 @@ const load = (
     name: classGraphQLConstraintTypeName,
     description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
     fields: {
-      _eq: defaultGraphQLTypes._eq(classGraphQLScalarType),
-      _ne: defaultGraphQLTypes._ne(classGraphQLScalarType),
-      _in: defaultGraphQLTypes._in(classGraphQLScalarType),
-      _nin: defaultGraphQLTypes._nin(classGraphQLScalarType),
+      _eq: defaultGraphQLTypes._eq(GraphQLID),
+      _ne: defaultGraphQLTypes._ne(GraphQLID),
+      _in: defaultGraphQLTypes._in(
+        new GraphQLList(defaultGraphQLTypes.OBJECT_ID)
+      ),
+      _nin: defaultGraphQLTypes._nin(
+        new GraphQLList(defaultGraphQLTypes.OBJECT_ID)
+      ),
       _exists: defaultGraphQLTypes._exists,
       _select: defaultGraphQLTypes._select,
       _dontSelect: defaultGraphQLTypes._dontSelect,
@@ -513,7 +411,8 @@ const load = (
                   config,
                   auth,
                   info,
-                  selectedFields.map(field => field.split('.', 1)[0])
+                  selectedFields.map(field => field.split('.', 1)[0]),
+                  parseClass.fields
                 );
               } catch (e) {
                 parseGraphQLSchema.handleError(e);
@@ -607,9 +506,7 @@ const load = (
   );
 
   parseGraphQLSchema.parseClassTypes[className] = {
-    classGraphQLPointerType,
     classGraphQLRelationType,
-    classGraphQLScalarType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
     classGraphQLConstraintType,

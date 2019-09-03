@@ -3416,11 +3416,7 @@ describe('ParseGraphQLServer', () => {
                   _or: [
                     {
                       pointerToUser: {
-                        _eq: {
-                          __type: 'Pointer',
-                          className: '_User',
-                          objectId: user5.id,
-                        },
+                        _eq: user5.id,
                       },
                     },
                     {
@@ -3443,6 +3439,40 @@ describe('ParseGraphQLServer', () => {
                 .map(object => object.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
+          });
+
+          it('should support _in pointer operator using class specific query', async () => {
+            await prepareData();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const result = await apolloClient.query({
+              query: gql`
+                query FindSomeObjects($where: GraphQLClassWhereInput) {
+                  graphQLClasses(where: $where) {
+                    results {
+                      someField
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  pointerToUser: {
+                    _in: [user5.id],
+                  },
+                },
+              },
+              context: {
+                headers: {
+                  'X-Parse-Master-Key': 'test',
+                },
+              },
+            });
+
+            const { results } = result.data.graphQLClasses;
+            expect(results.length).toBe(1);
+            expect(results[0].someField).toEqual('someValue3');
           });
 
           it('should support _or operation', async () => {
@@ -3543,11 +3573,7 @@ describe('ParseGraphQLServer', () => {
               _or: [
                 {
                   pointerToUser: {
-                    _eq: {
-                      __type: 'Pointer',
-                      className: '_User',
-                      objectId: user5.id,
-                    },
+                    _eq: user5.id,
                   },
                 },
                 {
@@ -3599,11 +3625,7 @@ describe('ParseGraphQLServer', () => {
               _or: [
                 {
                   pointerToUser: {
-                    _eq: {
-                      __type: 'Pointer',
-                      className: '_User',
-                      objectId: user5.id,
-                    },
+                    _eq: user5.id,
                   },
                 },
                 {
