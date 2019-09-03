@@ -454,16 +454,6 @@ const SESSION_TOKEN_ATT = {
   type: new GraphQLNonNull(GraphQLString),
 };
 
-const KEYS_ATT = {
-  description: 'The keys of the objects that will be returned.',
-  type: GraphQLString,
-};
-
-const INCLUDE_ATT = {
-  description: 'The pointers of the objects that will be returned.',
-  type: GraphQLString,
-};
-
 const READ_PREFERENCE = new GraphQLEnumType({
   name: 'ReadPreference',
   description:
@@ -518,7 +508,7 @@ const COUNT_ATT = {
 const SUBQUERY_INPUT = new GraphQLInputObjectType({
   name: 'SubqueryInput',
   description:
-    'The SubqueryInput type is used to specific a different query to a different class.',
+    'The SubqueryInput type is used to specify a sub query to another class.',
   fields: {
     className: CLASS_NAME_ATT,
     where: Object.assign({}, WHERE_ATT, {
@@ -530,7 +520,7 @@ const SUBQUERY_INPUT = new GraphQLInputObjectType({
 const SELECT_INPUT = new GraphQLInputObjectType({
   name: 'SelectInput',
   description:
-    'The SelectInput type is used to specify a $select operation on a constraint.',
+    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
   fields: {
     query: {
       description: 'This is the subquery to be executed.',
@@ -1116,8 +1106,6 @@ export {
   PARSE_OBJECT_FIELDS,
   PARSE_OBJECT,
   SESSION_TOKEN_ATT,
-  KEYS_ATT,
-  INCLUDE_ATT,
   READ_PREFERENCE,
   READ_PREFERENCE_ATT,
   INCLUDE_READ_PREFERENCE_ATT,
