@@ -3703,7 +3703,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  id: { _eq: object3.id },
+                  id: { equalTo: object3.id },
                 },
               },
               context: {
@@ -3728,7 +3728,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  id: { _eq: object3.id },
+                  id: { equalTo: object3.id },
                 },
               },
               context: {
@@ -3999,7 +3999,7 @@ describe('ParseGraphQLServer', () => {
                   variables: {
                     where: {
                       pointerToUser: {
-                        _inQuery: { where: {}, className: '_User' },
+                        inQuery: { where: {}, className: '_User' },
                       },
                     },
                   },
@@ -5334,7 +5334,9 @@ describe('ParseGraphQLServer', () => {
                   someClass(id: $id) {
                     someField
                   }
-                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(
+                    where: { someField: { equalTo: $someFieldValue } }
+                  ) {
                     results {
                       someField
                     }
@@ -5405,7 +5407,9 @@ describe('ParseGraphQLServer', () => {
                   someClass(id: $id) {
                     someField
                   }
-                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(
+                    where: { someField: { equalTo: $someFieldValue } }
+                  ) {
                     results {
                       someField
                     }
@@ -5476,7 +5480,9 @@ describe('ParseGraphQLServer', () => {
                   someClass(id: $id) {
                     someField
                   }
-                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(
+                    where: { someField: { equalTo: $someFieldValue } }
+                  ) {
                     results {
                       someField
                     }
@@ -6635,7 +6641,7 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  someClasses(where: { someField: { _exists: true } }) {
+                  someClasses(where: { someField: { exists: true } }) {
                     results {
                       id
                       someField {
@@ -6853,7 +6859,9 @@ describe('ParseGraphQLServer', () => {
                   someClass(id: $id) {
                     someField
                   }
-                  someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                  someClasses(
+                    where: { someField: { equalTo: $someFieldValue } }
+                  ) {
                     results {
                       id
                       someField
@@ -6935,7 +6943,7 @@ describe('ParseGraphQLServer', () => {
                       longitude
                     }
                   }
-                  someClasses(where: { someField: { _exists: true } }) {
+                  someClasses(where: { someField: { exists: true } }) {
                     results {
                       id
                       someField {
@@ -7020,7 +7028,7 @@ describe('ParseGraphQLServer', () => {
                       longitude
                     }
                   }
-                  someClasses(where: { somePolygonField: { _exists: true } }) {
+                  someClasses(where: { somePolygonField: { exists: true } }) {
                     results {
                       id
                       somePolygonField {
