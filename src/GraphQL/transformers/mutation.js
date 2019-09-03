@@ -1,5 +1,5 @@
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
-import * as objectsMutations from '../loaders/objectsMutations';
+import * as objectsMutations from '../helpers/objectsMutations';
 
 const transformTypes = async (
   inputType: 'create' | 'update',
@@ -119,7 +119,7 @@ const transformers = {
       value.add = value.add.map(input => ({
         __type: 'Pointer',
         className: targetClass,
-        objectId: input.objectId,
+        objectId: input,
       }));
       op.ops.push({
         __op: 'AddRelation',
@@ -133,7 +133,7 @@ const transformers = {
         objects: value.remove.map(input => ({
           __type: 'Pointer',
           className: targetClass,
-          objectId: input.objectId,
+          objectId: input,
         })),
       });
     }
@@ -171,11 +171,11 @@ const transformers = {
         objectId: nestedObjectToAdd.objectId,
       };
     }
-    if (value.link && value.link.objectId) {
+    if (value.link) {
       return {
         __type: 'Pointer',
         className: targetClass,
-        objectId: value.link.objectId,
+        objectId: value.link,
       };
     }
   },

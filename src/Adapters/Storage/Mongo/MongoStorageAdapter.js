@@ -799,7 +799,12 @@ export class MongoStorageAdapter implements StorageAdapter {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
             }
-            if (result._id == null || _.isEmpty(result._id)) {
+            if (
+              result._id == null ||
+              result._id == undefined ||
+              (['object', 'string'].includes(typeof result._id) &&
+                _.isEmpty(result._id))
+            ) {
               result._id = null;
             }
             result.objectId = result._id;

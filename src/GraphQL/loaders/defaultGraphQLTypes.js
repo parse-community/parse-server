@@ -395,16 +395,7 @@ const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
 
-const RELATION_INPUT = new GraphQLInputObjectType({
-  name: 'RelationInput',
-  description: 'Object involved into a relation',
-  fields: {
-    objectId: {
-      description: 'Id of the object involved.',
-      type: new GraphQLNonNull(GraphQLID),
-    },
-  },
-});
+const OBJECT_ID = new GraphQLNonNull(GraphQLID);
 
 const CLASS_NAME_ATT = {
   description: 'This is the class name of the object.',
@@ -418,7 +409,8 @@ const FIELDS_ATT = {
 
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
-  type: new GraphQLNonNull(GraphQLID),
+  type: OBJECT_ID,
+  resolve: ({ objectId }) => objectId,
 };
 
 const CREATED_AT_ATT = {
@@ -441,7 +433,7 @@ const INPUT_FIELDS = {
 };
 
 const CREATE_RESULT_FIELDS = {
-  objectId: OBJECT_ID_ATT,
+  id: OBJECT_ID_ATT,
   createdAt: CREATED_AT_ATT,
 };
 
@@ -463,17 +455,17 @@ const UPDATE_RESULT = new GraphQLObjectType({
   fields: UPDATE_RESULT_FIELDS,
 });
 
-const CLASS_FIELDS = {
+const PARSE_OBJECT_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
   ...INPUT_FIELDS,
 };
 
-const CLASS = new GraphQLInterfaceType({
-  name: 'Class',
+const PARSE_OBJECT = new GraphQLInterfaceType({
+  name: 'ParseObject',
   description:
-    'The Class interface type is used as a base type for the auto generated class types.',
-  fields: CLASS_FIELDS,
+    'The ParseObject interface type is used as a base type for the auto generated object types.',
+  fields: PARSE_OBJECT_FIELDS,
 });
 
 const SESSION_TOKEN_ATT = {
@@ -490,17 +482,6 @@ const INCLUDE_ATT = {
   description: 'The pointers of the objects that will be returned.',
   type: GraphQLString,
 };
-
-const POINTER_INPUT = new GraphQLInputObjectType({
-  name: 'PointerInput',
-  description: 'Allow to link an object to another object',
-  fields: {
-    objectId: {
-      description: 'Id of the object involved.',
-      type: new GraphQLNonNull(GraphQLID),
-    },
-  },
-});
 
 const READ_PREFERENCE = new GraphQLEnumType({
   name: 'ReadPreference',
@@ -1093,7 +1074,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
   parseGraphQLSchema.addGraphQLType(CREATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(UPDATE_RESULT, true);
-  parseGraphQLSchema.addGraphQLType(CLASS, true);
+  parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
@@ -1118,8 +1099,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(SIGN_UP_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
-  parseGraphQLSchema.addGraphQLType(RELATION_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(POINTER_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
 };
 
 export {
@@ -1145,6 +1125,7 @@ export {
   GEO_POINT,
   POLYGON_INPUT,
   POLYGON,
+  OBJECT_ID,
   CLASS_NAME_ATT,
   FIELDS_ATT,
   OBJECT_ID_ATT,
@@ -1156,8 +1137,8 @@ export {
   CREATE_RESULT,
   UPDATE_RESULT_FIELDS,
   UPDATE_RESULT,
-  CLASS_FIELDS,
-  CLASS,
+  PARSE_OBJECT_FIELDS,
+  PARSE_OBJECT,
   SESSION_TOKEN_ATT,
   KEYS_ATT,
   INCLUDE_ATT,
@@ -1206,8 +1187,6 @@ export {
   SIGN_UP_RESULT,
   ARRAY_RESULT,
   ELEMENT,
-  POINTER_INPUT,
-  RELATION_INPUT,
   load,
   loadArrayResult,
 };

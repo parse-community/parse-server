@@ -1546,9 +1546,7 @@ describe('Cloud Code', () => {
 
       request({
         method: 'POST',
-        url: `http://${Parse.applicationId}:${
-          Parse.masterKey
-        }@localhost:8378/1/jobs/myJob`,
+        url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
       }).then(
         () => {},
         err => {
@@ -2372,6 +2370,31 @@ describe('beforeLogin hook', () => {
 
     const user = await Parse.User.signUp('tupac', 'shakur');
     await user.save({ isBanned: true });
+
+    try {
+      await Parse.User.logIn('tupac', 'shakur');
+      throw new Error('should not have been logged in.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+    expect(hit).toBe(1);
+    done();
+  });
+
+  it('should be able to block login if an error is thrown even if the user has a attached file', async done => {
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+
+    const user = await Parse.User.signUp('tupac', 'shakur');
+    const base64 = 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+    await user.save({ isBanned: true, file });
 
     try {
       await Parse.User.logIn('tupac', 'shakur');

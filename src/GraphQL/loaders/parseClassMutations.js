@@ -5,8 +5,8 @@ import {
   extractKeysAndInclude,
   getParseClassMutationConfig,
 } from '../parseGraphQLUtils';
-import * as objectsMutations from './objectsMutations';
-import * as objectsQueries from './objectsQueries';
+import * as objectsMutations from '../helpers/objectsMutations';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';
@@ -91,7 +91,7 @@ const load = function(
             fields,
             keys,
             include,
-            ['objectId', 'createdAt', 'updatedAt']
+            ['id', 'createdAt', 'updatedAt']
           );
           let optimizedObject = {};
           if (needGet) {
@@ -125,7 +125,7 @@ const load = function(
     parseGraphQLSchema.addGraphQLMutation(updateGraphQLMutationName, {
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
       args: {
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
         fields: {
           description: 'These are the fields used to update the object.',
           type: classGraphQLUpdateType || defaultGraphQLTypes.OBJECT,
@@ -136,7 +136,7 @@ const load = function(
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { objectId, fields } = args;
+          const { id, fields } = args;
           const { config, auth, info } = context;
 
           const parseFields = await transformTypes('update', fields, {
@@ -147,7 +147,7 @@ const load = function(
 
           const updatedObject = await objectsMutations.updateObject(
             className,
-            objectId,
+            id,
             parseFields,
             config,
             auth,
@@ -160,13 +160,13 @@ const load = function(
             fields,
             keys,
             include,
-            ['objectId', 'updatedAt']
+            ['id', 'updatedAt']
           );
           let optimizedObject = {};
           if (needGet) {
             optimizedObject = await objectsQueries.getObject(
               className,
-              objectId,
+              id,
               requiredKeys,
               include,
               undefined,
@@ -177,7 +177,7 @@ const load = function(
             );
           }
           return {
-            objectId: objectId,
+            id,
             ...updatedObject,
             ...fields,
             ...optimizedObject,
@@ -194,24 +194,24 @@ const load = function(
     parseGraphQLSchema.addGraphQLMutation(deleteGraphQLMutationName, {
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
       args: {
-        objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.OBJECT_ID_ATT,
       },
       type: new GraphQLNonNull(
         classGraphQLOutputType || defaultGraphQLTypes.OBJECT
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { objectId } = args;
+          const { id } = args;
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(mutationInfo);
           const { keys, include } = extractKeysAndInclude(selectedFields);
 
           let optimizedObject = {};
           const splitedKeys = keys.split(',');
-          if (splitedKeys.length > 1 || splitedKeys[0] !== 'objectId') {
+          if (splitedKeys.length > 1 || splitedKeys[0] !== 'id') {
             optimizedObject = await objectsQueries.getObject(
               className,
-              objectId,
+              id,
               keys,
               include,
               undefined,
@@ -223,12 +223,12 @@ const load = function(
           }
           await objectsMutations.deleteObject(
             className,
-            objectId,
+            id,
             config,
             auth,
             info
           );
-          return { objectId: objectId, ...optimizedObject };
+          return { id, ...optimizedObject };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
