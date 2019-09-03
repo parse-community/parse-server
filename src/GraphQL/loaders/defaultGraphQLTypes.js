@@ -695,79 +695,79 @@ const GEO_INTERSECTS_INPUT = new GraphQLInputObjectType({
 
 const _eq = type => ({
   description:
-    'This is the $eq operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
+    'This is the equalTo operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
   type,
 });
 
 const _ne = type => ({
   description:
-    'This is the $ne operator to specify a constraint to select the objects where the value of a field do not equal to a specified value.',
+    'This is the notEqualTo operator to specify a constraint to select the objects where the value of a field do not equal to a specified value.',
   type,
 });
 
 const _lt = type => ({
   description:
-    'This is the $lt operator to specify a constraint to select the objects where the value of a field is less than a specified value.',
+    'This is the lessThan operator to specify a constraint to select the objects where the value of a field is less than a specified value.',
   type,
 });
 
 const _lte = type => ({
   description:
-    'This is the $lte operator to specify a constraint to select the objects where the value of a field is less than or equal to a specified value.',
+    'This is the lessThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is less than or equal to a specified value.',
   type,
 });
 
 const _gt = type => ({
   description:
-    'This is the $gt operator to specify a constraint to select the objects where the value of a field is greater than a specified value.',
+    'This is the greaterThan operator to specify a constraint to select the objects where the value of a field is greater than a specified value.',
   type,
 });
 
 const _gte = type => ({
   description:
-    'This is the $gte operator to specify a constraint to select the objects where the value of a field is greater than or equal to a specified value.',
+    'This is the greaterThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is greater than or equal to a specified value.',
   type,
 });
 
 const _in = type => ({
   description:
-    'This is the $in operator to specify a constraint to select the objects where the value of a field equals any value in the specified array.',
+    'This is the in operator to specify a constraint to select the objects where the value of a field equals any value in the specified array.',
   type: new GraphQLList(type),
 });
 
 const _nin = type => ({
   description:
-    'This is the $nin operator to specify a constraint to select the objects where the value of a field do not equal any value in the specified array.',
+    'This is the notIn operator to specify a constraint to select the objects where the value of a field do not equal any value in the specified array.',
   type: new GraphQLList(type),
 });
 
-const _exists = {
+const exists = {
   description:
-    'This is the $exists operator to specify a constraint to select the objects where a field exists (or do not exist).',
+    'This is the exists operator to specify a constraint to select the objects where a field exists (or do not exist).',
   type: GraphQLBoolean,
 };
 
-const _select = {
+const inQueryKey = {
   description:
-    'This is the $select operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
+    'This is the inQueryKey operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
   type: SELECT_INPUT,
 };
 
-const _dontSelect = {
+const notInQueryKey = {
   description:
-    'This is the $dontSelect operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
+    'This is the notInQueryKey operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
   type: SELECT_INPUT,
 };
 
-const _regex = {
+const matchesRegex = {
   description:
-    'This is the $regex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
+    'This is the matchesRegex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
   type: GraphQLString,
 };
 
-const _options = {
+const options = {
   description:
-    'This is the $options operator to specify optional flags (such as "i" and "m") to be added to a $regex operation in the same set of constraints.',
+    'This is the options operator to specify optional flags (such as "i" and "m") to be added to a matchesRegex operation in the same set of constraints.',
   type: GraphQLString,
 };
 
@@ -776,20 +776,20 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The StringWhereInput input type is used in operations that involve filtering objects by a field of type String.',
   fields: {
-    _eq: _eq(GraphQLString),
-    _ne: _ne(GraphQLString),
-    _lt: _lt(GraphQLString),
-    _lte: _lte(GraphQLString),
-    _gt: _gt(GraphQLString),
-    _gte: _gte(GraphQLString),
-    _in: _in(GraphQLString),
-    _nin: _nin(GraphQLString),
-    _exists,
-    _select,
-    _dontSelect,
-    _regex,
-    _options,
-    _text: {
+    equalTo: _eq(GraphQLString),
+    notEqualTo: _ne(GraphQLString),
+    lessThan: _lt(GraphQLString),
+    lessThanOrEqualTo: _lte(GraphQLString),
+    greaterThan: _gt(GraphQLString),
+    greaterThanOrEqualTo: _gte(GraphQLString),
+    in: _in(GraphQLString),
+    notIn: _nin(GraphQLString),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+    matchesRegex,
+    options,
+    text: {
       description:
         'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
@@ -802,17 +802,17 @@ const NUMBER_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The NumberWhereInput input type is used in operations that involve filtering objects by a field of type Number.',
   fields: {
-    _eq: _eq(GraphQLFloat),
-    _ne: _ne(GraphQLFloat),
-    _lt: _lt(GraphQLFloat),
-    _lte: _lte(GraphQLFloat),
-    _gt: _gt(GraphQLFloat),
-    _gte: _gte(GraphQLFloat),
-    _in: _in(GraphQLFloat),
-    _nin: _nin(GraphQLFloat),
-    _exists,
-    _select,
-    _dontSelect,
+    equalTo: _eq(GraphQLFloat),
+    notEqualTo: _ne(GraphQLFloat),
+    lessThan: _lt(GraphQLFloat),
+    lessThanOrEqualTo: _lte(GraphQLFloat),
+    greaterThan: _gt(GraphQLFloat),
+    greaterThanOrEqualTo: _gte(GraphQLFloat),
+    in: _in(GraphQLFloat),
+    notIn: _nin(GraphQLFloat),
+    exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -821,11 +821,11 @@ const BOOLEAN_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The BooleanWhereInput input type is used in operations that involve filtering objects by a field of type Boolean.',
   fields: {
-    _eq: _eq(GraphQLBoolean),
-    _ne: _ne(GraphQLBoolean),
-    _exists,
-    _select,
-    _dontSelect,
+    equalTo: _eq(GraphQLBoolean),
+    notEqualTo: _ne(GraphQLBoolean),
+    exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -834,23 +834,23 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The ArrayWhereInput input type is used in operations that involve filtering objects by a field of type Array.',
   fields: {
-    _eq: _eq(ANY),
-    _ne: _ne(ANY),
-    _lt: _lt(ANY),
-    _lte: _lte(ANY),
-    _gt: _gt(ANY),
-    _gte: _gte(ANY),
-    _in: _in(ANY),
-    _nin: _nin(ANY),
-    _exists,
-    _select,
-    _dontSelect,
-    _containedBy: {
+    equalTo: _eq(ANY),
+    notEqualTo: _ne(ANY),
+    lessThan: _lt(ANY),
+    lessThanOrEqualTo: _lte(ANY),
+    greaterThan: _gt(ANY),
+    greaterThanOrEqualTo: _gte(ANY),
+    in: _in(ANY),
+    notIn: _nin(ANY),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+    containedBy: {
       description:
         'This is the $containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
       type: new GraphQLList(ANY),
     },
-    _all: {
+    contains: {
       description:
         'This is the $all operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
       type: new GraphQLList(ANY),
@@ -878,17 +878,17 @@ const OBJECT_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The ObjectWhereInput input type is used in operations that involve filtering result by a field of type Object.',
   fields: {
-    _eq: _eq(KEY_VALUE_INPUT),
-    _ne: _ne(KEY_VALUE_INPUT),
-    _in: _in(KEY_VALUE_INPUT),
-    _nin: _nin(KEY_VALUE_INPUT),
-    _lt: _lt(KEY_VALUE_INPUT),
-    _lte: _lte(KEY_VALUE_INPUT),
-    _gt: _gt(KEY_VALUE_INPUT),
-    _gte: _gte(KEY_VALUE_INPUT),
-    _exists,
-    _select,
-    _dontSelect,
+    equalTo: _eq(KEY_VALUE_INPUT),
+    notEqualTo: _ne(KEY_VALUE_INPUT),
+    in: _in(KEY_VALUE_INPUT),
+    notIn: _nin(KEY_VALUE_INPUT),
+    lessThan: _lt(KEY_VALUE_INPUT),
+    lessThanOrEqualTo: _lte(KEY_VALUE_INPUT),
+    greaterThan: _gt(KEY_VALUE_INPUT),
+    greaterThanOrEqualTo: _gte(KEY_VALUE_INPUT),
+    exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -897,17 +897,17 @@ const DATE_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The DateWhereInput input type is used in operations that involve filtering objects by a field of type Date.',
   fields: {
-    _eq: _eq(DATE),
-    _ne: _ne(DATE),
-    _lt: _lt(DATE),
-    _lte: _lte(DATE),
-    _gt: _gt(DATE),
-    _gte: _gte(DATE),
-    _in: _in(DATE),
-    _nin: _nin(DATE),
-    _exists,
-    _select,
-    _dontSelect,
+    equalTo: _eq(DATE),
+    notEqualTo: _ne(DATE),
+    lessThan: _lt(DATE),
+    lessThanOrEqualTo: _lte(DATE),
+    greaterThan: _gt(DATE),
+    greaterThanOrEqualTo: _gte(DATE),
+    in: _in(DATE),
+    notIn: _nin(DATE),
+    exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -916,17 +916,17 @@ const BYTES_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The BytesWhereInput input type is used in operations that involve filtering objects by a field of type Bytes.',
   fields: {
-    _eq: _eq(BYTES),
-    _ne: _ne(BYTES),
-    _lt: _lt(BYTES),
-    _lte: _lte(BYTES),
-    _gt: _gt(BYTES),
-    _gte: _gte(BYTES),
-    _in: _in(BYTES),
-    _nin: _nin(BYTES),
-    _exists,
-    _select,
-    _dontSelect,
+    equalTo: _eq(BYTES),
+    notEqualTo: _ne(BYTES),
+    lessThan: _lt(BYTES),
+    lessThanOrEqualTo: _lte(BYTES),
+    greaterThan: _gt(BYTES),
+    greaterThanOrEqualTo: _gte(BYTES),
+    in: _in(BYTES),
+    notIn: _nin(BYTES),
+    exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -935,19 +935,19 @@ const FILE_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The FileWhereInput input type is used in operations that involve filtering objects by a field of type File.',
   fields: {
-    _eq: _eq(FILE),
-    _ne: _ne(FILE),
-    _lt: _lt(FILE),
-    _lte: _lte(FILE),
-    _gt: _gt(FILE),
-    _gte: _gte(FILE),
-    _in: _in(FILE),
-    _nin: _nin(FILE),
-    _exists,
-    _select,
-    _dontSelect,
-    _regex,
-    _options,
+    equalTo: _eq(FILE),
+    notEqualTo: _ne(FILE),
+    lessThan: _lt(FILE),
+    lessThanOrEqualTo: _lte(FILE),
+    greaterThan: _gt(FILE),
+    greaterThanOrEqualTo: _gte(FILE),
+    in: _in(FILE),
+    notIn: _nin(FILE),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+    matchesRegex,
+    options,
   },
 });
 
@@ -956,38 +956,38 @@ const GEO_POINT_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The GeoPointWhereInput input type is used in operations that involve filtering objects by a field of type GeoPoint.',
   fields: {
-    _exists,
-    _nearSphere: {
+    exists,
+    nearSphere: {
       description:
         'This is the $nearSphere operator to specify a constraint to select the objects where the values of a geo point field is near to another geo point.',
       type: GEO_POINT_INPUT,
     },
-    _maxDistance: {
+    maxDistance: {
       description:
         'This is the $maxDistance operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
-    _maxDistanceInRadians: {
+    maxDistanceInRadians: {
       description:
         'This is the $maxDistanceInRadians operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
-    _maxDistanceInMiles: {
+    maxDistanceInMiles: {
       description:
         'This is the $maxDistanceInMiles operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in miles) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
-    _maxDistanceInKilometers: {
+    maxDistanceInKilometers: {
       description:
         'This is the $maxDistanceInKilometers operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in kilometers) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
-    _within: {
+    within: {
       description:
         'This is the $within operator to specify a constraint to select the objects where the values of a geo point field is within a specified box.',
       type: WITHIN_INPUT,
     },
-    _geoWithin: {
+    geoWithin: {
       description:
         'This is the $geoWithin operator to specify a constraint to select the objects where the values of a geo point field is within a specified polygon or sphere.',
       type: GEO_WITHIN_INPUT,
@@ -1000,8 +1000,8 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
   description:
     'The PolygonWhereInput input type is used in operations that involve filtering objects by a field of type Polygon.',
   fields: {
-    _exists,
-    _geoIntersects: {
+    exists,
+    geoIntersects: {
       description:
         'This is the $geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
       type: GEO_INTERSECTS_INPUT,
@@ -1186,11 +1186,11 @@ export {
   _gte,
   _in,
   _nin,
-  _exists,
-  _select,
-  _dontSelect,
-  _regex,
-  _options,
+  exists,
+  inQueryKey,
+  notInQueryKey,
+  matchesRegex,
+  options,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,
   BOOLEAN_WHERE_INPUT,

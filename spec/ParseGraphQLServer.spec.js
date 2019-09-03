@@ -18,6 +18,19 @@ const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
 
+function handleError(e) {
+  if (
+    e &&
+    e.networkError &&
+    e.networkError.result &&
+    e.networkError.result.errors
+  ) {
+    fail(e.networkError.result.errors);
+  } else {
+    fail(e);
+  }
+}
+
 describe('ParseGraphQLServer', () => {
   let parseServer;
   let parseGraphQLServer;
@@ -1362,78 +1375,86 @@ describe('ParseGraphQLServer', () => {
           })).data.superCar;
           expect(getSuperCar.objectId).toBe(superCar.id);
         });
+
         it('should only allow the supplied constraint fields for a class', async () => {
-          const schemaController = await parseServer.config.databaseController.loadSchema();
+          try {
+            const schemaController = await parseServer.config.databaseController.loadSchema();
 
-          await schemaController.addClassIfNotExists('SuperCar', {
-            model: { type: 'String' },
-            engine: { type: 'String' },
-            doors: { type: 'Number' },
-            price: { type: 'String' },
-            mileage: { type: 'Number' },
-            insuranceCertificate: { type: 'String' },
-          });
+            await schemaController.addClassIfNotExists('SuperCar', {
+              model: { type: 'String' },
+              engine: { type: 'String' },
+              doors: { type: 'Number' },
+              price: { type: 'String' },
+              mileage: { type: 'Number' },
+              insuranceCertificate: { type: 'String' },
+            });
 
-          await new Parse.Object('SuperCar').save({
-            model: 'McLaren',
-            engine: 'petrol',
-            doors: 3,
-            price: '£7500',
-            mileage: 0,
-            insuranceCertificate: 'private-file.pdf',
-          });
+            await new Parse.Object('SuperCar').save({
+              model: 'McLaren',
+              engine: 'petrol',
+              doors: 3,
+              price: '£7500',
+              mileage: 0,
+              insuranceCertificate: 'private-file.pdf',
+            });
 
-          await parseGraphQLServer.setGraphQLConfig({
-            classConfigs: [
-              {
-                className: 'SuperCar',
-                type: {
-                  constraintFields: ['engine', 'doors', 'price'],
+            await parseGraphQLServer.setGraphQLConfig({
+              classConfigs: [
+                {
+                  className: 'SuperCar',
+                  type: {
+                    constraintFields: ['engine', 'doors', 'price'],
+                  },
                 },
-              },
-            ],
-          });
+              ],
+            });
 
-          await resetGraphQLCache();
+            await resetGraphQLCache();
 
-          await expectAsync(
-            apolloClient.query({
-              query: gql`
-                query FindSuperCar {
-                  superCars(
-                    where: { insuranceCertificate: { _eq: "private-file.pdf" } }
-                  ) {
-                    count
+            await expectAsync(
+              apolloClient.query({
+                query: gql`
+                  query FindSuperCar {
+                    superCars(
+                      where: {
+                        insuranceCertificate: { equalTo: "private-file.pdf" }
+                      }
+                    ) {
+                      count
+                    }
                   }
-                }
-              `,
-            })
-          ).toBeRejected();
+                `,
+              })
+            ).toBeRejected();
 
-          await expectAsync(
-            apolloClient.query({
-              query: gql`
-                query FindSuperCar {
-                  superCars(where: { mileage: { _eq: 0 } }) {
-                    count
+            await expectAsync(
+              apolloClient.query({
+                query: gql`
+                  query FindSuperCar {
+                    superCars(where: { mileage: { equalTo: 0 } }) {
+                      count
+                    }
                   }
-                }
-              `,
-            })
-          ).toBeRejected();
+                `,
+              })
+            ).toBeRejected();
 
-          await expectAsync(
-            apolloClient.query({
-              query: gql`
-                query FindSuperCar {
-                  superCars(where: { engine: { _eq: "petrol" } }) {
-                    count
+            await expectAsync(
+              apolloClient.query({
+                query: gql`
+                  query FindSuperCar {
+                    superCars(where: { engine: { equalTo: "petrol" } }) {
+                      count
+                    }
                   }
-                }
-              `,
-            })
-          ).toBeResolved();
+                `,
+              })
+            ).toBeResolved();
+          } catch (e) {
+            handleError(e);
+          }
         });
+
         it('should only allow the supplied sort fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
@@ -2492,12 +2513,12 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 where: {
                   someField: {
-                    _in: ['someValue1', 'someValue2', 'someValue3'],
+                    in: ['someValue1', 'someValue2', 'someValue3'],
                   },
                   OR: [
                     {
                       pointerToUser: {
-                        _eq: {
+                        equalTo: {
                           __type: 'Pointer',
                           className: '_User',
                           objectId: user5.id,
@@ -2506,7 +2527,7 @@ describe('ParseGraphQLServer', () => {
                     },
                     {
                       objectId: {
-                        _eq: object1.id,
+                        equalTo: object1.id,
                       },
                     },
                   ],
@@ -2537,8 +2558,8 @@ describe('ParseGraphQLServer', () => {
                   graphQLClasses(
                     where: {
                       OR: [
-                        { someField: { _eq: "someValue1" } }
-                        { someField: { _eq: "someValue2" } }
+                        { someField: { equalTo: "someValue1" } }
+                        { someField: { equalTo: "someValue2" } }
                       ]
                     }
                   ) {
@@ -2610,12 +2631,12 @@ describe('ParseGraphQLServer', () => {
                 className: 'SomeClass',
                 where: {
                   someField: {
-                    $regex: '^someValue',
+                    matchesRegex: '^someValue',
                   },
                 },
                 whereCustom: {
                   someField: {
-                    _regex: '^someValue',
+                    matchesRegex: '^someValue',
                   },
                 },
                 order: '-numberField,someField',
@@ -2641,12 +2662,12 @@ describe('ParseGraphQLServer', () => {
 
             const where = {
               someField: {
-                _in: ['someValue1', 'someValue2', 'someValue3'],
+                in: ['someValue1', 'someValue2', 'someValue3'],
               },
               OR: [
                 {
                   pointerToUser: {
-                    _eq: {
+                    equalTo: {
                       __type: 'Pointer',
                       className: '_User',
                       objectId: user5.id,
@@ -2655,7 +2676,7 @@ describe('ParseGraphQLServer', () => {
                 },
                 {
                   objectId: {
-                    _eq: object1.id,
+                    equalTo: object1.id,
                   },
                 },
               ],
@@ -2709,12 +2730,12 @@ describe('ParseGraphQLServer', () => {
 
             const where = {
               someField: {
-                _in: ['someValue1', 'someValue2', 'someValue3'],
+                in: ['someValue1', 'someValue2', 'someValue3'],
               },
               OR: [
                 {
                   pointerToUser: {
-                    _eq: {
+                    equalTo: {
                       __type: 'Pointer',
                       className: '_User',
                       objectId: user5.id,
@@ -2723,7 +2744,7 @@ describe('ParseGraphQLServer', () => {
                 },
                 {
                   objectId: {
-                    _eq: object1.id,
+                    equalTo: object1.id,
                   },
                 },
               ],
@@ -2779,14 +2800,14 @@ describe('ParseGraphQLServer', () => {
                 query FindSomeObjects($limit: Int) {
                   find(
                     className: "SomeClass"
-                    where: { objectId: { _exists: true } }
+                    where: { objectId: { exists: true } }
                     limit: $limit
                   ) {
                     results
                     count
                   }
                   someClasses(
-                    where: { objectId: { _exists: true } }
+                    where: { objectId: { exists: true } }
                     limit: $limit
                   ) {
                     results {
@@ -2896,7 +2917,7 @@ describe('ParseGraphQLServer', () => {
 
             const where = {
               objectId: {
-                _eq: object3.id,
+                equalTo: object3.id,
               },
             };
 
@@ -4583,7 +4604,9 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!, $someFieldValue: String) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                someClasses(
+                  where: { someField: { equalTo: $someFieldValue } }
+                ) {
                   results {
                     someField
                   }
@@ -4643,7 +4666,9 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                someClasses(
+                  where: { someField: { equalTo: $someFieldValue } }
+                ) {
                   results {
                     someField
                   }
@@ -4703,7 +4728,9 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!, $someFieldValue: Float) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                someClasses(
+                  where: { someField: { equalTo: $someFieldValue } }
+                ) {
                   results {
                     someField
                   }
@@ -4773,8 +4800,8 @@ describe('ParseGraphQLServer', () => {
                 get(className: "SomeClass", objectId: $objectId)
                 someClasses(
                   where: {
-                    someFieldTrue: { _eq: $someFieldValueTrue }
-                    someFieldFalse: { _eq: $someFieldValueFalse }
+                    someFieldTrue: { equalTo: $someFieldValueTrue }
+                    someFieldFalse: { equalTo: $someFieldValueFalse }
                   }
                 ) {
                   results {
@@ -4842,7 +4869,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
+                someClasses(where: { someField: { exists: true } }) {
                   results {
                     objectId
                   }
@@ -5338,7 +5365,7 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 where: {
                   name: {
-                    _eq: 'imACompany2',
+                    equalTo: 'imACompany2',
                   },
                 },
                 fields: {
@@ -5434,7 +5461,7 @@ describe('ParseGraphQLServer', () => {
             variables: {
               objectId: country.id,
               where: {
-                name: { _eq: 'imACompany1' },
+                name: { equalTo: 'imACompany1' },
               },
             },
           });
@@ -5543,7 +5570,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($objectId: ID!) {
                 get(className: "SomeClass", objectId: $objectId)
                 findSomeClass1: someClasses(
-                  where: { someField: { _exists: true } }
+                  where: { someField: { exists: true } }
                 ) {
                   results {
                     someField {
@@ -5553,7 +5580,7 @@ describe('ParseGraphQLServer', () => {
                   }
                 }
                 findSomeClass2: someClasses(
-                  where: { someField: { _exists: true } }
+                  where: { someField: { exists: true } }
                 ) {
                   results {
                     someField {
@@ -5623,10 +5650,10 @@ describe('ParseGraphQLServer', () => {
 
           const where = {
             someField: {
-              _eq: { _key: 'foo.bar', _value: 'baz' },
-              _ne: { _key: 'foo.bar', _value: 'bat' },
-              _gt: { _key: 'number', _value: 9 },
-              _lt: { _key: 'number', _value: 11 },
+              equalTo: { _key: 'foo.bar', _value: 'baz' },
+              notEqualTo: { _key: 'foo.bar', _value: 'bat' },
+              greaterThan: { _key: 'number', _value: 9 },
+              lessThan: { _key: 'number', _value: 11 },
             },
           };
           const queryResult = await apolloClient.query({
@@ -5711,24 +5738,24 @@ describe('ParseGraphQLServer', () => {
             AND: [
               {
                 someField: {
-                  _gt: { _key: 'number', _value: 9 },
+                  greaterThan: { _key: 'number', _value: 9 },
                 },
               },
               {
                 someField: {
-                  _lt: { _key: 'number', _value: 11 },
+                  lessThan: { _key: 'number', _value: 11 },
                 },
               },
               {
                 OR: [
                   {
                     someField: {
-                      _eq: { _key: 'lorem', _value: 'ipsum' },
+                      equalTo: { _key: 'lorem', _value: 'ipsum' },
                     },
                   },
                   {
                     someField: {
-                      _eq: { _key: 'foo.test', _value: 'bar' },
+                      equalTo: { _key: 'foo.test', _value: 'bar' },
                     },
                   },
                 ],
@@ -5828,7 +5855,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
+                someClasses(where: { someField: { exists: true } }) {
                   results {
                     objectId
                     someField {
@@ -5999,7 +6026,9 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!, $someFieldValue: Bytes) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _eq: $someFieldValue } }) {
+                someClasses(
+                  where: { someField: { equalTo: $someFieldValue } }
+                ) {
                   results {
                     objectId
                     someField
@@ -6067,7 +6096,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { someField: { _exists: true } }) {
+                someClasses(where: { someField: { exists: true } }) {
                   results {
                     objectId
                     someField {
@@ -6136,7 +6165,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($objectId: ID!) {
                 get(className: "SomeClass", objectId: $objectId)
-                someClasses(where: { somePolygonField: { _exists: true } }) {
+                someClasses(where: { somePolygonField: { exists: true } }) {
                   results {
                     objectId
                     somePolygonField {
@@ -6297,7 +6326,7 @@ describe('ParseGraphQLServer', () => {
             variables: {
               where: {
                 someField: {
-                  _eq: updatedSomeFieldValue.base64,
+                  equalTo: updatedSomeFieldValue.base64,
                 },
               },
             },

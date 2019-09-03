@@ -474,21 +474,21 @@ const load = (
     name: classGraphQLConstraintTypeName,
     description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
     fields: {
-      _eq: defaultGraphQLTypes._eq(classGraphQLScalarType),
-      _ne: defaultGraphQLTypes._ne(classGraphQLScalarType),
-      _in: defaultGraphQLTypes._in(classGraphQLScalarType),
-      _nin: defaultGraphQLTypes._nin(classGraphQLScalarType),
-      _exists: defaultGraphQLTypes._exists,
-      _select: defaultGraphQLTypes._select,
-      _dontSelect: defaultGraphQLTypes._dontSelect,
-      _inQuery: {
+      equalTo: defaultGraphQLTypes._eq(classGraphQLScalarType),
+      notEqualTo: defaultGraphQLTypes._ne(classGraphQLScalarType),
+      in: defaultGraphQLTypes._in(classGraphQLScalarType),
+      notIn: defaultGraphQLTypes._nin(classGraphQLScalarType),
+      exists: defaultGraphQLTypes.exists,
+      inQueryKey: defaultGraphQLTypes.inQueryKey,
+      notInQueryKey: defaultGraphQLTypes.notInQueryKey,
+      inQuery: {
         description:
-          'This is the $inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
+          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
-      _notInQuery: {
+      notInQuery: {
         description:
-          'This is the $notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
+          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
     },
@@ -629,7 +629,7 @@ const load = (
                 return await objectsQueries.findObjects(
                   source[field].className,
                   {
-                    _relatedTo: {
+                    relatedTo: {
                       object: {
                         __type: 'Pointer',
                         className: className,
