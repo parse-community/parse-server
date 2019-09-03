@@ -405,12 +405,13 @@ const USER_ACL_INPUT = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
     read: {
-      description: 'Allow the user to read the current object.',
+      description:
+        'Read is true by default. Allow the user to read the current object.',
       type: GraphQLBoolean,
     },
     write: {
       description:
-        'Allow the user to write on the current object. If true, read will be set to true.',
+        'Write is true by default. Allow the user to write on the current object. If true, read will be set to true.',
       type: GraphQLBoolean,
     },
   },
@@ -427,12 +428,12 @@ const ROLE_ACL_INPUT = new GraphQLInputObjectType({
     },
     read: {
       description:
-        'Read is true by default. Allow users who are members of the role to read the current object.',
+        "Read is true by default. Allow users who are members of the role to read the current object. By default it's true.",
       type: GraphQLBoolean,
     },
     write: {
       description:
-        'Write is true by default. Allow users who are members of the role to write on the current object. If true, read will be set to true.',
+        "Write is true by default. Allow users who are members of the role to write on the current object. If true, read will be set to true. By default it's true.",
       type: GraphQLBoolean,
     },
   },
@@ -486,11 +487,11 @@ const USER_ACL = new GraphQLObjectType({
     },
     read: {
       description: 'Allow the user to read the current object.',
-      type: GraphQLBoolean,
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
       description: 'Allow the user to write on the current object.',
-      type: GraphQLBoolean,
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
 });
@@ -507,12 +508,12 @@ const ROLE_ACL = new GraphQLObjectType({
     read: {
       description:
         'Allow users who are members of the role to read the current object.',
-      type: GraphQLBoolean,
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
       description:
         'Allow users who are members of the role to write on the current object.',
-      type: GraphQLBoolean,
+      type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
 });
@@ -545,9 +546,8 @@ const ACL = new GraphQLObjectType({
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
               userId: rule,
-              read: p[rule].read || null,
-              write:
-                p[rule].read && !p[rule].write ? false : p[rule].write || null,
+              read: p[rule].read || p[rule].write ? true : false,
+              write: p[rule].write ? true : false,
             });
           }
         });
@@ -563,9 +563,8 @@ const ACL = new GraphQLObjectType({
           if (rule.indexOf('role:') === 0) {
             roles.push({
               roleName: rule.replace('role:', ''),
-              read: p[rule].read || null,
-              write:
-                p[rule].read && !p[rule].write ? false : p[rule].write || null,
+              read: p[rule].read || p[rule].write ? true : false,
+              write: p[rule].write ? true : false,
             });
           }
         });
@@ -579,9 +578,8 @@ const ACL = new GraphQLObjectType({
         /* eslint-disable */
         return p['*']
           ? {
-              read: p['*'].read || null,
-              write:
-                p['*'].read && !p['*'].write ? false : p['*'].write || null,
+              read: p['*'].read || p['*'].write ? true : false,
+              write: p['*'].write ? true : false,
             }
           : null;
       },

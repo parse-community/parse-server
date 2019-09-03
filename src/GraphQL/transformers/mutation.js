@@ -90,7 +90,7 @@ const transformers = {
       value.users.forEach(rule => {
         parseACL[rule.userId] = {};
         if (rule.read) parseACL[rule.userId].read = rule.read;
-        if ((!rule.read && !rule.read) || rule.write) {
+        if (rule.write) {
           parseACL[rule.userId] = {
             read: true,
             write: true,
@@ -102,7 +102,7 @@ const transformers = {
       value.roles.forEach(rule => {
         parseACL[`role:${rule.roleName}`] = {};
         if (rule.read) parseACL[`role:${rule.roleName}`].read = rule.read;
-        if ((!rule.read && !rule.read) || rule.write) {
+        if (rule.write) {
           parseACL[`role:${rule.roleName}`] = {
             read: true,
             write: true,
