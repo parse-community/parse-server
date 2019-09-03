@@ -402,11 +402,6 @@ const CLASS_NAME_ATT = {
   type: new GraphQLNonNull(GraphQLString),
 };
 
-const FIELDS_ATT = {
-  description: 'These are the fields of the object.',
-  type: OBJECT,
-};
-
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: OBJECT_ID,
@@ -437,23 +432,9 @@ const CREATE_RESULT_FIELDS = {
   createdAt: CREATED_AT_ATT,
 };
 
-const CREATE_RESULT = new GraphQLObjectType({
-  name: 'CreateResult',
-  description:
-    'The CreateResult object type is used in the create mutations to return the data of the recent created object.',
-  fields: CREATE_RESULT_FIELDS,
-});
-
 const UPDATE_RESULT_FIELDS = {
   updatedAt: UPDATED_AT_ATT,
 };
-
-const UPDATE_RESULT = new GraphQLObjectType({
-  name: 'UpdateResult',
-  description:
-    'The UpdateResult object type is used in the update mutations to return the data of the recent updated object.',
-  fields: UPDATE_RESULT_FIELDS,
-});
 
 const PARSE_OBJECT_FIELDS = {
   ...CREATE_RESULT_FIELDS,
@@ -1072,8 +1053,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
-  parseGraphQLSchema.addGraphQLType(CREATE_RESULT, true);
-  parseGraphQLSchema.addGraphQLType(UPDATE_RESULT, true);
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
@@ -1127,16 +1106,13 @@ export {
   POLYGON,
   OBJECT_ID,
   CLASS_NAME_ATT,
-  FIELDS_ATT,
   OBJECT_ID_ATT,
   UPDATED_AT_ATT,
   CREATED_AT_ATT,
   ACL_ATT,
   INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
-  CREATE_RESULT,
   UPDATE_RESULT_FIELDS,
-  UPDATE_RESULT,
   PARSE_OBJECT_FIELDS,
   PARSE_OBJECT,
   SESSION_TOKEN_ATT,

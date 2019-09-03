@@ -604,44 +604,6 @@ describe('ParseGraphQLServer', () => {
           ]);
         });
 
-        it('should have CreateResult object type', async () => {
-          const createResultType = (await apolloClient.query({
-            query: gql`
-              query CreateResultType {
-                __type(name: "CreateResult") {
-                  kind
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-          expect(createResultType.kind).toEqual('OBJECT');
-          expect(
-            createResultType.fields.map(field => field.name).sort()
-          ).toEqual(['createdAt', 'id']);
-        });
-
-        it('should have UpdateResult object type', async () => {
-          const updateResultType = (await apolloClient.query({
-            query: gql`
-              query UpdateResultType {
-                __type(name: "UpdateResult") {
-                  kind
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-          expect(updateResultType.kind).toEqual('OBJECT');
-          expect(updateResultType.fields.map(field => field.name)).toEqual([
-            'updatedAt',
-          ]);
-        });
-
         it('should have Class interface type', async () => {
           const classType = (await apolloClient.query({
             query: gql`
@@ -740,12 +702,10 @@ describe('ParseGraphQLServer', () => {
 
           const expectedTypes = [
             'ParseObject',
-            'CreateResult',
             'Date',
             'FileInfo',
             'FindResult',
             'ReadPreference',
-            'UpdateResult',
             'Upload',
           ];
           expect(
