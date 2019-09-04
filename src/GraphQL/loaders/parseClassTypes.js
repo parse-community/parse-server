@@ -259,21 +259,21 @@ const load = (
     name: classGraphQLConstraintTypeName,
     description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
     fields: {
-      _eq: defaultGraphQLTypes._eq(GraphQLID),
-      _ne: defaultGraphQLTypes._ne(GraphQLID),
-      _in: defaultGraphQLTypes._in(defaultGraphQLTypes.OBJECT_ID),
-      _nin: defaultGraphQLTypes._nin(defaultGraphQLTypes.OBJECT_ID),
-      _exists: defaultGraphQLTypes._exists,
-      _select: defaultGraphQLTypes._select,
-      _dontSelect: defaultGraphQLTypes._dontSelect,
-      _inQuery: {
+      equalTo: defaultGraphQLTypes.equalTo(GraphQLID),
+      notEqualTo: defaultGraphQLTypes.notEqualTo(GraphQLID),
+      in: defaultGraphQLTypes.inOp(defaultGraphQLTypes.OBJECT_ID),
+      notIn: defaultGraphQLTypes.notIn(defaultGraphQLTypes.OBJECT_ID),
+      exists: defaultGraphQLTypes.exists,
+      inQueryKey: defaultGraphQLTypes.inQueryKey,
+      notInQueryKey: defaultGraphQLTypes.notInQueryKey,
+      inQuery: {
         description:
-          'This is the $inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
+          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
-      _notInQuery: {
+      notInQuery: {
         description:
-          'This is the $notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
+          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
     },
@@ -288,6 +288,12 @@ const load = (
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
+        if (['OR', 'AND', 'NOR'].includes(field)) {
+          parseGraphQLSchema.log.warn(
+            `Field ${field} could not be added to the auto schema ${classGraphQLConstraintsTypeName} because it collided with an existing one.`
+          );
+          return fields;
+        }
         const parseField = field === 'id' ? 'objectId' : field;
         const type = transformConstraintTypeToGraphQL(
           parseClass.fields[parseField].type,
@@ -306,16 +312,16 @@ const load = (
           return fields;
         }
       }, {}),
-      _or: {
-        description: 'This is the $or operator to compound constraints.',
+      OR: {
+        description: 'This is the OR operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
-      _and: {
-        description: 'This is the $and operator to compound constraints.',
+      AND: {
+        description: 'This is the AND operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
-      _nor: {
-        description: 'This is the $nor operator to compound constraints.',
+      NOR: {
+        description: 'This is the NOR operator to compound constraints.',
         type: new GraphQLList(new GraphQLNonNull(classGraphQLConstraintsType)),
       },
     }),
@@ -409,7 +415,7 @@ const load = (
                 return await objectsQueries.findObjects(
                   source[field].className,
                   {
-                    _relatedTo: {
+                    $relatedTo: {
                       object: {
                         __type: 'Pointer',
                         className: className,
