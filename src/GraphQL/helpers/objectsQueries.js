@@ -62,12 +62,13 @@ const findObjects = async (
   config,
   auth,
   info,
-  selectedFields
+  selectedFields,
+  fields
 ) => {
   if (!where) {
     where = {};
   }
-  transformQueryInputToParse(where);
+  transformQueryInputToParse(where, fields);
 
   const options = {};
 
