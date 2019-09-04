@@ -59,13 +59,13 @@ const transformQueryInputToParse = (
      *   From:
      *   {
      *     "someField": {
-     *       "_lt": {
-     *         "_key":"foo.bar",
-     *         "_value": 100
+     *       "lessThan": {
+     *         "key":"foo.bar",
+     *         "value": 100
      *       },
-     *       "_gt": {
-     *         "_key":"foo.bar",
-     *         "_value": 10
+     *       "greaterThan": {
+     *         "key":"foo.bar",
+     *         "value": 10
      *       }
      *     }
      *   }
