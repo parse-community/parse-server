@@ -1,9 +1,11 @@
-const parseMap = {
+const parseQueryMap = {
   id: 'objectId',
   OR: '$or',
   AND: '$and',
   NOR: '$nor',
-  relatedTo: '$relatedTo',
+};
+
+const parseConstraintMap = {
   equalTo: '$eq',
   notEqualTo: '$ne',
   lessThan: '$lt',
@@ -41,14 +43,11 @@ const parseMap = {
   point: '$point',
 };
 
-const transformQueryInputToParse = (
+const transformQueryConstraintInputToParse = (
   constraints,
   parentFieldName,
   parentConstraints
 ) => {
-  if (!constraints || typeof constraints !== 'object') {
-    return;
-  }
   Object.keys(constraints).forEach(fieldName => {
     let fieldValue = constraints[fieldName];
 
@@ -87,11 +86,11 @@ const transformQueryInputToParse = (
       delete parentConstraints[parentFieldName];
       parentConstraints[`${parentFieldName}.${fieldValue.key}`] = {
         ...parentConstraints[`${parentFieldName}.${fieldValue.key}`],
-        [parseMap[fieldName]]: fieldValue.value,
+        [parseConstraintMap[fieldName]]: fieldValue.value,
       };
-    } else if (parseMap[fieldName]) {
+    } else if (parseConstraintMap[fieldName]) {
       delete constraints[fieldName];
-      fieldName = parseMap[fieldName];
+      fieldName = parseConstraintMap[fieldName];
       constraints[fieldName] = fieldValue;
     }
     switch (fieldName) {
@@ -147,9 +146,44 @@ const transformQueryInputToParse = (
         break;
     }
     if (typeof fieldValue === 'object') {
-      transformQueryInputToParse(fieldValue, fieldName, constraints);
+      if (fieldName === 'where') {
+        transformQueryInputToParse(fieldValue);
+      } else {
+        transformQueryConstraintInputToParse(
+          fieldValue,
+          fieldName,
+          constraints
+        );
+      }
     }
   });
 };
 
-export { transformQueryInputToParse };
+const transformQueryInputToParse = constraints => {
+  if (!constraints || typeof constraints !== 'object') {
+    return;
+  }
+
+  Object.keys(constraints).forEach(fieldName => {
+    const fieldValue = constraints[fieldName];
+
+    if (parseQueryMap[fieldName]) {
+      delete constraints[fieldName];
+      fieldName = parseQueryMap[fieldName];
+      constraints[fieldName] = fieldValue;
+
+      if (fieldName !== 'objectId') {
+        fieldValue.forEach(fieldValueItem => {
+          transformQueryInputToParse(fieldValueItem);
+        });
+        return;
+      }
+    }
+
+    if (typeof fieldValue === 'object') {
+      transformQueryConstraintInputToParse(fieldValue, fieldName, constraints);
+    }
+  });
+};
+
+export { transformQueryConstraintInputToParse, transformQueryInputToParse };

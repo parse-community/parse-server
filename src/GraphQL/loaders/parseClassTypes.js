@@ -497,7 +497,7 @@ const load = (
                 return await objectsQueries.findObjects(
                   source[field].className,
                   {
-                    relatedTo: {
+                    $relatedTo: {
                       object: {
                         __type: 'Pointer',
                         className: className,
