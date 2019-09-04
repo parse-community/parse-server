@@ -202,6 +202,30 @@ const load = (
     classGraphQLUpdateType
   );
 
+  const classGraphQLPointerTypeName = `${graphQLClassName}PointerInput`;
+  let classGraphQLPointerType = new GraphQLInputObjectType({
+    name: classGraphQLPointerTypeName,
+    description: `Allow to link OR add and link an object of the ${graphQLClassName} class.`,
+    fields: () => {
+      const fields = {
+        link: {
+          description: `Link an existing object from ${graphQLClassName} class.`,
+          type: GraphQLID,
+        },
+      };
+      if (isCreateEnabled) {
+        fields['createAndLink'] = {
+          description: `Create and link an object from ${graphQLClassName} class.`,
+          type: classGraphQLCreateType,
+        };
+      }
+      return fields;
+    },
+  });
+  classGraphQLPointerType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLPointerType) ||
+    defaultGraphQLTypes.OBJECT;
+
   const classGraphQLRelationTypeName = `${graphQLClassName}RelationInput`;
   let classGraphQLRelationType = new GraphQLInputObjectType({
     name: classGraphQLRelationTypeName,
@@ -237,12 +261,8 @@ const load = (
     fields: {
       _eq: defaultGraphQLTypes._eq(GraphQLID),
       _ne: defaultGraphQLTypes._ne(GraphQLID),
-      _in: defaultGraphQLTypes._in(
-        new GraphQLList(defaultGraphQLTypes.OBJECT_ID)
-      ),
-      _nin: defaultGraphQLTypes._nin(
-        new GraphQLList(defaultGraphQLTypes.OBJECT_ID)
-      ),
+      _in: defaultGraphQLTypes._in(defaultGraphQLTypes.OBJECT_ID),
+      _nin: defaultGraphQLTypes._nin(defaultGraphQLTypes.OBJECT_ID),
       _exists: defaultGraphQLTypes._exists,
       _select: defaultGraphQLTypes._select,
       _dontSelect: defaultGraphQLTypes._dontSelect,
@@ -506,6 +526,7 @@ const load = (
   );
 
   parseGraphQLSchema.parseClassTypes[className] = {
+    classGraphQLPointerType,
     classGraphQLRelationType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
