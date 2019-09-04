@@ -13,6 +13,7 @@ const spotify = require('./spotify');
 const digits = require('./twitter'); // digits tokens are validated by twitter
 const janrainengage = require('./janrainengage');
 const janraincapture = require('./janraincapture');
+const line = require('./line');
 const vkontakte = require('./vkontakte');
 const qq = require('./qq');
 const wechat = require('./wechat');
@@ -44,6 +45,7 @@ const providers = {
   digits,
   janrainengage,
   janraincapture,
+  line,
   vkontakte,
   qq,
   wechat,
