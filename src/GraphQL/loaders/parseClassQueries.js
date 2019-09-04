@@ -120,7 +120,8 @@ const load = function(
             config,
             auth,
             info,
-            selectedFields.map(field => field.split('.', 1)[0])
+            selectedFields.map(field => field.split('.', 1)[0]),
+            parseClass.fields
           );
         } catch (e) {
           parseGraphQLSchema.handleError(e);
