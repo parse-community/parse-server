@@ -3449,6 +3449,53 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue1', 'someValue2']);
           });
 
+          it('should support full text search', async () => {
+            try {
+              const obj = new Parse.Object('FullTextSearchTest');
+              obj.set('field1', 'Parse GraphQL Server');
+              obj.set('field2', 'It rocks!');
+              await obj.save();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+              const result = await apolloClient.query({
+                query: gql`
+                  query FullTextSearchTests(
+                    $where: FullTextSearchTestWhereInput
+                  ) {
+                    fullTextSearchTests(where: $where) {
+                      results {
+                        id
+                      }
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+                variables: {
+                  where: {
+                    field1: {
+                      text: {
+                        search: {
+                          term: 'graphql',
+                        },
+                      },
+                    },
+                  },
+                },
+              });
+
+              expect(result.data.fullTextSearchTests.results[0].id).toEqual(
+                obj.id
+              );
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
           it('should support order, skip and limit arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {

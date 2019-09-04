@@ -539,21 +539,21 @@ const SEARCH_INPUT = new GraphQLInputObjectType({
   description:
     'The SearchInput type is used to specifiy a $search operation on a full text search.',
   fields: {
-    _term: {
+    term: {
       description: 'This is the term to be searched.',
       type: new GraphQLNonNull(GraphQLString),
     },
-    _language: {
+    language: {
       description:
         'This is the language to tetermine the list of stop words and the rules for tokenizer.',
       type: GraphQLString,
     },
-    _caseSensitive: {
+    caseSensitive: {
       description:
         'This is the flag to enable or disable case sensitive search.',
       type: GraphQLBoolean,
     },
-    _diacriticSensitive: {
+    diacriticSensitive: {
       description:
         'This is the flag to enable or disable diacritic sensitive search.',
       type: GraphQLBoolean,
@@ -566,7 +566,7 @@ const TEXT_INPUT = new GraphQLInputObjectType({
   description:
     'The TextInput type is used to specify a $text operation on a constraint.',
   fields: {
-    _search: {
+    search: {
       description: 'This is the search to be executed.',
       type: new GraphQLNonNull(SEARCH_INPUT),
     },
@@ -594,7 +594,7 @@ const WITHIN_INPUT = new GraphQLInputObjectType({
   description:
     'The WithinInput type is used to specify a $within operation on a constraint.',
   fields: {
-    _box: {
+    box: {
       description: 'This is the box to be specified.',
       type: new GraphQLNonNull(BOX_INPUT),
     },
@@ -622,11 +622,11 @@ const GEO_WITHIN_INPUT = new GraphQLInputObjectType({
   description:
     'The GeoWithinInput type is used to specify a $geoWithin operation on a constraint.',
   fields: {
-    _polygon: {
+    polygon: {
       description: 'This is the polygon to be specified.',
       type: POLYGON_INPUT,
     },
-    _centerSphere: {
+    centerSphere: {
       description: 'This is the sphere to be specified.',
       type: CENTER_SPHERE_INPUT,
     },
@@ -638,7 +638,7 @@ const GEO_INTERSECTS_INPUT = new GraphQLInputObjectType({
   description:
     'The GeoIntersectsInput type is used to specify a $geoIntersects operation on a constraint.',
   fields: {
-    _point: {
+    point: {
       description: 'This is the point to be specified.',
       type: GEO_POINT_INPUT,
     },
