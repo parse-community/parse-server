@@ -79,15 +79,15 @@ const transformQueryInputToParse = (
      *   }
      */
     if (
-      fieldValue._key &&
-      fieldValue._value &&
+      fieldValue.key &&
+      fieldValue.value &&
       parentConstraints &&
       parentFieldName
     ) {
       delete parentConstraints[parentFieldName];
-      parentConstraints[`${parentFieldName}.${fieldValue._key}`] = {
-        ...parentConstraints[`${parentFieldName}.${fieldValue._key}`],
-        [parseMap[fieldName]]: fieldValue._value,
+      parentConstraints[`${parentFieldName}.${fieldValue.key}`] = {
+        ...parentConstraints[`${parentFieldName}.${fieldValue.key}`],
+        [parseMap[fieldName]]: fieldValue.value,
       };
     } else if (parseMap[fieldName]) {
       delete constraints[fieldName];

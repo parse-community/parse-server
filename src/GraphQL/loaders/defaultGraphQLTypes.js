@@ -799,12 +799,12 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
     notInQueryKey,
     containedBy: {
       description:
-        'This is the $containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
+        'This is the containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
       type: new GraphQLList(ANY),
     },
     contains: {
       description:
-        'This is the $all operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
+        'This is the contains operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
       type: new GraphQLList(ANY),
     },
   },
@@ -814,11 +814,11 @@ const KEY_VALUE_INPUT = new GraphQLInputObjectType({
   name: 'KeyValueInput',
   description: 'An entry from an object, i.e., a pair of key and value.',
   fields: {
-    _key: {
+    key: {
       description: 'The key used to retrieve the value of this entry.',
       type: new GraphQLNonNull(GraphQLString),
     },
-    _value: {
+    value: {
       description: 'The value of the entry. Could be any type of scalar data.',
       type: new GraphQLNonNull(ANY),
     },
@@ -911,37 +911,37 @@ const GEO_POINT_WHERE_INPUT = new GraphQLInputObjectType({
     exists,
     nearSphere: {
       description:
-        'This is the $nearSphere operator to specify a constraint to select the objects where the values of a geo point field is near to another geo point.',
+        'This is the nearSphere operator to specify a constraint to select the objects where the values of a geo point field is near to another geo point.',
       type: GEO_POINT_INPUT,
     },
     maxDistance: {
       description:
-        'This is the $maxDistance operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
+        'This is the maxDistance operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
     maxDistanceInRadians: {
       description:
-        'This is the $maxDistanceInRadians operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
+        'This is the maxDistanceInRadians operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in radians) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
     maxDistanceInMiles: {
       description:
-        'This is the $maxDistanceInMiles operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in miles) from the geo point specified in the $nearSphere operator.',
+        'This is the maxDistanceInMiles operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in miles) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
     maxDistanceInKilometers: {
       description:
-        'This is the $maxDistanceInKilometers operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in kilometers) from the geo point specified in the $nearSphere operator.',
+        'This is the maxDistanceInKilometers operator to specify a constraint to select the objects where the values of a geo point field is at a max distance (in kilometers) from the geo point specified in the $nearSphere operator.',
       type: GraphQLFloat,
     },
     within: {
       description:
-        'This is the $within operator to specify a constraint to select the objects where the values of a geo point field is within a specified box.',
+        'This is the within operator to specify a constraint to select the objects where the values of a geo point field is within a specified box.',
       type: WITHIN_INPUT,
     },
     geoWithin: {
       description:
-        'This is the $geoWithin operator to specify a constraint to select the objects where the values of a geo point field is within a specified polygon or sphere.',
+        'This is the geoWithin operator to specify a constraint to select the objects where the values of a geo point field is within a specified polygon or sphere.',
       type: GEO_WITHIN_INPUT,
     },
   },
@@ -955,7 +955,7 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
     exists,
     geoIntersects: {
       description:
-        'This is the $geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
+        'This is the geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
       type: GEO_INTERSECTS_INPUT,
     },
   },
@@ -974,20 +974,9 @@ const FIND_RESULT = new GraphQLObjectType({
   },
 });
 
-const SIGN_UP_RESULT = new GraphQLObjectType({
-  name: 'SignUpResult',
-  description:
-    'The SignUpResult object type is used in the users sign up mutation to return the data of the recent created user.',
-  fields: {
-    ...CREATE_RESULT_FIELDS,
-    sessionToken: SESSION_TOKEN_ATT,
-  },
-});
-
 const ELEMENT = new GraphQLObjectType({
   name: 'Element',
-  description:
-    'The SignUpResult object type is used in the users sign up mutation to return the data of the recent created user.',
+  description: "The Element object type is used to return array items' value.",
   fields: {
     value: {
       description: 'Return the value of the element in the array',
@@ -1066,7 +1055,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
-  parseGraphQLSchema.addGraphQLType(SIGN_UP_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
   parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
 };
@@ -1148,7 +1136,6 @@ export {
   GEO_POINT_WHERE_INPUT,
   POLYGON_WHERE_INPUT,
   FIND_RESULT,
-  SIGN_UP_RESULT,
   ARRAY_RESULT,
   ELEMENT,
   load,

@@ -6429,10 +6429,10 @@ describe('ParseGraphQLServer', () => {
 
             const where = {
               someField: {
-                equalTo: { _key: 'foo.bar', _value: 'baz' },
-                notEqualTo: { _key: 'foo.bar', _value: 'bat' },
-                greaterThan: { _key: 'number', _value: 9 },
-                lessThan: { _key: 'number', _value: 11 },
+                equalTo: { key: 'foo.bar', value: 'baz' },
+                notEqualTo: { key: 'foo.bar', value: 'bat' },
+                greaterThan: { key: 'number', value: 9 },
+                lessThan: { key: 'number', value: 11 },
               },
             };
             const queryResult = await apolloClient.query({
@@ -6531,24 +6531,24 @@ describe('ParseGraphQLServer', () => {
               AND: [
                 {
                   someField: {
-                    greaterThan: { _key: 'number', _value: 9 },
+                    greaterThan: { key: 'number', value: 9 },
                   },
                 },
                 {
                   someField: {
-                    lessThan: { _key: 'number', _value: 11 },
+                    lessThan: { key: 'number', value: 11 },
                   },
                 },
                 {
                   OR: [
                     {
                       someField: {
-                        equalTo: { _key: 'lorem', _value: 'ipsum' },
+                        equalTo: { key: 'lorem', value: 'ipsum' },
                       },
                     },
                     {
                       someField: {
-                        equalTo: { _key: 'foo.test', _value: 'bar' },
+                        equalTo: { key: 'foo.test', value: 'bar' },
                       },
                     },
                   ],
