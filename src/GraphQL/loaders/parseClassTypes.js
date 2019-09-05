@@ -366,9 +366,7 @@ const load = (
     },
     skip: defaultGraphQLTypes.SKIP_ATT,
     limit: defaultGraphQLTypes.LIMIT_ATT,
-    readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
-    includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
-    subqueryReadPreference: defaultGraphQLTypes.SUBQUERY_READ_PREFERENCE_ATT,
+    options: defaultGraphQLTypes.READ_OPTIONS_ATT,
   };
 
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
@@ -395,15 +393,12 @@ const load = (
             type,
             async resolve(source, args, context, queryInfo) {
               try {
+                const { where, order, skip, limit, options } = args;
                 const {
-                  where,
-                  order,
-                  skip,
-                  limit,
                   readPreference,
                   includeReadPreference,
                   subqueryReadPreference,
-                } = args;
+                } = options || {};
                 const { config, auth, info } = context;
                 const selectedFields = getFieldNames(queryInfo);
 

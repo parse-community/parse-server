@@ -483,6 +483,22 @@ const SUBQUERY_READ_PREFERENCE_ATT = {
   type: READ_PREFERENCE,
 };
 
+const READ_OPTIONS_INPUT = new GraphQLInputObjectType({
+  name: 'ReadOptionsInput',
+  description:
+    'The ReadOptionsInputt type is used in queries in order to set the read preferences.',
+  fields: {
+    readPreference: READ_PREFERENCE_ATT,
+    includeReadPreference: INCLUDE_READ_PREFERENCE_ATT,
+    subqueryReadPreference: SUBQUERY_READ_PREFERENCE_ATT,
+  },
+});
+
+const READ_OPTIONS_ATT = {
+  description: 'The read options for the query to be executed.',
+  type: READ_OPTIONS_INPUT,
+};
+
 const WHERE_ATT = {
   description:
     'These are the conditions that the objects need to match in order to be found',
@@ -1034,6 +1050,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
+  parseGraphQLSchema.addGraphQLType(READ_OPTIONS_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SEARCH_INPUT, true);
@@ -1098,6 +1115,8 @@ export {
   READ_PREFERENCE_ATT,
   INCLUDE_READ_PREFERENCE_ATT,
   SUBQUERY_READ_PREFERENCE_ATT,
+  READ_OPTIONS_INPUT,
+  READ_OPTIONS_ATT,
   WHERE_ATT,
   SKIP_ATT,
   LIMIT_ATT,
