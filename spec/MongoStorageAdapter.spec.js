@@ -484,28 +484,30 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         expect(found).toBe(true);
       });
 
-      it('should not use transaction when using the sdk', async () => {
+      it('should not use transactions when using SDK insert', async () => {
         const databaseAdapter = Config.get(Parse.applicationId).database
           .adapter;
         spyOn(
           databaseAdapter.database.serverConfig,
-          'command'
+          'insert'
         ).and.callThrough();
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'cursor'
-        ).and.callThrough();
+
+        const myObject = new Parse.Object('MyObject');
+        await myObject.save();
+
+        const calls = databaseAdapter.database.serverConfig.insert.calls.all();
+        expect(calls.length).toBeGreaterThan(0);
+        calls.forEach(call => {
+          expect(call.args[2].session.transaction.state).toBe('NO_TRANSACTION');
+        });
+      });
+
+      it('should not use transactions when using SDK update', async () => {
+        const databaseAdapter = Config.get(Parse.applicationId).database
+          .adapter;
         spyOn(
           databaseAdapter.database.serverConfig,
           'update'
-        ).and.callThrough();
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'insert'
-        ).and.callThrough();
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'remove'
         ).and.callThrough();
 
         const myObject = new Parse.Object('MyObject');
@@ -514,38 +516,31 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         myObject.set('myAttribute', 'myValue');
         await myObject.save();
 
-        let found = false;
-        databaseAdapter.database.serverConfig.command.calls
-          .all()
-          .forEach(call => {
-            found = true;
-            expect(call.args[2].session).toBe(undefined);
-          });
-        expect(found).toBe(true);
-        databaseAdapter.database.serverConfig.cursor.calls
-          .all()
-          .forEach(call => {
-            expect(call.args[2]).toBe(undefined);
-          });
-        databaseAdapter.database.serverConfig.insert.calls
-          .all()
-          .forEach(call => {
-            expect(call.args[2].session.transaction.state).toBe(
-              'NO_TRANSACTION'
-            );
-          });
-        databaseAdapter.database.serverConfig.remove.calls
-          .all()
-          .forEach(call => {
-            expect(call.args[2].session).toBe(undefined);
-          });
-        databaseAdapter.database.serverConfig.update.calls
-          .all()
-          .forEach(call => {
-            expect(call.args[2].session.transaction.state).toBe(
-              'NO_TRANSACTION'
-            );
-          });
+        const calls = databaseAdapter.database.serverConfig.update.calls.all();
+        expect(calls.length).toBeGreaterThan(0);
+        calls.forEach(call => {
+          expect(call.args[2].session.transaction.state).toBe('NO_TRANSACTION');
+        });
+      });
+
+      it('should not use transactions when using SDK delete', async () => {
+        const databaseAdapter = Config.get(Parse.applicationId).database
+          .adapter;
+        spyOn(
+          databaseAdapter.database.serverConfig,
+          'remove'
+        ).and.callThrough();
+
+        const myObject = new Parse.Object('MyObject');
+        await myObject.save();
+
+        await myObject.destroy();
+
+        const calls = databaseAdapter.database.serverConfig.remove.calls.all();
+        expect(calls.length).toBeGreaterThan(0);
+        calls.forEach(call => {
+          expect(call.args[2].session.transaction.state).toBe('NO_TRANSACTION');
+        });
       });
     });
   }
