@@ -4868,4 +4868,34 @@ describe('Parse.Query testing', () => {
     const results = await query.find();
     equal(results[0].get('array').length, 105);
   });
+
+  it('can perform nearSphere query with different sort key', async () => {
+    const obj1 = new Parse.Object('TestObject', {
+      name: 'c',
+      location: new Parse.GeoPoint(0, 0),
+    });
+    const obj2 = new Parse.Object('TestObject', {
+      name: 'b',
+      location: new Parse.GeoPoint(5, 5),
+    });
+    const obj3 = new Parse.Object('TestObject', {
+      name: 'a',
+      location: new Parse.GeoPoint(10, 10),
+    });
+
+    const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+
+    const q = new Parse.Query(TestObject);
+    q.withinKilometers(
+      'location',
+      new Parse.GeoPoint(0, 0),
+      distanceInKilometers
+    );
+    q.ascending('name');
+
+    const results = await q.find();
+    equal(results.length, 3);
+    equal(results[0].get('name'), 'a');
+  });
 });
