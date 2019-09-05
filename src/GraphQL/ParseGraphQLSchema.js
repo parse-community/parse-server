@@ -15,6 +15,7 @@ import DatabaseController from '../Controllers/DatabaseController';
 import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 import * as schemaTypes from './loaders/schemaTypes';
+import { getFunctionNames } from '../triggers';
 
 const RESERVED_GRAPHQL_TYPE_NAMES = [
   'String',
@@ -29,6 +30,7 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Viewer',
   'SignUpFieldsInput',
   'LogInFieldsInput',
+  'CloudCodeFunction',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
@@ -53,6 +55,7 @@ class ParseGraphQLSchema {
       databaseController: DatabaseController,
       parseGraphQLController: ParseGraphQLController,
       log: any,
+      appId: String,
     } = {}
   ) {
     this.parseGraphQLController =
@@ -64,6 +67,7 @@ class ParseGraphQLSchema {
     this.log =
       params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
+    this.appId = params.appId;
   }
 
   async load() {
@@ -71,6 +75,8 @@ class ParseGraphQLSchema {
 
     const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
     const parseClassesString = JSON.stringify(parseClasses);
+    const functionNames = await getFunctionNames(this.appId);
+    const functionNamesString = JSON.stringify(functionNames);
 
     if (
       this.graphQLSchema &&
@@ -78,6 +84,7 @@ class ParseGraphQLSchema {
         parseClasses,
         parseClassesString,
         parseGraphQLConfig,
+        functionNamesString,
       })
     ) {
       return this.graphQLSchema;
@@ -86,6 +93,8 @@ class ParseGraphQLSchema {
     this.parseClasses = parseClasses;
     this.parseClassesString = parseClassesString;
     this.parseGraphQLConfig = parseGraphQLConfig;
+    this.functionNames = functionNames;
+    this.functionNamesString = functionNamesString;
     this.parseClassTypes = {};
     this.viewerType = null;
     this.graphQLAutoSchema = null;
@@ -370,12 +379,19 @@ class ParseGraphQLSchema {
     parseClasses: any,
     parseClassesString: string,
     parseGraphQLConfig: ?ParseGraphQLConfig,
+    functionNamesString: string,
   }): boolean {
-    const { parseClasses, parseClassesString, parseGraphQLConfig } = params;
+    const {
+      parseClasses,
+      parseClassesString,
+      parseGraphQLConfig,
+      functionNamesString,
+    } = params;
 
     if (
       JSON.stringify(this.parseGraphQLConfig) ===
-      JSON.stringify(parseGraphQLConfig)
+        JSON.stringify(parseGraphQLConfig) &&
+      this.functionNamesString === functionNamesString
     ) {
       if (this.parseClasses === parseClasses) {
         return false;

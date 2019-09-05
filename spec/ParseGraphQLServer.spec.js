@@ -5177,19 +5177,23 @@ describe('ParseGraphQLServer', () => {
 
       describe('Functions Mutations', () => {
         it('can be called', async () => {
-          Parse.Cloud.define('hello', async () => {
-            return 'Hello world!';
-          });
+          try {
+            Parse.Cloud.define('hello', async () => {
+              return 'Hello world!';
+            });
 
-          const result = await apolloClient.mutate({
-            mutation: gql`
-              mutation CallFunction {
-                callCloudCode(functionName: "hello")
-              }
-            `,
-          });
+            const result = await apolloClient.mutate({
+              mutation: gql`
+                mutation CallFunction {
+                  callCloudCode(functionName: hello)
+                }
+              `,
+            });
 
-          expect(result.data.callCloudCode).toEqual('Hello world!');
+            expect(result.data.callCloudCode).toEqual('Hello world!');
+          } catch (e) {
+            handleError(e);
+          }
         });
 
         it('can throw errors', async () => {
@@ -5201,7 +5205,7 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation CallFunction {
-                  callCloudCode(functionName: "hello")
+                  callCloudCode(functionName: hello)
                 }
               `,
             });
@@ -5302,13 +5306,44 @@ describe('ParseGraphQLServer', () => {
           apolloClient.mutate({
             mutation: gql`
               mutation CallFunction($params: Object) {
-                callCloudCode(functionName: "hello", params: $params)
+                callCloudCode(functionName: hello, params: $params)
               }
             `,
             variables: {
               params,
             },
           });
+        });
+
+        it('should list all functions in the enum type', async () => {
+          try {
+            Parse.Cloud.define('a', async () => {
+              return 'hello a';
+            });
+
+            Parse.Cloud.define('b', async () => {
+              return 'hello b';
+            });
+
+            const functionEnum = (await apolloClient.query({
+              query: gql`
+                query ObjectType {
+                  __type(name: "CloudCodeFunction") {
+                    kind
+                    enumValues {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+            expect(functionEnum.kind).toEqual('ENUM');
+            expect(
+              functionEnum.enumValues.map(value => value.name).sort()
+            ).toEqual(['a', 'b']);
+          } catch (e) {
+            handleError(e);
+          }
         });
       });
 
