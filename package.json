@@ -64,7 +64,7 @@
     "@parse/minami": "1.0.0",
     "apollo-cache-inmemory": "1.6.3",
     "apollo-client": "2.6.4",
-    "apollo-link": "1.2.12",
+    "apollo-link": "1.2.13",
     "apollo-link-http": "1.5.16",
     "apollo-link-ws": "1.0.19",
     "apollo-upload-client": "11.0.0",
