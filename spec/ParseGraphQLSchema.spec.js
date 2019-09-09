@@ -7,6 +7,7 @@ describe('ParseGraphQLSchema', () => {
   let databaseController;
   let parseGraphQLController;
   let parseGraphQLSchema;
+  const appId = 'test';
 
   beforeAll(async () => {
     parseServer = await global.reconfigureServer({
@@ -18,11 +19,12 @@ describe('ParseGraphQLSchema', () => {
       databaseController,
       parseGraphQLController,
       log: defaultLogger,
+      appId,
     });
   });
 
   describe('constructor', () => {
-    it('should require a parseGraphQLController, databaseController and a log instance', () => {
+    it('should require a parseGraphQLController, databaseController, a log instance, and the appId', () => {
       expect(() => new ParseGraphQLSchema()).toThrow(
         'You must provide a parseGraphQLController instance!'
       );
@@ -36,6 +38,14 @@ describe('ParseGraphQLSchema', () => {
             databaseController: {},
           })
       ).toThrow('You must provide a log instance!');
+      expect(
+        () =>
+          new ParseGraphQLSchema({
+            parseGraphQLController: {},
+            databaseController: {},
+            log: {},
+          })
+      ).toThrow('You must provide the appId!');
     });
   });
 
@@ -88,6 +98,7 @@ describe('ParseGraphQLSchema', () => {
         databaseController,
         parseGraphQLController,
         log: defaultLogger,
+        appId,
       });
       await parseGraphQLSchema.load();
       const parseClasses = parseGraphQLSchema.parseClasses;
@@ -134,6 +145,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const type = new GraphQLObjectType({ name: 'SomeClass' });
@@ -156,6 +168,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const type = new GraphQLObjectType({ name: 'SomeClass' });
@@ -184,6 +197,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       expect(
@@ -203,6 +217,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const type = new GraphQLObjectType({ name: 'String' });
@@ -225,6 +240,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const field = {};
@@ -247,6 +263,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const field = {};
@@ -274,6 +291,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       expect(parseGraphQLSchema.addGraphQLQuery('viewer', {})).toBeUndefined();
@@ -289,6 +307,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       delete parseGraphQLSchema.graphQLQueries.viewer;
@@ -314,6 +333,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const field = {};
@@ -338,6 +358,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       const field = {};
@@ -367,6 +388,7 @@ describe('ParseGraphQLSchema', () => {
             );
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       expect(
@@ -384,6 +406,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       await parseGraphQLSchema.load();
       delete parseGraphQLSchema.graphQLMutations.signUp;
@@ -405,6 +428,7 @@ describe('ParseGraphQLSchema', () => {
             fail('Should not warn');
           },
         },
+        appId,
       });
       expect(
         parseGraphQLSchema
@@ -443,6 +467,7 @@ describe('ParseGraphQLSchema', () => {
         databaseController,
         parseGraphQLController,
         log: defaultLogger,
+        appId,
       });
       await parseGraphQLSchema.databaseController.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
@@ -476,6 +501,7 @@ describe('ParseGraphQLSchema', () => {
         databaseController,
         parseGraphQLController,
         log: defaultLogger,
+        appId,
       });
       const car1 = new Parse.Object('Car');
       await car1.save();
@@ -511,6 +537,7 @@ describe('ParseGraphQLSchema', () => {
         databaseController,
         parseGraphQLController,
         log: defaultLogger,
+        appId,
       });
       const car = new Parse.Object('Car');
       await car.save();
