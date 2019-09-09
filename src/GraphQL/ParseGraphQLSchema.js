@@ -55,7 +55,7 @@ class ParseGraphQLSchema {
       databaseController: DatabaseController,
       parseGraphQLController: ParseGraphQLController,
       log: any,
-      appId: String,
+      appId: string,
     } = {}
   ) {
     this.parseGraphQLController =
@@ -67,15 +67,15 @@ class ParseGraphQLSchema {
     this.log =
       params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
-    this.appId = params.appId;
+    this.appId =
+      params.appId || requiredParameter('You must provide the appId!');
   }
 
   async load() {
     const { parseGraphQLConfig } = await this._initializeSchemaAndConfig();
-
     const parseClasses = await this._getClassesForSchema(parseGraphQLConfig);
     const parseClassesString = JSON.stringify(parseClasses);
-    const functionNames = await getFunctionNames(this.appId);
+    const functionNames = await this._getFunctionNames();
     const functionNamesString = JSON.stringify(functionNames);
 
     if (
@@ -366,6 +366,19 @@ class ParseGraphQLSchema {
         );
       }
       return [parseClass, parseClassConfig];
+    });
+  }
+
+  async _getFunctionNames() {
+    return await getFunctionNames(this.appId).filter(functionName => {
+      if (/^[_a-zA-Z][_a-zA-Z0-9]*$/.test(functionName)) {
+        return true;
+      } else {
+        this.log.warn(
+          `Function ${functionName} could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.`
+        );
+        return false;
+      }
     });
   }
 

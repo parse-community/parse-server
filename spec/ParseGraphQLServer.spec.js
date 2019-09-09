@@ -5325,6 +5325,14 @@ describe('ParseGraphQLServer', () => {
               return 'hello b';
             });
 
+            Parse.Cloud.define('_underscored', async () => {
+              return 'hello _underscored';
+            });
+
+            Parse.Cloud.define('contains1Number', async () => {
+              return 'hello contains1Number';
+            });
+
             const functionEnum = (await apolloClient.query({
               query: gql`
                 query ObjectType {
@@ -5340,7 +5348,56 @@ describe('ParseGraphQLServer', () => {
             expect(functionEnum.kind).toEqual('ENUM');
             expect(
               functionEnum.enumValues.map(value => value.name).sort()
-            ).toEqual(['a', 'b']);
+            ).toEqual(['_underscored', 'a', 'b', 'contains1Number']);
+          } catch (e) {
+            handleError(e);
+          }
+        });
+
+        it('should warn functions not matching GraphQL allowed names', async () => {
+          try {
+            spyOn(
+              parseGraphQLServer.parseGraphQLSchema.log,
+              'warn'
+            ).and.callThrough();
+
+            Parse.Cloud.define('a', async () => {
+              return 'hello a';
+            });
+
+            Parse.Cloud.define('double-barrelled', async () => {
+              return 'hello b';
+            });
+
+            Parse.Cloud.define('1NumberInTheBeggning', async () => {
+              return 'hello contains1Number';
+            });
+
+            const functionEnum = (await apolloClient.query({
+              query: gql`
+                query ObjectType {
+                  __type(name: "CloudCodeFunction") {
+                    kind
+                    enumValues {
+                      name
+                    }
+                  }
+                }
+              `,
+            })).data['__type'];
+            expect(functionEnum.kind).toEqual('ENUM');
+            expect(
+              functionEnum.enumValues.map(value => value.name).sort()
+            ).toEqual(['a']);
+            expect(
+              parseGraphQLServer.parseGraphQLSchema.log.warn.calls
+                .all()
+                .map(call => call.args[0])
+                .sort()
+            ).toEqual([
+              'Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
+              'Function double-barrelled could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
+            ]);
           } catch (e) {
             handleError(e);
           }
