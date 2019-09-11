@@ -841,7 +841,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
   // down a tree to find a "leaf node" and checking to see if it needs to be converted.
   _parseAggregateArgs(schema: any, pipeline: any): any {
-    if (Array.isArray(pipeline)) {
+    if (pipeline === null) {
+      return null;
+    } else if (Array.isArray(pipeline)) {
       return pipeline.map(value => this._parseAggregateArgs(schema, value));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
