@@ -94,14 +94,14 @@ export class GridStoreAdapter extends FilesAdapter {
     );
   }
 
-  async getFileStream(filename: string, req, res, contentType) {
+  async handleFileStream(filename: string, req, res, contentType) {
     const stream = await this._connect().then(database => {
       return GridStore.exist(database, filename).then(() => {
         const gridStore = new GridStore(database, filename, 'r');
         return gridStore.open();
       });
     });
-    handleFileStream(stream, req, res, contentType);
+    handleRangeRequest(stream, req, res, contentType);
   }
 
   handleShutdown() {
@@ -112,13 +112,13 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 }
 
-// handleFileStream is licensed under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
+// handleRangeRequest is licensed under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 // Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
-function handleFileStream(stream, req, res, contentType) {
+function handleRangeRequest(stream, req, res, contentType) {
   const buffer_size = 1024 * 1024; //1024Kb
   // Range request, partial stream the file
   const parts = req
-    .get('range')
+    .get('Range')
     .replace(/bytes=/, '')
     .split('-');
   let [start, end] = parts;

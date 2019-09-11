@@ -98,14 +98,14 @@ export class GridFSBucketAdapter extends FilesAdapter {
     );
   }
 
-  async getFileStream(filename: string, req, res, contentType) {
+  async handleFileStream(filename: string, req, res, contentType) {
     const bucket = await this._getBucket();
     const files = await bucket.find({ filename }).toArray();
     if (files.length === 0) {
       throw new Error('FileNotFound');
     }
     const parts = req
-      .get('range')
+      .get('Range')
       .replace(/bytes=/, '')
       .split('-');
     const partialstart = parts[0];

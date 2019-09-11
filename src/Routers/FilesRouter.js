@@ -45,7 +45,7 @@ export class FilesRouter {
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController
-        .getFileStream(config, filename, req, res, contentType)
+        .handleFileStream(config, filename, req, res, contentType)
         .catch(() => {
           res.status(404);
           res.set('Content-Type', 'text/plain');
@@ -139,6 +139,6 @@ export class FilesRouter {
 function isFileStreamable(req, filesController) {
   return (
     req.get('Range') &&
-    typeof filesController.adapter.getFileStream === 'function'
+    typeof filesController.adapter.handleFileStream === 'function'
   );
 }
