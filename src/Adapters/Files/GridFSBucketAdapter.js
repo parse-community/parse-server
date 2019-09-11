@@ -59,7 +59,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   async deleteFile(filename: string) {
     const bucket = await this._getBucket();
-    const documents = await bucket.find({ filename: filename }).toArray();
+    const documents = await bucket.find({ filename }).toArray();
     if (documents.length === 0) {
       throw new Error('FileNotFound');
     }
@@ -71,7 +71,8 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   async getFileData(filename: string) {
-    const stream = await this.getDownloadStream(filename);
+    const bucket = await this._getBucket();
+    const stream = bucket.openDownloadStreamByName(filename);
     stream.read();
     return new Promise((resolve, reject) => {
       const chunks = [];
@@ -97,9 +98,39 @@ export class GridFSBucketAdapter extends FilesAdapter {
     );
   }
 
-  async getDownloadStream(filename: string) {
+  async handleFileStream(filename: string, req, res, contentType) {
     const bucket = await this._getBucket();
-    return bucket.openDownloadStreamByName(filename);
+    const files = await bucket.find({ filename }).toArray();
+    if (files.length === 0) {
+      throw new Error('FileNotFound');
+    }
+    const parts = req
+      .get('Range')
+      .replace(/bytes=/, '')
+      .split('-');
+    const partialstart = parts[0];
+    const partialend = parts[1];
+
+    const start = parseInt(partialstart, 10);
+    const end = partialend ? parseInt(partialend, 10) : files[0].length - 1;
+
+    res.writeHead(206, {
+      'Accept-Ranges': 'bytes',
+      'Content-Length': end - start + 1,
+      'Content-Range': 'bytes ' + start + '-' + end + '/' + files[0].length,
+      'Content-Type': contentType,
+    });
+    const stream = bucket.openDownloadStreamByName(filename);
+    stream.start(start);
+    stream.on('data', chunk => {
+      res.write(chunk);
+    });
+    stream.on('error', () => {
+      res.sendStatus(404);
+    });
+    stream.on('end', () => {
+      res.end();
+    });
   }
 
   handleShutdown() {

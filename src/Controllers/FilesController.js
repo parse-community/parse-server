@@ -92,8 +92,8 @@ export class FilesController extends AdaptableController {
     return FilesAdapter;
   }
 
-  getFileStream(config, filename) {
-    return this.adapter.getFileStream(filename);
+  handleFileStream(config, filename, req, res, contentType) {
+    return this.adapter.handleFileStream(filename, req, res, contentType);
   }
 }
 
