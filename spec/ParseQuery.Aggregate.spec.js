@@ -941,7 +941,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('match null values', async () => {
+  it_exclude_dbs(['postgres'])('match null values', async () => {
     const obj1 = new Parse.Object('MyCollection');
     obj1.set('language', 'en');
     obj1.set('otherField', 1);
