@@ -298,7 +298,10 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    middlewares.allowCrossDomain({}, res, () => {});
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain({}, res, () => {});
     expect(Object.keys(headers).length).toBe(4);
     expect(headers['Access-Control-Expose-Headers']).toBe(
       'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
