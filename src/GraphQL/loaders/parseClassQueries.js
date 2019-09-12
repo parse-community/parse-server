@@ -14,7 +14,8 @@ const getParseClassQueryConfig = function(
 };
 
 const getQuery = async (className, _source, args, context, queryInfo) => {
-  const { id, readPreference, includeReadPreference } = args;
+  const { id, options } = args;
+  const { readPreference, includeReadPreference } = options || {};
   const { config, auth, info } = context;
   const selectedFields = getFieldNames(queryInfo);
 
@@ -58,8 +59,7 @@ const load = function(
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
         id: defaultGraphQLTypes.OBJECT_ID_ATT,
-        readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
-        includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
+        options: defaultGraphQLTypes.READ_OPTIONS_ATT,
       },
       type: new GraphQLNonNull(
         classGraphQLOutputType || defaultGraphQLTypes.OBJECT
@@ -86,15 +86,12 @@ const load = function(
       ),
       async resolve(_source, args, context, queryInfo) {
         try {
+          const { where, order, skip, limit, options } = args;
           const {
-            where,
-            order,
-            skip,
-            limit,
             readPreference,
             includeReadPreference,
             subqueryReadPreference,
-          } = args;
+          } = options || {};
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(queryInfo);
 

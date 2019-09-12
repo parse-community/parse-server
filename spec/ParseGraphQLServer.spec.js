@@ -3069,57 +3069,65 @@ describe('ParseGraphQLServer', () => {
 
           describe_only_db('mongo')('read preferences', () => {
             it('should read from primary by default', async () => {
-              await prepareData();
+              try {
+                await prepareData();
 
-              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+                await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-              const databaseAdapter =
-                parseServer.config.databaseController.adapter;
-              spyOn(
-                databaseAdapter.database.serverConfig,
-                'cursor'
-              ).and.callThrough();
+                const databaseAdapter =
+                  parseServer.config.databaseController.adapter;
+                spyOn(
+                  databaseAdapter.database.serverConfig,
+                  'cursor'
+                ).and.callThrough();
 
-              await apolloClient.query({
-                query: gql`
-                  query GetSomeObject($id: ID!) {
-                    graphQLClass(id: $id) {
-                      pointerToUser {
-                        username
+                await apolloClient.query({
+                  query: gql`
+                    query GetSomeObject($id: ID!) {
+                      graphQLClass(id: $id) {
+                        pointerToUser {
+                          username
+                        }
                       }
                     }
-                  }
-                `,
-                variables: {
-                  id: object3.id,
-                },
-                context: {
-                  headers: {
-                    'X-Parse-Session-Token': user1.getSessionToken(),
+                  `,
+                  variables: {
+                    id: object3.id,
                   },
-                },
-              });
-
-              let foundGraphQLClassReadPreference = false;
-              let foundUserClassReadPreference = false;
-              databaseAdapter.database.serverConfig.cursor.calls
-                .all()
-                .forEach(call => {
-                  if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
-                    foundGraphQLClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(
-                      ReadPreference.PRIMARY
-                    );
-                  } else if (call.args[0].ns.collection.indexOf('_User') >= 0) {
-                    foundUserClassReadPreference = true;
-                    expect(call.args[0].options.readPreference.mode).toBe(
-                      ReadPreference.PRIMARY
-                    );
-                  }
+                  context: {
+                    headers: {
+                      'X-Parse-Session-Token': user1.getSessionToken(),
+                    },
+                  },
                 });
 
-              expect(foundGraphQLClassReadPreference).toBe(true);
-              expect(foundUserClassReadPreference).toBe(true);
+                let foundGraphQLClassReadPreference = false;
+                let foundUserClassReadPreference = false;
+                databaseAdapter.database.serverConfig.cursor.calls
+                  .all()
+                  .forEach(call => {
+                    if (
+                      call.args[0].ns.collection.indexOf('GraphQLClass') >= 0
+                    ) {
+                      foundGraphQLClassReadPreference = true;
+                      expect(call.args[0].options.readPreference.mode).toBe(
+                        ReadPreference.PRIMARY
+                      );
+                    } else if (
+                      call.args[0].ns.collection.indexOf('_User') >= 0
+                    ) {
+                      foundUserClassReadPreference = true;
+                      expect(call.args[0].options.readPreference.mode).toBe(
+                        ReadPreference.PRIMARY
+                      );
+                    }
+                  });
+
+                expect(foundGraphQLClassReadPreference).toBe(true);
+                expect(foundUserClassReadPreference).toBe(true);
+              } catch (e) {
+                handleError(e);
+              }
             });
 
             it('should support readPreference argument', async () => {
@@ -3137,7 +3145,10 @@ describe('ParseGraphQLServer', () => {
               await apolloClient.query({
                 query: gql`
                   query GetSomeObject($id: ID!) {
-                    graphQLClass(id: $id, readPreference: SECONDARY) {
+                    graphQLClass(
+                      id: $id
+                      options: { readPreference: SECONDARY }
+                    ) {
                       pointerToUser {
                         username
                       }
@@ -3193,8 +3204,10 @@ describe('ParseGraphQLServer', () => {
                   query GetSomeObject($id: ID!) {
                     graphQLClass(
                       id: $id
-                      readPreference: SECONDARY
-                      includeReadPreference: NEAREST
+                      options: {
+                        readPreference: SECONDARY
+                        includeReadPreference: NEAREST
+                      }
                     ) {
                       pointerToUser {
                         username
@@ -3904,7 +3917,9 @@ describe('ParseGraphQLServer', () => {
               await apolloClient.query({
                 query: gql`
                   query FindSomeObjects {
-                    find: graphQLClasses(readPreference: SECONDARY) {
+                    find: graphQLClasses(
+                      options: { readPreference: SECONDARY }
+                    ) {
                       results {
                         pointerToUser {
                           username
@@ -3958,8 +3973,10 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query FindSomeObjects {
                     graphQLClasses(
-                      readPreference: SECONDARY
-                      includeReadPreference: NEAREST
+                      options: {
+                        readPreference: SECONDARY
+                        includeReadPreference: NEAREST
+                      }
                     ) {
                       results {
                         pointerToUser {
@@ -4016,8 +4033,10 @@ describe('ParseGraphQLServer', () => {
                     query FindSomeObjects($where: GraphQLClassWhereInput) {
                       find: graphQLClasses(
                         where: $where
-                        readPreference: SECONDARY
-                        subqueryReadPreference: NEAREST
+                        options: {
+                          readPreference: SECONDARY
+                          subqueryReadPreference: NEAREST
+                        }
                       ) {
                         results {
                           id
