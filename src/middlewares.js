@@ -283,28 +283,28 @@ function decodeBase64(str) {
   return Buffer.from(str, 'base64').toString();
 }
 
-export function allowCrossDomain(req, res, next) {
-  const config = Config.get(
-    req.get('X-Parse-Application-Id', getMountForRequest(req))
-  );
-  let allowHeaders =
-    'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
-  if (config && config.allowHeaders) {
-    allowHeaders += `, ${config.allowHeaders.join(', ')}`;
-  }
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', allowHeaders);
-  res.header(
-    'Access-Control-Expose-Headers',
-    'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
-  );
-  // intercept OPTIONS method
-  if ('OPTIONS' == req.method) {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
+export function allowCrossDomain(appId) {
+  return (req, res, next) => {
+    const config = Config.get(appId, getMountForRequest(req));
+    let allowHeaders =
+      'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+    if (config && config.allowHeaders) {
+      allowHeaders += `, ${config.allowHeaders.join(', ')}`;
+    }
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', allowHeaders);
+    res.header(
+      'Access-Control-Expose-Headers',
+      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
+    );
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  };
 }
 
 export function allowMethodOverride(req, res, next) {
