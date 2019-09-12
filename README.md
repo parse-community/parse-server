@@ -418,10 +418,11 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 The easiest way to run the Parse GraphQL API is through the CLI:
 
-```
+```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground
+$ mkdir -p ./cloud && touch ./cloud/main.js # later, you can use this file to create cloud code functions
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://localhost:1337/parse --cloud ./cloud/main.js --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
@@ -432,12 +433,13 @@ After starting the server, you can visit http://localhost:1337/playground in you
 
 You can also run the Parse GraphQL API inside a Docker container:
 
-```
+```bash
 $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
+$ mkdir -p ./cloud && touch ./cloud/main.js # later, you can use this file to create cloud code functions
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --mountGraphQL --mountPlayground
+$ docker run --name my-parse-server --link my-mongo:mongo --volume $(pwd)/cloud:/parse-server/cloud -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --cloud /parse-server/cloud/main.js --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
