@@ -2,7 +2,27 @@
 
 ### master
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.8.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...master)
+
+### 3.9.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.8.0...3.9.0)
+- NEW: Add allowHeaders to Options [#6044](https://github.com/parse-community/parse-server/pull/6044). Thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
+- CHANGE: Introduce ReadOptionsInput to GraphQL API [#6030](https://github.com/parse-community/parse-server/pull/6030). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- NEW: Stream video with GridFSBucketAdapter (implements byte-range requests) [#6028](https://github.com/parse-community/parse-server/pull/6028). Thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: Aggregate not matching null values [#6043](https://github.com/parse-community/parse-server/pull/6043). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- CHANGE: Improve callCloudCode mutation to receive a CloudCodeFunction enum instead of a String in the GraphQL API [#6029](https://github.com/parse-community/parse-server/pull/6029). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- TEST: Add more tests to transactions [#6022](https://github.com/parse-community/parse-server/pull/6022). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- CHANGE: Pointer constraint input type as ID in the GraphQL API [#6020](https://github.com/parse-community/parse-server/pull/6020). Thanks to [Douglas Muraoka](https://github.com/douglasmuraoka)
+- CHANGE: Remove underline from operators of the GraphQL API [#6024](https://github.com/parse-community/parse-server/pull/6024). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- FIX: Make method async as expected in usage [#6025](https://github.com/parse-community/parse-server/pull/6025). Thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
+- DOC: Added breaking change note to 3.8 release [#6023](https://github.com/parse-community/parse-server/pull/6023). Thanks to [Manuel](https://github.com/mtrezza)
+- NEW: Added support for line auth [#6007](https://github.com/parse-community/parse-server/pull/6007). Thanks to [Saimoom Safayet Akash](https://github.com/saimoomsafayet)
+- FIX: Fix aggregate group id [#5994](https://github.com/parse-community/parse-server/pull/5994). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- CHANGE: Schema operations instead of generic operations in the GraphQL API [#5993](https://github.com/parse-community/parse-server/pull/5993). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- DOC: Fix changelog formatting[#6009](https://github.com/parse-community/parse-server/pull/6009). Thanks to [Tom Fox](https://github.com/TomWFox)
+- CHANGE: Rename objectId to id in the GraphQL API [#5985](https://github.com/parse-community/parse-server/pull/5985). Thanks to [Douglas Muraoka](https://github.com/douglasmuraoka)
+- FIX: Fix beforeLogin trigger when user has a file [#6001](https://github.com/parse-community/parse-server/pull/6001). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
+- DOC: Update GraphQL Docs with the latest changes [#5980](https://github.com/parse-community/parse-server/pull/5980). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
 ### 3.8.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.2...3.8.0)
