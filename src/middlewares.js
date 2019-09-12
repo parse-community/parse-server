@@ -5,6 +5,9 @@ import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 
+export const DEFAULT_ALLOWED_HEADERS =
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+
 const getMountForRequest = function(req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
@@ -286,8 +289,7 @@ function decodeBase64(str) {
 export function allowCrossDomain(appId) {
   return (req, res, next) => {
     const config = Config.get(appId, getMountForRequest(req));
-    let allowHeaders =
-      'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+    let allowHeaders = DEFAULT_ALLOWED_HEADERS;
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
