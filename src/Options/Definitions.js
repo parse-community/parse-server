@@ -17,6 +17,11 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  allowHeaders: {
+    env: 'PARSE_SERVER_ALLOW_HEADERS',
+    help: 'Add headers to Access-Control-Allow-Headers',
+    action: parsers.arrayParser,
+  },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
     help: 'Adapter module for the analytics',
