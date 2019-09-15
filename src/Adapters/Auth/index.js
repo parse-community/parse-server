@@ -20,6 +20,7 @@ const wechat = require('./wechat');
 const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
+const microsoft = require('./microsoft');
 
 const anonymous = {
   validateAuthData: () => {
@@ -51,6 +52,7 @@ const providers = {
   wechat,
   weibo,
   phantauth,
+  microsoft,
 };
 
 function authDataValidator(adapter, appIds, options) {
