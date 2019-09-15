@@ -6,7 +6,7 @@ const httpsRequest = require('./httpsRequest');
 function validateAuthData(authData) {
   return request('me', authData.access_token).then(
     response => {
-      if (response && response.mail && response.mail == authData.id) {
+      if (response && response.id && response.id == authData.id && response.mail && response.mail == authData.mail) {
         return;
       }
       throw new Parse.Error(
