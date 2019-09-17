@@ -15,6 +15,7 @@ const responses = {
   weibo: { uid: 'userId' },
   qq: 'callback( {"openid":"userId"} );', // yes it's like that, run eval in the client :P
   phantauth: { sub: 'userId' },
+  microsoft: { id: 'userId', mail: 'userMail' },
 };
 
 describe('AuthenticationProviders', function() {
@@ -37,7 +38,8 @@ describe('AuthenticationProviders', function() {
     'wechat',
     'weibo',
     'phantauth',
-  ].map(function(providerName) {
+    'microsoft',
+  ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
@@ -1192,5 +1194,19 @@ describe('phant auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('PhantAuth auth is invalid for this user.');
     }
+  });
+});
+
+describe('microsoft graph auth adapter', () => {
+  const microsoft = require('../lib/Adapters/Auth/microsoft');
+
+  it('should use access_token for validation is passed and responds with id and mail', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId', mail: 'userMail' });
+    });
+    const result = await microsoft.validateAuthData(
+      { id: 'userId', access_token: 'the_token' }
+    );
+    expect(result).toEqual(fakeClaim);
   });
 });
