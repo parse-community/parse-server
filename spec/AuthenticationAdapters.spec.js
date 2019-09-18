@@ -1199,16 +1199,14 @@ describe('phant auth adapter', () => {
 
 describe('microsoft graph auth adapter', () => {
   const microsoft = require('../lib/Adapters/Auth/microsoft');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
   it('should use access_token for validation is passed and responds with id and mail', async () => {
-    const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
-    const fakeClaim = { id: 'userId', mail: 'userMail' };
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve(fakeClaim);
+      return Promise.resolve({ id: 'userId', mail: 'userMail' });
     });
-    const result = await microsoft.validateAuthData(
+    await microsoft.validateAuthData(
       { id: 'userId', access_token: 'the_token' }
     );
-    expect(result).toEqual(fakeClaim);
   });
 });
