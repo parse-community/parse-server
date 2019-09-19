@@ -7,14 +7,12 @@ describe('Microsoft Auth', () => {
       mail: 'fake@mail.com',
       access_token: 'very.long.bad.token',
     };
-    try {
-      microsoft.validateAuthData(
-        authData
+    microsoft.validateAuthData(authData).then(done.fail, err => {
+      expect(err.code).toBe(101);
+      expect(err.message).toBe(
+        'Microsoft Graph auth is invalid for this user.'
       );
-    } catch (error) {
-      jequal(error.code, 101);
-      jequal(error.message, 'Microsoft Graph auth is invalid for this user.');
       done();
-    }
+    });
   });
 });
