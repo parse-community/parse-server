@@ -163,7 +163,7 @@ cat > ./package.json << EOF
     "start": "parse-server config.json"
   },
   "dependencies": {
-    "parse-server": "^2.0.0"
+    "parse-server": "^3.9.0"
   }
 }
 EOF
