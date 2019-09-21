@@ -1,5 +1,5 @@
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
-import * as objectsMutations from '../loaders/objectsMutations';
+import * as objectsMutations from '../helpers/objectsMutations';
 
 const transformTypes = async (
   inputType: 'create' | 'update',
@@ -77,37 +77,25 @@ const transformers = {
   ACL: value => {
     const parseACL = {};
     if (value.public) {
-      parseACL['*'] = {};
-      if (value.public.read) parseACL['*'].read = value.public.read;
-      if (value.public.write) {
-        parseACL['*'] = {
-          read: true,
-          write: true,
-        };
-      }
+      parseACL['*'] = {
+        read: value.public.read,
+        write: value.public.write,
+      };
     }
     if (value.users) {
       value.users.forEach(rule => {
-        parseACL[rule.userId] = {};
-        if (rule.read) parseACL[rule.userId].read = rule.read;
-        if (rule.write) {
-          parseACL[rule.userId] = {
-            read: true,
-            write: true,
-          };
-        }
+        parseACL[rule.userId] = {
+          read: rule.read,
+          write: rule.write,
+        };
       });
     }
     if (value.roles) {
       value.roles.forEach(rule => {
-        parseACL[`role:${rule.roleName}`] = {};
-        if (rule.read) parseACL[`role:${rule.roleName}`].read = rule.read;
-        if (rule.write) {
-          parseACL[`role:${rule.roleName}`] = {
-            read: true,
-            write: true,
-          };
-        }
+        parseACL[`role:${rule.roleName}`] = {
+          read: rule.read,
+          write: rule.write,
+        };
       });
     }
     return parseACL;

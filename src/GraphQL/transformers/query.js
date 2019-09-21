@@ -1,54 +1,54 @@
-const parseMap = {
+const parseQueryMap = {
   id: 'objectId',
-  _or: '$or',
-  _and: '$and',
-  _nor: '$nor',
-  _relatedTo: '$relatedTo',
-  _eq: '$eq',
-  _ne: '$ne',
-  _lt: '$lt',
-  _lte: '$lte',
-  _gt: '$gt',
-  _gte: '$gte',
-  _in: '$in',
-  _nin: '$nin',
-  _exists: '$exists',
-  _select: '$select',
-  _dontSelect: '$dontSelect',
-  _inQuery: '$inQuery',
-  _notInQuery: '$notInQuery',
-  _containedBy: '$containedBy',
-  _all: '$all',
-  _regex: '$regex',
-  _options: '$options',
-  _text: '$text',
-  _search: '$search',
-  _term: '$term',
-  _language: '$language',
-  _caseSensitive: '$caseSensitive',
-  _diacriticSensitive: '$diacriticSensitive',
-  _nearSphere: '$nearSphere',
-  _maxDistance: '$maxDistance',
-  _maxDistanceInRadians: '$maxDistanceInRadians',
-  _maxDistanceInMiles: '$maxDistanceInMiles',
-  _maxDistanceInKilometers: '$maxDistanceInKilometers',
-  _within: '$within',
-  _box: '$box',
-  _geoWithin: '$geoWithin',
-  _polygon: '$polygon',
-  _centerSphere: '$centerSphere',
-  _geoIntersects: '$geoIntersects',
-  _point: '$point',
+  OR: '$or',
+  AND: '$and',
+  NOR: '$nor',
 };
 
-const transformQueryInputToParse = (
+const parseConstraintMap = {
+  equalTo: '$eq',
+  notEqualTo: '$ne',
+  lessThan: '$lt',
+  lessThanOrEqualTo: '$lte',
+  greaterThan: '$gt',
+  greaterThanOrEqualTo: '$gte',
+  in: '$in',
+  notIn: '$nin',
+  exists: '$exists',
+  inQueryKey: '$select',
+  notInQueryKey: '$dontSelect',
+  inQuery: '$inQuery',
+  notInQuery: '$notInQuery',
+  containedBy: '$containedBy',
+  contains: '$all',
+  matchesRegex: '$regex',
+  options: '$options',
+  text: '$text',
+  search: '$search',
+  term: '$term',
+  language: '$language',
+  caseSensitive: '$caseSensitive',
+  diacriticSensitive: '$diacriticSensitive',
+  nearSphere: '$nearSphere',
+  maxDistance: '$maxDistance',
+  maxDistanceInRadians: '$maxDistanceInRadians',
+  maxDistanceInMiles: '$maxDistanceInMiles',
+  maxDistanceInKilometers: '$maxDistanceInKilometers',
+  within: '$within',
+  box: '$box',
+  geoWithin: '$geoWithin',
+  polygon: '$polygon',
+  centerSphere: '$centerSphere',
+  geoIntersects: '$geoIntersects',
+  point: '$point',
+};
+
+const transformQueryConstraintInputToParse = (
   constraints,
+  fields,
   parentFieldName,
   parentConstraints
 ) => {
-  if (!constraints || typeof constraints !== 'object') {
-    return;
-  }
   Object.keys(constraints).forEach(fieldName => {
     let fieldValue = constraints[fieldName];
 
@@ -59,13 +59,13 @@ const transformQueryInputToParse = (
      *   From:
      *   {
      *     "someField": {
-     *       "_lt": {
-     *         "_key":"foo.bar",
-     *         "_value": 100
+     *       "lessThan": {
+     *         "key":"foo.bar",
+     *         "value": 100
      *       },
-     *       "_gt": {
-     *         "_key":"foo.bar",
-     *         "_value": 10
+     *       "greaterThan": {
+     *         "key":"foo.bar",
+     *         "value": 10
      *       }
      *     }
      *   }
@@ -79,20 +79,35 @@ const transformQueryInputToParse = (
      *   }
      */
     if (
-      fieldValue._key &&
-      fieldValue._value &&
+      fieldValue.key &&
+      fieldValue.value &&
       parentConstraints &&
       parentFieldName
     ) {
       delete parentConstraints[parentFieldName];
-      parentConstraints[`${parentFieldName}.${fieldValue._key}`] = {
-        ...parentConstraints[`${parentFieldName}.${fieldValue._key}`],
-        [parseMap[fieldName]]: fieldValue._value,
+      parentConstraints[`${parentFieldName}.${fieldValue.key}`] = {
+        ...parentConstraints[`${parentFieldName}.${fieldValue.key}`],
+        [parseConstraintMap[fieldName]]: fieldValue.value,
       };
-    } else if (parseMap[fieldName]) {
+    } else if (parseConstraintMap[fieldName]) {
       delete constraints[fieldName];
-      fieldName = parseMap[fieldName];
+      fieldName = parseConstraintMap[fieldName];
       constraints[fieldName] = fieldValue;
+
+      // If parent field type is Pointer, changes constraint value to format expected
+      // by Parse.
+      if (
+        fields[parentFieldName] &&
+        fields[parentFieldName].type === 'Pointer' &&
+        typeof fieldValue === 'string'
+      ) {
+        const { targetClass } = fields[parentFieldName];
+        constraints[fieldName] = {
+          __type: 'Pointer',
+          className: targetClass,
+          objectId: fieldValue,
+        };
+      }
     }
     switch (fieldName) {
       case '$point':
@@ -147,9 +162,50 @@ const transformQueryInputToParse = (
         break;
     }
     if (typeof fieldValue === 'object') {
-      transformQueryInputToParse(fieldValue, fieldName, constraints);
+      if (fieldName === 'where') {
+        transformQueryInputToParse(fieldValue);
+      } else {
+        transformQueryConstraintInputToParse(
+          fieldValue,
+          fields,
+          fieldName,
+          constraints
+        );
+      }
     }
   });
 };
 
-export { transformQueryInputToParse };
+const transformQueryInputToParse = (constraints, fields) => {
+  if (!constraints || typeof constraints !== 'object') {
+    return;
+  }
+
+  Object.keys(constraints).forEach(fieldName => {
+    const fieldValue = constraints[fieldName];
+
+    if (parseQueryMap[fieldName]) {
+      delete constraints[fieldName];
+      fieldName = parseQueryMap[fieldName];
+      constraints[fieldName] = fieldValue;
+
+      if (fieldName !== 'objectId') {
+        fieldValue.forEach(fieldValueItem => {
+          transformQueryInputToParse(fieldValueItem, fields);
+        });
+        return;
+      }
+    }
+
+    if (typeof fieldValue === 'object') {
+      transformQueryConstraintInputToParse(
+        fieldValue,
+        fields,
+        fieldName,
+        constraints
+      );
+    }
+  });
+};
+
+export { transformQueryConstraintInputToParse, transformQueryInputToParse };

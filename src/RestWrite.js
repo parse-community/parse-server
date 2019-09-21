@@ -872,7 +872,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   return this.createSessionToken();
 };
 
-RestWrite.prototype.createSessionToken = function() {
+RestWrite.prototype.createSessionToken = async function() {
   // cloud installationId from Cloud Code,
   // never create session tokens from there.
   if (this.auth.installationId && this.auth.installationId === 'cloud') {

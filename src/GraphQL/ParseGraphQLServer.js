@@ -33,6 +33,7 @@ class ParseGraphQLServer {
       databaseController: this.parseServer.config.databaseController,
       log: this.log,
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
+      appId: this.parseServer.config.appId,
     });
   }
 

@@ -148,6 +148,29 @@ export function getFunction(functionName, applicationId) {
   return get(Category.Functions, functionName, applicationId);
 }
 
+export function getFunctionNames(applicationId) {
+  const store =
+    (_triggerStore[applicationId] &&
+      _triggerStore[applicationId][Category.Functions]) ||
+    {};
+  const functionNames = [];
+  const extractFunctionNames = (namespace, store) => {
+    Object.keys(store).forEach(name => {
+      const value = store[name];
+      if (namespace) {
+        name = `${namespace}.${name}`;
+      }
+      if (typeof value === 'function') {
+        functionNames.push(name);
+      } else {
+        extractFunctionNames(name, value);
+      }
+    });
+  };
+  extractFunctionNames(null, store);
+  return functionNames;
+}
+
 export function getJob(jobName, applicationId) {
   return get(Category.Jobs, jobName, applicationId);
 }

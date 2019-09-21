@@ -298,10 +298,62 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    middlewares.allowCrossDomain({}, res, () => {});
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain(fakeReq, res, () => {});
     expect(Object.keys(headers).length).toBe(4);
     expect(headers['Access-Control-Expose-Headers']).toBe(
       'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
+    );
+  });
+
+  it('should set default Access-Control-Allow-Headers if allowHeaders are empty', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowHeaders: undefined,
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Headers']).toContain(
+      middlewares.DEFAULT_ALLOWED_HEADERS
+    );
+
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowHeaders: [],
+    });
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Headers']).toContain(
+      middlewares.DEFAULT_ALLOWED_HEADERS
+    );
+  });
+
+  it('should append custom headers to Access-Control-Allow-Headers if allowHeaders provided', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowHeaders: ['Header-1', 'Header-2'],
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Headers']).toContain(
+      'Header-1, Header-2'
+    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(
+      middlewares.DEFAULT_ALLOWED_HEADERS
     );
   });
 });

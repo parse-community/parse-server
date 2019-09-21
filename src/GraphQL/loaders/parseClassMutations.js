@@ -5,8 +5,8 @@ import {
   extractKeysAndInclude,
   getParseClassMutationConfig,
 } from '../parseGraphQLUtils';
-import * as objectsMutations from './objectsMutations';
-import * as objectsQueries from './objectsQueries';
+import * as objectsMutations from '../helpers/objectsMutations';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformTypes } from '../transformers/mutation';

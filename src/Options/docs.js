@@ -2,6 +2,7 @@
  * @interface ParseServerOptions
  * @property {Any} accountLockout account lockout policy for failed login attempts
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
+ * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
