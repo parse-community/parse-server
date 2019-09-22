@@ -21,6 +21,7 @@ import { toGraphQLError } from './parseGraphQLUtils';
 import * as schemaDirectives from './loaders/schemaDirectives';
 import * as schemaTypes from './loaders/schemaTypes';
 import { getFunctionNames } from '../triggers';
+import * as defaultRelaySchema from './loaders/defaultRelaySchema';
 
 const RESERVED_GRAPHQL_TYPE_NAMES = [
   'String',
@@ -126,6 +127,7 @@ class ParseGraphQLSchema {
     this.relayNodeInterface = null;
 
     defaultGraphQLTypes.load(this);
+    defaultRelaySchema.load(this);
     schemaTypes.load(this);
 
     this._getParseClassesWithConfig(parseClasses, parseGraphQLConfig).forEach(

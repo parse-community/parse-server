@@ -1,4 +1,5 @@
 import { GraphQLNonNull } from 'graphql';
+import { fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import {
@@ -125,7 +126,7 @@ const load = function(
     parseGraphQLSchema.addGraphQLMutation(updateGraphQLMutationName, {
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
       args: {
-        id: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
         fields: {
           description: 'These are the fields used to update the object.',
           type: classGraphQLUpdateType || defaultGraphQLTypes.OBJECT,
@@ -136,8 +137,15 @@ const load = function(
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { id, fields } = args;
+          let { id } = args;
+          const { fields } = args;
           const { config, auth, info } = context;
+
+          const globalIdObject = fromGlobalId(id);
+
+          if (globalIdObject.type === className) {
+            id = globalIdObject.id;
+          }
 
           const parseFields = await transformTypes('update', fields, {
             className,
@@ -194,17 +202,23 @@ const load = function(
     parseGraphQLSchema.addGraphQLMutation(deleteGraphQLMutationName, {
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
       args: {
-        id: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
       },
       type: new GraphQLNonNull(
         classGraphQLOutputType || defaultGraphQLTypes.OBJECT
       ),
       async resolve(_source, args, context, mutationInfo) {
         try {
-          const { id } = args;
+          let { id } = args;
           const { config, auth, info } = context;
           const selectedFields = getFieldNames(mutationInfo);
           const { keys, include } = extractKeysAndInclude(selectedFields);
+
+          const globalIdObject = fromGlobalId(id);
+
+          if (globalIdObject.type === className) {
+            id = globalIdObject.id;
+          }
 
           let optimizedObject = {};
           const splitedKeys = keys.split(',');

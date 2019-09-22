@@ -402,10 +402,15 @@ const CLASS_NAME_ATT = {
   type: new GraphQLNonNull(GraphQLString),
 };
 
+const GLOBAL_OR_OBJECT_ID_ATT = {
+  description:
+    'This is the object id. You can use either the global or the object id.',
+  type: OBJECT_ID,
+};
+
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: OBJECT_ID,
-  resolve: ({ objectId }) => objectId,
 };
 
 const CREATED_AT_ATT = {
@@ -428,7 +433,7 @@ const INPUT_FIELDS = {
 };
 
 const CREATE_RESULT_FIELDS = {
-  id: OBJECT_ID_ATT,
+  objectId: OBJECT_ID_ATT,
   createdAt: CREATED_AT_ATT,
 };
 
@@ -1073,7 +1078,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
-  parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
 };
 
 export {
@@ -1101,6 +1105,7 @@ export {
   POLYGON,
   OBJECT_ID,
   CLASS_NAME_ATT,
+  GLOBAL_OR_OBJECT_ID_ATT,
   OBJECT_ID_ATT,
   UPDATED_AT_ATT,
   CREATED_AT_ATT,

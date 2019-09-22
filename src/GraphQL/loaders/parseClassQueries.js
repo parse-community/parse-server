@@ -1,4 +1,5 @@
 import { GraphQLNonNull } from 'graphql';
+import { fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
@@ -14,10 +15,17 @@ const getParseClassQueryConfig = function(
 };
 
 const getQuery = async (className, _source, args, context, queryInfo) => {
-  const { id, options } = args;
+  let { id } = args;
+  const { options } = args;
   const { readPreference, includeReadPreference } = options || {};
   const { config, auth, info } = context;
   const selectedFields = getFieldNames(queryInfo);
+
+  const globalIdObject = fromGlobalId(id);
+
+  if (globalIdObject.type === className) {
+    id = globalIdObject.id;
+  }
 
   const { keys, include } = extractKeysAndInclude(selectedFields);
 
@@ -58,7 +66,7 @@ const load = function(
     parseGraphQLSchema.addGraphQLQuery(getGraphQLQueryName, {
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
-        id: defaultGraphQLTypes.OBJECT_ID_ATT,
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
         options: defaultGraphQLTypes.READ_OPTIONS_ATT,
       },
       type: new GraphQLNonNull(

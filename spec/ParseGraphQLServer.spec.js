@@ -621,7 +621,7 @@ describe('ParseGraphQLServer', () => {
           expect(classType.fields.map(field => field.name).sort()).toEqual([
             'ACL',
             'createdAt',
-            'id',
+            'objectId',
             'updatedAt',
           ]);
         });
@@ -1265,6 +1265,7 @@ describe('ParseGraphQLServer', () => {
                 query GetSuperCar($id: ID!) {
                   superCar(id: $id) {
                     id
+                    objectId
                     engine
                     doors
                     price
@@ -1283,6 +1284,7 @@ describe('ParseGraphQLServer', () => {
               query GetSuperCar($id: ID!) {
                 superCar(id: $id) {
                   id
+                  objectId
                   engine
                   doors
                   price
@@ -1327,6 +1329,7 @@ describe('ParseGraphQLServer', () => {
               query GetSuperCar($id: ID!) {
                 superCar(id: $id) {
                   id
+                  objectId
                 }
               }
             `,
@@ -1334,7 +1337,7 @@ describe('ParseGraphQLServer', () => {
               id: superCar.id,
             },
           })).data.superCar;
-          expect(getSuperCar.id).toBe(superCar.id);
+          expect(getSuperCar.objectId).toBe(superCar.id);
         });
 
         it('should only allow the supplied constraint fields for a class', async () => {
@@ -2644,6 +2647,7 @@ describe('ParseGraphQLServer', () => {
                 query GetCustomer($id: ID!) {
                   customer(id: $id) {
                     id
+                    objectId
                     someField
                     createdAt
                     updatedAt
@@ -2655,7 +2659,7 @@ describe('ParseGraphQLServer', () => {
               },
             })).data.customer;
 
-            expect(result.id).toEqual(obj.id);
+            expect(result.objectId).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
             expect(new Date(result.createdAt)).toEqual(obj.createdAt);
             expect(new Date(result.updatedAt)).toEqual(obj.updatedAt);
@@ -2685,10 +2689,10 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query GetCustomer($id: ID!) {
                     customer(id: $id) {
-                      id
+                      objectId
                       manyRelations {
                         ... on Customer {
-                          id
+                          objectId
                           someCustomerField
                           arrayField {
                             ... on Element {
@@ -2697,7 +2701,7 @@ describe('ParseGraphQLServer', () => {
                           }
                         }
                         ... on SomeClass {
-                          id
+                          objectId
                           someClassField
                         }
                       }
@@ -2711,14 +2715,14 @@ describe('ParseGraphQLServer', () => {
                 },
               })).data.customer;
 
-              expect(result.id).toEqual(obj3.id);
+              expect(result.objectId).toEqual(obj3.id);
               expect(result.manyRelations.length).toEqual(2);
 
               const customerSubObject = result.manyRelations.find(
-                o => o.id === obj1.id
+                o => o.objectId === obj1.id
               );
               const someClassSubObject = result.manyRelations.find(
-                o => o.id === obj2.id
+                o => o.objectId === obj2.id
               );
 
               expect(customerSubObject).toBeDefined();
@@ -2769,28 +2773,28 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query DeepComplexGraphQLQuery($id: ID!) {
                     country(id: $id) {
-                      id
+                      objectId
                       name
                       companies {
                         ... on Company {
-                          id
+                          objectId
                           name
                           employees {
                             ... on Employee {
-                              id
+                              objectId
                               name
                             }
                           }
                           teams {
                             ... on Team {
-                              id
+                              objectId
                               name
                               employees {
                                 ... on Employee {
-                                  id
+                                  objectId
                                   name
                                   country {
-                                    id
+                                    objectId
                                     name
                                   }
                                 }
@@ -2808,33 +2812,33 @@ describe('ParseGraphQLServer', () => {
               })).data.country;
 
               const expectedResult = {
-                id: obj4.id,
+                objectId: obj4.id,
                 name: 'imACountry',
                 __typename: 'Country',
                 companies: [
                   {
-                    id: obj3.id,
+                    objectId: obj3.id,
                     name: 'imACompany',
                     __typename: 'Company',
                     employees: [
                       {
-                        id: obj1.id,
+                        objectId: obj1.id,
                         name: 'imAnEmployee',
                         __typename: 'Employee',
                       },
                     ],
                     teams: [
                       {
-                        id: obj2.id,
+                        objectId: obj2.id,
                         name: 'imATeam',
                         __typename: 'Team',
                         employees: [
                           {
-                            id: obj1.id,
+                            objectId: obj1.id,
                             name: 'imAnEmployee',
                             __typename: 'Employee',
                             country: {
-                              id: obj4.id,
+                              objectId: obj4.id,
                               name: 'imACountry',
                               __typename: 'Country',
                             },
@@ -3265,7 +3269,7 @@ describe('ParseGraphQLServer', () => {
                 query FindCustomer {
                   customers {
                     results {
-                      id
+                      objectId
                       someField
                       createdAt
                       updatedAt
@@ -3278,8 +3282,8 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.customers.results.length).toEqual(2);
 
             result.data.customers.results.forEach(resultObj => {
-              const obj = resultObj.id === obj1.id ? obj1 : obj2;
-              expect(resultObj.id).toEqual(obj.id);
+              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
+              expect(resultObj.objectId).toEqual(obj.id);
               expect(resultObj.someField).toEqual(obj.get('someField'));
               expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
               expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
@@ -3508,7 +3512,7 @@ describe('ParseGraphQLServer', () => {
                   ) {
                     fullTextSearchTests(where: $where) {
                       results {
-                        id
+                        objectId
                       }
                     }
                   }
@@ -3531,9 +3535,9 @@ describe('ParseGraphQLServer', () => {
                 },
               });
 
-              expect(result.data.fullTextSearchTests.results[0].id).toEqual(
-                obj.id
-              );
+              expect(
+                result.data.fullTextSearchTests.results[0].objectId
+              ).toEqual(obj.id);
             } catch (e) {
               handleError(e);
             }
@@ -4104,6 +4108,7 @@ describe('ParseGraphQLServer', () => {
                 mutation CreateCustomer($fields: CreateCustomerFieldsInput) {
                   createCustomer(fields: $fields) {
                     id
+                    objectId
                     createdAt
                     someField
                   }
@@ -4120,7 +4125,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.data.createCustomer.someField).toEqual('someValue');
 
             const customer = await new Parse.Query('Customer').get(
-              result.data.createCustomer.id
+              result.data.createCustomer.objectId
             );
 
             expect(customer.createdAt).toEqual(
@@ -4265,6 +4270,7 @@ describe('ParseGraphQLServer', () => {
                 ) {
                   updateCustomer(id: $id, fields: $fields) {
                     id
+                    objectId
                   }
                 }
               `,
@@ -4276,7 +4282,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.updateCustomer.id).toEqual(obj.id);
+            expect(result.data.updateCustomer.objectId).toEqual(obj.id);
 
             await obj.fetch();
 
@@ -4655,6 +4661,7 @@ describe('ParseGraphQLServer', () => {
                 mutation DeleteCustomer($id: ID!) {
                   deleteCustomer(id: $id) {
                     id
+                    objectId
                     someField1
                     someField2
                   }
@@ -4665,7 +4672,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.deleteCustomer.id).toEqual(obj.id);
+            expect(result.data.deleteCustomer.objectId).toEqual(obj.id);
             expect(result.data.deleteCustomer.someField1).toEqual(
               'someField1Value1'
             );
@@ -4690,7 +4697,7 @@ describe('ParseGraphQLServer', () => {
                     $id: ID!
                   ) {
                     delete: delete${className}(id: $id) {
-                      id
+                      objectId
                     }
                   }
                 `,
@@ -4727,7 +4734,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(
               (await deleteObject(object4.className, object4.id)).data.delete
-            ).toEqual({ id: object4.id, __typename: 'PublicClass' });
+            ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4735,7 +4742,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
               })).data.delete
-            ).toEqual({ id: object1.id, __typename: 'GraphQLClass' });
+            ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4743,7 +4750,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
               })).data.delete
-            ).toEqual({ id: object2.id, __typename: 'GraphQLClass' });
+            ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4751,7 +4758,7 @@ describe('ParseGraphQLServer', () => {
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
               })).data.delete
-            ).toEqual({ id: object3.id, __typename: 'GraphQLClass' });
+            ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object3.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
@@ -4769,7 +4776,7 @@ describe('ParseGraphQLServer', () => {
                     $id: ID!
                   ) {
                     delete${className}(id: $id) {
-                      id
+                      objectId
                     }
                   }
                 `,
@@ -4807,7 +4814,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object4.className, object4.id)).data[
                 `delete${object4.className}`
-              ].id
+              ].objectId
             ).toEqual(object4.id);
             await expectAsync(
               object4.fetch({ useMasterKey: true })
@@ -4815,7 +4822,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
-              })).data[`delete${object1.className}`].id
+              })).data[`delete${object1.className}`].objectId
             ).toEqual(object1.id);
             await expectAsync(
               object1.fetch({ useMasterKey: true })
@@ -4823,7 +4830,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data[`delete${object2.className}`].id
+              })).data[`delete${object2.className}`].objectId
             ).toEqual(object2.id);
             await expectAsync(
               object2.fetch({ useMasterKey: true })
@@ -4831,7 +4838,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data[`delete${object3.className}`].id
+              })).data[`delete${object3.className}`].objectId
             ).toEqual(object3.id);
             await expectAsync(
               object3.fetch({ useMasterKey: true })
@@ -4958,6 +4965,7 @@ describe('ParseGraphQLServer', () => {
               query GetCurrentUser {
                 viewer {
                   id
+                  objectId
                   sessionToken
                   userFoo {
                     bar
@@ -4972,8 +4980,12 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const { id, sessionToken, userFoo: resultFoo } = result.data.viewer;
-          expect(id).toEqual(user.id);
+          const {
+            objectId,
+            sessionToken,
+            userFoo: resultFoo,
+          } = result.data.viewer;
+          expect(objectId).toEqual(user.id);
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
           expect(resultFoo.bar).toEqual('hello');
@@ -5852,8 +5864,10 @@ describe('ParseGraphQLServer', () => {
               mutation Create($fields: CreateCountryFieldsInput) {
                 createCountry(fields: $fields) {
                   id
+                  objectId
                   company {
                     id
+                    objectId
                     name
                   }
                 }
@@ -5868,7 +5882,7 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result.id).toBeDefined();
-          expect(result.company.id).toEqual(company2.id);
+          expect(result.company.objectId).toEqual(company2.id);
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -5938,8 +5952,10 @@ describe('ParseGraphQLServer', () => {
               mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
                 updateCountry(id: $id, fields: $fields) {
                   id
+                  objectId
                   company {
                     id
+                    objectId
                     name
                   }
                 }
@@ -5954,7 +5970,7 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result.id).toBeDefined();
-          expect(result.company.id).toEqual(company2.id);
+          expect(result.company.objectId).toEqual(company2.id);
           expect(result.company.name).toEqual('imACompany2');
         });
 
@@ -6022,10 +6038,12 @@ describe('ParseGraphQLServer', () => {
                 mutation CreateCountry($fields: CreateCountryFieldsInput) {
                   createCountry(fields: $fields) {
                     id
+                    objectId
                     name
                     companies {
                       results {
                         id
+                        objectId
                         name
                       }
                     }
@@ -6054,7 +6072,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.name).toEqual('imACountry2');
             expect(result.companies.results.length).toEqual(3);
             expect(
-              result.companies.results.some(o => o.id === company.id)
+              result.companies.results.some(o => o.objectId === company.id)
             ).toBeTruthy();
             expect(
               result.companies.results.some(o => o.name === 'imACompany2')
@@ -6179,9 +6197,11 @@ describe('ParseGraphQLServer', () => {
                 ) {
                   updateCountry(id: $id, fields: $fields) {
                     id
+                    objectId
                     companies {
                       results {
                         id
+                        objectId
                         name
                       }
                     }
@@ -6204,16 +6224,16 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.id).toEqual(country.id);
+            expect(result.objectId).toEqual(country.id);
             expect(result.companies.results.length).toEqual(2);
             expect(
-              result.companies.results.some(o => o.id === company2.id)
+              result.companies.results.some(o => o.objectId === company2.id)
             ).toBeTruthy();
             expect(
               result.companies.results.some(o => o.name === 'imACompany3')
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.id === company1.id)
+              result.companies.results.some(o => o.objectId === company1.id)
             ).toBeFalsy();
           }
         );
@@ -6308,9 +6328,11 @@ describe('ParseGraphQLServer', () => {
               query getCountry($id: ID!) {
                 country(id: $id) {
                   id
+                  objectId
                   companies {
                     results {
                       id
+                      objectId
                       name
                     }
                     count
@@ -6323,13 +6345,13 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(result1.id).toEqual(country.id);
+          expect(result1.objectId).toEqual(country.id);
           expect(result1.companies.results.length).toEqual(2);
           expect(
-            result1.companies.results.some(o => o.id === company1.id)
+            result1.companies.results.some(o => o.objectId === company1.id)
           ).toBeTruthy();
           expect(
-            result1.companies.results.some(o => o.id === company2.id)
+            result1.companies.results.some(o => o.objectId === company2.id)
           ).toBeTruthy();
 
           // With where
@@ -6340,9 +6362,11 @@ describe('ParseGraphQLServer', () => {
               query getCountry($id: ID!, $where: CompanyWhereInput) {
                 country(id: $id) {
                   id
+                  objectId
                   companies(where: $where) {
                     results {
                       id
+                      objectId
                       name
                     }
                   }
@@ -6356,9 +6380,9 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          expect(result2.id).toEqual(country.id);
+          expect(result2.objectId).toEqual(country.id);
           expect(result2.companies.results.length).toEqual(1);
-          expect(result2.companies.results[0].id).toEqual(company1.id);
+          expect(result2.companies.results[0].objectId).toEqual(company1.id);
         });
 
         it('should support files', async () => {
@@ -7313,7 +7337,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($id: ID!) {
                 get: user(id: $id) {
-                  id
+                  objectId
                 }
               }
             `,
@@ -7322,7 +7346,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.id).toEqual(user.id);
+          expect(getResult.data.get.objectId).toEqual(user.id);
         });
 
         it('should support Installation class', async () => {
@@ -7337,7 +7361,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($id: ID!) {
                 get: installation(id: $id) {
-                  id
+                  objectId
                 }
               }
             `,
@@ -7346,7 +7370,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.id).toEqual(installation.id);
+          expect(getResult.data.get.objectId).toEqual(installation.id);
         });
 
         it('should support Role class', async () => {
@@ -7361,7 +7385,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($id: ID!) {
                 get: role(id: $id) {
-                  id
+                  objectId
                 }
               }
             `,
@@ -7370,7 +7394,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.id).toEqual(role.id);
+          expect(getResult.data.get.objectId).toEqual(role.id);
         });
 
         it('should support Session class', async () => {
@@ -7387,6 +7411,7 @@ describe('ParseGraphQLServer', () => {
               query GetSomeObject($id: ID!) {
                 get: session(id: $id) {
                   id
+                  objectId
                 }
               }
             `,
@@ -7400,7 +7425,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.id).toEqual(session.id);
+          expect(getResult.data.get.objectId).toEqual(session.id);
         });
 
         it('should support Product class', async () => {
@@ -7423,7 +7448,7 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetSomeObject($id: ID!) {
                 get: product(id: $id) {
-                  id
+                  objectId
                 }
               }
             `,
@@ -7437,7 +7462,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          expect(getResult.data.get.id).toEqual(product.id);
+          expect(getResult.data.get.objectId).toEqual(product.id);
         });
       });
     });

@@ -7,6 +7,7 @@ import {
   GraphQLNonNull,
   GraphQLEnumType,
 } from 'graphql';
+import { globalIdField } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from '../helpers/objectsQueries';
@@ -30,9 +31,7 @@ const getInputFieldsAndConstraints = function(
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
-  const classFields = Object.keys(parseClass.fields)
-    .filter(field => field !== 'objectId')
-    .concat('id');
+  const classFields = Object.keys(parseClass.fields).concat('id');
   const {
     inputFields: allowedInputFields,
     outputFields: allowedOutputFields,
@@ -48,8 +47,9 @@ const getInputFieldsAndConstraints = function(
 
   // All allowed customs fields
   const classCustomFields = classFields.filter(field => {
-    return !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(
-      field
+    return (
+      !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(field) &&
+      field !== 'id'
     );
   });
 
@@ -370,6 +370,14 @@ const load = (
   };
 
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
+  const interfaces = [
+    defaultGraphQLTypes.PARSE_OBJECT,
+    parseGraphQLSchema.relayNodeInterface,
+  ];
+  const parseObjectFields = {
+    id: globalIdField(className, obj => obj.objectId),
+    ...defaultGraphQLTypes.PARSE_OBJECT_FIELDS,
+  };
   const outputFields = () => {
     return classOutputFields.reduce((fields, field) => {
       const type = transformOutputTypeToGraphQL(
@@ -492,12 +500,12 @@ const load = (
       } else {
         return fields;
       }
-    }, defaultGraphQLTypes.PARSE_OBJECT_FIELDS);
+    }, parseObjectFields);
   };
   let classGraphQLOutputType = new GraphQLObjectType({
     name: classGraphQLOutputTypeName,
     description: `The ${classGraphQLOutputTypeName} object type is used in operations that involve outputting objects of ${graphQLClassName} class.`,
-    interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
+    interfaces,
     fields: outputFields,
   });
   classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
@@ -547,7 +555,7 @@ const load = (
     const viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: `The Viewer object type is used in operations that involve outputting the current user data.`,
-      interfaces: [defaultGraphQLTypes.PARSE_OBJECT],
+      interfaces,
       fields: () => ({
         ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
