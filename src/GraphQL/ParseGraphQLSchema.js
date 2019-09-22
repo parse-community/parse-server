@@ -1,5 +1,10 @@
 import Parse from 'parse/node';
-import { GraphQLSchema, GraphQLObjectType } from 'graphql';
+import {
+  GraphQLSchema,
+  GraphQLObjectType,
+  DocumentNode,
+  GraphQLNamedType,
+} from 'graphql';
 import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
@@ -48,7 +53,14 @@ class ParseGraphQLSchema {
   databaseController: DatabaseController;
   parseGraphQLController: ParseGraphQLController;
   parseGraphQLConfig: ParseGraphQLConfig;
-  graphQLCustomTypeDefs: any;
+  log: any;
+  appId: string;
+  graphQLCustomTypeDefs: ?(
+    | string
+    | GraphQLSchema
+    | DocumentNode
+    | GraphQLNamedType[]
+  );
 
   constructor(
     params: {
@@ -56,6 +68,12 @@ class ParseGraphQLSchema {
       parseGraphQLController: ParseGraphQLController,
       log: any,
       appId: string,
+      graphQLCustomTypeDefs: ?(
+        | string
+        | GraphQLSchema
+        | DocumentNode
+        | GraphQLNamedType[]
+      ),
     } = {}
   ) {
     this.parseGraphQLController =
@@ -105,6 +123,7 @@ class ParseGraphQLSchema {
     this.graphQLSubscriptions = {};
     this.graphQLSchemaDirectivesDefinitions = null;
     this.graphQLSchemaDirectives = {};
+    this.relayNodeInterface = null;
 
     defaultGraphQLTypes.load(this);
     schemaTypes.load(this);
