@@ -1,3 +1,4 @@
+import { fromGlobalId } from 'graphql-relay';
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../helpers/objectsMutations';
 
@@ -116,11 +117,17 @@ const transformers = {
 
     if (value.add || nestedObjectsToAdd.length > 0) {
       if (!value.add) value.add = [];
-      value.add = value.add.map(input => ({
-        __type: 'Pointer',
-        className: targetClass,
-        objectId: input,
-      }));
+      value.add = value.add.map(input => {
+        const globalIdObject = fromGlobalId(input);
+        if (globalIdObject.type === targetClass) {
+          input = globalIdObject.id;
+        }
+        return {
+          __type: 'Pointer',
+          className: targetClass,
+          objectId: input,
+        };
+      });
       op.ops.push({
         __op: 'AddRelation',
         objects: [...value.add, ...nestedObjectsToAdd],
@@ -130,11 +137,17 @@ const transformers = {
     if (value.remove) {
       op.ops.push({
         __op: 'RemoveRelation',
-        objects: value.remove.map(input => ({
-          __type: 'Pointer',
-          className: targetClass,
-          objectId: input,
-        })),
+        objects: value.remove.map(input => {
+          const globalIdObject = fromGlobalId(input);
+          if (globalIdObject.type === targetClass) {
+            input = globalIdObject.id;
+          }
+          return {
+            __type: 'Pointer',
+            className: targetClass,
+            objectId: input,
+          };
+        }),
       });
     }
     return op;
@@ -172,10 +185,15 @@ const transformers = {
       };
     }
     if (value.link) {
+      let objectId = value.link;
+      const globalIdObject = fromGlobalId(objectId);
+      if (globalIdObject.type === targetClass) {
+        objectId = globalIdObject.id;
+      }
       return {
         __type: 'Pointer',
         className: targetClass,
-        objectId: value.link,
+        objectId,
       };
     }
   },

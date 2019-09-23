@@ -92,7 +92,7 @@ const load = function(
             fields,
             keys,
             include,
-            ['id', 'createdAt', 'updatedAt']
+            ['id', 'objectId', 'createdAt', 'updatedAt']
           );
           let optimizedObject = {};
           if (needGet) {
@@ -168,7 +168,7 @@ const load = function(
             fields,
             keys,
             include,
-            ['id', 'updatedAt']
+            ['id', 'objectId', 'updatedAt']
           );
           let optimizedObject = {};
           if (needGet) {
@@ -185,7 +185,7 @@ const load = function(
             );
           }
           return {
-            id,
+            objectId: id,
             ...updatedObject,
             ...fields,
             ...optimizedObject,
@@ -222,7 +222,10 @@ const load = function(
 
           let optimizedObject = {};
           const splitedKeys = keys.split(',');
-          if (splitedKeys.length > 1 || splitedKeys[0] !== 'id') {
+          if (
+            splitedKeys.filter(key => !['id', 'objectId'].includes(key))
+              .length > 0
+          ) {
             optimizedObject = await objectsQueries.getObject(
               className,
               id,
@@ -242,7 +245,7 @@ const load = function(
             auth,
             info
           );
-          return { id, ...optimizedObject };
+          return { objectId: id, ...optimizedObject };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

@@ -1,3 +1,5 @@
+import { fromGlobalId } from 'graphql-relay';
+
 const parseQueryMap = {
   id: 'objectId',
   OR: '$or',
@@ -102,10 +104,15 @@ const transformQueryConstraintInputToParse = (
         typeof fieldValue === 'string'
       ) {
         const { targetClass } = fields[parentFieldName];
+        let objectId = fieldValue;
+        const globalIdObject = fromGlobalId(objectId);
+        if (globalIdObject.type === targetClass) {
+          objectId = globalIdObject.id;
+        }
         constraints[fieldName] = {
           __type: 'Pointer',
           className: targetClass,
-          objectId: fieldValue,
+          objectId,
         };
       }
     }
@@ -198,7 +205,12 @@ const transformQueryInputToParse = (constraints, fields) => {
     }
 
     if (typeof fieldValue === 'object') {
-      transformQueryConstraintInputToParse(fieldValue, fields, fieldName, constraints);
+      transformQueryConstraintInputToParse(
+        fieldValue,
+        fields,
+        fieldName,
+        constraints
+      );
     }
   });
 };

@@ -209,7 +209,7 @@ const load = (
     fields: () => {
       const fields = {
         link: {
-          description: `Link an existing object from ${graphQLClassName} class.`,
+          description: `Link an existing object from ${graphQLClassName} class. You can use either the global or the object id.`,
           type: GraphQLID,
         },
       };
@@ -233,17 +233,17 @@ const load = (
     fields: () => {
       const fields = {
         add: {
-          description: `Add an existing object from the ${graphQLClassName} class into the relation.`,
+          description: `Add existing objects from the ${graphQLClassName} class into the relation. You can use either the global or the object ids.`,
           type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
         remove: {
-          description: `Remove an existing object from the ${graphQLClassName} class out of the relation.`,
+          description: `Remove existing objects from the ${graphQLClassName} class out of the relation. You can use either the global or the object ids.`,
           type: new GraphQLList(defaultGraphQLTypes.OBJECT_ID),
         },
       };
       if (isCreateEnabled) {
         fields['createAndAdd'] = {
-          description: `Create and add an object of the ${graphQLClassName} class into the relation.`,
+          description: `Create and add objects of the ${graphQLClassName} class into the relation.`,
           type: new GraphQLList(new GraphQLNonNull(classGraphQLCreateType)),
         };
       }
@@ -268,12 +268,12 @@ const load = (
       notInQueryKey: defaultGraphQLTypes.notInQueryKey,
       inQuery: {
         description:
-          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the ids in the result of a different query.',
+          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the object ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
       notInQuery: {
         description:
-          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the ids in the result of a different query.',
+          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the object ids in the result of a different query.',
         type: defaultGraphQLTypes.SUBQUERY_INPUT,
       },
     },
