@@ -68,7 +68,7 @@ const findObjects = async (
   if (!where) {
     where = {};
   }
-  transformQueryInputToParse(where, fields);
+  transformQueryInputToParse(where, fields, className);
 
   const options = {};
 

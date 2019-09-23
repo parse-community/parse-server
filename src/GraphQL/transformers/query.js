@@ -183,7 +183,7 @@ const transformQueryConstraintInputToParse = (
   });
 };
 
-const transformQueryInputToParse = (constraints, fields) => {
+const transformQueryInputToParse = (constraints, fields, className) => {
   if (!constraints || typeof constraints !== 'object') {
     return;
   }
@@ -198,9 +198,30 @@ const transformQueryInputToParse = (constraints, fields) => {
 
       if (fieldName !== 'objectId') {
         fieldValue.forEach(fieldValueItem => {
-          transformQueryInputToParse(fieldValueItem, fields);
+          transformQueryInputToParse(fieldValueItem, fields, className);
         });
         return;
+      } else if (className) {
+        Object.keys(fieldValue).forEach(constraintName => {
+          const constraintValue = fieldValue[constraintName];
+          if (typeof constraintValue === 'string') {
+            const globalIdObject = fromGlobalId(constraintValue);
+
+            if (globalIdObject.type === className) {
+              fieldValue[constraintName] = globalIdObject.id;
+            }
+          } else if (Array.isArray(constraintValue)) {
+            fieldValue[constraintName] = constraintValue.map(value => {
+              const globalIdObject = fromGlobalId(value);
+
+              if (globalIdObject.type === className) {
+                return globalIdObject.id;
+              }
+
+              return value;
+            });
+          }
+        });
       }
     }
 
