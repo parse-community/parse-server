@@ -39,6 +39,8 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'SignUpFieldsInput',
   'LogInFieldsInput',
   'CloudCodeFunction',
+  'CallCloudCodeInput',
+  'CallCloudCodePayload',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [

@@ -83,7 +83,11 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(createMutation.args.input.type, true, true);
+  parseGraphQLSchema.addGraphQLType(
+    createMutation.args.input.type.ofType,
+    true,
+    true
+  );
   parseGraphQLSchema.addGraphQLType(createMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation(
     'createFile',

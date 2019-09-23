@@ -820,6 +820,53 @@ describe('ParseGraphQLServer', () => {
             'fileInfo',
           ]);
         });
+
+        it('should have clientMutationId in call function input', async () => {
+          Parse.Cloud.define('hello', () => {});
+
+          const callFunctionInputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CallCloudCodeInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(callFunctionInputFields).toEqual([
+            'clientMutationId',
+            'functionName',
+            'params',
+          ]);
+        });
+
+        it('should have clientMutationId in call function payload', async () => {
+          Parse.Cloud.define('hello', () => {});
+
+          const callFunctionPayloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CallCloudCodePayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(callFunctionPayloadFields).toEqual([
+            'clientMutationId',
+            'result',
+          ]);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -5923,19 +5970,33 @@ describe('ParseGraphQLServer', () => {
       describe('Functions Mutations', () => {
         it('can be called', async () => {
           try {
+            const clientMutationId = uuidv4();
+
             Parse.Cloud.define('hello', async () => {
               return 'Hello world!';
             });
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation CallFunction {
-                  callCloudCode(functionName: hello)
+                mutation CallFunction($input: CallCloudCodeInput!) {
+                  callCloudCode(input: $input) {
+                    clientMutationId
+                    result
+                  }
                 }
               `,
+              variables: {
+                input: {
+                  clientMutationId,
+                  functionName: 'hello',
+                },
+              },
             });
 
-            expect(result.data.callCloudCode).toEqual('Hello world!');
+            expect(result.data.callCloudCode.clientMutationId).toEqual(
+              clientMutationId
+            );
+            expect(result.data.callCloudCode.result).toEqual('Hello world!');
           } catch (e) {
             handleError(e);
           }
@@ -5950,7 +6011,9 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation CallFunction {
-                  callCloudCode(functionName: hello)
+                  callCloudCode(input: { functionName: hello }) {
+                    result
+                  }
                 }
               `,
             });
@@ -6051,7 +6114,9 @@ describe('ParseGraphQLServer', () => {
           apolloClient.mutate({
             mutation: gql`
               mutation CallFunction($params: Object) {
-                callCloudCode(functionName: hello, params: $params)
+                callCloudCode(input: { functionName: hello, params: $params }) {
+                  result
+                }
               }
             `,
             variables: {
