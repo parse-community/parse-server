@@ -298,7 +298,8 @@ const load = (
         const type = transformConstraintTypeToGraphQL(
           parseClass.fields[parseField].type,
           parseClass.fields[parseField].targetClass,
-          parseGraphQLSchema.parseClassTypes
+          parseGraphQLSchema.parseClassTypes,
+          field
         );
         if (type) {
           return {

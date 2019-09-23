@@ -744,6 +744,25 @@ const options = {
   type: GraphQLString,
 };
 
+const ID_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'IdWhereInput',
+  description:
+    'The IdWhereInput input type is used in operations that involve filtering objects by an id.',
+  fields: {
+    equalTo: equalTo(GraphQLID),
+    notEqualTo: notEqualTo(GraphQLID),
+    lessThan: lessThan(GraphQLID),
+    lessThanOrEqualTo: lessThanOrEqualTo(GraphQLID),
+    greaterThan: greaterThan(GraphQLID),
+    greaterThanOrEqualTo: greaterThanOrEqualTo(GraphQLID),
+    in: inOp(GraphQLID),
+    notIn: notIn(GraphQLID),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+  },
+});
+
 const STRING_WHERE_INPUT = new GraphQLInputObjectType({
   name: 'StringWhereInput',
   description:
@@ -1065,6 +1084,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(CENTER_SPHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_WITHIN_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_INTERSECTS_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ID_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(STRING_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(NUMBER_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOOLEAN_WHERE_INPUT, true);
@@ -1148,6 +1168,7 @@ export {
   notInQueryKey,
   matchesRegex,
   options,
+  ID_WHERE_INPUT,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,
   BOOLEAN_WHERE_INPUT,
