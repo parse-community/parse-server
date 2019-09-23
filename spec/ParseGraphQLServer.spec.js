@@ -867,6 +867,42 @@ describe('ParseGraphQLServer', () => {
             'result',
           ]);
         });
+
+        it('should have clientMutationId in sign up mutation input', async () => {
+          const inputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "SignUpInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(inputFields).toEqual(['clientMutationId', 'userFields']);
+        });
+
+        it('should have clientMutationId in sign up mutation payload', async () => {
+          const payloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "SignUpPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -894,7 +930,6 @@ describe('ParseGraphQLServer', () => {
             'User',
             'UserWhereInput',
             'UserFindResult',
-            'SignUpFieldsInput',
             'CreateUserFieldsInput',
             'UpdateUserFieldsInput',
           ];
@@ -5755,31 +5790,39 @@ describe('ParseGraphQLServer', () => {
 
       describe('Users Mutations', () => {
         it('should sign user up', async () => {
+          const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
           await userSchema.update();
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation SignUp($fields: SignUpFieldsInput) {
-                signUp(fields: $fields) {
-                  sessionToken
-                  someField
+              mutation SignUp($input: SignUpInput!) {
+                signUp(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                    someField
+                  }
                 }
               }
             `,
             variables: {
-              fields: {
-                username: 'user1',
-                password: 'user1',
-                someField: 'someValue',
+              input: {
+                clientMutationId,
+                userFields: {
+                  username: 'user1',
+                  password: 'user1',
+                  someField: 'someValue',
+                },
               },
             },
           });
 
-          expect(result.data.signUp.sessionToken).toBeDefined();
-          expect(result.data.signUp.someField).toEqual('someValue');
-          expect(typeof result.data.signUp.sessionToken).toBe('string');
+          expect(result.data.signUp.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.signUp.viewer.sessionToken).toBeDefined();
+          expect(result.data.signUp.viewer.someField).toEqual('someValue');
+          expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
         });
 
         it('should log the user in', async () => {
@@ -8347,6 +8390,7 @@ describe('ParseGraphQLServer', () => {
         variables: {
           user: {
             username: 'somefolk',
+            password: 'somepassword',
           },
         },
       });

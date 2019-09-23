@@ -1,4 +1,5 @@
 import { GraphQLNonNull } from 'graphql';
+import { mutationWithClientMutationId } from 'graphql-relay';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from '../helpers/objectsMutations';
 import { getUserFromSessionToken } from './usersQueries';
@@ -10,42 +11,56 @@ const load = parseGraphQLSchema => {
     return;
   }
 
-  parseGraphQLSchema.addGraphQLMutation(
-    'signUp',
-    {
-      description: 'The signUp mutation can be used to sign the user up.',
-      args: {
-        fields: {
-          descriptions: 'These are the fields of the user.',
-          type: parseGraphQLSchema.parseClassTypes['_User'].signUpInputType,
-        },
-      },
-      type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
-      async resolve(_source, args, context, mutationInfo) {
-        try {
-          const { fields } = args;
-
-          const { config, auth, info } = context;
-
-          const { sessionToken } = await objectsMutations.createObject(
-            '_User',
-            fields,
-            config,
-            auth,
-            info
-          );
-
-          info.sessionToken = sessionToken;
-
-          return await getUserFromSessionToken(config, info, mutationInfo);
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
+  const signUpMutation = mutationWithClientMutationId({
+    name: 'SignUp',
+    description:
+      'The signUp mutation can be used to create and sign up a new user.',
+    inputFields: {
+      userFields: {
+        descriptions:
+          'These are the fields of the new user to be created and signed up.',
+        type:
+          parseGraphQLSchema.parseClassTypes['_User'].classGraphQLCreateType,
       },
     },
+    outputFields: {
+      viewer: {
+        description:
+          'This is the new user that was created, signed up and returned as a viewer.',
+        type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
+      },
+    },
+    mutateAndGetPayload: async (args, context, mutationInfo) => {
+      try {
+        const { userFields } = args;
+        const { config, auth, info } = context;
+
+        const { sessionToken } = await objectsMutations.createObject(
+          '_User',
+          userFields,
+          config,
+          auth,
+          info
+        );
+
+        info.sessionToken = sessionToken;
+
+        return {
+          viewer: await getUserFromSessionToken(config, info, mutationInfo),
+        };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    signUpMutation.args.input.type.ofType,
     true,
     true
   );
+  parseGraphQLSchema.addGraphQLType(signUpMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('signUp', signUpMutation, true, true);
 
   parseGraphQLSchema.addGraphQLMutation(
     'logIn',

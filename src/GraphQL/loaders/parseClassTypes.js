@@ -153,7 +153,11 @@ const load = (
               ...fields,
               [field]: {
                 description: `This is the object ${field}.`,
-                type,
+                type:
+                  className === '_User' &&
+                  (field === 'username' || field === 'password')
+                    ? new GraphQLNonNull(type)
+                    : type,
               },
             };
           } else {
@@ -566,35 +570,6 @@ const load = (
     parseGraphQLSchema.viewerType = viewerType;
     parseGraphQLSchema.addGraphQLType(viewerType, true, true);
 
-    const userSignUpInputTypeName = 'SignUpFieldsInput';
-    const userSignUpInputType = new GraphQLInputObjectType({
-      name: userSignUpInputTypeName,
-      description: `The ${userSignUpInputTypeName} input type is used in operations that involve inputting objects of ${graphQLClassName} class when signing up.`,
-      fields: () =>
-        classCreateFields.reduce((fields, field) => {
-          const type = transformInputTypeToGraphQL(
-            parseClass.fields[field].type,
-            parseClass.fields[field].targetClass,
-            parseGraphQLSchema.parseClassTypes
-          );
-          if (type) {
-            return {
-              ...fields,
-              [field]: {
-                description: `This is the object ${field}.`,
-                type:
-                  field === 'username' || field === 'password'
-                    ? new GraphQLNonNull(type)
-                    : type,
-              },
-            };
-          } else {
-            return fields;
-          }
-        }, {}),
-    });
-    parseGraphQLSchema.addGraphQLType(userSignUpInputType, true, true);
-
     const userLogInInputTypeName = 'LogInFieldsInput';
     const userLogInInputType = new GraphQLInputObjectType({
       name: userLogInInputTypeName,
@@ -612,9 +587,6 @@ const load = (
     });
     parseGraphQLSchema.addGraphQLType(userLogInInputType, true, true);
 
-    parseGraphQLSchema.parseClassTypes[
-      className
-    ].signUpInputType = userSignUpInputType;
     parseGraphQLSchema.parseClassTypes[
       className
     ].logInInputType = userLogInInputType;
