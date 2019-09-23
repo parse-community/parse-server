@@ -40,6 +40,8 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'SignUpPayload',
   'LogInInput',
   'LogInPayload',
+  'LogOutInput',
+  'LogOutPayload',
   'CloudCodeFunction',
   'CallCloudCodeInput',
   'CallCloudCodePayload',

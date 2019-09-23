@@ -117,36 +117,46 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(logInMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('logIn', logInMutation, true, true);
 
-  parseGraphQLSchema.addGraphQLMutation(
-    'logOut',
-    {
-      description: 'The logOut mutation can be used to log the user out.',
-      type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
-      async resolve(_source, _args, context, mutationInfo) {
-        try {
-          const { config, auth, info } = context;
-
-          const viewer = await getUserFromSessionToken(
-            config,
-            info,
-            mutationInfo
-          );
-
-          await usersRouter.handleLogOut({
-            config,
-            auth,
-            info,
-          });
-
-          return viewer;
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
+  const logOutMutation = mutationWithClientMutationId({
+    name: 'LogOut',
+    description: 'The logOut mutation can be used to log out an existing user.',
+    outputFields: {
+      viewer: {
+        description:
+          'This is the existing user that was logged out and returned as a viewer.',
+        type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
       },
     },
+    mutateAndGetPayload: async (_args, context, mutationInfo) => {
+      try {
+        const { config, auth, info } = context;
+
+        const viewer = await getUserFromSessionToken(
+          config,
+          info,
+          mutationInfo
+        );
+
+        await usersRouter.handleLogOut({
+          config,
+          auth,
+          info,
+        });
+
+        return { viewer };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    logOutMutation.args.input.type.ofType,
     true,
     true
   );
+  parseGraphQLSchema.addGraphQLType(logOutMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('logOut', logOutMutation, true, true);
 };
 
 export { load };

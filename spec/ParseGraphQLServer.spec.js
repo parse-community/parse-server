@@ -943,6 +943,42 @@ describe('ParseGraphQLServer', () => {
 
           expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
         });
+
+        it('should have clientMutationId in log out mutation input', async () => {
+          const inputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "LogOutInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(inputFields).toEqual(['clientMutationId']);
+        });
+
+        it('should have clientMutationId in log out mutation payload', async () => {
+          const payloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "LogOutPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -5902,6 +5938,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should log the user out', async () => {
+          const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -5930,9 +5967,12 @@ describe('ParseGraphQLServer', () => {
 
           const logOut = await apolloClient.mutate({
             mutation: gql`
-              mutation LogOutUser {
-                logOut {
-                  sessionToken
+              mutation LogOutUser($input: LogOutInput!) {
+                logOut(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                  }
                 }
               }
             `,
@@ -5941,8 +5981,14 @@ describe('ParseGraphQLServer', () => {
                 'X-Parse-Session-Token': sessionToken,
               },
             },
+            variables: {
+              input: {
+                clientMutationId,
+              },
+            },
           });
-          expect(logOut.data.logOut).toBeDefined();
+          expect(logOut.data.logOut.clientMutationId).toEqual(clientMutationId);
+          expect(logOut.data.logOut.viewer.sessionToken).toEqual(sessionToken);
 
           try {
             await apolloClient.query({
