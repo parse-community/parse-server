@@ -569,27 +569,6 @@ const load = (
     });
     parseGraphQLSchema.viewerType = viewerType;
     parseGraphQLSchema.addGraphQLType(viewerType, true, true);
-
-    const userLogInInputTypeName = 'LogInFieldsInput';
-    const userLogInInputType = new GraphQLInputObjectType({
-      name: userLogInInputTypeName,
-      description: `The ${userLogInInputTypeName} input type is used to login.`,
-      fields: {
-        username: {
-          description: 'This is the username used to log the user in.',
-          type: new GraphQLNonNull(GraphQLString),
-        },
-        password: {
-          description: 'This is the password used to log the user in.',
-          type: new GraphQLNonNull(GraphQLString),
-        },
-      },
-    });
-    parseGraphQLSchema.addGraphQLType(userLogInInputType, true, true);
-
-    parseGraphQLSchema.parseClassTypes[
-      className
-    ].logInInputType = userLogInInputType;
   }
 };
 

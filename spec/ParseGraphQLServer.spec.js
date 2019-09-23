@@ -903,6 +903,46 @@ describe('ParseGraphQLServer', () => {
 
           expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
         });
+
+        it('should have clientMutationId in log in mutation input', async () => {
+          const inputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "LogInInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(inputFields).toEqual([
+            'clientMutationId',
+            'password',
+            'username',
+          ]);
+        });
+
+        it('should have clientMutationId in log in mutation payload', async () => {
+          const payloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "LogInPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -5826,6 +5866,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should log the user in', async () => {
+          const clientMutationId = uuidv4();
           const user = new Parse.User();
           user.setUsername('user1');
           user.setPassword('user1');
@@ -5835,24 +5876,29 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($fields: LogInFieldsInput) {
-                logIn(fields: $fields) {
-                  sessionToken
-                  someField
+              mutation LogInUser($input: LogInInput!) {
+                logIn(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                    someField
+                  }
                 }
               }
             `,
             variables: {
-              fields: {
+              input: {
+                clientMutationId,
                 username: 'user1',
                 password: 'user1',
               },
             },
           });
 
-          expect(result.data.logIn.sessionToken).toBeDefined();
-          expect(result.data.logIn.someField).toEqual('someValue');
-          expect(typeof result.data.logIn.sessionToken).toBe('string');
+          expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
+          expect(result.data.logIn.viewer.sessionToken).toBeDefined();
+          expect(result.data.logIn.viewer.someField).toEqual('someValue');
+          expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
         });
 
         it('should log the user out', async () => {
@@ -5864,21 +5910,23 @@ describe('ParseGraphQLServer', () => {
 
           const logIn = await apolloClient.mutate({
             mutation: gql`
-              mutation LogInUser($fields: LogInFieldsInput) {
-                logIn(fields: $fields) {
-                  sessionToken
+              mutation LogInUser($input: LogInInput!) {
+                logIn(input: $input) {
+                  viewer {
+                    sessionToken
+                  }
                 }
               }
             `,
             variables: {
-              fields: {
+              input: {
                 username: 'user1',
                 password: 'user1',
               },
             },
           });
 
-          const sessionToken = logIn.data.logIn.sessionToken;
+          const sessionToken = logIn.data.logIn.viewer.sessionToken;
 
           const logOut = await apolloClient.mutate({
             mutation: gql`
@@ -5900,7 +5948,7 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.query({
               query: gql`
                 query GetCurrentUser {
-                  me {
+                  viewer {
                     username
                   }
                 }
