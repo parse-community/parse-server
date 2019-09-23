@@ -339,11 +339,12 @@ const load = (
       const updatedSortFields = {
         ...sortFields,
       };
+      const value = field === 'id' ? 'objectId' : field;
       if (asc) {
-        updatedSortFields[`${field}_ASC`] = { value: field };
+        updatedSortFields[`${field}_ASC`] = { value };
       }
       if (desc) {
-        updatedSortFields[`${field}_DESC`] = { value: `-${field}` };
+        updatedSortFields[`${field}_DESC`] = { value: `-${value}` };
       }
       return updatedSortFields;
     }, {}),
