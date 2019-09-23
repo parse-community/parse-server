@@ -33,6 +33,8 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'Query',
   'Mutation',
   'Subscription',
+  'CreateFileInput',
+  'CreateFilePayload',
   'Viewer',
   'SignUpFieldsInput',
   'LogInFieldsInput',

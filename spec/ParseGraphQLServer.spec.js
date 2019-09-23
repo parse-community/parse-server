@@ -17,6 +17,7 @@ const gql = require('graphql-tag');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
+const uuidv4 = require('uuid/v4');
 
 function handleError(e) {
   if (
@@ -779,6 +780,45 @@ describe('ParseGraphQLServer', () => {
 
           expect(userFields).toContain('id');
           expect(userFields).toContain('objectId');
+        });
+
+        it('should have clientMutationId in create file input', async () => {
+          const createFileInputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CreateFileInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(createFileInputFields).toEqual(['clientMutationId', 'upload']);
+        });
+
+        it('should have clientMutationId in create file payload', async () => {
+          const createFilePayloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "CreateFilePayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(createFilePayloadFields).toEqual([
+            'clientMutationId',
+            'fileInfo',
+          ]);
         });
       });
 
@@ -5510,6 +5550,8 @@ describe('ParseGraphQLServer', () => {
       describe('Files Mutations', () => {
         describe('Create', () => {
           it('should return File object', async () => {
+            const clientMutationId = uuidv4();
+
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
             });
@@ -5519,19 +5561,28 @@ describe('ParseGraphQLServer', () => {
               'operations',
               JSON.stringify({
                 query: `
-                  mutation CreateFile($upload: Upload!) {
-                    createFile(upload: $upload) {
-                      name
-                      url
+                  mutation CreateFile($input: CreateFileInput!) {
+                    createFile(input: $input) {
+                      clientMutationId
+                      fileInfo {
+                        name
+                        url
+                      }
                     }
                   }
                 `,
                 variables: {
-                  upload: null,
+                  input: {
+                    clientMutationId,
+                    upload: null,
+                  },
                 },
               })
             );
-            body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
+            body.append(
+              'map',
+              JSON.stringify({ 1: ['variables.input.upload'] })
+            );
             body.append('1', 'My File Content', {
               filename: 'myFileName.txt',
               contentType: 'text/plain',
@@ -5547,14 +5598,17 @@ describe('ParseGraphQLServer', () => {
 
             const result = JSON.parse(await res.text());
 
-            expect(result.data.createFile.name).toEqual(
+            expect(result.data.createFile.clientMutationId).toEqual(
+              clientMutationId
+            );
+            expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
-            expect(result.data.createFile.url).toEqual(
+            expect(result.data.createFile.fileInfo.url).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
 
-            res = await fetch(result.data.createFile.url);
+            res = await fetch(result.data.createFile.fileInfo.url);
 
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
@@ -7056,19 +7110,26 @@ describe('ParseGraphQLServer', () => {
               'operations',
               JSON.stringify({
                 query: `
-                  mutation CreateFile($upload: Upload!) {
-                    createFile(upload: $upload) {
-                      name
-                      url
+                  mutation CreateFile($input: CreateFileInput!) {
+                    createFile(input: $input) {
+                      fileInfo {
+                        name
+                        url
+                      }
                     }
                   }
                 `,
                 variables: {
-                  upload: null,
+                  input: {
+                    upload: null,
+                  },
                 },
               })
             );
-            body.append('map', JSON.stringify({ 1: ['variables.upload'] }));
+            body.append(
+              'map',
+              JSON.stringify({ 1: ['variables.input.upload'] })
+            );
             body.append('1', 'My File Content', {
               filename: 'myFileName.txt',
               contentType: 'text/plain',
@@ -7084,14 +7145,14 @@ describe('ParseGraphQLServer', () => {
 
             const result = JSON.parse(await res.text());
 
-            expect(result.data.createFile.name).toEqual(
+            expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
-            expect(result.data.createFile.url).toEqual(
+            expect(result.data.createFile.fileInfo.url).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
             );
 
-            const someFieldValue = result.data.createFile.name;
+            const someFieldValue = result.data.createFile.fileInfo.name;
 
             await apolloClient.mutate({
               mutation: gql`
@@ -7180,10 +7241,10 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField.name).toEqual(
-              result.data.createFile.name
+              result.data.createFile.fileInfo.name
             );
             expect(getResult.data.someClass.someField.url).toEqual(
-              result.data.createFile.url
+              result.data.createFile.fileInfo.url
             );
             expect(getResult.data.findSomeClass1.results.length).toEqual(1);
             expect(getResult.data.findSomeClass2.results.length).toEqual(1);
