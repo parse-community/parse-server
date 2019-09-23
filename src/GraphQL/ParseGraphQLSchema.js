@@ -45,6 +45,12 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'CloudCodeFunction',
   'CallCloudCodeInput',
   'CallCloudCodePayload',
+  'CreateClassInput',
+  'CreateClassPayload',
+  'UpdateClassInput',
+  'UpdateClassPayload',
+  'DeleteClassInput',
+  'DeleteClassPayload',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [

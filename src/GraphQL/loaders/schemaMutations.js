@@ -1,5 +1,6 @@
 import Parse from 'parse/node';
 import { GraphQLNonNull } from 'graphql';
+import { mutationWithClientMutationId } from 'graphql-relay';
 import * as schemaTypes from './schemaTypes';
 import {
   transformToParse,
@@ -9,47 +10,63 @@ import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 import { getClass } from './schemaQueries';
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.addGraphQLMutation(
-    'createClass',
-    {
-      description:
-        'The createClass mutation can be used to create the schema for a new object class.',
-      args: {
-        name: schemaTypes.CLASS_NAME_ATT,
-        schemaFields: {
-          description: "These are the schema's fields of the object class.",
-          type: schemaTypes.SCHEMA_FIELDS_INPUT,
-        },
-      },
-      type: new GraphQLNonNull(schemaTypes.CLASS),
-      resolve: async (_source, args, context) => {
-        try {
-          const { name, schemaFields } = args;
-          const { config, auth } = context;
-
-          enforceMasterKeyAccess(auth);
-
-          if (auth.isReadOnly) {
-            throw new Parse.Error(
-              Parse.Error.OPERATION_FORBIDDEN,
-              "read-only masterKey isn't allowed to create a schema."
-            );
-          }
-
-          const schema = await config.database.loadSchema({ clearCache: true });
-          const parseClass = await schema.addClassIfNotExists(
-            name,
-            transformToParse(schemaFields)
-          );
-          return {
-            name: parseClass.className,
-            schemaFields: transformToGraphQL(parseClass.fields),
-          };
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
+  const createClassMutation = mutationWithClientMutationId({
+    name: 'CreateClass',
+    description:
+      'The createClass mutation can be used to create the schema for a new object class.',
+    inputFields: {
+      name: schemaTypes.CLASS_NAME_ATT,
+      schemaFields: {
+        description: "These are the schema's fields of the object class.",
+        type: schemaTypes.SCHEMA_FIELDS_INPUT,
       },
     },
+    outputFields: {
+      class: {
+        description: 'This is the created class.',
+        type: new GraphQLNonNull(schemaTypes.CLASS),
+      },
+    },
+    mutateAndGetPayload: async (args, context) => {
+      try {
+        const { name, schemaFields } = args;
+        const { config, auth } = context;
+
+        enforceMasterKeyAccess(auth);
+
+        if (auth.isReadOnly) {
+          throw new Parse.Error(
+            Parse.Error.OPERATION_FORBIDDEN,
+            "read-only masterKey isn't allowed to create a schema."
+          );
+        }
+
+        const schema = await config.database.loadSchema({ clearCache: true });
+        const parseClass = await schema.addClassIfNotExists(
+          name,
+          transformToParse(schemaFields)
+        );
+        return {
+          class: {
+            name: parseClass.className,
+            schemaFields: transformToGraphQL(parseClass.fields),
+          },
+        };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    createClassMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(createClassMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'createClass',
+    createClassMutation,
     true,
     true
   );
