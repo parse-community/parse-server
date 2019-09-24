@@ -1428,8 +1428,8 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation UpdateSuperCar($id: ID!, $foo: String!) {
-                  updateSuperCar(id: $id, fields: { foo: $foo }) {
-                    updatedAt
+                  updateSuperCar(input: { id: $id, fields: { foo: $foo } }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1517,8 +1517,8 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation UpdateSupercar($id: ID!, $foo: String!) {
-                  updateSuperCar(id: $id, fields: { foo: $foo }) {
-                    updatedAt
+                  updateSuperCar(input: { id: $id, fields: { foo: $foo } }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1563,8 +1563,8 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation UpdateCustomer($id: ID!, $foo: String!) {
-                  updateCustomer(id: $id, fields: { foo: $foo }) {
-                    updatedAt
+                  updateCustomer(input: { id: $id, fields: { foo: $foo } }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1650,8 +1650,10 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation InvalidUpdateSuperCar($id: ID!) {
-                  updateSuperCar(id: $id, fields: { engine: "petrol" }) {
-                    updatedAt
+                  updateSuperCar(
+                    input: { id: $id, fields: { engine: "petrol" } }
+                  ) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1664,8 +1666,8 @@ describe('ParseGraphQLServer', () => {
           const updatedSuperCar = (await apolloClient.query({
             query: gql`
               mutation ValidUpdateSuperCar($id: ID!) {
-                updateSuperCar(id: $id, fields: { mileage: 2000 }) {
-                  updatedAt
+                updateSuperCar(input: { id: $id, fields: { mileage: 2000 } }) {
+                  clientMutationId
                 }
               }
             `,
@@ -2252,45 +2254,69 @@ describe('ParseGraphQLServer', () => {
                     $id6: ID!
                   ) {
                     secondaryObject1: updateSecondaryObject(
-                      id: $id1
-                      fields: { someField: "some value 11" }
+                      input: {
+                        id: $id1
+                        fields: { someField: "some value 11" }
+                      }
                     ) {
-                      id
-                      objectId
-                      someField
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
                     }
                     secondaryObject2: updateSecondaryObject(
-                      id: $id2
-                      fields: { someField: "some value 22" }
+                      input: {
+                        id: $id2
+                        fields: { someField: "some value 22" }
+                      }
                     ) {
-                      id
-                      someField
+                      secondaryObject {
+                        id
+                        someField
+                      }
                     }
                     secondaryObject3: updateSecondaryObject(
-                      id: $id3
-                      fields: { someField: "some value 33" }
+                      input: {
+                        id: $id3
+                        fields: { someField: "some value 33" }
+                      }
                     ) {
-                      objectId
-                      someField
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
                     }
                     secondaryObject4: updateSecondaryObject(
-                      id: $id4
-                      fields: { someField: "some value 44" }
+                      input: {
+                        id: $id4
+                        fields: { someField: "some value 44" }
+                      }
                     ) {
-                      id
-                      objectId
+                      secondaryObject {
+                        id
+                        objectId
+                      }
                     }
                     secondaryObject5: updateSecondaryObject(
-                      id: $id5
-                      fields: { someField: "some value 55" }
+                      input: {
+                        id: $id5
+                        fields: { someField: "some value 55" }
+                      }
                     ) {
-                      id
+                      secondaryObject {
+                        id
+                      }
                     }
                     secondaryObject6: updateSecondaryObject(
-                      id: $id6
-                      fields: { someField: "some value 66" }
+                      input: {
+                        id: $id6
+                        fields: { someField: "some value 66" }
+                      }
                     ) {
-                      objectId
+                      secondaryObject {
+                        objectId
+                      }
                     }
                   }
                 `,
@@ -2347,12 +2373,18 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  id1: updateSecondaryObjectsResult.data.secondaryObject1.id,
+                  id1:
+                    updateSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
                   id3:
-                    updateSecondaryObjectsResult.data.secondaryObject3.objectId,
-                  id5: updateSecondaryObjectsResult.data.secondaryObject5.id,
+                    updateSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id5:
+                    updateSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
                   id6:
-                    updateSecondaryObjectsResult.data.secondaryObject6.objectId,
+                    updateSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
                 },
                 context: {
                   headers: {
@@ -2376,9 +2408,12 @@ describe('ParseGraphQLServer', () => {
                   }
                 `,
                 variables: {
-                  id2: updateSecondaryObjectsResult.data.secondaryObject2.id,
+                  id2:
+                    updateSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
                   id4:
-                    updateSecondaryObjectsResult.data.secondaryObject4.objectId,
+                    updateSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
                 },
                 context: {
                   headers: {
@@ -2541,34 +2576,38 @@ describe('ParseGraphQLServer', () => {
                     $secondaryObject4: ID!
                   ) {
                     updatePrimaryObject(
-                      id: $id
-                      fields: {
-                        pointerField: { link: $secondaryObject4 }
-                        relationField: {
-                          remove: [$secondaryObject2, $secondaryObject4]
+                      input: {
+                        id: $id
+                        fields: {
+                          pointerField: { link: $secondaryObject4 }
+                          relationField: {
+                            remove: [$secondaryObject2, $secondaryObject4]
+                          }
                         }
                       }
                     ) {
-                      id
-                      stringField
-                      arrayField {
-                        ... on Element {
-                          value
-                        }
-                        ... on SecondaryObject {
-                          someField
-                        }
-                      }
-                      pointerField {
+                      primaryObject {
                         id
-                        objectId
-                        someField
-                      }
-                      relationField {
-                        results {
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
+                            someField
+                          }
+                        }
+                        pointerField {
                           id
                           objectId
                           someField
+                        }
+                        relationField {
+                          results {
+                            id
+                            objectId
+                            someField
+                          }
                         }
                       }
                     }
@@ -2612,22 +2651,24 @@ describe('ParseGraphQLServer', () => {
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
               expect(
-                updatePrimaryObjectResult.data.updatePrimaryObject.stringField
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .stringField
               ).toEqual('some value');
               expect(
-                updatePrimaryObjectResult.data.updatePrimaryObject.arrayField
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .arrayField
               ).toEqual([
                 { __typename: 'Element', value: 1 },
                 { __typename: 'Element', value: 'abc' },
                 { __typename: 'SecondaryObject', someField: 'some value 44' },
               ]);
               expect(
-                updatePrimaryObjectResult.data.updatePrimaryObject.pointerField
-                  .someField
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .pointerField.someField
               ).toEqual('some value 44');
               expect(
-                updatePrimaryObjectResult.data.updatePrimaryObject.relationField
-                  .results
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .relationField.results
               ).toEqual([]);
             } catch (e) {
               handleError(e);
@@ -5434,6 +5475,7 @@ describe('ParseGraphQLServer', () => {
 
         describe('Update', () => {
           it('should return specific type object using class specific mutation', async () => {
+            const clientMutationId = uuidv4();
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
             obj.set('someField2', 'someField2Value1');
@@ -5443,30 +5485,36 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation UpdateCustomer(
-                  $id: ID!
-                  $fields: UpdateCustomerFieldsInput
-                ) {
-                  updateCustomer(id: $id, fields: $fields) {
-                    updatedAt
-                    someField1
-                    someField2
+                mutation UpdateCustomer($input: UpdateCustomerInput!) {
+                  updateCustomer(input: $input) {
+                    clientMutationId
+                    customer {
+                      updatedAt
+                      someField1
+                      someField2
+                    }
                   }
                 }
               `,
               variables: {
-                id: obj.id,
-                fields: {
-                  someField1: 'someField1Value2',
+                input: {
+                  clientMutationId,
+                  id: obj.id,
+                  fields: {
+                    someField1: 'someField1Value2',
+                  },
                 },
               },
             });
 
-            expect(result.data.updateCustomer.updatedAt).toBeDefined();
-            expect(result.data.updateCustomer.someField1).toEqual(
+            expect(result.data.updateCustomer.clientMutationId).toEqual(
+              clientMutationId
+            );
+            expect(result.data.updateCustomer.customer.updatedAt).toBeDefined();
+            expect(result.data.updateCustomer.customer.someField1).toEqual(
               'someField1Value2'
             );
-            expect(result.data.updateCustomer.someField2).toEqual(
+            expect(result.data.updateCustomer.customer.someField2).toEqual(
               'someField2Value1'
             );
 
@@ -5490,9 +5538,11 @@ describe('ParseGraphQLServer', () => {
                   $id: ID!
                   $fields: UpdateCustomerFieldsInput
                 ) {
-                  updateCustomer(id: $id, fields: $fields) {
-                    id
-                    objectId
+                  updateCustomer(input: { id: $id, fields: $fields }) {
+                    customer {
+                      id
+                      objectId
+                    }
                   }
                 }
               `,
@@ -5504,7 +5554,9 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.updateCustomer.objectId).toEqual(obj.id);
+            expect(result.data.updateCustomer.customer.objectId).toEqual(
+              obj.id
+            );
 
             await obj.fetch();
 
@@ -5524,11 +5576,12 @@ describe('ParseGraphQLServer', () => {
                     $id: ID!
                     $fields: Update${className}FieldsInput
                   ) {
-                    update: update${className}(
+                    update: update${className}(input: {
                       id: $id
                       fields: $fields
-                    ) {
-                      updatedAt
+                      clientMutationId: "someid"
+                    }) {
+                      clientMutationId
                     }
                   }
                 `,
@@ -5557,7 +5610,7 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await updateObject(object4.className, object4.id, {
                 someField: 'changedValue1',
-              })).data.update.updatedAt
+              })).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue1');
@@ -5569,7 +5622,7 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue2' },
                     { 'X-Parse-Master-Key': 'test' }
-                  )).data.update.updatedAt
+                  )).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue2');
@@ -5583,7 +5636,7 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue3' },
                     { 'X-Parse-Session-Token': user1.getSessionToken() }
-                  )).data.update.updatedAt
+                  )).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue3');
@@ -5597,7 +5650,7 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue4' },
                     { 'X-Parse-Session-Token': user2.getSessionToken() }
-                  )).data.update.updatedAt
+                  )).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue4');
@@ -5611,7 +5664,7 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue5' },
                     { 'X-Parse-Session-Token': user3.getSessionToken() }
-                  )).data.update.updatedAt
+                  )).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue5');
@@ -5649,7 +5702,7 @@ describe('ParseGraphQLServer', () => {
                 object4.id,
                 { someField: 'changedValue6' },
                 { 'X-Parse-Session-Token': user4.getSessionToken() }
-              )).data.update.updatedAt
+              )).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue6');
@@ -5674,7 +5727,7 @@ describe('ParseGraphQLServer', () => {
                 object3.id,
                 { someField: 'changedValue7' },
                 { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data.update.updatedAt
+              )).data.update.clientMutationId
             ).toBeDefined();
             await object3.fetch({ useMasterKey: true });
             expect(object3.get('someField')).toEqual('changedValue7');
@@ -5684,7 +5737,7 @@ describe('ParseGraphQLServer', () => {
                 object4.id,
                 { someField: 'changedValue7' },
                 { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data.update.updatedAt
+              )).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue7');
@@ -5702,11 +5755,14 @@ describe('ParseGraphQLServer', () => {
                     $id: ID!
                     $fields: Update${className}FieldsInput
                   ) {
-                    update${className}(
+                    update${className}(input: {
                       id: $id
                       fields: $fields
-                    ) {
-                      updatedAt
+                    }) {
+                      ${className.charAt(0).toLowerCase() +
+                        className.slice(1)} {
+                        updatedAt
+                      }
                     }
                   }
                 `,
@@ -5735,7 +5791,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await updateObject(object4.className, object4.id, {
                 someField: 'changedValue1',
-              })).data[`update${object4.className}`].updatedAt
+              })).data[`update${object4.className}`][
+                object4.className.charAt(0).toLowerCase() +
+                  object4.className.slice(1)
+              ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue1');
@@ -5747,7 +5806,10 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue2' },
                     { 'X-Parse-Master-Key': 'test' }
-                  )).data[`update${obj.className}`].updatedAt
+                  )).data[`update${obj.className}`][
+                    obj.className.charAt(0).toLowerCase() +
+                      obj.className.slice(1)
+                  ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue2');
@@ -5761,7 +5823,10 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue3' },
                     { 'X-Parse-Session-Token': user1.getSessionToken() }
-                  )).data[`update${obj.className}`].updatedAt
+                  )).data[`update${obj.className}`][
+                    obj.className.charAt(0).toLowerCase() +
+                      obj.className.slice(1)
+                  ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue3');
@@ -5775,7 +5840,10 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue4' },
                     { 'X-Parse-Session-Token': user2.getSessionToken() }
-                  )).data[`update${obj.className}`].updatedAt
+                  )).data[`update${obj.className}`][
+                    obj.className.charAt(0).toLowerCase() +
+                      obj.className.slice(1)
+                  ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue4');
@@ -5789,7 +5857,10 @@ describe('ParseGraphQLServer', () => {
                     obj.id,
                     { someField: 'changedValue5' },
                     { 'X-Parse-Session-Token': user3.getSessionToken() }
-                  )).data[`update${obj.className}`].updatedAt
+                  )).data[`update${obj.className}`][
+                    obj.className.charAt(0).toLowerCase() +
+                      obj.className.slice(1)
+                  ].updatedAt
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue5');
@@ -5827,7 +5898,10 @@ describe('ParseGraphQLServer', () => {
                 object4.id,
                 { someField: 'changedValue6' },
                 { 'X-Parse-Session-Token': user4.getSessionToken() }
-              )).data[`update${object4.className}`].updatedAt
+              )).data[`update${object4.className}`][
+                object4.className.charAt(0).toLowerCase() +
+                  object4.className.slice(1)
+              ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue6');
@@ -5852,7 +5926,10 @@ describe('ParseGraphQLServer', () => {
                 object3.id,
                 { someField: 'changedValue7' },
                 { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data[`update${object3.className}`].updatedAt
+              )).data[`update${object3.className}`][
+                object3.className.charAt(0).toLowerCase() +
+                  object3.className.slice(1)
+              ].updatedAt
             ).toBeDefined();
             await object3.fetch({ useMasterKey: true });
             expect(object3.get('someField')).toEqual('changedValue7');
@@ -5862,7 +5939,10 @@ describe('ParseGraphQLServer', () => {
                 object4.id,
                 { someField: 'changedValue7' },
                 { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data[`update${object4.className}`].updatedAt
+              )).data[`update${object4.className}`][
+                object4.className.charAt(0).toLowerCase() +
+                  object4.className.slice(1)
+              ].updatedAt
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue7');
@@ -7263,17 +7343,21 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
           const {
-            data: { updateCountry: result },
+            data: {
+              updateCountry: { country: result },
+            },
           } = await apolloClient.mutate({
             mutation: gql`
               mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
-                updateCountry(id: $id, fields: $fields) {
-                  id
-                  objectId
-                  company {
+                updateCountry(input: { id: $id, fields: $fields }) {
+                  country {
                     id
                     objectId
-                    name
+                    company {
+                      id
+                      objectId
+                      name
+                    }
                   }
                 }
               }
@@ -7304,15 +7388,19 @@ describe('ParseGraphQLServer', () => {
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
           const {
-            data: { updateCountry: result },
+            data: {
+              updateCountry: { country: result },
+            },
           } = await apolloClient.mutate({
             mutation: gql`
               mutation Update($id: ID!, $fields: UpdateCountryFieldsInput) {
-                updateCountry(id: $id, fields: $fields) {
-                  id
-                  company {
+                updateCountry(input: { id: $id, fields: $fields }) {
+                  country {
                     id
-                    name
+                    company {
+                      id
+                      name
+                    }
                   }
                 }
               }
@@ -7513,21 +7601,25 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             const {
-              data: { updateCountry: result },
+              data: {
+                updateCountry: { country: result },
+              },
             } = await apolloClient.mutate({
               mutation: gql`
                 mutation UpdateCountry(
                   $id: ID!
                   $fields: UpdateCountryFieldsInput
                 ) {
-                  updateCountry(id: $id, fields: $fields) {
-                    id
-                    objectId
-                    companies {
-                      results {
-                        id
-                        objectId
-                        name
+                  updateCountry(input: { id: $id, fields: $fields }) {
+                    country {
+                      id
+                      objectId
+                      companies {
+                        results {
+                          id
+                          objectId
+                          name
+                        }
                       }
                     }
                   }
@@ -8284,8 +8376,8 @@ describe('ParseGraphQLServer', () => {
                   $id: ID!
                   $fields: UpdateSomeClassFieldsInput
                 ) {
-                  updateSomeClass(id: $id, fields: $fields) {
-                    updatedAt
+                  updateSomeClass(input: { id: $id, fields: $fields }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -8670,8 +8762,10 @@ describe('ParseGraphQLServer', () => {
                 $id: ID!
                 $fields: UpdateSomeClassFieldsInput
               ) {
-                updateSomeClass(id: $id, fields: $fields) {
-                  updatedAt
+                updateSomeClass(input: { id: $id, fields: $fields }) {
+                  someClass {
+                    updatedAt
+                  }
                 }
               }
             `,
@@ -8683,7 +8777,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const { updatedAt } = updatedResult.data.updateSomeClass;
+          const { updatedAt } = updatedResult.data.updateSomeClass.someClass;
           expect(updatedAt).toBeDefined();
 
           const findResult = await apolloClient.query({
