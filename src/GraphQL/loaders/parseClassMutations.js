@@ -1,5 +1,5 @@
 import { GraphQLNonNull } from 'graphql';
-import { fromGlobalId } from 'graphql-relay';
+import { fromGlobalId, mutationWithClientMutationId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import {
@@ -41,6 +41,8 @@ const load = function(
 ) {
   const className = parseClass.className;
   const graphQLClassName = transformClassNameToGraphQL(className);
+  const getGraphQLQueryName =
+    graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
 
   const {
     create: isCreateEnabled = true,
@@ -56,18 +58,24 @@ const load = function(
 
   if (isCreateEnabled) {
     const createGraphQLMutationName = `create${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLMutation(createGraphQLMutationName, {
+    const createGraphQLMutation = mutationWithClientMutationId({
+      name: `Create${graphQLClassName}`,
       description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
-      args: {
+      inputFields: {
         fields: {
-          description: 'These are the fields used to create the object.',
+          description:
+            'These are the fields that will be used to create the new object.',
           type: classGraphQLCreateType || defaultGraphQLTypes.OBJECT,
         },
       },
-      type: new GraphQLNonNull(
-        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
-      ),
-      async resolve(_source, args, context, mutationInfo) {
+      outputFields: {
+        [getGraphQLQueryName]: {
+          type: new GraphQLNonNull(
+            classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+          ),
+        },
+      },
+      mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
           let { fields } = args;
           if (!fields) fields = {};
@@ -86,7 +94,9 @@ const load = function(
             auth,
             info
           );
-          const selectedFields = getFieldNames(mutationInfo);
+          const selectedFields = getFieldNames(mutationInfo)
+            .filter(field => field.startsWith(`${getGraphQLQueryName}.`))
+            .map(field => field.replace(`${getGraphQLQueryName}.`, ''));
           const { keys, include } = extractKeysAndInclude(selectedFields);
           const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
             fields,
@@ -109,16 +119,30 @@ const load = function(
             );
           }
           return {
-            ...createdObject,
-            updatedAt: createdObject.createdAt,
-            ...fields,
-            ...optimizedObject,
+            [getGraphQLQueryName]: {
+              ...createdObject,
+              updatedAt: createdObject.createdAt,
+              ...fields,
+              ...optimizedObject,
+            },
           };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
       },
     });
+
+    if (
+      parseGraphQLSchema.addGraphQLType(
+        createGraphQLMutation.args.input.type.ofType
+      ) &&
+      parseGraphQLSchema.addGraphQLType(createGraphQLMutation.type)
+    ) {
+      parseGraphQLSchema.addGraphQLMutation(
+        createGraphQLMutationName,
+        createGraphQLMutation
+      );
+    }
   }
 
   if (isUpdateEnabled) {
