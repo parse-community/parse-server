@@ -455,7 +455,7 @@ const PARSE_OBJECT = new GraphQLInterfaceType({
 });
 
 const SESSION_TOKEN_ATT = {
-  description: 'The user session token',
+  description: 'The current user session token.',
   type: new GraphQLNonNull(GraphQLString),
 };
 

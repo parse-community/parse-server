@@ -46,7 +46,13 @@ const load = parseGraphQLSchema => {
         info.sessionToken = sessionToken;
 
         return {
-          viewer: await getUserFromSessionToken(config, info, mutationInfo),
+          viewer: await getUserFromSessionToken(
+            config,
+            info,
+            mutationInfo,
+            'viewer.user.',
+            true
+          ),
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -101,7 +107,13 @@ const load = parseGraphQLSchema => {
         info.sessionToken = sessionToken;
 
         return {
-          viewer: await getUserFromSessionToken(config, info, mutationInfo),
+          viewer: await getUserFromSessionToken(
+            config,
+            info,
+            mutationInfo,
+            'viewer.user.',
+            true
+          ),
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -134,7 +146,9 @@ const load = parseGraphQLSchema => {
         const viewer = await getUserFromSessionToken(
           config,
           info,
-          mutationInfo
+          mutationInfo,
+          'viewer.user.',
+          true
         );
 
         await usersRouter.handleLogOut({

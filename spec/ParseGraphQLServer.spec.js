@@ -6155,9 +6155,11 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 viewer {
-                  id
-                  username
-                  email
+                  user {
+                    id
+                    username
+                    email
+                  }
                 }
               }
             `,
@@ -6172,7 +6174,7 @@ describe('ParseGraphQLServer', () => {
             id,
             username: resultUserName,
             email: resultEmail,
-          } = result.data.viewer;
+          } = result.data.viewer.user;
           expect(id).toBeDefined();
           expect(resultUserName).toEqual(userName);
           expect(resultEmail).toEqual(email);
@@ -6200,11 +6202,13 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query GetCurrentUser {
                 viewer {
-                  id
-                  objectId
                   sessionToken
-                  userFoo {
-                    bar
+                  user {
+                    id
+                    objectId
+                    userFoo {
+                      bar
+                    }
                   }
                 }
               }
@@ -6216,11 +6220,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
 
-          const {
-            objectId,
-            sessionToken,
-            userFoo: resultFoo,
-          } = result.data.viewer;
+          const sessionToken = result.data.viewer.sessionToken;
+          const { objectId, userFoo: resultFoo } = result.data.viewer.user;
           expect(objectId).toEqual(user.id);
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
@@ -6242,7 +6243,9 @@ describe('ParseGraphQLServer', () => {
                   clientMutationId
                   viewer {
                     sessionToken
-                    someField
+                    user {
+                      someField
+                    }
                   }
                 }
               }
@@ -6261,7 +6264,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(result.data.signUp.clientMutationId).toEqual(clientMutationId);
           expect(result.data.signUp.viewer.sessionToken).toBeDefined();
-          expect(result.data.signUp.viewer.someField).toEqual('someValue');
+          expect(result.data.signUp.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
         });
 
@@ -6281,7 +6284,9 @@ describe('ParseGraphQLServer', () => {
                   clientMutationId
                   viewer {
                     sessionToken
-                    someField
+                    user {
+                      someField
+                    }
                   }
                 }
               }
@@ -6297,7 +6302,7 @@ describe('ParseGraphQLServer', () => {
 
           expect(result.data.logIn.clientMutationId).toEqual(clientMutationId);
           expect(result.data.logIn.viewer.sessionToken).toBeDefined();
-          expect(result.data.logIn.viewer.someField).toEqual('someValue');
+          expect(result.data.logIn.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.logIn.viewer.sessionToken).toBe('string');
         });
 
@@ -6415,7 +6420,9 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetCurrentUser {
                   viewer {
-                    username
+                    user {
+                      username
+                    }
                   }
                 }
               `,
@@ -6444,7 +6451,9 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query GetCurrentUser {
                   viewer {
-                    username
+                    user {
+                      username
+                    }
                   }
                   cars {
                     results {

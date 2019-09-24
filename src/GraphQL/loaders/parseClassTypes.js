@@ -561,14 +561,16 @@ const load = (
     const viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: `The Viewer object type is used in operations that involve outputting the current user data.`,
-      interfaces,
       fields: () => ({
-        ...outputFields(),
         sessionToken: defaultGraphQLTypes.SESSION_TOKEN_ATT,
+        user: {
+          description: 'This is the current user.',
+          type: new GraphQLNonNull(classGraphQLOutputType),
+        },
       }),
     });
-    parseGraphQLSchema.viewerType = viewerType;
     parseGraphQLSchema.addGraphQLType(viewerType, true, true);
+    parseGraphQLSchema.viewerType = viewerType;
   }
 };
 
