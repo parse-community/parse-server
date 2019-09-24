@@ -84,7 +84,7 @@ const load = parseGraphQLSchema => {
     },
     outputFields: {
       class: {
-        description: 'This is the created class.',
+        description: 'This is the updated class.',
         type: new GraphQLNonNull(schemaTypes.CLASS),
       },
     },
@@ -136,41 +136,57 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  parseGraphQLSchema.addGraphQLMutation(
-    'deleteClass',
-    {
-      description:
-        'The deleteClass mutation can be used to delete an existing object class.',
-      args: {
-        name: schemaTypes.CLASS_NAME_ATT,
-      },
-      type: new GraphQLNonNull(schemaTypes.CLASS),
-      resolve: async (_source, args, context) => {
-        try {
-          const { name } = args;
-          const { config, auth } = context;
-
-          enforceMasterKeyAccess(auth);
-
-          if (auth.isReadOnly) {
-            throw new Parse.Error(
-              Parse.Error.OPERATION_FORBIDDEN,
-              "read-only masterKey isn't allowed to delete a schema."
-            );
-          }
-
-          const schema = await config.database.loadSchema({ clearCache: true });
-          const existingParseClass = await getClass(name, schema);
-          await config.database.deleteSchema(name);
-          return {
-            name: existingParseClass.className,
-            schemaFields: transformToGraphQL(existingParseClass.fields),
-          };
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
+  const deleteClassMutation = mutationWithClientMutationId({
+    name: 'DeleteClass',
+    description:
+      'The deleteClass mutation can be used to delete an existing object class.',
+    inputFields: {
+      name: schemaTypes.CLASS_NAME_ATT,
+    },
+    outputFields: {
+      class: {
+        description: 'This is the deleted class.',
+        type: new GraphQLNonNull(schemaTypes.CLASS),
       },
     },
+    mutateAndGetPayload: async (args, context) => {
+      try {
+        const { name } = args;
+        const { config, auth } = context;
+
+        enforceMasterKeyAccess(auth);
+
+        if (auth.isReadOnly) {
+          throw new Parse.Error(
+            Parse.Error.OPERATION_FORBIDDEN,
+            "read-only masterKey isn't allowed to delete a schema."
+          );
+        }
+
+        const schema = await config.database.loadSchema({ clearCache: true });
+        const existingParseClass = await getClass(name, schema);
+        await config.database.deleteSchema(name);
+        return {
+          class: {
+            name: existingParseClass.className,
+            schemaFields: transformToGraphQL(existingParseClass.fields),
+          },
+        };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    deleteClassMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(deleteClassMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'deleteClass',
+    deleteClassMutation,
     true,
     true
   );

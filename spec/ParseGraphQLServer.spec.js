@@ -1059,6 +1059,42 @@ describe('ParseGraphQLServer', () => {
 
           expect(payloadFields).toEqual(['class', 'clientMutationId']);
         });
+
+        it('should have clientMutationId in deleteClass mutation input', async () => {
+          const inputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "DeleteClassInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(inputFields).toEqual(['clientMutationId', 'name']);
+        });
+
+        it('should have clientMutationId in deleteClass mutation payload', async () => {
+          const payloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "UpdateClassPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(payloadFields).toEqual(['class', 'clientMutationId']);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -3481,6 +3517,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should delete an existing class', async () => {
           try {
+            const clientMutationId = uuidv4();
             const result = await apolloClient.mutate({
               mutation: gql`
                 mutation {
@@ -3498,10 +3535,13 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  deleteClass(name: "MyNewClass") {
-                    name
-                    schemaFields {
+                  deleteClass(input: { clientMutationId: "${clientMutationId}" name: "MyNewClass" }) {
+                    clientMutationId
+                    class {
                       name
+                      schemaFields {
+                        name
+                      }
                     }
                   }
                 }
@@ -3515,7 +3555,7 @@ describe('ParseGraphQLServer', () => {
             result.data.createClass.class.schemaFields = result.data.createClass.class.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
-            result.data.deleteClass.schemaFields = result.data.deleteClass.schemaFields.sort(
+            result.data.deleteClass.class.schemaFields = result.data.deleteClass.class.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
             expect(result).toEqual({
@@ -3538,15 +3578,22 @@ describe('ParseGraphQLServer', () => {
                   __typename: 'CreateClassPayload',
                 },
                 deleteClass: {
-                  name: 'MyNewClass',
-                  schemaFields: [
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                    { name: 'willBeRemoved', __typename: 'SchemaStringField' },
-                  ],
-                  __typename: 'Class',
+                  clientMutationId,
+                  class: {
+                    name: 'MyNewClass',
+                    schemaFields: [
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
+                      {
+                        name: 'willBeRemoved',
+                        __typename: 'SchemaStringField',
+                      },
+                    ],
+                    __typename: 'Class',
+                  },
+                  __typename: 'DeleteClassPayload',
                 },
               },
             });
@@ -3604,8 +3651,8 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation {
-                  deleteClass(name: "SomeClass") {
-                    name
+                  deleteClass(input: { name: "SomeClass" }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -3626,8 +3673,8 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation {
-                  deleteClass(name: "SomeInexistentClass") {
-                    name
+                  deleteClass(input: { name: "SomeInexistentClass" }) {
+                    clientMutationId
                   }
                 }
               `,
