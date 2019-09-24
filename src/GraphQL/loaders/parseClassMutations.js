@@ -252,20 +252,24 @@ const load = function(
 
   if (isDestroyEnabled) {
     const deleteGraphQLMutationName = `delete${graphQLClassName}`;
-    parseGraphQLSchema.addGraphQLMutation(deleteGraphQLMutationName, {
+    const deleteGraphQLMutation = mutationWithClientMutationId({
+      name: `Delete${graphQLClassName}`,
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
-      args: {
+      inputFields: {
         id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
       },
-      type: new GraphQLNonNull(
-        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
-      ),
-      async resolve(_source, args, context, mutationInfo) {
+      outputFields: {
+        [getGraphQLQueryName]: {
+          description: 'This is the deleted object.',
+          type: new GraphQLNonNull(
+            classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+          ),
+        },
+      },
+      mutateAndGetPayload: async (args, context, mutationInfo) => {
         try {
           let { id } = args;
           const { config, auth, info } = context;
-          const selectedFields = getFieldNames(mutationInfo);
-          const { keys, include } = extractKeysAndInclude(selectedFields);
 
           const globalIdObject = fromGlobalId(id);
 
@@ -273,10 +277,14 @@ const load = function(
             id = globalIdObject.id;
           }
 
+          const selectedFields = getFieldNames(mutationInfo)
+            .filter(field => field.startsWith(`${getGraphQLQueryName}.`))
+            .map(field => field.replace(`${getGraphQLQueryName}.`, ''));
+          const { keys, include } = extractKeysAndInclude(selectedFields);
           let optimizedObject = {};
-          const splitedKeys = keys.split(',');
           if (
-            splitedKeys.filter(key => !['id', 'objectId'].includes(key))
+            keys &&
+            keys.split(',').filter(key => !['id', 'objectId'].includes(key))
               .length > 0
           ) {
             optimizedObject = await objectsQueries.getObject(
@@ -298,12 +306,29 @@ const load = function(
             auth,
             info
           );
-          return { objectId: id, ...optimizedObject };
+          return {
+            [getGraphQLQueryName]: {
+              objectId: id,
+              ...optimizedObject,
+            },
+          };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
       },
     });
+
+    if (
+      parseGraphQLSchema.addGraphQLType(
+        deleteGraphQLMutation.args.input.type.ofType
+      ) &&
+      parseGraphQLSchema.addGraphQLType(deleteGraphQLMutation.type)
+    ) {
+      parseGraphQLSchema.addGraphQLMutation(
+        deleteGraphQLMutationName,
+        deleteGraphQLMutation
+      );
+    }
   }
 };
 

@@ -1147,6 +1147,108 @@ describe('ParseGraphQLServer', () => {
             'someClass',
           ]);
         });
+
+        it('should have clientMutationId in custom update object mutation input', async () => {
+          const obj = new Parse.Object('SomeClass');
+          await obj.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const createObjectInputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "UpdateSomeClassInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(createObjectInputFields).toEqual([
+            'clientMutationId',
+            'fields',
+            'id',
+          ]);
+        });
+
+        it('should have clientMutationId in custom update object mutation payload', async () => {
+          const obj = new Parse.Object('SomeClass');
+          await obj.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const createObjectPayloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "UpdateSomeClassPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(createObjectPayloadFields).toEqual([
+            'clientMutationId',
+            'someClass',
+          ]);
+        });
+
+        it('should have clientMutationId in custom delete object mutation input', async () => {
+          const obj = new Parse.Object('SomeClass');
+          await obj.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const createObjectInputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "DeleteSomeClassInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(createObjectInputFields).toEqual(['clientMutationId', 'id']);
+        });
+
+        it('should have clientMutationId in custom delete object mutation payload', async () => {
+          const obj = new Parse.Object('SomeClass');
+          await obj.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const createObjectPayloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "DeleteSomeClassPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(createObjectPayloadFields).toEqual([
+            'clientMutationId',
+            'someClass',
+          ]);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -1444,8 +1546,8 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation DeleteCustomer($id: ID!) {
-                  deleteCustomer(id: $id) {
-                    id
+                  deleteCustomer(input: { id: $id }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1532,8 +1634,8 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation DeleteSuperCar($id: ID!) {
-                  deleteSuperCar(id: $id) {
-                    id
+                  deleteSuperCar(input: { id: $id }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -1578,7 +1680,9 @@ describe('ParseGraphQLServer', () => {
             apolloClient.query({
               query: gql`
                 mutation DeleteCustomer($id: ID!, $foo: String!) {
-                  deleteCustomer(id: $id)
+                  deleteCustomer(input: { id: $id }) {
+                    clientMutationId
+                  }
                 }
               `,
               variables: {
@@ -2355,20 +2459,36 @@ describe('ParseGraphQLServer', () => {
                     $id5: ID!
                     $id6: ID!
                   ) {
-                    secondaryObject1: deleteSecondaryObject(id: $id1) {
-                      id
-                      objectId
-                      someField
+                    secondaryObject1: deleteSecondaryObject(
+                      input: { id: $id1 }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
                     }
-                    secondaryObject3: deleteSecondaryObject(id: $id3) {
-                      objectId
-                      someField
+                    secondaryObject3: deleteSecondaryObject(
+                      input: { id: $id3 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
                     }
-                    secondaryObject5: deleteSecondaryObject(id: $id5) {
-                      id
+                    secondaryObject5: deleteSecondaryObject(
+                      input: { id: $id5 }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
                     }
-                    secondaryObject6: deleteSecondaryObject(id: $id6) {
-                      objectId
+                    secondaryObject6: deleteSecondaryObject(
+                      input: { id: $id6 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
                     }
                   }
                 `,
@@ -2466,14 +2586,19 @@ describe('ParseGraphQLServer', () => {
                 `,
                 variables: {
                   id1:
-                    deleteSecondaryObjectsResult.data.secondaryObject1.objectId,
+                    deleteSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.objectId,
                   id2: getSecondaryObjectsResult.data.secondaryObject2.id,
                   id3:
-                    deleteSecondaryObjectsResult.data.secondaryObject3.objectId,
+                    deleteSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
                   id4: getSecondaryObjectsResult.data.secondaryObject4.objectId,
-                  id5: deleteSecondaryObjectsResult.data.secondaryObject5.id,
+                  id5:
+                    deleteSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
                   id6:
-                    deleteSecondaryObjectsResult.data.secondaryObject6.objectId,
+                    deleteSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
                 },
                 context: {
                   headers: {
@@ -5951,6 +6076,7 @@ describe('ParseGraphQLServer', () => {
 
         describe('Delete', () => {
           it('should return a specific type using class specific mutation', async () => {
+            const clientMutationId = uuidv4();
             const obj = new Parse.Object('Customer');
             obj.set('someField1', 'someField1Value1');
             obj.set('someField2', 'someField2Value1');
@@ -5960,25 +6086,36 @@ describe('ParseGraphQLServer', () => {
 
             const result = await apolloClient.mutate({
               mutation: gql`
-                mutation DeleteCustomer($id: ID!) {
-                  deleteCustomer(id: $id) {
-                    id
-                    objectId
-                    someField1
-                    someField2
+                mutation DeleteCustomer($input: DeleteCustomerInput!) {
+                  deleteCustomer(input: $input) {
+                    clientMutationId
+                    customer {
+                      id
+                      objectId
+                      someField1
+                      someField2
+                    }
                   }
                 }
               `,
               variables: {
-                id: obj.id,
+                input: {
+                  clientMutationId,
+                  id: obj.id,
+                },
               },
             });
 
-            expect(result.data.deleteCustomer.objectId).toEqual(obj.id);
-            expect(result.data.deleteCustomer.someField1).toEqual(
+            expect(result.data.deleteCustomer.clientMutationId).toEqual(
+              clientMutationId
+            );
+            expect(result.data.deleteCustomer.customer.objectId).toEqual(
+              obj.id
+            );
+            expect(result.data.deleteCustomer.customer.someField1).toEqual(
               'someField1Value1'
             );
-            expect(result.data.deleteCustomer.someField2).toEqual(
+            expect(result.data.deleteCustomer.customer.someField2).toEqual(
               'someField2Value1'
             );
 
@@ -5998,8 +6135,11 @@ describe('ParseGraphQLServer', () => {
                   mutation DeleteSomeObject(
                     $id: ID!
                   ) {
-                    delete: delete${className}(id: $id) {
-                      objectId
+                    delete: delete${className}(input: { id: $id }) {
+                      ${className.charAt(0).toLowerCase() +
+                        className.slice(1)} {
+                        objectId
+                      }
                     }
                   }
                 `,
@@ -6035,7 +6175,10 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await deleteObject(object4.className, object4.id)).data.delete
+              (await deleteObject(object4.className, object4.id)).data.delete[
+                object4.className.charAt(0).toLowerCase() +
+                  object4.className.slice(1)
+              ]
             ).toEqual({ objectId: object4.id, __typename: 'PublicClass' });
             await expectAsync(
               object4.fetch({ useMasterKey: true })
@@ -6043,7 +6186,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
-              })).data.delete
+              })).data.delete[
+                object1.className.charAt(0).toLowerCase() +
+                  object1.className.slice(1)
+              ]
             ).toEqual({ objectId: object1.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object1.fetch({ useMasterKey: true })
@@ -6051,7 +6197,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.delete
+              })).data.delete[
+                object2.className.charAt(0).toLowerCase() +
+                  object2.className.slice(1)
+              ]
             ).toEqual({ objectId: object2.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object2.fetch({ useMasterKey: true })
@@ -6059,7 +6208,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.delete
+              })).data.delete[
+                object3.className.charAt(0).toLowerCase() +
+                  object3.className.slice(1)
+              ]
             ).toEqual({ objectId: object3.id, __typename: 'GraphQLClass' });
             await expectAsync(
               object3.fetch({ useMasterKey: true })
@@ -6077,8 +6229,11 @@ describe('ParseGraphQLServer', () => {
                   mutation DeleteSomeObject(
                     $id: ID!
                   ) {
-                    delete${className}(id: $id) {
-                      objectId
+                    delete${className}(input: { id: $id }) {
+                      ${className.charAt(0).toLowerCase() +
+                        className.slice(1)} {
+                        objectId
+                      }
                     }
                   }
                 `,
@@ -6116,6 +6271,9 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object4.className, object4.id)).data[
                 `delete${object4.className}`
+              ][
+                object4.className.charAt(0).toLowerCase() +
+                  object4.className.slice(1)
               ].objectId
             ).toEqual(object4.id);
             await expectAsync(
@@ -6124,7 +6282,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object1.className, object1.id, {
                 'X-Parse-Master-Key': 'test',
-              })).data[`delete${object1.className}`].objectId
+              })).data[`delete${object1.className}`][
+                object1.className.charAt(0).toLowerCase() +
+                  object1.className.slice(1)
+              ].objectId
             ).toEqual(object1.id);
             await expectAsync(
               object1.fetch({ useMasterKey: true })
@@ -6132,7 +6293,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object2.className, object2.id, {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data[`delete${object2.className}`].objectId
+              })).data[`delete${object2.className}`][
+                object2.className.charAt(0).toLowerCase() +
+                  object2.className.slice(1)
+              ].objectId
             ).toEqual(object2.id);
             await expectAsync(
               object2.fetch({ useMasterKey: true })
@@ -6140,7 +6304,10 @@ describe('ParseGraphQLServer', () => {
             expect(
               (await deleteObject(object3.className, object3.id, {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data[`delete${object3.className}`].objectId
+              })).data[`delete${object3.className}`][
+                object3.className.charAt(0).toLowerCase() +
+                  object3.className.slice(1)
+              ].objectId
             ).toEqual(object3.id);
             await expectAsync(
               object3.fetch({ useMasterKey: true })
