@@ -1019,6 +1019,46 @@ describe('ParseGraphQLServer', () => {
 
           expect(payloadFields).toEqual(['class', 'clientMutationId']);
         });
+
+        it('should have clientMutationId in updateClass mutation input', async () => {
+          const inputFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "UpdateClassInput") {
+                  inputFields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].inputFields
+            .map(field => field.name)
+            .sort();
+
+          expect(inputFields).toEqual([
+            'clientMutationId',
+            'name',
+            'schemaFields',
+          ]);
+        });
+
+        it('should have clientMutationId in updateClass mutation payload', async () => {
+          const payloadFields = (await apolloClient.query({
+            query: gql`
+              query {
+                __type(name: "UpdateClassPayload") {
+                  fields {
+                    name
+                  }
+                }
+              }
+            `,
+          })).data['__type'].fields
+            .map(field => field.name)
+            .sort();
+
+          expect(payloadFields).toEqual(['class', 'clientMutationId']);
+        });
       });
 
       describe('Parse Class Types', () => {
@@ -3010,6 +3050,7 @@ describe('ParseGraphQLServer', () => {
 
         it('should update an existing class', async () => {
           try {
+            const clientMutationId = uuidv4();
             const result = await apolloClient.mutate({
               mutation: gql`
                 mutation {
@@ -3027,7 +3068,8 @@ describe('ParseGraphQLServer', () => {
                       }
                     }
                   }
-                  updateClass(
+                  updateClass(input: {
+                    clientMutationId: "${clientMutationId}"
                     name: "MyNewClass"
                     schemaFields: {
                       addStrings: [
@@ -3102,16 +3144,19 @@ describe('ParseGraphQLServer', () => {
                         { name: "doesNotExist" }
                       ]
                     }
-                  ) {
-                    name
-                    schemaFields {
+                  }) {
+                    clientMutationId
+                    class {
                       name
-                      __typename
-                      ... on SchemaPointerField {
-                        targetClassName
-                      }
-                      ... on SchemaRelationField {
-                        targetClassName
+                      schemaFields {
+                        name
+                        __typename
+                        ... on SchemaPointerField {
+                          targetClassName
+                        }
+                        ... on SchemaRelationField {
+                          targetClassName
+                        }
                       }
                     }
                   }
@@ -3126,7 +3171,7 @@ describe('ParseGraphQLServer', () => {
             result.data.createClass.class.schemaFields = result.data.createClass.class.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
-            result.data.updateClass.schemaFields = result.data.updateClass.schemaFields.sort(
+            result.data.updateClass.class.schemaFields = result.data.updateClass.class.schemaFields.sort(
               (a, b) => (a.name > b.name ? 1 : -1)
             );
             expect(result).toEqual({
@@ -3149,56 +3194,72 @@ describe('ParseGraphQLServer', () => {
                   __typename: 'CreateClassPayload',
                 },
                 updateClass: {
-                  name: 'MyNewClass',
-                  schemaFields: [
-                    { name: 'ACL', __typename: 'SchemaACLField' },
-                    { name: 'arrayField1', __typename: 'SchemaArrayField' },
-                    { name: 'arrayField2', __typename: 'SchemaArrayField' },
-                    { name: 'booleanField1', __typename: 'SchemaBooleanField' },
-                    { name: 'booleanField2', __typename: 'SchemaBooleanField' },
-                    { name: 'bytesField1', __typename: 'SchemaBytesField' },
-                    { name: 'bytesField2', __typename: 'SchemaBytesField' },
-                    { name: 'createdAt', __typename: 'SchemaDateField' },
-                    { name: 'dateField1', __typename: 'SchemaDateField' },
-                    { name: 'dateField2', __typename: 'SchemaDateField' },
-                    { name: 'fileField1', __typename: 'SchemaFileField' },
-                    { name: 'fileField2', __typename: 'SchemaFileField' },
-                    {
-                      name: 'geoPointField',
-                      __typename: 'SchemaGeoPointField',
-                    },
-                    { name: 'numberField1', __typename: 'SchemaNumberField' },
-                    { name: 'numberField2', __typename: 'SchemaNumberField' },
-                    { name: 'objectField1', __typename: 'SchemaObjectField' },
-                    { name: 'objectField2', __typename: 'SchemaObjectField' },
-                    { name: 'objectId', __typename: 'SchemaStringField' },
-                    {
-                      name: 'pointerField1',
-                      __typename: 'SchemaPointerField',
-                      targetClassName: 'Class1',
-                    },
-                    {
-                      name: 'pointerField2',
-                      __typename: 'SchemaPointerField',
-                      targetClassName: 'Class6',
-                    },
-                    { name: 'polygonField1', __typename: 'SchemaPolygonField' },
-                    { name: 'polygonField2', __typename: 'SchemaPolygonField' },
-                    {
-                      name: 'relationField1',
-                      __typename: 'SchemaRelationField',
-                      targetClassName: 'Class1',
-                    },
-                    {
-                      name: 'relationField2',
-                      __typename: 'SchemaRelationField',
-                      targetClassName: 'Class6',
-                    },
-                    { name: 'stringField1', __typename: 'SchemaStringField' },
-                    { name: 'stringField2', __typename: 'SchemaStringField' },
-                    { name: 'updatedAt', __typename: 'SchemaDateField' },
-                  ],
-                  __typename: 'Class',
+                  clientMutationId,
+                  class: {
+                    name: 'MyNewClass',
+                    schemaFields: [
+                      { name: 'ACL', __typename: 'SchemaACLField' },
+                      { name: 'arrayField1', __typename: 'SchemaArrayField' },
+                      { name: 'arrayField2', __typename: 'SchemaArrayField' },
+                      {
+                        name: 'booleanField1',
+                        __typename: 'SchemaBooleanField',
+                      },
+                      {
+                        name: 'booleanField2',
+                        __typename: 'SchemaBooleanField',
+                      },
+                      { name: 'bytesField1', __typename: 'SchemaBytesField' },
+                      { name: 'bytesField2', __typename: 'SchemaBytesField' },
+                      { name: 'createdAt', __typename: 'SchemaDateField' },
+                      { name: 'dateField1', __typename: 'SchemaDateField' },
+                      { name: 'dateField2', __typename: 'SchemaDateField' },
+                      { name: 'fileField1', __typename: 'SchemaFileField' },
+                      { name: 'fileField2', __typename: 'SchemaFileField' },
+                      {
+                        name: 'geoPointField',
+                        __typename: 'SchemaGeoPointField',
+                      },
+                      { name: 'numberField1', __typename: 'SchemaNumberField' },
+                      { name: 'numberField2', __typename: 'SchemaNumberField' },
+                      { name: 'objectField1', __typename: 'SchemaObjectField' },
+                      { name: 'objectField2', __typename: 'SchemaObjectField' },
+                      { name: 'objectId', __typename: 'SchemaStringField' },
+                      {
+                        name: 'pointerField1',
+                        __typename: 'SchemaPointerField',
+                        targetClassName: 'Class1',
+                      },
+                      {
+                        name: 'pointerField2',
+                        __typename: 'SchemaPointerField',
+                        targetClassName: 'Class6',
+                      },
+                      {
+                        name: 'polygonField1',
+                        __typename: 'SchemaPolygonField',
+                      },
+                      {
+                        name: 'polygonField2',
+                        __typename: 'SchemaPolygonField',
+                      },
+                      {
+                        name: 'relationField1',
+                        __typename: 'SchemaRelationField',
+                        targetClassName: 'Class1',
+                      },
+                      {
+                        name: 'relationField2',
+                        __typename: 'SchemaRelationField',
+                        targetClassName: 'Class6',
+                      },
+                      { name: 'stringField1', __typename: 'SchemaStringField' },
+                      { name: 'stringField2', __typename: 'SchemaStringField' },
+                      { name: 'updatedAt', __typename: 'SchemaDateField' },
+                    ],
+                    __typename: 'Class',
+                  },
+                  __typename: 'UpdateClassPayload',
                 },
               },
             });
@@ -3313,8 +3374,8 @@ describe('ParseGraphQLServer', () => {
             await apolloClient.mutate({
               mutation: gql`
                 mutation {
-                  updateClass(name: "SomeClass") {
-                    name
+                  updateClass(input: { name: "SomeClass" }) {
+                    clientMutationId
                   }
                 }
               `,
@@ -3360,10 +3421,12 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation {
                   updateClass(
-                    name: "SomeClass"
-                    schemaFields: { addNumbers: [{ name: "someField" }] }
+                    input: {
+                      name: "SomeClass"
+                      schemaFields: { addNumbers: [{ name: "someField" }] }
+                    }
                   ) {
-                    name
+                    clientMutationId
                   }
                 }
               `,
@@ -3390,10 +3453,12 @@ describe('ParseGraphQLServer', () => {
               mutation: gql`
                 mutation {
                   updateClass(
-                    name: "SomeInexistentClass"
-                    schemaFields: { addNumbers: [{ name: "someField" }] }
+                    input: {
+                      name: "SomeInexistentClass"
+                      schemaFields: { addNumbers: [{ name: "someField" }] }
+                    }
                   ) {
-                    name
+                    clientMutationId
                   }
                 }
               `,

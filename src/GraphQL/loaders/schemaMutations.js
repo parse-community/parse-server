@@ -71,51 +71,67 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  parseGraphQLSchema.addGraphQLMutation(
-    'updateClass',
-    {
-      description:
-        'The updateClass mutation can be used to update the schema for an existing object class.',
-      args: {
-        name: schemaTypes.CLASS_NAME_ATT,
-        schemaFields: {
-          description: "These are the schema's fields of the object class.",
-          type: schemaTypes.SCHEMA_FIELDS_INPUT,
-        },
-      },
-      type: new GraphQLNonNull(schemaTypes.CLASS),
-      resolve: async (_source, args, context) => {
-        try {
-          const { name, schemaFields } = args;
-          const { config, auth } = context;
-
-          enforceMasterKeyAccess(auth);
-
-          if (auth.isReadOnly) {
-            throw new Parse.Error(
-              Parse.Error.OPERATION_FORBIDDEN,
-              "read-only masterKey isn't allowed to update a schema."
-            );
-          }
-
-          const schema = await config.database.loadSchema({ clearCache: true });
-          const existingParseClass = await getClass(name, schema);
-          const parseClass = await schema.updateClass(
-            name,
-            transformToParse(schemaFields, existingParseClass.fields),
-            undefined,
-            undefined,
-            config.database
-          );
-          return {
-            name: parseClass.className,
-            schemaFields: transformToGraphQL(parseClass.fields),
-          };
-        } catch (e) {
-          parseGraphQLSchema.handleError(e);
-        }
+  const updateClassMutation = mutationWithClientMutationId({
+    name: 'UpdateClass',
+    description:
+      'The updateClass mutation can be used to update the schema for an existing object class.',
+    inputFields: {
+      name: schemaTypes.CLASS_NAME_ATT,
+      schemaFields: {
+        description: "These are the schema's fields of the object class.",
+        type: schemaTypes.SCHEMA_FIELDS_INPUT,
       },
     },
+    outputFields: {
+      class: {
+        description: 'This is the created class.',
+        type: new GraphQLNonNull(schemaTypes.CLASS),
+      },
+    },
+    mutateAndGetPayload: async (args, context) => {
+      try {
+        const { name, schemaFields } = args;
+        const { config, auth } = context;
+
+        enforceMasterKeyAccess(auth);
+
+        if (auth.isReadOnly) {
+          throw new Parse.Error(
+            Parse.Error.OPERATION_FORBIDDEN,
+            "read-only masterKey isn't allowed to update a schema."
+          );
+        }
+
+        const schema = await config.database.loadSchema({ clearCache: true });
+        const existingParseClass = await getClass(name, schema);
+        const parseClass = await schema.updateClass(
+          name,
+          transformToParse(schemaFields, existingParseClass.fields),
+          undefined,
+          undefined,
+          config.database
+        );
+        return {
+          class: {
+            name: parseClass.className,
+            schemaFields: transformToGraphQL(parseClass.fields),
+          },
+        };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    updateClassMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(updateClassMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'updateClass',
+    updateClassMutation,
     true,
     true
   );
