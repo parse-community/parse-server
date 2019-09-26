@@ -4980,6 +4980,158 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue14', 'someValue17']);
           });
 
+          fit('should support pagination', async () => {
+            const numberArray = (first, last) => {
+              const array = [];
+              for (let i = first; i <= last; i++) {
+                array.push(i);
+              }
+              return array;
+            };
+
+            const promises = [];
+            for (let i = 0; i < 100; i++) {
+              const obj = new Parse.Object('SomeClass');
+              obj.set('numberField', i);
+              promises.push(obj.save());
+            }
+            await Promise.all(promises);
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const find = async ({ skip, after, first, before, last } = {}) => {
+              return await apolloClient.query({
+                query: gql`
+                  query FindSomeObjects(
+                    $order: [SomeClassOrder!]
+                    $skip: Int
+                    $after: String
+                    $first: Int
+                    $before: String
+                    $last: Int
+                  ) {
+                    someClasses(
+                      order: $order
+                      skip: $skip
+                      after: $after
+                      first: $first
+                      before: $before
+                      last: $last
+                    ) {
+                      edges {
+                        cursor
+                        node {
+                          numberField
+                        }
+                      }
+                      count
+                      pageInfo {
+                        hasPreviousPage
+                        startCursor
+                        endCursor
+                        hasNextPage
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  order: ['numberField_ASC'],
+                  skip,
+                  after,
+                  first,
+                  before,
+                  last,
+                },
+              });
+            };
+
+            let result = await find();
+            expect(
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
+            ).toEqual(numberArray(0, 99));
+            expect(result.data.someClasses.count).toEqual(100);
+            expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
+              false
+            );
+            expect(result.data.someClasses.pageInfo.startCursor).toEqual(
+              result.data.someClasses.edges[0].cursor
+            );
+            expect(result.data.someClasses.pageInfo.endCursor).toEqual(
+              result.data.someClasses.edges[99].cursor
+            );
+            expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(false);
+
+            result = await find({ first: 10 });
+            expect(
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
+            ).toEqual(numberArray(0, 9));
+            expect(result.data.someClasses.count).toEqual(100);
+            expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
+              false
+            );
+            expect(result.data.someClasses.pageInfo.startCursor).toEqual(
+              result.data.someClasses.edges[0].cursor
+            );
+            expect(result.data.someClasses.pageInfo.endCursor).toEqual(
+              result.data.someClasses.edges[9].cursor
+            );
+            expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(true);
+
+            result = await find({
+              first: 10,
+              after: result.data.someClasses.pageInfo.endCursor,
+            });
+            expect(
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
+            ).toEqual(numberArray(10, 19));
+            expect(result.data.someClasses.count).toEqual(100);
+            expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
+              true
+            );
+            expect(result.data.someClasses.pageInfo.startCursor).toEqual(
+              result.data.someClasses.edges[0].cursor
+            );
+            expect(result.data.someClasses.pageInfo.endCursor).toEqual(
+              result.data.someClasses.edges[9].cursor
+            );
+            expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(true);
+
+            result = await find({ last: 10 });
+            expect(
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
+            ).toEqual(numberArray(90, 99));
+            expect(result.data.someClasses.count).toEqual(100);
+            expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
+              true
+            );
+            expect(result.data.someClasses.pageInfo.startCursor).toEqual(
+              result.data.someClasses.edges[0].cursor
+            );
+            expect(result.data.someClasses.pageInfo.endCursor).toEqual(
+              result.data.someClasses.edges[9].cursor
+            );
+            expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(false);
+
+            result = await find({
+              last: 10,
+              before: result.data.someClasses.pageInfo.startCursor,
+            });
+            expect(
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
+            ).toEqual(numberArray(80, 89));
+            expect(result.data.someClasses.count).toEqual(100);
+            expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
+              true
+            );
+            expect(result.data.someClasses.pageInfo.startCursor).toEqual(
+              result.data.someClasses.edges[0].cursor
+            );
+            expect(result.data.someClasses.pageInfo.endCursor).toEqual(
+              result.data.someClasses.edges[9].cursor
+            );
+            expect(result.data.someClasses.pageInfo.hasNextPage).toEqual(true);
+          });
+
           it('should support count', async () => {
             await prepareData();
 
