@@ -1,3 +1,4 @@
+import Parse from 'parse/node';
 import { fromGlobalId } from 'graphql-relay';
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../helpers/objectsMutations';
@@ -82,8 +83,9 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value) === 0)
-      throw new Error(
-        `You need to provide atleast one operation on the relation mutation of field ${field}`
+      throw new Parse.Error(
+        Parse.Error.INVALID_POINTER,
+        `You need to provide at least one operation on the relation mutation of field ${field}`
       );
 
     const op = {
@@ -160,7 +162,8 @@ const transformers = {
     { config, auth, info }
   ) => {
     if (Object.keys(value) > 1 || Object.keys(value) === 0)
-      throw new Error(
+      throw new Parse.Error(
+        Parse.Error.INVALID_POINTER,
         `You need to provide link OR createLink on the pointer mutation of field ${field}`
       );
 

@@ -94,7 +94,16 @@ const load = function(
       ),
       async resolve(_source, args, context, queryInfo) {
         try {
-          const { where, order, skip, limit, options } = args;
+          const {
+            where,
+            order,
+            skip,
+            first,
+            after,
+            last,
+            before,
+            options,
+          } = args;
           const {
             readPreference,
             includeReadPreference,
@@ -105,8 +114,8 @@ const load = function(
 
           const { keys, include } = extractKeysAndInclude(
             selectedFields
-              .filter(field => field.includes('.'))
-              .map(field => field.slice(field.indexOf('.') + 1))
+              .filter(field => field.startsWith('edges.node.'))
+              .map(field => field.replace('edges.node.', ''))
           );
           const parseOrder = order && order.join(',');
 
@@ -115,7 +124,10 @@ const load = function(
             where,
             parseOrder,
             skip,
-            limit,
+            first,
+            after,
+            last,
+            before,
             keys,
             include,
             false,
@@ -125,7 +137,7 @@ const load = function(
             config,
             auth,
             info,
-            selectedFields.map(field => field.split('.', 1)[0]),
+            selectedFields,
             parseClass.fields
           );
         } catch (e) {

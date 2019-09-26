@@ -51,6 +51,7 @@ const RESERVED_GRAPHQL_TYPE_NAMES = [
   'UpdateClassPayload',
   'DeleteClassInput',
   'DeleteClassPayload',
+  'PageInfo',
 ];
 const RESERVED_GRAPHQL_QUERY_NAMES = ['health', 'viewer', 'class', 'classes'];
 const RESERVED_GRAPHQL_MUTATION_NAMES = [
@@ -243,10 +244,16 @@ class ParseGraphQLSchema {
     return this.graphQLSchema;
   }
 
-  addGraphQLType(type, throwError = false, ignoreReserved = false) {
+  addGraphQLType(
+    type,
+    throwError = false,
+    ignoreReserved = false,
+    ignoreConnection = false
+  ) {
     if (
       (!ignoreReserved && RESERVED_GRAPHQL_TYPE_NAMES.includes(type.name)) ||
-      this.graphQLTypes.find(existingType => existingType.name === type.name)
+      this.graphQLTypes.find(existingType => existingType.name === type.name) ||
+      (!ignoreConnection && type.name.endsWith('Connection'))
     ) {
       const message = `Type ${type.name} could not be added to the auto schema because it collided with an existing type.`;
       if (throwError) {

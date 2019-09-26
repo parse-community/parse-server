@@ -7,7 +7,11 @@ import {
   GraphQLNonNull,
   GraphQLEnumType,
 } from 'graphql';
-import { globalIdField } from 'graphql-relay';
+import {
+  globalIdField,
+  connectionArgs,
+  connectionDefinitions,
+} from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from '../helpers/objectsQueries';
@@ -371,7 +375,7 @@ const load = (
         : GraphQLString,
     },
     skip: defaultGraphQLTypes.SKIP_ATT,
-    limit: defaultGraphQLTypes.LIMIT_ATT,
+    ...connectionArgs,
     options: defaultGraphQLTypes.READ_OPTIONS_ATT,
   };
 
@@ -407,7 +411,16 @@ const load = (
             type,
             async resolve(source, args, context, queryInfo) {
               try {
-                const { where, order, skip, limit, options } = args;
+                const {
+                  where,
+                  order,
+                  skip,
+                  first,
+                  after,
+                  last,
+                  before,
+                  options,
+                } = args;
                 const {
                   readPreference,
                   includeReadPreference,
@@ -418,9 +431,11 @@ const load = (
 
                 const { keys, include } = extractKeysAndInclude(
                   selectedFields
-                    .filter(field => field.includes('.'))
-                    .map(field => field.slice(field.indexOf('.') + 1))
+                    .filter(field => field.startsWith('edges.node.'))
+                    .map(field => field.replace('edges.node.', ''))
                 );
+                const parseOrder = order && order.join(',');
+
                 return await objectsQueries.findObjects(
                   source[field].className,
                   {
@@ -434,9 +449,12 @@ const load = (
                     },
                     ...(where || {}),
                   },
-                  order,
+                  parseOrder,
                   skip,
-                  limit,
+                  first,
+                  after,
+                  last,
+                  before,
                   keys,
                   include,
                   false,
@@ -446,8 +464,11 @@ const load = (
                   config,
                   auth,
                   info,
-                  selectedFields.map(field => field.split('.', 1)[0]),
-                  parseClass.fields
+                  selectedFields,
+                  parseGraphQLSchema.parseClasses.find(
+                    parseClass =>
+                      parseClass.className === source[field].className
+                  ).fields
                 );
               } catch (e) {
                 parseGraphQLSchema.handleError(e);
@@ -518,27 +539,20 @@ const load = (
     classGraphQLOutputType
   );
 
-  const classGraphQLFindResultTypeName = `${graphQLClassName}FindResult`;
-  let classGraphQLFindResultType = new GraphQLObjectType({
-    name: classGraphQLFindResultTypeName,
-    description: `The ${classGraphQLFindResultTypeName} object type is used in the ${graphQLClassName} find query to return the data of the matched objects.`,
-    fields: {
-      results: {
-        description: 'This is the objects returned by the query',
-        type: new GraphQLNonNull(
-          new GraphQLList(
-            new GraphQLNonNull(
-              classGraphQLOutputType || defaultGraphQLTypes.OBJECT
-            )
-          )
-        ),
-      },
+  const { connectionType, edgeType } = connectionDefinitions({
+    name: graphQLClassName,
+    connectionFields: {
       count: defaultGraphQLTypes.COUNT_ATT,
     },
+    nodeType: classGraphQLOutputType || defaultGraphQLTypes.OBJECT,
   });
-  classGraphQLFindResultType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLFindResultType
-  );
+  let classGraphQLFindResultType = undefined;
+  if (
+    parseGraphQLSchema.addGraphQLType(edgeType) &&
+    parseGraphQLSchema.addGraphQLType(connectionType, false, false, true)
+  ) {
+    classGraphQLFindResultType = connectionType;
+  }
 
   parseGraphQLSchema.parseClassTypes[className] = {
     classGraphQLPointerType,
