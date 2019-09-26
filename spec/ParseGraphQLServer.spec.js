@@ -4980,7 +4980,7 @@ describe('ParseGraphQLServer', () => {
             ).toEqual(['someValue14', 'someValue17']);
           });
 
-          fit('should support pagination', async () => {
+          it('should support pagination', async () => {
             const numberArray = (first, last) => {
               const array = [];
               for (let i = first; i <= last; i++) {

@@ -1,7 +1,7 @@
 import { nodeDefinitions, fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsQueries from './objectsQueries';
+import * as objectsQueries from '../helpers/objectsQueries';
 import { extractKeysAndInclude } from './parseClassTypes';
 
 const GLOBAL_ID_ATT = {
