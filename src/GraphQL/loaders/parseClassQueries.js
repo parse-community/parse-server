@@ -90,7 +90,7 @@ const load = function(
       description: `The ${findGraphQLQueryName} query can be used to find objects of the ${graphQLClassName} class.`,
       args: classGraphQLFindArgs,
       type: new GraphQLNonNull(
-        classGraphQLFindResultType || defaultGraphQLTypes.FIND_RESULT
+        classGraphQLFindResultType || defaultGraphQLTypes.OBJECT
       ),
       async resolve(_source, args, context, queryInfo) {
         try {

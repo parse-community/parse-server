@@ -661,26 +661,6 @@ describe('ParseGraphQLServer', () => {
           ]);
         });
 
-        it('should have FindResult object type', async () => {
-          const findResultType = (await apolloClient.query({
-            query: gql`
-              query FindResultType {
-                __type(name: "FindResult") {
-                  kind
-                  fields {
-                    name
-                  }
-                }
-              }
-            `,
-          })).data['__type'];
-          expect(findResultType.kind).toEqual('OBJECT');
-          expect(findResultType.fields.map(name => name.name).sort()).toEqual([
-            'count',
-            'results',
-          ]);
-        });
-
         it('should have GraphQLUpload object type', async () => {
           const graphQLUploadType = (await apolloClient.query({
             query: gql`
@@ -714,7 +694,6 @@ describe('ParseGraphQLServer', () => {
             'ParseObject',
             'Date',
             'FileInfo',
-            'FindResult',
             'ReadPreference',
             'Upload',
           ];
@@ -1272,10 +1251,10 @@ describe('ParseGraphQLServer', () => {
             'RoleWhereInput',
             'CreateRoleFieldsInput',
             'UpdateRoleFieldsInput',
-            'RoleFindResult',
+            'RoleConnection',
             'User',
             'UserWhereInput',
-            'UserFindResult',
+            'UserConnection',
             'CreateUserFieldsInput',
             'UpdateUserFieldsInput',
           ];
@@ -2025,8 +2004,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [engine_ASC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2038,8 +2019,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [engine_DESC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2051,8 +2034,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [mileage_DESC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2065,8 +2050,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [mileage_ASC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2078,8 +2065,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [doors_ASC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2091,8 +2080,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [price_DESC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2104,8 +2095,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSuperCar {
                   superCars(order: [price_ASC, doors_DESC]) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -2181,19 +2174,21 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeClass {
                   someClasses(order: [createdAt_ASC]) {
-                    results {
-                      id
-                      objectId
+                    edges {
+                      node {
+                        id
+                        objectId
+                      }
                     }
                   }
                 }
               `,
             });
 
-            expect(findResult.data.someClasses.results[0].objectId).toBe(
+            expect(findResult.data.someClasses.edges[0].node.objectId).toBe(
               obj1.id
             );
-            expect(findResult.data.someClasses.results[1].objectId).toBe(
+            expect(findResult.data.someClasses.edges[1].node.objectId).toBe(
               obj2.id
             );
 
@@ -2217,18 +2212,18 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                id1: findResult.data.someClasses.results[0].id,
-                id2: findResult.data.someClasses.results[1].id,
+                id1: findResult.data.someClasses.edges[0].node.id,
+                id2: findResult.data.someClasses.edges[1].node.id,
               },
             });
 
             expect(nodeResult.data.node1.id).toBe(
-              findResult.data.someClasses.results[0].id
+              findResult.data.someClasses.edges[0].node.id
             );
             expect(nodeResult.data.node1.objectId).toBe(obj1.id);
             expect(nodeResult.data.node1.someField).toBe('some value 1');
             expect(nodeResult.data.node2.id).toBe(
-              findResult.data.someClasses.results[1].id
+              findResult.data.someClasses.edges[1].node.id
             );
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
@@ -2575,10 +2570,12 @@ describe('ParseGraphQLServer', () => {
                       }
                       order: [id_ASC, objectId_ASC]
                     ) {
-                      results {
-                        id
-                        objectId
-                        someField
+                      edges {
+                        node {
+                          id
+                          objectId
+                          someField
+                        }
                       }
                       count
                     }
@@ -2611,20 +2608,22 @@ describe('ParseGraphQLServer', () => {
                 findSecondaryObjectsResult.data.secondaryObjects.count
               ).toEqual(2);
               expect(
-                findSecondaryObjectsResult.data.secondaryObjects.results
-                  .map(value => value.someField)
+                findSecondaryObjectsResult.data.secondaryObjects.edges
+                  .map(value => value.node.someField)
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
               expect(
-                findSecondaryObjectsResult.data.secondaryObjects.results[0].id
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .id
               ).toBeLessThan(
-                findSecondaryObjectsResult.data.secondaryObjects.results[1].id
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .id
               );
               expect(
-                findSecondaryObjectsResult.data.secondaryObjects.results[0]
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
                   .objectId
               ).toBeLessThan(
-                findSecondaryObjectsResult.data.secondaryObjects.results[1]
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
                   .objectId
               );
 
@@ -2664,10 +2663,12 @@ describe('ParseGraphQLServer', () => {
                           someField
                         }
                         relationField {
-                          results {
-                            id
-                            objectId
-                            someField
+                          edges {
+                            node {
+                              id
+                              objectId
+                              someField
+                            }
                           }
                         }
                       }
@@ -2728,10 +2729,12 @@ describe('ParseGraphQLServer', () => {
                           someField
                         }
                         relationField {
-                          results {
-                            id
-                            objectId
-                            someField
+                          edges {
+                            node {
+                              id
+                              objectId
+                              someField
+                            }
                           }
                         }
                       }
@@ -2771,8 +2774,8 @@ describe('ParseGraphQLServer', () => {
                   .pointerField.someField
               ).toEqual('some value 22');
               expect(
-                createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.results
-                  .map(value => value.someField)
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
+                  .map(value => value.node.someField)
                   .sort()
               ).toEqual(['some value 22', 'some value 44']);
               expect(
@@ -2793,7 +2796,7 @@ describe('ParseGraphQLServer', () => {
               ).toEqual('some value 44');
               expect(
                 updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
-                  .relationField.results
+                  .relationField.edges
               ).toEqual([]);
             } catch (e) {
               handleError(e);
@@ -4639,25 +4642,27 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindCustomer {
                   customers {
-                    results {
-                      objectId
-                      someField
-                      createdAt
-                      updatedAt
+                    edges {
+                      node {
+                        objectId
+                        someField
+                        createdAt
+                        updatedAt
+                      }
                     }
                   }
                 }
               `,
             });
 
-            expect(result.data.customers.results.length).toEqual(2);
+            expect(result.data.customers.edges.length).toEqual(2);
 
-            result.data.customers.results.forEach(resultObj => {
-              const obj = resultObj.objectId === obj1.id ? obj1 : obj2;
-              expect(resultObj.objectId).toEqual(obj.id);
-              expect(resultObj.someField).toEqual(obj.get('someField'));
-              expect(new Date(resultObj.createdAt)).toEqual(obj.createdAt);
-              expect(new Date(resultObj.updatedAt)).toEqual(obj.updatedAt);
+            result.data.customers.edges.forEach(resultObj => {
+              const obj = resultObj.node.objectId === obj1.id ? obj1 : obj2;
+              expect(resultObj.node.objectId).toEqual(obj.id);
+              expect(resultObj.node.someField).toEqual(obj.get('someField'));
+              expect(new Date(resultObj.node.createdAt)).toEqual(obj.createdAt);
+              expect(new Date(resultObj.node.updatedAt)).toEqual(obj.updatedAt);
             });
           });
 
@@ -4674,9 +4679,11 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query FindSomeObjects {
                     find: ${graphqlClassName} {
-                      results {
-                        id
-                        someField
+                      edges {
+                        node {
+                          id
+                          someField
+                        }
                       }
                     }
                   }
@@ -4690,62 +4697,62 @@ describe('ParseGraphQLServer', () => {
             }
 
             expect(
-              (await findObjects('GraphQLClass')).data.find.results.map(
-                object => object.someField
+              (await findObjects('GraphQLClass')).data.find.edges.map(
+                object => object.node.someField
               )
             ).toEqual([]);
             expect(
-              (await findObjects('PublicClass')).data.find.results.map(
-                object => object.someField
+              (await findObjects('PublicClass')).data.find.edges.map(
+                object => object.node.someField
               )
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Master-Key': 'test',
-              })).data.find.results
-                .map(object => object.someField)
+              })).data.find.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('PublicClass', {
                 'X-Parse-Master-Key': 'test',
-              })).data.find.results.map(object => object.someField)
+              })).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find.results
-                .map(object => object.someField)
+              })).data.find.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('PublicClass', {
                 'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find.results.map(object => object.someField)
+              })).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.find.results
-                .map(object => object.someField)
+              })).data.find.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user3.getSessionToken(),
-              })).data.find.results
-                .map(object => object.someField)
+              })).data.find.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user4.getSessionToken(),
-              })).data.find.results.map(object => object.someField)
+              })).data.find.edges.map(object => object.node.someField)
             ).toEqual([]);
             expect(
               (await findObjects('GraphQLClass', {
                 'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.find.results.map(object => object.someField)
+              })).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue3']);
           });
 
@@ -4758,8 +4765,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObjects($where: GraphQLClassWhereInput) {
                   graphQLClasses(where: $where) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -4791,8 +4800,8 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.graphQLClasses.results
-                .map(object => object.someField)
+              result.data.graphQLClasses.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
           });
@@ -4806,8 +4815,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObjects($where: GraphQLClassWhereInput) {
                   graphQLClasses(where: $where) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -4826,9 +4837,9 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            const { results } = result.data.graphQLClasses;
-            expect(results.length).toBe(1);
-            expect(results[0].someField).toEqual('someValue3');
+            const { edges } = result.data.graphQLClasses;
+            expect(edges.length).toBe(1);
+            expect(edges[0].node.someField).toEqual('someValue3');
           });
 
           it('should support OR operation', async () => {
@@ -4847,8 +4858,10 @@ describe('ParseGraphQLServer', () => {
                       ]
                     }
                   ) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -4861,8 +4874,8 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.graphQLClasses.results
-                .map(object => object.someField)
+              result.data.graphQLClasses.edges
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2']);
           });
@@ -4882,8 +4895,10 @@ describe('ParseGraphQLServer', () => {
                     $where: FullTextSearchTestWhereInput
                   ) {
                     fullTextSearchTests(where: $where) {
-                      results {
-                        objectId
+                      edges {
+                        node {
+                          objectId
+                        }
                       }
                     }
                   }
@@ -4907,14 +4922,14 @@ describe('ParseGraphQLServer', () => {
               });
 
               expect(
-                result.data.fullTextSearchTests.results[0].objectId
+                result.data.fullTextSearchTests.edges[0].node.objectId
               ).toEqual(obj.id);
             } catch (e) {
               handleError(e);
             }
           });
 
-          it('should support order, skip and limit arguments', async () => {
+          it('should support order, skip and first arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
               const obj = new Parse.Object('SomeClass');
@@ -4932,16 +4947,18 @@ describe('ParseGraphQLServer', () => {
                   $where: SomeClassWhereInput
                   $order: [SomeClassOrder!]
                   $skip: Int
-                  $limit: Int
+                  $first: Int
                 ) {
                   find: someClasses(
                     where: $where
                     order: $order
                     skip: $skip
-                    limit: $limit
+                    first: $first
                   ) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -4954,14 +4971,13 @@ describe('ParseGraphQLServer', () => {
                 },
                 order: ['numberField_DESC', 'someField_ASC'],
                 skip: 4,
-                limit: 2,
+                first: 2,
               },
             });
 
-            expect(result.data.find.results.map(obj => obj.someField)).toEqual([
-              'someValue14',
-              'someValue17',
-            ]);
+            expect(
+              result.data.find.edges.map(obj => obj.node.someField)
+            ).toEqual(['someValue14', 'someValue17']);
           });
 
           it('should support count', async () => {
@@ -4991,11 +5007,13 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObjects(
                   $where: GraphQLClassWhereInput
-                  $limit: Int
+                  $first: Int
                 ) {
-                  find: graphQLClasses(where: $where, limit: $limit) {
-                    results {
-                      id
+                  find: graphQLClasses(where: $where, first: $first) {
+                    edges {
+                      node {
+                        id
+                      }
                     }
                     count
                   }
@@ -5003,7 +5021,7 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where,
-                limit: 0,
+                first: 0,
               },
               context: {
                 headers: {
@@ -5012,7 +5030,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.find.results).toEqual([]);
+            expect(result.data.find.edges).toEqual([]);
             expect(result.data.find.count).toEqual(2);
           });
 
@@ -5057,7 +5075,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.find.results).toBeUndefined();
+            expect(result.data.find.edges).toBeUndefined();
             expect(result.data.find.count).toEqual(2);
           });
 
@@ -5080,10 +5098,12 @@ describe('ParseGraphQLServer', () => {
                 query FindSomeObjects($limit: Int) {
                   find: someClasses(
                     where: { id: { exists: true } }
-                    limit: $limit
+                    first: $limit
                   ) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                     count
                   }
@@ -5099,7 +5119,7 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result.data.find.results.length).toEqual(10);
+            expect(result.data.find.edges.length).toEqual(10);
             expect(result.data.find.count).toEqual(100);
           });
 
@@ -5112,8 +5132,10 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObject($where: GraphQLClassWhereInput) {
                   find: graphQLClasses(where: $where) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -5134,10 +5156,12 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObject($where: GraphQLClassWhereInput) {
                   find: graphQLClasses(where: $where) {
-                    results {
-                      someField
-                      pointerToUser {
-                        username
+                    edges {
+                      node {
+                        someField
+                        pointerToUser {
+                          username
+                        }
                       }
                     }
                   }
@@ -5155,10 +5179,12 @@ describe('ParseGraphQLServer', () => {
               },
             });
 
-            expect(result1.data.find.results[0].someField).toBeDefined();
-            expect(result1.data.find.results[0].pointerToUser).toBeUndefined();
-            expect(result2.data.find.results[0].someField).toBeDefined();
-            expect(result2.data.find.results[0].pointerToUser).toBeDefined();
+            expect(result1.data.find.edges[0].node.someField).toBeDefined();
+            expect(
+              result1.data.find.edges[0].node.pointerToUser
+            ).toBeUndefined();
+            expect(result2.data.find.edges[0].node.someField).toBeDefined();
+            expect(result2.data.find.edges[0].node.pointerToUser).toBeDefined();
           });
 
           it('should support include argument', async () => {
@@ -5176,9 +5202,11 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObject($where: GraphQLClassWhereInput) {
                   find: graphQLClasses(where: $where) {
-                    results {
-                      pointerToUser {
-                        id
+                    edges {
+                      node {
+                        pointerToUser {
+                          id
+                        }
                       }
                     }
                   }
@@ -5198,9 +5226,11 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObject($where: GraphQLClassWhereInput) {
                   find: graphQLClasses(where: $where) {
-                    results {
-                      pointerToUser {
-                        username
+                    edges {
+                      node {
+                        pointerToUser {
+                          username
+                        }
                       }
                     }
                   }
@@ -5216,10 +5246,10 @@ describe('ParseGraphQLServer', () => {
               },
             });
             expect(
-              result1.data.find.results[0].pointerToUser.username
+              result1.data.find.edges[0].node.pointerToUser.username
             ).toBeUndefined();
             expect(
-              result2.data.find.results[0].pointerToUser.username
+              result2.data.find.edges[0].node.pointerToUser.username
             ).toBeDefined();
           });
 
@@ -5240,9 +5270,11 @@ describe('ParseGraphQLServer', () => {
                 query: gql`
                   query FindSomeObjects {
                     find: graphQLClasses {
-                      results {
-                        pointerToUser {
-                          username
+                      edges {
+                        node {
+                          pointerToUser {
+                            username
+                          }
                         }
                       }
                     }
@@ -5295,9 +5327,11 @@ describe('ParseGraphQLServer', () => {
                     find: graphQLClasses(
                       options: { readPreference: SECONDARY }
                     ) {
-                      results {
-                        pointerToUser {
-                          username
+                      edges {
+                        node {
+                          pointerToUser {
+                            username
+                          }
                         }
                       }
                     }
@@ -5353,9 +5387,11 @@ describe('ParseGraphQLServer', () => {
                         includeReadPreference: NEAREST
                       }
                     ) {
-                      results {
-                        pointerToUser {
-                          username
+                      edges {
+                        node {
+                          pointerToUser {
+                            username
+                          }
                         }
                       }
                     }
@@ -5413,8 +5449,10 @@ describe('ParseGraphQLServer', () => {
                           subqueryReadPreference: NEAREST
                         }
                       ) {
-                        results {
-                          id
+                        edges {
+                          node {
+                            id
+                          }
                         }
                       }
                     }
@@ -6703,8 +6741,10 @@ describe('ParseGraphQLServer', () => {
                     }
                   }
                   cars {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -7029,8 +7069,10 @@ describe('ParseGraphQLServer', () => {
                   someClasses(
                     where: { someField: { equalTo: $someFieldValue } }
                   ) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -7043,7 +7085,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('string');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -7106,8 +7148,10 @@ describe('ParseGraphQLServer', () => {
                   someClasses(
                     where: { someField: { equalTo: $someFieldValue } }
                   ) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -7120,7 +7164,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('number');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -7183,8 +7227,10 @@ describe('ParseGraphQLServer', () => {
                   someClasses(
                     where: { someField: { equalTo: $someFieldValue } }
                   ) {
-                    results {
-                      someField
+                    edges {
+                      node {
+                        someField
+                      }
                     }
                   }
                 }
@@ -7197,7 +7243,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('number');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -7274,8 +7320,10 @@ describe('ParseGraphQLServer', () => {
                       someFieldFalse: { equalTo: $someFieldValueFalse }
                     }
                   ) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -7295,7 +7343,7 @@ describe('ParseGraphQLServer', () => {
             );
             expect(getResult.data.someClass.someFieldTrue).toEqual(true);
             expect(getResult.data.someClass.someFieldFalse).toEqual(false);
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -7356,8 +7404,10 @@ describe('ParseGraphQLServer', () => {
                     someField
                   }
                   someClasses(where: { someField: { exists: true } }) {
-                    results {
-                      id
+                    edges {
+                      node {
+                        id
+                      }
                     }
                   }
                 }
@@ -7370,7 +7420,7 @@ describe('ParseGraphQLServer', () => {
             expect(new Date(getResult.data.someClass.someField)).toEqual(
               someFieldValue
             );
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -7616,10 +7666,12 @@ describe('ParseGraphQLServer', () => {
                       objectId
                       name
                       companies {
-                        results {
-                          id
-                          objectId
-                          name
+                        edges {
+                          node {
+                            id
+                            objectId
+                            name
+                          }
                         }
                       }
                     }
@@ -7646,15 +7698,15 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.id).toBeDefined();
             expect(result.name).toEqual('imACountry2');
-            expect(result.companies.results.length).toEqual(3);
+            expect(result.companies.edges.length).toEqual(3);
             expect(
-              result.companies.results.some(o => o.objectId === company.id)
+              result.companies.edges.some(o => o.node.objectId === company.id)
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.name === 'imACompany2')
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.name === 'imACompany3')
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
           }
         );
@@ -7688,13 +7740,17 @@ describe('ParseGraphQLServer', () => {
                     id
                     name
                     companies {
-                      results {
-                        id
-                        name
-                        teams {
-                          results {
-                            id
-                            name
+                      edges {
+                        node {
+                          id
+                          name
+                          teams {
+                            edges {
+                              node {
+                                id
+                                name
+                              }
+                            }
                           }
                         }
                       }
@@ -7732,19 +7788,19 @@ describe('ParseGraphQLServer', () => {
 
           expect(result.id).toBeDefined();
           expect(result.name).toEqual('imACountry2');
-          expect(result.companies.results.length).toEqual(2);
+          expect(result.companies.edges.length).toEqual(2);
           expect(
-            result.companies.results.some(
+            result.companies.edges.some(
               c =>
-                c.name === 'imACompany2' &&
-                c.teams.results.some(t => t.name === 'imATeam2')
+                c.node.name === 'imACompany2' &&
+                c.node.teams.edges.some(t => t.node.name === 'imATeam2')
             )
           ).toBeTruthy();
           expect(
-            result.companies.results.some(
+            result.companies.edges.some(
               c =>
-                c.name === 'imACompany3' &&
-                c.teams.results.some(t => t.name === 'imATeam3')
+                c.node.name === 'imACompany3' &&
+                c.node.teams.edges.some(t => t.node.name === 'imATeam3')
             )
           ).toBeTruthy();
         });
@@ -7782,10 +7838,12 @@ describe('ParseGraphQLServer', () => {
                       id
                       objectId
                       companies {
-                        results {
-                          id
-                          objectId
-                          name
+                        edges {
+                          node {
+                            id
+                            objectId
+                            name
+                          }
                         }
                       }
                     }
@@ -7809,15 +7867,15 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(result.objectId).toEqual(country.id);
-            expect(result.companies.results.length).toEqual(2);
+            expect(result.companies.edges.length).toEqual(2);
             expect(
-              result.companies.results.some(o => o.objectId === company2.id)
+              result.companies.edges.some(o => o.node.objectId === company2.id)
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.name === 'imACompany3')
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
             expect(
-              result.companies.results.some(o => o.objectId === company1.id)
+              result.companies.edges.some(o => o.node.objectId === company1.id)
             ).toBeFalsy();
           }
         );
@@ -7851,9 +7909,11 @@ describe('ParseGraphQLServer', () => {
                       id
                       name
                       companies(where: $where) {
-                        results {
-                          id
-                          name
+                        edges {
+                          node {
+                            id
+                            name
+                          }
                         }
                       }
                     }
@@ -7885,9 +7945,9 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.id).toBeDefined();
             expect(result.name).toEqual('imACountry2');
-            expect(result.companies.results.length).toEqual(1);
+            expect(result.companies.edges.length).toEqual(1);
             expect(
-              result.companies.results.some(o => o.name === 'imACompany2')
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
           }
         );
@@ -7918,10 +7978,12 @@ describe('ParseGraphQLServer', () => {
                   id
                   objectId
                   companies {
-                    results {
-                      id
-                      objectId
-                      name
+                    edges {
+                      node {
+                        id
+                        objectId
+                        name
+                      }
                     }
                     count
                   }
@@ -7934,12 +7996,12 @@ describe('ParseGraphQLServer', () => {
           });
 
           expect(result1.objectId).toEqual(country.id);
-          expect(result1.companies.results.length).toEqual(2);
+          expect(result1.companies.edges.length).toEqual(2);
           expect(
-            result1.companies.results.some(o => o.objectId === company1.id)
+            result1.companies.edges.some(o => o.node.objectId === company1.id)
           ).toBeTruthy();
           expect(
-            result1.companies.results.some(o => o.objectId === company2.id)
+            result1.companies.edges.some(o => o.node.objectId === company2.id)
           ).toBeTruthy();
 
           // With where
@@ -7952,10 +8014,12 @@ describe('ParseGraphQLServer', () => {
                   id
                   objectId
                   companies(where: $where) {
-                    results {
-                      id
-                      objectId
-                      name
+                    edges {
+                      node {
+                        id
+                        objectId
+                        name
+                      }
                     }
                   }
                 }
@@ -7969,8 +8033,8 @@ describe('ParseGraphQLServer', () => {
             },
           });
           expect(result2.objectId).toEqual(country.id);
-          expect(result2.companies.results.length).toEqual(1);
-          expect(result2.companies.results[0].objectId).toEqual(company1.id);
+          expect(result2.companies.edges.length).toEqual(1);
+          expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
 
         it('should support files', async () => {
@@ -8099,20 +8163,24 @@ describe('ParseGraphQLServer', () => {
                   findSomeClass1: someClasses(
                     where: { someField: { exists: true } }
                   ) {
-                    results {
-                      someField {
-                        name
-                        url
+                    edges {
+                      node {
+                        someField {
+                          name
+                          url
+                        }
                       }
                     }
                   }
                   findSomeClass2: someClasses(
                     where: { someField: { exists: true } }
                   ) {
-                    results {
-                      someField {
-                        name
-                        url
+                    edges {
+                      node {
+                        someField {
+                          name
+                          url
+                        }
                       }
                     }
                   }
@@ -8130,8 +8198,8 @@ describe('ParseGraphQLServer', () => {
             expect(getResult.data.someClass.someField.url).toEqual(
               result.data.createFile.fileInfo.url
             );
-            expect(getResult.data.findSomeClass1.results.length).toEqual(1);
-            expect(getResult.data.findSomeClass2.results.length).toEqual(1);
+            expect(getResult.data.findSomeClass1.edges.length).toEqual(1);
+            expect(getResult.data.findSomeClass2.edges.length).toEqual(1);
 
             res = await fetch(getResult.data.someClass.someField.url);
 
@@ -8209,9 +8277,11 @@ describe('ParseGraphQLServer', () => {
                     someField
                   }
                   someClasses(where: $where) {
-                    results {
-                      id
-                      someField
+                    edges {
+                      node {
+                        id
+                        someField
+                      }
                     }
                   }
                 }
@@ -8229,8 +8299,8 @@ describe('ParseGraphQLServer', () => {
             expect(someField).toEqual(someFieldValue);
 
             // Checks class query results
-            expect(someClasses.results.length).toEqual(1);
-            expect(someClasses.results[0].someField).toEqual(someFieldValue);
+            expect(someClasses.edges.length).toEqual(1);
+            expect(someClasses.edges[0].node.someField).toEqual(someFieldValue);
           } catch (e) {
             handleError(e);
           }
@@ -8331,9 +8401,11 @@ describe('ParseGraphQLServer', () => {
               query: gql`
                 query FindSomeObject($where: SomeClassWhereInput) {
                   someClasses(where: $where) {
-                    results {
-                      id
-                      someField
+                    edges {
+                      node {
+                        id
+                        someField
+                      }
                     }
                   }
                 }
@@ -8347,14 +8419,14 @@ describe('ParseGraphQLServer', () => {
             const { someClasses } = findResult.data;
 
             // Checks class query results
-            const { results } = someClasses;
-            expect(results.length).toEqual(2);
+            const { edges } = someClasses;
+            expect(edges.length).toEqual(2);
             expect(
-              results.find(result => result.id === create1.someClass.id)
+              edges.find(result => result.node.id === create1.someClass.id).node
                 .someField
             ).toEqual(someFieldValue);
             expect(
-              results.find(result => result.id === create2.someClass.id)
+              edges.find(result => result.node.id === create2.someClass.id).node
                 .someField
             ).toEqual(someFieldValue2);
           } catch (e) {
@@ -8427,11 +8499,13 @@ describe('ParseGraphQLServer', () => {
                     }
                   }
                   someClasses(where: { someField: { exists: true } }) {
-                    results {
-                      id
-                      someField {
-                        ... on Element {
-                          value
+                    edges {
+                      node {
+                        id
+                        someField {
+                          ... on Element {
+                            value
+                          }
                         }
                       }
                     }
@@ -8448,7 +8522,7 @@ describe('ParseGraphQLServer', () => {
             expect(someField.map(element => element.value)).toEqual(
               someFieldValue
             );
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -8661,9 +8735,11 @@ describe('ParseGraphQLServer', () => {
                   someClasses(
                     where: { someField: { equalTo: $someFieldValue } }
                   ) {
-                    results {
-                      id
-                      someField
+                    edges {
+                      node {
+                        id
+                        someField
+                      }
                     }
                   }
                 }
@@ -8676,7 +8752,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('string');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
-            expect(getResult.data.someClasses.results.length).toEqual(2);
+            expect(getResult.data.someClasses.edges.length).toEqual(2);
           } catch (e) {
             handleError(e);
           }
@@ -8747,11 +8823,13 @@ describe('ParseGraphQLServer', () => {
                     }
                   }
                   someClasses(where: { someField: { exists: true } }) {
-                    results {
-                      id
-                      someField {
-                        latitude
-                        longitude
+                    edges {
+                      node {
+                        id
+                        someField {
+                          latitude
+                          longitude
+                        }
                       }
                     }
                   }
@@ -8764,7 +8842,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -8836,11 +8914,13 @@ describe('ParseGraphQLServer', () => {
                     }
                   }
                   someClasses(where: { somePolygonField: { exists: true } }) {
-                    results {
-                      id
-                      somePolygonField {
-                        latitude
-                        longitude
+                    edges {
+                      node {
+                        id
+                        somePolygonField {
+                          latitude
+                          longitude
+                        }
                       }
                     }
                   }
@@ -8860,7 +8940,7 @@ describe('ParseGraphQLServer', () => {
                 __typename: 'GeoPoint',
               }))
             );
-            expect(getResult.data.someClasses.results.length).toEqual(1);
+            expect(getResult.data.someClasses.edges.length).toEqual(1);
           } catch (e) {
             handleError(e);
           }
@@ -8951,8 +9031,10 @@ describe('ParseGraphQLServer', () => {
             query: gql`
               query FindSomeObject($where: SomeClassWhereInput!) {
                 someClasses(where: $where) {
-                  results {
-                    id
+                  edges {
+                    node {
+                      id
+                    }
                   }
                 }
               }
@@ -8965,9 +9047,9 @@ describe('ParseGraphQLServer', () => {
               },
             },
           });
-          const findResults = findResult.data.someClasses.results;
+          const findResults = findResult.data.someClasses.edges;
           expect(findResults.length).toBe(1);
-          expect(findResults[0].id).toBe(
+          expect(findResults[0].node.id).toBe(
             createResult.data.createSomeClass.someClass.id
           );
         });

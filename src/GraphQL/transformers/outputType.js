@@ -45,7 +45,7 @@ const transformOutputTypeToGraphQL = (
           parseClassTypes[targetClass].classGraphQLFindResultType
         );
       } else {
-        return new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT);
+        return new GraphQLNonNull(defaultGraphQLTypes.OBJECT);
       }
     case 'File':
       return defaultGraphQLTypes.FILE_INFO;

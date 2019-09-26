@@ -1001,19 +1001,6 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
   },
 });
 
-const FIND_RESULT = new GraphQLObjectType({
-  name: 'FindResult',
-  description:
-    'The FindResult object type is used in the find queries to return the data of the matched objects.',
-  fields: {
-    results: {
-      description: 'This is the objects returned by the query',
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(OBJECT))),
-    },
-    count: COUNT_ATT,
-  },
-});
-
 const ELEMENT = new GraphQLObjectType({
   name: 'Element',
   description: "The Element object type is used to return array items' value.",
@@ -1096,7 +1083,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FILE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
 };
 
@@ -1180,7 +1166,6 @@ export {
   FILE_WHERE_INPUT,
   GEO_POINT_WHERE_INPUT,
   POLYGON_WHERE_INPUT,
-  FIND_RESULT,
   ARRAY_RESULT,
   ELEMENT,
   load,
