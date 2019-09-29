@@ -540,7 +540,7 @@ const ACL = new GraphQLObjectType({
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
               userId: rule,
-              read: p[rule].read || p[rule].write ? true : false,
+              read: p[rule].read ? true : false,
               write: p[rule].write ? true : false,
             });
           }
