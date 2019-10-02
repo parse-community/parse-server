@@ -46,18 +46,6 @@ function RestWrite(
   this.storage = {};
   this.runOptions = {};
   this.context = {};
-  if (!query && data.objectId) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_KEY_NAME,
-      'objectId is an invalid field name.'
-    );
-  }
-  if (!query && data.id) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_KEY_NAME,
-      'id is an invalid field name.'
-    );
-  }
 
   // When the operation is complete, this.response may have several
   // fields.
