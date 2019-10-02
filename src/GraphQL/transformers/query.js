@@ -198,7 +198,12 @@ const transformQueryInputToParse = (constraints, fields) => {
     }
 
     if (typeof fieldValue === 'object') {
-      transformQueryConstraintInputToParse(fieldValue, fields, fieldName, constraints);
+      transformQueryConstraintInputToParse(
+        fieldValue,
+        fields,
+        fieldName,
+        constraints
+      );
     }
   });
 };
