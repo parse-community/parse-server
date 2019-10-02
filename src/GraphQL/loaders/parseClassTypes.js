@@ -161,7 +161,7 @@ const load = (
           }
         },
         {
-          ACL: defaultGraphQLTypes.ACL_ATT,
+          ACL: { type: defaultGraphQLTypes.ACL_INPUT },
         }
       ),
   });
@@ -194,7 +194,7 @@ const load = (
           }
         },
         {
-          ACL: defaultGraphQLTypes.ACL_ATT,
+          ACL: { type: defaultGraphQLTypes.ACL_INPUT },
         }
       ),
   });
