@@ -7604,6 +7604,185 @@ describe('ParseGraphQLServer', () => {
           expect(schema.fields.updatedAt.type).toEqual('Date');
         });
 
+        it('should support ACL', async () => {
+          const someClass = new Parse.Object('SomeClass');
+          await someClass.save();
+
+          const user = new Parse.User();
+          user.set('username', 'username');
+          user.set('password', 'password');
+          await user.signUp();
+
+          const user2 = new Parse.User();
+          user2.set('username', 'username2');
+          user2.set('password', 'password2');
+          await user2.signUp();
+
+          const roleACL = new Parse.ACL();
+          roleACL.setPublicReadAccess(true);
+
+          const role = new Parse.Role('aRole', roleACL);
+          await role.save();
+
+          const role2 = new Parse.Role('aRole2', roleACL);
+          await role2.save();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const {
+            data: { createSomeClass },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation Create($fields: CreateSomeClassFieldsInput) {
+                createSomeClass(input: { fields: $fields }) {
+                  someClass {
+                    id
+                    objectId
+                    ACL {
+                      users {
+                        userId
+                        read
+                        write
+                      }
+                      roles {
+                        roleName
+                        read
+                        write
+                      }
+                      public {
+                        read
+                        write
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              fields: {
+                ACL: {
+                  users: [
+                    { userId: user.id, read: true, write: true },
+                    { userId: user2.id, read: true, write: false },
+                  ],
+                  roles: [
+                    { roleName: 'aRole', read: true, write: false },
+                    { roleName: 'aRole2', read: false, write: true },
+                  ],
+                  public: { read: true, write: true },
+                },
+              },
+            },
+          });
+
+          const expectedCreateACL = {
+            __typename: 'ACL',
+            users: [
+              {
+                userId: user.id,
+                read: true,
+                write: true,
+                __typename: 'UserACL',
+              },
+              {
+                userId: user2.id,
+                read: true,
+                write: false,
+                __typename: 'UserACL',
+              },
+            ],
+            roles: [
+              {
+                roleName: 'aRole',
+                read: true,
+                write: false,
+                __typename: 'RoleACL',
+              },
+              {
+                roleName: 'aRole2',
+                read: false,
+                write: true,
+                __typename: 'RoleACL',
+              },
+            ],
+            public: { read: true, write: true, __typename: 'PublicACL' },
+          };
+          const query1 = new Parse.Query('SomeClass');
+          const obj1 = (await query1.get(createSomeClass.someClass.objectId, {
+            useMasterKey: true,
+          })).toJSON();
+          expect(obj1.ACL[user.id]).toEqual({ read: true, write: true });
+          expect(obj1.ACL[user2.id]).toEqual({ read: true });
+          expect(obj1.ACL['role:aRole']).toEqual({ read: true });
+          expect(obj1.ACL['role:aRole2']).toEqual({ write: true });
+          expect(obj1.ACL['*']).toEqual({ read: true, write: true });
+          expect(createSomeClass.someClass.ACL).toEqual(expectedCreateACL);
+
+          const {
+            data: { updateSomeClass },
+          } = await apolloClient.mutate({
+            mutation: gql`
+              mutation Update($id: ID!, $fields: UpdateSomeClassFieldsInput) {
+                updateSomeClass(input: { id: $id, fields: $fields }) {
+                  someClass {
+                    id
+                    objectId
+                    ACL {
+                      users {
+                        userId
+                        read
+                        write
+                      }
+                      roles {
+                        roleName
+                        read
+                        write
+                      }
+                      public {
+                        read
+                        write
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              id: createSomeClass.someClass.id,
+              fields: {
+                ACL: {
+                  roles: [{ roleName: 'aRole', write: true, read: true }],
+                  public: { read: true, write: false },
+                },
+              },
+            },
+          });
+
+          const expectedUpdateACL = {
+            __typename: 'ACL',
+            users: null,
+            roles: [
+              {
+                roleName: 'aRole',
+                read: true,
+                write: true,
+                __typename: 'RoleACL',
+              },
+            ],
+            public: { read: true, write: false, __typename: 'PublicACL' },
+          };
+
+          const query2 = new Parse.Query('SomeClass');
+          const obj2 = (await query2.get(createSomeClass.someClass.objectId, {
+            useMasterKey: true,
+          })).toJSON();
+
+          expect(obj2.ACL['role:aRole']).toEqual({ write: true, read: true });
+          expect(obj2.ACL[user.id]).toBeUndefined();
+          expect(obj2.ACL['*']).toEqual({ read: true });
+          expect(updateSomeClass.someClass.ACL).toEqual(expectedUpdateACL);
+        });
+
         it('should support pointer on create', async () => {
           const company = new Parse.Object('Company');
           company.set('name', 'imACompany1');

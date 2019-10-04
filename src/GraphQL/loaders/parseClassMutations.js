@@ -127,7 +127,7 @@ const load = function(
             [getGraphQLQueryName]: {
               ...createdObject,
               updatedAt: createdObject.createdAt,
-              ...fields,
+              ...parseFields,
               ...optimizedObject,
             },
           };
@@ -227,7 +227,7 @@ const load = function(
             [getGraphQLQueryName]: {
               objectId: id,
               ...updatedObject,
-              ...fields,
+              ...parseFields,
               ...optimizedObject,
             },
           };

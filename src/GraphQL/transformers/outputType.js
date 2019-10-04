@@ -56,7 +56,7 @@ const transformOutputTypeToGraphQL = (
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
+      return defaultGraphQLTypes.ACL;
     default:
       return undefined;
   }

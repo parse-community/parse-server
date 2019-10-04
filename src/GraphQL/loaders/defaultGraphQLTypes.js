@@ -395,6 +395,192 @@ const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
 
+const USER_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'UserACLInput',
+  description: 'Allow to manage users in ACL.',
+  fields: {
+    userId: {
+      description: 'ID of the targetted User.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description: 'Allow the user to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow the user to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ROLE_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'RoleACLInput',
+  description: 'Allow to manage roles in ACL.',
+  fields: {
+    roleName: {
+      description: 'Name of the targetted Role.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    read: {
+      description:
+        'Allow users who are members of the role to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description:
+        'Allow users who are members of the role to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const PUBLIC_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'PublicACLInput',
+  description: 'Allow to manage public rights.',
+  fields: {
+    read: {
+      description: 'Allow anyone to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow anyone to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ACL_INPUT = new GraphQLInputObjectType({
+  name: 'ACLInput',
+  description:
+    'Allow to manage access rights. If not provided object will be publicly readable and writable',
+  fields: {
+    users: {
+      description: 'Access control list for users.',
+      type: new GraphQLList(new GraphQLNonNull(USER_ACL_INPUT)),
+    },
+    roles: {
+      description: 'Access control list for roles.',
+      type: new GraphQLList(new GraphQLNonNull(ROLE_ACL_INPUT)),
+    },
+    public: {
+      description: 'Public access control list.',
+      type: PUBLIC_ACL_INPUT,
+    },
+  },
+});
+
+const USER_ACL = new GraphQLObjectType({
+  name: 'UserACL',
+  description:
+    'Allow to manage users in ACL. If read and write are null the users have read and write rights.',
+  fields: {
+    userId: {
+      description: 'ID of the targetted User.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description: 'Allow the user to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow the user to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ROLE_ACL = new GraphQLObjectType({
+  name: 'RoleACL',
+  description:
+    'Allow to manage roles in ACL. If read and write are null the role have read and write rights.',
+  fields: {
+    roleName: {
+      description: 'Name of the targetted Role.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description:
+        'Allow users who are members of the role to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description:
+        'Allow users who are members of the role to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const PUBLIC_ACL = new GraphQLObjectType({
+  name: 'PublicACL',
+  description: 'Allow to manage public rights.',
+  fields: {
+    read: {
+      description: 'Allow anyone to read the current object.',
+      type: GraphQLBoolean,
+    },
+    write: {
+      description: 'Allow anyone to write on the current object.',
+      type: GraphQLBoolean,
+    },
+  },
+});
+
+const ACL = new GraphQLObjectType({
+  name: 'ACL',
+  description: 'Current access control list of the current object.',
+  fields: {
+    users: {
+      description: 'Access control list for users.',
+      type: new GraphQLList(new GraphQLNonNull(USER_ACL)),
+      resolve(p) {
+        const users = [];
+        Object.keys(p).forEach(rule => {
+          if (rule !== '*' && rule.indexOf('role:') !== 0) {
+            users.push({
+              userId: rule,
+              read: p[rule].read ? true : false,
+              write: p[rule].write ? true : false,
+            });
+          }
+        });
+        return users.length ? users : null;
+      },
+    },
+    roles: {
+      description: 'Access control list for roles.',
+      type: new GraphQLList(new GraphQLNonNull(ROLE_ACL)),
+      resolve(p) {
+        const roles = [];
+        Object.keys(p).forEach(rule => {
+          if (rule.indexOf('role:') === 0) {
+            roles.push({
+              roleName: rule.replace('role:', ''),
+              read: p[rule].read ? true : false,
+              write: p[rule].write ? true : false,
+            });
+          }
+        });
+        return roles.length ? roles : null;
+      },
+    },
+    public: {
+      description: 'Public access control list.',
+      type: PUBLIC_ACL,
+      resolve(p) {
+        /* eslint-disable */
+        return p['*']
+          ? {
+              read: p['*'].read ? true : false,
+              write: p['*'].write ? true : false,
+            }
+          : null;
+      },
+    },
+  },
+});
+
 const OBJECT_ID = new GraphQLNonNull(GraphQLID);
 
 const CLASS_NAME_ATT = {
@@ -423,13 +609,10 @@ const UPDATED_AT_ATT = {
   type: new GraphQLNonNull(DATE),
 };
 
-const ACL_ATT = {
-  description: 'This is the access control list of the object.',
-  type: OBJECT,
-};
-
 const INPUT_FIELDS = {
-  ACL: ACL_ATT,
+  ACL: {
+    type: ACL,
+  },
 };
 
 const CREATE_RESULT_FIELDS = {
@@ -1084,6 +1267,14 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
+  parseGraphQLSchema.addGraphQLType(ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(USER_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ROLE_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(PUBLIC_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ACL, true);
+  parseGraphQLSchema.addGraphQLType(USER_ACL, true);
+  parseGraphQLSchema.addGraphQLType(ROLE_ACL, true);
+  parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
 };
 
 export {
@@ -1115,7 +1306,6 @@ export {
   OBJECT_ID_ATT,
   UPDATED_AT_ATT,
   CREATED_AT_ATT,
-  ACL_ATT,
   INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
   UPDATE_RESULT_FIELDS,
@@ -1168,6 +1358,14 @@ export {
   POLYGON_WHERE_INPUT,
   ARRAY_RESULT,
   ELEMENT,
+  ACL_INPUT,
+  USER_ACL_INPUT,
+  ROLE_ACL_INPUT,
+  PUBLIC_ACL_INPUT,
+  ACL,
+  USER_ACL,
+  ROLE_ACL,
+  PUBLIC_ACL,
   load,
   loadArrayResult,
 };
