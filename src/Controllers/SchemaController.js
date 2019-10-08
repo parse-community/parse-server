@@ -556,7 +556,7 @@ export default class SchemaController {
   _dbAdapter: StorageAdapter;
   schemaData: { [string]: Schema };
   _cache: any;
-  reloadDataPromise: Promise<any>;
+  reloadDataPromise: ?Promise<any>;
   protectedFields: any;
 
   constructor(databaseAdapter: StorageAdapter, schemaCache: any) {
