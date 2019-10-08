@@ -131,7 +131,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _collectionPrefix: string;
   _mongoOptions: Object;
   // Public
-  connectionPromise: Promise<any>;
+  connectionPromise: ?Promise<any>;
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
