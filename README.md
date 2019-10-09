@@ -78,7 +78,11 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 ## Running Parse Server
 
-Before you start make sure you have [npm](https://www.npmjs.com/) and [MongoDB](https://www.mongodb.com/) to run Parse Server, and optionally Docker [Docker](https://www.docker.com/).
+Before you start make sure you have installed:
+
+- [NodeJS](https://www.npmjs.com/) that includes `npm` 
+- [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)
+- Optionally [Docker](https://www.docker.com/)
 
 ### Locally
 ```
