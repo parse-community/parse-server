@@ -172,6 +172,7 @@ describe_only(() => {
   let cacheAdapter;
   let getSpy;
   let putSpy;
+  let delSpy;
 
   beforeEach(async () => {
     cacheAdapter = new RedisCacheAdapter();
@@ -182,6 +183,7 @@ describe_only(() => {
 
     getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
     putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
+    delSpy = spyOn(cacheAdapter, 'del').and.callThrough();
   });
 
   it('test new object', async () => {
@@ -190,6 +192,10 @@ describe_only(() => {
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(3);
+    expect(delSpy.calls.count()).toBe(1);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test new object multiple fields', async () => {
@@ -203,6 +209,10 @@ describe_only(() => {
     await container.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(3);
+    expect(delSpy.calls.count()).toBe(1);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test update existing fields', async () => {
@@ -217,6 +227,10 @@ describe_only(() => {
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(2);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test saveAll / destroyAll', async () => {
@@ -242,6 +256,10 @@ describe_only(() => {
     await Parse.Object.destroyAll(objects);
     expect(getSpy.calls.count()).toBe(11);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(3);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test saveAll / destroyAll batch', async () => {
@@ -267,6 +285,10 @@ describe_only(() => {
     await Parse.Object.destroyAll(objects, { batchSize: 5 });
     expect(getSpy.calls.count()).toBe(12);
     expect(putSpy.calls.count()).toBe(2);
+    expect(delSpy.calls.count()).toBe(5);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test add new field to existing object', async () => {
@@ -281,6 +303,10 @@ describe_only(() => {
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(2);
+    expect(delSpy.calls.count()).toBe(2);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test add multiple fields to existing object', async () => {
@@ -301,6 +327,10 @@ describe_only(() => {
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(2);
+    expect(delSpy.calls.count()).toBe(2);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test user', async () => {
@@ -311,6 +341,10 @@ describe_only(() => {
 
     expect(getSpy.calls.count()).toBe(8);
     expect(putSpy.calls.count()).toBe(2);
+    expect(delSpy.calls.count()).toBe(1);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test allowClientCreation false', async () => {
@@ -320,8 +354,11 @@ describe_only(() => {
       cacheAdapter,
       allowClientClassCreation: false,
     });
+    await cacheAdapter.clear();
+
     getSpy.calls.reset();
     putSpy.calls.reset();
+    delSpy.calls.reset();
 
     object.set('foo', 'bar');
     await object.save();
@@ -335,6 +372,10 @@ describe_only(() => {
     await query.get(object.id);
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(2);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test query', async () => {
@@ -344,11 +385,16 @@ describe_only(() => {
 
     getSpy.calls.reset();
     putSpy.calls.reset();
+    delSpy.calls.reset();
 
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
     expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(1);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test query include', async () => {
@@ -368,6 +414,10 @@ describe_only(() => {
 
     expect(getSpy.calls.count()).toBe(4);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(3);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('query relation without schema', async () => {
@@ -388,6 +438,10 @@ describe_only(() => {
 
     expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(3);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test delete object', async () => {
@@ -397,10 +451,15 @@ describe_only(() => {
 
     getSpy.calls.reset();
     putSpy.calls.reset();
+    delSpy.calls.reset();
 
     await object.destroy();
     expect(getSpy.calls.count()).toBe(2);
     expect(putSpy.calls.count()).toBe(1);
+    expect(delSpy.calls.count()).toBe(1);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(0);
   });
 
   it('test schema update class', async () => {
@@ -409,6 +468,7 @@ describe_only(() => {
 
     getSpy.calls.reset();
     putSpy.calls.reset();
+    delSpy.calls.reset();
 
     const config = Config.get('test');
     const schema = await config.database.loadSchema();
@@ -452,5 +512,9 @@ describe_only(() => {
     );
     expect(getSpy.calls.count()).toBe(3);
     expect(putSpy.calls.count()).toBe(3);
+    expect(delSpy.calls.count()).toBe(0);
+
+    const keys = await cacheAdapter.getAllKeys();
+    expect(keys.length).toBe(1);
   });
 });

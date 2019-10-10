@@ -56,3 +56,6 @@ lib/
 
 # Folder created by FileSystemAdapter
 /files
+
+# Redis Dump
+dump.rdb
