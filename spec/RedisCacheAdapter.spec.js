@@ -175,11 +175,11 @@ describe_only(() => {
 
   beforeEach(async () => {
     cacheAdapter = new RedisCacheAdapter();
-    await cacheAdapter.clear();
     await reconfigureServer({
       cacheAdapter,
-      enableSingleSchemaCache: true,
     });
+    await cacheAdapter.clear();
+
     getSpy = spyOn(cacheAdapter, 'get').and.callThrough();
     putSpy = spyOn(cacheAdapter, 'put').and.callThrough();
   });
@@ -189,7 +189,7 @@ describe_only(() => {
     object.set('foo', 'bar');
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(3);
   });
 
   it('test new object multiple fields', async () => {
@@ -202,7 +202,7 @@ describe_only(() => {
     });
     await container.save();
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(3);
   });
 
   it('test update existing fields', async () => {
@@ -216,7 +216,7 @@ describe_only(() => {
     object.set('foo', 'barz');
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test saveAll / destroyAll', async () => {
@@ -234,14 +234,14 @@ describe_only(() => {
     }
     await Parse.Object.saveAll(objects);
     expect(getSpy.calls.count()).toBe(21);
-    expect(putSpy.calls.count()).toBe(10);
+    expect(putSpy.calls.count()).toBe(11);
 
     getSpy.calls.reset();
     putSpy.calls.reset();
 
     await Parse.Object.destroyAll(objects);
     expect(getSpy.calls.count()).toBe(11);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test saveAll / destroyAll batch', async () => {
@@ -259,14 +259,14 @@ describe_only(() => {
     }
     await Parse.Object.saveAll(objects, { batchSize: 5 });
     expect(getSpy.calls.count()).toBe(22);
-    expect(putSpy.calls.count()).toBe(5);
+    expect(putSpy.calls.count()).toBe(7);
 
     getSpy.calls.reset();
     putSpy.calls.reset();
 
     await Parse.Object.destroyAll(objects, { batchSize: 5 });
     expect(getSpy.calls.count()).toBe(12);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test add new field to existing object', async () => {
@@ -280,7 +280,7 @@ describe_only(() => {
     object.set('new', 'barz');
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(1);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test add multiple fields to existing object', async () => {
@@ -300,7 +300,7 @@ describe_only(() => {
     });
     await object.save();
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(1);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test user', async () => {
@@ -310,7 +310,7 @@ describe_only(() => {
     await user.signUp();
 
     expect(getSpy.calls.count()).toBe(8);
-    expect(putSpy.calls.count()).toBe(1);
+    expect(putSpy.calls.count()).toBe(2);
   });
 
   it('test allowClientCreation false', async () => {
@@ -318,7 +318,6 @@ describe_only(() => {
     await object.save();
     await reconfigureServer({
       cacheAdapter,
-      enableSingleSchemaCache: true,
       allowClientClassCreation: false,
     });
     getSpy.calls.reset();
@@ -327,7 +326,7 @@ describe_only(() => {
     object.set('foo', 'bar');
     await object.save();
     expect(getSpy.calls.count()).toBe(4);
-    expect(putSpy.calls.count()).toBe(1);
+    expect(putSpy.calls.count()).toBe(2);
 
     getSpy.calls.reset();
     putSpy.calls.reset();
@@ -335,7 +334,7 @@ describe_only(() => {
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test query', async () => {
@@ -349,7 +348,7 @@ describe_only(() => {
     const query = new Parse.Query(TestObject);
     await query.get(object.id);
     expect(getSpy.calls.count()).toBe(2);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test query include', async () => {
@@ -368,7 +367,7 @@ describe_only(() => {
     await query.get(object.id);
 
     expect(getSpy.calls.count()).toBe(4);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('query relation without schema', async () => {
@@ -388,7 +387,7 @@ describe_only(() => {
     expect(objects[0].id).toBe(child.id);
 
     expect(getSpy.calls.count()).toBe(2);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test delete object', async () => {
@@ -401,7 +400,7 @@ describe_only(() => {
 
     await object.destroy();
     expect(getSpy.calls.count()).toBe(2);
-    expect(putSpy.calls.count()).toBe(0);
+    expect(putSpy.calls.count()).toBe(1);
   });
 
   it('test schema update class', async () => {
@@ -452,6 +451,6 @@ describe_only(() => {
       config.database
     );
     expect(getSpy.calls.count()).toBe(3);
-    expect(putSpy.calls.count()).toBe(2);
+    expect(putSpy.calls.count()).toBe(3);
   });
 });
