@@ -2450,4 +2450,58 @@ describe('beforeLogin hook', () => {
     await Parse.User.logIn('tupac', 'shakur');
     done();
   });
+
+  it('afterFind should not be triggered when saving an object', async () => {
+    let beforeSaves = 0;
+    Parse.Cloud.beforeSave('SavingTest', () => {
+      beforeSaves++;
+    });
+
+    let afterSaves = 0;
+    Parse.Cloud.afterSave('SavingTest', () => {
+      afterSaves++;
+    });
+
+    let beforeFinds = 0;
+    Parse.Cloud.beforeFind('SavingTest', () => {
+      beforeFinds++;
+    });
+
+    let afterFinds = 0;
+    Parse.Cloud.afterFind('SavingTest', () => {
+      afterFinds++;
+    });
+
+    const obj = new Parse.Object('SavingTest');
+    obj.set('someField', 'some value 1');
+    await obj.save();
+
+    expect(beforeSaves).toEqual(1);
+    expect(afterSaves).toEqual(1);
+    expect(beforeFinds).toEqual(0);
+    expect(afterFinds).toEqual(0);
+
+    obj.set('someField', 'some value 2');
+    await obj.save();
+
+    expect(beforeSaves).toEqual(2);
+    expect(afterSaves).toEqual(2);
+    expect(beforeFinds).toEqual(0);
+    expect(afterFinds).toEqual(0);
+
+    await obj.fetch();
+
+    expect(beforeSaves).toEqual(2);
+    expect(afterSaves).toEqual(2);
+    expect(beforeFinds).toEqual(1);
+    expect(afterFinds).toEqual(1);
+
+    obj.set('someField', 'some value 3');
+    await obj.save();
+
+    expect(beforeSaves).toEqual(3);
+    expect(afterSaves).toEqual(3);
+    expect(beforeFinds).toEqual(1);
+    expect(afterFinds).toEqual(1);
+  });
 });
