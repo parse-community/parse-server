@@ -96,6 +96,19 @@ export class RedisCacheAdapter {
         })
     );
   }
+
+  // Used for testing
+  async getAllKeys() {
+    return new Promise((resolve, reject) => {
+      this.client.keys('*', (err, keys) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(keys);
+        }
+      });
+    });
+  }
 }
 
 export default RedisCacheAdapter;
