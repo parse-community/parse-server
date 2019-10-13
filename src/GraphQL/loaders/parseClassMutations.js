@@ -22,7 +22,7 @@ const getOnlyRequiredFields = (
   const missingFields = selectedFields
     .filter(
       field =>
-        (!updatedFields[field] && !nativeObjectFields.includes(field)) ||
+        !nativeObjectFields.includes(field) ||
         includedFields.includes(field)
     )
     .join(',');
