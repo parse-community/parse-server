@@ -27,10 +27,10 @@ env:
   - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=11.4.0
+  - NODE_VERSION=12.12.0
 matrix:
   allow_failures:
-  - env: NODE_VERSION=11.4.0
+  - env: NODE_VERSION=12.12.0
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
