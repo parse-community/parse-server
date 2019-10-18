@@ -21,6 +21,7 @@ const responses = {
 describe('AuthenticationProviders', function() {
   [
     'apple',
+    'gcenter',
     'facebook',
     'facebookaccountkit',
     'github',
@@ -39,7 +40,7 @@ describe('AuthenticationProviders', function() {
     'weibo',
     'phantauth',
     'microsoft',
-  ].map(function (providerName) {
+  ].map(function(providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
@@ -57,7 +58,8 @@ describe('AuthenticationProviders', function() {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      if (providerName === 'twitter' || providerName === 'apple') {
+      const noResponse = ['twitter', 'apple', 'gcenter'];
+      if (noResponse.includes(providerName)) {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
@@ -1175,6 +1177,67 @@ describe('apple signin auth adapter', () => {
   });
 });
 
+describe('Apple Game Center Auth adapter', () => {
+  const gcenter = require('../lib/Adapters/Auth/gcenter');
+
+  it('validateAuthData should validate', async () => {
+    // real token is used
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature:
+        'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+    } catch (e) {
+      fail();
+    }
+  });
+
+  it('validateAuthData invalid signature id', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Apple Game Center - invalid signature');
+    }
+  });
+
+  it('validateAuthData invalid public key url', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'invalid.com',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'Apple Game Center - invalid publicKeyUrl: invalid.com'
+      );
+    }
+  });
+});
+
 describe('phant auth adapter', () => {
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -1205,8 +1268,24 @@ describe('microsoft graph auth adapter', () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ id: 'userId', mail: 'userMail' });
     });
-    await microsoft.validateAuthData(
-      { id: 'userId', access_token: 'the_token' }
-    );
+    await microsoft.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token',
+    });
+  });
+
+  it('should fail to validate Microsoft Graph auth with bad token', done => {
+    const authData = {
+      id: 'fake-id',
+      mail: 'fake@mail.com',
+      access_token: 'very.long.bad.token',
+    };
+    microsoft.validateAuthData(authData).then(done.fail, err => {
+      expect(err.code).toBe(101);
+      expect(err.message).toBe(
+        'Microsoft Graph auth is invalid for this user.'
+      );
+      done();
+    });
   });
 });
