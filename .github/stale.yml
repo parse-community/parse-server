@@ -4,13 +4,18 @@ daysUntilStale: 45
 daysUntilClose: 7
 # Issues with these labels will never be considered stale
 exemptLabels:
-  - pinned
-  - security
-  - good first issue
-  - up-for-grabs
   - bug
   - enhancement
+  - feature request
+  - good first issue
+  - hacktoberfest
   - help wanted
+  - needs investigation
+  - needs more info
+  - question
+  - pinned
+  - security
+  - up-for-grabs
 # Label to use when marking an issue as stale
 staleLabel: wontfix
 # Limit to only `issues` not `pulls`
