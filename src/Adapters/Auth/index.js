@@ -1,6 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 
 const apple = require('./apple');
+const gcenter = require('./gcenter');
 const facebook = require('./facebook');
 const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
@@ -33,6 +34,7 @@ const anonymous = {
 
 const providers = {
   apple,
+  gcenter,
   facebook,
   facebookaccountkit,
   instagram,
