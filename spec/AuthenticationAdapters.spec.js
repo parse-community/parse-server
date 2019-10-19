@@ -5,6 +5,7 @@ const defaultColumns = require('../lib/Controllers/SchemaController')
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
+  gpgames: { playerId: 'userId' },
   instagram: { data: { id: 'userId' } },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
@@ -22,6 +23,7 @@ describe('AuthenticationProviders', function() {
   [
     'apple',
     'gcenter',
+    'gpgames',
     'facebook',
     'facebookaccountkit',
     'github',
