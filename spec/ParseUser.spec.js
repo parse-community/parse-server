@@ -1246,7 +1246,7 @@ describe('Parse.User testing', () => {
     done();
   });
 
-  fit('log in with provider despite invalid authData field in DB', async done => {
+  it('log in with provider despite invalid authData field in DB', async done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     const user = await Parse.User._logInWith('facebook');
