@@ -1281,6 +1281,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         return;
       }
+      if (fieldName === 'authData') {
+        // Ignore `authData` as this key is reserved to be synthesized of `_auth_data_*` keys
+        return;
+      }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
         var provider = authDataMatch[1];
