@@ -1246,6 +1246,20 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  fit('log in with provider despite invalid authData field in DB', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = await Parse.User._logInWith('facebook');
+    user.set('authData', null);
+    await user.save();
+    let authData = user.get('authData');
+    expect(authData).toBe(null);
+    await user.fetch();
+    authData = user.get('authData');
+    expect(authData.facebook.id).toBeDefined();
+    done();
+  });
+
   it('user authData should be available in cloudcode (#2342)', async done => {
     Parse.Cloud.define('checkLogin', req => {
       expect(req.user).not.toBeUndefined();
