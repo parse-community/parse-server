@@ -1281,10 +1281,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (object[fieldName] === null) {
         return;
       }
-      if (fieldName === 'authData') {
-        // Ignore `authData` as this key is reserved to be synthesized of `_auth_data_*` keys
-        return;
-      }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
         var provider = authDataMatch[1];
@@ -1885,6 +1881,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Does not strip out anything based on a lack of authentication.
   postgresObjectToParseObject(className: string, object: any, schema: any) {
     Object.keys(schema.fields).forEach(fieldName => {
+      if (fieldName === 'authData' && className === '_User') {
+        // Ignore `authData` in `_User` as this key is reserved to be synthesized of `_auth_data_*` keys
+        return;
+      }
       if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
         object[fieldName] = {
           objectId: object[fieldName],
