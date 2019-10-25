@@ -376,6 +376,38 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
+  if (options.appId) {
+    const reservedCharacters = [
+      '!',
+      '#',
+      '$',
+      '%',
+      '&',
+      "'",
+      '(',
+      ')',
+      '*',
+      '+',
+      '/',
+      ':',
+      ';',
+      '=',
+      '?',
+      '@',
+      '[',
+      ']',
+    ];
+    if (
+      reservedCharacters.some(function(v) {
+        return options.appId.indexOf(v) >= 0;
+      })
+    ) {
+      console.warn(
+        `\nappId is containing some special characters that can cause issues while using with urls.\n`
+      );
+    }
+  }
+
   // Backwards compatibility
   if (options.userSensitiveFields) {
     /* eslint-disable no-console */
