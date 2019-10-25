@@ -14,6 +14,7 @@ const mockAdapter = {
   deleteFile: () => {},
   getFileData: () => {},
   getFileLocation: () => 'xyz',
+  validateFilename: () => {},
 };
 
 // Small additional tests to improve overall coverage
@@ -116,6 +117,15 @@ describe('FilesController', () => {
       fileName
     );
 
+    done();
+  });
+
+  it('should reject slashes in file names', done => {
+    const gridStoreAdapter = new GridFSBucketAdapter(
+      'mongodb://localhost:27017/parse'
+    );
+    const fileName = 'foo/randomFileName.pdf';
+    expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
     done();
   });
 });
