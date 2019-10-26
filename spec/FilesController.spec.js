@@ -4,6 +4,8 @@ const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapte
   .WinstonLoggerAdapter;
 const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
+const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter')
+  .GridStoreAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
 
@@ -122,6 +124,15 @@ describe('FilesController', () => {
 
   it('should reject slashes in file names', done => {
     const gridStoreAdapter = new GridFSBucketAdapter(
+      'mongodb://localhost:27017/parse'
+    );
+    const fileName = 'foo/randomFileName.pdf';
+    expect(gridStoreAdapter.validateFilename(fileName)).not.toBe(null);
+    done();
+  });
+
+  it('should also reject slashes in file names', done => {
+    const gridStoreAdapter = new GridStoreAdapter(
       'mongodb://localhost:27017/parse'
     );
     const fileName = 'foo/randomFileName.pdf';

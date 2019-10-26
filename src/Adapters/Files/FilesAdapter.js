@@ -16,7 +16,7 @@
 // database adapter.
 
 import type { Config } from '../../Config';
-import Parse from 'parse/lib/node/Parse';
+import Parse from 'parse/node';
 /**
  * @module Adapters
  */
@@ -60,28 +60,26 @@ export class FilesAdapter {
    */
   getFileLocation(config: Config, filename: string): string {}
 
-  /** Validate a filename for this adaptor type (optional)1G
+  /** Validate a filename for this adapter type
    *
    * @param {string} filename
    *
-   * @returns {null|*|Parse.Error} null if there are no errors
+   * @returns {null|Parse.Error} null if there are no errors
    */
-  // TODO: Make this required once enough people have updated their adaptors
-  // validateFilename(filename): ?Parse.Error {}
+  validateFilename(filename: string): ?Parse.Error {}
 }
 
 /**
- * Default filename validate pulled out of FilesRouter.  Mostly used for Mongo storage
+ * Simple filename validation
  *
  * @param filename
- * @returns {null|*|Parse.Error|Parse.ParseError|ParseError|ParseError|Parse.ParseError}
+ * @returns {null|Parse.Error}
  */
 export function validateFilename(filename): ?Parse.Error {
   if (filename.length > 128) {
     return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
   }
 
-  // US/ASCII centric default
   const regx = /^[_a-zA-Z0-9][a-zA-Z0-9@. ~_-]*$/;
   if (!filename.match(regx)) {
     return new Parse.Error(
@@ -89,7 +87,7 @@ export function validateFilename(filename): ?Parse.Error {
       'Filename contains invalid characters.'
     );
   }
-  return null; // No errors
+  return null;
 }
 
 export default FilesAdapter;
