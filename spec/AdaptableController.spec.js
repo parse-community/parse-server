@@ -64,6 +64,7 @@ describe('AdaptableController', () => {
       deleteFile: function() {},
       getFileData: function() {},
       getFileLocation: function() {},
+      validateFilename: function() {},
     };
     expect(() => {
       new FilesController(adapter);
@@ -77,6 +78,7 @@ describe('AdaptableController', () => {
     AGoodAdapter.prototype.deleteFile = function() {};
     AGoodAdapter.prototype.getFileData = function() {};
     AGoodAdapter.prototype.getFileLocation = function() {};
+    AGoodAdapter.prototype.validateFilename = function() {};
 
     const adapter = new AGoodAdapter();
     expect(() => {

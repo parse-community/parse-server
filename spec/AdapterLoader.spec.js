@@ -43,6 +43,7 @@ describe('AdapterLoader', () => {
     expect(typeof adapter.deleteFile).toBe('function');
     expect(typeof adapter.getFileData).toBe('function');
     expect(typeof adapter.getFileLocation).toBe('function');
+    expect(typeof adapter.validateFilename).toBe('function');
     done();
   });
 
@@ -56,6 +57,8 @@ describe('AdapterLoader', () => {
     expect(typeof adapter.deleteFile).toBe('function');
     expect(typeof adapter.getFileData).toBe('function');
     expect(typeof adapter.getFileLocation).toBe('function');
+    // Older adapters won't implement this
+    // expect(typeof adapter.validateFilename).toBe('function');
     done();
   });
 
