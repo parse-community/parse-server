@@ -376,34 +376,12 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
+  // Reserved Characters
   if (options.appId) {
-    const reservedCharacters = [
-      '!',
-      '#',
-      '$',
-      '%',
-      '&',
-      "'",
-      '(',
-      ')',
-      '*',
-      '+',
-      '/',
-      ':',
-      ';',
-      '=',
-      '?',
-      '@',
-      '[',
-      ']',
-    ];
-    if (
-      reservedCharacters.some(function(v) {
-        return options.appId.indexOf(v) >= 0;
-      })
-    ) {
+    const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
+    if (options.appId.match(regex)) {
       console.warn(
-        `\nappId is containing some special characters that can cause issues while using with urls.\n`
+        `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
       );
     }
   }

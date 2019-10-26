@@ -26,6 +26,14 @@ describe('server', () => {
       });
   });
 
+  it('show warning if any reserved characters in appId', done => {
+    spyOn(console, 'warn').and.callThrough();
+    reconfigureServer({ appId: 'test!-^' }).then(() => {
+      expect(console.warn).toHaveBeenCalled();
+      return done();
+    });
+  });
+
   it('support http basic authentication with masterkey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
       request({
