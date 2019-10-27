@@ -1253,21 +1253,23 @@ describe('Parse.User testing', () => {
       const user = await Parse.User._logInWith('facebook');
       user.set('authData', null);
       await user.save();
+      fail();
     } catch (e) {
       expect(e.message).toBe('This authentication method is unsupported.');
     }
   });
 
-  it('can not set authdata to undefined', async () => {
-    try {
-      const provider = getMockFacebookProvider();
-      Parse.User._registerAuthenticationProvider(provider);
-      const user = await Parse.User._logInWith('facebook');
-      user.set('authData', undefined);
-      await user.save();
-    } catch (e) {
-      expect(e.message).toBe('This authentication method is unsupported.');
-    }
+  it('ignore setting authdata to undefined', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = await Parse.User._logInWith('facebook');
+    user.set('authData', undefined);
+    await user.save();
+    let authData = user.get('authData');
+    expect(authData).toBe(undefined);
+    await user.fetch();
+    authData = user.get('authData');
+    expect(authData.facebook.id).toBeDefined();
   });
 
   it('user authData should be available in cloudcode (#2342)', async done => {
