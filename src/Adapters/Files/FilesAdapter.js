@@ -10,6 +10,7 @@
 // * getFileLocation(config, filename)
 // Adapter classes should implement the following functions:
 // * validateFilename(filename)
+// * handleFileStream(filename, req, res, contentType)
 //
 // Default is GridFSBucketAdapter, which requires mongo
 // and for the API server to be using the DatabaseController with Mongo
@@ -66,7 +67,18 @@ export class FilesAdapter {
    *
    * @returns {null|Parse.Error} null if there are no errors
    */
-  validateFilename(filename: string): ?Parse.Error {}
+  // validateFilename(filename: string): ?Parse.Error {}
+
+  /** Handles Byte-Range Requests for Streaming
+   *
+   * @param {string} filename
+   * @param {object} req
+   * @param {object} res
+   * @param {string} contentType
+   *
+   * @returns {Promise} Data for byte range
+   */
+  // handleFileStream(filename: string, res: any, req: any, contentType: string): Promise
 }
 
 /**
