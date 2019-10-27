@@ -1529,8 +1529,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     for (const fieldName in update) {
       const fieldValue = update[fieldName];
-      // Drop any undefined values.
-      if (typeof fieldValue === 'undefined') {
+      if (fieldName === 'authData' && fieldValue === null) {
+        // Ignore `authData` as this key is reserved to be synthesized of `_auth_data_*` keys
+      } else if (typeof fieldValue === 'undefined') {
+        // Drop any undefined values.
         delete update[fieldName];
       } else if (fieldValue === null) {
         updatePatterns.push(`$${index}:name = NULL`);
@@ -1881,10 +1883,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Does not strip out anything based on a lack of authentication.
   postgresObjectToParseObject(className: string, object: any, schema: any) {
     Object.keys(schema.fields).forEach(fieldName => {
-      if (fieldName === 'authData' && className === '_User') {
-        // Ignore `authData` in `_User` as this key is reserved to be synthesized of `_auth_data_*` keys
-        return;
-      }
       if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
         object[fieldName] = {
           objectId: object[fieldName],
