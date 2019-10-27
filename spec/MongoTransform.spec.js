@@ -480,7 +480,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('ignores authData field in DB so it can be synthesized in code', done => {
+  it('ignores User authData field in DB so it can be synthesized in code', done => {
     const input = {
       _id: '123',
       _auth_data_acme: { id: 'abc' },
@@ -490,6 +490,20 @@ describe('parseObjectToMongoObjectForCreate', () => {
       fields: {},
     });
     expect(output.authData.acme.id).toBe('abc');
+    done();
+  });
+
+  it('can set authData when not User class', done => {
+    const input = {
+      _id: '123',
+      _auth_data_acme: { id: 'abc' },
+      authData: 'random',
+    };
+    const output = transform.mongoObjectToParseObject('TestObject', input, {
+      fields: {},
+    });
+    expect(output.authData).toBe('random');
+    expect(output._auth_data_acme).toBeUndefined();
     done();
   });
 });
