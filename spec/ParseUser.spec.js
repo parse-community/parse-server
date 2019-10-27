@@ -3950,4 +3950,29 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function() {
       done();
     }
   );
+  it_only_db('mongo')('should ignore authData field', async () => {
+    // Add User to Database with authData
+    const database = Config.get(Parse.applicationId).database;
+    const collection = await database.adapter._adaptiveCollection('_User');
+    await collection.insertOne({
+      _id: '1234ABCDEF',
+      name: '<some_name>',
+      email: '<some_email>',
+      username: '<some_username>',
+      _hashed_password: '<some_password>',
+      _auth_data_custom: {
+        id: 'linkedID',
+      },
+      sessionToken: '<some_session_token>',
+      authData: null, // should ignore
+    });
+    const provider = {
+      getAuthType: () => 'custom',
+      restoreAuthentication: () => true,
+    };
+    Parse.User._registerAuthenticationProvider(provider);
+    const query = new Parse.Query(Parse.User);
+    const user = await query.get('1234ABCDEF', { useMasterKey: true });
+    expect(user.get('authData')).toEqual({ custom: { id: 'linkedID' } });
+  });
 });
