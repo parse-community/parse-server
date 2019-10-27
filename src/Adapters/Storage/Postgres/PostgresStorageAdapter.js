@@ -1529,10 +1529,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     for (const fieldName in update) {
       const fieldValue = update[fieldName];
-      if (fieldName === 'authData' && fieldValue === null) {
-        // Ignore `authData` as this key is reserved to be synthesized of `_auth_data_*` keys
-      } else if (typeof fieldValue === 'undefined') {
-        // Drop any undefined values.
+      // Drop any undefined values.
+      if (typeof fieldValue === 'undefined') {
         delete update[fieldName];
       } else if (fieldValue === null) {
         updatePatterns.push(`$${index}:name = NULL`);

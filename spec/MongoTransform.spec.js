@@ -479,19 +479,6 @@ describe('parseObjectToMongoObjectForCreate', () => {
     }).toThrow();
     done();
   });
-
-  it('ignores authData field in DB so it can be synthesized in code', done => {
-    const input = {
-      _id: '123',
-      _auth_data_acme: { id: 'abc' },
-      authData: null,
-    };
-    const output = transform.mongoObjectToParseObject(null, input, {
-      fields: {},
-    });
-    expect(output.authData.acme.id).toBe('abc');
-    done();
-  });
 });
 
 describe('transformUpdate', () => {

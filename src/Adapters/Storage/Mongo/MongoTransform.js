@@ -1403,9 +1403,6 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
           case 'times_used':
             restObject['timesUsed'] = mongoObject[key];
             break;
-          case 'authData':
-            // Ignore `authData` as this key is reserved to be synthesized of `_auth_data_*` keys
-            break;
           default:
             // Check other auth data keys
             var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
