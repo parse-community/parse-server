@@ -8,7 +8,7 @@
 
 // @flow-disable-next
 import { MongoClient, GridFSBucket, Db } from 'mongodb';
-import { FilesAdapter } from './FilesAdapter';
+import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 
 export class GridFSBucketAdapter extends FilesAdapter {
@@ -138,6 +138,10 @@ export class GridFSBucketAdapter extends FilesAdapter {
       return Promise.resolve();
     }
     return this._client.close(false);
+  }
+
+  validateFilename(filename) {
+    return validateFilename(filename);
   }
 }
 
