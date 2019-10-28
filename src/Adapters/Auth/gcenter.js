@@ -107,7 +107,10 @@ function verifySignature(publicKey, authData) {
 // Returns a promise that fulfills if this user id is valid.
 async function validateAuthData(authData) {
   if (!authData.id) {
-    return Promise.reject('Apple Game Center - authData id missing');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Apple Game Center - authData id missing'
+    );
   }
   authData.playerId = authData.id;
   const publicKey = await getAppleCertificate(authData.publicKeyUrl);
