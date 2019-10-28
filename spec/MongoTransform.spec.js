@@ -506,6 +506,21 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 });
 
+it('cannot have a custom field name beginning with underscore', done => {
+  const input = {
+    _id: '123',
+    _thisFieldNameIs: 'invalid',
+  };
+  try {
+    transform.mongoObjectToParseObject('TestObject', input, {
+      fields: {},
+    });
+  } catch (e) {
+    expect(e).toBeDefined();
+  }
+  done();
+});
+
 describe('transformUpdate', () => {
   it('removes Relation types', done => {
     const input = {
