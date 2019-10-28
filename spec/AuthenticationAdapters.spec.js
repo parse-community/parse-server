@@ -650,6 +650,37 @@ describe('google auth adapter', () => {
   });
 });
 
+describe('google play games service auth', () => {
+  const gpgames = require('../lib/Adapters/Auth/gpgames');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should pass validation', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'userId' });
+    });
+    await gpgames.validateAuthData({
+      id: 'userId',
+      access_token: 'access_token',
+    });
+  });
+
+  it('validateAuthData should throw error', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'invalid' });
+    });
+    try {
+      await gpgames.validateAuthData({
+        id: 'userId',
+        access_token: 'access_token',
+      });
+    } catch (e) {
+      expect(e.message).toBe(
+        'Google Play Games Services - authData is invalid for this user.'
+      );
+    }
+  });
+});
+
 describe('oauth2 auth adapter', () => {
   const oauth2 = require('../lib/Adapters/Auth/oauth2');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
