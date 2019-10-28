@@ -1404,8 +1404,11 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject['timesUsed'] = mongoObject[key];
             break;
           case 'authData':
-            // Ignore `authData` in _User as this key is reserved to be synthesized of `_auth_data_*` keys
-            if (className !== '_User') {
+            if (className === '_User') {
+              log.warn(
+                'ignoring authData in _User as this key is reserved to be synthesized of `_auth_data_*` keys'
+              );
+            } else {
               restObject['authData'] = mongoObject[key];
             }
             break;
