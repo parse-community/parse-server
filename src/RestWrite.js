@@ -417,8 +417,21 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
 
-  if (!this.data.authData || !Object.keys(this.data.authData).length) {
+  if (
+    (this.data.authData && !Object.keys(this.data.authData).length) ||
+    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
+  ) {
+    // Handle saving authData to {} or if authData doesn't exist
     return;
+  } else if (
+    Object.prototype.hasOwnProperty.call(this.data, 'authData') &&
+    !this.data.authData
+  ) {
+    // Handle saving authData to null
+    throw new Parse.Error(
+      Parse.Error.UNSUPPORTED_SERVICE,
+      'This authentication method is unsupported.'
+    );
   }
 
   var authData = this.data.authData;
