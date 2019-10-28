@@ -1412,7 +1412,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
           default:
             // Check other auth data keys
             var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
-            if (authDataMatch) {
+            if (authDataMatch && className === '_User') {
               var provider = authDataMatch[1];
               restObject['authData'] = restObject['authData'] || {};
               restObject['authData'][provider] = mongoObject[key];

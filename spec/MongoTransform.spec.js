@@ -496,14 +496,12 @@ describe('parseObjectToMongoObjectForCreate', () => {
   it('can set authData when not User class', done => {
     const input = {
       _id: '123',
-      _auth_data_acme: { id: 'abc' },
       authData: 'random',
     };
     const output = transform.mongoObjectToParseObject('TestObject', input, {
       fields: {},
     });
     expect(output.authData).toBe('random');
-    expect(output._auth_data_acme).toBeUndefined();
     done();
   });
 });
