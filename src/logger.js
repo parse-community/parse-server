@@ -24,7 +24,7 @@ export function setLogger(aLogger) {
 
 export function getLogger() {
   if (!logger) {
-    return defaultLogger();
+    return defaultLogger;
   }
   return logger;
 }
