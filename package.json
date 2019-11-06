@@ -119,6 +119,10 @@
     "url": "https://opencollective.com/parse-server",
     "logo": "https://opencollective.com/parse-server/logo.txt?reverse=true&variant=binary"
   },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/parse-server"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
