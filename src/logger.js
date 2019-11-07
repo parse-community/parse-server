@@ -4,7 +4,7 @@ import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
 import { LoggerController } from './Controllers/LoggerController';
 
 // Used for Separate Live Query Server
-function basicLogger() {
+function defaultLogger() {
   const options = {
     logsFolder: defaults.logsFolder,
     jsonLogs: defaults.jsonLogs,
@@ -15,17 +15,13 @@ function basicLogger() {
   return new LoggerController(adapter, null, options);
 }
 
-let logger;
-const defaultLogger = basicLogger();
+let logger = defaultLogger();
 
 export function setLogger(aLogger) {
   logger = aLogger;
 }
 
 export function getLogger() {
-  if (!logger) {
-    return defaultLogger;
-  }
   return logger;
 }
 
