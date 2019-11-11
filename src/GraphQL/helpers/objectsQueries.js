@@ -96,14 +96,16 @@ const findObjects = async (
     if (Object.keys(where).length > 0 && subqueryReadPreference) {
       preCountOptions.subqueryReadPreference = subqueryReadPreference;
     }
-    preCount = (await rest.find(
-      config,
-      auth,
-      className,
-      where,
-      preCountOptions,
-      info.clientSDK
-    )).count;
+    preCount = (
+      await rest.find(
+        config,
+        auth,
+        className,
+        where,
+        preCountOptions,
+        info.clientSDK
+      )
+    ).count;
     if ((skip || 0) + limit < preCount) {
       skip = preCount - limit;
     }
@@ -214,6 +216,8 @@ const calculateSkipAndLimit = (
   let skip = undefined;
   let limit = undefined;
   let needToPreCount = false;
+
+  // Validates the skip input
   if (skipInput || skipInput === 0) {
     if (skipInput < 0) {
       throw new Parse.Error(
@@ -223,6 +227,8 @@ const calculateSkipAndLimit = (
     }
     skip = skipInput;
   }
+
+  // Validates the after param
   if (after) {
     after = cursorToOffset(after);
     if ((!after && after !== 0) || after < 0) {
@@ -231,8 +237,12 @@ const calculateSkipAndLimit = (
         'After is not a valid cursor'
       );
     }
+
+    // If skip and after are passed, a new skip is calculated by adding them
     skip = (skip || 0) + (after + 1);
   }
+
+  // Validates the first param
   if (first || first === 0) {
     if (first < 0) {
       throw new Parse.Error(
@@ -240,9 +250,14 @@ const calculateSkipAndLimit = (
         'First should be a positive number'
       );
     }
+
+    // The first param is translated to the limit param of the Parse legacy API
     limit = first;
   }
+
+  // Validates the before param
   if (before || before === 0) {
+    // This method converts the cursor to the index of the object
     before = cursorToOffset(before);
     if ((!before && before !== 0) || before < 0) {
       throw new Parse.Error(
@@ -250,12 +265,17 @@ const calculateSkipAndLimit = (
         'Before is not a valid cursor'
       );
     }
+
     if ((skip || 0) >= before) {
+      // If the before index is less then the skip, no objects will be returned
       limit = 0;
     } else if ((!limit && limit !== 0) || (skip || 0) + limit > before) {
+      // If there is no limit set, the limit is calculated. Or, if the limit (plus skip) is bigger than the before index, the new limit is set.
       limit = before - (skip || 0);
     }
   }
+
+  // Validates the last param
   if (last || last === 0) {
     if (last < 0) {
       throw new Parse.Error(
@@ -263,17 +283,24 @@ const calculateSkipAndLimit = (
         'Last should be a positive number'
       );
     }
+
     if (last > maxLimit) {
+      // Last can't be bigger than Parse server maxLimit config.
       last = maxLimit;
     }
+
     if (limit || limit === 0) {
+      // If there is a previous limit set, it may be adjusted
       if (last < limit) {
-        skip = (skip || 0) + (limit - last);
-        limit = last;
+        // if last is less than the current limit
+        skip = (skip || 0) + (limit - last); // The skip is adjusted
+        limit = last; // the limit is adjusted
       }
     } else if (last === 0) {
+      // No objects will be returned
       limit = 0;
     } else {
+      // No previous limit set, the limit will be equal to last and pre count is needed.
       limit = last;
       needToPreCount = true;
     }
