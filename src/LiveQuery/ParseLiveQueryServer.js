@@ -584,7 +584,8 @@ class ParseLiveQueryServer {
       clientId,
       parseWebsocket,
       hasMasterKey,
-      request.sessionToken
+      request.sessionToken,
+      request.installationId
     );
     parseWebsocket.clientId = clientId;
     this.clients.set(parseWebsocket.clientId, client);
@@ -679,9 +680,6 @@ class ParseLiveQueryServer {
     if (request.sessionToken) {
       subscriptionInfo.sessionToken = request.sessionToken;
     }
-    if (request.installationId) {
-      subscriptionInfo.installationId = request.installationId;
-    }
     client.addSubscriptionInfo(request.requestId, subscriptionInfo);
 
     // Add clientId to subscription
@@ -703,7 +701,7 @@ class ParseLiveQueryServer {
       subscriptions: this.subscriptions.size,
       sessionToken: request.sessionToken,
       useMasterKey: client.hasMasterKey,
-      installationId: request.installationId,
+      installationId: client.installationId,
     });
   }
 
@@ -785,7 +783,7 @@ class ParseLiveQueryServer {
       subscriptions: this.subscriptions.size,
       sessionToken: subscriptionInfo.sessionToken,
       useMasterKey: client.hasMasterKey,
-      installationId: subscriptionInfo.installationId,
+      installationId: client.installationId,
     });
 
     if (!notifyClient) {

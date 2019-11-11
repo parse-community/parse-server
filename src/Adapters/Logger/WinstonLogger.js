@@ -13,37 +13,45 @@ function configureTransports(options) {
     const silent = options.silent;
     delete options.silent;
 
-    if (!_.isNil(options.dirname)) {
-      const parseServer = new DailyRotateFile(
-        Object.assign(
-          {
-            filename: 'parse-server.info',
-            json: true,
-            format: format.combine(format.timestamp(), format.splat(), format.json()),
-          },
-          options
-        )
-      );
-      parseServer.name = 'parse-server';
-      transports.push(parseServer);
+    try {
+      if (!_.isNil(options.dirname)) {
+        const parseServer = new DailyRotateFile(
+          Object.assign(
+            {
+              filename: 'parse-server.info',
+              json: true,
+              format: format.combine(
+                format.timestamp(),
+                format.splat(),
+                format.json()
+              ),
+            },
+            options
+          )
+        );
+        parseServer.name = 'parse-server';
+        transports.push(parseServer);
 
-      const parseServerError = new DailyRotateFile(
-        Object.assign(
-          {
-            filename: 'parse-server.err',
-            json: true,
-            format: format.combine(
-              format.timestamp(),
-              format.splat(),
-              format.json()
-            ),
-          },
-          options,
-          { level: 'error' }
-        )
-      );
-      parseServerError.name = 'parse-server-error';
-      transports.push(parseServerError);
+        const parseServerError = new DailyRotateFile(
+          Object.assign(
+            {
+              filename: 'parse-server.err',
+              json: true,
+              format: format.combine(
+                format.timestamp(),
+                format.splat(),
+                format.json()
+              ),
+            },
+            options,
+            { level: 'error' }
+          )
+        );
+        parseServerError.name = 'parse-server-error';
+        transports.push(parseServerError);
+      }
+    } catch (e) {
+      /* */
     }
 
     const consoleFormat = options.json ? format.json() : format.simple();

@@ -8,12 +8,16 @@
 // * deleteFile(filename)
 // * getFileData(filename)
 // * getFileLocation(config, filename)
+// Adapter classes should implement the following functions:
+// * validateFilename(filename)
+// * handleFileStream(filename, req, res, contentType)
 //
 // Default is GridFSBucketAdapter, which requires mongo
 // and for the API server to be using the DatabaseController with Mongo
 // database adapter.
 
 import type { Config } from '../../Config';
+import Parse from 'parse/node';
 /**
  * @module Adapters
  */
@@ -56,6 +60,46 @@ export class FilesAdapter {
    * @return {string} Absolute URL
    */
   getFileLocation(config: Config, filename: string): string {}
+
+  /** Validate a filename for this adapter type
+   *
+   * @param {string} filename
+   *
+   * @returns {null|Parse.Error} null if there are no errors
+   */
+  // validateFilename(filename: string): ?Parse.Error {}
+
+  /** Handles Byte-Range Requests for Streaming
+   *
+   * @param {string} filename
+   * @param {object} req
+   * @param {object} res
+   * @param {string} contentType
+   *
+   * @returns {Promise} Data for byte range
+   */
+  // handleFileStream(filename: string, res: any, req: any, contentType: string): Promise
+}
+
+/**
+ * Simple filename validation
+ *
+ * @param filename
+ * @returns {null|Parse.Error}
+ */
+export function validateFilename(filename): ?Parse.Error {
+  if (filename.length > 128) {
+    return new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
+  }
+
+  const regx = /^[_a-zA-Z0-9][a-zA-Z0-9@. ~_-]*$/;
+  if (!filename.match(regx)) {
+    return new Parse.Error(
+      Parse.Error.INVALID_FILE_NAME,
+      'Filename contains invalid characters.'
+    );
+  }
+  return null;
 }
 
 export default FilesAdapter;
