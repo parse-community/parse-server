@@ -33,11 +33,6 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  // Contains classes which do not allow triggers of any kind
-  const restrictedClassNames = [];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
