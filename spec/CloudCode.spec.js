@@ -2219,10 +2219,14 @@ describe('afterFind hooks', () => {
   it('should validate triggers correctly', () => {
     expect(() => {
       Parse.Cloud.beforeSave('_Session', () => {});
-    }).toThrow('Triggers are not supported for _Session class.');
+    }).toThrow(
+      'Only the afterLogout trigger is allowed for the _Session class.'
+    );
     expect(() => {
       Parse.Cloud.afterSave('_Session', () => {});
-    }).toThrow('Triggers are not supported for _Session class.');
+    }).toThrow(
+      'Only the afterLogout trigger is allowed for the _Session class.'
+    );
     expect(() => {
       Parse.Cloud.beforeSave('_PushStatus', () => {});
     }).toThrow('Only afterSave is allowed on _PushStatus');
@@ -2247,6 +2251,22 @@ describe('afterFind hooks', () => {
     expect(() => {
       Parse.Cloud.beforeLogin('SomeClass', () => {});
     }).toThrow('Only the _User class is allowed for the beforeLogin trigger');
+    expect(() => {
+      Parse.Cloud.afterLogout(() => {});
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.afterLogout('_Session', () => {});
+    }).not.toThrow();
+    expect(() => {
+      Parse.Cloud.afterLogout('_User', () => {});
+    }).toThrow(
+      'Only the _Session class is allowed for the afterLogout trigger.'
+    );
+    expect(() => {
+      Parse.Cloud.afterLogout('SomeClass', () => {});
+    }).toThrow(
+      'Only the _Session class is allowed for the afterLogout trigger.'
+    );
   });
 
   it('should skip afterFind hooks for aggregate', done => {
@@ -2433,6 +2453,19 @@ describe('beforeLogin hook', () => {
     const user = await Parse.User.signUp('tupac', 'shakur');
     expect(user).toBeDefined();
     expect(hit).toBe(0);
+    done();
+  });
+
+  it('should trigger afterLogout hook on logout', async done => {
+    let hit = 0;
+    Parse.Cloud.afterLogout(() => {
+      hit++;
+    });
+
+    const user = await Parse.User.signUp('user', 'pass');
+    await user.save();
+    await Parse.User.logOut();
+    expect(hit).toBe(1);
     done();
   });
 

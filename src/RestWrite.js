@@ -321,6 +321,33 @@ RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
   );
 };
 
+RestWrite.prototype.runAfterLogoutTrigger = async function(sessionData) {
+  // Avoid doing any setup for triggers if there is no 'afterLogout' trigger
+  if (
+    !triggers.triggerExists(
+      this.className,
+      triggers.Types.afterLogout,
+      this.config.applicationId
+    )
+  ) {
+    return;
+  }
+
+  // Cloud code gets a bit of extra data for its objects
+  const extraData = { className: this.className };
+  const session = triggers.inflate(extraData, sessionData);
+
+  // no need to return a response
+  await triggers.maybeRunTrigger(
+    triggers.Types.afterLogout,
+    this.auth,
+    session,
+    null,
+    this.config,
+    this.context
+  );
+};
+
 RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
   if (this.data) {
     return this.validSchemaController.getAllClasses().then(allClasses => {
