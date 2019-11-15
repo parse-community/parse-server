@@ -1527,16 +1527,17 @@ describe('Parse.User testing', () => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    let hit = 0;
+    let userId;
     Parse.Cloud.afterLogout(req => {
-      hit++;
       expect(req.object.className).toEqual('_Session');
       expect(req.object.id).toBeDefined();
+      const user = req.object.get('user');
+      expect(user).toBeDefined();
+      userId = user.id;
     });
-    await Parse.User._logInWith('facebook');
-    await Parse.User.current().save({ name: 'user' });
+    const user = await Parse.User._logInWith('facebook');
     await Parse.User.logOut();
-    expect(hit).toBe(1);
+    expect(user.id).toBe(userId);
     done();
   });
 
