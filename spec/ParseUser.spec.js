@@ -1528,8 +1528,10 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
 
     let hit = 0;
-    Parse.Cloud.afterLogout(() => {
+    Parse.Cloud.afterLogout(req => {
       hit++;
+      expect(req.object.className).toEqual('_Session');
+      expect(req.object.id).toBeDefined();
     });
     await Parse.User._logInWith('facebook');
     await Parse.User.current().save({ name: 'user' });

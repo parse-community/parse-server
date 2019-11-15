@@ -2458,8 +2458,10 @@ describe('beforeLogin hook', () => {
 
   it('should trigger afterLogout hook on logout', async done => {
     let hit = 0;
-    Parse.Cloud.afterLogout(() => {
+    Parse.Cloud.afterLogout(req => {
       hit++;
+      expect(req.object.className).toEqual('_Session');
+      expect(req.object.id).toBeDefined();
     });
 
     const user = await Parse.User.signUp('user', 'pass');
