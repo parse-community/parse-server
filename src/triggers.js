@@ -4,6 +4,7 @@ import { logger } from './logger';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
+  afterLogout: 'afterLogout',
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
@@ -32,10 +33,6 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = ['_Session'];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
@@ -46,6 +43,16 @@ function validateClassNameForTriggers(className, type) {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the _User class is allowed for the beforeLogin trigger';
+  }
+  if (type === Types.afterLogout && className !== '_Session') {
+    // TODO: check if upstream code will handle `Error` instance rather
+    // than this anti-pattern of throwing strings
+    throw 'Only the _Session class is allowed for the afterLogout trigger.';
+  }
+  if (className === '_Session' && type !== Types.afterLogout) {
+    // TODO: check if upstream code will handle `Error` instance rather
+    // than this anti-pattern of throwing strings
+    throw 'Only the afterLogout trigger is allowed for the _Session class.';
   }
   return className;
 }
