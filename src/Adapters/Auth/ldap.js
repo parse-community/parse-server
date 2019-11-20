@@ -3,10 +3,14 @@ const Parse = require('parse/node').Parse;
 
 function validateAuthData(authData, options) {
   if (!optionsAreValid(options)) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      'LDAP auth configuration missing'
-    );
+    return new Promise((_, reject) => {
+      reject(
+        new Parse.Error(
+          Parse.Error.INTERNAL_SERVER_ERROR,
+          'LDAP auth configuration missing'
+        )
+      );
+    });
   }
 
   const client = ldapjs.createClient({ url: options.url });
@@ -31,40 +35,7 @@ function validateAuthData(authData, options) {
         typeof options.groupCn === 'string' &&
         typeof options.groupFilter === 'string'
       ) {
-        const filter = options.groupFilter.replace(/{{id}}/gi, authData.id);
-        const opts = {
-          scope: 'sub',
-          filter: filter,
-        };
-        let found = false;
-        client.search(options.suffix, opts, (searchError, res) => {
-          if (searchError) {
-            throw new Parse.Error(
-              Parse.Error.INTERNAL_SERVER_ERROR,
-              'LDAP group search failed'
-            );
-          }
-          res.on('searchEntry', function(entry) {
-            if (entry.object.cn === options.groupCn) {
-              found = true;
-              client.unbind();
-              client.destroy();
-              return resolve();
-            }
-          });
-          res.on('end', function() {
-            if (!found) {
-              client.unbind();
-              client.destroy();
-              reject(
-                new Parse.Error(
-                  Parse.Error.INTERNAL_SERVER_ERROR,
-                  'LDAP: User not in group'
-                )
-              );
-            }
-          });
-        });
+        searchForGroup(client, options, authData.id, resolve, reject);
       } else {
         client.unbind();
         client.destroy();
@@ -81,6 +52,55 @@ function optionsAreValid(options) {
     typeof options.url === 'string' &&
     options.url.startsWith('ldap://')
   );
+}
+
+function searchForGroup(client, options, id, resolve, reject) {
+  const filter = options.groupFilter.replace(/{{id}}/gi, id);
+  const opts = {
+    scope: 'sub',
+    filter: filter,
+  };
+  let found = false;
+  client.search(options.suffix, opts, (searchError, res) => {
+    if (searchError) {
+      client.unbind();
+      client.destroy();
+      return reject(
+        new Parse.Error(
+          Parse.Error.INTERNAL_SERVER_ERROR,
+          'LDAP group search failed'
+        )
+      );
+    }
+    res.on('searchEntry', entry => {
+      if (entry.object.cn === options.groupCn) {
+        found = true;
+        client.unbind();
+        client.destroy();
+        return resolve();
+      }
+    });
+    res.on('end', () => {
+      if (!found) {
+        client.unbind();
+        client.destroy();
+        return reject(
+          new Parse.Error(
+            Parse.Error.INTERNAL_SERVER_ERROR,
+            'LDAP: User not in group'
+          )
+        );
+      }
+    });
+    res.on('error', () => {
+      return reject(
+        new Parse.Error(
+          Parse.Error.INTERNAL_SERVER_ERROR,
+          'LDAP group search failed'
+        )
+      );
+    });
+  });
 }
 
 function validateAppId() {

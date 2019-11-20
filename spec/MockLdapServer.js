@@ -1,6 +1,6 @@
 const ldapjs = require('ldapjs');
 
-function newServer(port, dn) {
+function newServer(port, dn, provokeSearchError = false) {
   const server = ldapjs.createServer();
 
   server.bind('o=example', function(req, res, next) {
@@ -10,7 +10,11 @@ function newServer(port, dn) {
     return next();
   });
 
-  server.search('o=example', function(req, res) {
+  server.search('o=example', function(req, res, next) {
+    if (provokeSearchError) {
+      res.end(ldapjs.LDAP_SIZE_LIMIT_EXCEEDED);
+      return next(new ldapjs.NoSuchObjectError('fake error'));
+    }
     const obj = {
       dn: req.dn.toString(),
       attributes: {

@@ -1523,6 +1523,24 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  it('logout with provider should call afterLogout trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let userId;
+    Parse.Cloud.afterLogout(req => {
+      expect(req.object.className).toEqual('_Session');
+      expect(req.object.id).toBeDefined();
+      const user = req.object.get('user');
+      expect(user).toBeDefined();
+      userId = user.id;
+    });
+    const user = await Parse.User._logInWith('facebook');
+    await Parse.User.logOut();
+    expect(user.id).toBe(userId);
+    done();
+  });
+
   it('link with provider', async done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
