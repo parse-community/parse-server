@@ -392,6 +392,8 @@ class ParseLiveQueryServer {
         event: 'ws_disconnect',
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
       });
     });
 

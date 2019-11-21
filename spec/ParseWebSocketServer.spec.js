@@ -39,6 +39,44 @@ describe('ParseWebSocketServer', function() {
     }, 10);
   });
 
+  it('can handle error event', async () => {
+    jasmine.restoreLibrary('ws', 'Server');
+    const WebSocketServer = require('ws').Server;
+    let wssError;
+    class WSSAdapter {
+      constructor(options) {
+        this.options = options;
+      }
+      onListen() {}
+      onConnection() {}
+      onError(error) {
+        wssError = error;
+      }
+      start() {
+        const wss = new WebSocketServer({ server: this.options.server });
+        wss.on('listening', this.onListen);
+        wss.on('connection', this.onConnection);
+        wss.on('error', this.onError);
+        this.wss = wss;
+      }
+    }
+
+    const server = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      liveQueryServerOptions: {
+        wssAdapter: WSSAdapter,
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const wssAdapter = server.liveQueryServer.parseWebSocketServer.server;
+    wssAdapter.wss.emit('error', 'Invalid Packet');
+    expect(wssError).toBe('Invalid Packet');
+  });
+
   afterEach(function() {
     jasmine.restoreLibrary('ws', 'Server');
   });
