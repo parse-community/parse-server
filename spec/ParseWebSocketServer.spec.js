@@ -49,14 +49,15 @@ describe('ParseWebSocketServer', function() {
       }
       onListen() {}
       onConnection() {}
-      onError(error) {
-        wssError = error;
-      }
+      onError() {}
       start() {
         const wss = new WebSocketServer({ server: this.options.server });
         wss.on('listening', this.onListen);
         wss.on('connection', this.onConnection);
-        wss.on('error', this.onError);
+        wss.on('error', error => {
+          wssError = error;
+          this.onError(error);
+        });
         this.wss = wss;
       }
     }
