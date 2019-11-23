@@ -451,22 +451,14 @@ export function maybeRunQueryTrigger(
       restOptions,
     });
   }
+  const json = Object.assign({}, restOptions);
+  json.where = restWhere;
 
   const parseQuery = new Parse.Query(className);
-  if (restWhere) {
-    parseQuery._where = restWhere;
-  }
+  parseQuery.withJSON(json);
+
   let count = false;
   if (restOptions) {
-    if (restOptions.include && restOptions.include.length > 0) {
-      parseQuery._include = restOptions.include.split(',');
-    }
-    if (restOptions.skip) {
-      parseQuery._skip = restOptions.skip;
-    }
-    if (restOptions.limit) {
-      parseQuery._limit = restOptions.limit;
-    }
     count = !!restOptions.count;
   }
   const requestObject = getRequestQueryObject(
@@ -502,6 +494,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.include) {
           restOptions = restOptions || {};
           restOptions.include = jsonQuery.include;
+        }
+        if (jsonQuery.excludeKeys) {
+          restOptions = restOptions || {};
+          restOptions.excludeKeys = jsonQuery.excludeKeys;
         }
         if (jsonQuery.keys) {
           restOptions = restOptions || {};

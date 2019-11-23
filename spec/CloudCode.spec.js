@@ -878,7 +878,10 @@ describe('Cloud Code', () => {
         url: 'https://some.url',
       }),
       array: ['a', 'b', 'c'],
-      arrayOfArray: [['a', 'b', 'c'], ['d', 'e', 'f']],
+      arrayOfArray: [
+        ['a', 'b', 'c'],
+        ['d', 'e', 'f'],
+      ],
     };
     Parse.Cloud.run('params', params).then(() => {
       done();
@@ -1763,8 +1766,15 @@ describe('beforeFind hooks', () => {
       expect(jsonQuery.where.key).toEqual('value');
       expect(jsonQuery.where.some).toEqual({ $gt: 10 });
       expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.excludeKeys).toBe('exclude');
       expect(jsonQuery.limit).toEqual(100);
       expect(jsonQuery.skip).toBe(undefined);
+      expect(jsonQuery.order).toBe('key');
+      expect(jsonQuery.keys).toBe('select');
+      expect(jsonQuery.readPreference).toBe('PRIMARY');
+      expect(jsonQuery.includeReadPreference).toBe('SECONDARY');
+      expect(jsonQuery.subqueryReadPreference).toBe('SECONDARY_PREFERRED');
+
       expect(req.isGet).toEqual(false);
     });
 
@@ -1773,6 +1783,10 @@ describe('beforeFind hooks', () => {
     query.greaterThan('some', 10);
     query.include('otherKey');
     query.include('otherValue');
+    query.ascending('key');
+    query.select('select');
+    query.exclude('exclude');
+    query.readPreference('PRIMARY', 'SECONDARY', 'SECONDARY_PREFERRED');
     query.find().then(() => {
       done();
     });
@@ -1822,6 +1836,25 @@ describe('beforeFind hooks', () => {
         done();
       });
     });
+  });
+
+  it('should use the modified exclude query', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      const q = req.query;
+      q.exclude('number');
+    });
+
+    const obj = new Parse.Object('MyObject');
+    obj.set('number', 100);
+    obj.set('string', 'hello');
+    await obj.save();
+
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const results = await query.find();
+    expect(results.length).toBe(1);
+    expect(results[0].get('number')).toBeUndefined();
+    expect(results[0].get('string')).toBe('hello');
   });
 
   it('should reject queries', done => {
