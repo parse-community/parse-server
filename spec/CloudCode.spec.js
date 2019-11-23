@@ -878,7 +878,10 @@ describe('Cloud Code', () => {
         url: 'https://some.url',
       }),
       array: ['a', 'b', 'c'],
-      arrayOfArray: [['a', 'b', 'c'], ['d', 'e', 'f']],
+      arrayOfArray: [
+        ['a', 'b', 'c'],
+        ['d', 'e', 'f'],
+      ],
     };
     Parse.Cloud.run('params', params).then(() => {
       done();
@@ -1763,8 +1766,15 @@ describe('beforeFind hooks', () => {
       expect(jsonQuery.where.key).toEqual('value');
       expect(jsonQuery.where.some).toEqual({ $gt: 10 });
       expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.excludeKeys).toBe('exclude');
       expect(jsonQuery.limit).toEqual(100);
       expect(jsonQuery.skip).toBe(undefined);
+      expect(jsonQuery.order).toBe('key');
+      expect(jsonQuery.keys).toBe('select');
+      expect(jsonQuery.readPreference).toBe('PRIMARY');
+      expect(jsonQuery.includeReadPreference).toBe('SECONDARY');
+      expect(jsonQuery.subqueryReadPreference).toBe('SECONDARY_PREFERRED');
+
       expect(req.isGet).toEqual(false);
     });
 
@@ -1773,6 +1783,10 @@ describe('beforeFind hooks', () => {
     query.greaterThan('some', 10);
     query.include('otherKey');
     query.include('otherValue');
+    query.ascending('key');
+    query.select('select');
+    query.exclude('exclude');
+    query.readPreference('PRIMARY', 'SECONDARY', 'SECONDARY_PREFERRED');
     query.find().then(() => {
       done();
     });
