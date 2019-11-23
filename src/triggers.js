@@ -495,6 +495,10 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.include = jsonQuery.include;
         }
+        if (jsonQuery.excludeKeys) {
+          restOptions = restOptions || {};
+          restOptions.excludeKeys = jsonQuery.excludeKeys;
+        }
         if (jsonQuery.keys) {
           restOptions = restOptions || {};
           restOptions.keys = jsonQuery.keys;

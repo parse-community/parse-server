@@ -1838,6 +1838,25 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should use the modified exclude query', async () => {
+    Parse.Cloud.beforeFind('MyObject', req => {
+      const q = req.query;
+      q.exclude('number');
+    });
+
+    const obj = new Parse.Object('MyObject');
+    obj.set('number', 100);
+    obj.set('string', 'hello');
+    await obj.save();
+
+    const query = new Parse.Query('MyObject');
+    query.equalTo('objectId', obj.id);
+    const results = await query.find();
+    expect(results.length).toBe(1);
+    expect(results[0].get('number')).toBeUndefined();
+    expect(results[0].get('string')).toBe('hello');
+  });
+
   it('should reject queries', done => {
     Parse.Cloud.beforeFind('MyObject', () => {
       return Promise.reject('Do not run that query');
