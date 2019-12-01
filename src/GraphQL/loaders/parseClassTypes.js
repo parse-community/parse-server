@@ -368,7 +368,6 @@ const load = (
     limit: defaultGraphQLTypes.LIMIT_ATT,
     options: defaultGraphQLTypes.READ_OPTIONS_ATT,
   };
-
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
   const outputFields = () => {
     return classOutputFields.reduce((fields, field) => {
