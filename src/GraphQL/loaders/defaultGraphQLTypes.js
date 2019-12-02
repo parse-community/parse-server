@@ -623,6 +623,10 @@ const PARSE_OBJECT_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
   ...INPUT_FIELDS,
+  ACL: {
+    type: new GraphQLNonNull(ACL),
+    resolve: ({ ACL }) => (ACL ? ACL : { '*': { read: true, write: true } }),
+  },
 };
 
 const PARSE_OBJECT = new GraphQLInterfaceType({
