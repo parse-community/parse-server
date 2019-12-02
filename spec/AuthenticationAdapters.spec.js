@@ -54,8 +54,14 @@ describe('AuthenticationProviders', function() {
         Promise.prototype.constructor
       );
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
-      validateAuthDataPromise.then(() => {}, () => {});
-      validateAppIdPromise.then(() => {}, () => {});
+      validateAuthDataPromise.then(
+        () => {},
+        () => {}
+      );
+      validateAppIdPromise.then(
+        () => {},
+        () => {}
+      );
       done();
     });
 
