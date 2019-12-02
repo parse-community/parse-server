@@ -23,6 +23,9 @@ export class ParseWebSocketServer {
         }
       }, config.websocketTimeout || 10 * 1000);
     };
+    wss.onError = error => {
+      logger.error(error);
+    };
     wss.start();
     this.server = wss;
   }
