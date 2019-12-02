@@ -588,10 +588,15 @@ const CLASS_NAME_ATT = {
   type: new GraphQLNonNull(GraphQLString),
 };
 
+const GLOBAL_OR_OBJECT_ID_ATT = {
+  description:
+    'This is the object id. You can use either the global or the object id.',
+  type: OBJECT_ID,
+};
+
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: OBJECT_ID,
-  resolve: ({ objectId }) => objectId,
 };
 
 const CREATED_AT_ATT = {
@@ -611,7 +616,7 @@ const INPUT_FIELDS = {
 };
 
 const CREATE_RESULT_FIELDS = {
-  id: OBJECT_ID_ATT,
+  objectId: OBJECT_ID_ATT,
   createdAt: CREATED_AT_ATT,
 };
 
@@ -637,7 +642,7 @@ const PARSE_OBJECT = new GraphQLInterfaceType({
 });
 
 const SESSION_TOKEN_ATT = {
-  description: 'The user session token',
+  description: 'The current user session token.',
   type: new GraphQLNonNull(GraphQLString),
 };
 
@@ -926,6 +931,25 @@ const options = {
   type: GraphQLString,
 };
 
+const ID_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'IdWhereInput',
+  description:
+    'The IdWhereInput input type is used in operations that involve filtering objects by an id.',
+  fields: {
+    equalTo: equalTo(GraphQLID),
+    notEqualTo: notEqualTo(GraphQLID),
+    lessThan: lessThan(GraphQLID),
+    lessThanOrEqualTo: lessThanOrEqualTo(GraphQLID),
+    greaterThan: greaterThan(GraphQLID),
+    greaterThanOrEqualTo: greaterThanOrEqualTo(GraphQLID),
+    in: inOp(GraphQLID),
+    notIn: notIn(GraphQLID),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+  },
+});
+
 const STRING_WHERE_INPUT = new GraphQLInputObjectType({
   name: 'StringWhereInput',
   description:
@@ -1164,19 +1188,6 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
   },
 });
 
-const FIND_RESULT = new GraphQLObjectType({
-  name: 'FindResult',
-  description:
-    'The FindResult object type is used in the find queries to return the data of the matched objects.',
-  fields: {
-    results: {
-      description: 'This is the objects returned by the query',
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(OBJECT))),
-    },
-    count: COUNT_ATT,
-  },
-});
-
 const ELEMENT = new GraphQLObjectType({
   name: 'Element',
   description: "The Element object type is used to return array items' value.",
@@ -1247,6 +1258,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(CENTER_SPHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_WITHIN_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_INTERSECTS_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ID_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(STRING_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(NUMBER_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOOLEAN_WHERE_INPUT, true);
@@ -1258,9 +1270,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FILE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
-  parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
   parseGraphQLSchema.addGraphQLType(ACL_INPUT, true);
   parseGraphQLSchema.addGraphQLType(USER_ACL_INPUT, true);
   parseGraphQLSchema.addGraphQLType(ROLE_ACL_INPUT, true);
@@ -1296,6 +1306,7 @@ export {
   POLYGON,
   OBJECT_ID,
   CLASS_NAME_ATT,
+  GLOBAL_OR_OBJECT_ID_ATT,
   OBJECT_ID_ATT,
   UPDATED_AT_ATT,
   CREATED_AT_ATT,
@@ -1337,6 +1348,7 @@ export {
   notInQueryKey,
   matchesRegex,
   options,
+  ID_WHERE_INPUT,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,
   BOOLEAN_WHERE_INPUT,
@@ -1348,7 +1360,6 @@ export {
   FILE_WHERE_INPUT,
   GEO_POINT_WHERE_INPUT,
   POLYGON_WHERE_INPUT,
-  FIND_RESULT,
   ARRAY_RESULT,
   ELEMENT,
   ACL_INPUT,

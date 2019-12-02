@@ -97,7 +97,11 @@ describe('parseObjectToMongoObjectForCreate', () => {
     const lng3 = 65;
     const polygon = {
       __type: 'Polygon',
-      coordinates: [[lat1, lng1], [lat2, lng2], [lat3, lng3]],
+      coordinates: [
+        [lat1, lng1],
+        [lat2, lng2],
+        [lat3, lng3],
+      ],
     };
     const out = transform.parseObjectToMongoObjectForCreate(
       null,
@@ -107,7 +111,12 @@ describe('parseObjectToMongoObjectForCreate', () => {
       }
     );
     expect(out.location.coordinates).toEqual([
-      [[lng1, lat1], [lng2, lat2], [lng3, lat3], [lng1, lat1]],
+      [
+        [lng1, lat1],
+        [lng2, lat2],
+        [lng3, lat3],
+        [lng1, lat1],
+      ],
     ]);
     done();
   });
@@ -217,7 +226,15 @@ describe('parseObjectToMongoObjectForCreate', () => {
     const lng = 45;
     // Mongo stores polygon in WGS84 lng/lat
     const input = {
-      location: { type: 'Polygon', coordinates: [[[lat, lng], [lat, lng]]] },
+      location: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [lat, lng],
+            [lat, lng],
+          ],
+        ],
+      },
     };
     const output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'Polygon' } },
@@ -225,7 +242,10 @@ describe('parseObjectToMongoObjectForCreate', () => {
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual({
       __type: 'Polygon',
-      coordinates: [[lng, lat], [lng, lat]],
+      coordinates: [
+        [lng, lat],
+        [lng, lat],
+      ],
     });
     done();
   });
