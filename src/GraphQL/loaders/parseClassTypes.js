@@ -378,7 +378,6 @@ const load = (
     ...connectionArgs,
     options: defaultGraphQLTypes.READ_OPTIONS_ATT,
   };
-
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
   const interfaces = [
     defaultGraphQLTypes.PARSE_OBJECT,
