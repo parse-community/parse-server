@@ -115,14 +115,7 @@ const findObjects = async (
     options.subqueryReadPreference = subqueryReadPreference;
   }
 
-  return await rest.find(
-    config,
-    auth,
-    className,
-    where,
-    options,
-    info.clientSDK
-  );
+  return rest.find(config, auth, className, where, options, info.clientSDK);
 };
 
 export { getObject, findObjects };
