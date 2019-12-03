@@ -67,13 +67,12 @@ const findObjects = async (
   auth,
   info,
   selectedFields,
-  fields
+  parseClasses
 ) => {
   if (!where) {
     where = {};
   }
-  transformQueryInputToParse(where, fields, className);
-
+  transformQueryInputToParse(where, className, parseClasses);
   const skipAndLimitCalculation = calculateSkipAndLimit(
     skipInput,
     first,

@@ -138,7 +138,7 @@ const load = function(
             auth,
             info,
             selectedFields,
-            parseClass.fields
+            parseGraphQLSchema.parseClasses
           );
         } catch (e) {
           parseGraphQLSchema.handleError(e);

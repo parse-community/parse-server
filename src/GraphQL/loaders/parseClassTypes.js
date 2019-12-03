@@ -266,25 +266,28 @@ const load = (
   let classGraphQLConstraintType = new GraphQLInputObjectType({
     name: classGraphQLConstraintTypeName,
     description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
-    fields: {
-      equalTo: defaultGraphQLTypes.equalTo(GraphQLID),
-      notEqualTo: defaultGraphQLTypes.notEqualTo(GraphQLID),
-      in: defaultGraphQLTypes.inOp(defaultGraphQLTypes.OBJECT_ID),
-      notIn: defaultGraphQLTypes.notIn(defaultGraphQLTypes.OBJECT_ID),
-      exists: defaultGraphQLTypes.exists,
-      inQueryKey: defaultGraphQLTypes.inQueryKey,
-      notInQueryKey: defaultGraphQLTypes.notInQueryKey,
-      inQuery: {
-        description:
-          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the object ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY_INPUT,
-      },
-      notInQuery: {
-        description:
-          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the object ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY_INPUT,
-      },
-    },
+    fields: () => ({
+      ...classConstraintFields.reduce((fields, field) => {
+        const parseField = field === 'id' ? 'objectId' : field;
+        const type = transformConstraintTypeToGraphQL(
+          parseClass.fields[parseField].type,
+          parseClass.fields[parseField].targetClass,
+          parseGraphQLSchema.parseClassTypes,
+          field
+        );
+        if (type) {
+          return {
+            ...fields,
+            [field]: {
+              description: `This is the object ${field}.`,
+              type,
+            },
+          };
+        } else {
+          return fields;
+        }
+      }, {}),
+    }),
   });
   classGraphQLConstraintType = parseGraphQLSchema.addGraphQLType(
     classGraphQLConstraintType
@@ -296,6 +299,7 @@ const load = (
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
+        // TODO: Moumouls
         if (['OR', 'AND', 'NOR'].includes(field)) {
           parseGraphQLSchema.log.warn(
             `Field ${field} could not be added to the auto schema ${classGraphQLConstraintsTypeName} because it collided with an existing one.`
@@ -464,10 +468,7 @@ const load = (
                   auth,
                   info,
                   selectedFields,
-                  parseGraphQLSchema.parseClasses.find(
-                    parseClass =>
-                      parseClass.className === source[field].className
-                  ).fields
+                  parseGraphQLSchema.parseClasses
                 );
               } catch (e) {
                 parseGraphQLSchema.handleError(e);

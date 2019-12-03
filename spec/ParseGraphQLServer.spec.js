@@ -253,9 +253,9 @@ describe('ParseGraphQLServer', () => {
           return { response: { result: true } };
         },
       };
-      await expectAsync(parseGraphQLServer.setGraphQLConfig({})).toBeResolvedTo(
-        { response: { result: true } }
-      );
+      await expectAsync(
+        parseGraphQLServer.setGraphQLConfig({})
+      ).toBeResolvedTo({ response: { result: true } });
     });
   });
 
@@ -464,13 +464,15 @@ describe('ParseGraphQLServer', () => {
     describe('GraphQL', () => {
       it('should be healthy', async () => {
         try {
-          const health = (await apolloClient.query({
-            query: gql`
-              query Health {
-                health
-              }
-            `,
-          })).data.health;
+          const health = (
+            await apolloClient.query({
+              query: gql`
+                query Health {
+                  health
+                }
+              `,
+            })
+          ).data.health;
           expect(health).toBeTruthy();
         } catch (e) {
           handleError(e);
@@ -523,13 +525,15 @@ describe('ParseGraphQLServer', () => {
           checked = true;
           return await originalGetGraphQLOptions.bind(parseGraphQLServer)(req);
         };
-        const health = (await apolloClient.query({
-          query: gql`
-            query Health {
-              health
-            }
-          `,
-        })).data.health;
+        const health = (
+          await apolloClient.query({
+            query: gql`
+              query Health {
+                health
+              }
+            `,
+          })
+        ).data.health;
         expect(health).toBeTruthy();
         expect(checked).toBeTruthy();
         parseGraphQLServer._getGraphQLOptions = originalGetGraphQLOptions;
@@ -556,57 +560,65 @@ describe('ParseGraphQLServer', () => {
 
       describe('Default Types', () => {
         it('should have Object scalar type', async () => {
-          const objectType = (await apolloClient.query({
-            query: gql`
-              query ObjectType {
-                __type(name: "Object") {
-                  kind
+          const objectType = (
+            await apolloClient.query({
+              query: gql`
+                query ObjectType {
+                  __type(name: "Object") {
+                    kind
+                  }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(objectType.kind).toEqual('SCALAR');
         });
 
         it('should have Date scalar type', async () => {
-          const dateType = (await apolloClient.query({
-            query: gql`
-              query DateType {
-                __type(name: "Date") {
-                  kind
+          const dateType = (
+            await apolloClient.query({
+              query: gql`
+                query DateType {
+                  __type(name: "Date") {
+                    kind
+                  }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(dateType.kind).toEqual('SCALAR');
         });
 
         it('should have ArrayResult type', async () => {
-          const arrayResultType = (await apolloClient.query({
-            query: gql`
-              query ArrayResultType {
-                __type(name: "ArrayResult") {
-                  kind
+          const arrayResultType = (
+            await apolloClient.query({
+              query: gql`
+                query ArrayResultType {
+                  __type(name: "ArrayResult") {
+                    kind
+                  }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(arrayResultType.kind).toEqual('UNION');
         });
 
         it('should have File object type', async () => {
-          const fileType = (await apolloClient.query({
-            query: gql`
-              query FileType {
-                __type(name: "FileInfo") {
-                  kind
-                  fields {
-                    name
+          const fileType = (
+            await apolloClient.query({
+              query: gql`
+                query FileType {
+                  __type(name: "FileInfo") {
+                    kind
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(fileType.kind).toEqual('OBJECT');
           expect(fileType.fields.map(field => field.name).sort()).toEqual([
             'name',
@@ -615,18 +627,20 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have Class interface type', async () => {
-          const classType = (await apolloClient.query({
-            query: gql`
-              query ClassType {
-                __type(name: "ParseObject") {
-                  kind
-                  fields {
-                    name
+          const classType = (
+            await apolloClient.query({
+              query: gql`
+                query ClassType {
+                  __type(name: "ParseObject") {
+                    kind
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(classType.kind).toEqual('INTERFACE');
           expect(classType.fields.map(field => field.name).sort()).toEqual([
             'ACL',
@@ -637,18 +651,20 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have ReadPreference enum type', async () => {
-          const readPreferenceType = (await apolloClient.query({
-            query: gql`
-              query ReadPreferenceType {
-                __type(name: "ReadPreference") {
-                  kind
-                  enumValues {
-                    name
+          const readPreferenceType = (
+            await apolloClient.query({
+              query: gql`
+                query ReadPreferenceType {
+                  __type(name: "ReadPreference") {
+                    kind
+                    enumValues {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(readPreferenceType.kind).toEqual('ENUM');
           expect(
             readPreferenceType.enumValues.map(value => value.name).sort()
@@ -662,33 +678,37 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have GraphQLUpload object type', async () => {
-          const graphQLUploadType = (await apolloClient.query({
-            query: gql`
-              query GraphQLUploadType {
-                __type(name: "Upload") {
-                  kind
-                  fields {
-                    name
+          const graphQLUploadType = (
+            await apolloClient.query({
+              query: gql`
+                query GraphQLUploadType {
+                  __type(name: "Upload") {
+                    kind
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           expect(graphQLUploadType.kind).toEqual('SCALAR');
         });
 
         it('should have all expected types', async () => {
-          const schemaTypes = (await apolloClient.query({
-            query: gql`
-              query SchemaTypes {
-                __schema {
-                  types {
-                    name
+          const schemaTypes = (
+            await apolloClient.query({
+              query: gql`
+                query SchemaTypes {
+                  __schema {
+                    types {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__schema'].types.map(type => type.name);
+              `,
+            })
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
             'ParseObject',
@@ -713,66 +733,74 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have Node interface', async () => {
-          const schemaTypes = (await apolloClient.query({
-            query: gql`
-              query SchemaTypes {
-                __schema {
-                  types {
-                    name
+          const schemaTypes = (
+            await apolloClient.query({
+              query: gql`
+                query SchemaTypes {
+                  __schema {
+                    types {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__schema'].types.map(type => type.name);
+              `,
+            })
+          ).data['__schema'].types.map(type => type.name);
 
           expect(schemaTypes).toContain('Node');
         });
 
         it('should have node query', async () => {
-          const queryFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "Query") {
-                  fields {
-                    name
+          const queryFields = (
+            await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "Query") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
+              `,
+            })
+          ).data['__type'].fields.map(field => field.name);
 
           expect(queryFields).toContain('node');
         });
 
         it('should return global id', async () => {
-          const userFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "User") {
-                  fields {
-                    name
+          const userFields = (
+            await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "User") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
+              `,
+            })
+          ).data['__type'].fields.map(field => field.name);
 
           expect(userFields).toContain('id');
           expect(userFields).toContain('objectId');
         });
 
         it('should have clientMutationId in create file input', async () => {
-          const createFileInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFileInput") {
-                  inputFields {
-                    name
+          const createFileInputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFileInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -780,17 +808,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in create file payload', async () => {
-          const createFilePayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateFilePayload") {
-                  fields {
-                    name
+          const createFilePayloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateFilePayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -803,17 +833,19 @@ describe('ParseGraphQLServer', () => {
         it('should have clientMutationId in call function input', async () => {
           Parse.Cloud.define('hello', () => {});
 
-          const callFunctionInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallCloudCodeInput") {
-                  inputFields {
-                    name
+          const callFunctionInputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallCloudCodeInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -827,17 +859,19 @@ describe('ParseGraphQLServer', () => {
         it('should have clientMutationId in call function payload', async () => {
           Parse.Cloud.define('hello', () => {});
 
-          const callFunctionPayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CallCloudCodePayload") {
-                  fields {
-                    name
+          const callFunctionPayloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CallCloudCodePayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -848,17 +882,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in sign up mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "SignUpInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -866,17 +902,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in sign up mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "SignUpPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "SignUpPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -884,17 +922,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in log in mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "LogInInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -906,17 +946,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in log in mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "LogInPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogInPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -924,17 +966,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in log out mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "LogOutInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -942,17 +986,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in log out mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "LogOutPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "LogOutPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -960,17 +1006,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in createClass mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateClassInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -982,17 +1030,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in createClass mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateClassPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1000,17 +1050,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in updateClass mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "UpdateClassInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -1022,17 +1074,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in updateClass mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "UpdateClassPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1040,17 +1094,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in deleteClass mutation input', async () => {
-          const inputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "DeleteClassInput") {
-                  inputFields {
-                    name
+          const inputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -1058,17 +1114,19 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should have clientMutationId in deleteClass mutation payload', async () => {
-          const payloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "UpdateClassPayload") {
-                  fields {
-                    name
+          const payloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1081,17 +1139,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateSomeClassInput") {
-                  inputFields {
-                    name
+          const createObjectInputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -1107,17 +1167,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectPayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "CreateSomeClassPayload") {
-                  fields {
-                    name
+          const createObjectPayloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "CreateSomeClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1133,17 +1195,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "UpdateSomeClassInput") {
-                  inputFields {
-                    name
+          const createObjectInputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -1160,17 +1224,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectPayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "UpdateSomeClassPayload") {
-                  fields {
-                    name
+          const createObjectPayloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "UpdateSomeClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1186,17 +1252,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectInputFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "DeleteSomeClassInput") {
-                  inputFields {
-                    name
+          const createObjectInputFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassInput") {
+                    inputFields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].inputFields
+              `,
+            })
+          ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
 
@@ -1209,17 +1277,19 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-          const createObjectPayloadFields = (await apolloClient.query({
-            query: gql`
-              query {
-                __type(name: "DeleteSomeClassPayload") {
-                  fields {
-                    name
+          const createObjectPayloadFields = (
+            await apolloClient.query({
+              query: gql`
+                query {
+                  __type(name: "DeleteSomeClassPayload") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields
+              `,
+            })
+          ).data['__type'].fields
             .map(field => field.name)
             .sort();
 
@@ -1234,17 +1304,19 @@ describe('ParseGraphQLServer', () => {
         it('should have all expected types', async () => {
           await parseServer.config.databaseController.loadSchema();
 
-          const schemaTypes = (await apolloClient.query({
-            query: gql`
-              query SchemaTypes {
-                __schema {
-                  types {
-                    name
+          const schemaTypes = (
+            await apolloClient.query({
+              query: gql`
+                query SchemaTypes {
+                  __schema {
+                    types {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__schema'].types.map(type => type.name);
+              `,
+            })
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
             'Role',
@@ -1264,18 +1336,20 @@ describe('ParseGraphQLServer', () => {
         });
 
         it('should ArrayResult contains all types', async () => {
-          const objectType = (await apolloClient.query({
-            query: gql`
-              query ObjectType {
-                __type(name: "ArrayResult") {
-                  kind
-                  possibleTypes {
-                    name
+          const objectType = (
+            await apolloClient.query({
+              query: gql`
+                query ObjectType {
+                  __type(name: "ArrayResult") {
+                    kind
+                    possibleTypes {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'];
+              `,
+            })
+          ).data['__type'];
           const possibleTypes = objectType.possibleTypes.map(o => o.name);
           expect(possibleTypes).toContain('User');
           expect(possibleTypes).toContain('Role');
@@ -1288,32 +1362,36 @@ describe('ParseGraphQLServer', () => {
             foo: { type: 'String' },
           });
 
-          const userFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "User") {
-                  fields {
-                    name
+          const userFields = (
+            await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "User") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
+              `,
+            })
+          ).data['__type'].fields.map(field => field.name);
           expect(userFields.indexOf('foo') !== -1).toBeTruthy();
         });
 
         it('should not contain password field from _User class', async () => {
-          const userFields = (await apolloClient.query({
-            query: gql`
-              query UserType {
-                __type(name: "User") {
-                  fields {
-                    name
+          const userFields = (
+            await apolloClient.query({
+              query: gql`
+                query UserType {
+                  __type(name: "User") {
+                    fields {
+                      name
+                    }
                   }
                 }
-              }
-            `,
-          })).data['__type'].fields.map(field => field.name);
+              `,
+            })
+          ).data['__type'].fields.map(field => field.name);
           expect(userFields.includes('password')).toBeFalsy();
         });
       });
@@ -1711,21 +1789,23 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).toBeRejected();
-          const { id: superCarId } = (await apolloClient.query({
-            query: gql`
-              mutation ValidCreateSuperCar {
-                createSuperCar(
-                  input: {
-                    fields: { engine: "diesel", doors: 5, price: "£10000" }
-                  }
-                ) {
-                  superCar {
-                    id
+          const { id: superCarId } = (
+            await apolloClient.query({
+              query: gql`
+                mutation ValidCreateSuperCar {
+                  createSuperCar(
+                    input: {
+                      fields: { engine: "diesel", doors: 5, price: "£10000" }
+                    }
+                  ) {
+                    superCar {
+                      id
+                    }
                   }
                 }
-              }
-            `,
-          })).data.createSuperCar.superCar;
+              `,
+            })
+          ).data.createSuperCar.superCar;
 
           expect(superCarId).toBeTruthy();
 
@@ -1746,18 +1826,22 @@ describe('ParseGraphQLServer', () => {
             })
           ).toBeRejected();
 
-          const updatedSuperCar = (await apolloClient.query({
-            query: gql`
-              mutation ValidUpdateSuperCar($id: ID!) {
-                updateSuperCar(input: { id: $id, fields: { mileage: 2000 } }) {
-                  clientMutationId
+          const updatedSuperCar = (
+            await apolloClient.query({
+              query: gql`
+                mutation ValidUpdateSuperCar($id: ID!) {
+                  updateSuperCar(
+                    input: { id: $id, fields: { mileage: 2000 } }
+                  ) {
+                    clientMutationId
+                  }
                 }
-              }
-            `,
-            variables: {
-              id: superCarId,
-            },
-          })).data.updateSuperCar;
+              `,
+              variables: {
+                id: superCarId,
+              },
+            })
+          ).data.updateSuperCar;
           expect(updatedSuperCar).toBeTruthy();
         });
 
@@ -1813,23 +1897,25 @@ describe('ParseGraphQLServer', () => {
               },
             })
           ).toBeRejected();
-          let getSuperCar = (await apolloClient.query({
-            query: gql`
-              query GetSuperCar($id: ID!) {
-                superCar(id: $id) {
-                  id
-                  objectId
-                  engine
-                  doors
-                  price
-                  mileage
+          let getSuperCar = (
+            await apolloClient.query({
+              query: gql`
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
+                    id
+                    objectId
+                    engine
+                    doors
+                    price
+                    mileage
+                  }
                 }
-              }
-            `,
-            variables: {
-              id: superCar.id,
-            },
-          })).data.superCar;
+              `,
+              variables: {
+                id: superCar.id,
+              },
+            })
+          ).data.superCar;
           expect(getSuperCar).toBeTruthy();
 
           await parseGraphQLServer.setGraphQLConfig({
@@ -1858,19 +1944,21 @@ describe('ParseGraphQLServer', () => {
               },
             })
           ).toBeRejected();
-          getSuperCar = (await apolloClient.query({
-            query: gql`
-              query GetSuperCar($id: ID!) {
-                superCar(id: $id) {
-                  id
-                  objectId
+          getSuperCar = (
+            await apolloClient.query({
+              query: gql`
+                query GetSuperCar($id: ID!) {
+                  superCar(id: $id) {
+                    id
+                    objectId
+                  }
                 }
-              }
-            `,
-            variables: {
-              id: superCar.id,
-            },
-          })).data.superCar;
+              `,
+              variables: {
+                id: superCar.id,
+              },
+            })
+          ).data.superCar;
           expect(getSuperCar.objectId).toBe(superCar.id);
         });
 
@@ -3022,9 +3110,9 @@ describe('ParseGraphQLServer', () => {
               clientMutationId: result.data[fieldName].clientMutationId,
               class: {
                 name: result.data[fieldName].class.name,
-                schemaFields: result.data[fieldName].class.schemaFields.sort(
-                  (a, b) => (a.name > b.name ? 1 : -1)
-                ),
+                schemaFields: result.data[
+                  fieldName
+                ].class.schemaFields.sort((a, b) => (a.name > b.name ? 1 : -1)),
                 __typename: result.data[fieldName].class.__typename,
               },
               __typename: result.data[fieldName].__typename,
@@ -4021,22 +4109,24 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            const result = (await apolloClient.query({
-              query: gql`
-                query GetCustomer($id: ID!) {
-                  customer(id: $id) {
-                    id
-                    objectId
-                    someField
-                    createdAt
-                    updatedAt
+            const result = (
+              await apolloClient.query({
+                query: gql`
+                  query GetCustomer($id: ID!) {
+                    customer(id: $id) {
+                      id
+                      objectId
+                      someField
+                      createdAt
+                      updatedAt
+                    }
                   }
-                }
-              `,
-              variables: {
-                id: obj.id,
-              },
-            })).data.customer;
+                `,
+                variables: {
+                  id: obj.id,
+                },
+              })
+            ).data.customer;
 
             expect(result.objectId).toEqual(obj.id);
             expect(result.someField).toEqual('someValue');
@@ -4064,35 +4154,37 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-              const result = (await apolloClient.query({
-                query: gql`
-                  query GetCustomer($id: ID!) {
-                    customer(id: $id) {
-                      objectId
-                      manyRelations {
-                        ... on Customer {
-                          objectId
-                          someCustomerField
-                          arrayField {
-                            ... on Element {
-                              value
+              const result = (
+                await apolloClient.query({
+                  query: gql`
+                    query GetCustomer($id: ID!) {
+                      customer(id: $id) {
+                        objectId
+                        manyRelations {
+                          ... on Customer {
+                            objectId
+                            someCustomerField
+                            arrayField {
+                              ... on Element {
+                                value
+                              }
                             }
                           }
+                          ... on SomeClass {
+                            objectId
+                            someClassField
+                          }
                         }
-                        ... on SomeClass {
-                          objectId
-                          someClassField
-                        }
+                        createdAt
+                        updatedAt
                       }
-                      createdAt
-                      updatedAt
                     }
-                  }
-                `,
-                variables: {
-                  id: obj3.id,
-                },
-              })).data.customer;
+                  `,
+                  variables: {
+                    id: obj3.id,
+                  },
+                })
+              ).data.customer;
 
               expect(result.objectId).toEqual(obj3.id);
               expect(result.manyRelations.length).toEqual(2);
@@ -4148,33 +4240,35 @@ describe('ParseGraphQLServer', () => {
 
               await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-              const result = (await apolloClient.query({
-                query: gql`
-                  query DeepComplexGraphQLQuery($id: ID!) {
-                    country(id: $id) {
-                      objectId
-                      name
-                      companies {
-                        ... on Company {
-                          objectId
-                          name
-                          employees {
-                            ... on Employee {
-                              objectId
-                              name
+              const result = (
+                await apolloClient.query({
+                  query: gql`
+                    query DeepComplexGraphQLQuery($id: ID!) {
+                      country(id: $id) {
+                        objectId
+                        name
+                        companies {
+                          ... on Company {
+                            objectId
+                            name
+                            employees {
+                              ... on Employee {
+                                objectId
+                                name
+                              }
                             }
-                          }
-                          teams {
-                            ... on Team {
-                              objectId
-                              name
-                              employees {
-                                ... on Employee {
-                                  objectId
-                                  name
-                                  country {
+                            teams {
+                              ... on Team {
+                                objectId
+                                name
+                                employees {
+                                  ... on Employee {
                                     objectId
                                     name
+                                    country {
+                                      objectId
+                                      name
+                                    }
                                   }
                                 }
                               }
@@ -4183,12 +4277,12 @@ describe('ParseGraphQLServer', () => {
                         }
                       }
                     }
-                  }
-                `,
-                variables: {
-                  id: obj4.id,
-                },
-              })).data.country;
+                  `,
+                  variables: {
+                    id: obj4.id,
+                  },
+                })
+              ).data.country;
 
               const expectedResult = {
                 objectId: obj4.id,
@@ -4276,27 +4370,33 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj =>
                 expect(
-                  (await getObject(obj.className, obj.id, {
-                    'X-Parse-Master-Key': 'test',
-                  })).data.get.someField
+                  (
+                    await getObject(obj.className, obj.id, {
+                      'X-Parse-Master-Key': 'test',
+                    })
+                  ).data.get.someField
                 ).toEqual(obj.get('someField'))
               )
             );
             await Promise.all(
               objects.map(async obj =>
                 expect(
-                  (await getObject(obj.className, obj.id, {
-                    'X-Parse-Session-Token': user1.getSessionToken(),
-                  })).data.get.someField
+                  (
+                    await getObject(obj.className, obj.id, {
+                      'X-Parse-Session-Token': user1.getSessionToken(),
+                    })
+                  ).data.get.someField
                 ).toEqual(obj.get('someField'))
               )
             );
             await Promise.all(
               objects.map(async obj =>
                 expect(
-                  (await getObject(obj.className, obj.id, {
-                    'X-Parse-Session-Token': user2.getSessionToken(),
-                  })).data.get.someField
+                  (
+                    await getObject(obj.className, obj.id, {
+                      'X-Parse-Session-Token': user2.getSessionToken(),
+                    })
+                  ).data.get.someField
                 ).toEqual(obj.get('someField'))
               )
             );
@@ -4308,9 +4408,11 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               [object1, object3, object4].map(async obj =>
                 expect(
-                  (await getObject(obj.className, obj.id, {
-                    'X-Parse-Session-Token': user3.getSessionToken(),
-                  })).data.get.someField
+                  (
+                    await getObject(obj.className, obj.id, {
+                      'X-Parse-Session-Token': user3.getSessionToken(),
+                    })
+                  ).data.get.someField
                 ).toEqual(obj.get('someField'))
               )
             );
@@ -4324,9 +4426,11 @@ describe('ParseGraphQLServer', () => {
               )
             );
             expect(
-              (await getObject(object4.className, object4.id, {
-                'X-Parse-Session-Token': user4.getSessionToken(),
-              })).data.get.someField
+              (
+                await getObject(object4.className, object4.id, {
+                  'X-Parse-Session-Token': user4.getSessionToken(),
+                })
+              ).data.get.someField
             ).toEqual('someValue4');
             await Promise.all(
               objects.slice(0, 2).map(obj =>
@@ -4338,14 +4442,18 @@ describe('ParseGraphQLServer', () => {
               )
             );
             expect(
-              (await getObject(object3.className, object3.id, {
-                'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.get.someField
+              (
+                await getObject(object3.className, object3.id, {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
+                })
+              ).data.get.someField
             ).toEqual('someValue3');
             expect(
-              (await getObject(object4.className, object4.id, {
-                'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.get.someField
+              (
+                await getObject(object4.className, object4.id, {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
+                })
+              ).data.get.someField
             ).toEqual('someValue4');
           });
 
@@ -4712,52 +4820,68 @@ describe('ParseGraphQLServer', () => {
               )
             ).toEqual(['someValue4']);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Master-Key': 'test',
-              })).data.find.edges
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Master-Key': 'test',
+                })
+              ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
-              (await findObjects('PublicClass', {
-                'X-Parse-Master-Key': 'test',
-              })).data.find.edges.map(object => object.node.someField)
+              (
+                await findObjects('PublicClass', {
+                  'X-Parse-Master-Key': 'test',
+                })
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find.edges
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                })
+              ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
-              (await findObjects('PublicClass', {
-                'X-Parse-Session-Token': user1.getSessionToken(),
-              })).data.find.edges.map(object => object.node.someField)
+              (
+                await findObjects('PublicClass', {
+                  'X-Parse-Session-Token': user1.getSessionToken(),
+                })
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.find.edges
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user2.getSessionToken(),
+                })
+              ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Session-Token': user3.getSessionToken(),
-              })).data.find.edges
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user3.getSessionToken(),
+                })
+              ).data.find.edges
                 .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Session-Token': user4.getSessionToken(),
-              })).data.find.edges.map(object => object.node.someField)
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user4.getSessionToken(),
+                })
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual([]);
             expect(
-              (await findObjects('GraphQLClass', {
-                'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.find.edges.map(object => object.node.someField)
+              (
+                await findObjects('GraphQLClass', {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
+                })
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue3']);
           });
 
@@ -4786,7 +4910,9 @@ describe('ParseGraphQLServer', () => {
                   OR: [
                     {
                       pointerToUser: {
-                        equalTo: user5.id,
+                        objectId: {
+                          equalTo: user5.id,
+                        },
                       },
                     },
                     {
@@ -4831,7 +4957,9 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 where: {
                   pointerToUser: {
-                    in: [user5.id],
+                    objectId: {
+                      in: [user5.id],
+                    },
                   },
                 },
               },
@@ -5149,7 +5277,9 @@ describe('ParseGraphQLServer', () => {
               OR: [
                 {
                   pointerToUser: {
-                    equalTo: user5.id,
+                    objectId: {
+                      equalTo: user5.id,
+                    },
                   },
                 },
                 {
@@ -5203,7 +5333,9 @@ describe('ParseGraphQLServer', () => {
               OR: [
                 {
                   pointerToUser: {
-                    equalTo: user5.id,
+                    objectId: {
+                      equalTo: user5.id,
+                    },
                   },
                 },
                 {
@@ -5617,7 +5749,9 @@ describe('ParseGraphQLServer', () => {
                   variables: {
                     where: {
                       pointerToUser: {
-                        inQuery: { where: {}, className: '_User' },
+                        objectId: {
+                          equalTo: 'xxxx',
+                        },
                       },
                     },
                   },
@@ -5928,21 +6062,25 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(object4.className, object4.id, {
-                someField: 'changedValue1',
-              })).data.update.clientMutationId
+              (
+                await updateObject(object4.className, object4.id, {
+                  someField: 'changedValue1',
+                })
+              ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue1');
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue2' },
-                    { 'X-Parse-Master-Key': 'test' }
-                  )).data.update.clientMutationId
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue2' },
+                      { 'X-Parse-Master-Key': 'test' }
+                    )
+                  ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue2');
@@ -5951,12 +6089,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue3' },
-                    { 'X-Parse-Session-Token': user1.getSessionToken() }
-                  )).data.update.clientMutationId
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue3' },
+                      { 'X-Parse-Session-Token': user1.getSessionToken() }
+                    )
+                  ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue3');
@@ -5965,12 +6105,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue4' },
-                    { 'X-Parse-Session-Token': user2.getSessionToken() }
-                  )).data.update.clientMutationId
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue4' },
+                      { 'X-Parse-Session-Token': user2.getSessionToken() }
+                    )
+                  ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue4');
@@ -5979,12 +6121,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               [object1, object3, object4].map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue5' },
-                    { 'X-Parse-Session-Token': user3.getSessionToken() }
-                  )).data.update.clientMutationId
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue5' },
+                      { 'X-Parse-Session-Token': user3.getSessionToken() }
+                    )
+                  ).data.update.clientMutationId
                 ).toBeDefined();
                 await obj.fetch({ useMasterKey: true });
                 expect(obj.get('someField')).toEqual('changedValue5');
@@ -6017,12 +6161,14 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(
-                object4.className,
-                object4.id,
-                { someField: 'changedValue6' },
-                { 'X-Parse-Session-Token': user4.getSessionToken() }
-              )).data.update.clientMutationId
+              (
+                await updateObject(
+                  object4.className,
+                  object4.id,
+                  { someField: 'changedValue6' },
+                  { 'X-Parse-Session-Token': user4.getSessionToken() }
+                )
+              ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue6');
@@ -6042,22 +6188,26 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(
-                object3.className,
-                object3.id,
-                { someField: 'changedValue7' },
-                { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data.update.clientMutationId
+              (
+                await updateObject(
+                  object3.className,
+                  object3.id,
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
+                )
+              ).data.update.clientMutationId
             ).toBeDefined();
             await object3.fetch({ useMasterKey: true });
             expect(object3.get('someField')).toEqual('changedValue7');
             expect(
-              (await updateObject(
-                object4.className,
-                object4.id,
-                { someField: 'changedValue7' },
-                { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data.update.clientMutationId
+              (
+                await updateObject(
+                  object4.className,
+                  object4.id,
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
+                )
+              ).data.update.clientMutationId
             ).toBeDefined();
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue7');
@@ -6109,9 +6259,11 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(object4.className, object4.id, {
-                someField: 'changedValue1',
-              })).data[`update${object4.className}`][
+              (
+                await updateObject(object4.className, object4.id, {
+                  someField: 'changedValue1',
+                })
+              ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
                   object4.className.slice(1)
               ].updatedAt
@@ -6121,12 +6273,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue2' },
-                    { 'X-Parse-Master-Key': 'test' }
-                  )).data[`update${obj.className}`][
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue2' },
+                      { 'X-Parse-Master-Key': 'test' }
+                    )
+                  ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
                       obj.className.slice(1)
                   ].updatedAt
@@ -6138,12 +6292,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue3' },
-                    { 'X-Parse-Session-Token': user1.getSessionToken() }
-                  )).data[`update${obj.className}`][
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue3' },
+                      { 'X-Parse-Session-Token': user1.getSessionToken() }
+                    )
+                  ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
                       obj.className.slice(1)
                   ].updatedAt
@@ -6155,12 +6311,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects.map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue4' },
-                    { 'X-Parse-Session-Token': user2.getSessionToken() }
-                  )).data[`update${obj.className}`][
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue4' },
+                      { 'X-Parse-Session-Token': user2.getSessionToken() }
+                    )
+                  ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
                       obj.className.slice(1)
                   ].updatedAt
@@ -6172,12 +6330,14 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               [object1, object3, object4].map(async obj => {
                 expect(
-                  (await updateObject(
-                    obj.className,
-                    obj.id,
-                    { someField: 'changedValue5' },
-                    { 'X-Parse-Session-Token': user3.getSessionToken() }
-                  )).data[`update${obj.className}`][
+                  (
+                    await updateObject(
+                      obj.className,
+                      obj.id,
+                      { someField: 'changedValue5' },
+                      { 'X-Parse-Session-Token': user3.getSessionToken() }
+                    )
+                  ).data[`update${obj.className}`][
                     obj.className.charAt(0).toLowerCase() +
                       obj.className.slice(1)
                   ].updatedAt
@@ -6213,12 +6373,14 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(
-                object4.className,
-                object4.id,
-                { someField: 'changedValue6' },
-                { 'X-Parse-Session-Token': user4.getSessionToken() }
-              )).data[`update${object4.className}`][
+              (
+                await updateObject(
+                  object4.className,
+                  object4.id,
+                  { someField: 'changedValue6' },
+                  { 'X-Parse-Session-Token': user4.getSessionToken() }
+                )
+              ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
                   object4.className.slice(1)
               ].updatedAt
@@ -6241,12 +6403,14 @@ describe('ParseGraphQLServer', () => {
               })
             );
             expect(
-              (await updateObject(
-                object3.className,
-                object3.id,
-                { someField: 'changedValue7' },
-                { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data[`update${object3.className}`][
+              (
+                await updateObject(
+                  object3.className,
+                  object3.id,
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
+                )
+              ).data[`update${object3.className}`][
                 object3.className.charAt(0).toLowerCase() +
                   object3.className.slice(1)
               ].updatedAt
@@ -6254,12 +6418,14 @@ describe('ParseGraphQLServer', () => {
             await object3.fetch({ useMasterKey: true });
             expect(object3.get('someField')).toEqual('changedValue7');
             expect(
-              (await updateObject(
-                object4.className,
-                object4.id,
-                { someField: 'changedValue7' },
-                { 'X-Parse-Session-Token': user5.getSessionToken() }
-              )).data[`update${object4.className}`][
+              (
+                await updateObject(
+                  object4.className,
+                  object4.id,
+                  { someField: 'changedValue7' },
+                  { 'X-Parse-Session-Token': user5.getSessionToken() }
+                )
+              ).data[`update${object4.className}`][
                 object4.className.charAt(0).toLowerCase() +
                   object4.className.slice(1)
               ].updatedAt
@@ -6379,9 +6545,11 @@ describe('ParseGraphQLServer', () => {
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object1.className, object1.id, {
-                'X-Parse-Master-Key': 'test',
-              })).data.delete[
+              (
+                await deleteObject(object1.className, object1.id, {
+                  'X-Parse-Master-Key': 'test',
+                })
+              ).data.delete[
                 object1.className.charAt(0).toLowerCase() +
                   object1.className.slice(1)
               ]
@@ -6390,9 +6558,11 @@ describe('ParseGraphQLServer', () => {
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object2.className, object2.id, {
-                'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data.delete[
+              (
+                await deleteObject(object2.className, object2.id, {
+                  'X-Parse-Session-Token': user2.getSessionToken(),
+                })
+              ).data.delete[
                 object2.className.charAt(0).toLowerCase() +
                   object2.className.slice(1)
               ]
@@ -6401,9 +6571,11 @@ describe('ParseGraphQLServer', () => {
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object3.className, object3.id, {
-                'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data.delete[
+              (
+                await deleteObject(object3.className, object3.id, {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
+                })
+              ).data.delete[
                 object3.className.charAt(0).toLowerCase() +
                   object3.className.slice(1)
               ]
@@ -6475,9 +6647,11 @@ describe('ParseGraphQLServer', () => {
               object4.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object1.className, object1.id, {
-                'X-Parse-Master-Key': 'test',
-              })).data[`delete${object1.className}`][
+              (
+                await deleteObject(object1.className, object1.id, {
+                  'X-Parse-Master-Key': 'test',
+                })
+              ).data[`delete${object1.className}`][
                 object1.className.charAt(0).toLowerCase() +
                   object1.className.slice(1)
               ].objectId
@@ -6486,9 +6660,11 @@ describe('ParseGraphQLServer', () => {
               object1.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object2.className, object2.id, {
-                'X-Parse-Session-Token': user2.getSessionToken(),
-              })).data[`delete${object2.className}`][
+              (
+                await deleteObject(object2.className, object2.id, {
+                  'X-Parse-Session-Token': user2.getSessionToken(),
+                })
+              ).data[`delete${object2.className}`][
                 object2.className.charAt(0).toLowerCase() +
                   object2.className.slice(1)
               ].objectId
@@ -6497,9 +6673,11 @@ describe('ParseGraphQLServer', () => {
               object2.fetch({ useMasterKey: true })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             expect(
-              (await deleteObject(object3.className, object3.id, {
-                'X-Parse-Session-Token': user5.getSessionToken(),
-              })).data[`delete${object3.className}`][
+              (
+                await deleteObject(object3.className, object3.id, {
+                  'X-Parse-Session-Token': user5.getSessionToken(),
+                })
+              ).data[`delete${object3.className}`][
                 object3.className.charAt(0).toLowerCase() +
                   object3.className.slice(1)
               ].objectId
@@ -7062,7 +7240,10 @@ describe('ParseGraphQLServer', () => {
               url: 'https://some.url',
             }),
             array: ['a', 'b', 'c'],
-            arrayOfArray: [['a', 'b', 'c'], ['d', 'e', 'f']],
+            arrayOfArray: [
+              ['a', 'b', 'c'],
+              ['d', 'e', 'f'],
+            ],
           };
 
           apolloClient.mutate({
@@ -7097,18 +7278,20 @@ describe('ParseGraphQLServer', () => {
               return 'hello contains1Number';
             });
 
-            const functionEnum = (await apolloClient.query({
-              query: gql`
-                query ObjectType {
-                  __type(name: "CloudCodeFunction") {
-                    kind
-                    enumValues {
-                      name
+            const functionEnum = (
+              await apolloClient.query({
+                query: gql`
+                  query ObjectType {
+                    __type(name: "CloudCodeFunction") {
+                      kind
+                      enumValues {
+                        name
+                      }
                     }
                   }
-                }
-              `,
-            })).data['__type'];
+                `,
+              })
+            ).data['__type'];
             expect(functionEnum.kind).toEqual('ENUM');
             expect(
               functionEnum.enumValues.map(value => value.name).sort()
@@ -7137,18 +7320,20 @@ describe('ParseGraphQLServer', () => {
               return 'hello contains1Number';
             });
 
-            const functionEnum = (await apolloClient.query({
-              query: gql`
-                query ObjectType {
-                  __type(name: "CloudCodeFunction") {
-                    kind
-                    enumValues {
-                      name
+            const functionEnum = (
+              await apolloClient.query({
+                query: gql`
+                  query ObjectType {
+                    __type(name: "CloudCodeFunction") {
+                      kind
+                      enumValues {
+                        name
+                      }
                     }
                   }
-                }
-              `,
-            })).data['__type'];
+                `,
+              })
+            ).data['__type'];
             expect(functionEnum.kind).toEqual('ENUM');
             expect(
               functionEnum.enumValues.map(value => value.name).sort()
@@ -7708,9 +7893,11 @@ describe('ParseGraphQLServer', () => {
             public: { read: true, write: true, __typename: 'PublicACL' },
           };
           const query1 = new Parse.Query('SomeClass');
-          const obj1 = (await query1.get(createSomeClass.someClass.objectId, {
-            useMasterKey: true,
-          })).toJSON();
+          const obj1 = (
+            await query1.get(createSomeClass.someClass.objectId, {
+              useMasterKey: true,
+            })
+          ).toJSON();
           expect(obj1.ACL[user.id]).toEqual({ read: true, write: true });
           expect(obj1.ACL[user2.id]).toEqual({ read: true });
           expect(obj1.ACL['role:aRole']).toEqual({ read: true });
@@ -7773,9 +7960,11 @@ describe('ParseGraphQLServer', () => {
           };
 
           const query2 = new Parse.Query('SomeClass');
-          const obj2 = (await query2.get(createSomeClass.someClass.objectId, {
-            useMasterKey: true,
-          })).toJSON();
+          const obj2 = (
+            await query2.get(createSomeClass.someClass.objectId, {
+              useMasterKey: true,
+            })
+          ).toJSON();
 
           expect(obj2.ACL['role:aRole']).toEqual({ write: true, read: true });
           expect(obj2.ACL[user.id]).toBeUndefined();
@@ -8372,6 +8561,73 @@ describe('ParseGraphQLServer', () => {
           expect(result2.companies.edges.length).toEqual(1);
           expect(result2.companies.edges[0].node.objectId).toEqual(company1.id);
         });
+
+        it_only_db('mongo')(
+          'should support relationnal where query',
+          async () => {
+            const employee = new Parse.Object('Employee');
+            employee.set('name', 'John');
+            await employee.save();
+
+            const company1 = new Parse.Object('Company');
+            company1.set('name', 'imACompany1');
+            await company1.save();
+
+            const company2 = new Parse.Object('Company');
+            company2.set('name', 'imACompany2');
+            company2.relation('employees').add([employee]);
+            await company2.save();
+
+            const country = new Parse.Object('Country');
+            country.set('name', 'imACountry');
+            country.relation('companies').add([company1, company2]);
+            await country.save();
+
+            const country2 = new Parse.Object('Country');
+            country2.set('name', 'imACountry2');
+            country2.relation('companies').add([company1]);
+            await country2.save();
+
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            let {
+              data: {
+                countries: { edges: result },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        objectId
+                        companies {
+                          edges {
+                            node {
+                              id
+                              objectId
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  companies: { employees: { name: { equalTo: 'John' } } },
+                },
+              },
+            });
+            expect(result.length).toEqual(1);
+            result = result[0].node;
+            expect(result.objectId).toEqual(country.id);
+            expect(result.companies.edges.length).toEqual(2);
+          }
+        );
 
         it('should support files', async () => {
           try {
