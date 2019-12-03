@@ -2073,7 +2073,7 @@ describe('Parse.Object testing', () => {
 
     // Fetch object from server
     object = await object.fetch();
-    console.log(object.id, object.get('jsonData'));
+    equal(object.get('jsonData'), { c: 'd' });
 
     done();
   });
