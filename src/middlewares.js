@@ -353,7 +353,9 @@ export function handleParseErrors(err, req, res, next) {
       code: Parse.Error.INTERNAL_SERVER_ERROR,
       message: 'Internal server error.',
     });
-    next(err);
+    if (!(process && process.env.TESTING)) {
+      next(err);
+    }
   }
 }
 
