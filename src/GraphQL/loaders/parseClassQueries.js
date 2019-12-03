@@ -44,6 +44,8 @@ const load = function(
   const {
     get: isGetEnabled = true,
     find: isFindEnabled = true,
+    getAlias: getAlias = '',
+    findAlias: findAlias = '',
   } = getParseClassQueryConfig(parseClassConfig);
 
   const {
@@ -53,8 +55,11 @@ const load = function(
   } = parseGraphQLSchema.parseClassTypes[className];
 
   if (isGetEnabled) {
-    const getGraphQLQueryName =
+    const lowerCaseClassName =
       graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
+
+    const getGraphQLQueryName = getAlias || lowerCaseClassName;
+
     parseGraphQLSchema.addGraphQLQuery(getGraphQLQueryName, {
       description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
       args: {
@@ -75,9 +80,11 @@ const load = function(
   }
 
   if (isFindEnabled) {
-    const findGraphQLQueryName = pluralize(
-      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1)
-    );
+    const lowerCaseClassName =
+      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
+
+    const findGraphQLQueryName = findAlias || pluralize(lowerCaseClassName);
+
     parseGraphQLSchema.addGraphQLQuery(findGraphQLQueryName, {
       description: `The ${findGraphQLQueryName} query can be used to find objects of the ${graphQLClassName} class.`,
       args: classGraphQLFindArgs,
