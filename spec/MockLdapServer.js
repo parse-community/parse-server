@@ -13,7 +13,7 @@ function newServer(port, dn, provokeSearchError = false) {
   server.search('o=example', function(req, res, next) {
     if (provokeSearchError) {
       res.end(ldapjs.LDAP_SIZE_LIMIT_EXCEEDED);
-      return next(new ldapjs.NoSuchObjectError('fake error'));
+      return next();
     }
     const obj = {
       dn: req.dn.toString(),

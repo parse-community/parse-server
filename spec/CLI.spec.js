@@ -106,6 +106,7 @@ describe('commander additions', () => {
   });
 
   it('should not override config.json', done => {
+    spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
     commander.parse(
       [
@@ -160,6 +161,7 @@ describe('commander additions', () => {
   });
 
   it('should load config from apps', done => {
+    spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
     commander.parse([
       'node',
