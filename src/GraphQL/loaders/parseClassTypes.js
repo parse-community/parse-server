@@ -262,44 +262,12 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLRelationType) ||
     defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLConstraintTypeName = `${graphQLClassName}PointerWhereInput`;
-  let classGraphQLConstraintType = new GraphQLInputObjectType({
-    name: classGraphQLConstraintTypeName,
-    description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
-    fields: () => ({
-      ...classConstraintFields.reduce((fields, field) => {
-        const parseField = field === 'id' ? 'objectId' : field;
-        const type = transformConstraintTypeToGraphQL(
-          parseClass.fields[parseField].type,
-          parseClass.fields[parseField].targetClass,
-          parseGraphQLSchema.parseClassTypes,
-          field
-        );
-        if (type) {
-          return {
-            ...fields,
-            [field]: {
-              description: `This is the object ${field}.`,
-              type,
-            },
-          };
-        } else {
-          return fields;
-        }
-      }, {}),
-    }),
-  });
-  classGraphQLConstraintType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLConstraintType
-  );
-
   const classGraphQLConstraintsTypeName = `${graphQLClassName}WhereInput`;
   let classGraphQLConstraintsType = new GraphQLInputObjectType({
     name: classGraphQLConstraintsTypeName,
     description: `The ${classGraphQLConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       ...classConstraintFields.reduce((fields, field) => {
-        // TODO: Moumouls
         if (['OR', 'AND', 'NOR'].includes(field)) {
           parseGraphQLSchema.log.warn(
             `Field ${field} could not be added to the auto schema ${classGraphQLConstraintsTypeName} because it collided with an existing one.`
@@ -559,7 +527,6 @@ const load = (
     classGraphQLRelationType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
-    classGraphQLConstraintType,
     classGraphQLConstraintsType,
     classGraphQLFindArgs,
     classGraphQLOutputType,

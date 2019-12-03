@@ -8563,7 +8563,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         it_only_db('mongo')(
-          'should support relationnal where query',
+          'should support relational where query',
           async () => {
             const employee = new Parse.Object('Employee');
             employee.set('name', 'John');
@@ -8587,6 +8587,10 @@ describe('ParseGraphQLServer', () => {
             country2.set('name', 'imACountry2');
             country2.relation('companies').add([company1]);
             await country2.save();
+
+            const country3 = new Parse.Object('Country');
+            country3.set('name', 'imACountry2');
+            await country3.save();
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
@@ -8626,6 +8630,45 @@ describe('ParseGraphQLServer', () => {
             result = result[0].node;
             expect(result.objectId).toEqual(country.id);
             expect(result.companies.edges.length).toEqual(2);
+
+            const {
+              data: {
+                countries: { edges: result2 },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        objectId
+                        companies {
+                          edges {
+                            node {
+                              id
+                              objectId
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  companies: {
+                    OR: [
+                      { name: { equalTo: 'imACompany1' } },
+                      { name: { equalTo: 'imACompany2' } },
+                    ],
+                  },
+                },
+              },
+            });
+            expect(result2.length).toEqual(2);
           }
         );
 

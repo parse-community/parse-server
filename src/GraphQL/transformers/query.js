@@ -1,7 +1,6 @@
 import { fromGlobalId } from 'graphql-relay';
 
 const parseQueryMap = {
-  id: 'objectId',
   OR: '$or',
   AND: '$and',
   NOR: '$nor',
@@ -55,7 +54,7 @@ const transformQueryConstraintInputToParse = (
   const fields = parseClasses.find(
     parseClass => parseClass.className === className
   ).fields;
-  if (parentFieldName === 'objectId' && className) {
+  if (parentFieldName === 'id' && className) {
     Object.keys(constraints).forEach(constraintName => {
       const constraintValue = constraints[constraintName];
       if (typeof constraintValue === 'string') {
@@ -76,6 +75,8 @@ const transformQueryConstraintInputToParse = (
         });
       }
     });
+    parentConstraints.objectId = constraints;
+    delete parentConstraints.id;
   }
   Object.keys(constraints).forEach(fieldName => {
     let fieldValue = constraints[fieldName];
