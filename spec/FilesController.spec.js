@@ -16,7 +16,9 @@ const mockAdapter = {
   deleteFile: () => {},
   getFileData: () => {},
   getFileLocation: () => 'xyz',
-  validateFilename: () => {},
+  validateFilename: () => {
+    return null;
+  },
 };
 
 // Small additional tests to improve overall coverage
@@ -75,6 +77,19 @@ describe('FilesController', () => {
 
         done();
       });
+  });
+
+  it('should create a parse error when a string is returned', done => {
+    const mock2 = mockAdapter;
+    mock2.validateFilename = () => {
+      return 'Bad file! No biscuit!';
+    };
+    const filesController = new FilesController(mockAdapter);
+    const error = filesController.validateFilename();
+    expect(typeof error).toBe('object');
+    expect(error.message.indexOf('biscuit')).toBe(13);
+    expect(error.code).toBe(Parse.Error.INVALID_FILE_NAME);
+    done();
   });
 
   it('should add a unique hash to the file name when the preserveFileName option is false', done => {
