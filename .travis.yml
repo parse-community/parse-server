@@ -8,7 +8,9 @@ addons:
   postgresql: '11'
   apt:
     packages:
+    - postgresql-11
     - postgresql-11-postgis-2.5
+    - postgresql-11-postgis-2.5-scripts
 branches:
   only:
   - master
