@@ -36,6 +36,7 @@ describe('Server Url Checks', () => {
   });
 
   it('mark bad server url', done => {
+    spyOn(console, 'warn').and.callFake(() => {});
     Parse.serverURL = 'notavalidurl';
     ParseServer.verifyServerUrl(function(result) {
       if (result) {

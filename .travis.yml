@@ -18,6 +18,7 @@ branches:
 cache:
   directories:
   - "$HOME/.npm"
+  - ".eslintcache"
 stage: test
 env:
   global:

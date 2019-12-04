@@ -77,8 +77,7 @@ function getAppleCertificate(publicKeyUrl) {
 }
 
 function convertTimestampToBigEndian(timestamp) {
-  const buffer = new Buffer(8);
-  buffer.fill(0);
+  const buffer = Buffer.alloc(8);
 
   const high = ~~(timestamp / 0xffffffff);
   const low = timestamp % (0xffffffff + 0x1);
