@@ -5,10 +5,10 @@ services:
 - redis-server
 - docker
 addons:
-  postgresql: '9.5'
+  postgresql: '11'
   apt:
     packages:
-    - postgresql-9.5-postgis-2.3
+    - postgresql-11-postgis-2.5
 branches:
   only:
   - master
@@ -23,6 +23,7 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  - PGPORT=5432
   matrix:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
