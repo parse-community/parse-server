@@ -1,5 +1,5 @@
 language: node_js
-dist: trusty
+dist: xenial
 services:
 - postgresql
 - redis-server
