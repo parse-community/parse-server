@@ -51,6 +51,9 @@ const load = function(
     create: isCreateEnabled = true,
     update: isUpdateEnabled = true,
     destroy: isDestroyEnabled = true,
+    createAlias: createAlias = '',
+    updateAlias: updateAlias = '',
+    destroyAlias: destroyAlias = '',
   } = getParseClassMutationConfig(parseClassConfig);
 
   const {
@@ -60,7 +63,8 @@ const load = function(
   } = parseGraphQLSchema.parseClassTypes[className];
 
   if (isCreateEnabled) {
-    const createGraphQLMutationName = `create${graphQLClassName}`;
+    const createGraphQLMutationName =
+      createAlias || `create${graphQLClassName}`;
     const createGraphQLMutation = mutationWithClientMutationId({
       name: `Create${graphQLClassName}`,
       description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
@@ -150,7 +154,8 @@ const load = function(
   }
 
   if (isUpdateEnabled) {
-    const updateGraphQLMutationName = `update${graphQLClassName}`;
+    const updateGraphQLMutationName =
+      updateAlias || `update${graphQLClassName}`;
     const updateGraphQLMutation = mutationWithClientMutationId({
       name: `Update${graphQLClassName}`,
       description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
@@ -250,7 +255,8 @@ const load = function(
   }
 
   if (isDestroyEnabled) {
-    const deleteGraphQLMutationName = `delete${graphQLClassName}`;
+    const deleteGraphQLMutationName =
+      destroyAlias || `delete${graphQLClassName}`;
     const deleteGraphQLMutation = mutationWithClientMutationId({
       name: `Delete${graphQLClassName}`,
       description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,

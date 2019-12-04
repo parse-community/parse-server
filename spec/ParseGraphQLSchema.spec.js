@@ -564,9 +564,8 @@ describe('ParseGraphQLSchema', () => {
       ).toEqual(Object.keys(mutations2).sort());
     });
   });
-
-  describe('query alias', () => {
-    it('Should be able to define alias for find query', async () => {
+  describe('alias', () => {
+    it('Should be able to define alias for get and find query', async () => {
       const parseGraphQLSchema = new ParseGraphQLSchema({
         databaseController,
         parseGraphQLController,
@@ -601,7 +600,7 @@ describe('ParseGraphQLSchema', () => {
       expect(Object.keys(queries1)).toContain('precious_data');
     });
 
-    it('should fail if query alias is not a string', async () => {
+    it('Should be able to define alias for mutation', async () => {
       const parseGraphQLSchema = new ParseGraphQLSchema({
         databaseController,
         parseGraphQLController,
@@ -609,57 +608,34 @@ describe('ParseGraphQLSchema', () => {
         appId,
       });
 
-      const classConfigsBoolFindAlias = {
+      await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig({
         classConfigs: [
           {
-            className: 'Data',
-            query: {
-              get: true,
-              getAlias: 'valid',
-              find: true,
-              findAlias: true,
+            className: 'Track',
+            mutation: {
+              create: true,
+              createAlias: 'addTrack',
+              update: true,
+              updateAlias: 'modifyTrack',
+              destroy: true,
+              destroyAlias: 'eraseTrack',
             },
           },
         ],
-      };
+      });
 
-      const classConfigsNumberGetAlias = {
-        classConfigs: [
-          {
-            className: 'Pants',
-            query: {
-              get: true,
-              getAlias: 1,
-              find: true,
-              findAlias: 'valid',
-            },
-          },
-        ],
-      };
+      const data = new Parse.Object('Track');
 
-      let className;
+      await data.save();
 
-      className = classConfigsBoolFindAlias.classConfigs[0].className;
-      try {
-        await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig(
-          classConfigsBoolFindAlias
-        );
-      } catch (e) {
-        expect(e).toMatch(
-          `Invalid graphQLConfig: classConfig:${className} is invalid because "query.findAlias" must be a string`
-        );
-      }
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.load();
 
-      className = classConfigsNumberGetAlias.classConfigs[0].className;
-      try {
-        await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig(
-          classConfigsNumberGetAlias
-        );
-      } catch (e) {
-        expect(e).toMatch(
-          `Invalid graphQLConfig: classConfig:${className} is invalid because "query.getAlias" must be a string`
-        );
-      }
+      const mutations = parseGraphQLSchema.graphQLMutations;
+
+      expect(Object.keys(mutations)).toContain('addTrack');
+      expect(Object.keys(mutations)).toContain('modifyTrack');
+      expect(Object.keys(mutations)).toContain('eraseTrack');
     });
   });
 });

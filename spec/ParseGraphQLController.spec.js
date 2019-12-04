@@ -970,4 +970,102 @@ describe('ParseGraphQLController', () => {
       expect(cacheAfterValue).toBeNull();
     });
   });
+
+  describe('alias', () => {
+    it('should fail if query alias is not a string', async () => {
+      const parseGraphQLController = new ParseGraphQLController({
+        databaseController,
+      });
+
+      const className = 'Bar';
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              query: {
+                get: true,
+                getAlias: 1,
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "query.getAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              query: {
+                find: true,
+                findAlias: { not: 'valid' },
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "query.findAlias" must be a string`
+      );
+    });
+
+    it('should fail if mutation alias is not a string', async () => {
+      const parseGraphQLController = new ParseGraphQLController({
+        databaseController,
+      });
+
+      const className = 'Bar';
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                create: true,
+                createAlias: true,
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.createAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                update: true,
+                updateAlias: 1,
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.updateAlias" must be a string`
+      );
+
+      expectAsync(
+        parseGraphQLController.updateGraphQLConfig({
+          classConfigs: [
+            {
+              className,
+              mutation: {
+                destroy: true,
+                destroyAlias: { not: 'valid' },
+              },
+            },
+          ],
+        })
+      ).toBeRejected(
+        `Invalid graphQLConfig: classConfig:${className} is invalid because "mutation.destroyAlias" must be a string`
+      );
+    });
+  });
 });
