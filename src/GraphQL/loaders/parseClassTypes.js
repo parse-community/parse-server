@@ -5,6 +5,7 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLNonNull,
+  GraphQLBoolean,
   GraphQLEnumType,
 } from 'graphql';
 import {
@@ -311,6 +312,29 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLConstraintsType) ||
     defaultGraphQLTypes.OBJECT;
 
+  const classGraphQLRelationConstraintsTypeName = `${graphQLClassName}RelationWhereInput`;
+  let classGraphQLRelationConstraintsType = new GraphQLInputObjectType({
+    name: classGraphQLRelationConstraintsTypeName,
+    description: `The ${classGraphQLRelationConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
+    fields: () => ({
+      have: {
+        description: 'Execute a relational/pointer query.',
+        type: classGraphQLConstraintsType,
+      },
+      haveNot: {
+        description: 'Execute an inverted relational/pointer query.',
+        type: classGraphQLConstraintsType,
+      },
+      exists: {
+        description: 'Check if the relation/pointer contains objects.',
+        type: GraphQLBoolean,
+      },
+    }),
+  });
+  classGraphQLRelationConstraintsType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLRelationConstraintsType) ||
+    defaultGraphQLTypes.OBJECT;
+
   const classGraphQLOrderTypeName = `${graphQLClassName}Order`;
   let classGraphQLOrderType = new GraphQLEnumType({
     name: classGraphQLOrderTypeName,
@@ -528,6 +552,7 @@ const load = (
     classGraphQLCreateType,
     classGraphQLUpdateType,
     classGraphQLConstraintsType,
+    classGraphQLRelationConstraintsType,
     classGraphQLFindArgs,
     classGraphQLOutputType,
     classGraphQLFindResultType,

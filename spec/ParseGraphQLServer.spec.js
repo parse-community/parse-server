@@ -4910,8 +4910,10 @@ describe('ParseGraphQLServer', () => {
                   OR: [
                     {
                       pointerToUser: {
-                        objectId: {
-                          equalTo: user5.id,
+                        have: {
+                          objectId: {
+                            equalTo: user5.id,
+                          },
                         },
                       },
                     },
@@ -4957,8 +4959,10 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 where: {
                   pointerToUser: {
-                    objectId: {
-                      in: [user5.id],
+                    have: {
+                      objectId: {
+                        in: [user5.id],
+                      },
                     },
                   },
                 },
@@ -5277,8 +5281,10 @@ describe('ParseGraphQLServer', () => {
               OR: [
                 {
                   pointerToUser: {
-                    objectId: {
-                      equalTo: user5.id,
+                    have: {
+                      objectId: {
+                        equalTo: user5.id,
+                      },
                     },
                   },
                 },
@@ -5333,8 +5339,10 @@ describe('ParseGraphQLServer', () => {
               OR: [
                 {
                   pointerToUser: {
-                    objectId: {
-                      equalTo: user5.id,
+                    have: {
+                      objectId: {
+                        equalTo: user5.id,
+                      },
                     },
                   },
                 },
@@ -5749,8 +5757,10 @@ describe('ParseGraphQLServer', () => {
                   variables: {
                     where: {
                       pointerToUser: {
-                        objectId: {
-                          equalTo: 'xxxx',
+                        have: {
+                          objectId: {
+                            equalTo: 'xxxx',
+                          },
                         },
                       },
                     },
@@ -8565,6 +8575,10 @@ describe('ParseGraphQLServer', () => {
         it_only_db('mongo')(
           'should support relational where query',
           async () => {
+            const president = new Parse.Object('President');
+            president.set('name', 'James');
+            await president.save();
+
             const employee = new Parse.Object('Employee');
             employee.set('name', 'John');
             await employee.save();
@@ -8589,7 +8603,8 @@ describe('ParseGraphQLServer', () => {
             await country2.save();
 
             const country3 = new Parse.Object('Country');
-            country3.set('name', 'imACountry2');
+            country3.set('name', 'imACountry3');
+            country3.set('president', president);
             await country3.save();
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
@@ -8622,7 +8637,11 @@ describe('ParseGraphQLServer', () => {
               `,
               variables: {
                 where: {
-                  companies: { employees: { name: { equalTo: 'John' } } },
+                  companies: {
+                    have: {
+                      employees: { have: { name: { equalTo: 'John' } } },
+                    },
+                  },
                 },
               },
             });
@@ -8660,15 +8679,126 @@ describe('ParseGraphQLServer', () => {
               variables: {
                 where: {
                   companies: {
-                    OR: [
-                      { name: { equalTo: 'imACompany1' } },
-                      { name: { equalTo: 'imACompany2' } },
-                    ],
+                    have: {
+                      OR: [
+                        { name: { equalTo: 'imACompany1' } },
+                        { name: { equalTo: 'imACompany2' } },
+                      ],
+                    },
                   },
                 },
               },
             });
             expect(result2.length).toEqual(2);
+
+            const {
+              data: {
+                countries: { edges: result3 },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  companies: { exists: false },
+                },
+              },
+            });
+            expect(result3.length).toEqual(1);
+            expect(result3[0].node.name).toEqual('imACountry3');
+
+            const {
+              data: {
+                countries: { edges: result4 },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  president: { exists: false },
+                },
+              },
+            });
+            expect(result4.length).toEqual(2);
+            const {
+              data: {
+                countries: { edges: result5 },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  president: { exists: true },
+                },
+              },
+            });
+            expect(result5.length).toEqual(1);
+            const {
+              data: {
+                countries: { edges: result6 },
+              },
+            } = await apolloClient.query({
+              query: gql`
+                query findCountry($where: CountryWhereInput) {
+                  countries(where: $where) {
+                    edges {
+                      node {
+                        id
+                        objectId
+                        name
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                where: {
+                  companies: {
+                    haveNot: {
+                      OR: [
+                        { name: { equalTo: 'imACompany1' } },
+                        { name: { equalTo: 'imACompany2' } },
+                      ],
+                    },
+                  },
+                },
+              },
+            });
+            expect(result6.length).toEqual(1);
+            expect(result6.length).toEqual(1);
+            expect(result6[0].node.name).toEqual('imACountry3');
           }
         );
 

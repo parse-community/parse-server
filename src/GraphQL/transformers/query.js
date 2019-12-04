@@ -127,17 +127,59 @@ const transformQueryConstraintInputToParse = (
         fields[parentFieldName].type === 'Relation')
     ) {
       const { targetClass } = fields[parentFieldName];
-      parentConstraints[parentFieldName] = {
-        $inQuery: {
-          where: parentConstraints[parentFieldName],
-          className: targetClass,
-        },
-      };
-      transformQueryInputToParse(
-        parentConstraints[parentFieldName].$inQuery.where,
-        targetClass,
-        parseClasses
-      );
+      if (fieldName === 'exists') {
+        if (fields[parentFieldName].type === 'Relation') {
+          const whereTarget = fieldValue ? 'where' : 'notWhere';
+          if (constraints[whereTarget]) {
+            if (constraints[whereTarget].objectId) {
+              constraints[whereTarget].objectId = {
+                ...constraints[whereTarget].objectId,
+                $exists: fieldValue,
+              };
+            } else {
+              constraints[whereTarget].objectId = {
+                $exists: fieldValue,
+              };
+            }
+          } else {
+            const parseWhereTarget = fieldValue ? '$inQuery' : '$notInQuery';
+            parentConstraints[parentFieldName][parseWhereTarget] = {
+              where: { objectId: { $exists: true } },
+              className: targetClass,
+            };
+          }
+          delete constraints.$exists;
+        } else {
+          parentConstraints[parentFieldName].$exists = fieldValue;
+        }
+        return;
+      }
+      switch (fieldName) {
+        case 'have':
+          parentConstraints[parentFieldName].$inQuery = {
+            where: fieldValue,
+            className: targetClass,
+          };
+          transformQueryInputToParse(
+            parentConstraints[parentFieldName].$inQuery.where,
+            targetClass,
+            parseClasses
+          );
+          break;
+        case 'haveNot':
+          parentConstraints[parentFieldName].$notInQuery = {
+            where: fieldValue,
+            className: targetClass,
+          };
+          transformQueryInputToParse(
+            parentConstraints[parentFieldName].$notInQuery.where,
+            targetClass,
+            parseClasses
+          );
+          break;
+      }
+      delete constraints[fieldName];
+      return;
     }
     switch (fieldName) {
       case '$point':
