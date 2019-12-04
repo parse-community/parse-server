@@ -54,7 +54,6 @@ describe('test validate_receipt endpoint', () => {
     if (typeof body != 'object') {
       fail('Body is not an object');
     } else {
-      console.log(body);
       expect(body.__type).toEqual('File');
       const url = body.url;
       const otherResponse = await request({

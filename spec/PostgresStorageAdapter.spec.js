@@ -2,6 +2,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const databaseURI =
   'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const Config = require('../lib/Config');
 
 const getColumns = (client, className) => {
   return client.map(
@@ -16,8 +17,10 @@ const dropTable = (client, className) => {
 };
 
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
-  const adapter = new PostgresStorageAdapter({ uri: databaseURI });
+  let adapter;
   beforeEach(() => {
+    const config = Config.get('test');
+    adapter = config.database.adapter;
     return adapter.deleteAllClasses();
   });
 
