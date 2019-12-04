@@ -296,6 +296,9 @@ class ParseGraphQLController {
             create = null,
             update = null,
             destroy = null,
+            createAlias = null,
+            updateAlias = null,
+            destroyAlias = null,
             ...invalidKeys
           } = mutation;
           if (Object.keys(invalidKeys).length) {
@@ -311,6 +314,15 @@ class ParseGraphQLController {
           }
           if (destroy !== null && typeof destroy !== 'boolean') {
             return `"mutation.destroy" must be a boolean`;
+          }
+          if (createAlias !== null && typeof createAlias !== 'string') {
+            return `"mutation.createAlias" must be a string`;
+          }
+          if (updateAlias !== null && typeof updateAlias !== 'string') {
+            return `"mutation.updateAlias" must be a string`;
+          }
+          if (destroyAlias !== null && typeof destroyAlias !== 'string') {
+            return `"mutation.destroyAlias" must be a string`;
           }
         } else {
           return `"mutation" must be a valid object`;
@@ -380,6 +392,9 @@ export interface ParseGraphQLClassConfig {
     update: ?boolean,
     // delete is a reserved key word in js
     destroy: ?boolean,
+    createAlias: ?String,
+    updateAlias: ?String,
+    destroyAlias: ?String,
   };
 }
 
