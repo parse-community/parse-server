@@ -266,7 +266,13 @@ class ParseGraphQLController {
       }
       if (query !== null) {
         if (isValidSimpleObject(query)) {
-          const { find = null, get = null, ...invalidKeys } = query;
+          const {
+            find = null,
+            get = null,
+            findAlias = null,
+            getAlias = null,
+            ...invalidKeys
+          } = query;
           if (Object.keys(invalidKeys).length) {
             return `"query" contains invalid keys, [${Object.keys(
               invalidKeys
@@ -275,6 +281,10 @@ class ParseGraphQLController {
             return `"query.find" must be a boolean`;
           } else if (get !== null && typeof get !== 'boolean') {
             return `"query.get" must be a boolean`;
+          } else if (findAlias !== null && typeof findAlias !== 'string') {
+            return `"query.findAlias" must be a string`;
+          } else if (getAlias !== null && typeof getAlias !== 'string') {
+            return `"query.getAlias" must be a string`;
           }
         } else {
           return `"query" must be a valid object`;
@@ -361,6 +371,8 @@ export interface ParseGraphQLClassConfig {
   query: ?{
     get: ?boolean,
     find: ?boolean,
+    findAlias: ?String,
+    getAlias: ?String,
   };
   /* The `mutation` object contains options for which class mutations are generated */
   mutation: ?{
