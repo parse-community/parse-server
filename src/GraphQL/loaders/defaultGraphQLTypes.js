@@ -890,6 +890,47 @@ const options = {
   type: GraphQLString,
 };
 
+const SUBQUERY_INPUT = new GraphQLInputObjectType({
+  name: 'SubqueryInput',
+  description:
+    'The SubqueryInput type is used to specify a sub query to another class.',
+  fields: {
+    className: CLASS_NAME_ATT,
+    where: Object.assign({}, WHERE_ATT, {
+      type: new GraphQLNonNull(WHERE_ATT.type),
+    }),
+  },
+});
+
+const SELECT_INPUT = new GraphQLInputObjectType({
+  name: 'SelectInput',
+  description:
+    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
+  fields: {
+    query: {
+      description: 'This is the subquery to be executed.',
+      type: new GraphQLNonNull(SUBQUERY_INPUT),
+    },
+    key: {
+      description:
+        'This is the key in the result of the subquery that must match (not match) the field.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+const inQueryKey = {
+  description:
+    'This is the inQueryKey operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
+  type: SELECT_INPUT,
+};
+
+const notInQueryKey = {
+  description:
+    'This is the notInQueryKey operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
+  type: SELECT_INPUT,
+};
+
 const ID_WHERE_INPUT = new GraphQLInputObjectType({
   name: 'IdWhereInput',
   description:
@@ -904,6 +945,8 @@ const ID_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(GraphQLID),
     notIn: notIn(GraphQLID),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -928,6 +971,8 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -945,6 +990,8 @@ const NUMBER_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(GraphQLFloat),
     notIn: notIn(GraphQLFloat),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -956,6 +1003,8 @@ const BOOLEAN_WHERE_INPUT = new GraphQLInputObjectType({
     equalTo: equalTo(GraphQLBoolean),
     notEqualTo: notEqualTo(GraphQLBoolean),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -983,6 +1032,8 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the contains operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
       type: new GraphQLList(ANY),
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1015,6 +1066,8 @@ const OBJECT_WHERE_INPUT = new GraphQLInputObjectType({
     greaterThan: greaterThan(KEY_VALUE_INPUT),
     greaterThanOrEqualTo: greaterThanOrEqualTo(KEY_VALUE_INPUT),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1032,6 +1085,8 @@ const DATE_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(DATE),
     notIn: notIn(DATE),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1049,6 +1104,8 @@ const BYTES_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(BYTES),
     notIn: notIn(BYTES),
     exists,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1068,6 +1125,8 @@ const FILE_WHERE_INPUT = new GraphQLInputObjectType({
     exists,
     matchesRegex,
     options,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1218,6 +1277,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(USER_ACL, true);
   parseGraphQLSchema.addGraphQLType(ROLE_ACL, true);
   parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
+  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
 };
 
 export {
@@ -1236,6 +1297,8 @@ export {
   DATE,
   BYTES,
   parseFileValue,
+  SUBQUERY_INPUT,
+  SELECT_INPUT,
   FILE,
   FILE_INFO,
   GEO_POINT_FIELDS,
@@ -1283,6 +1346,8 @@ export {
   exists,
   matchesRegex,
   options,
+  inQueryKey,
+  notInQueryKey,
   ID_WHERE_INPUT,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,

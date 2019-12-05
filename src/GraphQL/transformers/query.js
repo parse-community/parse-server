@@ -234,13 +234,17 @@ const transformQueryConstraintInputToParse = (
         break;
     }
     if (typeof fieldValue === 'object') {
-      transformQueryConstraintInputToParse(
-        fieldValue,
-        fieldName,
-        className,
-        constraints,
-        parseClasses
-      );
+      if (fieldName === 'where') {
+        transformQueryInputToParse(fieldValue, className, parseClasses);
+      } else {
+        transformQueryConstraintInputToParse(
+          fieldValue,
+          fieldName,
+          className,
+          constraints,
+          parseClasses
+        );
+      }
     }
   });
 };

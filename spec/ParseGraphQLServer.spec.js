@@ -5066,6 +5066,72 @@ describe('ParseGraphQLServer', () => {
             }
           });
 
+          it('should support in query key', async () => {
+            try {
+              const country = new Parse.Object('Country');
+              country.set('code', 'FR');
+              await country.save();
+
+              const country2 = new Parse.Object('Country');
+              country2.set('code', 'US');
+              await country2.save();
+
+              const city = new Parse.Object('City');
+              city.set('country', 'FR');
+              city.set('name', 'city1');
+              await city.save();
+
+              const city2 = new Parse.Object('City');
+              city2.set('country', 'US');
+              city2.set('name', 'city2');
+              await city2.save();
+
+              await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+              const {
+                data: {
+                  cities: { edges: result },
+                },
+              } = await apolloClient.query({
+                query: gql`
+                  query inQueryKey($where: CityWhereInput) {
+                    cities(where: $where) {
+                      edges {
+                        node {
+                          country
+                          name
+                        }
+                      }
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+                variables: {
+                  where: {
+                    country: {
+                      inQueryKey: {
+                        query: {
+                          className: 'Country',
+                          where: { code: { equalTo: 'US' } },
+                        },
+                        key: 'code',
+                      },
+                    },
+                  },
+                },
+              });
+
+              expect(result.length).toEqual(1);
+              expect(result[0].node.name).toEqual('city2');
+            } catch (e) {
+              handleError(e);
+            }
+          });
+
           it('should support order, skip and first arguments', async () => {
             const promises = [];
             for (let i = 0; i < 100; i++) {
