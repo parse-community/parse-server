@@ -713,35 +713,6 @@ const COUNT_ATT = {
   type: new GraphQLNonNull(GraphQLInt),
 };
 
-const SUBQUERY_INPUT = new GraphQLInputObjectType({
-  name: 'SubqueryInput',
-  description:
-    'The SubqueryInput type is used to specify a sub query to another class.',
-  fields: {
-    className: CLASS_NAME_ATT,
-    where: Object.assign({}, WHERE_ATT, {
-      type: new GraphQLNonNull(WHERE_ATT.type),
-    }),
-  },
-});
-
-const SELECT_INPUT = new GraphQLInputObjectType({
-  name: 'SelectInput',
-  description:
-    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
-  fields: {
-    query: {
-      description: 'This is the subquery to be executed.',
-      type: new GraphQLNonNull(SUBQUERY_INPUT),
-    },
-    key: {
-      description:
-        'This is the key in the result of the subquery that must match (not match) the field.',
-      type: new GraphQLNonNull(GraphQLString),
-    },
-  },
-});
-
 const SEARCH_INPUT = new GraphQLInputObjectType({
   name: 'SearchInput',
   description:
@@ -907,18 +878,6 @@ const exists = {
   type: GraphQLBoolean,
 };
 
-const inQueryKey = {
-  description:
-    'This is the inQueryKey operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
-  type: SELECT_INPUT,
-};
-
-const notInQueryKey = {
-  description:
-    'This is the notInQueryKey operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
-  type: SELECT_INPUT,
-};
-
 const matchesRegex = {
   description:
     'This is the matchesRegex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
@@ -929,6 +888,47 @@ const options = {
   description:
     'This is the options operator to specify optional flags (such as "i" and "m") to be added to a matchesRegex operation in the same set of constraints.',
   type: GraphQLString,
+};
+
+const SUBQUERY_INPUT = new GraphQLInputObjectType({
+  name: 'SubqueryInput',
+  description:
+    'The SubqueryInput type is used to specify a sub query to another class.',
+  fields: {
+    className: CLASS_NAME_ATT,
+    where: Object.assign({}, WHERE_ATT, {
+      type: new GraphQLNonNull(WHERE_ATT.type),
+    }),
+  },
+});
+
+const SELECT_INPUT = new GraphQLInputObjectType({
+  name: 'SelectInput',
+  description:
+    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
+  fields: {
+    query: {
+      description: 'This is the subquery to be executed.',
+      type: new GraphQLNonNull(SUBQUERY_INPUT),
+    },
+    key: {
+      description:
+        'This is the key in the result of the subquery that must match (not match) the field.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+const inQueryKey = {
+  description:
+    'This is the inQueryKey operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
+  type: SELECT_INPUT,
+};
+
+const notInQueryKey = {
+  description:
+    'This is the notInQueryKey operator to specify a constraint to select the objects where a field do not equal to a key in the result of a different query.',
+  type: SELECT_INPUT,
 };
 
 const ID_WHERE_INPUT = new GraphQLInputObjectType({
@@ -964,8 +964,6 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(GraphQLString),
     notIn: notIn(GraphQLString),
     exists,
-    inQueryKey,
-    notInQueryKey,
     matchesRegex,
     options,
     text: {
@@ -973,6 +971,8 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1022,8 +1022,6 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(ANY),
     notIn: notIn(ANY),
     exists,
-    inQueryKey,
-    notInQueryKey,
     containedBy: {
       description:
         'This is the containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
@@ -1034,6 +1032,8 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the contains operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
       type: new GraphQLList(ANY),
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1123,10 +1123,10 @@ const FILE_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(FILE),
     notIn: notIn(FILE),
     exists,
-    inQueryKey,
-    notInQueryKey,
     matchesRegex,
     options,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -1249,8 +1249,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
   parseGraphQLSchema.addGraphQLType(READ_OPTIONS_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SEARCH_INPUT, true);
   parseGraphQLSchema.addGraphQLType(TEXT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOX_INPUT, true);
@@ -1279,6 +1277,8 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(USER_ACL, true);
   parseGraphQLSchema.addGraphQLType(ROLE_ACL, true);
   parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
+  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
 };
 
 export {
@@ -1297,6 +1297,8 @@ export {
   DATE,
   BYTES,
   parseFileValue,
+  SUBQUERY_INPUT,
+  SELECT_INPUT,
   FILE,
   FILE_INFO,
   GEO_POINT_FIELDS,
@@ -1326,8 +1328,6 @@ export {
   SKIP_ATT,
   LIMIT_ATT,
   COUNT_ATT,
-  SUBQUERY_INPUT,
-  SELECT_INPUT,
   SEARCH_INPUT,
   TEXT_INPUT,
   BOX_INPUT,
@@ -1344,10 +1344,10 @@ export {
   inOp,
   notIn,
   exists,
-  inQueryKey,
-  notInQueryKey,
   matchesRegex,
   options,
+  inQueryKey,
+  notInQueryKey,
   ID_WHERE_INPUT,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,

@@ -26,9 +26,9 @@ const transformConstraintTypeToGraphQL = (
     case 'Pointer':
       if (
         parseClassTypes[targetClass] &&
-        parseClassTypes[targetClass].classGraphQLConstraintType
+        parseClassTypes[targetClass].classGraphQLRelationConstraintsType
       ) {
-        return parseClassTypes[targetClass].classGraphQLConstraintType;
+        return parseClassTypes[targetClass].classGraphQLRelationConstraintsType;
       } else {
         return defaultGraphQLTypes.OBJECT;
       }
@@ -43,6 +43,14 @@ const transformConstraintTypeToGraphQL = (
     case 'ACL':
       return defaultGraphQLTypes.OBJECT_WHERE_INPUT;
     case 'Relation':
+      if (
+        parseClassTypes[targetClass] &&
+        parseClassTypes[targetClass].classGraphQLRelationConstraintsType
+      ) {
+        return parseClassTypes[targetClass].classGraphQLRelationConstraintsType;
+      } else {
+        return defaultGraphQLTypes.OBJECT;
+      }
     default:
       return undefined;
   }
