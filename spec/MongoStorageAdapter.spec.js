@@ -291,7 +291,6 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         expect(adapter.database.serverConfig.connections().length > 0).toEqual(
           false
         );
-        expect(adapter.database.serverConfig.s.connected).toEqual(false);
         done();
       });
     });
