@@ -318,11 +318,13 @@ const load = (
     description: `The ${classGraphQLRelationConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       have: {
-        description: 'Execute a relational/pointer query.',
+        description:
+          'Run a relational/pointer query where at least one child object can match.',
         type: classGraphQLConstraintsType,
       },
       haveNot: {
-        description: 'Execute an inverted relational/pointer query.',
+        description:
+          'Run an inverted relational/pointer query where at least one child object can match.',
         type: classGraphQLConstraintsType,
       },
       exists: {
