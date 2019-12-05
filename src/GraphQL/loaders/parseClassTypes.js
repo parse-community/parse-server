@@ -5,6 +5,7 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLNonNull,
+  GraphQLBoolean,
   GraphQLEnumType,
 } from 'graphql';
 import {
@@ -262,34 +263,6 @@ const load = (
     parseGraphQLSchema.addGraphQLType(classGraphQLRelationType) ||
     defaultGraphQLTypes.OBJECT;
 
-  const classGraphQLConstraintTypeName = `${graphQLClassName}PointerWhereInput`;
-  let classGraphQLConstraintType = new GraphQLInputObjectType({
-    name: classGraphQLConstraintTypeName,
-    description: `The ${classGraphQLConstraintTypeName} input type is used in operations that involve filtering objects by a pointer field to ${graphQLClassName} class.`,
-    fields: {
-      equalTo: defaultGraphQLTypes.equalTo(GraphQLID),
-      notEqualTo: defaultGraphQLTypes.notEqualTo(GraphQLID),
-      in: defaultGraphQLTypes.inOp(defaultGraphQLTypes.OBJECT_ID),
-      notIn: defaultGraphQLTypes.notIn(defaultGraphQLTypes.OBJECT_ID),
-      exists: defaultGraphQLTypes.exists,
-      inQueryKey: defaultGraphQLTypes.inQueryKey,
-      notInQueryKey: defaultGraphQLTypes.notInQueryKey,
-      inQuery: {
-        description:
-          'This is the inQuery operator to specify a constraint to select the objects where a field equals to any of the object ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY_INPUT,
-      },
-      notInQuery: {
-        description:
-          'This is the notInQuery operator to specify a constraint to select the objects where a field do not equal to any of the object ids in the result of a different query.',
-        type: defaultGraphQLTypes.SUBQUERY_INPUT,
-      },
-    },
-  });
-  classGraphQLConstraintType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLConstraintType
-  );
-
   const classGraphQLConstraintsTypeName = `${graphQLClassName}WhereInput`;
   let classGraphQLConstraintsType = new GraphQLInputObjectType({
     name: classGraphQLConstraintsTypeName,
@@ -337,6 +310,31 @@ const load = (
   });
   classGraphQLConstraintsType =
     parseGraphQLSchema.addGraphQLType(classGraphQLConstraintsType) ||
+    defaultGraphQLTypes.OBJECT;
+
+  const classGraphQLRelationConstraintsTypeName = `${graphQLClassName}RelationWhereInput`;
+  let classGraphQLRelationConstraintsType = new GraphQLInputObjectType({
+    name: classGraphQLRelationConstraintsTypeName,
+    description: `The ${classGraphQLRelationConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
+    fields: () => ({
+      have: {
+        description:
+          'Run a relational/pointer query where at least one child object can match.',
+        type: classGraphQLConstraintsType,
+      },
+      haveNot: {
+        description:
+          'Run an inverted relational/pointer query where at least one child object can match.',
+        type: classGraphQLConstraintsType,
+      },
+      exists: {
+        description: 'Check if the relation/pointer contains objects.',
+        type: GraphQLBoolean,
+      },
+    }),
+  });
+  classGraphQLRelationConstraintsType =
+    parseGraphQLSchema.addGraphQLType(classGraphQLRelationConstraintsType) ||
     defaultGraphQLTypes.OBJECT;
 
   const classGraphQLOrderTypeName = `${graphQLClassName}Order`;
@@ -464,10 +462,7 @@ const load = (
                   auth,
                   info,
                   selectedFields,
-                  parseGraphQLSchema.parseClasses.find(
-                    parseClass =>
-                      parseClass.className === source[field].className
-                  ).fields
+                  parseGraphQLSchema.parseClasses
                 );
               } catch (e) {
                 parseGraphQLSchema.handleError(e);
@@ -558,8 +553,8 @@ const load = (
     classGraphQLRelationType,
     classGraphQLCreateType,
     classGraphQLUpdateType,
-    classGraphQLConstraintType,
     classGraphQLConstraintsType,
+    classGraphQLRelationConstraintsType,
     classGraphQLFindArgs,
     classGraphQLOutputType,
     classGraphQLFindResultType,
