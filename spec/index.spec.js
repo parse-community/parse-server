@@ -65,10 +65,13 @@ describe('server', () => {
     });
   });
 
-  xit('fails if database is unreachable', done => {
+  it('fails if database is unreachable', done => {
     reconfigureServer({
       databaseAdapter: new MongoStorageAdapter({
         uri: 'mongodb://fake:fake@localhost:43605/drew3',
+        mongoOptions: {
+          serverSelectionTimeoutMS: 2000,
+        },
       }),
     }).catch(() => {
       //Need to use rest api because saving via JS SDK results in fail() not getting called
