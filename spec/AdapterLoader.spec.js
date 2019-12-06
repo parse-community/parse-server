@@ -145,6 +145,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should load S3Adapter from direct passing', done => {
+    spyOn(console, 'warn').and.callFake(() => {});
     const s3Adapter = new S3Adapter('key', 'secret', 'bucket');
     expect(() => {
       const adapter = loadAdapter(s3Adapter, FilesAdapter);

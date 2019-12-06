@@ -1,6 +1,8 @@
 import loadAdapter from '../AdapterLoader';
 
 const apple = require('./apple');
+const gcenter = require('./gcenter');
+const gpgames = require('./gpgames');
 const facebook = require('./facebook');
 const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
@@ -13,12 +15,15 @@ const spotify = require('./spotify');
 const digits = require('./twitter'); // digits tokens are validated by twitter
 const janrainengage = require('./janrainengage');
 const janraincapture = require('./janraincapture');
+const line = require('./line');
 const vkontakte = require('./vkontakte');
 const qq = require('./qq');
 const wechat = require('./wechat');
 const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
+const microsoft = require('./microsoft');
+const ldap = require('./ldap');
 
 const anonymous = {
   validateAuthData: () => {
@@ -31,6 +36,8 @@ const anonymous = {
 
 const providers = {
   apple,
+  gcenter,
+  gpgames,
   facebook,
   facebookaccountkit,
   instagram,
@@ -44,11 +51,14 @@ const providers = {
   digits,
   janrainengage,
   janraincapture,
+  line,
   vkontakte,
   qq,
   wechat,
   weibo,
   phantauth,
+  microsoft,
+  ldap,
 };
 
 function authDataValidator(adapter, appIds, options) {

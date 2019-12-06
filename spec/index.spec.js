@@ -26,13 +26,21 @@ describe('server', () => {
       });
   });
 
+  it('show warning if any reserved characters in appId', done => {
+    spyOn(console, 'warn').and.callFake(() => {});
+    reconfigureServer({ appId: 'test!-^' }).then(() => {
+      expect(console.warn).toHaveBeenCalled();
+      return done();
+    });
+  });
+
   it('support http basic authentication with masterkey', done => {
     reconfigureServer({ appId: 'test' }).then(() => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
           Authorization:
-            'Basic ' + new Buffer('test:' + 'test').toString('base64'),
+            'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -48,7 +56,7 @@ describe('server', () => {
         headers: {
           Authorization:
             'Basic ' +
-            new Buffer('test:javascript-key=' + 'test').toString('base64'),
+            Buffer.from('test:javascript-key=' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);

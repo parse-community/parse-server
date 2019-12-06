@@ -33,6 +33,7 @@ class ParseGraphQLServer {
       databaseController: this.parseServer.config.databaseController,
       log: this.log,
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
+      appId: this.parseServer.config.appId,
     });
   }
 
@@ -44,6 +45,10 @@ class ParseGraphQLServer {
           info: req.info,
           config: req.config,
           auth: req.auth,
+        },
+        formatError: error => {
+          // Allow to console.log here to debug
+          return error;
         },
       };
     } catch (e) {

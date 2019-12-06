@@ -431,7 +431,7 @@ describe('schemas', () => {
             defaultValue: false,
           },
           defaultZero: { type: 'Number', defaultValue: 0 },
-          relation: { type: 'Relation', targetClass: 'SomeClass' }
+          relation: { type: 'Relation', targetClass: 'SomeClass' },
         },
       },
     }).then(async response => {
@@ -458,7 +458,7 @@ describe('schemas', () => {
             defaultValue: false,
           },
           defaultZero: { type: 'Number', defaultValue: 0 },
-          relation: { type: 'Relation', targetClass: 'SomeClass' }
+          relation: { type: 'Relation', targetClass: 'SomeClass' },
         },
         classLevelPermissions: defaultClassLevelPermissions,
       });
@@ -486,7 +486,7 @@ describe('schemas', () => {
     });
   });
 
-  it('try to set a relation field as a required field', async (done) => {
+  it('try to set a relation field as a required field', async done => {
     try {
       await request({
         url: 'http://localhost:8378/1/schemas',
@@ -497,7 +497,11 @@ describe('schemas', () => {
           className: 'NewClassWithRelationRequired',
           fields: {
             foo: { type: 'String' },
-            relation: { type: 'Relation', targetClass: 'SomeClass', required: true }
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              required: true,
+            },
           },
         },
       });
@@ -508,7 +512,7 @@ describe('schemas', () => {
     done();
   });
 
-  it('try to set a relation field with a default value', async (done) => {
+  it('try to set a relation field with a default value', async done => {
     try {
       await request({
         url: 'http://localhost:8378/1/schemas',
@@ -519,7 +523,11 @@ describe('schemas', () => {
           className: 'NewClassRelationWithOptions',
           fields: {
             foo: { type: 'String' },
-            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              defaultValue: { __type: 'Relation', className: '_User' },
+            },
           },
         },
       });
@@ -530,7 +538,7 @@ describe('schemas', () => {
     done();
   });
 
-  it('try to update schemas with a relation field with options', async (done) => {
+  it('try to update schemas with a relation field with options', async done => {
     await request({
       url: 'http://localhost:8378/1/schemas',
       method: 'POST',
@@ -539,7 +547,7 @@ describe('schemas', () => {
       body: {
         className: 'NewClassRelationWithOptions',
         fields: {
-          foo: { type: 'String' }
+          foo: { type: 'String' },
         },
       },
     });
@@ -552,10 +560,14 @@ describe('schemas', () => {
         body: {
           className: 'NewClassRelationWithOptions',
           fields: {
-            relation: { type: 'Relation', targetClass: 'SomeClass', required: true }
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              required: true,
+            },
           },
-          _method: "PUT"
-        }
+          _method: 'PUT',
+        },
       });
       fail('should fail');
     } catch (e) {
@@ -571,10 +583,14 @@ describe('schemas', () => {
         body: {
           className: 'NewClassRelationWithOptions',
           fields: {
-            relation: { type: 'Relation', targetClass: 'SomeClass', defaultValue: { __type: 'Relation', className: '_User' } }
+            relation: {
+              type: 'Relation',
+              targetClass: 'SomeClass',
+              defaultValue: { __type: 'Relation', className: '_User' },
+            },
           },
-          _method: "PUT"
-        }
+          _method: 'PUT',
+        },
       });
       fail('should fail');
     } catch (e) {

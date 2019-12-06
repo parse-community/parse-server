@@ -145,7 +145,7 @@ class ParseServer {
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
-    api.use(middlewares.allowCrossDomain);
+    api.use(middlewares.allowCrossDomain(appId));
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -374,6 +374,16 @@ function injectDefaults(options: ParseServerOptions) {
 
   if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+  }
+
+  // Reserved Characters
+  if (options.appId) {
+    const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
+    if (options.appId.match(regex)) {
+      console.warn(
+        `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
+      );
+    }
   }
 
   // Backwards compatibility

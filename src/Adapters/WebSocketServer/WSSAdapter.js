@@ -4,6 +4,7 @@
 // Adapter classes must implement the following functions:
 // * onListen()
 // * onConnection(ws)
+// * onError(error)
 // * start()
 // * close()
 //
@@ -22,6 +23,7 @@ export class WSSAdapter {
   constructor(options) {
     this.onListen = () => {};
     this.onConnection = () => {};
+    this.onError = () => {};
   }
 
   // /**
@@ -35,6 +37,13 @@ export class WSSAdapter {
   //  * @param {WebSocket} ws - RFC 6455 WebSocket.
   //  */
   // onConnection(ws) {}
+
+  // /**
+  //  * Emitted when error event is called.
+  //  *
+  //  * @param {Error} error - WebSocketServer error
+  //  */
+  // onError(error) {}
 
   /**
    * Initialize Connection.

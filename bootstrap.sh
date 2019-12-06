@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
@@ -163,7 +163,7 @@ cat > ./package.json << EOF
     "start": "parse-server config.json"
   },
   "dependencies": {
-    "parse-server": "^2.0.0"
+    "parse-server": "^3.9.0"
   }
 }
 EOF

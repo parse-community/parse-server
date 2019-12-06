@@ -1,3 +1,6 @@
+// Apple SignIn Auth
+// https://developer.apple.com/documentation/signinwithapplerestapi
+
 const Parse = require('parse/node').Parse;
 const httpsRequest = require('./httpsRequest');
 const NodeRSA = require('node-rsa');

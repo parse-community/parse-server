@@ -4,7 +4,6 @@
 
 const httpsRequest = require('./httpsRequest');
 var Parse = require('parse/node').Parse;
-var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, params) {
@@ -28,7 +27,6 @@ function validateAuthData(authData, params) {
         );
       });
     }
-    logger.error('Vk Auth', 'Vk appIds or appSecret is incorrect.');
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Vk appIds or appSecret is incorrect.'
@@ -45,10 +43,6 @@ function vkOAuth2Request(params) {
       !params.appSecret ||
       !params.appSecret.length
     ) {
-      logger.error(
-        'Vk Auth',
-        'Vk auth is not configured. Missing appIds or appSecret.'
-      );
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
         'Vk auth is not configured. Missing appIds or appSecret.'

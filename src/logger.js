@@ -3,6 +3,7 @@ import defaults from './defaults';
 import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
 import { LoggerController } from './Controllers/LoggerController';
 
+// Used for Separate Live Query Server
 function defaultLogger() {
   const options = {
     logsFolder: defaults.logsFolder,

@@ -78,6 +78,12 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 ## Running Parse Server
 
+Before you start make sure you have installed:
+
+- [NodeJS](https://www.npmjs.com/) that includes `npm` 
+- [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)
+- Optionally [Docker](https://www.docker.com/)
+
 ### Locally
 ```
 $ npm install -g parse-server mongodb-runner
@@ -93,7 +99,7 @@ $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+$ docker run --name my-parse-server -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
@@ -418,10 +424,10 @@ Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/gu
 
 The easiest way to run the Parse GraphQL API is through the CLI:
 
-```
+```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
@@ -432,12 +438,12 @@ After starting the server, you can visit http://localhost:1337/playground in you
 
 You can also run the Parse GraphQL API inside a Docker container:
 
-```
+```bash
 $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --mountGraphQL --mountPlayground
+$ docker run --name my-parse-server --link my-mongo:mongo -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
@@ -446,9 +452,17 @@ After starting the server, you can visit http://localhost:1337/playground in you
 
 ### Using Express.js
 
-You can also mount the GraphQL API in an Express.js application together with the REST API or solo:
+You can also mount the GraphQL API in an Express.js application together with the REST API or solo. You first need to create a new project and install the required dependencies:
 
+```bash
+$ mkdir my-app
+$ cd my-app
+$ npm install parse-server express --save
 ```
+
+Then, create an `index.js` file with the following content:
+
+```js
 const express = require('express');
 const { default: ParseServer, ParseGraphQLServer } = require('parse-server');
 
@@ -458,7 +472,8 @@ const parseServer = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/test',
   appId: 'APPLICATION_ID',
   masterKey: 'MASTER_KEY',
-  serverURL: 'http://localhost:1337/parse'
+  serverURL: 'http://localhost:1337/parse',
+  publicServerURL: 'http://localhost:1337/parse'
 });
 
 const parseGraphQLServer = new ParseGraphQLServer(
@@ -480,7 +495,14 @@ app.listen(1337, function() {
 });
 ```
 
-After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
+And finally start your app:
+
+```bash
+$ npx mongodb-runner start
+$ node index.js
+```
+
+After starting the app, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
 ***Note:*** Do ***NOT*** mount the GraphQL Playground in production. [Parse Dashboard](https://github.com/parse-community/parse-dashboard) has a built-in GraphQL Playground and it is the recommended option for production apps.
 
@@ -504,31 +526,66 @@ You should receive the following response:
 }
 ```
 
-## Creating your first object
+## Creating your first class
 
-Since your application does not have a schema yet, you can use the generic `create` mutation to create your first object. Run the following:
+Since your application does not have any schema yet, you can use the `createClass` mutation to create your first class. Run the following:
 
 ```graphql
-mutation CreateObject {
-  objects {
-    create(className: "GameScore" fields: { score: 1337 playerName: "Sean Plott" cheatMode: false }) {
-      objectId
-      createdAt
+mutation CreateClass {
+  createClass(
+    name: "GameScore"
+    schemaFields: {
+      addStrings: [{ name: "playerName" }]
+      addNumbers: [{ name: "score" }]
+      addBooleans: [{ name: "cheatMode" }]
+    }
+  ) {
+    name
+    schemaFields {
+      name
+      __typename
     }
   }
 }
 ```
 
-You should receive a response similar to this:
+You should receive the following response:
 
 ```json
 {
   "data": {
-    "objects": {
-      "create": {
-        "objectId": "7jfBmbGgyF",
-        "createdAt": "2019-06-20T23:50:50.825Z"
-      }
+    "createClass": {
+      "name": "GameScore",
+      "schemaFields": [
+        {
+          "name": "objectId",
+          "__typename": "SchemaStringField"
+        },
+        {
+          "name": "updatedAt",
+          "__typename": "SchemaDateField"
+        },
+        {
+          "name": "createdAt",
+          "__typename": "SchemaDateField"
+        },
+        {
+          "name": "playerName",
+          "__typename": "SchemaStringField"
+        },
+        {
+          "name": "score",
+          "__typename": "SchemaNumberField"
+        },
+        {
+          "name": "cheatMode",
+          "__typename": "SchemaBooleanField"
+        },
+        {
+          "name": "ACL",
+          "__typename": "SchemaACLField"
+        }
+      ]
     }
   }
 }
@@ -536,17 +593,26 @@ You should receive a response similar to this:
 
 ## Using automatically generated operations
 
-Parse Server learned from the first object that you created and now you have the `GameScore` class in your schema. You can now start using the automatically generated operations!
+Parse Server learned from the first class that you created and now you have the `GameScore` class in your schema. You can now start using the automatically generated operations!
 
-Run the following to create a second object:
+Run the following to create your first object:
 
 ```graphql
 mutation CreateGameScore {
-  objects {
-    createGameScore(fields: { score: 2558 playerName: "Luke Skywalker" cheatMode: false }) {
-      objectId
-      createdAt
+  createGameScore(
+    fields: {
+      playerName: "Sean Plott"
+      score: 1337
+      cheatMode: false
     }
+  ) {
+    id
+    updatedAt
+    createdAt
+    playerName
+    score
+    cheatMode
+    ACL
   }
 }
 ```
@@ -556,11 +622,14 @@ You should receive a response similar to this:
 ```json
 {
   "data": {
-    "objects": {
-      "createGameScore": {
-        "objectId": "gySYolb2CL",
-        "createdAt": "2019-06-20T23:56:37.114Z"
-      }
+    "createGameScore": {
+      "id": "XN75D94OBD",
+      "updatedAt": "2019-09-17T06:50:26.357Z",
+      "createdAt": "2019-09-17T06:50:26.357Z",
+      "playerName": "Sean Plott",
+      "score": 1337,
+      "cheatMode": false,
+      "ACL": null
     }
   }
 }
@@ -569,13 +638,16 @@ You should receive a response similar to this:
 You can also run a query to this new class:
 
 ```graphql
-query FindGameScore {
-  objects {
-    findGameScore {
-      results {
-        playerName
-        score
-      }
+query GameScores {
+  gameScores {
+    results {
+      id
+      updatedAt
+      createdAt
+      playerName
+      score
+      cheatMode
+      ACL
     }
   }
 }
@@ -586,19 +658,18 @@ You should receive a response similar to this:
 ```json
 {
   "data": {
-    "objects": {
-      "findGameScore": {
-        "results": [
-          {
-            "playerName": "Sean Plott",
-            "score": 1337
-          },
-          {
-            "playerName": "Luke Skywalker",
-            "score": 2558
-          }
-        ]
-      }
+    "gameScores": {
+      "results": [
+        {
+          "id": "XN75D94OBD",
+          "updatedAt": "2019-09-17T06:50:26.357Z",
+          "createdAt": "2019-09-17T06:50:26.357Z",
+          "playerName": "Sean Plott",
+          "score": 1337,
+          "cheatMode": false,
+          "ACL": null
+        }
+      ]
     }
   }
 }
@@ -611,7 +682,7 @@ Parse GraphQL Server allows you to create a custom GraphQL schema with own queri
 To start creating your custom schema, you need to code a `schema.graphql` file and initialize Parse Server with `--graphQLSchema` and `--cloud` options:
 
 ```bash
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground --graphQLSchema ./schema.graphql --cloud ./main.js
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --publicServerURL http://localhost:1337/parse --cloud ./cloud/main.js --graphQLSchema ./cloud/schema.graphql --mountGraphQL --mountPlayground
 ```
 
 ### Creating your first custom query

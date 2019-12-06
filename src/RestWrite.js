@@ -417,8 +417,21 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
 
-  if (!this.data.authData || !Object.keys(this.data.authData).length) {
+  if (
+    (this.data.authData && !Object.keys(this.data.authData).length) ||
+    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
+  ) {
+    // Handle saving authData to {} or if authData doesn't exist
     return;
+  } else if (
+    Object.prototype.hasOwnProperty.call(this.data, 'authData') &&
+    !this.data.authData
+  ) {
+    // Handle saving authData to null
+    throw new Parse.Error(
+      Parse.Error.UNSUPPORTED_SERVICE,
+      'This authentication method is unsupported.'
+    );
   }
 
   var authData = this.data.authData;
@@ -872,7 +885,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   return this.createSessionToken();
 };
 
-RestWrite.prototype.createSessionToken = function() {
+RestWrite.prototype.createSessionToken = async function() {
   // cloud installationId from Cloud Code,
   // never create session tokens from there.
   if (this.auth.installationId && this.auth.installationId === 'cloud') {

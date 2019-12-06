@@ -26,6 +26,8 @@ export interface ParseServerOptions {
   masterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
+  /* Add headers to Access-Control-Allow-Headers */
+  allowHeaders: ?(string[]);
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
