@@ -46,7 +46,7 @@ describe('Server Url Checks', () => {
     });
   });
 
-  it('handleShutdown, close connection', done => {
+  xit('handleShutdown, close connection', done => {
     const mongoURI =
       'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
     const postgresURI =
