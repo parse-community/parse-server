@@ -286,12 +286,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       expect(adapter.database.serverConfig.connections().length > 0).toEqual(
         true
       );
-      expect(adapter.database.serverConfig.s.connected).toEqual(true);
       adapter.handleShutdown().then(() => {
         expect(adapter.database.serverConfig.connections().length > 0).toEqual(
           false
         );
-        expect(adapter.database.serverConfig.s.connected).toEqual(false);
         done();
       });
     });
