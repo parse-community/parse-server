@@ -159,8 +159,9 @@ const load = (
               [field]: {
                 description: `This is the object ${field}.`,
                 type:
-                  className === '_User' &&
-                  (field === 'username' || field === 'password')
+                  (className === '_User' &&
+                    (field === 'username' || field === 'password')) ||
+                  parseClass.fields[field].required
                     ? new GraphQLNonNull(type)
                     : type,
               },
