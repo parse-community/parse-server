@@ -17,6 +17,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  allowCustomObjectId: {
+    env: 'PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID',
+    help: 'Enable (or disable) custom objectId, defaults to false',
+    action: parsers.booleanParser,
+    default: false,
+  },
   allowHeaders: {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
     help: 'Add headers to Access-Control-Allow-Headers',

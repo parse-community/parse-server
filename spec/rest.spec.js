@@ -44,6 +44,26 @@ describe('rest create', () => {
       });
   });
 
+  it('handles custom objectId when enabled custom objectId option', done => {
+    config.allowCustomObjectId = true;
+
+    const obj = {
+      objectId: '123',
+    };
+
+    rest
+      .create(config, auth.nobody(config), 'MyClass', obj)
+      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const obj = results[0];
+        expect(typeof obj.objectId).toEqual('string');
+        expect(obj.objectId).toEqual('123');
+        expect(obj._id).toBeUndefined();
+        done();
+      });
+  });
+
   it('is backwards compatible when _id size changes', done => {
     rest
       .create(config, auth.nobody(config), 'Foo', { size: 10 })
