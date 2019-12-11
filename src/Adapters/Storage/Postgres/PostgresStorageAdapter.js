@@ -831,7 +831,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async _ensureSchemaCollectionExists(conn: any) {
     conn = conn || this._client;
-    return conn
+    await conn
       .none(
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
@@ -954,6 +954,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           schema.fields,
           t
         );
+        // TODO: The test should not verify the returned value, and then
+        //  the method can be simplified, to avoid returning useless stuff.
         return t.batch([q1, q2, q3]);
       })
       .then(() => {
