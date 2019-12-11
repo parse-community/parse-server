@@ -831,7 +831,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async _ensureSchemaCollectionExists(conn: any) {
     conn = conn || this._client;
-    await conn
+    return conn
       .none(
         'CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )'
       )
@@ -940,20 +940,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async createClass(className: string, schema: SchemaType, conn: ?any) {
     conn = conn || this._client;
-    await conn
+    return conn
       .tx('create-class', async t => {
-        await this.createTable(className, schema, t);
-        await t.none(
+        const q1 = this.createTable(className, schema, t);
+        const q2 = t.none(
           'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)',
           { className, schema }
         );
-        await this.setIndexesWithSchemaFormat(
+        const q3 = this.setIndexesWithSchemaFormat(
           className,
           schema.indexes,
           {},
           schema.fields,
           t
         );
+        return t.batch([q1, q2, q3]);
       })
       .then(() => {
         return toParseSchema(schema);
