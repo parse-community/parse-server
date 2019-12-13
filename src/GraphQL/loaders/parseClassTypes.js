@@ -159,8 +159,9 @@ const load = (
               [field]: {
                 description: `This is the object ${field}.`,
                 type:
-                  className === '_User' &&
-                  (field === 'username' || field === 'password')
+                  (className === '_User' &&
+                    (field === 'username' || field === 'password')) ||
+                  parseClass.fields[field].required
                     ? new GraphQLNonNull(type)
                     : type,
               },
@@ -405,7 +406,9 @@ const load = (
           [field]: {
             description: `This is the object ${field}.`,
             args,
-            type,
+            type: parseClass.fields[field].required
+              ? new GraphQLNonNull(type)
+              : type,
             async resolve(source, args, context, queryInfo) {
               try {
                 const {
@@ -475,7 +478,9 @@ const load = (
           ...fields,
           [field]: {
             description: `This is the object ${field}.`,
-            type,
+            type: parseClass.fields[field].required
+              ? new GraphQLNonNull(type)
+              : type,
             async resolve(source) {
               if (source[field] && source[field].coordinates) {
                 return source[field].coordinates.map(coordinate => ({
@@ -493,7 +498,9 @@ const load = (
           ...fields,
           [field]: {
             description: `Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments`,
-            type,
+            type: parseClass.fields[field].required
+              ? new GraphQLNonNull(type)
+              : type,
             async resolve(source) {
               if (!source[field]) return null;
               return source[field].map(async elem => {
@@ -515,7 +522,9 @@ const load = (
           ...fields,
           [field]: {
             description: `This is the object ${field}.`,
-            type,
+            type: parseClass.fields[field].required
+              ? new GraphQLNonNull(type)
+              : type,
           },
         };
       } else {

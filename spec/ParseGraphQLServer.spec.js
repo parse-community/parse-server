@@ -1850,6 +1850,70 @@ describe('ParseGraphQLServer', () => {
           expect(updatedSuperCar).toBeTruthy();
         });
 
+        it('should handle required fields from the Parse class', async () => {
+          const schemaController = await parseServer.config.databaseController.loadSchema();
+          await schemaController.addClassIfNotExists('SuperCar', {
+            engine: { type: 'String', required: true },
+            doors: { type: 'Number', required: true },
+            price: { type: 'String' },
+            mileage: { type: 'Number' },
+          });
+
+          await resetGraphQLCache();
+
+          const {
+            data: { __type },
+          } = await apolloClient.query({
+            query: gql`
+              query requiredFields {
+                __type(name: "CreateSuperCarFieldsInput") {
+                  inputFields {
+                    name
+                    type {
+                      kind
+                    }
+                  }
+                }
+              }
+            `,
+          });
+          expect(
+            __type.inputFields.find(o => o.name === 'price').type.kind
+          ).toEqual('SCALAR');
+          expect(
+            __type.inputFields.find(o => o.name === 'engine').type.kind
+          ).toEqual('NON_NULL');
+          expect(
+            __type.inputFields.find(o => o.name === 'doors').type.kind
+          ).toEqual('NON_NULL');
+
+          const {
+            data: { __type: __type2 },
+          } = await apolloClient.query({
+            query: gql`
+              query requiredFields {
+                __type(name: "SuperCar") {
+                  fields {
+                    name
+                    type {
+                      kind
+                    }
+                  }
+                }
+              }
+            `,
+          });
+          expect(
+            __type2.fields.find(o => o.name === 'price').type.kind
+          ).toEqual('SCALAR');
+          expect(
+            __type2.fields.find(o => o.name === 'engine').type.kind
+          ).toEqual('NON_NULL');
+          expect(
+            __type2.fields.find(o => o.name === 'doors').type.kind
+          ).toEqual('NON_NULL');
+        });
+
         it('should only allow the supplied output fields for a class', async () => {
           const schemaController = await parseServer.config.databaseController.loadSchema();
 
