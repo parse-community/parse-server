@@ -47,18 +47,30 @@ function RestWrite(
   this.runOptions = {};
   this.context = {};
 
-  if (!this.config.allowCustomObjectId) {
-    if (!query && data.objectId) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        'objectId is an invalid field name.'
-      );
-    }
-    if (!query && data.id) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_KEY_NAME,
-        'id is an invalid field name.'
-      );
+  if (!query) {
+    if (this.config.allowCustomObjectId) {
+      if (
+        Object.prototype.hasOwnProperty.call(data, 'objectId') &&
+        !data.objectId
+      ) {
+        throw new Parse.Error(
+          Parse.Error.MISSING_OBJECT_ID,
+          'objectId must not be empty, null or undefined'
+        );
+      }
+    } else {
+      if (data.objectId) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'objectId is an invalid field name.'
+        );
+      }
+      if (data.id) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'id is an invalid field name.'
+        );
+      }
     }
   }
 
@@ -372,7 +384,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
 
         // Only assign new objectId if we are creating new object
         // and allow custom objectId
-        if (!this.data.objectId && !this.config.allowCustomObjectId) {
+        if (!this.data.objectId) {
           this.data.objectId = cryptoUtils.newObjectId(
             this.config.objectIdSize
           );
