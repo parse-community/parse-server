@@ -62,7 +62,7 @@ describe('rest create', () => {
     expect(objectId).toEqual(customId);
   });
 
-  it('should throw on invalid objectId when allowCustomObjectId true', async () => {
+  it('should throw on invalid objectId when allowCustomObjectId true', () => {
     config.allowCustomObjectId = true;
 
     const objIdNull = {
