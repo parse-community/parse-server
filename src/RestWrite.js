@@ -381,7 +381,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
       this.data.updatedAt = this.updatedAt;
       if (!this.query) {
         this.data.createdAt = this.updatedAt;
-        
+
         // Only assign new objectId if we are creating new object
         if (!this.data.objectId) {
           this.data.objectId = cryptoUtils.newObjectId(
