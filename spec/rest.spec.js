@@ -44,24 +44,64 @@ describe('rest create', () => {
       });
   });
 
-  it('handles custom objectId when enabled custom objectId option', done => {
+  it('should use objectId from client when allowCustomObjectId true', async () => {
     config.allowCustomObjectId = true;
 
+    // use time as unique custom id for test reusability
+    const customId = `${Date.now()}`;
     const obj = {
-      objectId: '123',
+      objectId: customId,
     };
 
-    rest
-      .create(config, auth.nobody(config), 'MyClass', obj)
-      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
-      .then(results => {
-        expect(results.length).toEqual(1);
-        const obj = results[0];
-        expect(typeof obj.objectId).toEqual('string');
-        expect(obj.objectId).toEqual('123');
-        expect(obj._id).toBeUndefined();
-        done();
-      });
+    const {
+      status,
+      response: { objectId },
+    } = await rest.create(config, auth.nobody(config), 'MyClass', obj);
+
+    expect(status).toEqual(201);
+    expect(objectId).toEqual(customId);
+  });
+
+  it('should throw on invalid objectId when allowCustomObjectId true', () => {
+    config.allowCustomObjectId = true;
+
+    const objIdNull = {
+      objectId: null,
+    };
+
+    const objIdUndef = {
+      objectId: undefined,
+    };
+
+    const objIdEmpty = {
+      objectId: '',
+    };
+
+    const err = 'objectId must not be empty, null or undefined';
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)
+    ).toThrowError(err);
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdNull)
+    ).toThrowError(err);
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdUndef)
+    ).toThrowError(err);
+  });
+
+  it('should generate objectId when not set by client with allowCustomObjectId true', async () => {
+    config.allowCustomObjectId = true;
+
+    const {
+      status,
+      response: { objectId },
+    } = await rest.create(config, auth.nobody(config), 'MyClass', {});
+
+    expect(status).toEqual(201);
+    expect(objectId).toBeDefined();
   });
 
   it('is backwards compatible when _id size changes', done => {
