@@ -102,6 +102,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
   :DEFAULT: true */
   allowClientClassCreation: ?boolean;
+  /* Enable (or disable) custom objectId
+  :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
+  :DEFAULT: false */
+  allowCustomObjectId: ?boolean;
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?any;
