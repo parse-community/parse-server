@@ -212,13 +212,14 @@ export class PublicAPIRouter extends PromiseRouter {
           }
         }
 
+        const encodedUsername = encodeURIComponent(username);
+        const location = result.success
+          ? `${config.passwordResetSuccessURL}?username=${encodedUsername}`
+          : `${config.choosePasswordURL}?${params}`;
+
         return Promise.resolve({
           status: 302,
-          location: `${
-            result.success
-              ? `${config.passwordResetSuccessURL}?username=${username}`
-              : `${config.choosePasswordURL}?${params}`
-          }`,
+          location,
         });
       });
   }
