@@ -88,7 +88,7 @@
     "lint-staged": "9.5.0",
     "mongodb-runner": "4.7.5",
     "node-fetch": "2.6.0",
-    "nyc": "14.1.1",
+    "nyc": "15.0.0",
     "prettier": "1.19.0"
   },
   "scripts": {
