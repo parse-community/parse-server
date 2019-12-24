@@ -218,6 +218,9 @@ function inject(t, list) {
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';
     }
+    if (type === 'NumberOrString') {
+      type = 'Number|String';
+    }
     if (type === 'Adapter') {
       const adapterType = elt.typeAnnotation.typeParameters.params[0].id.name;
       type = `Adapter<${adapterType}>`;
