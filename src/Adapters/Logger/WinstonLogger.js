@@ -79,6 +79,7 @@ export function configureLogger({
   logLevel = winston.level,
   verbose = defaults.verbose,
   silent = defaults.silent,
+  maxLogFiles,
 } = {}) {
   if (verbose) {
     logLevel = 'verbose';
@@ -100,6 +101,7 @@ export function configureLogger({
   options.dirname = logsFolder;
   options.level = logLevel;
   options.silent = silent;
+  options.maxFiles = maxLogFiles;
 
   if (jsonLogs) {
     options.json = true;
