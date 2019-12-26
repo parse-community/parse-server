@@ -285,6 +285,7 @@ describe('ParseGraphQLServer', () => {
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
+      user1.setEmail('user1@user1.user1');
       await user1.signUp();
 
       user2 = new Parse.User();
@@ -7148,6 +7149,89 @@ describe('ParseGraphQLServer', () => {
               error: 'Invalid session token',
             });
           }
+        });
+
+        it('should send reset password', async () => {
+          const clientMutationId = uuidv4();
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://test.test',
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation ResetPassword($input: ResetPasswordInput!) {
+                resetPassword(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                email: 'user1@user1.user1',
+              },
+            },
+          });
+
+          expect(result.data.resetPassword.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.resetPassword.ok).toBeTruthy();
+        });
+        it('should send verification email again', async () => {
+          const clientMutationId = uuidv4();
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://test.test',
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation SendVerificationEmail(
+                $input: SendVerificationEmailInput!
+              ) {
+                sendVerificationEmail(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                email: 'user1@user1.user1',
+              },
+            },
+          });
+
+          expect(result.data.sendVerificationEmail.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.sendVerificationEmail.ok).toBeTruthy();
         });
       });
 
