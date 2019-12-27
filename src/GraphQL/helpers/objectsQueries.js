@@ -119,6 +119,8 @@ const findObjects = async (
   ) {
     if (limit || limit === 0) {
       options.limit = limit;
+    } else {
+      options.limit = 100;
     }
     if (options.limit !== 0) {
       if (order) {
@@ -127,10 +129,7 @@ const findObjects = async (
       if (skip) {
         options.skip = skip;
       }
-      if (
-        config.maxLimit &&
-        (options.limit === undefined || options.limit > config.maxLimit)
-      ) {
+      if (config.maxLimit && options.limit > config.maxLimit) {
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
