@@ -407,6 +407,8 @@ const load = (
                     .filter(field => field.includes('.'))
                     .map(field => field.slice(field.indexOf('.') + 1))
                 );
+                const parseOrder = order && order.join(',');
+
                 return await objectsQueries.findObjects(
                   source[field].className,
                   {
@@ -420,7 +422,7 @@ const load = (
                     },
                     ...(where || {}),
                   },
-                  order,
+                  parseOrder,
                   skip,
                   limit,
                   keys,
