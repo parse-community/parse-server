@@ -5944,7 +5944,7 @@ describe('ParseGraphQLServer', () => {
           it('should order by multiple fields', async () => {
             await prepareData();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await resetGraphQLCache();
 
             let result;
             try {
@@ -5988,7 +5988,7 @@ describe('ParseGraphQLServer', () => {
             relation.add(object3);
             await parentObject.save();
 
-            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+            await resetGraphQLCache();
 
             let result;
             try {
