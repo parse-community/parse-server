@@ -5978,57 +5978,60 @@ describe('ParseGraphQLServer', () => {
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
-          it('should order by multiple fields on a relation field', async () => {
-            await prepareData();
+          it_only_db('mongo')(
+            'should order by multiple fields on a relation field',
+            async () => {
+              await prepareData();
 
-            const parentObject = new Parse.Object('ParentClass');
-            const relation = parentObject.relation('graphQLClasses');
-            relation.add(object1);
-            relation.add(object2);
-            relation.add(object3);
-            await parentObject.save();
+              const parentObject = new Parse.Object('ParentClass');
+              const relation = parentObject.relation('graphQLClasses');
+              relation.add(object1);
+              relation.add(object2);
+              relation.add(object3);
+              await parentObject.save();
 
-            await resetGraphQLCache();
+              await resetGraphQLCache();
 
-            let result;
-            try {
-              result = await apolloClient.query({
-                query: gql`
-                  query OrderByMultipleFieldsOnRelation(
-                    $id: ID!
-                    $order: [GraphQLClassOrder!]
-                  ) {
-                    parentClass(id: $id) {
-                      graphQLClasses(order: $order) {
-                        edges {
-                          node {
-                            objectId
+              let result;
+              try {
+                result = await apolloClient.query({
+                  query: gql`
+                    query OrderByMultipleFieldsOnRelation(
+                      $id: ID!
+                      $order: [GraphQLClassOrder!]
+                    ) {
+                      parentClass(id: $id) {
+                        graphQLClasses(order: $order) {
+                          edges {
+                            node {
+                              objectId
+                            }
                           }
                         }
                       }
                     }
-                  }
-                `,
-                variables: {
-                  id: parentObject.id,
-                  order: ['someOtherField_DESC', 'someField_ASC'],
-                },
-                context: {
-                  headers: {
-                    'X-Parse-Master-Key': 'test',
+                  `,
+                  variables: {
+                    id: parentObject.id,
+                    order: ['someOtherField_DESC', 'someField_ASC'],
                   },
-                },
-              });
-            } catch (e) {
-              handleError(e);
-            }
+                  context: {
+                    headers: {
+                      'X-Parse-Master-Key': 'test',
+                    },
+                  },
+                });
+              } catch (e) {
+                handleError(e);
+              }
 
-            expect(
-              result.data.parentClass.graphQLClasses.edges.map(
-                edge => edge.node.objectId
-              )
-            ).toEqual([object3.id, object1.id, object2.id]);
-          });
+              expect(
+                result.data.parentClass.graphQLClasses.edges.map(
+                  edge => edge.node.objectId
+                )
+              ).toEqual([object3.id, object1.id, object2.id]);
+            }
+          );
         });
       });
 
