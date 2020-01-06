@@ -1,14 +1,16 @@
 language: node_js
-dist: trusty
+dist: xenial
 services:
 - postgresql
 - redis-server
 - docker
 addons:
-  postgresql: '9.5'
+  postgresql: '11'
   apt:
     packages:
-    - postgresql-9.5-postgis-2.3
+    - postgresql-11
+    - postgresql-11-postgis-2.5
+    - postgresql-11-postgis-2.5-scripts
 branches:
   only:
   - master
@@ -18,23 +20,29 @@ branches:
 cache:
   directories:
   - "$HOME/.npm"
+  - ".eslintcache"
 stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  - PGPORT=5432
   matrix:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=11.4.0
+  - NODE_VERSION=12.12.0
 matrix:
   allow_failures:
-  - env: NODE_VERSION=11.4.0
+  - env: NODE_VERSION=12.12.0
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
 - npm install -g greenkeeper-lockfile@1
+- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
+- sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
+- sudo service postgresql stop
+- sudo service postgresql start 11
 before_script:
 - node -e 'require("./lib/index.js")'
 - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres

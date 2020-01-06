@@ -45,7 +45,7 @@ const transformOutputTypeToGraphQL = (
           parseClassTypes[targetClass].classGraphQLFindResultType
         );
       } else {
-        return new GraphQLNonNull(defaultGraphQLTypes.FIND_RESULT);
+        return new GraphQLNonNull(defaultGraphQLTypes.OBJECT);
       }
     case 'File':
       return defaultGraphQLTypes.FILE_INFO;
@@ -56,7 +56,7 @@ const transformOutputTypeToGraphQL = (
     case 'Bytes':
       return defaultGraphQLTypes.BYTES;
     case 'ACL':
-      return defaultGraphQLTypes.OBJECT;
+      return new GraphQLNonNull(defaultGraphQLTypes.ACL);
     default:
       return undefined;
   }

@@ -69,6 +69,11 @@ export class FilesRouter {
   }
 
   createHandler(req, res, next) {
+    const config = req.config;
+    const filesController = config.filesController;
+    const filename = req.params.filename;
+    const contentType = req.get('Content-type');
+
     if (!req.body || !req.body.length) {
       next(
         new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.')
@@ -76,27 +81,11 @@ export class FilesRouter {
       return;
     }
 
-    if (req.params.filename.length > 128) {
-      next(
-        new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.')
-      );
+    const error = filesController.validateFilename(filename);
+    if (error) {
+      next(error);
       return;
     }
-
-    if (!req.params.filename.match(/^[_a-zA-Z0-9][a-zA-Z0-9@\.\ ~_-]*$/)) {
-      next(
-        new Parse.Error(
-          Parse.Error.INVALID_FILE_NAME,
-          'Filename contains invalid characters.'
-        )
-      );
-      return;
-    }
-
-    const filename = req.params.filename;
-    const contentType = req.get('Content-type');
-    const config = req.config;
-    const filesController = config.filesController;
 
     filesController
       .createFile(config, filename, req.body, contentType)

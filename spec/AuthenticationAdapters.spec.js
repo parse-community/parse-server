@@ -5,6 +5,7 @@ const defaultColumns = require('../lib/Controllers/SchemaController')
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
+  gpgames: { playerId: 'userId' },
   instagram: { data: { id: 'userId' } },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
@@ -15,11 +16,14 @@ const responses = {
   weibo: { uid: 'userId' },
   qq: 'callback( {"openid":"userId"} );', // yes it's like that, run eval in the client :P
   phantauth: { sub: 'userId' },
+  microsoft: { id: 'userId', mail: 'userMail' },
 };
 
 describe('AuthenticationProviders', function() {
   [
     'apple',
+    'gcenter',
+    'gpgames',
     'facebook',
     'facebookaccountkit',
     'github',
@@ -37,6 +41,7 @@ describe('AuthenticationProviders', function() {
     'wechat',
     'weibo',
     'phantauth',
+    'microsoft',
   ].map(function(providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
@@ -49,13 +54,20 @@ describe('AuthenticationProviders', function() {
         Promise.prototype.constructor
       );
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
-      validateAuthDataPromise.then(() => {}, () => {});
-      validateAppIdPromise.then(() => {}, () => {});
+      validateAuthDataPromise.then(
+        () => {},
+        () => {}
+      );
+      validateAppIdPromise.then(
+        () => {},
+        () => {}
+      );
       done();
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      if (providerName === 'twitter' || providerName === 'apple') {
+      const noResponse = ['twitter', 'apple', 'gcenter'];
+      if (noResponse.includes(providerName)) {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
@@ -644,6 +656,37 @@ describe('google auth adapter', () => {
   });
 });
 
+describe('google play games service auth', () => {
+  const gpgames = require('../lib/Adapters/Auth/gpgames');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should pass validation', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'userId' });
+    });
+    await gpgames.validateAuthData({
+      id: 'userId',
+      access_token: 'access_token',
+    });
+  });
+
+  it('validateAuthData should throw error', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'invalid' });
+    });
+    try {
+      await gpgames.validateAuthData({
+        id: 'userId',
+        access_token: 'access_token',
+      });
+    } catch (e) {
+      expect(e.message).toBe(
+        'Google Play Games Services - authData is invalid for this user.'
+      );
+    }
+  });
+});
+
 describe('oauth2 auth adapter', () => {
   const oauth2 = require('../lib/Adapters/Auth/oauth2');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
@@ -1173,6 +1216,67 @@ describe('apple signin auth adapter', () => {
   });
 });
 
+describe('Apple Game Center Auth adapter', () => {
+  const gcenter = require('../lib/Adapters/Auth/gcenter');
+
+  it('validateAuthData should validate', async () => {
+    // real token is used
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature:
+        'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+    } catch (e) {
+      fail();
+    }
+  });
+
+  it('validateAuthData invalid signature id', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Apple Game Center - invalid signature');
+    }
+  });
+
+  it('validateAuthData invalid public key url', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'invalid.com',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'Apple Game Center - invalid publicKeyUrl: invalid.com'
+      );
+    }
+  });
+});
+
 describe('phant auth adapter', () => {
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
@@ -1192,5 +1296,35 @@ describe('phant auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('PhantAuth auth is invalid for this user.');
     }
+  });
+});
+
+describe('microsoft graph auth adapter', () => {
+  const microsoft = require('../lib/Adapters/Auth/microsoft');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should use access_token for validation is passed and responds with id and mail', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId', mail: 'userMail' });
+    });
+    await microsoft.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token',
+    });
+  });
+
+  it('should fail to validate Microsoft Graph auth with bad token', done => {
+    const authData = {
+      id: 'fake-id',
+      mail: 'fake@mail.com',
+      access_token: 'very.long.bad.token',
+    };
+    microsoft.validateAuthData(authData).then(done.fail, err => {
+      expect(err.code).toBe(101);
+      expect(err.message).toBe(
+        'Microsoft Graph auth is invalid for this user.'
+      );
+      done();
+    });
   });
 });

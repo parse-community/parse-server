@@ -1246,6 +1246,32 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  it('can not set authdata to null', async () => {
+    try {
+      const provider = getMockFacebookProvider();
+      Parse.User._registerAuthenticationProvider(provider);
+      const user = await Parse.User._logInWith('facebook');
+      user.set('authData', null);
+      await user.save();
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('This authentication method is unsupported.');
+    }
+  });
+
+  it('ignore setting authdata to undefined', async () => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    const user = await Parse.User._logInWith('facebook');
+    user.set('authData', undefined);
+    await user.save();
+    let authData = user.get('authData');
+    expect(authData).toBe(undefined);
+    await user.fetch();
+    authData = user.get('authData');
+    expect(authData.facebook.id).toBeDefined();
+  });
+
   it('user authData should be available in cloudcode (#2342)', async done => {
     Parse.Cloud.define('checkLogin', req => {
       expect(req.user).not.toBeUndefined();
@@ -1494,6 +1520,24 @@ describe('Parse.User testing', () => {
     }
 
     expect(hit).toBe(1);
+    done();
+  });
+
+  it('logout with provider should call afterLogout trigger', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let userId;
+    Parse.Cloud.afterLogout(req => {
+      expect(req.object.className).toEqual('_Session');
+      expect(req.object.id).toBeDefined();
+      const user = req.object.get('user');
+      expect(user).toBeDefined();
+      userId = user.id;
+    });
+    const user = await Parse.User._logInWith('facebook');
+    await Parse.User.logOut();
+    expect(user.id).toBe(userId);
     done();
   });
 
@@ -3924,4 +3968,29 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function() {
       done();
     }
   );
+  it_only_db('mongo')('should ignore authData field', async () => {
+    // Add User to Database with authData
+    const database = Config.get(Parse.applicationId).database;
+    const collection = await database.adapter._adaptiveCollection('_User');
+    await collection.insertOne({
+      _id: '1234ABCDEF',
+      name: '<some_name>',
+      email: '<some_email>',
+      username: '<some_username>',
+      _hashed_password: '<some_password>',
+      _auth_data_custom: {
+        id: 'linkedID',
+      },
+      sessionToken: '<some_session_token>',
+      authData: null, // should ignore
+    });
+    const provider = {
+      getAuthType: () => 'custom',
+      restoreAuthentication: () => true,
+    };
+    Parse.User._registerAuthenticationProvider(provider);
+    const query = new Parse.Query(Parse.User);
+    const user = await query.get('1234ABCDEF', { useMasterKey: true });
+    expect(user.get('authData')).toEqual({ custom: { id: 'linkedID' } });
+  });
 });

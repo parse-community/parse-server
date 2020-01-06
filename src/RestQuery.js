@@ -24,7 +24,8 @@ function RestQuery(
   className,
   restWhere = {},
   restOptions = {},
-  clientSDK
+  clientSDK,
+  runAfterFind = true
 ) {
   this.config = config;
   this.auth = auth;
@@ -32,6 +33,7 @@ function RestQuery(
   this.restWhere = restWhere;
   this.restOptions = restOptions;
   this.clientSDK = clientSDK;
+  this.runAfterFind = runAfterFind;
   this.response = null;
   this.findOptions = {};
 
@@ -772,6 +774,9 @@ RestQuery.prototype.handleInclude = function() {
 //Returns a promise of a processed set of results
 RestQuery.prototype.runAfterFindTrigger = function() {
   if (!this.response) {
+    return;
+  }
+  if (!this.runAfterFind) {
     return;
   }
   // Avoid doing any setup for triggers if there is no 'afterFind' trigger for this class.

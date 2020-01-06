@@ -1,6 +1,8 @@
 import loadAdapter from '../AdapterLoader';
 
 const apple = require('./apple');
+const gcenter = require('./gcenter');
+const gpgames = require('./gpgames');
 const facebook = require('./facebook');
 const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
@@ -20,6 +22,8 @@ const wechat = require('./wechat');
 const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
+const microsoft = require('./microsoft');
+const ldap = require('./ldap');
 
 const anonymous = {
   validateAuthData: () => {
@@ -32,6 +36,8 @@ const anonymous = {
 
 const providers = {
   apple,
+  gcenter,
+  gpgames,
   facebook,
   facebookaccountkit,
   instagram,
@@ -51,6 +57,8 @@ const providers = {
   wechat,
   weibo,
   phantauth,
+  microsoft,
+  ldap,
 };
 
 function authDataValidator(adapter, appIds, options) {

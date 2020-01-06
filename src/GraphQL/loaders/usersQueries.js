@@ -5,7 +5,13 @@ import rest from '../../rest';
 import Auth from '../../Auth';
 import { extractKeysAndInclude } from './parseClassTypes';
 
-const getUserFromSessionToken = async (config, info, queryInfo) => {
+const getUserFromSessionToken = async (
+  config,
+  info,
+  queryInfo,
+  keysPrefix,
+  validatedToken
+) => {
   if (!info || !info.sessionToken) {
     throw new Parse.Error(
       Parse.Error.INVALID_SESSION_TOKEN,
@@ -13,20 +19,42 @@ const getUserFromSessionToken = async (config, info, queryInfo) => {
     );
   }
   const sessionToken = info.sessionToken;
-  const selectedFields = getFieldNames(queryInfo);
+  const selectedFields = getFieldNames(queryInfo)
+    .filter(field => field.startsWith(keysPrefix))
+    .map(field => field.replace(keysPrefix, ''));
 
-  const { include } = extractKeysAndInclude(selectedFields);
+  const keysAndInclude = extractKeysAndInclude(selectedFields);
+  const { keys } = keysAndInclude;
+  let { include } = keysAndInclude;
+
+  if (validatedToken && !keys && !include) {
+    return {
+      sessionToken,
+    };
+  } else if (keys && !include) {
+    include = 'user';
+  }
+
+  const options = {};
+  if (keys) {
+    options.keys = keys
+      .split(',')
+      .map(key => `user.${key}`)
+      .join(',');
+  }
+  if (include) {
+    options.include = include
+      .split(',')
+      .map(included => `user.${included}`)
+      .join(',');
+  }
+
   const response = await rest.find(
     config,
     Auth.master(config),
     '_Session',
     { sessionToken },
-    {
-      include: include
-        .split(',')
-        .map(included => `user.${included}`)
-        .join(','),
-    },
+    options,
     info.clientVersion
   );
   if (
@@ -40,8 +68,10 @@ const getUserFromSessionToken = async (config, info, queryInfo) => {
     );
   } else {
     const user = response.results[0].user;
-    user.sessionToken = sessionToken;
-    return user;
+    return {
+      sessionToken,
+      user,
+    };
   }
 };
 
@@ -59,7 +89,13 @@ const load = parseGraphQLSchema => {
       async resolve(_source, _args, context, queryInfo) {
         try {
           const { config, info } = context;
-          return await getUserFromSessionToken(config, info, queryInfo);
+          return await getUserFromSessionToken(
+            config,
+            info,
+            queryInfo,
+            'user.',
+            false
+          );
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

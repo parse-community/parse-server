@@ -29,7 +29,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 ### Good to know:
 
-* The lib/ folder is not commited, so never make changes in there.
+* The `lib/` folder is not commited, so never make changes in there.
 * Always make changes to files in the `src/` folder.
 * All the tests should point to sources in the `lib/` folder.
 

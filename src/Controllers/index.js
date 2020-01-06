@@ -76,10 +76,18 @@ export function getLoggerController(
     logsFolder,
     verbose,
     logLevel,
+    maxLogFiles,
     silent,
     loggerAdapter,
   } = options;
-  const loggerOptions = { jsonLogs, logsFolder, verbose, logLevel, silent };
+  const loggerOptions = {
+    jsonLogs,
+    logsFolder,
+    verbose,
+    logLevel,
+    silent,
+    maxLogFiles,
+  };
   const loggerControllerAdapter = loadAdapter(
     loggerAdapter,
     WinstonLoggerAdapter,

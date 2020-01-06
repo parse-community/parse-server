@@ -376,6 +376,16 @@ function injectDefaults(options: ParseServerOptions) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
   }
 
+  // Reserved Characters
+  if (options.appId) {
+    const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
+    if (options.appId.match(regex)) {
+      console.warn(
+        `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
+      );
+    }
+  }
+
   // Backwards compatibility
   if (options.userSensitiveFields) {
     /* eslint-disable no-console */

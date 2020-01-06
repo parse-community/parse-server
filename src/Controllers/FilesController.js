@@ -1,9 +1,10 @@
 // FilesController.js
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
-import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
+import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path from 'path';
 import mime from 'mime';
+const Parse = require('parse').Parse;
 
 const legacyFilesRegex = new RegExp(
   '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
@@ -94,6 +95,17 @@ export class FilesController extends AdaptableController {
 
   handleFileStream(config, filename, req, res, contentType) {
     return this.adapter.handleFileStream(filename, req, res, contentType);
+  }
+
+  validateFilename(filename) {
+    if (typeof this.adapter.validateFilename === 'function') {
+      const error = this.adapter.validateFilename(filename);
+      if (typeof error !== 'string') {
+        return error;
+      }
+      return new Parse.Error(Parse.Error.INVALID_FILE_NAME, error);
+    }
+    return validateFilename(filename);
   }
 }
 

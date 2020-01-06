@@ -4,6 +4,7 @@ import { logger } from './logger';
 
 export const Types = {
   beforeLogin: 'beforeLogin',
+  afterLogout: 'afterLogout',
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
@@ -32,10 +33,6 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = ['_Session'];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
   if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
@@ -46,6 +43,16 @@ function validateClassNameForTriggers(className, type) {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the _User class is allowed for the beforeLogin trigger';
+  }
+  if (type === Types.afterLogout && className !== '_Session') {
+    // TODO: check if upstream code will handle `Error` instance rather
+    // than this anti-pattern of throwing strings
+    throw 'Only the _Session class is allowed for the afterLogout trigger.';
+  }
+  if (className === '_Session' && type !== Types.afterLogout) {
+    // TODO: check if upstream code will handle `Error` instance rather
+    // than this anti-pattern of throwing strings
+    throw 'Only the afterLogout trigger is allowed for the _Session class.';
   }
   return className;
 }
@@ -444,22 +451,14 @@ export function maybeRunQueryTrigger(
       restOptions,
     });
   }
+  const json = Object.assign({}, restOptions);
+  json.where = restWhere;
 
   const parseQuery = new Parse.Query(className);
-  if (restWhere) {
-    parseQuery._where = restWhere;
-  }
+  parseQuery.withJSON(json);
+
   let count = false;
   if (restOptions) {
-    if (restOptions.include && restOptions.include.length > 0) {
-      parseQuery._include = restOptions.include.split(',');
-    }
-    if (restOptions.skip) {
-      parseQuery._skip = restOptions.skip;
-    }
-    if (restOptions.limit) {
-      parseQuery._limit = restOptions.limit;
-    }
     count = !!restOptions.count;
   }
   const requestObject = getRequestQueryObject(
@@ -495,6 +494,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.include) {
           restOptions = restOptions || {};
           restOptions.include = jsonQuery.include;
+        }
+        if (jsonQuery.excludeKeys) {
+          restOptions = restOptions || {};
+          restOptions.excludeKeys = jsonQuery.excludeKeys;
         }
         if (jsonQuery.keys) {
           restOptions = restOptions || {};

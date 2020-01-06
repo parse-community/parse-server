@@ -395,6 +395,192 @@ const POLYGON_INPUT = new GraphQLList(new GraphQLNonNull(GEO_POINT_INPUT));
 
 const POLYGON = new GraphQLList(new GraphQLNonNull(GEO_POINT));
 
+const USER_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'UserACLInput',
+  description: 'Allow to manage users in ACL.',
+  fields: {
+    userId: {
+      description: 'ID of the targetted User.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description: 'Allow the user to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow the user to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ROLE_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'RoleACLInput',
+  description: 'Allow to manage roles in ACL.',
+  fields: {
+    roleName: {
+      description: 'Name of the targetted Role.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+    read: {
+      description:
+        'Allow users who are members of the role to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description:
+        'Allow users who are members of the role to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const PUBLIC_ACL_INPUT = new GraphQLInputObjectType({
+  name: 'PublicACLInput',
+  description: 'Allow to manage public rights.',
+  fields: {
+    read: {
+      description: 'Allow anyone to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow anyone to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ACL_INPUT = new GraphQLInputObjectType({
+  name: 'ACLInput',
+  description:
+    'Allow to manage access rights. If not provided object will be publicly readable and writable',
+  fields: {
+    users: {
+      description: 'Access control list for users.',
+      type: new GraphQLList(new GraphQLNonNull(USER_ACL_INPUT)),
+    },
+    roles: {
+      description: 'Access control list for roles.',
+      type: new GraphQLList(new GraphQLNonNull(ROLE_ACL_INPUT)),
+    },
+    public: {
+      description: 'Public access control list.',
+      type: PUBLIC_ACL_INPUT,
+    },
+  },
+});
+
+const USER_ACL = new GraphQLObjectType({
+  name: 'UserACL',
+  description:
+    'Allow to manage users in ACL. If read and write are null the users have read and write rights.',
+  fields: {
+    userId: {
+      description: 'ID of the targetted User.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description: 'Allow the user to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description: 'Allow the user to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const ROLE_ACL = new GraphQLObjectType({
+  name: 'RoleACL',
+  description:
+    'Allow to manage roles in ACL. If read and write are null the role have read and write rights.',
+  fields: {
+    roleName: {
+      description: 'Name of the targetted Role.',
+      type: new GraphQLNonNull(GraphQLID),
+    },
+    read: {
+      description:
+        'Allow users who are members of the role to read the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+    write: {
+      description:
+        'Allow users who are members of the role to write on the current object.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
+const PUBLIC_ACL = new GraphQLObjectType({
+  name: 'PublicACL',
+  description: 'Allow to manage public rights.',
+  fields: {
+    read: {
+      description: 'Allow anyone to read the current object.',
+      type: GraphQLBoolean,
+    },
+    write: {
+      description: 'Allow anyone to write on the current object.',
+      type: GraphQLBoolean,
+    },
+  },
+});
+
+const ACL = new GraphQLObjectType({
+  name: 'ACL',
+  description: 'Current access control list of the current object.',
+  fields: {
+    users: {
+      description: 'Access control list for users.',
+      type: new GraphQLList(new GraphQLNonNull(USER_ACL)),
+      resolve(p) {
+        const users = [];
+        Object.keys(p).forEach(rule => {
+          if (rule !== '*' && rule.indexOf('role:') !== 0) {
+            users.push({
+              userId: rule,
+              read: p[rule].read ? true : false,
+              write: p[rule].write ? true : false,
+            });
+          }
+        });
+        return users.length ? users : null;
+      },
+    },
+    roles: {
+      description: 'Access control list for roles.',
+      type: new GraphQLList(new GraphQLNonNull(ROLE_ACL)),
+      resolve(p) {
+        const roles = [];
+        Object.keys(p).forEach(rule => {
+          if (rule.indexOf('role:') === 0) {
+            roles.push({
+              roleName: rule.replace('role:', ''),
+              read: p[rule].read ? true : false,
+              write: p[rule].write ? true : false,
+            });
+          }
+        });
+        return roles.length ? roles : null;
+      },
+    },
+    public: {
+      description: 'Public access control list.',
+      type: PUBLIC_ACL,
+      resolve(p) {
+        /* eslint-disable */
+        return p['*']
+          ? {
+              read: p['*'].read ? true : false,
+              write: p['*'].write ? true : false,
+            }
+          : null;
+      },
+    },
+  },
+});
+
 const OBJECT_ID = new GraphQLNonNull(GraphQLID);
 
 const CLASS_NAME_ATT = {
@@ -402,10 +588,15 @@ const CLASS_NAME_ATT = {
   type: new GraphQLNonNull(GraphQLString),
 };
 
+const GLOBAL_OR_OBJECT_ID_ATT = {
+  description:
+    'This is the object id. You can use either the global or the object id.',
+  type: OBJECT_ID,
+};
+
 const OBJECT_ID_ATT = {
   description: 'This is the object id.',
   type: OBJECT_ID,
-  resolve: ({ objectId }) => objectId,
 };
 
 const CREATED_AT_ATT = {
@@ -418,17 +609,14 @@ const UPDATED_AT_ATT = {
   type: new GraphQLNonNull(DATE),
 };
 
-const ACL_ATT = {
-  description: 'This is the access control list of the object.',
-  type: OBJECT,
-};
-
 const INPUT_FIELDS = {
-  ACL: ACL_ATT,
+  ACL: {
+    type: ACL,
+  },
 };
 
 const CREATE_RESULT_FIELDS = {
-  id: OBJECT_ID_ATT,
+  objectId: OBJECT_ID_ATT,
   createdAt: CREATED_AT_ATT,
 };
 
@@ -440,6 +628,10 @@ const PARSE_OBJECT_FIELDS = {
   ...CREATE_RESULT_FIELDS,
   ...UPDATE_RESULT_FIELDS,
   ...INPUT_FIELDS,
+  ACL: {
+    type: new GraphQLNonNull(ACL),
+    resolve: ({ ACL }) => (ACL ? ACL : { '*': { read: true, write: true } }),
+  },
 };
 
 const PARSE_OBJECT = new GraphQLInterfaceType({
@@ -450,7 +642,7 @@ const PARSE_OBJECT = new GraphQLInterfaceType({
 });
 
 const SESSION_TOKEN_ATT = {
-  description: 'The user session token',
+  description: 'The current user session token.',
   type: new GraphQLNonNull(GraphQLString),
 };
 
@@ -520,35 +712,6 @@ const COUNT_ATT = {
     'This is the total matched objecs count that is returned when the count flag is set.',
   type: new GraphQLNonNull(GraphQLInt),
 };
-
-const SUBQUERY_INPUT = new GraphQLInputObjectType({
-  name: 'SubqueryInput',
-  description:
-    'The SubqueryInput type is used to specify a sub query to another class.',
-  fields: {
-    className: CLASS_NAME_ATT,
-    where: Object.assign({}, WHERE_ATT, {
-      type: new GraphQLNonNull(WHERE_ATT.type),
-    }),
-  },
-});
-
-const SELECT_INPUT = new GraphQLInputObjectType({
-  name: 'SelectInput',
-  description:
-    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
-  fields: {
-    query: {
-      description: 'This is the subquery to be executed.',
-      type: new GraphQLNonNull(SUBQUERY_INPUT),
-    },
-    key: {
-      description:
-        'This is the key in the result of the subquery that must match (not match) the field.',
-      type: new GraphQLNonNull(GraphQLString),
-    },
-  },
-});
 
 const SEARCH_INPUT = new GraphQLInputObjectType({
   name: 'SearchInput',
@@ -715,6 +878,47 @@ const exists = {
   type: GraphQLBoolean,
 };
 
+const matchesRegex = {
+  description:
+    'This is the matchesRegex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
+  type: GraphQLString,
+};
+
+const options = {
+  description:
+    'This is the options operator to specify optional flags (such as "i" and "m") to be added to a matchesRegex operation in the same set of constraints.',
+  type: GraphQLString,
+};
+
+const SUBQUERY_INPUT = new GraphQLInputObjectType({
+  name: 'SubqueryInput',
+  description:
+    'The SubqueryInput type is used to specify a sub query to another class.',
+  fields: {
+    className: CLASS_NAME_ATT,
+    where: Object.assign({}, WHERE_ATT, {
+      type: new GraphQLNonNull(WHERE_ATT.type),
+    }),
+  },
+});
+
+const SELECT_INPUT = new GraphQLInputObjectType({
+  name: 'SelectInput',
+  description:
+    'The SelectInput type is used to specify an inQueryKey or a notInQueryKey operation on a constraint.',
+  fields: {
+    query: {
+      description: 'This is the subquery to be executed.',
+      type: new GraphQLNonNull(SUBQUERY_INPUT),
+    },
+    key: {
+      description:
+        'This is the key in the result of the subquery that must match (not match) the field.',
+      type: new GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 const inQueryKey = {
   description:
     'This is the inQueryKey operator to specify a constraint to select the objects where a field equals to a key in the result of a different query.',
@@ -727,17 +931,24 @@ const notInQueryKey = {
   type: SELECT_INPUT,
 };
 
-const matchesRegex = {
+const ID_WHERE_INPUT = new GraphQLInputObjectType({
+  name: 'IdWhereInput',
   description:
-    'This is the matchesRegex operator to specify a constraint to select the objects where the value of a field matches a specified regular expression.',
-  type: GraphQLString,
-};
-
-const options = {
-  description:
-    'This is the options operator to specify optional flags (such as "i" and "m") to be added to a matchesRegex operation in the same set of constraints.',
-  type: GraphQLString,
-};
+    'The IdWhereInput input type is used in operations that involve filtering objects by an id.',
+  fields: {
+    equalTo: equalTo(GraphQLID),
+    notEqualTo: notEqualTo(GraphQLID),
+    lessThan: lessThan(GraphQLID),
+    lessThanOrEqualTo: lessThanOrEqualTo(GraphQLID),
+    greaterThan: greaterThan(GraphQLID),
+    greaterThanOrEqualTo: greaterThanOrEqualTo(GraphQLID),
+    in: inOp(GraphQLID),
+    notIn: notIn(GraphQLID),
+    exists,
+    inQueryKey,
+    notInQueryKey,
+  },
+});
 
 const STRING_WHERE_INPUT = new GraphQLInputObjectType({
   name: 'StringWhereInput',
@@ -753,8 +964,6 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(GraphQLString),
     notIn: notIn(GraphQLString),
     exists,
-    inQueryKey,
-    notInQueryKey,
     matchesRegex,
     options,
     text: {
@@ -762,6 +971,8 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -811,8 +1022,6 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(ANY),
     notIn: notIn(ANY),
     exists,
-    inQueryKey,
-    notInQueryKey,
     containedBy: {
       description:
         'This is the containedBy operator to specify a constraint to select the objects where the values of an array field is contained by another specified array.',
@@ -823,6 +1032,8 @@ const ARRAY_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the contains operator to specify a constraint to select the objects where the values of an array field contain all elements of another specified array.',
       type: new GraphQLList(ANY),
     },
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -912,10 +1123,10 @@ const FILE_WHERE_INPUT = new GraphQLInputObjectType({
     in: inOp(FILE),
     notIn: notIn(FILE),
     exists,
-    inQueryKey,
-    notInQueryKey,
     matchesRegex,
     options,
+    inQueryKey,
+    notInQueryKey,
   },
 });
 
@@ -974,19 +1185,6 @@ const POLYGON_WHERE_INPUT = new GraphQLInputObjectType({
         'This is the geoIntersects operator to specify a constraint to select the objects where the values of a polygon field intersect a specified point.',
       type: GEO_INTERSECTS_INPUT,
     },
-  },
-});
-
-const FIND_RESULT = new GraphQLObjectType({
-  name: 'FindResult',
-  description:
-    'The FindResult object type is used in the find queries to return the data of the matched objects.',
-  fields: {
-    results: {
-      description: 'This is the objects returned by the query',
-      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(OBJECT))),
-    },
-    count: COUNT_ATT,
   },
 });
 
@@ -1051,8 +1249,6 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
   parseGraphQLSchema.addGraphQLType(READ_PREFERENCE, true);
   parseGraphQLSchema.addGraphQLType(READ_OPTIONS_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SEARCH_INPUT, true);
   parseGraphQLSchema.addGraphQLType(TEXT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOX_INPUT, true);
@@ -1060,6 +1256,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(CENTER_SPHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_WITHIN_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_INTERSECTS_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ID_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(STRING_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(NUMBER_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(BOOLEAN_WHERE_INPUT, true);
@@ -1071,9 +1268,17 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(FILE_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_WHERE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(POLYGON_WHERE_INPUT, true);
-  parseGraphQLSchema.addGraphQLType(FIND_RESULT, true);
   parseGraphQLSchema.addGraphQLType(ELEMENT, true);
-  parseGraphQLSchema.addGraphQLType(OBJECT_ID, true);
+  parseGraphQLSchema.addGraphQLType(ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(USER_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ROLE_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(PUBLIC_ACL_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(ACL, true);
+  parseGraphQLSchema.addGraphQLType(USER_ACL, true);
+  parseGraphQLSchema.addGraphQLType(ROLE_ACL, true);
+  parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
+  parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
 };
 
 export {
@@ -1092,6 +1297,8 @@ export {
   DATE,
   BYTES,
   parseFileValue,
+  SUBQUERY_INPUT,
+  SELECT_INPUT,
   FILE,
   FILE_INFO,
   GEO_POINT_FIELDS,
@@ -1101,10 +1308,10 @@ export {
   POLYGON,
   OBJECT_ID,
   CLASS_NAME_ATT,
+  GLOBAL_OR_OBJECT_ID_ATT,
   OBJECT_ID_ATT,
   UPDATED_AT_ATT,
   CREATED_AT_ATT,
-  ACL_ATT,
   INPUT_FIELDS,
   CREATE_RESULT_FIELDS,
   UPDATE_RESULT_FIELDS,
@@ -1121,8 +1328,6 @@ export {
   SKIP_ATT,
   LIMIT_ATT,
   COUNT_ATT,
-  SUBQUERY_INPUT,
-  SELECT_INPUT,
   SEARCH_INPUT,
   TEXT_INPUT,
   BOX_INPUT,
@@ -1139,10 +1344,11 @@ export {
   inOp,
   notIn,
   exists,
-  inQueryKey,
-  notInQueryKey,
   matchesRegex,
   options,
+  inQueryKey,
+  notInQueryKey,
+  ID_WHERE_INPUT,
   STRING_WHERE_INPUT,
   NUMBER_WHERE_INPUT,
   BOOLEAN_WHERE_INPUT,
@@ -1154,9 +1360,16 @@ export {
   FILE_WHERE_INPUT,
   GEO_POINT_WHERE_INPUT,
   POLYGON_WHERE_INPUT,
-  FIND_RESULT,
   ARRAY_RESULT,
   ELEMENT,
+  ACL_INPUT,
+  USER_ACL_INPUT,
+  ROLE_ACL_INPUT,
+  PUBLIC_ACL_INPUT,
+  ACL,
+  USER_ACL,
+  ROLE_ACL,
+  PUBLIC_ACL,
   load,
   loadArrayResult,
 };

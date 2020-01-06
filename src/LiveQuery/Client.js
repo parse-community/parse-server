@@ -16,6 +16,7 @@ class Client {
   parseWebSocket: any;
   hasMasterKey: boolean;
   sessionToken: string;
+  installationId: string;
   userId: string;
   roles: Array<string>;
   subscriptionInfos: Object;
@@ -32,12 +33,14 @@ class Client {
     id: number,
     parseWebSocket: any,
     hasMasterKey: boolean = false,
-    sessionToken: string
+    sessionToken: string,
+    installationId: string
   ) {
     this.id = id;
     this.parseWebSocket = parseWebSocket;
     this.hasMasterKey = hasMasterKey;
     this.sessionToken = sessionToken;
+    this.installationId = installationId;
     this.roles = [];
     this.subscriptionInfos = new Map();
     this.pushConnect = this._pushEvent('connected');
@@ -93,6 +96,7 @@ class Client {
       const response: Message = {
         op: type,
         clientId: this.id,
+        installationId: this.installationId,
       };
       if (typeof subscriptionId !== 'undefined') {
         response['requestId'] = subscriptionId;

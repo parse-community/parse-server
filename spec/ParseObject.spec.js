@@ -276,6 +276,16 @@ describe('Parse.Object testing', () => {
     done();
   });
 
+  it('can set authData when not user class', async () => {
+    const obj = new Parse.Object('TestObject');
+    obj.set('authData', 'random');
+    await obj.save();
+    expect(obj.get('authData')).toBe('random');
+    const query = new Parse.Query('TestObject');
+    const object = await query.get(obj.id, { useMasterKey: true });
+    expect(object.get('authData')).toBe('random');
+  });
+
   it('invalid class name', function(done) {
     const item = new Parse.Object('Foo^bar');
     item.save().then(
@@ -2063,7 +2073,6 @@ describe('Parse.Object testing', () => {
 
     // Fetch object from server
     object = await object.fetch();
-    console.log(object.id, object.get('jsonData'));
     equal(object.get('jsonData'), { c: 'd' });
 
     done();
