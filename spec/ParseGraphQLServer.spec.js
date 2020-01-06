@@ -372,6 +372,7 @@ describe('ParseGraphQLServer', () => {
 
       object1 = new Parse.Object('GraphQLClass');
       object1.set('someField', 'someValue1');
+      object1.set('someOtherField', 'A');
       const object1ACL = new Parse.ACL();
       object1ACL.setPublicReadAccess(false);
       object1ACL.setPublicWriteAccess(false);
@@ -386,6 +387,7 @@ describe('ParseGraphQLServer', () => {
 
       object2 = new Parse.Object('GraphQLClass');
       object2.set('someField', 'someValue2');
+      object2.set('someOtherField', 'A');
       const object2ACL = new Parse.ACL();
       object2ACL.setPublicReadAccess(false);
       object2ACL.setPublicWriteAccess(false);
@@ -400,6 +402,7 @@ describe('ParseGraphQLServer', () => {
 
       object3 = new Parse.Object('GraphQLClass');
       object3.set('someField', 'someValue3');
+      object3.set('someOtherField', 'B');
       object3.set('pointerToUser', user5);
       await object3.save(undefined, { useMasterKey: true });
 
@@ -5937,6 +5940,98 @@ describe('ParseGraphQLServer', () => {
               }
             });
           });
+
+          it('should order by multiple fields', async () => {
+            await prepareData();
+
+            await resetGraphQLCache();
+
+            let result;
+            try {
+              result = await apolloClient.query({
+                query: gql`
+                  query OrderByMultipleFields($order: [GraphQLClassOrder!]) {
+                    graphQLClasses(order: $order) {
+                      edges {
+                        node {
+                          objectId
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  order: ['someOtherField_DESC', 'someField_ASC'],
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+            } catch (e) {
+              handleError(e);
+            }
+
+            expect(
+              result.data.graphQLClasses.edges.map(edge => edge.node.objectId)
+            ).toEqual([object3.id, object1.id, object2.id]);
+          });
+
+          it_only_db('mongo')(
+            'should order by multiple fields on a relation field',
+            async () => {
+              await prepareData();
+
+              const parentObject = new Parse.Object('ParentClass');
+              const relation = parentObject.relation('graphQLClasses');
+              relation.add(object1);
+              relation.add(object2);
+              relation.add(object3);
+              await parentObject.save();
+
+              await resetGraphQLCache();
+
+              let result;
+              try {
+                result = await apolloClient.query({
+                  query: gql`
+                    query OrderByMultipleFieldsOnRelation(
+                      $id: ID!
+                      $order: [GraphQLClassOrder!]
+                    ) {
+                      parentClass(id: $id) {
+                        graphQLClasses(order: $order) {
+                          edges {
+                            node {
+                              objectId
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  variables: {
+                    id: parentObject.id,
+                    order: ['someOtherField_DESC', 'someField_ASC'],
+                  },
+                  context: {
+                    headers: {
+                      'X-Parse-Master-Key': 'test',
+                    },
+                  },
+                });
+              } catch (e) {
+                handleError(e);
+              }
+
+              expect(
+                result.data.parentClass.graphQLClasses.edges.map(
+                  edge => edge.node.objectId
+                )
+              ).toEqual([object3.id, object1.id, object2.id]);
+            }
+          );
         });
       });
 
