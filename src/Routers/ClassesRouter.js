@@ -220,6 +220,12 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.subqueryReadPreference === 'string') {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
+    if (
+      body.hint &&
+      (typeof body.hint === 'string' || typeof body.hint === 'object')
+    ) {
+      options.hint = body.hint;
+    }
     return options;
   }
 

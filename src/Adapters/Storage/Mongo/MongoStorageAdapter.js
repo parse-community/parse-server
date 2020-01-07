@@ -620,7 +620,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference }: QueryOptions
+    { skip, limit, sort, keys, readPreference }: QueryOptions,
+    hint: ?mixed
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -652,6 +653,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
         })
       )
       .then(objects =>
@@ -712,7 +714,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
@@ -721,6 +724,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
         })
       )
       .catch(err => this.handleError(err));
@@ -730,7 +734,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    fieldName: string
+    fieldName: string,
+    hint: ?mixed
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const isPointerField =
@@ -741,7 +746,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection.distinct(
           transformField,
-          transformWhere(className, query, schema)
+          transformWhere(className, query, schema),
+          hint
         )
       )
       .then(objects => {
@@ -761,7 +767,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema: any,
     pipeline: any,
     readPreference: ?string,
-    hint
+    hint: ?mixed
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {

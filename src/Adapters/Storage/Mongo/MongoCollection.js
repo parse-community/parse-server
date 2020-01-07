@@ -13,7 +13,10 @@ export default class MongoCollection {
   // none, then build the geoindex.
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
-  find(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
+  find(
+    query,
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint } = {}
+  ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
       delete keys.$score;
@@ -26,6 +29,7 @@ export default class MongoCollection {
       keys,
       maxTimeMS,
       readPreference,
+      hint,
     }).catch(error => {
       // Check for "no geoindex" error
       if (
@@ -54,19 +58,35 @@ export default class MongoCollection {
               keys,
               maxTimeMS,
               readPreference,
+              hint,
             })
           )
       );
     });
   }
 
-  _rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
-    let findOperation = this._mongoCollection.find(query, {
-      skip,
-      limit,
-      sort,
-      readPreference,
-    });
+  _rawFind(
+    query,
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint } = {}
+  ) {
+    let findOperation;
+    if (hint) {
+      findOperation = this._mongoCollection
+        .find(query, {
+          skip,
+          limit,
+          sort,
+          readPreference,
+        })
+        .hint(hint);
+    } else {
+      findOperation = this._mongoCollection.find(query, {
+        skip,
+        limit,
+        sort,
+        readPreference,
+      });
+    }
 
     if (keys) {
       findOperation = findOperation.project(keys);
@@ -79,15 +99,37 @@ export default class MongoCollection {
     return findOperation.toArray();
   }
 
-  count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+  count(query, { skip, limit, sort, maxTimeMS, readPreference, hint } = {}) {
     // If query is empty, then use estimatedDocumentCount instead.
     // This is due to countDocuments performing a scan,
     // which greatly increases execution time when being run on large collections.
     // See https://github.com/Automattic/mongoose/issues/6713 for more info regarding this problem.
     if (typeof query !== 'object' || !Object.keys(query).length) {
-      return this._mongoCollection.estimatedDocumentCount({
-        maxTimeMS,
-      });
+      if (hint) {
+        return this._mongoCollection
+          .estimatedDocumentCount({
+            maxTimeMS,
+          })
+          .hint(hint);
+      } else {
+        return this._mongoCollection.estimatedDocumentCount({
+          maxTimeMS,
+        });
+      }
+    }
+
+    if (hint) {
+      const countOperation = this._mongoCollection
+        .countDocuments(query, {
+          skip,
+          limit,
+          sort,
+          maxTimeMS,
+          readPreference,
+        })
+        .hint(hint);
+
+      return countOperation;
     }
 
     const countOperation = this._mongoCollection.countDocuments(query, {
@@ -101,14 +143,21 @@ export default class MongoCollection {
     return countOperation;
   }
 
-  distinct(field, query) {
+  distinct(field, query, hint) {
+    if (hint) {
+      return this._mongoCollection.distinct(field, query).hint;
+    }
+
     return this._mongoCollection.distinct(field, query);
   }
 
   aggregate(pipeline, { maxTimeMS, readPreference, hint } = {}) {
-    return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference, hint })
-      .toArray();
+    if (hint) {
+      return this._mongoCollection
+        .aggregate(pipeline, { maxTimeMS, readPreference })
+        .hint(hint)
+        .toArray();
+    }
   }
 
   insertOne(object, session) {

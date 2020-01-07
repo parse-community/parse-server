@@ -507,6 +507,10 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.order = jsonQuery.order;
         }
+        if (jsonQuery.hint) {
+          restOptions = restOptions || {};
+          restOptions.hint = jsonQuery.hint;
+        }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};
           restOptions.readPreference = requestObject.readPreference;
