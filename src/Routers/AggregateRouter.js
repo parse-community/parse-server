@@ -50,6 +50,7 @@ export class AggregateRouter extends ClassesRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
+    options.hint = body.hint;
     return rest
       .find(
         req.config,

@@ -1289,13 +1289,13 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
+      hint,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
-
     op =
       op ||
       (typeof query.objectId == 'string' && Object.keys(query).length === 1
@@ -1406,7 +1406,8 @@ class DatabaseController {
                       className,
                       schema,
                       query,
-                      readPreference
+                      readPreference,
+                      hint
                     );
                   }
                 } else if (distinct) {
@@ -1417,7 +1418,8 @@ class DatabaseController {
                       className,
                       schema,
                       query,
-                      distinct
+                      distinct,
+                      hint
                     );
                   }
                 } else if (pipeline) {
@@ -1428,12 +1430,13 @@ class DatabaseController {
                       className,
                       schema,
                       pipeline,
-                      readPreference
+                      readPreference,
+                      hint
                     );
                   }
                 } else {
                   return this.adapter
-                    .find(className, schema, query, queryOptions)
+                    .find(className, schema, query, queryOptions, hint)
                     .then(objects =>
                       objects.map(object => {
                         object = untransformObjectACL(object);

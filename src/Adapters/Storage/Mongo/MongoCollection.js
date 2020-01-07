@@ -105,9 +105,9 @@ export default class MongoCollection {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference } = {}) {
+  aggregate(pipeline, { maxTimeMS, readPreference, hint } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference })
+      .aggregate(pipeline, { maxTimeMS, readPreference, hint })
       .toArray();
   }
 

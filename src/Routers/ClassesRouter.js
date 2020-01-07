@@ -173,6 +173,7 @@ export class ClassesRouter extends PromiseRouter {
       'readPreference',
       'includeReadPreference',
       'subqueryReadPreference',
+      'hint',
     ];
 
     for (const key of Object.keys(body)) {

@@ -760,7 +760,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
@@ -791,6 +792,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          hint,
         })
       )
       .then(results => {
