@@ -10,6 +10,7 @@ import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 // @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
+type NumberOrString = number | string;
 type ProtectedFields = any;
 
 export interface ParseServerOptions {
@@ -51,6 +52,8 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
+  maxLogFiles: ?NumberOrString;
   /* Disables console output
   :ENV: SILENT */
   silent: ?boolean;
