@@ -46,20 +46,43 @@ const hintHelper = () => {
     restAPIKey: 'test',
     publicServerURL: 'http://localhost:8378/1',
     databaseAdapter,
-  }).then(() => {
-    return request({
-      method: 'POST',
-      url: 'http://localhost:8378/1/batch',
-      body: {
-        requests,
-      },
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'test',
-        'Content-Type': 'application/json',
-      },
+  })
+    .then(() => {
+      return request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        body: {
+          className: 'TestObject',
+          fields: {
+            subject: {
+              type: 'String',
+            },
+            comment: {
+              type: 'String',
+            },
+          },
+          indexes: {
+            indexName: {
+              subject: 1,
+            },
+          },
+        },
+      });
+    })
+    .then(() => {
+      return request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/batch',
+        body: {
+          requests,
+        },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test',
+          'Content-Type': 'application/json',
+        },
+      });
     });
-  });
 };
 
 describe('Parse.Query hint testing', () => {
@@ -69,7 +92,7 @@ describe('Parse.Query hint testing', () => {
         return request({
           method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          body: { where: {}, _method: 'GET', hint: '_id_' },
+          body: { where: {}, _method: 'GET', hint: 'subject' },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
@@ -92,7 +115,7 @@ describe('Parse.Query hint testing', () => {
         return request({
           method: 'POST',
           url: 'http://localhost:8378/1/classes/TestObject',
-          body: { where: {}, _method: 'GET', hint: { _id_: 1 } },
+          body: { where: {}, _method: 'GET', hint: { subject: 1 } },
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-REST-API-Key': 'test',
