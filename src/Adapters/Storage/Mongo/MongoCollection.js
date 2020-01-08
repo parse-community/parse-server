@@ -158,6 +158,9 @@ export default class MongoCollection {
         .hint(hint)
         .toArray();
     }
+    return this._mongoCollection
+      .aggregate(pipeline, { maxTimeMS, readPreference })
+      .toArray();
   }
 
   insertOne(object, session) {
