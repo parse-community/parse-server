@@ -1407,7 +1407,8 @@ class DatabaseController {
                       schema,
                       query,
                       readPreference,
-                      hint
+                      undefined,
+                      hint,
                     );
                   }
                 } else if (distinct) {

@@ -14,6 +14,7 @@ export type QueryOptions = {
   distinct?: boolean,
   pipeline?: any,
   readPreference?: ?string,
+  hint?: ?mixed,
 };
 
 export type UpdateQueryOptions = {
@@ -80,7 +81,8 @@ export interface StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    options: QueryOptions
+    options: QueryOptions,
+    hint?: mixed
   ): Promise<[any]>;
   ensureUniqueness(
     className: string,
@@ -92,19 +94,22 @@ export interface StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     readPreference?: string,
-    estimate?: boolean
+    estimate?: boolean,
+    hint?: mixed
   ): Promise<number>;
   distinct(
     className: string,
     schema: SchemaType,
     query: QueryType,
-    fieldName: string
+    fieldName: string,
+    hint: ?mixed
   ): Promise<any>;
   aggregate(
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
 
