@@ -1835,6 +1835,32 @@ describe('schemas', () => {
     });
   });
 
+  it('should aceept class-level permission with userid of any length', async done => {
+    await global.reconfigureServer({
+      customIdSize: 11,
+    });
+
+    const id = 'e1evenChars';
+
+    const { data } = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            [id]: true,
+          },
+        },
+      },
+    });
+
+    expect(data.classLevelPermissions.find[id]).toBe(true);
+
+    done();
+  });
+
   it('should allow set class-level permission for custom userid of any length and chars', async done => {
     await global.reconfigureServer({
       allowCustomObjectId: true,
