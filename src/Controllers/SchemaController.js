@@ -173,8 +173,6 @@ const volatileClasses = Object.freeze([
   '_Audience',
 ]);
 
-// 10 alpha numberic chars + uppercase
-const userIdRegex = /^[a-zA-Z0-9]{10}$/;
 // Anything that start with role
 const roleRegex = /^role:.*/;
 // Anything that starts with userField
@@ -185,19 +183,23 @@ const publicRegex = /^\*$/;
 const requireAuthenticationRegex = /^requiresAuthentication$/;
 
 const permissionKeyRegex = Object.freeze([
-  userIdRegex,
   roleRegex,
   pointerPermissionRegex,
   publicRegex,
   requireAuthenticationRegex,
 ]);
 
-function verifyPermissionKey(key) {
-  const result = permissionKeyRegex.reduce((isGood, regEx) => {
-    isGood = isGood || key.match(regEx) != null;
-    return isGood;
-  }, false);
-  if (!result) {
+function validatePermissionKey(key, userIdRegExp) {
+  let matchesSome = false;
+  for (const regEx of permissionKeyRegex) {
+    if (key.match(regEx) !== null) {
+      matchesSome = true;
+      break;
+    }
+  }
+
+  const valid = matchesSome || key.match(userIdRegExp) !== null;
+  if (!valid) {
     throw new Parse.Error(
       Parse.Error.INVALID_JSON,
       `'${key}' is not a valid key for class level permissions`
@@ -217,11 +219,17 @@ const CLPValidKeys = Object.freeze([
   'writeUserFields',
   'protectedFields',
 ]);
-function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
+
+// validation before setting class-level permissions on collection
+function validateCLP(
+  perms: ClassLevelPermissions,
+  fields: SchemaFields,
+  userIdRegExp: RegExp
+) {
   if (!perms) {
     return;
   }
-  Object.keys(perms).forEach(operation => {
+  for (const operation in perms) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(
         Parse.Error.INVALID_JSON,
@@ -233,50 +241,58 @@ function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
     }
 
     if (operation === 'readUserFields' || operation === 'writeUserFields') {
-      if (!Array.isArray(perms[operation])) {
-        // @flow-disable-next
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `'${perms[operation]}' is not a valid value for class level permissions ${operation}`
-        );
-      } else {
-        perms[operation].forEach(key => {
-          if (
-            !(
-              fields[key] &&
-              ((fields[key].type == 'Pointer' &&
-                fields[key].targetClass == '_User') ||
-                fields[key].type == 'Array')
-            )
-          ) {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
-              `'${key}' is not a valid column for class level pointer permissions ${operation}`
-            );
-          }
-        });
-      }
+      validatePointerPermission(perms[operation], fields, operation);
+
       return;
     }
 
-    // @flow-disable-next
-    Object.keys(perms[operation]).forEach(key => {
-      verifyPermissionKey(key);
-      // @flow-disable-next
+    for (const key in perms[operation]) {
+      validatePermissionKey(key, userIdRegExp);
+
       const perm = perms[operation][key];
+
       if (
         perm !== true &&
         (operation !== 'protectedFields' || !Array.isArray(perm))
       ) {
-        // @flow-disable-next
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
           `'${perm}' is not a valid value for class level permissions ${operation}:${key}:${perm}`
         );
       }
-    });
-  });
+    }
+  }
 }
+
+function validatePointerPermission(
+  pointer: string[],
+  fields: Object,
+  operation: string
+) {
+  if (!Array.isArray(pointer)) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `'${pointer}' is not a valid value for class level permissions ${operation}`
+    );
+  } else {
+    pointer.forEach(key => {
+      if (
+        !(
+          fields[key] &&
+          ((fields[key].type == 'Pointer' &&
+            fields[key].targetClass == '_User') ||
+            fields[key].type == 'Array')
+        )
+      ) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `'${key}' is not a valid column for class level pointer permissions ${operation}`
+        );
+      }
+    });
+  }
+}
+
 const joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 const classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 function classNameIsValid(className: string): boolean {
@@ -558,12 +574,20 @@ export default class SchemaController {
   _cache: any;
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
+  userIdRegEx: RegExp;
 
   constructor(databaseAdapter: StorageAdapter, schemaCache: any) {
     this._dbAdapter = databaseAdapter;
     this._cache = schemaCache;
     this.schemaData = new SchemaData();
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
+
+    const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
+
+    const cusomIdRegEx = /^.{1,}$/u; // 1+ chars
+    const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
+
+    this.userIdRegEx = customIds ? cusomIdRegEx : autoIdRegEx;
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -959,7 +983,7 @@ export default class SchemaController {
           ' already exists.',
       };
     }
-    validateCLP(classLevelPermissions, fields);
+    validateCLP(classLevelPermissions, fields, this.userIdRegEx);
   }
 
   // Sets the Class-level permissions for a given className, which must exist.
@@ -967,7 +991,7 @@ export default class SchemaController {
     if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
-    validateCLP(perms, newSchema);
+    validateCLP(perms, newSchema, this.userIdRegEx);
     return this._dbAdapter.setClassLevelPermissions(className, perms);
   }
 

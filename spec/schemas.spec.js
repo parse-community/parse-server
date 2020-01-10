@@ -1835,8 +1835,14 @@ describe('schemas', () => {
     });
   });
 
-  it('should throw with invalid userId (>10 chars)', done => {
-    request({
+  it('should allow set class-level permission for custom userid of any length and chars', async done => {
+    await global.reconfigureServer({
+      allowCustomObjectId: true,
+    });
+
+    const symbolsId = 'set:ID+symbol$=@llowed';
+    const shortId = '1';
+    const { data } = await request({
       method: 'POST',
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
@@ -1844,37 +1850,58 @@ describe('schemas', () => {
       body: {
         classLevelPermissions: {
           find: {
-            '1234567890A': true,
+            [symbolsId]: true,
+            [shortId]: true,
           },
         },
       },
-    }).then(fail, response => {
-      expect(response.data.error).toEqual(
-        "'1234567890A' is not a valid key for class level permissions"
-      );
-      done();
     });
+
+    expect(data.classLevelPermissions.find[symbolsId]).toBe(true);
+    expect(data.classLevelPermissions.find[shortId]).toBe(true);
+
+    done();
   });
 
-  it('should throw with invalid userId (<10 chars)', done => {
-    request({
-      method: 'POST',
-      url: 'http://localhost:8378/1/schemas/AClass',
-      headers: masterKeyHeaders,
-      json: true,
-      body: {
-        classLevelPermissions: {
-          find: {
-            a12345678: true,
+  it('should allow set ACL for custom userid', async done => {
+    await global.reconfigureServer({
+      allowCustomObjectId: true,
+    });
+
+    const symbolsId = 'symbols:id@allowed=';
+    const shortId = '1';
+    const normalId = 'tensymbols';
+
+    try {
+      const { data } = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/classes/AClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          ACL: {
+            [symbolsId]: { read: true, write: true },
+            [shortId]: { read: true, write: true },
+            [normalId]: { read: true, write: true },
           },
         },
-      },
-    }).then(fail, response => {
-      expect(response.data.error).toEqual(
-        "'a12345678' is not a valid key for class level permissions"
-      );
+      });
+
+      const { data: created } = await request({
+        method: 'GET',
+        url: `http://localhost:8378/1/classes/AClass/${data.objectId}`,
+        headers: masterKeyHeaders,
+        json: true,
+      });
+
+      console.log(created);
+      expect(created.ACL[normalId].write).toBe(true);
+      expect(created.ACL[symbolsId].write).toBe(true);
+      expect(created.ACL[shortId].write).toBe(true);
       done();
-    });
+    } catch (e) {
+      console.log(e);
+    }
   });
 
   it('should throw with invalid userId (invalid char)', done => {
