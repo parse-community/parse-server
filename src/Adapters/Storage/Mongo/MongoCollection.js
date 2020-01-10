@@ -15,7 +15,7 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -30,6 +30,7 @@ export default class MongoCollection {
       maxTimeMS,
       readPreference,
       hint,
+      explain,
     }).catch(error => {
       // Check for "no geoindex" error
       if (
@@ -59,6 +60,7 @@ export default class MongoCollection {
               maxTimeMS,
               readPreference,
               hint,
+              explain,
             })
           )
       );
@@ -67,26 +69,15 @@ export default class MongoCollection {
 
   _rawFind(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain } = {}
   ) {
-    let findOperation;
-    if (hint) {
-      findOperation = this._mongoCollection
-        .find(query, {
-          skip,
-          limit,
-          sort,
-          readPreference,
-        })
-        .hint(hint);
-    } else {
-      findOperation = this._mongoCollection.find(query, {
-        skip,
-        limit,
-        sort,
-        readPreference,
-      });
-    }
+    let findOperation = this._mongoCollection.find(query, {
+      skip,
+      limit,
+      sort,
+      readPreference,
+      hint,
+    });
 
     if (keys) {
       findOperation = findOperation.project(keys);
@@ -96,7 +87,7 @@ export default class MongoCollection {
       findOperation = findOperation.maxTimeMS(maxTimeMS);
     }
 
-    return findOperation.toArray();
+    return explain ? findOperation.explain(explain) : findOperation.toArray();
   }
 
   count(query, { skip, limit, sort, maxTimeMS, readPreference, hint } = {}) {
@@ -105,31 +96,9 @@ export default class MongoCollection {
     // which greatly increases execution time when being run on large collections.
     // See https://github.com/Automattic/mongoose/issues/6713 for more info regarding this problem.
     if (typeof query !== 'object' || !Object.keys(query).length) {
-      if (hint) {
-        return this._mongoCollection
-          .estimatedDocumentCount({
-            maxTimeMS,
-          })
-          .hint(hint);
-      } else {
-        return this._mongoCollection.estimatedDocumentCount({
-          maxTimeMS,
-        });
-      }
-    }
-
-    if (hint) {
-      const countOperation = this._mongoCollection
-        .countDocuments(query, {
-          skip,
-          limit,
-          sort,
-          maxTimeMS,
-          readPreference,
-        })
-        .hint(hint);
-
-      return countOperation;
+      return this._mongoCollection.estimatedDocumentCount({
+        maxTimeMS,
+      });
     }
 
     const countOperation = this._mongoCollection.countDocuments(query, {
@@ -138,28 +107,19 @@ export default class MongoCollection {
       sort,
       maxTimeMS,
       readPreference,
+      hint,
     });
 
     return countOperation;
   }
 
-  distinct(field, query, hint) {
-    if (hint) {
-      return this._mongoCollection.distinct(field, query).hint;
-    }
-
+  distinct(field, query) {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference, hint } = {}) {
-    if (hint) {
-      return this._mongoCollection
-        .aggregate(pipeline, { maxTimeMS, readPreference })
-        .hint(hint)
-        .toArray();
-    }
+  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference })
+      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain })
       .toArray();
   }
 

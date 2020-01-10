@@ -101,8 +101,7 @@ export interface StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    fieldName: string,
-    hint: ?mixed
+    fieldName: string
   ): Promise<any>;
   aggregate(
     className: string,

@@ -1408,7 +1408,7 @@ class DatabaseController {
                       query,
                       readPreference,
                       undefined,
-                      hint,
+                      hint
                     );
                   }
                 } else if (distinct) {
@@ -1419,8 +1419,7 @@ class DatabaseController {
                       className,
                       schema,
                       query,
-                      distinct,
-                      hint
+                      distinct
                     );
                   }
                 } else if (pipeline) {

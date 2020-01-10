@@ -734,8 +734,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    fieldName: string,
-    hint: ?mixed
+    fieldName: string
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const isPointerField =
@@ -746,8 +745,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection.distinct(
           transformField,
-          transformWhere(className, query, schema),
-          hint
+          transformWhere(className, query, schema)
         )
       )
       .then(objects => {
