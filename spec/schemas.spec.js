@@ -1898,36 +1898,31 @@ describe('schemas', () => {
     const shortId = '1';
     const normalId = 'tensymbols';
 
-    try {
-      const { data } = await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/classes/AClass',
-        headers: masterKeyHeaders,
-        json: true,
-        body: {
-          ACL: {
-            [symbolsId]: { read: true, write: true },
-            [shortId]: { read: true, write: true },
-            [normalId]: { read: true, write: true },
-          },
+    const { data } = await request({
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        ACL: {
+          [symbolsId]: { read: true, write: true },
+          [shortId]: { read: true, write: true },
+          [normalId]: { read: true, write: true },
         },
-      });
+      },
+    });
 
-      const { data: created } = await request({
-        method: 'GET',
-        url: `http://localhost:8378/1/classes/AClass/${data.objectId}`,
-        headers: masterKeyHeaders,
-        json: true,
-      });
+    const { data: created } = await request({
+      method: 'GET',
+      url: `http://localhost:8378/1/classes/AClass/${data.objectId}`,
+      headers: masterKeyHeaders,
+      json: true,
+    });
 
-      console.log(created);
-      expect(created.ACL[normalId].write).toBe(true);
-      expect(created.ACL[symbolsId].write).toBe(true);
-      expect(created.ACL[shortId].write).toBe(true);
-      done();
-    } catch (e) {
-      console.log(e);
-    }
+    expect(created.ACL[normalId].write).toBe(true);
+    expect(created.ACL[symbolsId].write).toBe(true);
+    expect(created.ACL[shortId].write).toBe(true);
+    done();
   });
 
   it('should throw with invalid userId (invalid char)', done => {

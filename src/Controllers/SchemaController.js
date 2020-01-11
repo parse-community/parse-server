@@ -584,10 +584,10 @@ export default class SchemaController {
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
 
-    const cusomIdRegEx = /^.{1,}$/u; // 1+ chars
+    const customIdRegEx = /^.{1,}$/u; // 1+ chars
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
 
-    this.userIdRegEx = customIds ? cusomIdRegEx : autoIdRegEx;
+    this.userIdRegEx = customIds ? customIdRegEx : autoIdRegEx;
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
