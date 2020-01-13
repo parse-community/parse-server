@@ -5,6 +5,7 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
+const triggers = require('../triggers');
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -73,6 +74,7 @@ export class FilesRouter {
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = req.get('Content-type');
+    const contentLength = req.get('Content-Length');
 
     if (!req.body || !req.body.length) {
       next(
@@ -87,12 +89,46 @@ export class FilesRouter {
       return;
     }
 
-    filesController
-      .createFile(config, filename, req.body, contentType)
+    const fileObject = {
+      filename,
+      contentType,
+      contentLength,
+      data: req.body,
+    };
+    triggers
+      .maybeRunFileTrigger(
+        triggers.Types.beforeSaveFile,
+        fileObject,
+        config,
+        req.auth
+      )
       .then(result => {
-        res.status(201);
-        res.set('Location', result.url);
-        res.json(result);
+        fileObject.filename = result.filename || fileObject.filename;
+        fileObject.contentType = result.contentType || fileObject.contentType;
+        fileObject.contentLength =
+          result.contentLength || fileObject.contentLength;
+        fileObject.data = result.data || fileObject.data;
+        return filesController.createFile(
+          config,
+          fileObject.filename,
+          fileObject.data,
+          fileObject.contentType
+        );
+      })
+      .then(result => {
+        fileObject.url = result.url;
+        return triggers
+          .maybeRunFileTrigger(
+            triggers.Types.afterSaveFile,
+            fileObject,
+            config,
+            req.auth
+          )
+          .then(() => {
+            res.status(201);
+            res.set('Location', result.url);
+            res.json(result);
+          });
       })
       .catch(e => {
         logger.error('Error creating a file: ', e);

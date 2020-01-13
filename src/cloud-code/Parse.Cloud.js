@@ -325,6 +325,52 @@ ParseCloud.afterFind = function(parseClass, handler) {
   );
 };
 
+/**
+ * Registers an before save file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.beforeSaveFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeSaveFile
+ * @name Parse.Cloud.beforeSaveFile
+ * @param {Function} func The function to run before saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.BeforeSaveFileRequest}.
+ */
+ParseCloud.beforeSaveFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.beforeSaveFile,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ * Registers an after save file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.afterSaveFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method afterSaveFile
+ * @name Parse.Cloud.afterSaveFile
+ * @param {Function} func The function to run after saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.AfterSaveFileRequest}.
+ */
+ParseCloud.afterSaveFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.afterSaveFile,
+    handler,
+    Parse.applicationId
+  );
+};
+
 ParseCloud.onLiveQueryEvent = function(handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
@@ -355,6 +401,30 @@ module.exports = ParseCloud;
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
  * @property {Parse.Object} original If set, the object, as currently stored.
+ */
+
+/**
+ * @interface Parse.Cloud.BeforeSaveFileRequest
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} master If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Object} fileObject The object triggering the hook.
+ * @property {String} ip The IP address of the client making the request.
+ * @property {Object} headers The original HTTP headers for the request.
+ * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
+ * @property {Object} log The current logger inside Parse Server.
+ */
+
+/**
+ * @interface Parse.Cloud.AfterSaveFileRequest
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} master If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Object} fileObject The object triggering the hook.
+ * @property {String} ip The IP address of the client making the request.
+ * @property {Object} headers The original HTTP headers for the request.
+ * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
+ * @property {Object} log The current logger inside Parse Server.
  */
 
 /**
