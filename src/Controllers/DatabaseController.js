@@ -1290,6 +1290,7 @@ class DatabaseController {
       pipeline,
       readPreference,
       hint,
+      explain,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
@@ -1333,7 +1334,15 @@ class DatabaseController {
               sort.updatedAt = sort._updated_at;
               delete sort._updated_at;
             }
-            const queryOptions = { skip, limit, sort, keys, readPreference };
+            const queryOptions = {
+              skip,
+              limit,
+              sort,
+              keys,
+              readPreference,
+              hint,
+              explain,
+            };
             Object.keys(sort).forEach(fieldName => {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(
@@ -1431,9 +1440,17 @@ class DatabaseController {
                       schema,
                       pipeline,
                       readPreference,
-                      hint
+                      hint,
+                      explain
                     );
                   }
+                } else if (explain) {
+                  return this.adapter.find(
+                    className,
+                    schema,
+                    query,
+                    queryOptions
+                  );
                 } else {
                   return this.adapter
                     .find(className, schema, query, queryOptions, hint)

@@ -120,6 +120,8 @@ function RestQuery(
       case 'includeAll':
         this.includeAll = true;
         break;
+      case 'explain':
+      case 'hint':
       case 'distinct':
       case 'pipeline':
       case 'skip':

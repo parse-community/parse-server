@@ -174,6 +174,7 @@ export class ClassesRouter extends PromiseRouter {
       'includeReadPreference',
       'subqueryReadPreference',
       'hint',
+      'explain',
     ];
 
     for (const key of Object.keys(body)) {
@@ -225,6 +226,9 @@ export class ClassesRouter extends PromiseRouter {
       (typeof body.hint === 'string' || typeof body.hint === 'object')
     ) {
       options.hint = body.hint;
+    }
+    if (body.explain) {
+      options.explain = body.explain;
     }
     return options;
   }
