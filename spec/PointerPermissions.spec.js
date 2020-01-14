@@ -399,7 +399,7 @@ describe('Pointer Permissions', () => {
         });
     });
 
-    it('should prevent creating pointer permission on bad field', done => {
+    it('should prevent creating pointer permission on bad field (of wrong type)', done => {
       const config = Config.get(Parse.applicationId);
       config.database
         .loadSchema()
@@ -426,7 +426,34 @@ describe('Pointer Permissions', () => {
         });
     });
 
-    it('should prevent creating pointer permission on bad field', done => {
+    it('should prevent creating pointer permission on bad field (non-user pointer)', done => {
+      const config = Config.get(Parse.applicationId);
+      config.database
+        .loadSchema()
+        .then(schema => {
+          return schema.addClassIfNotExists(
+            'AnObject',
+            { owner: { type: 'Pointer', targetClass: '_Session' } },
+            {
+              create: {},
+              writeUserFields: ['owner'],
+              readUserFields: ['owner'],
+            }
+          );
+        })
+        .then(() => {
+          fail('should not succeed');
+        })
+        .catch(err => {
+          expect(err.code).toBe(107);
+          expect(err.message).toBe(
+            "'owner' is not a valid column for class level pointer permissions writeUserFields"
+          );
+          done();
+        });
+    });
+
+    it('should prevent creating pointer permission on bad field (non-existing)', done => {
       const config = Config.get(Parse.applicationId);
       const object = new Parse.Object('AnObject');
       object.set('owner', 'value');
@@ -984,7 +1011,7 @@ describe('Pointer Permissions', () => {
         );
     });
 
-    it('should fail with invalid pointer perms', done => {
+    it('should fail with invalid pointer perms (not array)', done => {
       const config = Config.get(Parse.applicationId);
       config.database
         .loadSchema()
@@ -1002,7 +1029,7 @@ describe('Pointer Permissions', () => {
         });
     });
 
-    it('should fail with invalid pointer perms', done => {
+    it('should fail with invalid pointer perms (non-existing field)', done => {
       const config = Config.get(Parse.applicationId);
       config.database
         .loadSchema()
@@ -1398,7 +1425,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should prevent creating pointer permission on bad field', async done => {
+    it('should prevent creating pointer permission on bad field (of wrong type)', async done => {
       const config = Config.get(Parse.applicationId);
       const schema = await config.database.loadSchema();
       try {
@@ -1421,7 +1448,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should prevent creating pointer permission on bad field', async done => {
+    it('should prevent creating pointer permission on bad field (non-existing)', async done => {
       const config = Config.get(Parse.applicationId);
       const object = new Parse.Object('AnObject');
       object.set('owners', 'value');
@@ -1955,7 +1982,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should fail with invalid pointer perms', async done => {
+    it('should fail with invalid pointer perms (not array)', async done => {
       const config = Config.get(Parse.applicationId);
       const schema = await config.database.loadSchema();
       try {
@@ -1971,7 +1998,7 @@ describe('Pointer Permissions', () => {
       }
     });
 
-    it('should fail with invalid pointer perms', async done => {
+    it('should fail with invalid pointer perms (non-existing field)', async done => {
       const config = Config.get(Parse.applicationId);
       const schema = await config.database.loadSchema();
       try {
