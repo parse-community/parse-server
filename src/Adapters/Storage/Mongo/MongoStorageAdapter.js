@@ -620,8 +620,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference }: QueryOptions,
-    hint: ?mixed
+    { skip, limit, sort, keys, readPreference, hint, explain }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -654,13 +653,17 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           readPreference,
           hint,
+          explain,
         })
       )
-      .then(objects =>
-        objects.map(object =>
+      .then(objects => {
+        if (explain) {
+          return objects;
+        }
+        return objects.map(object =>
           mongoObjectToParseObject(className, object, schema)
-        )
-      )
+        );
+      })
       .catch(err => this.handleError(err));
   }
 
@@ -765,7 +768,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema: any,
     pipeline: any,
     readPreference: ?string,
-    hint: ?mixed
+    hint: ?mixed,
+    explain?: boolean
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
@@ -797,6 +801,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           readPreference,
           maxTimeMS: this._maxTimeMS,
           hint,
+          explain,
         })
       )
       .then(results => {

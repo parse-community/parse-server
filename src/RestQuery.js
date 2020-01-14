@@ -32,8 +32,6 @@ function RestQuery(
   this.className = className;
   this.restWhere = restWhere;
   this.restOptions = restOptions;
-  this.hint = this.restOptions.hint;
-  delete this.restOptions.hint;
   this.clientSDK = clientSDK;
   this.runAfterFind = runAfterFind;
   this.response = null;
@@ -120,6 +118,8 @@ function RestQuery(
       case 'includeAll':
         this.includeAll = true;
         break;
+      case 'explain':
+      case 'hint':
       case 'distinct':
       case 'pipeline':
       case 'skip':
@@ -662,9 +662,6 @@ RestQuery.prototype.runFind = function(options = {}) {
   }
   if (options.op) {
     findOptions.op = options.op;
-  }
-  if (this.hint) {
-    findOptions.hint = this.hint;
   }
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
