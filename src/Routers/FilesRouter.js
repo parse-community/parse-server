@@ -103,11 +103,13 @@ export class FilesRouter {
         req.auth
       )
       .then(result => {
-        fileObject.filename = result.filename || fileObject.filename;
-        fileObject.contentType = result.contentType || fileObject.contentType;
-        fileObject.contentLength =
-          result.contentLength || fileObject.contentLength;
-        fileObject.data = result.data || fileObject.data;
+        if (result && typeof result === 'object') {
+          fileObject.filename = result.filename || fileObject.filename;
+          fileObject.contentType = result.contentType || fileObject.contentType;
+          fileObject.contentLength =
+            result.contentLength || fileObject.contentLength;
+          fileObject.data = result.data || fileObject.data;
+        }
         return filesController.createFile(
           config,
           fileObject.filename,
@@ -117,6 +119,7 @@ export class FilesRouter {
       })
       .then(result => {
         fileObject.url = result.url;
+        fileObject.filename = result.name;
         return triggers
           .maybeRunFileTrigger(
             triggers.Types.afterSaveFile,
