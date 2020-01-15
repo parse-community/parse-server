@@ -72,7 +72,7 @@ export class FilesRouter {
   createHandler(req, res, next) {
     const config = req.config;
     const filesController = config.filesController;
-    const filename = req.params.filename;
+    const { filename, options = {} } = req.params;
     const contentType = req.get('Content-type');
     const contentLength = req.get('Content-Length');
 
@@ -94,6 +94,8 @@ export class FilesRouter {
       contentType,
       contentLength,
       data: req.body,
+      tags: options.tags,
+      metadata: options.metadata,
     };
     triggers
       .maybeRunFileTrigger(
@@ -109,12 +111,18 @@ export class FilesRouter {
           fileObject.contentLength =
             result.contentLength || fileObject.contentLength;
           fileObject.data = result.data || fileObject.data;
+          fileObject.tags = result.tags || fileObject.tags;
+          fileObject.metadata = result.metadata || fileObject.metadata;
         }
         return filesController.createFile(
           config,
           fileObject.filename,
           fileObject.data,
-          fileObject.contentType
+          fileObject.contentType,
+          {
+            tags: fileObject.tags,
+            metadata: fileObject.metadata,
+          }
         );
       })
       .then(result => {
