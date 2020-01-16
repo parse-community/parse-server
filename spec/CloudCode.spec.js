@@ -5,6 +5,19 @@ const request = require('../lib/request');
 const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter')
   .InMemoryCacheAdapter;
 
+const mockAdapter = {
+  createFile: () => ({
+    name: 'some-file-name.txt',
+    url: 'http://www.somewhere.com/some-file-name.txt',
+  }),
+  deleteFile: () => {},
+  getFileData: () => {},
+  getFileLocation: () => 'xyz',
+  validateFilename: () => {
+    return null;
+  },
+};
+
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
     reconfigureServer({
@@ -2573,4 +2586,24 @@ describe('beforeLogin hook', () => {
     expect(beforeFinds).toEqual(1);
     expect(afterFinds).toEqual(1);
   });
+
+  it('beforeSaveFile should not change file if nothing is returned', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter })
+    Parse.Cloud.beforeSaveFile((req) => {
+      expect(req.triggerName).toEqual('beforeSaveFile');
+      expect(req.fileObject).toEqual({
+        filename: 'popeye.txt',
+        data: [1, 2, 3],
+        contentType: 'text/plain',
+        contentLength: 3
+      });
+      return;
+    });
+    spyOn(Parse.Cloud, 'beforeSaveFile');
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    await file.save({ useMasterKey: true });
+    expect(Parse.Cloud.beforeSaveFile).toHaveBeenCalled();
+  });
 });
+
+
