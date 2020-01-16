@@ -1453,7 +1453,7 @@ class DatabaseController {
                   );
                 } else {
                   return this.adapter
-                    .find(className, schema, query, queryOptions, hint)
+                    .find(className, schema, query, queryOptions)
                     .then(objects =>
                       objects.map(object => {
                         object = untransformObjectACL(object);

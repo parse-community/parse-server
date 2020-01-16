@@ -82,8 +82,7 @@ export interface StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    options: QueryOptions,
-    hint?: mixed
+    options: QueryOptions
   ): Promise<[any]>;
   ensureUniqueness(
     className: string,
