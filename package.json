@@ -43,7 +43,7 @@
     "lodash": "4.17.15",
     "lru-cache": "5.1.1",
     "mime": "2.4.4",
-    "mongodb": "3.4.1",
+    "mongodb": "3.5.0",
     "node-rsa": "1.0.7",
     "parse": "2.11.0",
     "pg-promise": "10.3.3",
