@@ -92,7 +92,7 @@ export class FilesRouter {
     const fileObject = {
       filename,
       contentType,
-      contentLength,
+      contentLength: parseInt(contentLength),
       data: req.body,
       tags: options.tags,
       metadata: options.metadata,
@@ -107,13 +107,12 @@ export class FilesRouter {
       .then(result => {
         if (result && typeof result === 'object') {
           fileObject.filename = result.filename || fileObject.filename;
-          fileObject.contentType = result.contentType || fileObject.contentType;
-          fileObject.contentLength =
-            result.contentLength || fileObject.contentLength;
+          fileObject.contentLength = result.contentLength || fileObject.contentLength;
           fileObject.data = result.data || fileObject.data;
           fileObject.tags = result.tags || fileObject.tags;
           fileObject.metadata = result.metadata || fileObject.metadata;
         }
+        fileObject.contentType = mime.getType(fileObject.filename);
         return filesController.createFile(
           config,
           fileObject.filename,
@@ -142,11 +141,12 @@ export class FilesRouter {
           });
       })
       .catch(e => {
+        // TODO: Should the error message from a throw in beforeSaveFile hook be used here (instead of `Could not store file: ${filename}`)?
         logger.error('Error creating a file: ', e);
         next(
           new Parse.Error(
             Parse.Error.FILE_SAVE_ERROR,
-            `Could not store file: ${filename}.`
+            `Could not store file: ${fileObject.filename}.`
           )
         );
       });

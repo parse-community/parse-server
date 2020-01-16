@@ -705,22 +705,17 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   return request;
 }
 
-export function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
+export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
-    return Promise.resolve()
-      .then(() => {
-        const request = getRequestFileObject(
-          triggerType,
-          auth,
-          fileObject,
-          config
-        );
-        return fileTrigger(request);
-      })
-      .then(result => {
-        return result || fileObject;
-      });
+    const request = getRequestFileObject(
+      triggerType,
+      auth,
+      fileObject,
+      config
+    );
+    const result = fileTrigger(request);
+    return result || fileObject;
   }
-  return Promise.resolve(fileObject);
+  return fileObject;
 }
