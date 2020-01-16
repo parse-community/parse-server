@@ -112,7 +112,10 @@ export class FilesRouter {
           fileObject.tags = result.tags || fileObject.tags;
           fileObject.metadata = result.metadata || fileObject.metadata;
         }
-        fileObject.contentType = mime.getType(fileObject.filename);
+        if (fileObject.filename !== filename) {
+          // if the file name has been changed, update the contentType
+          fileObject.contentType = mime.getType(fileObject.filename);
+        }
         return filesController.createFile(
           config,
           fileObject.filename,
