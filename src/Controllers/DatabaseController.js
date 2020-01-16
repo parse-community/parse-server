@@ -1289,13 +1289,14 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
+      hint,
+      explain,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
-
     op =
       op ||
       (typeof query.objectId == 'string' && Object.keys(query).length === 1
@@ -1333,7 +1334,15 @@ class DatabaseController {
               sort.updatedAt = sort._updated_at;
               delete sort._updated_at;
             }
-            const queryOptions = { skip, limit, sort, keys, readPreference };
+            const queryOptions = {
+              skip,
+              limit,
+              sort,
+              keys,
+              readPreference,
+              hint,
+              explain,
+            };
             Object.keys(sort).forEach(fieldName => {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(
@@ -1406,7 +1415,9 @@ class DatabaseController {
                       className,
                       schema,
                       query,
-                      readPreference
+                      readPreference,
+                      undefined,
+                      hint
                     );
                   }
                 } else if (distinct) {
@@ -1428,9 +1439,18 @@ class DatabaseController {
                       className,
                       schema,
                       pipeline,
-                      readPreference
+                      readPreference,
+                      hint,
+                      explain
                     );
                   }
+                } else if (explain) {
+                  return this.adapter.find(
+                    className,
+                    schema,
+                    query,
+                    queryOptions
+                  );
                 } else {
                   return this.adapter
                     .find(className, schema, query, queryOptions)
