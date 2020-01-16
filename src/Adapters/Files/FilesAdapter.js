@@ -41,7 +41,7 @@ export class FilesAdapter {
     filename: string,
     data,
     contentType: string,
-    options: object
+    options: Object
   ): Promise {}
 
   /** Responsible for deleting the specified file
