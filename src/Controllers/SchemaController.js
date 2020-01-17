@@ -182,11 +182,14 @@ const publicRegex = /^\*$/;
 
 const requireAuthenticationRegex = /^requiresAuthentication$/;
 
+const pointerFieldsRegex = /^pointerFields$/;
+
 const permissionKeyRegex = Object.freeze([
   roleRegex,
   pointerPermissionRegex,
   publicRegex,
   requireAuthenticationRegex,
+  pointerFieldsRegex,
 ]);
 
 function validatePermissionKey(key, userIdRegExp) {
@@ -299,10 +302,28 @@ function validateCLP(
     // "*" - Public,
     // "requiresAuthentication" - authenticated users,
     // "objectId" - _User id,
-    // "role:objectId",
+    // "role:rolename",
+    // "pointerFields" - array of field names containing pointers to users
     for (const entity in operation) {
       // throws on unexpected key
       validatePermissionKey(entity, userIdRegExp);
+
+      if (entity === 'pointerFields') {
+        const pointerFields = operation[entity];
+
+        if (Array.isArray(pointerFields)) {
+          for (const pointerField of pointerFields) {
+            validatePointerPermission(pointerField, fields, operation);
+          }
+        } else {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${pointerFields}' is not a valid value for protectedFields[${entity}] - expected an array.`
+          );
+        }
+        // proceed with next entity key
+        continue;
+      }
 
       const permit = operation[entity];
 
@@ -322,7 +343,7 @@ function validatePointerPermission(
   operation: string
 ) {
   // Uses collection schema to ensure the field is of type:
-  // - Pointer<_User> (pointers/relations)
+  // - Pointer<_User> (pointers)
   // - Array
   //
   //    It's not possible to enforce type on Array's items in schema
@@ -1340,7 +1361,8 @@ export default class SchemaController {
     classPermissions: ?any,
     className: string,
     aclGroup: string[],
-    operation: string
+    operation: string,
+    action?: string
   ) {
     if (
       SchemaController.testPermissions(classPermissions, aclGroup, operation)
@@ -1394,6 +1416,16 @@ export default class SchemaController {
     ) {
       return Promise.resolve();
     }
+
+    const pointerFields = classPermissions[operation].pointerFields;
+    if (Array.isArray(pointerFields) && pointerFields.length > 0) {
+      // any op except 'addField as part of create' is ok.
+      // We can allow adding field on update flow only.
+      if (operation !== 'addField' || action === 'update') {
+        return Promise.resolve();
+      }
+    }
+
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       `Permission denied for action ${operation} on class ${className}.`
@@ -1401,12 +1433,18 @@ export default class SchemaController {
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className: string, aclGroup: string[], operation: string) {
+  validatePermission(
+    className: string,
+    aclGroup: string[],
+    operation: string,
+    action?: string
+  ) {
     return SchemaController.validatePermission(
       this.getClassLevelPermissions(className),
       className,
       aclGroup,
-      operation
+      operation,
+      action
     );
   }
 

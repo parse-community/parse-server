@@ -553,7 +553,7 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    { acl }: QueryOptions
+    { acl, action }: QueryOptions
   ): Promise<boolean> {
     let schema;
     const isMaster = acl === undefined;
@@ -564,7 +564,7 @@ class DatabaseController {
         if (isMaster) {
           return Promise.resolve();
         }
-        return this.canAddField(schema, className, object, aclGroup);
+        return this.canAddField(schema, className, object, aclGroup, action);
       })
       .then(() => {
         return schema.validateObject(className, object, query);
@@ -994,7 +994,8 @@ class DatabaseController {
     schema: SchemaController.SchemaController,
     className: string,
     object: any,
-    aclGroup: string[]
+    aclGroup: string[],
+    action?: string
   ): Promise<void> {
     const classSchema = schema.schemaData[className];
     if (!classSchema) {
@@ -1014,7 +1015,7 @@ class DatabaseController {
       return schemaFields.indexOf(field) < 0;
     });
     if (newKeys.length > 0) {
-      return schema.validatePermission(className, aclGroup, 'addField');
+      return schema.validatePermission(className, aclGroup, 'addField', action);
     }
     return Promise.resolve();
   }
@@ -1525,28 +1526,50 @@ class DatabaseController {
       });
   }
 
+  // Constraints query using CLP's pointer permissions (PP) if any.
+  // 1. Etract the user id from caller's ACLgroup;
+  // 2. Exctract a list of field names that are PP for target collection and operation;
+  // 3. Constraint the original query so that each PP field must
+  // point to caller's id (or contain it in case of PP field being an array)
   addPointerPermissions(
     schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
     aclGroup: any[] = []
-  ) {
+  ): any {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
     if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
     const perms = schema.getClassLevelPermissions(className);
-    const field =
-      ['get', 'find'].indexOf(operation) > -1
-        ? 'readUserFields'
-        : 'writeUserFields';
+
     const userACL = aclGroup.filter(acl => {
       return acl.indexOf('role:') != 0 && acl != '*';
     });
+
+    const groupKey =
+      ['get', 'find', 'count'].indexOf(operation) > -1
+        ? 'readUserFields'
+        : 'writeUserFields';
+
+    const permFields = [];
+
+    if (perms[operation] && perms[operation].pointerFields) {
+      permFields.push(...perms[operation].pointerFields);
+    }
+
+    if (perms[groupKey]) {
+      for (const field of perms[groupKey]) {
+        if (!permFields.includes(field)) {
+          permFields.push(field);
+        }
+      }
+    }
     // the ACL should have exactly 1 user
-    if (perms && perms[field] && perms[field].length > 0) {
+    if (permFields.length > 0) {
+      // the ACL should have exactly 1 user
       // No user set return undefined
       // If the length is > 1, that means we didn't de-dupe users correctly
       if (userACL.length != 1) {
@@ -1559,7 +1582,6 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const permFields = perms[field];
       const ors = permFields.flatMap(key => {
         // constraint for single pointer setup
         const q = {
@@ -1588,7 +1610,7 @@ class DatabaseController {
     query: any = {},
     aclGroup: any[] = [],
     auth: any = {}
-  ) {
+  ): null | string[] {
     const perms = schema.getClassLevelPermissions(className);
     if (!perms) return null;
 
