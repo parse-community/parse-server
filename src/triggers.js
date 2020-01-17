@@ -682,8 +682,8 @@ export function runLiveQueryEventHandlers(
 
 export function getRequestFileObject(triggerType, auth, fileObject, config) {
   const request = {
+    ...fileObject,
     triggerName: triggerType,
-    fileObject,
     master: false,
     log: config.loggerController,
     headers: config.headers,

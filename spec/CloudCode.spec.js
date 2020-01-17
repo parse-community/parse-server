@@ -2615,25 +2615,14 @@ describe('beforeLogin hook', () => {
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSaveFile(async (req) => {
       expect(req.triggerName).toEqual('beforeSaveFile');
-      expect(req.fileObject).toEqual({
-        filename: 'popeye.txt',
-        contentType: 'text/plain',
-        contentLength: 174,
-        data: new Buffer([1, 2, 3]),
-        tags: undefined,
-        metadata: undefined,
-      });
       expect(req.master).toBe(true);
-      req.fileObject.filename = 'donald_duck.pdf';
-      req.fileObject.data = new Buffer([4, 5, 6]);
-      req.fileObject.tags = { tagA: 'some-tag' }
-      req.fileObject.metadata = { foo: 'bar' };
+      req.file.addMetadata('foo', 'bar');
+      req.file.addTag('tagA', 'some-tag');
     });
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
-    const newData = new Buffer([4, 5, 6]);
-    const newContentType = 'application/pdf';
+    const newData = new Buffer([1, 2, 3]);
     const newOptions = {
       tags: {
         tagA: 'some-tag',
@@ -2642,33 +2631,21 @@ describe('beforeLogin hook', () => {
         foo: 'bar',
       },
     };
-    expect(createFileSpy).toHaveBeenCalledWith(jasmine.any(String), newData, newContentType, newOptions);
-    const expectedFileName = 'donald_duck.pdf';
-    expect(file._name.indexOf(expectedFileName)).toBe(file._name.length - expectedFileName.length);
+    expect(createFileSpy).toHaveBeenCalledWith(jasmine.any(String), newData, 'text/plain', newOptions);
   });
 
   it('beforeSaveFile should change values by returning new fileObject', async () => {    await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSaveFile(async (req) => {
       expect(req.triggerName).toEqual('beforeSaveFile');
-      expect(req.fileObject).toEqual({
-        filename: 'popeye.txt',
-        contentType: 'text/plain',
-        contentLength: 174,
-        data: new Buffer([1, 2, 3]),
-        tags: undefined,
-        metadata: undefined,
-      });
-      return {
-        filename: 'donald_duck.pdf',
-        data: new Buffer([4, 5, 6]),
-        tags: { tagA: 'some-tag' },
-        metadata: { foo: 'bar' },
-      };
+      const newFile = new Parse.File('donald_duck.pdf', [4, 5, 6], 'application/pdf');
+      newFile.setMetadata({ foo: 'bar' });
+      newFile.setTags({ tagA: 'some-tag' });
+      return newFile;
     });
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
-    expect(result).toBe(file);
+    expect(result).toBeInstanceOf(Parse.File);
     const newData = new Buffer([4, 5, 6]);
     const newContentType = 'application/pdf';
     const newOptions = {
@@ -2686,40 +2663,32 @@ describe('beforeLogin hook', () => {
 
   it('afterSaveFile should throw error', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
-    Parse.Cloud.beforeSaveFile(async (req) => {
-      req.fileObject.filename = 'donald_duck.pdf';
-    });
     Parse.Cloud.afterSaveFile(async () => {
       throw new Parse.Error(400, 'some-error-message');
     });
-    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    const filename = 'donald_duck.pdf';
+    const file = new Parse.File(filename, [1, 2, 3], 'text/plain');
     try {
       await file.save({ useMasterKey: true });
     } catch (error) {
       expect(error.message.indexOf('Could not store file: ')).toBe(0);
-      const newFileName = 'donald_duck.pdf.';
-      expect(error.message.indexOf(newFileName)).toBe(error.message.length - newFileName.length);
+      expect(error.message.indexOf(filename)).toBe(error.message.length - filename.length - 1);
     }
   });
 
   it('afterSaveFile should call with fileObject', async (done) => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSaveFile(async (req) => {
-      req.fileObject.filename = 'donald_duck.pdf';
-      req.fileObject.tags = { tagA: 'some-tag' };
-      req.fileObject.metadata = { foo: 'bar' };
+      req.file.setTags({ tagA: 'some-tag' });
+      req.file.setMetadata({ foo: 'bar' });
     });
     Parse.Cloud.afterSaveFile(async (req) => {
       expect(req.master).toBe(true);
-      expect(req.fileObject.filename.indexOf('donald_duck.pdf')).toBe(req.fileObject.filename.length - 15);
-      expect(req.fileObject.contentType).toBe('application/pdf');
-      expect(req.fileObject.tags).toEqual({ tagA: 'some-tag' });
-      expect(req.fileObject.metadata).toEqual({ foo: 'bar' });
+      expect(req.file._tags).toEqual({ tagA: 'some-tag' });
+      expect(req.file._metadata).toEqual({ foo: 'bar' });
       done();
     });
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
   });
 });
-
-

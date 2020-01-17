@@ -408,23 +408,12 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
- * @property {Object} fileObject The object triggering the hook {@link Parse.Cloud.BeforeSaveFileRequest.fileObject}.
+ * @property {Parse.File} file The file that triggered the hook
+ * @property {Integer} contentLength The value from Content-Length header
  * @property {String} ip The IP address of the client making the request.
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
  * @property {Object} log The current logger inside Parse Server.
- */
-
-/**
- * @interface Parse.Cloud.BeforeSaveFileRequest.fileObject
- * @property {String} filename The file name for the file to be saved
- * @property {String} contentType The mime type
- * @property {String} contentLength The byte size of the file being saved
- * @property {Array} data The data that that should be saved
- *  1. an Array of byte value Numbers, or
- *  2. an Object like { base64: "..." } with a base64-encoded String.
- * @property {Object} tags Key value pairs that should be stored as tags with file (S3 Only)
- * @property {Object} metadata Key value pairs that should be stored as metadata with file (S3 Only)
  */
 
 /**

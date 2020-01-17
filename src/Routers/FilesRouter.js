@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
@@ -6,6 +6,30 @@ import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
 const triggers = require('../triggers');
+const http = require('http');
+
+const downloadFileFromURI = (uri) => {
+  return new Promise((res, rej) => {
+    http.get(uri, (response) => {
+      response.setDefaultEncoding('base64');
+      let body = `data:${response.headers['content-type']};base64,`;
+      response.on('data', data => body += data);
+      response.on('end', () => res(body));
+    }).on('error', (e) => {
+      rej(`Error downloading file from ${uri}: ${e.message}`);
+    });
+  });
+};
+
+const addFileDataIfNeeded = async (file) => {
+  if (file._source.format === 'uri') {
+    const base64 = await downloadFileFromURI(file._source.uri);
+    file._previousSave = file;
+    file._data = base64;
+    file._requestTask = null;
+  }
+  return file;
+};
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -69,7 +93,7 @@ export class FilesRouter {
     }
   }
 
-  createHandler(req, res, next) {
+  async createHandler(req, res, next) {
     const config = req.config;
     const filesController = config.filesController;
     const { filename, options = {} } = req.params;
@@ -89,70 +113,79 @@ export class FilesRouter {
       return;
     }
 
-    const fileObject = {
-      filename,
-      contentType,
-      contentLength: parseInt(contentLength),
-      data: req.body,
-      tags: options.tags,
-      metadata: options.metadata,
-    };
-    triggers
-      .maybeRunFileTrigger(
+    const base64 = req.body.toString('base64');
+    const file = new Parse.File(filename, { base64 }, contentType);
+    file.setTags(options.tags);
+    file.setMetadata(options.metadata);
+    const fileObject = { contentLength: parseInt(contentLength), file };
+    try {
+      // run beforeSaveFile trigger
+      const triggerResult = await triggers.maybeRunFileTrigger(
         triggers.Types.beforeSaveFile,
         fileObject,
         config,
         req.auth
       )
-      .then(result => {
-        if (result && typeof result === 'object') {
-          fileObject.filename = result.filename || fileObject.filename;
-          fileObject.contentLength = result.contentLength || fileObject.contentLength;
-          fileObject.data = result.data || fileObject.data;
-          fileObject.tags = result.tags || fileObject.tags;
-          fileObject.metadata = result.metadata || fileObject.metadata;
+      let saveResult;
+      // if a new ParseFile is returned check if it's an already saved file
+      if (triggerResult instanceof Parse.File) {
+        fileObject.file = triggerResult;
+        if (triggerResult.url()) {
+          // set contentLength to null because we wont know how big it is here
+          fileObject.contentLength = null;
+          saveResult = {
+            url: triggerResult.url(),
+            name: triggerResult._name,
+          };
         }
-        if (fileObject.filename !== filename) {
-          // if the file name has been changed, update the contentType
-          fileObject.contentType = mime.getType(fileObject.filename);
-        }
-        return filesController.createFile(
+      }
+      // if the file returned by the trigger has already been saved skip saving anything
+      if (!saveResult) {
+        // if the ParseFile returned is type uri, download the file before saving it
+        await addFileDataIfNeeded(fileObject.file);
+        // save file
+        const createFileResult = await filesController.createFile(
           config,
-          fileObject.filename,
-          fileObject.data,
-          fileObject.contentType,
+          fileObject.file._name,
+          Buffer.from(fileObject.file._data, 'base64'),
+          fileObject.file._source.type,
           {
-            tags: fileObject.tags,
-            metadata: fileObject.metadata,
+            tags: fileObject.file._tags,
+            metadata: fileObject.file._metadata,
           }
         );
-      })
-      .then(result => {
-        fileObject.url = result.url;
-        fileObject.filename = result.name;
-        return triggers
-          .maybeRunFileTrigger(
-            triggers.Types.afterSaveFile,
-            fileObject,
-            config,
-            req.auth
-          )
-          .then(() => {
-            res.status(201);
-            res.set('Location', result.url);
-            res.json(result);
-          });
-      })
-      .catch(e => {
-        // TODO: Should the error message from a throw in beforeSaveFile hook be used here (instead of `Could not store file: ${filename}`)?
-        logger.error('Error creating a file: ', e);
-        next(
-          new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
-            `Could not store file: ${fileObject.filename}.`
-          )
-        );
-      });
+        // update file with new data
+        fileObject.file._name = createFileResult.name;
+        fileObject.file._url = createFileResult.url;
+        fileObject.file._requestTask = null;
+        fileObject.file._previousSave = Promise.resolve(fileObject.file);
+        saveResult = {
+          url: createFileResult.url,
+          name: createFileResult.name,
+        };
+      }
+      // run afterSaveFile trigger
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterSaveFile,
+        fileObject,
+        config,
+        req.auth
+      );
+      res.status(201);
+      res.set('Location', saveResult.url);
+      res.json(saveResult);
+
+    } catch (e) {
+      console.log(e);
+      // TODO: Should the error message from a throw in beforeSaveFile hook be used here (instead of `Could not store file: ${filename}`)?
+      logger.error('Error creating a file: ', e);
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          `Could not store file: ${fileObject.file._name}.`
+        )
+      );
+    }
   }
 
   deleteHandler(req, res, next) {
