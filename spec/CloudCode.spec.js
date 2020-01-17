@@ -2597,6 +2597,22 @@ describe('beforeLogin hook', () => {
     expect(result).toBe(result);
   });
 
+  it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
+    Parse.Cloud.beforeSaveFile(() => {
+      const newFile = new Parse.File('some-file.txt');
+      newFile._url = 'http://www.somewhere.com/parse/files/some-app-id/some-file.txt';
+      return newFile;
+    });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    const result = await file.save({ useMasterKey: true });
+    expect(result).toBe(result);
+    expect(result._name).toBe('some-file.txt');
+    expect(result._url).toBe('http://www.somewhere.com/parse/files/some-app-id/some-file.txt');
+    expect(createFileSpy).not.toHaveBeenCalled();
+  });
+
   it('beforeSaveFile should throw error', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeSaveFile(() => {
@@ -2634,7 +2650,8 @@ describe('beforeLogin hook', () => {
     expect(createFileSpy).toHaveBeenCalledWith(jasmine.any(String), newData, 'text/plain', newOptions);
   });
 
-  it('beforeSaveFile should change values by returning new fileObject', async () => {    await reconfigureServer({ filesAdapter: mockAdapter });
+  it('beforeSaveFile should change values by returning new fileObject', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSaveFile(async (req) => {
       expect(req.triggerName).toEqual('beforeSaveFile');
