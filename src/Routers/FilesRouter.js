@@ -116,7 +116,8 @@ export class FilesRouter {
     const file = new Parse.File(filename, { base64 }, contentType);
     file.setTags(options.tags);
     file.setMetadata(options.metadata);
-    const fileObject = { file };
+    const fileSize = Buffer.byteLength(req.body);
+    const fileObject = { file, fileSize };
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
@@ -130,8 +131,8 @@ export class FilesRouter {
       if (triggerResult instanceof Parse.File) {
         fileObject.file = triggerResult;
         if (triggerResult.url()) {
-          // set contentLength to null because we wont know how big it is here
-          fileObject.contentLength = null;
+          // set fileSize to null because we wont know how big it is here
+          fileObject.fileSize = null;
           saveResult = {
             url: triggerResult.url(),
             name: triggerResult._name,
@@ -142,11 +143,14 @@ export class FilesRouter {
       if (!saveResult) {
         // if the ParseFile returned is type uri, download the file before saving it
         await addFileDataIfNeeded(fileObject.file);
+        // update fileSize
+        const bufferData = Buffer.from(fileObject.file._data, 'base64');
+        fileObject.fileSize = Buffer.byteLength(bufferData);
         // save file
         const createFileResult = await filesController.createFile(
           config,
           fileObject.file._name,
-          Buffer.from(fileObject.file._data, 'base64'),
+          bufferData,
           fileObject.file._source.type,
           {
             tags: fileObject.file._tags,
@@ -193,7 +197,7 @@ export class FilesRouter {
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
       file._url = filesController.adapter.getFileLocation(req.config, filename);
-      const fileObject = { file }
+      const fileObject = { file, fileSize: null }
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDeleteFile,
         fileObject,

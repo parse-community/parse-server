@@ -454,7 +454,8 @@ module.exports = ParseCloud;
  * @property {String} installationId If set, the installationId triggering the request.
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
- * @property {Parse.File} file The file that triggered the hook
+ * @property {Parse.File} file The file that triggered the hook.
+ * @property {Integer} fileSize The size of the file in bytes.
  * @property {Integer} contentLength The value from Content-Length header
  * @property {String} ip The IP address of the client making the request.
  * @property {Object} headers The original HTTP headers for the request.
