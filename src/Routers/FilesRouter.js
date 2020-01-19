@@ -98,7 +98,6 @@ export class FilesRouter {
     const filesController = config.filesController;
     const { filename, options = {} } = req.params;
     const contentType = req.get('Content-type');
-    const contentLength = req.get('Content-Length');
 
     if (!req.body || !req.body.length) {
       next(
@@ -117,7 +116,7 @@ export class FilesRouter {
     const file = new Parse.File(filename, { base64 }, contentType);
     file.setTags(options.tags);
     file.setMetadata(options.metadata);
-    const fileObject = { contentLength: parseInt(contentLength), file };
+    const fileObject = { file };
     try {
       // run beforeSaveFile trigger
       const triggerResult = await triggers.maybeRunFileTrigger(
