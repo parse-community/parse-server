@@ -176,7 +176,6 @@ export class FilesRouter {
       res.json(saveResult);
 
     } catch (e) {
-      console.log(e);
       // TODO: Should the error message from a throw in beforeSaveFile hook be used here (instead of `Could not store file: ${filename}`)?
       logger.error('Error creating a file: ', e);
       next(
@@ -188,23 +187,42 @@ export class FilesRouter {
     }
   }
 
-  deleteHandler(req, res, next) {
-    const filesController = req.config.filesController;
-    filesController
-      .deleteFile(req.config, req.params.filename)
-      .then(() => {
-        res.status(200);
-        // TODO: return useful JSON here?
-        res.end();
-      })
-      .catch(() => {
-        next(
-          new Parse.Error(
-            Parse.Error.FILE_DELETE_ERROR,
-            'Could not delete file.'
-          )
-        );
-      });
+  async deleteHandler(req, res, next) {
+    try {
+      const { filesController } = req.config;
+      const { filename } = req.params;
+      // run beforeDeleteFile trigger
+      const file = new Parse.File(filename);
+      file._url = filesController.adapter.getFileLocation(req.config, filename);
+      const fileObject = { file }
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeDeleteFile,
+        fileObject,
+        req.config,
+        req.auth
+      );
+      // delete file
+      await filesController.deleteFile(req.config, filename);
+      // run afterDeleteFile trigger
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterDeleteFile,
+        fileObject,
+        req.config,
+        req.auth
+      );
+      res.status(200);
+      // TODO: return useful JSON here?
+      res.end();
+    } catch (e) {
+      // TODO: Should the error message from a throw in beforeDeleteFile hook be used here (instead of 'Could not delete file')?
+      logger.error('Error deleting a file: ', e);
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_DELETE_ERROR,
+          'Could not delete file.'
+        )
+      );
+    }
   }
 }
 

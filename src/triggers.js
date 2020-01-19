@@ -13,6 +13,8 @@ export const Types = {
   afterFind: 'afterFind',
   beforeSaveFile: 'beforeSaveFile',
   afterSaveFile: 'afterSaveFile',
+  beforeDeleteFile: 'beforeDeleteFile',
+  afterDeleteFile: 'afterDeleteFile',
 };
 
 const FileClassName = '@File';

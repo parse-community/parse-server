@@ -2708,4 +2708,46 @@ describe('beforeLogin hook', () => {
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     await file.save({ useMasterKey: true });
   });
+
+  it('beforeDeleteFile should call with fileObject', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    Parse.Cloud.beforeDeleteFile((req) => {
+      expect(req.file).toBeInstanceOf(Parse.File);
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
+    });
+    const file = new Parse.File('popeye.txt');
+    await file.destroy({ useMasterKey: true });
+  });
+
+  it('beforeDeleteFile should throw error', async (done) => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    Parse.Cloud.beforeDeleteFile(() => {
+      throw new Error('some error message');
+    });
+    const file = new Parse.File('popeye.txt');
+    try {
+      await file.destroy({ useMasterKey: true });
+    } catch (error) {
+      expect(error.message).toBe('Could not delete file.');
+      done();
+    }
+  })
+
+  it('afterDeleteFile should cal with fileObject', async (done) => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    Parse.Cloud.beforeDeleteFile((req) => {
+      expect(req.file).toBeInstanceOf(Parse.File);
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
+    });
+    Parse.Cloud.afterDeleteFile((req) => {
+      expect(req.file).toBeInstanceOf(Parse.File);
+      expect(req.file._name).toEqual('popeye.txt');
+      expect(req.file._url).toEqual('http://www.somewhere.com/popeye.txt');
+      done();
+    });
+    const file = new Parse.File('popeye.txt');
+    await file.destroy({ useMasterKey: true });
+  });
 });
