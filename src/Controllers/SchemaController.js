@@ -241,26 +241,19 @@ function validateCLP(
     }
 
     const operation = perms[operationKey];
-    if (!operation) {
-      // proceed with next operationKey
-      continue;
-    }
+    // proceed with next operationKey
 
-    // validate grouped pointer permissions
+    // throws when root fields are of wrong type
+    validateCLPjson(operation, operationKey);
+
     if (
       operationKey === 'readUserFields' ||
       operationKey === 'writeUserFields'
     ) {
+      // validate grouped pointer permissions
       // must be an array with field names
-      if (!Array.isArray(operation)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `'${operation}' is not a valid value for class level permissions ${operationKey}`
-        );
-      } else {
-        for (const fieldName of operation) {
-          validatePointerPermission(fieldName, fields, operationKey);
-        }
+      for (const fieldName of operation) {
+        validatePointerPermission(fieldName, fields, operationKey);
       }
       // readUserFields and writerUserFields do not have nesdted fields
       // proceed with next operationKey
@@ -333,6 +326,27 @@ function validateCLP(
           `'${permit}' is not a valid value for class level permissions ${operationKey}:${entity}:${permit}`
         );
       }
+    }
+  }
+}
+
+function validateCLPjson(operation: any, operationKey: string) {
+  if (operationKey === 'readUserFields' || operationKey === 'writeUserFields') {
+    if (!Array.isArray(operation)) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an array`
+      );
+    }
+  } else {
+    if (typeof operation === 'object' && operation !== null) {
+      // ok to proceed
+      return;
+    } else {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an object`
+      );
     }
   }
 }

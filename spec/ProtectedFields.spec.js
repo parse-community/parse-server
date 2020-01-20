@@ -758,4 +758,37 @@ describe('ProtectedFields', function() {
       });
     });
   });
+
+  describe('schema setup', () => {
+    const className = 'AObject';
+    async function updateCLP(clp) {
+      const config = Config.get(Parse.applicationId);
+      const schemaController = await config.database.loadSchema();
+
+      await schemaController.updateClass(className, {}, clp);
+    }
+
+    it('should fail setting non-existing protected field', async () => {
+      const object = new Parse.Object(className, {
+        revision: 0,
+      });
+      await object.save();
+
+      const field = 'non-existing';
+      const entity = '*';
+
+      await expectAsync(
+        updateCLP({
+          protectedFields: {
+            [entity]: [field],
+          },
+        })
+      ).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `Field '${field}' in protectedFields:${entity} does not exist`
+        )
+      );
+    });
+  });
 });
