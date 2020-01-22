@@ -96,7 +96,7 @@ export class FilesRouter {
   async createHandler(req, res, next) {
     const config = req.config;
     const filesController = config.filesController;
-    const { filename, options = {} } = req.params;
+    const { filename } = req.params;
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
@@ -114,8 +114,9 @@ export class FilesRouter {
 
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
-    file.setTags(options.tags);
-    file.setMetadata(options.metadata);
+    const { metadata = {}, tags = {} } = req.fileData || {};
+    file.setTags(tags);
+    file.setMetadata(metadata);
     const fileSize = Buffer.byteLength(req.body);
     const fileObject = { file, fileSize };
     try {

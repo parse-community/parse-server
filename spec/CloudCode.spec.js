@@ -2679,6 +2679,29 @@ describe('beforeLogin hook', () => {
     expect(file._name.indexOf(expectedFileName)).toBe(file._name.length - expectedFileName.length);
   });
 
+  fit('beforeSaveFile should contain metadata and tags saved from client', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
+    Parse.Cloud.beforeSaveFile(async (req) => {
+      expect(req.triggerName).toEqual('beforeSaveFile');
+      expect(req.fileSize).toBe(3);
+      expect(req.file).toBeInstanceOf(Parse.File);
+      expect(req.file.name()).toBe('popeye.txt');
+      expect(req.file.metadata()).toEqual({ foo: 'bar' });
+      expect(req.file.tags()).toEqual({ bar: 'foo' });
+    });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    file.setMetadata({ foo: 'bar' });
+    file.setTags({ bar: 'foo' });
+    const result = await file.save({ useMasterKey: true });
+    expect(result).toBeInstanceOf(Parse.File);
+    const options = {
+      metadata: { foo: 'bar' },
+      tags: { bar: 'foo' },
+    };
+    expect(createFileSpy).toHaveBeenCalledWith(jasmine.any(String), jasmine.any(Buffer), 'text/plain', options);
+  });
+
   it('afterSaveFile should set fileSize to null if beforeSave returns an already saved file', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();

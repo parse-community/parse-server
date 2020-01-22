@@ -110,6 +110,7 @@ export function handleParseHeaders(req, res, next) {
   }
 
   if (fileViaJSON) {
+    req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
     req.body = Buffer.from(base64, 'base64');
