@@ -1,4 +1,4 @@
-import express, { response } from 'express';
+import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import Parse from 'parse/node';
