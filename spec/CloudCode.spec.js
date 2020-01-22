@@ -2679,7 +2679,7 @@ describe('beforeLogin hook', () => {
     expect(file._name.indexOf(expectedFileName)).toBe(file._name.length - expectedFileName.length);
   });
 
-  fit('beforeSaveFile should contain metadata and tags saved from client', async () => {
+  it('beforeSaveFile should contain metadata and tags saved from client', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
     Parse.Cloud.beforeSaveFile(async (req) => {
