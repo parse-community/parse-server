@@ -1434,8 +1434,8 @@ export default class SchemaController {
     const pointerFields = classPermissions[operation].pointerFields;
     if (Array.isArray(pointerFields) && pointerFields.length > 0) {
       // any op except 'addField as part of create' is ok.
-      // We can allow adding field on update flow only.
       if (operation !== 'addField' || action === 'update') {
+        // We can allow adding field on update flow only.
         return Promise.resolve();
       }
     }

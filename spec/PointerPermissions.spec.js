@@ -2024,8 +2024,10 @@ describe('Pointer Permissions', () => {
     const actionCreate = () => new Parse.Object(className).save();
     const actionUpdate = obj => obj.save({ revision: 2 });
     const actionDelete = obj => obj.destroy();
-    const actionAddField = () =>
-      new Parse.Object(className, { extra: 'field' }).save();
+    const actionAddFieldOnCreate = () =>
+      new Parse.Object(className, { ['extra' + Date.now()]: 'field' }).save();
+    const actionAddFieldOnUpdate = obj =>
+      obj.save({ ['another' + Date.now()]: 'field' });
 
     const OBJECT_NOT_FOUND = new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -2055,9 +2057,19 @@ describe('Pointer Permissions', () => {
       await schemaController.updateClass(className, {}, clp);
     }
 
-    let user1, user2;
-    let obj1, obj2;
     describe('on single-pointer fields', () => {
+      /** owns: **obj1** */
+      let user1;
+
+      /** owns: **obj2** */
+      let user2;
+
+      /** owned by: **user1** */
+      let obj1;
+
+      /** owned by: **user2** */
+      let obj2;
+
       async function initialize() {
         await Config.get(Parse.applicationId).database.schemaCache.clear();
 
@@ -2066,8 +2078,6 @@ describe('Pointer Permissions', () => {
           createUser('user2'),
         ]);
 
-        // User1 owns object1
-        // User2 owns object2
         obj1 = new Parse.Object(className, {
           owner: user1,
           revision: 0,
@@ -2132,7 +2142,7 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2185,7 +2195,7 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2241,7 +2251,7 @@ describe('Pointer Permissions', () => {
               actionFind(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2273,7 +2283,7 @@ describe('Pointer Permissions', () => {
 
           await logIn(user2);
 
-          await expectAsync(obj1.save({ revision: 1 })).toBeRejectedWith(
+          await expectAsync(actionUpdate(obj1)).toBeRejectedWith(
             OBJECT_NOT_FOUND
           );
           done();
@@ -2294,7 +2304,7 @@ describe('Pointer Permissions', () => {
               actionFind(),
               actionCount(),
               actionCreate(),
-              actionAddField(),
+              actionAddFieldOnCreate(),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2349,7 +2359,7 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
             })
@@ -2360,7 +2370,7 @@ describe('Pointer Permissions', () => {
 
       describe('create action', () => {
         // For Pointer permissions create is different from other operations
-        // since there's no object holding the pointer upon creating
+        // since there's no object holding the pointer before created
         it('should be denied (writelock) when no other permissions on class', async done => {
           await updateCLP({
             create: {
@@ -2375,7 +2385,7 @@ describe('Pointer Permissions', () => {
       });
 
       describe('addField action', () => {
-        it('should have no effect when creating object (and allowed by explicit userid permission)', async done => {
+        xit('should have no effect when creating object (and allowed by explicit userid permission)', async done => {
           await updateCLP({
             create: {
               '*': true,
@@ -2388,14 +2398,11 @@ describe('Pointer Permissions', () => {
 
           await logIn(user1);
 
-          const newObject = new Parse.Object(className, {
-            extra: 'field',
-          });
-          await expectAsync(newObject.save()).toBeResolved();
+          await expectAsync(actionAddFieldOnCreate()).toBeResolved();
           done();
         });
 
-        it('should be denied when creating object (and no explicit permission)', async done => {
+        xit('should be denied when creating object (and no explicit permission)', async done => {
           await updateCLP({
             create: {
               '*': true,
@@ -2422,17 +2429,33 @@ describe('Pointer Permissions', () => {
             update: {
               '*': true,
             },
-            get: {
-              '*': true,
-            },
             addField: {
-              pointerFields: ['owner'], // this purposely has no effect
+              pointerFields: ['owner'],
             },
           });
 
           await logIn(user1);
 
-          await expectAsync(actionUpdate(obj1)).toBeResolved();
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+
+          done();
+        });
+
+        it('should be denied when updating object for user without addField permission', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
 
           done();
         });
@@ -2440,8 +2463,47 @@ describe('Pointer Permissions', () => {
     });
 
     describe('on array of pointers', () => {
+      /**
+       * owns: **obj1**
+       *
+       * moderates: **obj1** */
+      let user1;
+
+      /**
+       * owns: **obj2**
+       *
+       * moderates: **obj1, obj2** */
+      let user2;
+
+      /**
+       * owns: **obj3**
+       *
+       * moderates: **obj1, obj2, obj3 ** */
       let user3;
-      let obj3, objNobody;
+
+      /**
+       * owned by: **user1**
+       *
+       * moderated by: **user1, user2, user3** */
+      let obj1;
+
+      /**
+       * owned by: **user2**
+       *
+       * moderated by: **user2, user3** */
+      let obj2;
+
+      /**
+       * owned by: **user3**
+       *
+       * moderated by: **user3** */
+      let obj3;
+
+      /**
+       * owned by: **noboody**
+       *
+       * moderated by: **nobody** */
+      let objNobody;
 
       async function initialize() {
         await Config.get(Parse.applicationId).database.schemaCache.clear();
@@ -2457,9 +2519,6 @@ describe('Pointer Permissions', () => {
         obj3 = new Parse.Object(className);
         objNobody = new Parse.Object(className);
 
-        // User1 owns 1 object, moderates 1 object
-        // User1 owns 1 object, moderates 2 objects
-        // User3 owns 1 object, moderates 3 oobjecs
         obj1.set({
           owners: [user1],
           moderators: [user3, user2, user1],
@@ -2532,7 +2591,7 @@ describe('Pointer Permissions', () => {
           await logIn(user1);
 
           await expectAsync(actionGet(obj3.id)).toBeRejectedWith(
-            jasmine.stringMatching('not found')
+            OBJECT_NOT_FOUND
           );
           done();
         });
@@ -2552,7 +2611,8 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj2),
-              actionAddField(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj2),
               actionDelete(obj2),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2620,7 +2680,8 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2665,7 +2726,8 @@ describe('Pointer Permissions', () => {
               actionFind(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2732,7 +2794,8 @@ describe('Pointer Permissions', () => {
               actionFind(),
               actionCount(),
               actionCreate(),
-              actionAddField(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
               actionDelete(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
@@ -2800,7 +2863,8 @@ describe('Pointer Permissions', () => {
               actionCount(),
               actionCreate(),
               actionUpdate(obj1),
-              actionAddField(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
             ].map(async p => {
               await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
             })
@@ -2811,7 +2875,7 @@ describe('Pointer Permissions', () => {
 
       describe('create action', () => {
         /* For Pointer permissions 'create' is different from other operations
-         since there's no object holding the pointer upon creating */
+         since there's no object holding the pointer before created */
         it('should be denied (writelock) when no other permissions on class', async done => {
           await updateCLP({
             create: {
@@ -2839,10 +2903,7 @@ describe('Pointer Permissions', () => {
 
           await logIn(user1);
 
-          const newObject = new Parse.Object(className, {
-            extra: 'field',
-          });
-          await expectAsync(newObject.save()).toBeResolved();
+          await expectAsync(actionAddFieldOnCreate()).toBeResolved();
           done();
         });
 
@@ -2874,18 +2935,63 @@ describe('Pointer Permissions', () => {
               '*': true,
             },
             addField: {
-              pointerFields: ['moderators'], // this purposely has no effect
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+
+          done();
+        });
+
+        it('should be restricted when updating object without addField permission', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['moderators'],
             },
           });
 
           await logIn(user1);
-          await expectAsync(actionUpdate(obj1)).toBeResolved();
+
+          await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
 
           done();
         });
       });
     });
+
     describe('combined with grouped', () => {
+      /**
+       * owns: **obj1**
+       *
+       * moderates: **obj2** */
+      let user1;
+
+      /**
+       * owns: **obj2**
+       *
+       * moderates: **obj1, obj2** */
+      let user2;
+
+      /**
+       * owned by: **user1**
+       *
+       * moderated by: **user2** */
+      let obj1;
+
+      /**
+       * owned by: **user2**
+       *
+       * moderated by: **user1, user2** */
+      let obj2;
+
       async function initialize() {
         await Config.get(Parse.applicationId).database.schemaCache.clear();
 
@@ -2948,9 +3054,10 @@ describe('Pointer Permissions', () => {
 
         await logIn(user2);
 
-        // create and addField can't be enabled with pointer by design
         await expectAsync(actionUpdate(obj1)).toBeResolved();
+        await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
         await expectAsync(actionDelete(obj1)).toBeResolved();
+        // [create] and [addField on create] can't be enabled with pointer by design
 
         done();
       });

@@ -17,6 +17,7 @@ export type QueryOptions = {
   hint?: ?mixed,
   explain?: Boolean,
   action?: string,
+  addsField?: boolean,
 };
 
 export type UpdateQueryOptions = {

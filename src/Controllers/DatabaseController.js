@@ -553,9 +553,10 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    { acl, action }: QueryOptions
+    runOptions: QueryOptions
   ): Promise<boolean> {
     let schema;
+    const acl = runOptions.acl;
     const isMaster = acl === undefined;
     var aclGroup: string[] = acl || [];
     return this.loadSchema()
@@ -564,7 +565,13 @@ class DatabaseController {
         if (isMaster) {
           return Promise.resolve();
         }
-        return this.canAddField(schema, className, object, aclGroup, action);
+        return this.canAddField(
+          schema,
+          className,
+          object,
+          aclGroup,
+          runOptions
+        );
       })
       .then(() => {
         return schema.validateObject(className, object, query);
@@ -575,7 +582,7 @@ class DatabaseController {
     className: string,
     query: any,
     update: any,
-    { acl, many, upsert }: FullQueryOptions = {},
+    { acl, many, upsert, addsField }: FullQueryOptions = {},
     skipSanitization: boolean = false,
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
@@ -608,6 +615,21 @@ class DatabaseController {
                 query,
                 aclGroup
               );
+
+              if (addsField) {
+                query = {
+                  $and: [
+                    query,
+                    this.addPointerPermissions(
+                      schemaController,
+                      className,
+                      'addField',
+                      query,
+                      aclGroup
+                    ),
+                  ],
+                };
+              }
             }
             if (!query) {
               return Promise.resolve();
@@ -995,7 +1017,7 @@ class DatabaseController {
     className: string,
     object: any,
     aclGroup: string[],
-    action?: string
+    runOptions: QueryOptions
   ): Promise<void> {
     const classSchema = schema.schemaData[className];
     if (!classSchema) {
@@ -1015,6 +1037,10 @@ class DatabaseController {
       return schemaFields.indexOf(field) < 0;
     });
     if (newKeys.length > 0) {
+      // adds a marker that new field is being adding during update
+      runOptions.addsField = true;
+
+      const action = runOptions.action;
       return schema.validatePermission(className, aclGroup, 'addField', action);
     }
     return Promise.resolve();
