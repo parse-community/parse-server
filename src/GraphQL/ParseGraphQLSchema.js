@@ -197,19 +197,47 @@ class ParseGraphQLSchema {
     if (this.graphQLCustomTypeDefs) {
       schemaDirectives.load(this);
 
-      this.graphQLSchema = mergeSchemas({
-        schemas: [
-          this.graphQLSchemaDirectivesDefinitions,
-          this.graphQLAutoSchema,
-          this.graphQLCustomTypeDefs,
-        ],
-        mergeDirectives: true,
-      });
+      if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
+        const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs.getTypeMap();
+        Object.values(customGraphQLSchemaTypeMap).forEach(
+          customGraphQLSchemaType => {
+            const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
+              customGraphQLSchemaType.name
+            );
+            if (autoGraphQLSchemaType) {
+              autoGraphQLSchemaType._fields = {
+                ...autoGraphQLSchemaType._fields,
+                ...customGraphQLSchemaType._fields,
+              };
+            }
+          }
+        );
+        this.graphQLSchema = mergeSchemas({
+          schemas: [
+            this.graphQLSchemaDirectivesDefinitions,
+            this.graphQLCustomTypeDefs,
+            this.graphQLAutoSchema,
+          ],
+          mergeDirectives: true,
+        });
+      } else {
+        this.graphQLSchema = mergeSchemas({
+          schemas: [
+            this.graphQLSchemaDirectivesDefinitions,
+            this.graphQLAutoSchema,
+            this.graphQLCustomTypeDefs,
+          ],
+          mergeDirectives: true,
+        });
+      }
 
       const graphQLSchemaTypeMap = this.graphQLSchema.getTypeMap();
       Object.keys(graphQLSchemaTypeMap).forEach(graphQLSchemaTypeName => {
         const graphQLSchemaType = graphQLSchemaTypeMap[graphQLSchemaTypeName];
-        if (typeof graphQLSchemaType.getFields === 'function') {
+        if (
+          typeof graphQLSchemaType.getFields === 'function' &&
+          this.graphQLCustomTypeDefs.definitions
+        ) {
           const graphQLCustomTypeDef = this.graphQLCustomTypeDefs.definitions.find(
             definition => definition.name.value === graphQLSchemaTypeName
           );

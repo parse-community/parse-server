@@ -3,6 +3,9 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
+const hasCustomField = (fields, keys) =>
+  !!keys.find(keyName => !fields[keyName.split('.')[0]]);
+
 const getObject = async (
   className,
   objectId,
@@ -12,10 +15,11 @@ const getObject = async (
   includeReadPreference,
   config,
   auth,
-  info
+  info,
+  parseClass
 ) => {
   const options = {};
-  if (keys) {
+  if (keys && !hasCustomField(parseClass.fields, keys)) {
     options.keys = keys;
   }
   if (include) {
@@ -133,7 +137,7 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (keys) {
+      if (keys && !hasCustomField(parseClasses[className].fields, keys)) {
         options.keys = keys;
       }
       if (includeAll === true) {
@@ -313,4 +317,4 @@ const calculateSkipAndLimit = (
   };
 };
 
-export { getObject, findObjects, calculateSkipAndLimit };
+export { getObject, findObjects, calculateSkipAndLimit, hasCustomField };

@@ -30,7 +30,8 @@ const load = parseGraphQLSchema => {
             undefined,
             config,
             auth,
-            info
+            info,
+            parseGraphQLSchema.parseClasses[type]
           )),
         };
       } catch (e) {
