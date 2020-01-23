@@ -4,7 +4,9 @@ import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
 const hasCustomField = (fields, keys) =>
-  !!keys.find(keyName => !fields[keyName.split('.')[0]]);
+  keys
+    ? !!keys.split(',').find(keyName => !fields[keyName.split('.')[0]])
+    : true;
 
 const getObject = async (
   className,
@@ -137,7 +139,15 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (keys && !hasCustomField(parseClasses[className].fields, keys)) {
+      if (
+        keys &&
+        !hasCustomField(
+          parseClasses.find(
+            ({ className: parseClassName }) => className === parseClassName
+          ).fields,
+          keys
+        )
+      ) {
         options.keys = keys;
       }
       if (includeAll === true) {
