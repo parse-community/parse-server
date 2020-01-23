@@ -85,7 +85,7 @@ Before you start make sure you have installed:
 - Optionally [Docker](https://www.docker.com/)
 
 ### Locally
-```
+```bash
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
@@ -94,12 +94,12 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 
 ### Inside a Docker container
-```
+```bash
 $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+$ docker run --name my-parse-server -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
@@ -113,7 +113,7 @@ That's it! You are now running a standalone version of Parse Server on your mach
 Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). Run the following:
 
 ```bash
-curl -X POST \
+$ curl -X POST \
 -H "X-Parse-Application-Id: APPLICATION_ID" \
 -H "Content-Type: application/json" \
 -d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
@@ -150,7 +150,7 @@ $ curl -X GET \
 
 Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
 
-```
+```bash
 $ curl -X GET \
   -H "X-Parse-Application-Id: APPLICATION_ID" \
   http://localhost:1337/parse/classes/GameScore
@@ -443,7 +443,7 @@ $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
+$ docker run --name my-parse-server --link my-mongo:mongo -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.

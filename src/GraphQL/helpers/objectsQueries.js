@@ -119,6 +119,8 @@ const findObjects = async (
   ) {
     if (limit || limit === 0) {
       options.limit = limit;
+    } else {
+      options.limit = 100;
     }
     if (options.limit !== 0) {
       if (order) {

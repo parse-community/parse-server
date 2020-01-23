@@ -44,6 +44,66 @@ describe('rest create', () => {
       });
   });
 
+  it('should use objectId from client when allowCustomObjectId true', async () => {
+    config.allowCustomObjectId = true;
+
+    // use time as unique custom id for test reusability
+    const customId = `${Date.now()}`;
+    const obj = {
+      objectId: customId,
+    };
+
+    const {
+      status,
+      response: { objectId },
+    } = await rest.create(config, auth.nobody(config), 'MyClass', obj);
+
+    expect(status).toEqual(201);
+    expect(objectId).toEqual(customId);
+  });
+
+  it('should throw on invalid objectId when allowCustomObjectId true', () => {
+    config.allowCustomObjectId = true;
+
+    const objIdNull = {
+      objectId: null,
+    };
+
+    const objIdUndef = {
+      objectId: undefined,
+    };
+
+    const objIdEmpty = {
+      objectId: '',
+    };
+
+    const err = 'objectId must not be empty, null or undefined';
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdEmpty)
+    ).toThrowError(err);
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdNull)
+    ).toThrowError(err);
+
+    expect(() =>
+      rest.create(config, auth.nobody(config), 'MyClass', objIdUndef)
+    ).toThrowError(err);
+  });
+
+  it('should generate objectId when not set by client with allowCustomObjectId true', async () => {
+    config.allowCustomObjectId = true;
+
+    const {
+      status,
+      response: { objectId },
+    } = await rest.create(config, auth.nobody(config), 'MyClass', {});
+
+    expect(status).toEqual(201);
+    expect(objectId).toBeDefined();
+  });
+
   it('is backwards compatible when _id size changes', done => {
     rest
       .create(config, auth.nobody(config), 'Foo', { size: 10 })
