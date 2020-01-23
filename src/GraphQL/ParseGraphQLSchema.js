@@ -201,6 +201,13 @@ class ParseGraphQLSchema {
         const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs.getTypeMap();
         Object.values(customGraphQLSchemaTypeMap).forEach(
           customGraphQLSchemaType => {
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
             const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
               customGraphQLSchemaType.name
             );
