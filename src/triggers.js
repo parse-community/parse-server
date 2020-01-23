@@ -499,6 +499,10 @@ export function maybeRunQueryTrigger(
           restOptions = restOptions || {};
           restOptions.excludeKeys = jsonQuery.excludeKeys;
         }
+        if (jsonQuery.explain) {
+          restOptions = restOptions || {};
+          restOptions.explain = jsonQuery.explain;
+        }
         if (jsonQuery.keys) {
           restOptions = restOptions || {};
           restOptions.keys = jsonQuery.keys;
@@ -506,6 +510,10 @@ export function maybeRunQueryTrigger(
         if (jsonQuery.order) {
           restOptions = restOptions || {};
           restOptions.order = jsonQuery.order;
+        }
+        if (jsonQuery.hint) {
+          restOptions = restOptions || {};
+          restOptions.hint = jsonQuery.hint;
         }
         if (requestObject.readPreference) {
           restOptions = restOptions || {};

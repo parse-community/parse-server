@@ -285,6 +285,7 @@ describe('ParseGraphQLServer', () => {
       user1 = new Parse.User();
       user1.setUsername('user1');
       user1.setPassword('user1');
+      user1.setEmail('user1@user1.user1');
       await user1.signUp();
 
       user2 = new Parse.User();
@@ -371,6 +372,7 @@ describe('ParseGraphQLServer', () => {
 
       object1 = new Parse.Object('GraphQLClass');
       object1.set('someField', 'someValue1');
+      object1.set('someOtherField', 'A');
       const object1ACL = new Parse.ACL();
       object1ACL.setPublicReadAccess(false);
       object1ACL.setPublicWriteAccess(false);
@@ -385,6 +387,7 @@ describe('ParseGraphQLServer', () => {
 
       object2 = new Parse.Object('GraphQLClass');
       object2.set('someField', 'someValue2');
+      object2.set('someOtherField', 'A');
       const object2ACL = new Parse.ACL();
       object2ACL.setPublicReadAccess(false);
       object2ACL.setPublicWriteAccess(false);
@@ -399,6 +402,7 @@ describe('ParseGraphQLServer', () => {
 
       object3 = new Parse.Object('GraphQLClass');
       object3.set('someField', 'someValue3');
+      object3.set('someOtherField', 'B');
       object3.set('pointerToUser', user5);
       await object3.save(undefined, { useMasterKey: true });
 
@@ -5936,6 +5940,98 @@ describe('ParseGraphQLServer', () => {
               }
             });
           });
+
+          it('should order by multiple fields', async () => {
+            await prepareData();
+
+            await resetGraphQLCache();
+
+            let result;
+            try {
+              result = await apolloClient.query({
+                query: gql`
+                  query OrderByMultipleFields($order: [GraphQLClassOrder!]) {
+                    graphQLClasses(order: $order) {
+                      edges {
+                        node {
+                          objectId
+                        }
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  order: ['someOtherField_DESC', 'someField_ASC'],
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+            } catch (e) {
+              handleError(e);
+            }
+
+            expect(
+              result.data.graphQLClasses.edges.map(edge => edge.node.objectId)
+            ).toEqual([object3.id, object1.id, object2.id]);
+          });
+
+          it_only_db('mongo')(
+            'should order by multiple fields on a relation field',
+            async () => {
+              await prepareData();
+
+              const parentObject = new Parse.Object('ParentClass');
+              const relation = parentObject.relation('graphQLClasses');
+              relation.add(object1);
+              relation.add(object2);
+              relation.add(object3);
+              await parentObject.save();
+
+              await resetGraphQLCache();
+
+              let result;
+              try {
+                result = await apolloClient.query({
+                  query: gql`
+                    query OrderByMultipleFieldsOnRelation(
+                      $id: ID!
+                      $order: [GraphQLClassOrder!]
+                    ) {
+                      parentClass(id: $id) {
+                        graphQLClasses(order: $order) {
+                          edges {
+                            node {
+                              objectId
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  variables: {
+                    id: parentObject.id,
+                    order: ['someOtherField_DESC', 'someField_ASC'],
+                  },
+                  context: {
+                    headers: {
+                      'X-Parse-Master-Key': 'test',
+                    },
+                  },
+                });
+              } catch (e) {
+                handleError(e);
+              }
+
+              expect(
+                result.data.parentClass.graphQLClasses.edges.map(
+                  edge => edge.node.objectId
+                )
+              ).toEqual([object3.id, object1.id, object2.id]);
+            }
+          );
         });
       });
 
@@ -7148,6 +7244,89 @@ describe('ParseGraphQLServer', () => {
               error: 'Invalid session token',
             });
           }
+        });
+
+        it('should send reset password', async () => {
+          const clientMutationId = uuidv4();
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://test.test',
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation ResetPassword($input: ResetPasswordInput!) {
+                resetPassword(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                email: 'user1@user1.user1',
+              },
+            },
+          });
+
+          expect(result.data.resetPassword.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.resetPassword.ok).toBeTruthy();
+        });
+        it('should send verification email again', async () => {
+          const clientMutationId = uuidv4();
+          const emailAdapter = {
+            sendVerificationEmail: () => {},
+            sendPasswordResetEmail: () => Promise.resolve(),
+            sendMail: () => {},
+          };
+          parseServer = await global.reconfigureServer({
+            appName: 'test',
+            emailAdapter: emailAdapter,
+            publicServerURL: 'http://test.test',
+          });
+          const user = new Parse.User();
+          user.setUsername('user1');
+          user.setPassword('user1');
+          user.setEmail('user1@user1.user1');
+          await user.signUp();
+          await Parse.User.logOut();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation SendVerificationEmail(
+                $input: SendVerificationEmailInput!
+              ) {
+                sendVerificationEmail(input: $input) {
+                  clientMutationId
+                  ok
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                email: 'user1@user1.user1',
+              },
+            },
+          });
+
+          expect(result.data.sendVerificationEmail.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.sendVerificationEmail.ok).toBeTruthy();
         });
       });
 
