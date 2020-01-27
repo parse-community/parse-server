@@ -19,6 +19,7 @@ const {
   GraphQLString,
   GraphQLNonNull,
   GraphQLEnumType,
+  GraphQLInputObjectType,
   GraphQLSchema,
 } = require('graphql');
 const { ParseServer } = require('../');
@@ -10376,6 +10377,13 @@ describe('ParseGraphQLServer', () => {
       beforeAll(async () => {
         const expressApp = express();
         httpServer = http.createServer(expressApp);
+        const TypeEnum = new GraphQLEnumType({
+          name: 'TypeEnum',
+          values: {
+            human: { value: 'human' },
+            robot: { value: 'robot' },
+          },
+        });
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
           graphQLPath: '/graphql',
           graphQLCustomTypeDefs: new GraphQLSchema({
@@ -10392,6 +10400,18 @@ describe('ParseGraphQLServer', () => {
               },
             }),
             types: [
+              new GraphQLInputObjectType({
+                name: 'CreateSomeClassFieldsInput',
+                fields: {
+                  type: { type: TypeEnum },
+                },
+              }),
+              new GraphQLInputObjectType({
+                name: 'UpdateSomeClassFieldsInput',
+                fields: {
+                  type: { type: TypeEnum },
+                },
+              }),
               new GraphQLObjectType({
                 name: 'SomeClass',
                 fields: {
@@ -10399,6 +10419,7 @@ describe('ParseGraphQLServer', () => {
                     type: new GraphQLNonNull(GraphQLString),
                     resolve: p => p.name.toUpperCase(),
                   },
+                  type: { type: TypeEnum },
                   language: {
                     type: new GraphQLEnumType({
                       name: 'LanguageEnum',
@@ -10453,7 +10474,7 @@ describe('ParseGraphQLServer', () => {
 
       it('can resolve a custom extend type', async () => {
         const obj = new Parse.Object('SomeClass');
-        await obj.save({ name: 'aname' });
+        await obj.save({ name: 'aname', type: 'robot' });
         await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
         const result = await apolloClient.query({
           variables: { id: obj.id },
@@ -10462,13 +10483,14 @@ describe('ParseGraphQLServer', () => {
               someClass(id: $id) {
                 nameUpperCase
                 language
+                type
               }
             }
           `,
         });
-
         expect(result.data.someClass.nameUpperCase).toEqual('ANAME');
         expect(result.data.someClass.language).toEqual('fr');
+        expect(result.data.someClass.type).toEqual('robot');
 
         const result2 = await apolloClient.query({
           variables: { id: obj.id },
@@ -10483,14 +10505,16 @@ describe('ParseGraphQLServer', () => {
         });
         expect(result2.data.someClass.name).toEqual('aname');
         expect(result.data.someClass.language).toEqual('fr');
-
         const result3 = await apolloClient.mutate({
           variables: { id: obj.id, name: 'anewname' },
           mutation: gql`
             mutation someClass($id: ID!, $name: String!) {
-              updateSomeClass(input: { id: $id, fields: { name: $name } }) {
+              updateSomeClass(
+                input: { id: $id, fields: { name: $name, type: human } }
+              ) {
                 someClass {
                   nameUpperCase
+                  type
                 }
               }
             }
@@ -10499,6 +10523,7 @@ describe('ParseGraphQLServer', () => {
         expect(result3.data.updateSomeClass.someClass.nameUpperCase).toEqual(
           'ANEWNAME'
         );
+        expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
       });
     });
   });
