@@ -5,6 +5,53 @@ import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
 
+const handleUpload = async (upload, config) => {
+  const { createReadStream, filename, mimetype } = await upload;
+  let data = null;
+  if (createReadStream) {
+    const stream = createReadStream();
+    data = await new Promise((resolve, reject) => {
+      const chunks = [];
+      stream
+        .on('error', reject)
+        .on('data', chunk => chunks.push(chunk))
+        .on('end', () => resolve(Buffer.concat(chunks)));
+    });
+  }
+
+  if (!data || !data.length) {
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
+  }
+
+  if (filename.length > 128) {
+    throw new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename too long.');
+  }
+
+  if (!filename.match(/^[_a-zA-Z0-9][a-zA-Z0-9@\.\ ~_-]*$/)) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_FILE_NAME,
+      'Filename contains invalid characters.'
+    );
+  }
+
+  try {
+    return {
+      fileInfo: await config.filesController.createFile(
+        config,
+        filename,
+        data,
+        mimetype
+      ),
+    };
+  } catch (e) {
+    logger.error('Error creating a file: ', e);
+    throw new Parse.Error(
+      Parse.Error.FILE_SAVE_ERROR,
+      `Could not store file: ${filename}.`
+    );
+  }
+};
+
 const load = parseGraphQLSchema => {
   const createMutation = mutationWithClientMutationId({
     name: 'CreateFile',
@@ -26,57 +73,7 @@ const load = parseGraphQLSchema => {
       try {
         const { upload } = args;
         const { config } = context;
-
-        const { createReadStream, filename, mimetype } = await upload;
-        let data = null;
-        if (createReadStream) {
-          const stream = createReadStream();
-          data = await new Promise((resolve, reject) => {
-            const chunks = [];
-            stream
-              .on('error', reject)
-              .on('data', chunk => chunks.push(chunk))
-              .on('end', () => resolve(Buffer.concat(chunks)));
-          });
-        }
-
-        if (!data || !data.length) {
-          throw new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
-            'Invalid file upload.'
-          );
-        }
-
-        if (filename.length > 128) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_FILE_NAME,
-            'Filename too long.'
-          );
-        }
-
-        if (!filename.match(/^[_a-zA-Z0-9][a-zA-Z0-9@\.\ ~_-]*$/)) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_FILE_NAME,
-            'Filename contains invalid characters.'
-          );
-        }
-
-        try {
-          return {
-            fileInfo: await config.filesController.createFile(
-              config,
-              filename,
-              data,
-              mimetype
-            ),
-          };
-        } catch (e) {
-          logger.error('Error creating a file: ', e);
-          throw new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
-            `Could not store file: ${filename}.`
-          );
-        }
+        return handleUpload(upload, config);
       } catch (e) {
         parseGraphQLSchema.handleError(e);
       }
@@ -97,4 +94,4 @@ const load = parseGraphQLSchema => {
   );
 };
 
-export { load };
+export { load, handleUpload };

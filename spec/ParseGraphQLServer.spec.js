@@ -9174,7 +9174,7 @@ describe('ParseGraphQLServer', () => {
           }
         );
 
-        it('should support files', async () => {
+        fit('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
@@ -9218,7 +9218,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(res.status).toEqual(200);
 
-            const result = JSON.parse(await res.text());
+            let result = JSON.parse(await res.text());
 
             expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
@@ -9253,17 +9253,25 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            const createResult = await apolloClient.mutate({
-              mutation: gql`
+            const body2 = new FormData();
+            body2.append(
+              'operations',
+              JSON.stringify({
+                query: `
                 mutation CreateSomeObject(
                   $fields1: CreateSomeClassFieldsInput
                   $fields2: CreateSomeClassFieldsInput
+                  $fields3: CreateSomeClassFieldsInput
                 ) {
                   createSomeClass1: createSomeClass(
                     input: { fields: $fields1 }
                   ) {
                     someClass {
                       id
+                      someField {
+                        name
+                        url
+                      }
                     }
                   }
                   createSomeClass2: createSomeClass(
@@ -9271,19 +9279,73 @@ describe('ParseGraphQLServer', () => {
                   ) {
                     someClass {
                       id
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                  createSomeClass3: createSomeClass(
+                    input: { fields: $fields3 }
+                  ) {
+                    someClass {
+                      id
+                      someField {
+                        name
+                        url
+                      }
                     }
                   }
                 }
-              `,
-              variables: {
-                fields1: {
-                  someField: someFieldValue,
+                `,
+                variables: {
+                  fields1: {
+                    someField: { file: someFieldValue },
+                  },
+                  fields2: {
+                    someField: { file: someFieldValue.name },
+                  },
+                  fields3: {
+                    someField: { upload: null },
+                  },
                 },
-                fields2: {
-                  someField: someFieldValue.name,
-                },
-              },
+              })
+            );
+            body2.append(
+              'map',
+              JSON.stringify({ 1: ['variables.fields3.someField.upload'] })
+            );
+            body2.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
+
+            res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body: body2,
+            });
+            expect(res.status).toEqual(200);
+            result = JSON.parse(await res.text());
+            console.log(JSON.stringify(result.errors));
+            expect(
+              result.data.createSomeClass1.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClass1.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClass2.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClass2.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClass3.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result.data.createSomeClass3.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('File');
