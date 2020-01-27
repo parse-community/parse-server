@@ -1,7 +1,13 @@
-import { GraphQLNonNull, GraphQLString, GraphQLBoolean } from 'graphql';
+import {
+  GraphQLNonNull,
+  GraphQLString,
+  GraphQLBoolean,
+  GraphQLInputObjectType,
+} from 'graphql';
 import { mutationWithClientMutationId } from 'graphql-relay';
 import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from '../helpers/objectsMutations';
+import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
 
 const usersRouter = new UsersRouter();
@@ -32,12 +38,12 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { userFields } = args;
+        const { fields } = args;
         const { config, auth, info } = context;
 
         const { sessionToken } = await objectsMutations.createObject(
           '_User',
-          userFields,
+          fields,
           config,
           auth,
           info
@@ -67,6 +73,98 @@ const load = parseGraphQLSchema => {
   );
   parseGraphQLSchema.addGraphQLType(signUpMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('signUp', signUpMutation, true, true);
+  console.log(
+    'Class',
+    parseGraphQLSchema.parseClassTypes['_User'].classGraphQLCreateType._fields
+  );
+  const logInWithMutation = mutationWithClientMutationId({
+    name: 'LoginWith',
+    description:
+      'The loginWith mutation can be used to signup, login user with 3rd party authentication system. This mutation create a user if the authData do not correspond to an existing one.',
+    inputFields: {
+      authData: {
+        descriptions: 'This is the auth data of your custom auth provider',
+        type: new GraphQLNonNull(OBJECT),
+      },
+      fields: {
+        descriptions:
+          'These are the fields of the user to be created/updated and logged in.',
+        type: new GraphQLInputObjectType({
+          name: 'UserLoginWihInput',
+          fields: () => {
+            const classGraphQLCreateFields = parseGraphQLSchema.parseClassTypes[
+              '_User'
+            ].classGraphQLCreateType._fields()
+            Object.keys(
+              parseGraphQLSchema.parseClassTypes[
+                '_User'
+              ].classGraphQLCreateType._fields()
+            ).reduce((fields, fieldName) => {
+              if (
+                fieldName !== 'password' &&
+                fieldName !== 'username' &&
+                fieldName !== 'authData'
+              ) {
+                fields[fieldName] =
+                  parseGraphQLSchema.parseClassTypes[
+                    '_User'
+                  ].classGraphQLCreateType._fields[fieldName];
+              }
+              console.log(fields);
+              return fields;
+            }, {}),
+        }),
+      },
+    },
+    outputFields: {
+      viewer: {
+        description:
+          'This is the new user that was created, signed up and returned as a viewer.',
+        type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
+      },
+    },
+    mutateAndGetPayload: async (args, context, mutationInfo) => {
+      try {
+        const { fields, authData } = args;
+        const { config, auth, info } = context;
+
+        const { sessionToken } = await objectsMutations.createObject(
+          '_User',
+          { ...fields, authData },
+          config,
+          auth,
+          info
+        );
+
+        info.sessionToken = sessionToken;
+
+        return {
+          viewer: await getUserFromSessionToken(
+            config,
+            info,
+            mutationInfo,
+            'viewer.user.',
+            true
+          ),
+        };
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(
+    logInWithMutation.args.input.type.ofType,
+    true,
+    true
+  );
+  parseGraphQLSchema.addGraphQLType(logInWithMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation(
+    'loginWith',
+    logInWithMutation,
+    true,
+    true
+  );
 
   const logInMutation = mutationWithClientMutationId({
     name: 'LogIn',
