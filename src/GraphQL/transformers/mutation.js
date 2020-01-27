@@ -73,11 +73,11 @@ const transformTypes = async (
 
 const transformers = {
   file: async ({ file, upload }, { config }) => {
-    console.log('File', file, 'Upload', upload);
     if (upload) {
-      return handleUpload(upload, config);
-    } else if (file) {
-      return file;
+      const { fileInfo } = await handleUpload(upload, config);
+      return { name: fileInfo.name, __type: 'File' };
+    } else if (file && file.name) {
+      return { name: file.name, __type: 'File' };
     }
     throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
   },

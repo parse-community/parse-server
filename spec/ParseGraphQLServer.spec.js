@@ -9174,7 +9174,7 @@ describe('ParseGraphQLServer', () => {
           }
         );
 
-        fit('should support files', async () => {
+        it('should support files', async () => {
           try {
             parseServer = await global.reconfigureServer({
               publicServerURL: 'http://localhost:13377/parse',
@@ -9218,7 +9218,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(res.status).toEqual(200);
 
-            let result = JSON.parse(await res.text());
+            const result = JSON.parse(await res.text());
 
             expect(result.data.createFile.fileInfo.name).toEqual(
               jasmine.stringMatching(/_myFileName.txt$/)
@@ -9228,6 +9228,7 @@ describe('ParseGraphQLServer', () => {
             );
 
             const someFieldValue = result.data.createFile.fileInfo.name;
+            const someFieldObjectValue = result.data.createFile.fileInfo;
 
             await apolloClient.mutate({
               mutation: gql`
@@ -9303,7 +9304,13 @@ describe('ParseGraphQLServer', () => {
                     someField: { file: someFieldValue },
                   },
                   fields2: {
-                    someField: { file: someFieldValue.name },
+                    someField: {
+                      file: {
+                        name: someFieldObjectValue.name,
+                        url: someFieldObjectValue.url,
+                        __type: 'File',
+                      },
+                    },
                   },
                   fields3: {
                     someField: { upload: null },
@@ -9326,25 +9333,24 @@ describe('ParseGraphQLServer', () => {
               body: body2,
             });
             expect(res.status).toEqual(200);
-            result = JSON.parse(await res.text());
-            console.log(JSON.stringify(result.errors));
+            const result2 = JSON.parse(await res.text());
             expect(
-              result.data.createSomeClass1.someClass.someField.name
+              result2.data.createSomeClass1.someClass.someField.name
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
             expect(
-              result.data.createSomeClass1.someClass.someField.url
+              result2.data.createSomeClass1.someClass.someField.url
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
             expect(
-              result.data.createSomeClass2.someClass.someField.name
+              result2.data.createSomeClass2.someClass.someField.name
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
             expect(
-              result.data.createSomeClass2.someClass.someField.url
+              result2.data.createSomeClass2.someClass.someField.url
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
             expect(
-              result.data.createSomeClass3.someClass.someField.name
+              result2.data.createSomeClass3.someClass.someField.name
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
             expect(
-              result.data.createSomeClass3.someClass.someField.url
+              result2.data.createSomeClass3.someClass.someField.url
             ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
 
             const schema = await new Parse.Schema('SomeClass').get();
@@ -9386,7 +9392,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                id: createResult.data.createSomeClass1.someClass.id,
+                id: result2.data.createSomeClass1.someClass.id,
               },
             });
 
@@ -9397,8 +9403,8 @@ describe('ParseGraphQLServer', () => {
             expect(getResult.data.someClass.someField.url).toEqual(
               result.data.createFile.fileInfo.url
             );
-            expect(getResult.data.findSomeClass1.edges.length).toEqual(1);
-            expect(getResult.data.findSomeClass2.edges.length).toEqual(1);
+            expect(getResult.data.findSomeClass1.edges.length).toEqual(3);
+            expect(getResult.data.findSomeClass2.edges.length).toEqual(3);
 
             res = await fetch(getResult.data.someClass.someField.url);
 
