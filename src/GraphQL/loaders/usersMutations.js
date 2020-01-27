@@ -73,14 +73,10 @@ const load = parseGraphQLSchema => {
   );
   parseGraphQLSchema.addGraphQLType(signUpMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation('signUp', signUpMutation, true, true);
-  console.log(
-    'Class',
-    parseGraphQLSchema.parseClassTypes['_User'].classGraphQLCreateType._fields
-  );
   const logInWithMutation = mutationWithClientMutationId({
-    name: 'LoginWith',
+    name: 'LogInWith',
     description:
-      'The loginWith mutation can be used to signup, login user with 3rd party authentication system. This mutation create a user if the authData do not correspond to an existing one.',
+      'The logInWith mutation can be used to signup, login user with 3rd party authentication system. This mutation create a user if the authData do not correspond to an existing one.',
     inputFields: {
       authData: {
         descriptions: 'This is the auth data of your custom auth provider',
@@ -90,29 +86,25 @@ const load = parseGraphQLSchema => {
         descriptions:
           'These are the fields of the user to be created/updated and logged in.',
         type: new GraphQLInputObjectType({
-          name: 'UserLoginWihInput',
+          name: 'UserLoginWithInput',
           fields: () => {
             const classGraphQLCreateFields = parseGraphQLSchema.parseClassTypes[
               '_User'
-            ].classGraphQLCreateType._fields()
-            Object.keys(
-              parseGraphQLSchema.parseClassTypes[
-                '_User'
-              ].classGraphQLCreateType._fields()
-            ).reduce((fields, fieldName) => {
-              if (
-                fieldName !== 'password' &&
-                fieldName !== 'username' &&
-                fieldName !== 'authData'
-              ) {
-                fields[fieldName] =
-                  parseGraphQLSchema.parseClassTypes[
-                    '_User'
-                  ].classGraphQLCreateType._fields[fieldName];
-              }
-              console.log(fields);
-              return fields;
-            }, {}),
+            ].classGraphQLCreateType.getFields();
+            return Object.keys(classGraphQLCreateFields).reduce(
+              (fields, fieldName) => {
+                if (
+                  fieldName !== 'password' &&
+                  fieldName !== 'username' &&
+                  fieldName !== 'authData'
+                ) {
+                  fields[fieldName] = classGraphQLCreateFields[fieldName];
+                }
+                return fields;
+              },
+              {}
+            );
+          },
         }),
       },
     },
@@ -160,7 +152,7 @@ const load = parseGraphQLSchema => {
   );
   parseGraphQLSchema.addGraphQLType(logInWithMutation.type, true, true);
   parseGraphQLSchema.addGraphQLMutation(
-    'loginWith',
+    'logInWith',
     logInWithMutation,
     true,
     true
