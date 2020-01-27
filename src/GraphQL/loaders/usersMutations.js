@@ -16,7 +16,7 @@ const load = parseGraphQLSchema => {
     description:
       'The signUp mutation can be used to create and sign up a new user.',
     inputFields: {
-      userFields: {
+      fields: {
         descriptions:
           'These are the fields of the new user to be created and signed up.',
         type:
