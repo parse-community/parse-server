@@ -251,7 +251,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
         restWhere,
         restObject,
         originalRestObject,
-        clientSDK
+        clientSDK,
+        'update'
       ).execute();
     })
     .catch(error => {
