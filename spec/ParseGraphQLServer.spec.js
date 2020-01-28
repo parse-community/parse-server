@@ -9980,6 +9980,87 @@ describe('ParseGraphQLServer', () => {
             expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
+
+            const getGeoWhere = await apolloClient.query({
+              query: gql`
+                query GeoQuery($latitude: Float!, $longitude: Float!) {
+                  nearSphere: someClasses(
+                    where: {
+                      someField: {
+                        nearSphere: {
+                          latitude: $latitude
+                          longitude: $longitude
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                  geoWithin: someClasses(
+                    where: {
+                      someField: {
+                        geoWithin: {
+                          centerSphere: {
+                            distance: 10
+                            center: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                  within: someClasses(
+                    where: {
+                      someField: {
+                        within: {
+                          box: {
+                            bottomLeft: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                            upperRight: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                latitude: 45,
+                longitude: 45,
+              },
+            });
+            expect(getGeoWhere.data.nearSphere.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
+            expect(getGeoWhere.data.geoWithin.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
+            expect(getGeoWhere.data.within.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
           } catch (e) {
             handleError(e);
           }
@@ -10078,6 +10159,34 @@ describe('ParseGraphQLServer', () => {
               }))
             );
             expect(getResult.data.someClasses.edges.length).toEqual(1);
+            const getIntersect = await apolloClient.query({
+              query: gql`
+                query IntersectQuery($point: GeoPointInput!) {
+                  someClasses(
+                    where: {
+                      somePolygonField: { geoIntersects: { point: $point } }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                        somePolygonField {
+                          latitude
+                          longitude
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                point: { latitude: 44, longitude: 45 },
+              },
+            });
+            expect(getIntersect.data.someClasses.edges.length).toEqual(1);
+            expect(getIntersect.data.someClasses.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
           } catch (e) {
             handleError(e);
           }
