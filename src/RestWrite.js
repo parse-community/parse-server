@@ -31,7 +31,8 @@ function RestWrite(
   query,
   data,
   originalData,
-  clientSDK
+  clientSDK,
+  action
 ) {
   if (auth.isReadOnly) {
     throw new Parse.Error(
@@ -46,6 +47,10 @@ function RestWrite(
   this.storage = {};
   this.runOptions = {};
   this.context = {};
+
+  if (action) {
+    this.runOptions.action = action;
+  }
 
   if (!query) {
     if (this.config.allowCustomObjectId) {

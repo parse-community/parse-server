@@ -2752,6 +2752,115 @@ describe('schemas', () => {
       );
   });
 
+  it('should reject creating class schema with field with invalid key', async done => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+
+    const fieldName = '1invalid';
+
+    const schemaCreation = () =>
+      schemaController.addClassIfNotExists('AnObject', {
+        [fieldName]: { __type: 'String' },
+      });
+
+    await expectAsync(schemaCreation()).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_KEY_NAME,
+        `invalid field name: ${fieldName}`
+      )
+    );
+    done();
+  });
+
+  it('should reject creating invalid field name', async done => {
+    const object = new Parse.Object('AnObject');
+
+    await expectAsync(
+      object.save({
+        '!12field': 'field',
+      })
+    ).toBeRejectedWith(new Parse.Error(Parse.Error.INVALID_KEY_NAME));
+    done();
+  });
+
+  it('should be rejected if CLP operation is not an object', async done => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+
+    const operationKey = 'get';
+    const operation = true;
+
+    const schemaSetup = async () =>
+      await schemaController.addClassIfNotExists(
+        'AnObject',
+        {},
+        {
+          [operationKey]: operation,
+        }
+      );
+
+    await expectAsync(schemaSetup()).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an object`
+      )
+    );
+
+    done();
+  });
+
+  it('should be rejected if CLP protectedFields is not an object', async done => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+
+    const operationKey = 'get';
+    const operation = 'wrongtype';
+
+    const schemaSetup = async () =>
+      await schemaController.addClassIfNotExists(
+        'AnObject',
+        {},
+        {
+          [operationKey]: operation,
+        }
+      );
+
+    await expectAsync(schemaSetup()).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an object`
+      )
+    );
+
+    done();
+  });
+
+  it('should be rejected if CLP read/writeUserFields is not an array', async done => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+
+    const operationKey = 'readUserFields';
+    const operation = true;
+
+    const schemaSetup = async () =>
+      await schemaController.addClassIfNotExists(
+        'AnObject',
+        {},
+        {
+          [operationKey]: operation,
+        }
+      );
+
+    await expectAsync(schemaSetup()).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an array`
+      )
+    );
+
+    done();
+  });
+
   describe('index management', () => {
     beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
     it('cannot create index if field does not exist', done => {

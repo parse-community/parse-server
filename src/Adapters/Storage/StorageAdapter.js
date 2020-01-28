@@ -16,6 +16,8 @@ export type QueryOptions = {
   readPreference?: ?string,
   hint?: ?mixed,
   explain?: Boolean,
+  action?: string,
+  addsField?: boolean,
 };
 
 export type UpdateQueryOptions = {
