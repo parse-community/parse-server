@@ -4,6 +4,7 @@ const req = require('../lib/request');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
+require('./helper');
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -907,7 +908,7 @@ describe('ParseGraphQLServer', () => {
             .map(field => field.name)
             .sort();
 
-          expect(inputFields).toEqual(['clientMutationId', 'userFields']);
+          expect(inputFields).toEqual(['clientMutationId', 'fields']);
         });
 
         it('should have clientMutationId in sign up mutation payload', async () => {
@@ -7114,7 +7115,7 @@ describe('ParseGraphQLServer', () => {
             variables: {
               input: {
                 clientMutationId,
-                userFields: {
+                fields: {
                   username: 'user1',
                   password: 'user1',
                   someField: 'someValue',
@@ -7127,6 +7128,63 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.signUp.viewer.sessionToken).toBeDefined();
           expect(result.data.signUp.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
+        });
+
+        it('should login with user', async () => {
+          const clientMutationId = uuidv4();
+          const userSchema = new Parse.Schema('_User');
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              myAuth: {
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
+              },
+            },
+          });
+
+          userSchema.addString('someField');
+          await userSchema.update();
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation LogInWith($input: LogInWithInput!) {
+                logInWith(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                    user {
+                      someField
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                authData: {
+                  myAuth: {
+                    id: 'parse',
+                    password: 'graphql',
+                  },
+                },
+                fields: {
+                  someField: 'someValue',
+                },
+              },
+            },
+          });
+
+          expect(result.data.logInWith.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.logInWith.viewer.sessionToken).toBeDefined();
+          expect(result.data.logInWith.viewer.user.someField).toEqual(
+            'someValue'
+          );
+          expect(typeof result.data.logInWith.viewer.sessionToken).toBe(
+            'string'
+          );
         });
 
         it('should log the user in', async () => {
