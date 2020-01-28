@@ -366,6 +366,20 @@ const FILE_INFO = new GraphQLObjectType({
   },
 });
 
+const FILE_INPUT = new GraphQLInputObjectType({
+  name: 'FileInput',
+  fields: {
+    file: {
+      description: 'A File Scalar can be an url or a FileInfo object.',
+      type: FILE,
+    },
+    upload: {
+      description: 'Use this field if you want to create a new file.',
+      type: GraphQLUpload,
+    },
+  },
+});
+
 const GEO_POINT_FIELDS = {
   latitude: {
     description: 'This is the latitude.',
@@ -1244,6 +1258,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(BYTES, true);
   parseGraphQLSchema.addGraphQLType(FILE, true);
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
+  parseGraphQLSchema.addGraphQLType(FILE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
@@ -1301,6 +1316,7 @@ export {
   SELECT_INPUT,
   FILE,
   FILE_INFO,
+  FILE_INPUT,
   GEO_POINT_FIELDS,
   GEO_POINT_INPUT,
   GEO_POINT,
