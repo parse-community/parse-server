@@ -31,7 +31,8 @@ function RestWrite(
   query,
   data,
   originalData,
-  clientSDK
+  clientSDK,
+  action
 ) {
   if (auth.isReadOnly) {
     throw new Parse.Error(
@@ -46,17 +47,36 @@ function RestWrite(
   this.storage = {};
   this.runOptions = {};
   this.context = {};
-  if (!query && data.objectId) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_KEY_NAME,
-      'objectId is an invalid field name.'
-    );
+
+  if (action) {
+    this.runOptions.action = action;
   }
-  if (!query && data.id) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_KEY_NAME,
-      'id is an invalid field name.'
-    );
+
+  if (!query) {
+    if (this.config.allowCustomObjectId) {
+      if (
+        Object.prototype.hasOwnProperty.call(data, 'objectId') &&
+        !data.objectId
+      ) {
+        throw new Parse.Error(
+          Parse.Error.MISSING_OBJECT_ID,
+          'objectId must not be empty, null or undefined'
+        );
+      }
+    } else {
+      if (data.objectId) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'objectId is an invalid field name.'
+        );
+      }
+      if (data.id) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_KEY_NAME,
+          'id is an invalid field name.'
+        );
+      }
+    }
   }
 
   // When the operation is complete, this.response may have several
@@ -417,8 +437,21 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
 
-  if (!this.data.authData || !Object.keys(this.data.authData).length) {
+  if (
+    (this.data.authData && !Object.keys(this.data.authData).length) ||
+    !Object.prototype.hasOwnProperty.call(this.data, 'authData')
+  ) {
+    // Handle saving authData to {} or if authData doesn't exist
     return;
+  } else if (
+    Object.prototype.hasOwnProperty.call(this.data, 'authData') &&
+    !this.data.authData
+  ) {
+    // Handle saving authData to null
+    throw new Parse.Error(
+      Parse.Error.UNSUPPORTED_SERVICE,
+      'This authentication method is unsupported.'
+    );
   }
 
   var authData = this.data.authData;

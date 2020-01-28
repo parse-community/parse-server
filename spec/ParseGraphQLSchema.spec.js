@@ -564,4 +564,78 @@ describe('ParseGraphQLSchema', () => {
       ).toEqual(Object.keys(mutations2).sort());
     });
   });
+  describe('alias', () => {
+    it('Should be able to define alias for get and find query', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+        appId,
+      });
+
+      await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig({
+        classConfigs: [
+          {
+            className: 'Data',
+            query: {
+              get: true,
+              getAlias: 'precious_data',
+              find: true,
+              findAlias: 'data_results',
+            },
+          },
+        ],
+      });
+
+      const data = new Parse.Object('Data');
+
+      await data.save();
+
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.load();
+
+      const queries1 = parseGraphQLSchema.graphQLQueries;
+
+      expect(Object.keys(queries1)).toContain('data_results');
+      expect(Object.keys(queries1)).toContain('precious_data');
+    });
+
+    it('Should be able to define alias for mutation', async () => {
+      const parseGraphQLSchema = new ParseGraphQLSchema({
+        databaseController,
+        parseGraphQLController,
+        log: defaultLogger,
+        appId,
+      });
+
+      await parseGraphQLSchema.parseGraphQLController.updateGraphQLConfig({
+        classConfigs: [
+          {
+            className: 'Track',
+            mutation: {
+              create: true,
+              createAlias: 'addTrack',
+              update: true,
+              updateAlias: 'modifyTrack',
+              destroy: true,
+              destroyAlias: 'eraseTrack',
+            },
+          },
+        ],
+      });
+
+      const data = new Parse.Object('Track');
+
+      await data.save();
+
+      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.load();
+
+      const mutations = parseGraphQLSchema.graphQLMutations;
+
+      expect(Object.keys(mutations)).toContain('addTrack');
+      expect(Object.keys(mutations)).toContain('modifyTrack');
+      expect(Object.keys(mutations)).toContain('eraseTrack');
+    });
+  });
 });

@@ -1,5 +1,6 @@
+import { fromGlobalId } from 'graphql-relay';
+
 const parseQueryMap = {
-  id: 'objectId',
   OR: '$or',
   AND: '$and',
   NOR: '$nor',
@@ -45,13 +46,44 @@ const parseConstraintMap = {
 
 const transformQueryConstraintInputToParse = (
   constraints,
-  fields,
   parentFieldName,
-  parentConstraints
+  className,
+  parentConstraints,
+  parseClasses
 ) => {
+  const fields = parseClasses.find(
+    parseClass => parseClass.className === className
+  ).fields;
+  if (parentFieldName === 'id' && className) {
+    Object.keys(constraints).forEach(constraintName => {
+      const constraintValue = constraints[constraintName];
+      if (typeof constraintValue === 'string') {
+        const globalIdObject = fromGlobalId(constraintValue);
+
+        if (globalIdObject.type === className) {
+          constraints[constraintName] = globalIdObject.id;
+        }
+      } else if (Array.isArray(constraintValue)) {
+        constraints[constraintName] = constraintValue.map(value => {
+          const globalIdObject = fromGlobalId(value);
+
+          if (globalIdObject.type === className) {
+            return globalIdObject.id;
+          }
+
+          return value;
+        });
+      }
+    });
+    parentConstraints.objectId = constraints;
+    delete parentConstraints.id;
+  }
   Object.keys(constraints).forEach(fieldName => {
     let fieldValue = constraints[fieldName];
-
+    if (parseConstraintMap[fieldName]) {
+      constraints[parseConstraintMap[fieldName]] = constraints[fieldName];
+      delete constraints[fieldName];
+    }
     /**
      * If we have a key-value pair, we need to change the way the constraint is structured.
      *
@@ -89,34 +121,78 @@ const transformQueryConstraintInputToParse = (
         ...parentConstraints[`${parentFieldName}.${fieldValue.key}`],
         [parseConstraintMap[fieldName]]: fieldValue.value,
       };
-    } else if (parseConstraintMap[fieldName]) {
-      delete constraints[fieldName];
-      fieldName = parseConstraintMap[fieldName];
-      constraints[fieldName] = fieldValue;
-
-      // If parent field type is Pointer, changes constraint value to format expected
-      // by Parse.
-      if (
-        fields[parentFieldName] &&
-        fields[parentFieldName].type === 'Pointer' &&
-        typeof fieldValue === 'string'
-      ) {
-        const { targetClass } = fields[parentFieldName];
-        constraints[fieldName] = {
-          __type: 'Pointer',
-          className: targetClass,
-          objectId: fieldValue,
-        };
+    } else if (
+      fields[parentFieldName] &&
+      (fields[parentFieldName].type === 'Pointer' ||
+        fields[parentFieldName].type === 'Relation')
+    ) {
+      const { targetClass } = fields[parentFieldName];
+      if (fieldName === 'exists') {
+        if (fields[parentFieldName].type === 'Relation') {
+          const whereTarget = fieldValue ? 'where' : 'notWhere';
+          if (constraints[whereTarget]) {
+            if (constraints[whereTarget].objectId) {
+              constraints[whereTarget].objectId = {
+                ...constraints[whereTarget].objectId,
+                $exists: fieldValue,
+              };
+            } else {
+              constraints[whereTarget].objectId = {
+                $exists: fieldValue,
+              };
+            }
+          } else {
+            const parseWhereTarget = fieldValue ? '$inQuery' : '$notInQuery';
+            parentConstraints[parentFieldName][parseWhereTarget] = {
+              where: { objectId: { $exists: true } },
+              className: targetClass,
+            };
+          }
+          delete constraints.$exists;
+        } else {
+          parentConstraints[parentFieldName].$exists = fieldValue;
+        }
+        return;
       }
+      switch (fieldName) {
+        case 'have':
+          parentConstraints[parentFieldName].$inQuery = {
+            where: fieldValue,
+            className: targetClass,
+          };
+          transformQueryInputToParse(
+            parentConstraints[parentFieldName].$inQuery.where,
+            targetClass,
+            parseClasses
+          );
+          break;
+        case 'haveNot':
+          parentConstraints[parentFieldName].$notInQuery = {
+            where: fieldValue,
+            className: targetClass,
+          };
+          transformQueryInputToParse(
+            parentConstraints[parentFieldName].$notInQuery.where,
+            targetClass,
+            parseClasses
+          );
+          break;
+      }
+      delete constraints[fieldName];
+      return;
     }
     switch (fieldName) {
-      case '$point':
-      case '$nearSphere':
+      case 'point':
         if (typeof fieldValue === 'object' && !fieldValue.__type) {
           fieldValue.__type = 'GeoPoint';
         }
         break;
-      case '$box':
+      case 'nearSphere':
+        if (typeof fieldValue === 'object' && !fieldValue.__type) {
+          fieldValue.__type = 'GeoPoint';
+        }
+        break;
+      case 'box':
         if (
           typeof fieldValue === 'object' &&
           fieldValue.bottomLeft &&
@@ -132,10 +208,10 @@ const transformQueryConstraintInputToParse = (
               ...fieldValue.upperRight,
             },
           ];
-          constraints[fieldName] = fieldValue;
+          constraints[parseConstraintMap[fieldName]] = fieldValue;
         }
         break;
-      case '$polygon':
+      case 'polygon':
         if (fieldValue instanceof Array) {
           fieldValue.forEach(geoPoint => {
             if (typeof geoPoint === 'object' && !geoPoint.__type) {
@@ -144,7 +220,7 @@ const transformQueryConstraintInputToParse = (
           });
         }
         break;
-      case '$centerSphere':
+      case 'centerSphere':
         if (
           typeof fieldValue === 'object' &&
           fieldValue.center &&
@@ -157,26 +233,27 @@ const transformQueryConstraintInputToParse = (
             },
             fieldValue.distance,
           ];
-          constraints[fieldName] = fieldValue;
+          constraints[parseConstraintMap[fieldName]] = fieldValue;
         }
         break;
     }
     if (typeof fieldValue === 'object') {
       if (fieldName === 'where') {
-        transformQueryInputToParse(fieldValue);
+        transformQueryInputToParse(fieldValue, className, parseClasses);
       } else {
         transformQueryConstraintInputToParse(
           fieldValue,
-          fields,
           fieldName,
-          constraints
+          className,
+          constraints,
+          parseClasses
         );
       }
     }
   });
 };
 
-const transformQueryInputToParse = (constraints, fields) => {
+const transformQueryInputToParse = (constraints, className, parseClasses) => {
   if (!constraints || typeof constraints !== 'object') {
     return;
   }
@@ -188,21 +265,17 @@ const transformQueryInputToParse = (constraints, fields) => {
       delete constraints[fieldName];
       fieldName = parseQueryMap[fieldName];
       constraints[fieldName] = fieldValue;
-
-      if (fieldName !== 'objectId') {
-        fieldValue.forEach(fieldValueItem => {
-          transformQueryInputToParse(fieldValueItem, fields);
-        });
-        return;
-      }
-    }
-
-    if (typeof fieldValue === 'object') {
+      fieldValue.forEach(fieldValueItem => {
+        transformQueryInputToParse(fieldValueItem, className, parseClasses);
+      });
+      return;
+    } else {
       transformQueryConstraintInputToParse(
         fieldValue,
-        fields,
         fieldName,
-        constraints
+        className,
+        constraints,
+        parseClasses
       );
     }
   });

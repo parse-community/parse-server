@@ -31,7 +31,6 @@ describe('Email Verification Token Expiration: ', () => {
         // wait for 1 second - simulate user behavior to some extent
         setTimeout(() => {
           expect(sendEmailOptions).not.toBeUndefined();
-          console.log(sendEmailOptions.link);
 
           request({
             url: sendEmailOptions.link,

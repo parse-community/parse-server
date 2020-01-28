@@ -225,7 +225,15 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
       const hasLiveQuery = checkLiveQuery(className, config);
       if (hasTriggers || hasLiveQuery) {
         // Do not use find, as it runs the before finds
-        return new RestQuery(config, auth, className, restWhere).execute({
+        return new RestQuery(
+          config,
+          auth,
+          className,
+          restWhere,
+          undefined,
+          undefined,
+          false
+        ).execute({
           op: 'update',
         });
       }
@@ -243,7 +251,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
         restWhere,
         restObject,
         originalRestObject,
-        clientSDK
+        clientSDK,
+        'update'
       ).execute();
     })
     .catch(error => {

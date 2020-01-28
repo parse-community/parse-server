@@ -14,6 +14,10 @@ export type QueryOptions = {
   distinct?: boolean,
   pipeline?: any,
   readPreference?: ?string,
+  hint?: ?mixed,
+  explain?: Boolean,
+  action?: string,
+  addsField?: boolean,
 };
 
 export type UpdateQueryOptions = {
@@ -92,7 +96,8 @@ export interface StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     readPreference?: string,
-    estimate?: boolean
+    estimate?: boolean,
+    hint?: mixed
   ): Promise<number>;
   distinct(
     className: string,
@@ -104,7 +109,9 @@ export interface StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
 

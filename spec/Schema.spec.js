@@ -1665,7 +1665,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       );
   });
 
-  it('required auth test create/get/update/delete not authenitcated', done => {
+  it('required auth test get not authenticated', done => {
     config.database
       .loadSchema()
       .then(schema => {
@@ -1675,12 +1675,6 @@ describe('Class Level Permissions for requiredAuth', () => {
       .then(schema => {
         return schema.setPermissions('Stuff', {
           get: {
-            requiresAuthentication: true,
-          },
-          delete: {
-            requiresAuthentication: true,
-          },
-          update: {
             requiresAuthentication: true,
           },
           create: {
@@ -1710,7 +1704,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       );
   });
 
-  it('required auth test create/get/update/delete not authenitcated', done => {
+  it('required auth test find not authenticated', done => {
     config.database
       .loadSchema()
       .then(schema => {
@@ -1720,12 +1714,6 @@ describe('Class Level Permissions for requiredAuth', () => {
       .then(schema => {
         return schema.setPermissions('Stuff', {
           find: {
-            requiresAuthentication: true,
-          },
-          delete: {
-            requiresAuthentication: true,
-          },
-          update: {
             requiresAuthentication: true,
           },
           create: {

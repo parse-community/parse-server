@@ -13,7 +13,10 @@ export default class MongoCollection {
   // none, then build the geoindex.
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
-  find(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
+  find(
+    query,
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain } = {}
+  ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
       delete keys.$score;
@@ -26,6 +29,8 @@ export default class MongoCollection {
       keys,
       maxTimeMS,
       readPreference,
+      hint,
+      explain,
     }).catch(error => {
       // Check for "no geoindex" error
       if (
@@ -54,18 +59,24 @@ export default class MongoCollection {
               keys,
               maxTimeMS,
               readPreference,
+              hint,
+              explain,
             })
           )
       );
     });
   }
 
-  _rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
+  _rawFind(
+    query,
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain } = {}
+  ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
       limit,
       sort,
       readPreference,
+      hint,
     });
 
     if (keys) {
@@ -76,10 +87,10 @@ export default class MongoCollection {
       findOperation = findOperation.maxTimeMS(maxTimeMS);
     }
 
-    return findOperation.toArray();
+    return explain ? findOperation.explain(explain) : findOperation.toArray();
   }
 
-  count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+  count(query, { skip, limit, sort, maxTimeMS, readPreference, hint } = {}) {
     // If query is empty, then use estimatedDocumentCount instead.
     // This is due to countDocuments performing a scan,
     // which greatly increases execution time when being run on large collections.
@@ -96,6 +107,7 @@ export default class MongoCollection {
       sort,
       maxTimeMS,
       readPreference,
+      hint,
     });
 
     return countOperation;
@@ -105,9 +117,9 @@ export default class MongoCollection {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference } = {}) {
+  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference })
+      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain })
       .toArray();
   }
 

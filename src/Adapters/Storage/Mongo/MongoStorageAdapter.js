@@ -131,7 +131,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _collectionPrefix: string;
   _mongoOptions: Object;
   // Public
-  connectionPromise: Promise<any>;
+  connectionPromise: ?Promise<any>;
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
@@ -620,7 +620,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference }: QueryOptions
+    { skip, limit, sort, keys, readPreference, hint, explain }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -652,13 +652,18 @@ export class MongoStorageAdapter implements StorageAdapter {
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
+          explain,
         })
       )
-      .then(objects =>
-        objects.map(object =>
+      .then(objects => {
+        if (explain) {
+          return objects;
+        }
+        return objects.map(object =>
           mongoObjectToParseObject(className, object, schema)
-        )
-      )
+        );
+      })
       .catch(err => this.handleError(err));
   }
 
@@ -712,7 +717,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
@@ -721,6 +727,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
         })
       )
       .catch(err => this.handleError(err));
@@ -760,7 +767,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
@@ -791,6 +800,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          hint,
+          explain,
         })
       )
       .then(results => {

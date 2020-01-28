@@ -9,7 +9,7 @@
 
 // @flow-disable-next
 import { MongoClient, GridStore, Db } from 'mongodb';
-import { FilesAdapter } from './FilesAdapter';
+import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
 
 export class GridStoreAdapter extends FilesAdapter {
@@ -109,6 +109,10 @@ export class GridStoreAdapter extends FilesAdapter {
       return Promise.resolve();
     }
     return this._client.close(false);
+  }
+
+  validateFilename(filename) {
+    return validateFilename(filename);
   }
 }
 

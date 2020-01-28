@@ -463,7 +463,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('succeeds sending a password reset email if appName, publicServerURL, and email adapter are prodvided', done => {
+  it('succeeds sending a password reset email if appName, publicServerURL, and email adapter are provided', done => {
     reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
@@ -897,6 +897,65 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     }).then(() => {
       user.setPassword('asdf');
       user.setUsername('zxcv');
+      user.set('email', 'user@parse.com');
+      user.signUp().then(() => {
+        Parse.User.requestPasswordReset('user@parse.com', {
+          error: err => {
+            jfail(err);
+            fail('Should not fail');
+            done();
+          },
+        });
+      });
+    });
+  });
+
+  it('should redirect with username encoded on success page', done => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        request({
+          url: options.link,
+          followRedirects: false,
+        }).then(response => {
+          expect(response.status).toEqual(302);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv%2B1/;
+          const match = response.text.match(re);
+          if (!match) {
+            fail('should have a token');
+            done();
+            return;
+          }
+          const token = match[1];
+
+          request({
+            url: 'http://localhost:8378/1/apps/test/request_password_reset',
+            method: 'POST',
+            body: { new_password: 'hello', token, username: 'zxcv+1' },
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            followRedirects: false,
+          }).then(response => {
+            expect(response.status).toEqual(302);
+            expect(response.text).toEqual(
+              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv%2B1'
+            );
+            done();
+          });
+        });
+      },
+      sendMail: () => {},
+    };
+    reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      user.setPassword('asdf');
+      user.setUsername('zxcv+1');
       user.set('email', 'user@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user@parse.com', {
