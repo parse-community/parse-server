@@ -1,5 +1,6 @@
 import Parse from 'parse/node';
 import { fromGlobalId } from 'graphql-relay';
+import { handleUpload } from '../loaders/filesMutations';
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 import * as objectsMutations from '../helpers/objectsMutations';
 
@@ -40,6 +41,9 @@ const transformTypes = async (
           case inputTypeField.type === defaultGraphQLTypes.POLYGON_INPUT:
             fields[field] = transformers.polygon(fields[field]);
             break;
+          case inputTypeField.type === defaultGraphQLTypes.FILE_INPUT:
+            fields[field] = await transformers.file(fields[field], req);
+            break;
           case parseClass.fields[field].type === 'Relation':
             fields[field] = await transformers.relation(
               parseClass.fields[field].targetClass,
@@ -68,6 +72,15 @@ const transformTypes = async (
 };
 
 const transformers = {
+  file: async ({ file, upload }, { config }) => {
+    if (upload) {
+      const { fileInfo } = await handleUpload(upload, config);
+      return { name: fileInfo.name, __type: 'File' };
+    } else if (file && file.name) {
+      return { name: file.name, __type: 'File' };
+    }
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.');
+  },
   polygon: value => ({
     __type: 'Polygon',
     coordinates: value.map(geoPoint => [geoPoint.latitude, geoPoint.longitude]),
@@ -122,22 +135,24 @@ const transformers = {
     let nestedObjectsToAdd = [];
 
     if (value.createAndAdd) {
-      nestedObjectsToAdd = (await Promise.all(
-        value.createAndAdd.map(async input => {
-          const parseFields = await transformTypes('create', input, {
-            className: targetClass,
-            parseGraphQLSchema,
-            req: { config, auth, info },
-          });
-          return objectsMutations.createObject(
-            targetClass,
-            parseFields,
-            config,
-            auth,
-            info
-          );
-        })
-      )).map(object => ({
+      nestedObjectsToAdd = (
+        await Promise.all(
+          value.createAndAdd.map(async input => {
+            const parseFields = await transformTypes('create', input, {
+              className: targetClass,
+              parseGraphQLSchema,
+              req: { config, auth, info },
+            });
+            return objectsMutations.createObject(
+              targetClass,
+              parseFields,
+              config,
+              auth,
+              info
+            );
+          })
+        )
+      ).map(object => ({
         __type: 'Pointer',
         className: targetClass,
         objectId: object.objectId,
