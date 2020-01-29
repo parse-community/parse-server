@@ -311,7 +311,7 @@ function validateCLP(
         } else {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${pointerFields}' is not a valid value for protectedFields[${entity}] - expected an array.`
+            `'${pointerFields}' is not a valid value for ${operationKey}[${entity}] - expected an array.`
           );
         }
         // proceed with next entity key
