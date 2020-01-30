@@ -6,6 +6,15 @@ var Parse = require('parse/node').Parse,
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
 
+const checkSchemasOption = req => {
+  if (req.config.schemas) {
+    throw new Parse.Error(
+      Parse.Error.OPERATION_FORBIDDEN,
+      'This server use schemas option, schemas creation/modification operations are blocked. You can still delete a class.'
+    );
+  }
+};
+
 function classNameMismatchResponse(bodyClass, pathClass) {
   throw new Parse.Error(
     Parse.Error.INVALID_CLASS_NAME,
@@ -42,6 +51,7 @@ function getOneSchema(req) {
 }
 
 function createSchema(req) {
+  checkSchemasOption(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -76,6 +86,7 @@ function createSchema(req) {
 }
 
 function modifySchema(req) {
+  checkSchemasOption(req);
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -104,6 +115,8 @@ function modifySchema(req) {
 }
 
 const deleteSchema = req => {
+  // Here we do not check schemas options, developer need to delete manually classes
+  // to avoid data loss during auto migration
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,

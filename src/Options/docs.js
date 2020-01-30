@@ -73,6 +73,7 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Enable (or disable) user email validation, defaults to false
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ * @property {Parse.Schema[]} schemas lock and pre define schemas of the parse server.
  */
 
 /**

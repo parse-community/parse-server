@@ -528,4 +528,10 @@ module.exports.LiveQueryServerOptions = {
     help: 'Adapter module for the WebSocketServer',
     action: parsers.moduleOrObjectParser,
   },
+  schemas: {
+    env: 'PARSE_SERVER_SCHEMAS',
+    help:
+      'Schemas options allow to lock and pre define schemas of the parse server.',
+    action: parsers.objectParser,
+  },
 };

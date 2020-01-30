@@ -28,6 +28,20 @@ import type {
   SchemaField,
   LoadSchemaOptions,
 } from './types';
+import logger from '../logger';
+
+const defaultIndexes = Object.freeze({
+  _Default: {
+    objectId: true,
+  },
+  _User: {
+    username: true,
+    email: true,
+  },
+  _Role: {
+    name: true,
+  },
+});
 
 const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -592,34 +606,26 @@ const _GraphQLConfigSchema = {
   className: '_GraphQLConfig',
   fields: defaultColumns._GraphQLConfig,
 };
-const _PushStatusSchema = convertSchemaToAdapterSchema(
-  injectDefaultSchema({
-    className: '_PushStatus',
-    fields: {},
-    classLevelPermissions: {},
-  })
-);
-const _JobStatusSchema = convertSchemaToAdapterSchema(
-  injectDefaultSchema({
-    className: '_JobStatus',
-    fields: {},
-    classLevelPermissions: {},
-  })
-);
-const _JobScheduleSchema = convertSchemaToAdapterSchema(
-  injectDefaultSchema({
-    className: '_JobSchedule',
-    fields: {},
-    classLevelPermissions: {},
-  })
-);
-const _AudienceSchema = convertSchemaToAdapterSchema(
-  injectDefaultSchema({
-    className: '_Audience',
-    fields: defaultColumns._Audience,
-    classLevelPermissions: {},
-  })
-);
+const _PushStatusSchema = convertSchemaToAdapterSchema({
+  className: '_PushStatus',
+  fields: {},
+  classLevelPermissions: {},
+});
+const _JobStatusSchema = convertSchemaToAdapterSchema({
+  className: '_JobStatus',
+  fields: {},
+  classLevelPermissions: {},
+});
+const _JobScheduleSchema = convertSchemaToAdapterSchema({
+  className: '_JobSchedule',
+  fields: {},
+  classLevelPermissions: {},
+});
+const _AudienceSchema = convertSchemaToAdapterSchema({
+  className: '_Audience',
+  fields: defaultColumns._Audience,
+  classLevelPermissions: {},
+});
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -649,6 +655,13 @@ const typeToString = (type: SchemaField | string): string => {
     return `${type.type}<${type.targetClass}>`;
   }
   return `${type.type}`;
+};
+
+const paramsAreEquals = (indexA, indexB) => {
+  const keysIndexA = Object.keys(indexA);
+  const keysIndexB = Object.keys(indexB);
+  if (keysIndexA.length !== keysIndexB.length) return false;
+  return keysIndexA.every(k => indexA[k] === indexB[k]);
 };
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
@@ -811,6 +824,146 @@ export default class SchemaController {
           throw error;
         }
       });
+  }
+
+  async loadSchemas(localSchemas, database: DatabaseController) {
+    const cloudSchemas = await this.getAllClasses({ clearCache: true });
+    // We do not check classes to delete, developer need to delete manually classes
+    // to avoid data loss during auto migration
+    await Promise.all(
+      localSchemas.map(async localSchema => {
+        const cloudSchema = cloudSchemas.find(
+          ({ className }) => className === localSchema.className
+        );
+        if (cloudSchema) {
+          await this.migrateClass(localSchema, cloudSchema, database);
+        } else {
+          if (!localSchema.className)
+            throw new Parse.Error(
+              500,
+              `className is undefined on a schema. Check your schemas objects.`
+            );
+          await this.addClassIfNotExists(
+            localSchema.className,
+            localSchema.fields,
+            localSchema.classLevelPermissions,
+            localSchema.indexes
+          );
+        }
+      })
+    );
+  }
+
+  async migrateClass(localSchema, cloudSchema, database: DatabaseController) {
+    localSchema.fields = localSchema.fields || {};
+    localSchema.indexes = localSchema.indexes || {};
+    localSchema.classLevelPermissions = localSchema.classLevelPermissions || {};
+
+    const fieldsToAdd = {};
+    const fieldsToDelete = {};
+    const indexesToAdd = {};
+    const indexesToDelete = {};
+
+    const isNotDefaultField = fieldName =>
+      !defaultColumns['_Default'][fieldName] ||
+      (defaultColumns[localSchema.className] &&
+        !defaultColumns[localSchema.className][fieldName]);
+
+    Object.keys(localSchema.fields)
+      .filter(fieldName => isNotDefaultField(fieldName))
+      .forEach(fieldName => {
+        if (!cloudSchema.fields[fieldName])
+          fieldsToAdd[fieldName] = localSchema.fields[fieldName];
+      });
+
+    Object.keys(cloudSchema.fields)
+      .filter(fieldName => isNotDefaultField(fieldName))
+      .map(async fieldName => {
+        if (!localSchema.fields[fieldName]) {
+          fieldsToDelete[fieldName] = { __op: 'Delete' };
+          return;
+        }
+        if (
+          !paramsAreEquals(
+            cloudSchema.fields[fieldName],
+            localSchema.fields[fieldName]
+          )
+        ) {
+          fieldsToDelete[fieldName] = { __op: 'Delete' };
+          fieldsToAdd[fieldName] = localSchema.fields[fieldName];
+        }
+      });
+
+    const isNotDefaultIndex = indexName =>
+      !defaultIndexes['_Default'][indexName] ||
+      (defaultIndexes[localSchema.className] &&
+        !defaultIndexes[localSchema.className][indexName]);
+
+    Object.keys(localSchema.indexes)
+      .filter(indexName => isNotDefaultIndex(indexName))
+      .forEach(indexName => {
+        if (!cloudSchema.indexes[indexName])
+          indexesToAdd[indexName] = localSchema.indexes[indexName];
+      });
+
+    Object.keys(cloudSchema.indexes)
+      .filter(indexName => isNotDefaultIndex(indexName))
+      .map(async indexName => {
+        if (!localSchema.indexes[indexName]) {
+          indexesToDelete[indexName] = { __op: 'Delete' };
+          return;
+        }
+        if (
+          !paramsAreEquals(
+            cloudSchema.indexes[indexName],
+            localSchema.indexes[indexName]
+          )
+        ) {
+          indexesToDelete[indexName] = { __op: 'Delete' };
+          indexesToAdd[indexName] = localSchema.indexes[indexName];
+        }
+      });
+    const CLPs = {
+      ...localSchema.classLevelPermissions,
+      // Block add field feature when developers use parse with schemas
+      // to avoid auto migration issues across SDKs
+      addField: {},
+    };
+    // Concurrent migrations can lead to errors
+    try {
+      await this.updateClass(
+        localSchema.className,
+        fieldsToDelete,
+        CLPs,
+        indexesToDelete,
+        database
+      );
+    } catch (e) {
+      setTimeout(async () => {
+        try {
+          await this.migrateClass(localSchema, cloudSchema, database);
+        } catch (e) {
+          logger.error('Error occured during migration deletion time.');
+        }
+      }, 15000);
+    }
+    try {
+      await this.updateClass(
+        localSchema.className,
+        fieldsToAdd,
+        CLPs,
+        indexesToAdd,
+        database
+      );
+    } catch (e) {
+      setTimeout(async () => {
+        try {
+          await this.migrateClass(localSchema, cloudSchema, database);
+        } catch (e) {
+          logger.error('Error occured during migration addition.');
+        }
+      }, 15000);
+    }
   }
 
   updateClass(

@@ -75,7 +75,7 @@ class ParseServer {
     this.config = Config.put(Object.assign({}, options, allControllers));
 
     logging.setLogger(loggerController);
-    const dbInitPromise = databaseController.performInitialization();
+    const dbInitPromise = databaseController.performInitialization(options);
     const hooksLoadPromise = hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
