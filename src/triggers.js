@@ -710,14 +710,32 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
 export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
-    const request = getRequestFileObject(
-      triggerType,
-      auth,
-      fileObject,
-      config
-    );
-    const result = fileTrigger(request);
-    return result || fileObject;
+    try {
+      const request = getRequestFileObject(
+        triggerType,
+        auth,
+        fileObject,
+        config
+      );
+      const result = await fileTrigger(request);
+      logTriggerSuccessBeforeHook(
+        triggerType,
+        'Parse.File',
+        { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
+        result,
+        auth,
+      )
+      return result || fileObject;
+    } catch (error) {
+      logTriggerErrorBeforeHook(
+        triggerType,
+        'Parse.File',
+        { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
+        auth,
+        error,
+      );
+      throw error;
+    }
   }
   return fileObject;
 }
