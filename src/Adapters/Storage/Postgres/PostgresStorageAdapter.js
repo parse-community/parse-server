@@ -258,7 +258,7 @@ const buildWhereClause = ({
   schema,
   query,
   index,
-  insensitive,
+  caseInsensitive,
 }): WhereClause => {
   const patterns = [];
   let values = [];
@@ -286,7 +286,7 @@ const buildWhereClause = ({
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
       continue;
     } else if (
-      insensitive &&
+      caseInsensitive &&
       (fieldName === 'username' || fieldName === 'email')
     ) {
       patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
@@ -348,7 +348,7 @@ const buildWhereClause = ({
           schema,
           query: subQuery,
           index,
-          insensitive,
+          caseInsensitive,
         });
         if (clause.pattern.length > 0) {
           clauses.push(clause.pattern);
@@ -488,10 +488,16 @@ const buildWhereClause = ({
         }
       };
       if (fieldValue.$in) {
-        createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
+        createConstraint(
+          _.flatMap(fieldValue.$in, elt => elt),
+          false
+        );
       }
       if (fieldValue.$nin) {
-        createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
+        createConstraint(
+          _.flatMap(fieldValue.$nin, elt => elt),
+          true
+        );
       }
     } else if (typeof fieldValue.$in !== 'undefined') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
@@ -1465,7 +1471,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema,
       index,
       query,
-      insensitive: false,
+      caseInsensitive: false,
     });
     values.push(...where.values);
     if (Object.keys(query).length === 0) {
@@ -1777,7 +1783,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema,
       index,
       query,
-      insensitive: false,
+      caseInsensitive: false,
     });
     values.push(...where.values);
 
@@ -1829,13 +1835,24 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, insensitive }: QueryOptions
+    { skip, limit, sort, keys, caseInsensitive }: QueryOptions
   ) {
-    debug('find', className, query, { skip, limit, sort, keys, insensitive });
+    debug('find', className, query, {
+      skip,
+      limit,
+      sort,
+      keys,
+      caseInsensitive,
+    });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
-    const where = buildWhereClause({ schema, query, index: 2, insensitive });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      caseInsensitive,
+    });
     values.push(...where.values);
 
     const wherePattern =
@@ -2065,7 +2082,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema,
       query,
       index: 2,
-      insensitive: false,
+      caseInsensitive: false,
     });
     values.push(...where.values);
 
@@ -2123,7 +2140,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema,
       query,
       index: 4,
-      insensitive: false,
+      caseInsensitive: false,
     });
     values.push(...where.values);
 
@@ -2408,7 +2425,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
+  async createIndexes(
+    className: string,
+    indexes: any,
+    conn: ?any
+  ): Promise<void> {
     return (conn || this._client).tx(t =>
       t.batch(
         indexes.map(i => {
@@ -2428,10 +2449,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     type: any,
     conn: ?any
   ): Promise<void> {
-    await (conn || this._client).none(
-      'CREATE INDEX $1:name ON $2:name ($3:name)',
-      [fieldName, className, type]
-    );
+    await (
+      conn || this._client
+    ).none('CREATE INDEX $1:name ON $2:name ($3:name)', [
+      fieldName,
+      className,
+      type,
+    ]);
   }
 
   async dropIndexes(className: string, indexes: any, conn: any): Promise<void> {

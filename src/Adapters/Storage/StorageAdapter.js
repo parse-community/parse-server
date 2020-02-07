@@ -13,7 +13,7 @@ export type QueryOptions = {
   op?: string,
   distinct?: boolean,
   pipeline?: any,
-  insensitive?: boolean,
+  caseInsensitive?: boolean,
   readPreference?: ?string,
   hint?: ?mixed,
   explain?: Boolean,
