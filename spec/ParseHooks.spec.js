@@ -1,5 +1,5 @@
 'use strict';
-/* global describe, it, expect, fail, Parse */
+
 const request = require('../lib/request');
 const triggers = require('../lib/triggers');
 const HooksController = require('../lib/Controllers/HooksController').default;

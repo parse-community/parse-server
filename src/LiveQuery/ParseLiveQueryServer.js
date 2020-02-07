@@ -61,7 +61,7 @@ class ParseLiveQueryServer {
     this.parseWebSocketServer = new ParseWebSocketServer(
       server,
       parseWebsocket => this._onConnect(parseWebsocket),
-      config.websocketTimeout
+      config
     );
 
     // Initialize subscriber
@@ -392,6 +392,8 @@ class ParseLiveQueryServer {
         event: 'ws_disconnect',
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
       });
     });
 
@@ -580,15 +582,25 @@ class ParseLiveQueryServer {
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
     const clientId = uuid();
-    const client = new Client(clientId, parseWebsocket, hasMasterKey);
+    const client = new Client(
+      clientId,
+      parseWebsocket,
+      hasMasterKey,
+      request.sessionToken,
+      request.installationId
+    );
     parseWebsocket.clientId = clientId;
     this.clients.set(parseWebsocket.clientId, client);
     logger.info(`Create new client: ${parseWebsocket.clientId}`);
     client.pushConnect();
     runLiveQueryEventHandlers({
+      client,
       event: 'connect',
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
+      sessionToken: request.sessionToken,
+      useMasterKey: client.hasMasterKey,
+      installationId: request.installationId,
     });
   }
 
@@ -600,7 +612,10 @@ class ParseLiveQueryServer {
     ) {
       return false;
     }
-    if (!request || !request.hasOwnProperty('masterKey')) {
+    if (
+      !request ||
+      !Object.prototype.hasOwnProperty.call(request, 'masterKey')
+    ) {
       return false;
     }
     return request.masterKey === validKeyPairs.get('masterKey');
@@ -623,7 +638,7 @@ class ParseLiveQueryServer {
 
   _handleSubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
-    if (!parseWebsocket.hasOwnProperty('clientId')) {
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
         parseWebsocket,
         2,
@@ -660,7 +675,7 @@ class ParseLiveQueryServer {
     const subscriptionInfo = {
       subscription: subscription,
     };
-    // Add selected fields and sessionToken for this subscription if necessary
+    // Add selected fields, sessionToken and installationId for this subscription if necessary
     if (request.query.fields) {
       subscriptionInfo.fields = request.query.fields;
     }
@@ -678,15 +693,17 @@ class ParseLiveQueryServer {
     client.pushSubscribe(request.requestId);
 
     logger.verbose(
-      `Create client ${parseWebsocket.clientId} new subscription: ${
-        request.requestId
-      }`
+      `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
     );
     logger.verbose('Current client number: %d', this.clients.size);
     runLiveQueryEventHandlers({
+      client,
       event: 'subscribe',
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
+      sessionToken: request.sessionToken,
+      useMasterKey: client.hasMasterKey,
+      installationId: client.installationId,
     });
   }
 
@@ -701,7 +718,7 @@ class ParseLiveQueryServer {
     notifyClient: boolean = true
   ): any {
     // If we can not find this client, return error to client
-    if (!parseWebsocket.hasOwnProperty('clientId')) {
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
         parseWebsocket,
         2,
@@ -762,9 +779,13 @@ class ParseLiveQueryServer {
       this.subscriptions.delete(className);
     }
     runLiveQueryEventHandlers({
+      client,
       event: 'unsubscribe',
       clients: this.clients.size,
       subscriptions: this.subscriptions.size,
+      sessionToken: subscriptionInfo.sessionToken,
+      useMasterKey: client.hasMasterKey,
+      installationId: client.installationId,
     });
 
     if (!notifyClient) {
@@ -774,9 +795,7 @@ class ParseLiveQueryServer {
     client.pushUnsubscribe(request.requestId);
 
     logger.verbose(
-      `Delete client: ${parseWebsocket.clientId} | subscription: ${
-        request.requestId
-      }`
+      `Delete client: ${parseWebsocket.clientId} | subscription: ${request.requestId}`
     );
   }
 }

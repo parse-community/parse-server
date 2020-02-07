@@ -15,6 +15,10 @@ export type QueryOptions = {
   pipeline?: any,
   insensitive?: boolean,
   readPreference?: ?string,
+  hint?: ?mixed,
+  explain?: Boolean,
+  action?: string,
+  addsField?: boolean,
 };
 
 export type UpdateQueryOptions = {
@@ -47,30 +51,35 @@ export interface StorageAdapter {
   createObject(
     className: string,
     schema: SchemaType,
-    object: any
+    object: any,
+    transactionalSession: ?any
   ): Promise<any>;
   deleteObjectsByQuery(
     className: string,
     schema: SchemaType,
-    query: QueryType
+    query: QueryType,
+    transactionalSession: ?any
   ): Promise<void>;
   updateObjectsByQuery(
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ): Promise<[any]>;
   findOneAndUpdate(
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ): Promise<any>;
   upsertOneObject(
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ): Promise<any>;
   find(
     className: string,
@@ -89,7 +98,8 @@ export interface StorageAdapter {
     schema: SchemaType,
     query: QueryType,
     readPreference?: string,
-    estimate?: boolean
+    estimate?: boolean,
+    hint?: mixed
   ): Promise<number>;
   distinct(
     className: string,
@@ -101,7 +111,9 @@ export interface StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
   ): Promise<any>;
   performInitialization(options: ?any): Promise<void>;
 
@@ -116,4 +128,7 @@ export interface StorageAdapter {
     fields: any,
     conn: ?any
   ): Promise<void>;
+  createTransactionalSession(): Promise<any>;
+  commitTransactionalSession(transactionalSession: any): Promise<void>;
+  abortTransactionalSession(transactionalSession: any): Promise<void>;
 }

@@ -257,6 +257,7 @@ describe('ParseLiveQueryServer', function() {
         expect(saveArgs[0]).toBe('Yolo');
         expect(saveArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -271,6 +272,7 @@ describe('ParseLiveQueryServer', function() {
         expect(deleteArgs[0]).toBe('Yolo');
         expect(deleteArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -291,7 +293,9 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine
       .createSpy('validateKeys')
       .and.returnValue(true);
-    parseLiveQueryServer._handleConnect(parseWebSocket);
+    parseLiveQueryServer._handleConnect(parseWebSocket, {
+      sessionToken: 'token',
+    });
 
     const clientKeys = parseLiveQueryServer.clients.keys();
     expect(parseLiveQueryServer.clients.size).toBe(1);
@@ -512,6 +516,7 @@ describe('ParseLiveQueryServer', function() {
     const connectRequest = {
       op: 'connect',
       applicationId: '1',
+      installationId: '1234',
     };
     // Trigger message event
     parseWebSocket.emit('message', connectRequest);
@@ -985,6 +990,62 @@ describe('ParseLiveQueryServer', function() {
       expect(client.pushUpdate).not.toHaveBeenCalled();
       expect(client.pushDelete).not.toHaveBeenCalled();
       expect(client.pushLeave).not.toHaveBeenCalled();
+      done();
+    }, jasmine.ASYNC_TEST_WAIT_TIME);
+  });
+
+  it('can handle create command with fields', function(done) {
+    jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
+    const Client = require('../lib/LiveQuery/Client').Client;
+    const parseLiveQueryServer = new ParseLiveQueryServer({});
+    // Make mock request message
+    const message = generateMockMessage();
+
+    const clientId = 1;
+    const parseWebSocket = {
+      clientId,
+      send: jasmine.createSpy('send'),
+    };
+    const client = new Client(clientId, parseWebSocket);
+    spyOn(client, 'pushCreate').and.callThrough();
+    parseLiveQueryServer.clients.set(clientId, client);
+
+    // Add mock subscription
+    const requestId = 2;
+    const query = {
+      className: testClassName,
+      where: {
+        key: 'value',
+      },
+      fields: ['test'],
+    };
+    addMockSubscription(
+      parseLiveQueryServer,
+      clientId,
+      requestId,
+      parseWebSocket,
+      query
+    );
+    // Mock _matchesSubscription to return matching
+    parseLiveQueryServer._matchesSubscription = function(parseObject) {
+      if (!parseObject) {
+        return false;
+      }
+      return true;
+    };
+    parseLiveQueryServer._matchesACL = function() {
+      return Promise.resolve(true);
+    };
+
+    parseLiveQueryServer._onAfterSave(message);
+
+    // Make sure we send create command to client
+    setTimeout(function() {
+      expect(client.pushCreate).toHaveBeenCalled();
+      const args = parseWebSocket.send.calls.mostRecent().args;
+      const toSend = JSON.parse(args[0]);
+      expect(toSend.object).toBeDefined();
+      expect(toSend.original).toBeUndefined();
       done();
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
@@ -1922,6 +1983,7 @@ describe('LiveQueryController', () => {
         expect(saveArgs[0]).toBe('Yolo');
         expect(saveArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},
@@ -1936,6 +1998,7 @@ describe('LiveQueryController', () => {
         expect(deleteArgs[0]).toBe('Yolo');
         expect(deleteArgs[3]).toEqual({
           get: {},
+          count: {},
           addField: {},
           create: { '*': true },
           find: {},

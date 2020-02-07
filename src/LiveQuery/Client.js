@@ -15,6 +15,8 @@ class Client {
   id: number;
   parseWebSocket: any;
   hasMasterKey: boolean;
+  sessionToken: string;
+  installationId: string;
   userId: string;
   roles: Array<string>;
   subscriptionInfos: Object;
@@ -27,10 +29,18 @@ class Client {
   pushDelete: Function;
   pushLeave: Function;
 
-  constructor(id: number, parseWebSocket: any, hasMasterKey: boolean) {
+  constructor(
+    id: number,
+    parseWebSocket: any,
+    hasMasterKey: boolean = false,
+    sessionToken: string,
+    installationId: string
+  ) {
     this.id = id;
     this.parseWebSocket = parseWebSocket;
     this.hasMasterKey = hasMasterKey;
+    this.sessionToken = sessionToken;
+    this.installationId = installationId;
     this.roles = [];
     this.subscriptionInfos = new Map();
     this.pushConnect = this._pushEvent('connected');
@@ -86,6 +96,7 @@ class Client {
       const response: Message = {
         op: type,
         clientId: this.id,
+        installationId: this.installationId,
       };
       if (typeof subscriptionId !== 'undefined') {
         response['requestId'] = subscriptionId;
@@ -96,7 +107,7 @@ class Client {
           fields = this.subscriptionInfos.get(subscriptionId).fields;
         }
         response['object'] = this._toJSONWithFields(parseObjectJSON, fields);
-        if (typeof parseOriginalObjectJSON !== 'undefined') {
+        if (parseOriginalObjectJSON) {
           response['original'] = this._toJSONWithFields(
             parseOriginalObjectJSON,
             fields

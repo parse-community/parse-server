@@ -1,121 +1,340 @@
-import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
+import { GraphQLNonNull } from 'graphql';
+import { fromGlobalId, mutationWithClientMutationId } from 'graphql-relay';
+import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsMutations from './objectsMutations';
+import {
+  extractKeysAndInclude,
+  getParseClassMutationConfig,
+} from '../parseGraphQLUtils';
+import * as objectsMutations from '../helpers/objectsMutations';
+import * as objectsQueries from '../helpers/objectsQueries';
+import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { transformClassNameToGraphQL } from '../transformers/className';
+import { transformTypes } from '../transformers/mutation';
 
-const load = (parseGraphQLSchema, parseClass) => {
+const getOnlyRequiredFields = (
+  updatedFields,
+  selectedFieldsString,
+  includedFieldsString,
+  nativeObjectFields
+) => {
+  const includedFields = includedFieldsString
+    ? includedFieldsString.split(',')
+    : [];
+  const selectedFields = selectedFieldsString
+    ? selectedFieldsString.split(',')
+    : [];
+  const missingFields = selectedFields
+    .filter(
+      field =>
+        !nativeObjectFields.includes(field) || includedFields.includes(field)
+    )
+    .join(',');
+  if (!missingFields.length) {
+    return { needGet: false, keys: '' };
+  } else {
+    return { needGet: true, keys: missingFields };
+  }
+};
+
+const load = function(
+  parseGraphQLSchema,
+  parseClass,
+  parseClassConfig: ?ParseGraphQLClassConfig
+) {
   const className = parseClass.className;
+  const graphQLClassName = transformClassNameToGraphQL(className);
+  const getGraphQLQueryName =
+    graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
 
-  const classGraphQLInputType =
-    parseGraphQLSchema.parseClassTypes[className].classGraphQLInputType;
-  const fields = {
-    description: 'These are the fields of the object.',
-    type: classGraphQLInputType,
-  };
-  const classGraphQLInputTypeFields = classGraphQLInputType.getFields();
+  const {
+    create: isCreateEnabled = true,
+    update: isUpdateEnabled = true,
+    destroy: isDestroyEnabled = true,
+    createAlias: createAlias = '',
+    updateAlias: updateAlias = '',
+    destroyAlias: destroyAlias = '',
+  } = getParseClassMutationConfig(parseClassConfig);
 
-  const transformTypes = fields => {
-    if (fields) {
-      Object.keys(fields).forEach(field => {
-        if (classGraphQLInputTypeFields[field]) {
-          switch (classGraphQLInputTypeFields[field].type) {
-            case defaultGraphQLTypes.GEO_POINT:
-              fields[field].__type = 'GeoPoint';
-              break;
-            case defaultGraphQLTypes.POLYGON:
-              fields[field] = {
-                __type: 'Polygon',
-                coordinates: fields[field].map(geoPoint => [
-                  geoPoint.latitude,
-                  geoPoint.longitude,
-                ]),
-              };
-              break;
+  const {
+    classGraphQLCreateType,
+    classGraphQLUpdateType,
+    classGraphQLOutputType,
+  } = parseGraphQLSchema.parseClassTypes[className];
+
+  if (isCreateEnabled) {
+    const createGraphQLMutationName =
+      createAlias || `create${graphQLClassName}`;
+    const createGraphQLMutation = mutationWithClientMutationId({
+      name: `Create${graphQLClassName}`,
+      description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${graphQLClassName} class.`,
+      inputFields: {
+        fields: {
+          description:
+            'These are the fields that will be used to create the new object.',
+          type: classGraphQLCreateType || defaultGraphQLTypes.OBJECT,
+        },
+      },
+      outputFields: {
+        [getGraphQLQueryName]: {
+          description: 'This is the created object.',
+          type: new GraphQLNonNull(
+            classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+          ),
+        },
+      },
+      mutateAndGetPayload: async (args, context, mutationInfo) => {
+        try {
+          let { fields } = args;
+          if (!fields) fields = {};
+          const { config, auth, info } = context;
+
+          const parseFields = await transformTypes('create', fields, {
+            className,
+            parseGraphQLSchema,
+            req: { config, auth, info },
+          });
+
+          const createdObject = await objectsMutations.createObject(
+            className,
+            parseFields,
+            config,
+            auth,
+            info
+          );
+          const selectedFields = getFieldNames(mutationInfo)
+            .filter(field => field.startsWith(`${getGraphQLQueryName}.`))
+            .map(field => field.replace(`${getGraphQLQueryName}.`, ''));
+          const { keys, include } = extractKeysAndInclude(selectedFields);
+          const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+            fields,
+            keys,
+            include,
+            ['id', 'objectId', 'createdAt', 'updatedAt']
+          );
+          let optimizedObject = {};
+          if (needGet) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              createdObject.objectId,
+              requiredKeys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
           }
+          return {
+            [getGraphQLQueryName]: {
+              ...createdObject,
+              updatedAt: createdObject.createdAt,
+              ...parseFields,
+              ...optimizedObject,
+            },
+          };
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
         }
-      });
+      },
+    });
+
+    if (
+      parseGraphQLSchema.addGraphQLType(
+        createGraphQLMutation.args.input.type.ofType
+      ) &&
+      parseGraphQLSchema.addGraphQLType(createGraphQLMutation.type)
+    ) {
+      parseGraphQLSchema.addGraphQLMutation(
+        createGraphQLMutationName,
+        createGraphQLMutation
+      );
     }
-  };
+  }
 
-  const createGraphQLMutationName = `create${className}`;
-  parseGraphQLSchema.graphQLObjectsMutations[createGraphQLMutationName] = {
-    description: `The ${createGraphQLMutationName} mutation can be used to create a new object of the ${className} class.`,
-    args: {
-      fields,
-    },
-    type: new GraphQLNonNull(defaultGraphQLTypes.CREATE_RESULT),
-    async resolve(_source, args, context) {
-      try {
-        const { fields } = args;
-        const { config, auth, info } = context;
+  if (isUpdateEnabled) {
+    const updateGraphQLMutationName =
+      updateAlias || `update${graphQLClassName}`;
+    const updateGraphQLMutation = mutationWithClientMutationId({
+      name: `Update${graphQLClassName}`,
+      description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${graphQLClassName} class.`,
+      inputFields: {
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
+        fields: {
+          description:
+            'These are the fields that will be used to update the object.',
+          type: classGraphQLUpdateType || defaultGraphQLTypes.OBJECT,
+        },
+      },
+      outputFields: {
+        [getGraphQLQueryName]: {
+          description: 'This is the updated object.',
+          type: new GraphQLNonNull(
+            classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+          ),
+        },
+      },
+      mutateAndGetPayload: async (args, context, mutationInfo) => {
+        try {
+          let { id, fields } = args;
+          if (!fields) fields = {};
+          const { config, auth, info } = context;
 
-        transformTypes(fields);
+          const globalIdObject = fromGlobalId(id);
 
-        return await objectsMutations.createObject(
-          className,
-          fields,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+          if (globalIdObject.type === className) {
+            id = globalIdObject.id;
+          }
 
-  const updateGraphQLMutationName = `update${className}`;
-  parseGraphQLSchema.graphQLObjectsMutations[updateGraphQLMutationName] = {
-    description: `The ${updateGraphQLMutationName} mutation can be used to update an object of the ${className} class.`,
-    args: {
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      fields,
-    },
-    type: defaultGraphQLTypes.UPDATE_RESULT,
-    async resolve(_source, args, context) {
-      try {
-        const { objectId, fields } = args;
-        const { config, auth, info } = context;
+          const parseFields = await transformTypes('update', fields, {
+            className,
+            parseGraphQLSchema,
+            req: { config, auth, info },
+          });
 
-        transformTypes(fields);
+          const updatedObject = await objectsMutations.updateObject(
+            className,
+            id,
+            parseFields,
+            config,
+            auth,
+            info
+          );
 
-        return await objectsMutations.updateObject(
-          className,
-          objectId,
-          fields,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+          const selectedFields = getFieldNames(mutationInfo)
+            .filter(field => field.startsWith(`${getGraphQLQueryName}.`))
+            .map(field => field.replace(`${getGraphQLQueryName}.`, ''));
+          const { keys, include } = extractKeysAndInclude(selectedFields);
+          const { keys: requiredKeys, needGet } = getOnlyRequiredFields(
+            fields,
+            keys,
+            include,
+            ['id', 'objectId', 'updatedAt']
+          );
 
-  const deleteGraphQLMutationName = `delete${className}`;
-  parseGraphQLSchema.graphQLObjectsMutations[deleteGraphQLMutationName] = {
-    description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${className} class.`,
-    args: {
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-    },
-    type: new GraphQLNonNull(GraphQLBoolean),
-    async resolve(_source, args, context) {
-      try {
-        const { objectId } = args;
-        const { config, auth, info } = context;
+          let optimizedObject = {};
+          if (needGet) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              id,
+              requiredKeys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
+          }
+          return {
+            [getGraphQLQueryName]: {
+              objectId: id,
+              ...updatedObject,
+              ...parseFields,
+              ...optimizedObject,
+            },
+          };
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
+    });
 
-        return await objectsMutations.deleteObject(
-          className,
-          objectId,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+    if (
+      parseGraphQLSchema.addGraphQLType(
+        updateGraphQLMutation.args.input.type.ofType
+      ) &&
+      parseGraphQLSchema.addGraphQLType(updateGraphQLMutation.type)
+    ) {
+      parseGraphQLSchema.addGraphQLMutation(
+        updateGraphQLMutationName,
+        updateGraphQLMutation
+      );
+    }
+  }
+
+  if (isDestroyEnabled) {
+    const deleteGraphQLMutationName =
+      destroyAlias || `delete${graphQLClassName}`;
+    const deleteGraphQLMutation = mutationWithClientMutationId({
+      name: `Delete${graphQLClassName}`,
+      description: `The ${deleteGraphQLMutationName} mutation can be used to delete an object of the ${graphQLClassName} class.`,
+      inputFields: {
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
+      },
+      outputFields: {
+        [getGraphQLQueryName]: {
+          description: 'This is the deleted object.',
+          type: new GraphQLNonNull(
+            classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+          ),
+        },
+      },
+      mutateAndGetPayload: async (args, context, mutationInfo) => {
+        try {
+          let { id } = args;
+          const { config, auth, info } = context;
+
+          const globalIdObject = fromGlobalId(id);
+
+          if (globalIdObject.type === className) {
+            id = globalIdObject.id;
+          }
+
+          const selectedFields = getFieldNames(mutationInfo)
+            .filter(field => field.startsWith(`${getGraphQLQueryName}.`))
+            .map(field => field.replace(`${getGraphQLQueryName}.`, ''));
+          const { keys, include } = extractKeysAndInclude(selectedFields);
+          let optimizedObject = {};
+          if (
+            keys &&
+            keys.split(',').filter(key => !['id', 'objectId'].includes(key))
+              .length > 0
+          ) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              id,
+              keys,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info
+            );
+          }
+          await objectsMutations.deleteObject(
+            className,
+            id,
+            config,
+            auth,
+            info
+          );
+          return {
+            [getGraphQLQueryName]: {
+              objectId: id,
+              ...optimizedObject,
+            },
+          };
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
+    });
+
+    if (
+      parseGraphQLSchema.addGraphQLType(
+        deleteGraphQLMutation.args.input.type.ofType
+      ) &&
+      parseGraphQLSchema.addGraphQLType(deleteGraphQLMutation.type)
+    ) {
+      parseGraphQLSchema.addGraphQLMutation(
+        deleteGraphQLMutationName,
+        deleteGraphQLMutation
+      );
+    }
+  }
 };
 
 export { load };

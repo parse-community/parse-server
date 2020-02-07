@@ -1,5 +1,6 @@
-const ParseWebSocketServer = require('../lib/LiveQuery/ParseWebSocketServer')
-  .ParseWebSocketServer;
+const {
+  ParseWebSocketServer,
+} = require('../lib/LiveQuery/ParseWebSocketServer');
 
 describe('ParseWebSocketServer', function() {
   beforeEach(function(done) {
@@ -19,14 +20,14 @@ describe('ParseWebSocketServer', function() {
     const parseWebSocketServer = new ParseWebSocketServer(
       server,
       onConnectCallback,
-      5
+      { websocketTimeout: 5 }
     ).server;
     const ws = {
       readyState: 0,
       OPEN: 0,
       ping: jasmine.createSpy('ping'),
     };
-    parseWebSocketServer.emit('connection', ws);
+    parseWebSocketServer.onConnection(ws);
 
     // Make sure callback is called
     expect(onConnectCallback).toHaveBeenCalled();
@@ -36,6 +37,45 @@ describe('ParseWebSocketServer', function() {
       server.close();
       done();
     }, 10);
+  });
+
+  it('can handle error event', async () => {
+    jasmine.restoreLibrary('ws', 'Server');
+    const WebSocketServer = require('ws').Server;
+    let wssError;
+    class WSSAdapter {
+      constructor(options) {
+        this.options = options;
+      }
+      onListen() {}
+      onConnection() {}
+      onError() {}
+      start() {
+        const wss = new WebSocketServer({ server: this.options.server });
+        wss.on('listening', this.onListen);
+        wss.on('connection', this.onConnection);
+        wss.on('error', error => {
+          wssError = error;
+          this.onError(error);
+        });
+        this.wss = wss;
+      }
+    }
+
+    const server = await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      liveQueryServerOptions: {
+        wssAdapter: WSSAdapter,
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const wssAdapter = server.liveQueryServer.parseWebSocketServer.server;
+    wssAdapter.wss.emit('error', 'Invalid Packet');
+    expect(wssError).toBe('Invalid Packet');
   });
 
   afterEach(function() {

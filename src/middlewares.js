@@ -5,6 +5,15 @@ import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 
+export const DEFAULT_ALLOWED_HEADERS =
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+
+const getMountForRequest = function(req) {
+  const mountPathLength = req.originalUrl.length - req.url.length;
+  const mountPath = req.originalUrl.slice(0, mountPathLength);
+  return req.protocol + '://' + req.get('host') + mountPath;
+};
+
 // Checks that the request is authorized for this app and checks user
 // auth too.
 // The bodyparser should run before this middleware.
@@ -12,9 +21,7 @@ import defaultLogger from './logger';
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
-  var mountPathLength = req.originalUrl.length - req.url.length;
-  var mountPath = req.originalUrl.slice(0, mountPathLength);
-  var mount = req.protocol + '://' + req.get('host') + mountPath;
+  var mount = getMountForRequest(req);
 
   var info = {
     appId: req.get('X-Parse-Application-Id'),
@@ -105,7 +112,7 @@ export function handleParseHeaders(req, res, next) {
   if (fileViaJSON) {
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
-    req.body = new Buffer(base64, 'base64');
+    req.body = Buffer.from(base64, 'base64');
   }
 
   const clientIp = getClientIp(req);
@@ -276,26 +283,30 @@ function httpAuth(req) {
 }
 
 function decodeBase64(str) {
-  return new Buffer(str, 'base64').toString();
+  return Buffer.from(str, 'base64').toString();
 }
 
-export function allowCrossDomain(req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header(
-    'Access-Control-Allow-Headers',
-    'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control'
-  );
-  res.header(
-    'Access-Control-Expose-Headers',
-    'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
-  );
-  // intercept OPTIONS method
-  if ('OPTIONS' == req.method) {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
+export function allowCrossDomain(appId) {
+  return (req, res, next) => {
+    const config = Config.get(appId, getMountForRequest(req));
+    let allowHeaders = DEFAULT_ALLOWED_HEADERS;
+    if (config && config.allowHeaders) {
+      allowHeaders += `, ${config.allowHeaders.join(', ')}`;
+    }
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', allowHeaders);
+    res.header(
+      'Access-Control-Expose-Headers',
+      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
+    );
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  };
 }
 
 export function allowMethodOverride(req, res, next) {
@@ -332,7 +343,9 @@ export function handleParseErrors(err, req, res, next) {
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
-    next(err);
+    if (!(process && process.env.TESTING)) {
+      next(err);
+    }
   } else {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
@@ -340,7 +353,9 @@ export function handleParseErrors(err, req, res, next) {
       code: Parse.Error.INTERNAL_SERVER_ERROR,
       message: 'Internal server error.',
     });
-    next(err);
+    if (!(process && process.env.TESTING)) {
+      next(err);
+    }
   }
 }
 

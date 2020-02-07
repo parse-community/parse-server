@@ -5,7 +5,9 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  path = require('path');
+  { parse } = require('graphql'),
+  path = require('path'),
+  fs = require('fs');
 
 import { ParseServerOptions, LiveQueryServerOptions } from './Options';
 import defaults from './defaults';
@@ -19,6 +21,7 @@ import { FeaturesRouter } from './Routers/FeaturesRouter';
 import { FilesRouter } from './Routers/FilesRouter';
 import { FunctionsRouter } from './Routers/FunctionsRouter';
 import { GlobalConfigRouter } from './Routers/GlobalConfigRouter';
+import { GraphQLRouter } from './Routers/GraphQLRouter';
 import { HooksRouter } from './Routers/HooksRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
@@ -34,39 +37,15 @@ import { UsersRouter } from './Routers/UsersRouter';
 import { PurgeRouter } from './Routers/PurgeRouter';
 import { AudiencesRouter } from './Routers/AudiencesRouter';
 import { AggregateRouter } from './Routers/AggregateRouter';
-
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
+import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
 // ParseServer works like a constructor of an express app.
-// The args that we understand are:
-// "analyticsAdapter": an adapter class for analytics
-// "filesAdapter": a class like GridFSBucketAdapter providing create, get,
-//                 and delete
-// "loggerAdapter": a class like WinstonLoggerAdapter providing info, error,
-//                 and query
-// "jsonLogs": log as structured JSON objects
-// "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
-//          what database this Parse API connects to.
-// "cloud": relative location to cloud code to require, or a function
-//          that is given an instance of Parse as a parameter.  Use this instance of Parse
-//          to register your cloud code hooks and functions.
-// "appId": the application id to host
-// "masterKey": the master key for requests to this app
-// "collectionPrefix": optional prefix for database collection names
-// "fileKey": optional key from Parse dashboard for supporting older files
-//            hosted by Parse
-// "clientKey": optional key from Parse dashboard
-// "dotNetKey": optional key from Parse dashboard
-// "restAPIKey": optional key from Parse dashboard
-// "webhookKey": optional key from Parse dashboard
-// "javascriptKey": optional key from Parse dashboard
-// "push": optional key from configure push
-// "sessionLength": optional length in seconds for how long Sessions should be valid for
-// "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
-
+// https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
 class ParseServer {
   /**
    * @constructor
@@ -110,7 +89,6 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete(error);
         } else {
-          // eslint-disable-next-line no-console
           console.error(error);
           process.exit(1);
         }
@@ -136,10 +114,26 @@ class ParseServer {
   }
 
   handleShutdown() {
-    const { adapter } = this.config.databaseController;
-    if (adapter && typeof adapter.handleShutdown === 'function') {
-      adapter.handleShutdown();
+    const promises = [];
+    const { adapter: databaseAdapter } = this.config.databaseController;
+    if (
+      databaseAdapter &&
+      typeof databaseAdapter.handleShutdown === 'function'
+    ) {
+      promises.push(databaseAdapter.handleShutdown());
     }
+    const { adapter: fileAdapter } = this.config.filesController;
+    if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
+      promises.push(fileAdapter.handleShutdown());
+    }
+    return (promises.length > 0
+      ? Promise.all(promises)
+      : Promise.resolve()
+    ).then(() => {
+      if (this.config.serverCloseComplete) {
+        this.config.serverCloseComplete();
+      }
+    });
   }
 
   /**
@@ -151,7 +145,7 @@ class ParseServer {
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
-    api.use(middlewares.allowCrossDomain);
+    api.use(middlewares.allowCrossDomain(appId));
     // File handling needs to be before default middlewares are applied
     api.use(
       '/',
@@ -228,6 +222,7 @@ class ParseServer {
       new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
+      new GraphQLRouter(),
       new PurgeRouter(),
       new HooksRouter(),
       new CloudCodeRouter(),
@@ -264,6 +259,30 @@ class ParseServer {
     }
 
     app.use(options.mountPath, this.app);
+
+    if (options.mountGraphQL === true || options.mountPlayground === true) {
+      let graphQLCustomTypeDefs = undefined;
+      if (options.graphQLSchema) {
+        graphQLCustomTypeDefs = parse(
+          fs.readFileSync(options.graphQLSchema, 'utf8')
+        );
+      }
+
+      const parseGraphQLServer = new ParseGraphQLServer(this, {
+        graphQLPath: options.graphQLPath,
+        playgroundPath: options.playgroundPath,
+        graphQLCustomTypeDefs,
+      });
+
+      if (options.mountGraphQL) {
+        parseGraphQLServer.applyGraphQL(app);
+      }
+
+      if (options.mountPlayground) {
+        parseGraphQLServer.applyPlayground(app);
+      }
+    }
+
     const server = app.listen(options.port, options.host, callback);
     this.server = server;
 
@@ -348,13 +367,23 @@ function addParseCloud() {
 
 function injectDefaults(options: ParseServerOptions) {
   Object.keys(defaults).forEach(key => {
-    if (!options.hasOwnProperty(key)) {
+    if (!Object.prototype.hasOwnProperty.call(options, key)) {
       options[key] = defaults[key];
     }
   });
 
-  if (!options.hasOwnProperty('serverURL')) {
+  if (!Object.prototype.hasOwnProperty.call(options, 'serverURL')) {
     options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+  }
+
+  // Reserved Characters
+  if (options.appId) {
+    const regex = /[!#$%'()*+&/:;=?@[\]{}^,|<>]/g;
+    if (options.appId.match(regex)) {
+      console.warn(
+        `\nWARNING, appId that contains special characters can cause issues while using with urls.\n`
+      );
+    }
   }
 
   // Backwards compatibility

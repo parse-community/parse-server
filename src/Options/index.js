@@ -5,10 +5,12 @@ import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import { CacheAdapter } from '../Adapters/Cache/CacheAdapter';
 import { MailAdapter } from '../Adapters/Email/MailAdapter';
 import { PubSubAdapter } from '../Adapters/PubSub/PubSubAdapter';
+import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 
 // @flow
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
+type NumberOrString = number | string;
 type ProtectedFields = any;
 
 export interface ParseServerOptions {
@@ -25,6 +27,8 @@ export interface ParseServerOptions {
   masterKeyIps: ?(string[]);
   /* Sets the app name */
   appName: ?string;
+  /* Add headers to Access-Control-Allow-Headers */
+  allowHeaders: ?(string[]);
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
@@ -48,6 +52,8 @@ export interface ParseServerOptions {
   verbose: ?boolean;
   /* Sets the level for logs */
   logLevel: ?string;
+  /* Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null) */
+  maxLogFiles: ?NumberOrString;
   /* Disables console output
   :ENV: SILENT */
   silent: ?boolean;
@@ -99,6 +105,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION
   :DEFAULT: true */
   allowClientClassCreation: ?boolean;
+  /* Enable (or disable) custom objectId
+  :ENV: PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID
+  :DEFAULT: false */
+  allowCustomObjectId: ?boolean;
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?any;
@@ -180,8 +190,28 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
-
+  /* Full path to your GraphQL custom schema.graphql file */
+  graphQLSchema: ?string;
+  /* Mounts the GraphQL endpoint
+  :ENV: PARSE_SERVER_MOUNT_GRAPHQL
+  :DEFAULT: false */
+  mountGraphQL: ?boolean;
+  /* Mount path for the GraphQL endpoint, defaults to /graphql
+  :ENV: PARSE_SERVER_GRAPHQL_PATH
+  :DEFAULT: /graphql */
+  graphQLPath: ?string;
+  /* Mounts the GraphQL Playground - never use this option in production
+  :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
+  :DEFAULT: false */
+  mountPlayground: ?boolean;
+  /* Mount path for the GraphQL Playground, defaults to /playground
+  :ENV: PARSE_SERVER_PLAYGROUND_PATH
+  :DEFAULT: /playground */
+  playgroundPath: ?string;
+  /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
+  /* Callback when server has closed */
+  serverCloseComplete: ?() => void;
 }
 
 export interface CustomPagesOptions {
@@ -213,6 +243,8 @@ export interface LiveQueryOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
+  /* Adapter module for the WebSocketServer */
+  wssAdapter: ?Adapter<WSSAdapter>;
 }
 
 export interface LiveQueryServerOptions {
@@ -239,4 +271,6 @@ export interface LiveQueryServerOptions {
   redisURL: ?string;
   /* LiveQuery pubsub adapter */
   pubSubAdapter: ?Adapter<PubSubAdapter>;
+  /* Adapter module for the WebSocketServer */
+  wssAdapter: ?Adapter<WSSAdapter>;
 }

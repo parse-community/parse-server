@@ -36,6 +36,9 @@ const connect = {
     sessionToken: {
       type: 'string',
     },
+    installationId: {
+      type: 'string',
+    },
   },
   required: ['op', 'applicationId'],
   additionalProperties: false,

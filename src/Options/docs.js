@@ -2,6 +2,8 @@
  * @interface ParseServerOptions
  * @property {Any} accountLockout account lockout policy for failed login attempts
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
+ * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
+ * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
@@ -27,6 +29,8 @@
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
+ * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
+ * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
@@ -38,11 +42,15 @@
  * @property {String} masterKey Your Parse Master Key
  * @property {String[]} masterKeyIps Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)
  * @property {Number} maxLimit Max value for limit option on queries, defaults to unlimited
+ * @property {Number|String} maxLogFiles Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)
  * @property {String} maxUploadSize Max file size for uploads, defaults to 20mb
  * @property {Union} middleware middleware for express server, can be string or function
+ * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
+ * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {Any} passwordPolicy Password policy for enforcing password related rules
+ * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
  * @property {Boolean} preventLoginWithUnverifiedEmail Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false
@@ -54,6 +62,8 @@
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
+ * @property {Function} serverCloseComplete Callback when server has closed
+ * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
@@ -83,6 +93,7 @@
  * @property {Adapter<PubSubAdapter>} pubSubAdapter LiveQuery pubsub adapter
  * @property {Any} redisOptions parse-server's LiveQuery redisOptions
  * @property {String} redisURL parse-server's LiveQuery redisURL
+ * @property {Adapter<WSSAdapter>} wssAdapter Adapter module for the WebSocketServer
  */
 
 /**
@@ -98,4 +109,5 @@
  * @property {String} redisURL parse-server's LiveQuery redisURL
  * @property {String} serverURL This string should match the serverURL in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same serverURL.
  * @property {Number} websocketTimeout Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).
+ * @property {Adapter<WSSAdapter>} wssAdapter Adapter module for the WebSocketServer
  */

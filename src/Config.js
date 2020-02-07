@@ -73,6 +73,7 @@ export class Config {
     masterKeyIps,
     masterKey,
     readOnlyMasterKey,
+    allowHeaders,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -110,6 +111,8 @@ export class Config {
     this.validateMasterKeyIps(masterKeyIps);
 
     this.validateMaxLimit(maxLimit);
+
+    this.validateAllowHeaders(allowHeaders);
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
@@ -254,6 +257,22 @@ export class Config {
     }
   }
 
+  static validateAllowHeaders(allowHeaders) {
+    if (![null, undefined].includes(allowHeaders)) {
+      if (Array.isArray(allowHeaders)) {
+        allowHeaders.forEach(header => {
+          if (typeof header !== 'string') {
+            throw 'Allow headers must only contain strings';
+          } else if (!header.trim().length) {
+            throw 'Allow headers must not contain empty strings';
+          }
+        });
+      } else {
+        throw 'Allow headers must be an array';
+      }
+    }
+  }
+
   generateEmailVerifyTokenExpiresAt() {
     if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
       return undefined;
@@ -328,9 +347,7 @@ export class Config {
   }
 
   get requestResetPasswordURL() {
-    return `${this.publicServerURL}/apps/${
-      this.applicationId
-    }/request_password_reset`;
+    return `${this.publicServerURL}/apps/${this.applicationId}/request_password_reset`;
   }
 
   get passwordResetSuccessURL() {

@@ -5,19 +5,25 @@ const defaultColumns = require('../lib/Controllers/SchemaController')
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
+  gpgames: { playerId: 'userId' },
   instagram: { data: { id: 'userId' } },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
+  line: { userId: 'userId' },
   vkontakte: { response: [{ id: 'userId' }] },
   google: { sub: 'userId' },
   wechat: { errcode: 0 },
   weibo: { uid: 'userId' },
   qq: 'callback( {"openid":"userId"} );', // yes it's like that, run eval in the client :P
+  phantauth: { sub: 'userId' },
+  microsoft: { id: 'userId', mail: 'userMail' },
 };
 
 describe('AuthenticationProviders', function() {
   [
-    'apple-signin',
+    'apple',
+    'gcenter',
+    'gpgames',
     'facebook',
     'facebookaccountkit',
     'github',
@@ -28,11 +34,14 @@ describe('AuthenticationProviders', function() {
     'twitter',
     'janrainengage',
     'janraincapture',
+    'line',
     'vkontakte',
     'qq',
     'spotify',
     'wechat',
     'weibo',
+    'phantauth',
+    'microsoft',
   ].map(function(providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
@@ -45,13 +54,20 @@ describe('AuthenticationProviders', function() {
         Promise.prototype.constructor
       );
       jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
-      validateAuthDataPromise.then(() => {}, () => {});
-      validateAppIdPromise.then(() => {}, () => {});
+      validateAuthDataPromise.then(
+        () => {},
+        () => {}
+      );
+      validateAppIdPromise.then(
+        () => {},
+        () => {}
+      );
       done();
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      if (providerName === 'twitter' || providerName === 'apple-signin') {
+      const noResponse = ['twitter', 'apple', 'gcenter'];
+      if (noResponse.includes(providerName)) {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
@@ -640,6 +656,37 @@ describe('google auth adapter', () => {
   });
 });
 
+describe('google play games service auth', () => {
+  const gpgames = require('../lib/Adapters/Auth/gpgames');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should pass validation', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'userId' });
+    });
+    await gpgames.validateAuthData({
+      id: 'userId',
+      access_token: 'access_token',
+    });
+  });
+
+  it('validateAuthData should throw error', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ playerId: 'invalid' });
+    });
+    try {
+      await gpgames.validateAuthData({
+        id: 'userId',
+        access_token: 'access_token',
+      });
+    } catch (e) {
+      expect(e.message).toBe(
+        'Google Play Games Services - authData is invalid for this user.'
+      );
+    }
+  });
+});
+
 describe('oauth2 auth adapter', () => {
   const oauth2 = require('../lib/Adapters/Auth/oauth2');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
@@ -1087,7 +1134,7 @@ describe('oauth2 auth adapter', () => {
 });
 
 describe('apple signin auth adapter', () => {
-  const apple = require('../lib/Adapters/Auth/apple-signin');
+  const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
 
   it('should throw error with missing id_token', async () => {
@@ -1095,14 +1142,14 @@ describe('apple signin auth adapter', () => {
       await apple.validateAuthData({}, { client_id: 'secret' });
       fail();
     } catch (e) {
-      expect(e.message).toBe('id_token is invalid for this user.');
+      expect(e.message).toBe('id token is invalid for this user.');
     }
   });
 
   it('should not verify invalid id_token', async () => {
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_user_id', token: 'the_token' },
         { client_id: 'secret' }
       );
       fail();
@@ -1116,11 +1163,12 @@ describe('apple signin auth adapter', () => {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
       exp: Date.now(),
+      sub: 'the_user_id',
     };
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
-      { id_token: 'the_token' },
+      { id: 'the_user_id', token: 'the_token' },
       { client_id: 'secret' }
     );
     expect(result).toEqual(fakeClaim);
@@ -1129,18 +1177,19 @@ describe('apple signin auth adapter', () => {
   it('should throw error with with invalid jwt issuer', async () => {
     const fakeClaim = {
       iss: 'https://not.apple.com',
+      sub: 'the_user_id',
     };
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_user_id', token: 'the_token' },
         { client_id: 'secret' }
       );
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id_token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
+        'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
     }
   });
@@ -1149,12 +1198,13 @@ describe('apple signin auth adapter', () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'invalid_client_id',
+      sub: 'the_user_id',
     };
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
       await apple.validateAuthData(
-        { id_token: 'the_token' },
+        { id: 'the_user_id', token: 'the_token' },
         { client_id: 'secret' }
       );
       fail();
@@ -1163,5 +1213,118 @@ describe('apple signin auth adapter', () => {
         'jwt aud parameter does not include this client - is: invalid_client_id | expected: secret'
       );
     }
+  });
+});
+
+describe('Apple Game Center Auth adapter', () => {
+  const gcenter = require('../lib/Adapters/Auth/gcenter');
+
+  it('validateAuthData should validate', async () => {
+    // real token is used
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature:
+        'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+    } catch (e) {
+      fail();
+    }
+  });
+
+  it('validateAuthData invalid signature id', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Apple Game Center - invalid signature');
+    }
+  });
+
+  it('validateAuthData invalid public key url', async () => {
+    const authData = {
+      id: 'G:1965586982',
+      publicKeyUrl: 'invalid.com',
+      timestamp: 1565257031287,
+      signature: '1234',
+      salt: 'DzqqrQ==',
+      bundleId: 'cloud.xtralife.gamecenterauth',
+    };
+
+    try {
+      await gcenter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'Apple Game Center - invalid publicKeyUrl: invalid.com'
+      );
+    }
+  });
+});
+
+describe('phant auth adapter', () => {
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should throw for invalid auth', async () => {
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
+
+    spyOn(httpsRequest, 'get').and.callFake(() =>
+      Promise.resolve({ sub: 'invalidID' })
+    );
+    try {
+      await adapter.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('PhantAuth auth is invalid for this user.');
+    }
+  });
+});
+
+describe('microsoft graph auth adapter', () => {
+  const microsoft = require('../lib/Adapters/Auth/microsoft');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should use access_token for validation is passed and responds with id and mail', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId', mail: 'userMail' });
+    });
+    await microsoft.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token',
+    });
+  });
+
+  it('should fail to validate Microsoft Graph auth with bad token', done => {
+    const authData = {
+      id: 'fake-id',
+      mail: 'fake@mail.com',
+      access_token: 'very.long.bad.token',
+    };
+    microsoft.validateAuthData(authData).then(done.fail, err => {
+      expect(err.code).toBe(101);
+      expect(err.message).toBe(
+        'Microsoft Graph auth is invalid for this user.'
+      );
+      done();
+    });
   });
 });

@@ -17,6 +17,17 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: true,
   },
+  allowCustomObjectId: {
+    env: 'PARSE_SERVER_ALLOW_CUSTOM_OBJECT_ID',
+    help: 'Enable (or disable) custom objectId',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  allowHeaders: {
+    env: 'PARSE_SERVER_ALLOW_HEADERS',
+    help: 'Add headers to Access-Control-Allow-Headers',
+    action: parsers.arrayParser,
+  },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
     help: 'Adapter module for the analytics',
@@ -153,6 +164,15 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for the files sub-system',
     action: parsers.moduleOrObjectParser,
   },
+  graphQLPath: {
+    env: 'PARSE_SERVER_GRAPHQL_PATH',
+    help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
+    default: '/graphql',
+  },
+  graphQLSchema: {
+    env: 'PARSE_SERVER_GRAPH_QLSCHEMA',
+    help: 'Full path to your GraphQL custom schema.graphql file',
+  },
   host: {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',
@@ -210,6 +230,12 @@ module.exports.ParseServerOptions = {
     help: 'Max value for limit option on queries, defaults to unlimited',
     action: parsers.numberParser('maxLimit'),
   },
+  maxLogFiles: {
+    env: 'PARSE_SERVER_MAX_LOG_FILES',
+    help:
+      "Maximum number of logs to keep. If not set, no logs will be removed. This can be a number of files or number of days. If using days, add 'd' as the suffix. (default: null)",
+    action: parsers.objectParser,
+  },
   maxUploadSize: {
     env: 'PARSE_SERVER_MAX_UPLOAD_SIZE',
     help: 'Max file size for uploads, defaults to 20mb',
@@ -219,10 +245,22 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MIDDLEWARE',
     help: 'middleware for express server, can be string or function',
   },
+  mountGraphQL: {
+    env: 'PARSE_SERVER_MOUNT_GRAPHQL',
+    help: 'Mounts the GraphQL endpoint',
+    action: parsers.booleanParser,
+    default: false,
+  },
   mountPath: {
     env: 'PARSE_SERVER_MOUNT_PATH',
     help: 'Mount path for the server, defaults to /parse',
     default: '/parse',
+  },
+  mountPlayground: {
+    env: 'PARSE_SERVER_MOUNT_PLAYGROUND',
+    help: 'Mounts the GraphQL Playground - never use this option in production',
+    action: parsers.booleanParser,
+    default: false,
   },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
@@ -234,6 +272,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'Password policy for enforcing password related rules',
     action: parsers.objectParser,
+  },
+  playgroundPath: {
+    env: 'PARSE_SERVER_PLAYGROUND_PATH',
+    help: 'Mount path for the GraphQL Playground, defaults to /playground',
+    default: '/playground',
   },
   port: {
     env: 'PORT',
@@ -303,6 +346,14 @@ module.exports.ParseServerOptions = {
       'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
     action: parsers.numberParser('schemaCacheTTL'),
     default: 5000,
+  },
+  serverCloseComplete: {
+    env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
+    help: 'Callback when server has closed',
+  },
+  serverStartComplete: {
+    env: 'PARSE_SERVER_SERVER_START_COMPLETE',
+    help: 'Callback when server has started',
   },
   serverURL: {
     env: 'PARSE_SERVER_URL',
@@ -407,6 +458,11 @@ module.exports.LiveQueryOptions = {
     env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
+  wssAdapter: {
+    env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
+    help: 'Adapter module for the WebSocketServer',
+    action: parsers.moduleOrObjectParser,
+  },
 };
 module.exports.LiveQueryServerOptions = {
   appId: {
@@ -466,5 +522,10 @@ module.exports.LiveQueryServerOptions = {
     help:
       'Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).',
     action: parsers.numberParser('websocketTimeout'),
+  },
+  wssAdapter: {
+    env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
+    help: 'Adapter module for the WebSocketServer',
+    action: parsers.moduleOrObjectParser,
   },
 };

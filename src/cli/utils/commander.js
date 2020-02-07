@@ -102,7 +102,7 @@ function parseConfigFile(program) {
 
 Command.prototype.setValuesIfNeeded = function(options) {
   Object.keys(options).forEach(key => {
-    if (!this.hasOwnProperty(key)) {
+    if (!Object.prototype.hasOwnProperty.call(this, key)) {
       this[key] = options[key];
     }
   });

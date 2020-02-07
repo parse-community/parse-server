@@ -120,7 +120,7 @@ const validateQuery = (
          */
         Object.keys(query).forEach(key => {
           const noCollisions = !query.$or.some(subq =>
-            subq.hasOwnProperty(key)
+            Object.prototype.hasOwnProperty.call(subq, key)
           );
           let hasNears = false;
           if (query[key] != null && typeof query[key] == 'object') {
@@ -193,15 +193,69 @@ const validateQuery = (
 
 // Filters out any data that shouldn't be on this REST-formatted object.
 const filterSensitiveData = (
-  isMaster,
-  aclGroup,
-  className,
-  protectedFields,
-  object
+  isMaster: boolean,
+  aclGroup: any[],
+  auth: any,
+  operation: any,
+  schema: SchemaController.SchemaController,
+  className: string,
+  protectedFields: null | Array<any>,
+  object: any
 ) => {
-  protectedFields && protectedFields.forEach(k => delete object[k]);
+  let userId = null;
+  if (auth && auth.user) userId = auth.user.id;
 
-  if (className !== '_User') {
+  // replace protectedFields when using pointer-permissions
+  const perms = schema.getClassLevelPermissions(className);
+  if (perms) {
+    const isReadOperation = ['get', 'find'].indexOf(operation) > -1;
+
+    if (isReadOperation && perms.protectedFields) {
+      // extract protectedFields added with the pointer-permission prefix
+      const protectedFieldsPointerPerm = Object.keys(perms.protectedFields)
+        .filter(key => key.startsWith('userField:'))
+        .map(key => {
+          return { key: key.substring(10), value: perms.protectedFields[key] };
+        });
+
+      const newProtectedFields: Array<string> = [];
+      let overrideProtectedFields = false;
+
+      // check if the object grants the current user access based on the extracted fields
+      protectedFieldsPointerPerm.forEach(pointerPerm => {
+        let pointerPermIncludesUser = false;
+        const readUserFieldValue = object[pointerPerm.key];
+        if (readUserFieldValue) {
+          if (Array.isArray(readUserFieldValue)) {
+            pointerPermIncludesUser = readUserFieldValue.some(
+              user => user.objectId && user.objectId === userId
+            );
+          } else {
+            pointerPermIncludesUser =
+              readUserFieldValue.objectId &&
+              readUserFieldValue.objectId === userId;
+          }
+        }
+
+        if (pointerPermIncludesUser) {
+          overrideProtectedFields = true;
+          newProtectedFields.push(...pointerPerm.value);
+        }
+      });
+
+      // if atleast one pointer-permission affected the current user override the protectedFields
+      if (overrideProtectedFields) protectedFields = newProtectedFields;
+    }
+  }
+
+  const isUserClass = className === '_User';
+
+  /* special treat for the user class: don't filter protectedFields if currently loggedin user is
+  the retrieved user */
+  if (!(isUserClass && userId && object.objectId === userId))
+    protectedFields && protectedFields.forEach(k => delete object[k]);
+
+  if (!isUserClass) {
     return object;
   }
 
@@ -412,6 +466,7 @@ class DatabaseController {
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   skipMongoDBServer13732Workaround: boolean;
+  _transactionalSession: ?any;
 
   constructor(
     adapter: StorageAdapter,
@@ -425,6 +480,7 @@ class DatabaseController {
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this.skipMongoDBServer13732Workaround = skipMongoDBServer13732Workaround;
+    this._transactionalSession = null;
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -498,9 +554,10 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    { acl }: QueryOptions
+    runOptions: QueryOptions
   ): Promise<boolean> {
     let schema;
+    const acl = runOptions.acl;
     const isMaster = acl === undefined;
     var aclGroup: string[] = acl || [];
     return this.loadSchema()
@@ -509,7 +566,13 @@ class DatabaseController {
         if (isMaster) {
           return Promise.resolve();
         }
-        return this.canAddField(schema, className, object, aclGroup);
+        return this.canAddField(
+          schema,
+          className,
+          object,
+          aclGroup,
+          runOptions
+        );
       })
       .then(() => {
         return schema.validateObject(className, object, query);
@@ -520,7 +583,7 @@ class DatabaseController {
     className: string,
     query: any,
     update: any,
-    { acl, many, upsert }: FullQueryOptions = {},
+    { acl, many, upsert, addsField }: FullQueryOptions = {},
     skipSanitization: boolean = false,
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
@@ -553,6 +616,21 @@ class DatabaseController {
                 query,
                 aclGroup
               );
+
+              if (addsField) {
+                query = {
+                  $and: [
+                    query,
+                    this.addPointerPermissions(
+                      schemaController,
+                      className,
+                      'addField',
+                      query,
+                      aclGroup
+                    ),
+                  ],
+                };
+              }
             }
             if (!query) {
               return Promise.resolve();
@@ -625,21 +703,24 @@ class DatabaseController {
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else if (upsert) {
                   return this.adapter.upsertOneObject(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 } else {
                   return this.adapter.findOneAndUpdate(
                     className,
                     schema,
                     query,
-                    update
+                    update,
+                    this._transactionalSession
                   );
                 }
               });
@@ -761,7 +842,8 @@ class DatabaseController {
       `_Join:${key}:${fromClassName}`,
       relationSchema,
       doc,
-      doc
+      doc,
+      this._transactionalSession
     );
   }
 
@@ -782,7 +864,8 @@ class DatabaseController {
       .deleteObjectsByQuery(
         `_Join:${key}:${fromClassName}`,
         relationSchema,
-        doc
+        doc,
+        this._transactionalSession
       )
       .catch(error => {
         // We don't care if they try to delete a non-existent relation.
@@ -849,7 +932,8 @@ class DatabaseController {
               this.adapter.deleteObjectsByQuery(
                 className,
                 parseFormatSchema,
-                query
+                query,
+                this._transactionalSession
               )
             )
             .catch(error => {
@@ -909,7 +993,8 @@ class DatabaseController {
             return this.adapter.createObject(
               className,
               SchemaController.convertSchemaToAdapterSchema(schema),
-              object
+              object,
+              this._transactionalSession
             );
           })
           .then(result => {
@@ -932,7 +1017,8 @@ class DatabaseController {
     schema: SchemaController.SchemaController,
     className: string,
     object: any,
-    aclGroup: string[]
+    aclGroup: string[],
+    runOptions: QueryOptions
   ): Promise<void> {
     const classSchema = schema.schemaData[className];
     if (!classSchema) {
@@ -952,7 +1038,11 @@ class DatabaseController {
       return schemaFields.indexOf(field) < 0;
     });
     if (newKeys.length > 0) {
-      return schema.validatePermission(className, aclGroup, 'addField');
+      // adds a marker that new field is being adding during update
+      runOptions.addsField = true;
+
+      const action = runOptions.action;
+      return schema.validatePermission(className, aclGroup, 'addField', action);
     }
     return Promise.resolve();
   }
@@ -1229,13 +1319,14 @@ class DatabaseController {
       pipeline,
       readPreference,
       caseInsensitive = false,
+      hint,
+      explain,
     }: any = {},
     auth: any = {},
     validSchemaController: SchemaController.SchemaController
   ): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
-
     op =
       op ||
       (typeof query.objectId == 'string' && Object.keys(query).length === 1
@@ -1280,6 +1371,8 @@ class DatabaseController {
               keys,
               readPreference,
               caseInsensitive,
+              hint,
+              explain,
             };
             Object.keys(sort).forEach(fieldName => {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
@@ -1316,8 +1409,9 @@ class DatabaseController {
                     query,
                     aclGroup
                   );
-                  // ProtectedFields is generated before executing the query so we
-                  // can optimize the query using Mongo Projection at a later stage.
+                  /* Don't use projections to optimize the protectedFields since the protectedFields
+                  based on pointer-permissions are determined after querying. The filtering can
+                  overwrite the protected fields. */
                   protectedFields = this.addProtectedFields(
                     schemaController,
                     className,
@@ -1352,7 +1446,9 @@ class DatabaseController {
                       className,
                       schema,
                       query,
-                      readPreference
+                      readPreference,
+                      undefined,
+                      hint
                     );
                   }
                 } else if (distinct) {
@@ -1374,9 +1470,18 @@ class DatabaseController {
                       className,
                       schema,
                       pipeline,
-                      readPreference
+                      readPreference,
+                      hint,
+                      explain
                     );
                   }
+                } else if (explain) {
+                  return this.adapter.find(
+                    className,
+                    schema,
+                    query,
+                    queryOptions
+                  );
                 } else {
                   return this.adapter
                     .find(className, schema, query, queryOptions)
@@ -1386,6 +1491,9 @@ class DatabaseController {
                         return filterSensitiveData(
                           isMaster,
                           aclGroup,
+                          auth,
+                          op,
+                          schemaController,
                           className,
                           protectedFields,
                           object
@@ -1448,28 +1556,50 @@ class DatabaseController {
       });
   }
 
+  // Constraints query using CLP's pointer permissions (PP) if any.
+  // 1. Etract the user id from caller's ACLgroup;
+  // 2. Exctract a list of field names that are PP for target collection and operation;
+  // 3. Constraint the original query so that each PP field must
+  // point to caller's id (or contain it in case of PP field being an array)
   addPointerPermissions(
     schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
     aclGroup: any[] = []
-  ) {
+  ): any {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
     if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
     const perms = schema.getClassLevelPermissions(className);
-    const field =
-      ['get', 'find'].indexOf(operation) > -1
-        ? 'readUserFields'
-        : 'writeUserFields';
+
     const userACL = aclGroup.filter(acl => {
       return acl.indexOf('role:') != 0 && acl != '*';
     });
+
+    const groupKey =
+      ['get', 'find', 'count'].indexOf(operation) > -1
+        ? 'readUserFields'
+        : 'writeUserFields';
+
+    const permFields = [];
+
+    if (perms[operation] && perms[operation].pointerFields) {
+      permFields.push(...perms[operation].pointerFields);
+    }
+
+    if (perms[groupKey]) {
+      for (const field of perms[groupKey]) {
+        if (!permFields.includes(field)) {
+          permFields.push(field);
+        }
+      }
+    }
     // the ACL should have exactly 1 user
-    if (perms && perms[field] && perms[field].length > 0) {
+    if (permFields.length > 0) {
+      // the ACL should have exactly 1 user
       // No user set return undefined
       // If the length is > 1, that means we didn't de-dupe users correctly
       if (userACL.length != 1) {
@@ -1482,24 +1612,23 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const permFields = perms[field];
-      const ors = permFields.map(key => {
+      const ors = permFields.flatMap(key => {
+        // constraint for single pointer setup
         const q = {
           [key]: userPointer,
         };
+        // constraint for users-array setup
+        const qa = {
+          [key]: { $all: [userPointer] },
+        };
         // if we already have a constraint on the key, use the $and
-        if (query.hasOwnProperty(key)) {
-          return { $and: [q, query] };
+        if (Object.prototype.hasOwnProperty.call(query, key)) {
+          return [{ $and: [q, query] }, { $and: [qa, query] }];
         }
         // otherwise just add the constaint
-        return Object.assign({}, query, {
-          [`${key}`]: userPointer,
-        });
+        return [Object.assign({}, query, q), Object.assign({}, query, qa)];
       });
-      if (ors.length > 1) {
-        return { $or: ors };
-      }
-      return ors[0];
+      return { $or: ors };
     } else {
       return query;
     }
@@ -1511,7 +1640,7 @@ class DatabaseController {
     query: any = {},
     aclGroup: any[] = [],
     auth: any = {}
-  ) {
+  ): null | string[] {
     const perms = schema.getClassLevelPermissions(className);
     if (!perms) return null;
 
@@ -1519,18 +1648,13 @@ class DatabaseController {
     if (!protectedFields) return null;
 
     if (aclGroup.indexOf(query.objectId) > -1) return null;
-    if (
-      Object.keys(query).length === 0 &&
-      auth &&
-      auth.user &&
-      aclGroup.indexOf(auth.user.id) > -1
-    )
-      return null;
 
-    let protectedKeys = Object.values(protectedFields).reduce(
-      (acc, val) => acc.concat(val),
-      []
-    ); //.flat();
+    // remove userField keys since they are filtered after querying
+    let protectedKeys = Object.keys(protectedFields).reduce((acc, val) => {
+      if (val.startsWith('userField:')) return acc;
+      return acc.concat(protectedFields[val]);
+    }, []);
+
     [...(auth.userRoles || [])].forEach(role => {
       const fields = protectedFields[role];
       if (fields) {
@@ -1539,6 +1663,36 @@ class DatabaseController {
     });
 
     return protectedKeys;
+  }
+
+  createTransactionalSession() {
+    return this.adapter
+      .createTransactionalSession()
+      .then(transactionalSession => {
+        this._transactionalSession = transactionalSession;
+      });
+  }
+
+  commitTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to commit');
+    }
+    return this.adapter
+      .commitTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
+  }
+
+  abortTransactionalSession() {
+    if (!this._transactionalSession) {
+      throw new Error('There is no transactional session to abort');
+    }
+    return this.adapter
+      .abortTransactionalSession(this._transactionalSession)
+      .then(() => {
+        this._transactionalSession = null;
+      });
   }
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to

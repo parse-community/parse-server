@@ -15,7 +15,7 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, caseInsensitive } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain, caseInsensitive } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -30,6 +30,8 @@ export default class MongoCollection {
       maxTimeMS,
       readPreference,
       caseInsensitive,
+      hint,
+      explain,
     }).catch(error => {
       // Check for "no geoindex" error
       if (
@@ -59,6 +61,8 @@ export default class MongoCollection {
               maxTimeMS,
               readPreference,
               caseInsensitive,
+              hint,
+              explain,
             })
           )
       );
@@ -67,13 +71,14 @@ export default class MongoCollection {
 
   _rawFind(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, caseInsensitive } = {}
+    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain, caseInsensitive } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
       limit,
       sort,
       readPreference,
+      hint,
     });
 
     if (keys) {
@@ -88,10 +93,10 @@ export default class MongoCollection {
       findOperation = findOperation.maxTimeMS(maxTimeMS);
     }
 
-    return findOperation.toArray();
+    return explain ? findOperation.explain(explain) : findOperation.toArray();
   }
 
-  count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+  count(query, { skip, limit, sort, maxTimeMS, readPreference, hint } = {}) {
     // If query is empty, then use estimatedDocumentCount instead.
     // This is due to countDocuments performing a scan,
     // which greatly increases execution time when being run on large collections.
@@ -108,6 +113,7 @@ export default class MongoCollection {
       sort,
       maxTimeMS,
       readPreference,
+      hint,
     });
 
     return countOperation;
@@ -117,33 +123,36 @@ export default class MongoCollection {
     return this._mongoCollection.distinct(field, query);
   }
 
-  aggregate(pipeline, { maxTimeMS, readPreference } = {}) {
+  aggregate(pipeline, { maxTimeMS, readPreference, hint, explain } = {}) {
     return this._mongoCollection
-      .aggregate(pipeline, { maxTimeMS, readPreference })
+      .aggregate(pipeline, { maxTimeMS, readPreference, hint, explain })
       .toArray();
   }
 
-  insertOne(object) {
-    return this._mongoCollection.insertOne(object);
+  insertOne(object, session) {
+    return this._mongoCollection.insertOne(object, { session });
   }
 
   // Atomically updates data in the database for a single (first) object that matched the query
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
-  upsertOne(query, update) {
-    return this._mongoCollection.updateOne(query, update, { upsert: true });
+  upsertOne(query, update, session) {
+    return this._mongoCollection.updateOne(query, update, {
+      upsert: true,
+      session,
+    });
   }
 
   updateOne(query, update) {
     return this._mongoCollection.updateOne(query, update);
   }
 
-  updateMany(query, update) {
-    return this._mongoCollection.updateMany(query, update);
+  updateMany(query, update, session) {
+    return this._mongoCollection.updateMany(query, update, { session });
   }
 
-  deleteMany(query) {
-    return this._mongoCollection.deleteMany(query);
+  deleteMany(query, session) {
+    return this._mongoCollection.deleteMany(query, { session });
   }
 
   _ensureSparseUniqueIndexInBackground(indexRequest) {

@@ -11,6 +11,10 @@ RUN npm run build
 
 # Release stage
 FROM node:lts-alpine as release
+
+RUN apk update; \
+  apk add git;
+
 VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server

@@ -84,9 +84,19 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (
   };
 
   for (const fieldName in fields) {
+    const { type, targetClass, ...fieldOptions } = fields[fieldName];
     mongoObject[
       fieldName
-    ] = MongoSchemaCollection.parseFieldTypeToMongoFieldType(fields[fieldName]);
+    ] = MongoSchemaCollection.parseFieldTypeToMongoFieldType({
+      type,
+      targetClass,
+    });
+    if (fieldOptions && Object.keys(fieldOptions).length > 0) {
+      mongoObject._metadata = mongoObject._metadata || {};
+      mongoObject._metadata.fields_options =
+        mongoObject._metadata.fields_options || {};
+      mongoObject._metadata.fields_options[fieldName] = fieldOptions;
+    }
   }
 
   if (typeof classLevelPermissions !== 'undefined') {
@@ -121,7 +131,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   _collectionPrefix: string;
   _mongoOptions: Object;
   // Public
-  connectionPromise: Promise<any>;
+  connectionPromise: ?Promise<any>;
   database: any;
   client: MongoClient;
   _maxTimeMS: ?number;
@@ -136,6 +146,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
+    this._mongoOptions.useUnifiedTopology = true;
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
@@ -193,9 +204,9 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   handleShutdown() {
     if (!this.client) {
-      return;
+      return Promise.resolve();
     }
-    this.client.close(false);
+    return this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
@@ -268,7 +279,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!fields.hasOwnProperty(key)) {
+          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -425,6 +436,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach(name => {
       schemaUpdate['$unset'][name] = null;
+      schemaUpdate['$unset'][`_metadata.fields_options.${name}`] = null;
     });
 
     return this._adaptiveCollection(className)
@@ -461,7 +473,12 @@ export class MongoStorageAdapter implements StorageAdapter {
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schema only for the legacy mongo format. We'll figure that out later.
-  createObject(className: string, schema: SchemaType, object: any) {
+  createObject(
+    className: string,
+    schema: SchemaType,
+    object: any,
+    transactionalSession: ?any
+  ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(
       className,
@@ -469,7 +486,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       schema
     );
     return this._adaptiveCollection(className)
-      .then(collection => collection.insertOne(mongoObject))
+      .then(collection =>
+        collection.insertOne(mongoObject, transactionalSession)
+      )
       .catch(error => {
         if (error.code === 11000) {
           // Duplicate value
@@ -499,13 +518,14 @@ export class MongoStorageAdapter implements StorageAdapter {
   deleteObjectsByQuery(
     className: string,
     schema: SchemaType,
-    query: QueryType
+    query: QueryType,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
       .then(collection => {
         const mongoWhere = transformWhere(className, query, schema);
-        return collection.deleteMany(mongoWhere);
+        return collection.deleteMany(mongoWhere, transactionalSession);
       })
       .catch(err => this.handleError(err))
       .then(
@@ -532,13 +552,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.updateMany(mongoWhere, mongoUpdate))
+      .then(collection =>
+        collection.updateMany(mongoWhere, mongoUpdate, transactionalSession)
+      )
       .catch(err => this.handleError(err));
   }
 
@@ -548,7 +571,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
@@ -557,6 +581,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection =>
         collection._mongoCollection.findOneAndUpdate(mongoWhere, mongoUpdate, {
           returnOriginal: false,
+          session: transactionalSession || undefined,
         })
       )
       .then(result => mongoObjectToParseObject(className, result.value, schema))
@@ -577,13 +602,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    update: any
+    update: any,
+    transactionalSession: ?any
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.upsertOne(mongoWhere, mongoUpdate))
+      .then(collection =>
+        collection.upsertOne(mongoWhere, mongoUpdate, transactionalSession)
+      )
       .catch(err => this.handleError(err));
   }
 
@@ -592,7 +620,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference, caseInsensitive }: QueryOptions
+    { skip, limit, sort, keys, readPreference, hint, explain, caseInsensitive }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -625,13 +653,18 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           readPreference,
           caseInsensitive,
+          hint,
+          explain,
         })
       )
-      .then(objects =>
-        objects.map(object =>
+      .then(objects => {
+        if (explain) {
+          return objects;
+        }
+        return objects.map(object =>
           mongoObjectToParseObject(className, object, schema)
-        )
-      )
+        );
+      })
       .catch(err => this.handleError(err));
   }
 
@@ -685,7 +718,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed
   ) {
     schema = convertParseSchemaToMongoSchema(schema);
     readPreference = this._parseReadPreference(readPreference);
@@ -694,6 +728,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.count(transformWhere(className, query, schema, true), {
           maxTimeMS: this._maxTimeMS,
           readPreference,
+          hint,
         })
       )
       .catch(err => this.handleError(err));
@@ -733,7 +768,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: any,
     pipeline: any,
-    readPreference: ?string
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean
   ) {
     let isPointerField = false;
     pipeline = pipeline.map(stage => {
@@ -764,15 +801,22 @@ export class MongoStorageAdapter implements StorageAdapter {
         collection.aggregate(pipeline, {
           readPreference,
           maxTimeMS: this._maxTimeMS,
+          hint,
+          explain,
         })
       )
       .then(results => {
         results.forEach(result => {
-          if (result.hasOwnProperty('_id')) {
+          if (Object.prototype.hasOwnProperty.call(result, '_id')) {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
             }
-            if (result._id == null || _.isEmpty(result._id)) {
+            if (
+              result._id == null ||
+              result._id == undefined ||
+              (['object', 'string'].includes(typeof result._id) &&
+                _.isEmpty(result._id))
+            ) {
               result._id = null;
             }
             result.objectId = result._id;
@@ -809,7 +853,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
   // down a tree to find a "leaf node" and checking to see if it needs to be converted.
   _parseAggregateArgs(schema: any, pipeline: any): any {
-    if (Array.isArray(pipeline)) {
+    if (pipeline === null) {
+      return null;
+    } else if (Array.isArray(pipeline)) {
       return pipeline.map(value => this._parseAggregateArgs(schema, value));
     } else if (typeof pipeline === 'object') {
       const returnValue = {};
@@ -997,7 +1043,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       const existingIndexes = schema.indexes;
       for (const key in existingIndexes) {
         const index = existingIndexes[key];
-        if (index.hasOwnProperty(fieldName)) {
+        if (Object.prototype.hasOwnProperty.call(index, fieldName)) {
           return Promise.resolve();
         }
       }
@@ -1048,6 +1094,24 @@ export class MongoStorageAdapter implements StorageAdapter {
         return Promise.all(promises);
       })
       .catch(err => this.handleError(err));
+  }
+
+  createTransactionalSession(): Promise<any> {
+    const transactionalSection = this.client.startSession();
+    transactionalSection.startTransaction();
+    return Promise.resolve(transactionalSection);
+  }
+
+  commitTransactionalSession(transactionalSection: any): Promise<void> {
+    return transactionalSection.commitTransaction().then(() => {
+      transactionalSection.endSession();
+    });
+  }
+
+  abortTransactionalSession(transactionalSection: any): Promise<void> {
+    return transactionalSection.abortTransaction().then(() => {
+      transactionalSection.endSession();
+    });
   }
 }
 

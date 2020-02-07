@@ -18,7 +18,7 @@ describe('GridFSBucket and GridStore interop', () => {
   beforeEach(async () => {
     const gsAdapter = new GridStoreAdapter(databaseURI);
     const db = await gsAdapter._connect();
-    db.dropDatabase();
+    await db.dropDatabase();
   });
 
   it('a file created in GridStore should be available in GridFS', async () => {
@@ -59,5 +59,18 @@ describe('GridFSBucket and GridStore interop', () => {
     expect(documents.length).toBe(2);
     await gfsAdapter.deleteFile('myFileName');
     await expectMissingFile(gfsAdapter, 'myFileName');
+  });
+
+  it('handleShutdown, close connection', done => {
+    const databaseURI = 'mongodb://localhost:27017/parse';
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+
+    gfsAdapter._connect().then(db => {
+      expect(db.serverConfig.connections().length > 0).toEqual(true);
+      gfsAdapter.handleShutdown().then(() => {
+        expect(db.serverConfig.connections().length > 0).toEqual(false);
+        done();
+      });
+    });
   });
 });

@@ -359,6 +359,24 @@ describe('Parse.Query testing', () => {
       }, done.fail);
   });
 
+  it('nested equalTo string with single quote', async () => {
+    const obj = new TestObject({ nested: { foo: "single'quote" } });
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    query.equalTo('nested.foo', "single'quote");
+    const result = await query.get(obj.id);
+    equal(result.get('nested').foo, "single'quote");
+  });
+
+  it('nested containedIn string with single quote', async () => {
+    const obj = new TestObject({ nested: { foo: ["single'quote"] } });
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    query.containedIn('nested.foo', ["single'quote"]);
+    const result = await query.get(obj.id);
+    equal(result.get('nested').foo[0], "single'quote");
+  });
+
   it('nested containedIn string', done => {
     const sender1 = { group: ['A', 'B'] };
     const sender2 = { group: ['A', 'C'] };
@@ -3348,6 +3366,122 @@ describe('Parse.Query testing', () => {
         }
       );
   });
+  it('exclude keys', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with select same key', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: 'foo',
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBeUndefined();
+  });
+
+  it('exclude keys with select different key', async () => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: 'foo,hello',
+        excludeKeys: 'foo',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with include same key', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({ child: pointer, hello: 'world' });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        include: 'child',
+        excludeKeys: 'child',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child).toBeUndefined();
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with include different key', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({
+      child1: pointer,
+      child2: pointer,
+      hello: 'world',
+    });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        include: 'child1,child2',
+        excludeKeys: 'child1',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child1).toBeUndefined();
+    expect(response.data.results[0].child2.objectId).toEqual(pointer.id);
+    expect(response.data.results[0].hello).toBe('world');
+  });
+
+  it('exclude keys with includeAll', async () => {
+    const pointer = new TestObject();
+    await pointer.save();
+    const obj = new TestObject({
+      child1: pointer,
+      child2: pointer,
+      hello: 'world',
+    });
+    await obj.save();
+
+    const response = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        includeAll: true,
+        excludeKeys: 'child1',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response.data.results[0].child).toBeUndefined();
+    expect(response.data.results[0].child2.objectId).toEqual(pointer.id);
+    expect(response.data.results[0].hello).toBe('world');
+  });
 
   it('select keys with each query', function(done) {
     const obj = new TestObject({ foo: 'baz', bar: 1 });
@@ -4441,6 +4575,71 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it('should not throw error with undefined dot notation when using matchesKeyInQuery', async () => {
+    const group = new Parse.Object('Group', { name: 'Group #1' });
+    await group.save();
+
+    const role1 = new Parse.Object('Role', {
+      name: 'Role #1',
+      type: 'x',
+      belongsTo: group,
+    });
+
+    const role2 = new Parse.Object('Role', {
+      name: 'Role #2',
+      type: 'y',
+      belongsTo: undefined,
+    });
+    await Parse.Object.saveAll([role1, role2]);
+
+    const rolesOfTypeX = new Parse.Query('Role');
+    rolesOfTypeX.equalTo('type', 'x');
+
+    const groupsWithRoleX = new Parse.Query('Group');
+    groupsWithRoleX.matchesKeyInQuery(
+      'objectId',
+      'belongsTo.objectId',
+      rolesOfTypeX
+    );
+
+    const results = await groupsWithRoleX.find();
+    equal(results.length, 1);
+    equal(results[0].get('name'), group.get('name'));
+  });
+
+  it('should not throw error with undefined dot notation when using doesNotMatchKeyInQuery', async () => {
+    const group1 = new Parse.Object('Group', { name: 'Group #1' });
+    const group2 = new Parse.Object('Group', { name: 'Group #2' });
+    await Parse.Object.saveAll([group1, group2]);
+
+    const role1 = new Parse.Object('Role', {
+      name: 'Role #1',
+      type: 'x',
+      belongsTo: group1,
+    });
+
+    const role2 = new Parse.Object('Role', {
+      name: 'Role #2',
+      type: 'y',
+      belongsTo: undefined,
+    });
+    await Parse.Object.saveAll([role1, role2]);
+
+    const rolesOfTypeX = new Parse.Query('Role');
+    rolesOfTypeX.equalTo('type', 'x');
+
+    const groupsWithRoleX = new Parse.Query('Group');
+    groupsWithRoleX.doesNotMatchKeyInQuery(
+      'objectId',
+      'belongsTo.objectId',
+      rolesOfTypeX
+    );
+
+    const results = await groupsWithRoleX.find();
+    equal(results.length, 1);
+    equal(results[0].get('name'), group2.get('name'));
+  });
+
   it('withJSON supports geoWithin.centerSphere', done => {
     const inbound = new Parse.GeoPoint(1.5, 1.5);
     const onbound = new Parse.GeoPoint(10, 10);
@@ -4636,6 +4835,19 @@ describe('Parse.Query testing', () => {
 
     const results = await query.find();
     equal(results[0].get('array'), data2);
+  });
+
+  it('can query regex with unicode', async () => {
+    const object = new TestObject();
+    object.set('field', 'autoöo');
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.contains('field', 'autoöo');
+    const results = await query.find();
+
+    expect(results.length).toBe(1);
+    expect(results[0].get('field')).toBe('autoöo');
   });
 
   it('can update mixed array more than 100 elements', async () => {

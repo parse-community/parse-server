@@ -127,9 +127,15 @@ describe('Parse.Query Aggregate testing', () => {
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
-        expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).not.toBe(undefined);
         expect(resp.results[1].objectId).not.toBe(undefined);
         expect(resp.results[2].objectId).not.toBe(undefined);
@@ -148,9 +154,15 @@ describe('Parse.Query Aggregate testing', () => {
     });
     const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
     expect(resp.results.length).toBe(3);
-    expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
-    expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
-    expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+    ).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+    ).toBe(true);
+    expect(
+      Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
+    ).toBe(true);
     expect(resp.results[0].objectId).not.toBe(undefined);
     expect(resp.results[1].objectId).not.toBe(undefined);
     expect(resp.results[2].objectId).not.toBe(undefined);
@@ -237,7 +249,7 @@ describe('Parse.Query Aggregate testing', () => {
       .then(results => {
         const createdAt = new Date(obj1.createdAt);
         expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
-        expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+        expect(results[0].objectId.month).toEqual(createdAt.getUTCMonth() + 1);
         expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
         done();
       });
@@ -267,10 +279,33 @@ describe('Parse.Query Aggregate testing', () => {
       .then(results => {
         const createdAt = new Date(obj1.createdAt);
         expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
-        expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+        expect(results[0].objectId.month).toEqual(createdAt.getUTCMonth() + 1);
         expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
         done();
       });
+  });
+
+  it('group by number', done => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { objectId: '$score' },
+      },
+    });
+    get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then(resp => {
+        expect(resp.results.length).toBe(2);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
+        ).toBe(true);
+        expect(
+          resp.results.sort((a, b) => (a.objectId > b.objectId ? 1 : -1))
+        ).toEqual([{ objectId: 10 }, { objectId: 20 }]);
+        done();
+      })
+      .catch(done.fail);
   });
 
   it_exclude_dbs(['postgres'])('group and multiply transform', done => {
@@ -371,8 +406,12 @@ describe('Parse.Query Aggregate testing', () => {
       expect(results.length).toEqual(4);
       for (let i = 0; i < results.length; i++) {
         const item = results[i];
-        expect(item.hasOwnProperty('updatedAt')).toEqual(true);
-        expect(item.hasOwnProperty('objectId')).toEqual(false);
+        expect(Object.prototype.hasOwnProperty.call(item, 'updatedAt')).toEqual(
+          true
+        );
+        expect(Object.prototype.hasOwnProperty.call(item, 'objectId')).toEqual(
+          false
+        );
       }
       done();
     });
@@ -482,7 +521,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(50);
         done();
@@ -498,7 +539,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(4);
         done();
@@ -514,7 +557,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].minScore).toBe(10);
         done();
@@ -530,7 +575,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].maxScore).toBe(20);
         done();
@@ -546,7 +593,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(
+          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
+        ).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].avgScore).toBe(12.5);
         done();
@@ -892,6 +941,52 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it_exclude_dbs(['postgres'])('match null values', async () => {
+    const obj1 = new Parse.Object('MyCollection');
+    obj1.set('language', 'en');
+    obj1.set('otherField', 1);
+    const obj2 = new Parse.Object('MyCollection');
+    obj2.set('language', 'en');
+    obj2.set('otherField', 2);
+    const obj3 = new Parse.Object('MyCollection');
+    obj3.set('language', null);
+    obj3.set('otherField', 3);
+    const obj4 = new Parse.Object('MyCollection');
+    obj4.set('language', null);
+    obj4.set('otherField', 4);
+    const obj5 = new Parse.Object('MyCollection');
+    obj5.set('language', 'pt');
+    obj5.set('otherField', 5);
+    const obj6 = new Parse.Object('MyCollection');
+    obj6.set('language', 'pt');
+    obj6.set('otherField', 6);
+    await Parse.Object.saveAll([obj1, obj2, obj3, obj4, obj5, obj6]);
+
+    expect(
+      (await new Parse.Query('MyCollection').aggregate([
+        {
+          match: {
+            language: { $in: [null, 'en'] },
+          },
+        },
+      ]))
+        .map(value => value.otherField)
+        .sort()
+    ).toEqual([1, 2, 3, 4]);
+
+    expect(
+      (await new Parse.Query('MyCollection').aggregate([
+        {
+          match: {
+            $or: [{ language: 'en' }, { language: null }],
+          },
+        },
+      ]))
+        .map(value => value.otherField)
+        .sort()
+    ).toEqual([1, 2, 3, 4]);
+  });
+
   it('project query', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -966,7 +1061,9 @@ describe('Parse.Query Aggregate testing', () => {
       .then(resp => {
         expect(resp.results.length).toBe(2);
         resp.results.forEach(result => {
-          expect(result.hasOwnProperty('objectId')).toBe(true);
+          expect(Object.prototype.hasOwnProperty.call(result, 'objectId')).toBe(
+            true
+          );
           expect(result.name).toBe(undefined);
           expect(result.sender).toBe(undefined);
           expect(result.size).toBe(undefined);

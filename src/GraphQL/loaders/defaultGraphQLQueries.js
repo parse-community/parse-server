@@ -1,17 +1,22 @@
 import { GraphQLNonNull, GraphQLBoolean } from 'graphql';
-import * as objectsQueries from './objectsQueries';
 import * as usersQueries from './usersQueries';
+import * as schemaQueries from './schemaQueries';
 
 const load = parseGraphQLSchema => {
-  parseGraphQLSchema.graphQLQueries.health = {
-    description:
-      'The health query can be used to check if the server is up and running.',
-    type: new GraphQLNonNull(GraphQLBoolean),
-    resolve: () => true,
-  };
+  parseGraphQLSchema.addGraphQLQuery(
+    'health',
+    {
+      description:
+        'The health query can be used to check if the server is up and running.',
+      type: new GraphQLNonNull(GraphQLBoolean),
+      resolve: () => true,
+    },
+    true,
+    true
+  );
 
-  objectsQueries.load(parseGraphQLSchema);
   usersQueries.load(parseGraphQLSchema);
+  schemaQueries.load(parseGraphQLSchema);
 };
 
 export { load };

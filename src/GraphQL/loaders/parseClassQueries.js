@@ -1,11 +1,60 @@
 import { GraphQLNonNull } from 'graphql';
+import { fromGlobalId } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
+import pluralize from 'pluralize';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
-import * as objectsQueries from './objectsQueries';
-import * as parseClassTypes from './parseClassTypes';
+import * as objectsQueries from '../helpers/objectsQueries';
+import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLController';
+import { transformClassNameToGraphQL } from '../transformers/className';
+import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
-const load = (parseGraphQLSchema, parseClass) => {
+const getParseClassQueryConfig = function(
+  parseClassConfig: ?ParseGraphQLClassConfig
+) {
+  return (parseClassConfig && parseClassConfig.query) || {};
+};
+
+const getQuery = async (className, _source, args, context, queryInfo) => {
+  let { id } = args;
+  const { options } = args;
+  const { readPreference, includeReadPreference } = options || {};
+  const { config, auth, info } = context;
+  const selectedFields = getFieldNames(queryInfo);
+
+  const globalIdObject = fromGlobalId(id);
+
+  if (globalIdObject.type === className) {
+    id = globalIdObject.id;
+  }
+
+  const { keys, include } = extractKeysAndInclude(selectedFields);
+
+  return await objectsQueries.getObject(
+    className,
+    id,
+    keys,
+    include,
+    readPreference,
+    includeReadPreference,
+    config,
+    auth,
+    info
+  );
+};
+
+const load = function(
+  parseGraphQLSchema,
+  parseClass,
+  parseClassConfig: ?ParseGraphQLClassConfig
+) {
   const className = parseClass.className;
+  const graphQLClassName = transformClassNameToGraphQL(className);
+  const {
+    get: isGetEnabled = true,
+    find: isFindEnabled = true,
+    getAlias: getAlias = '',
+    findAlias: findAlias = '',
+  } = getParseClassQueryConfig(parseClassConfig);
 
   const {
     classGraphQLOutputType,
@@ -13,90 +62,97 @@ const load = (parseGraphQLSchema, parseClass) => {
     classGraphQLFindResultType,
   } = parseGraphQLSchema.parseClassTypes[className];
 
-  const getGraphQLQueryName = `get${className}`;
-  parseGraphQLSchema.graphQLObjectsQueries[getGraphQLQueryName] = {
-    description: `The ${getGraphQLQueryName} query can be used to get an object of the ${className} class by its id.`,
-    args: {
-      objectId: defaultGraphQLTypes.OBJECT_ID_ATT,
-      readPreference: defaultGraphQLTypes.READ_PREFERENCE_ATT,
-      includeReadPreference: defaultGraphQLTypes.INCLUDE_READ_PREFERENCE_ATT,
-    },
-    type: new GraphQLNonNull(classGraphQLOutputType),
-    async resolve(_source, args, context, queryInfo) {
-      try {
-        const { objectId, readPreference, includeReadPreference } = args;
-        const { config, auth, info } = context;
-        const selectedFields = getFieldNames(queryInfo);
+  if (isGetEnabled) {
+    const lowerCaseClassName =
+      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
 
-        const { keys, include } = parseClassTypes.extractKeysAndInclude(
-          selectedFields
-        );
+    const getGraphQLQueryName = getAlias || lowerCaseClassName;
 
-        return await objectsQueries.getObject(
-          className,
-          objectId,
-          keys,
-          include,
-          readPreference,
-          includeReadPreference,
-          config,
-          auth,
-          info
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+    parseGraphQLSchema.addGraphQLQuery(getGraphQLQueryName, {
+      description: `The ${getGraphQLQueryName} query can be used to get an object of the ${graphQLClassName} class by its id.`,
+      args: {
+        id: defaultGraphQLTypes.GLOBAL_OR_OBJECT_ID_ATT,
+        options: defaultGraphQLTypes.READ_OPTIONS_ATT,
+      },
+      type: new GraphQLNonNull(
+        classGraphQLOutputType || defaultGraphQLTypes.OBJECT
+      ),
+      async resolve(_source, args, context, queryInfo) {
+        try {
+          return await getQuery(className, _source, args, context, queryInfo);
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
+    });
+  }
 
-  const findGraphQLQueryName = `find${className}`;
-  parseGraphQLSchema.graphQLObjectsQueries[findGraphQLQueryName] = {
-    description: `The ${findGraphQLQueryName} query can be used to find objects of the ${className} class.`,
-    args: classGraphQLFindArgs,
-    type: new GraphQLNonNull(classGraphQLFindResultType),
-    async resolve(_source, args, context, queryInfo) {
-      try {
-        const {
-          where,
-          order,
-          skip,
-          limit,
-          readPreference,
-          includeReadPreference,
-          subqueryReadPreference,
-        } = args;
-        const { config, auth, info } = context;
-        const selectedFields = getFieldNames(queryInfo);
+  if (isFindEnabled) {
+    const lowerCaseClassName =
+      graphQLClassName.charAt(0).toLowerCase() + graphQLClassName.slice(1);
 
-        const { keys, include } = parseClassTypes.extractKeysAndInclude(
-          selectedFields
-            .filter(field => field.includes('.'))
-            .map(field => field.slice(field.indexOf('.') + 1))
-        );
-        const parseOrder = order && order.join(',');
+    const findGraphQLQueryName = findAlias || pluralize(lowerCaseClassName);
 
-        return await objectsQueries.findObjects(
-          className,
-          where,
-          parseOrder,
-          skip,
-          limit,
-          keys,
-          include,
-          false,
-          readPreference,
-          includeReadPreference,
-          subqueryReadPreference,
-          config,
-          auth,
-          info,
-          selectedFields.map(field => field.split('.', 1)[0])
-        );
-      } catch (e) {
-        parseGraphQLSchema.handleError(e);
-      }
-    },
-  };
+    parseGraphQLSchema.addGraphQLQuery(findGraphQLQueryName, {
+      description: `The ${findGraphQLQueryName} query can be used to find objects of the ${graphQLClassName} class.`,
+      args: classGraphQLFindArgs,
+      type: new GraphQLNonNull(
+        classGraphQLFindResultType || defaultGraphQLTypes.OBJECT
+      ),
+      async resolve(_source, args, context, queryInfo) {
+        try {
+          const {
+            where,
+            order,
+            skip,
+            first,
+            after,
+            last,
+            before,
+            options,
+          } = args;
+          const {
+            readPreference,
+            includeReadPreference,
+            subqueryReadPreference,
+          } = options || {};
+          const { config, auth, info } = context;
+          const selectedFields = getFieldNames(queryInfo);
+
+          const { keys, include } = extractKeysAndInclude(
+            selectedFields
+              .filter(field => field.startsWith('edges.node.'))
+              .map(field => field.replace('edges.node.', ''))
+          );
+          const parseOrder = order && order.join(',');
+
+          return await objectsQueries.findObjects(
+            className,
+            where,
+            parseOrder,
+            skip,
+            first,
+            after,
+            last,
+            before,
+            keys,
+            include,
+            false,
+            readPreference,
+            includeReadPreference,
+            subqueryReadPreference,
+            config,
+            auth,
+            info,
+            selectedFields,
+            parseGraphQLSchema.parseClasses
+          );
+        } catch (e) {
+          parseGraphQLSchema.handleError(e);
+        }
+      },
+    });
+  }
 };
 
 export { load };

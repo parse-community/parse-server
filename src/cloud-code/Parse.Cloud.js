@@ -2,7 +2,10 @@ import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
 
 function isParseObjectConstructor(object) {
-  return typeof object === 'function' && object.hasOwnProperty('className');
+  return (
+    typeof object === 'function' &&
+    Object.prototype.hasOwnProperty.call(object, 'className')
+  );
 }
 
 function getClassName(parseClass) {
@@ -156,6 +159,41 @@ ParseCloud.beforeLogin = function(handler) {
   }
   triggers.addTrigger(
     triggers.Types.beforeLogin,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ *
+ * Registers the after logout function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * This function is triggered after a user logs out.
+ *
+ * ```
+ * Parse.Cloud.afterLogout((request) => {
+ *   // code here
+ * })
+ *
+ * ```
+ *
+ * @method afterLogout
+ * @name Parse.Cloud.afterLogout
+ * @param {Function} func The function to run after a logout. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
+ */
+ParseCloud.afterLogout = function(handler) {
+  let className = '_Session';
+  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+    // validation will occur downstream, this is to maintain internal
+    // code consistency with the other hook types.
+    className = getClassName(handler);
+    handler = arguments[1];
+  }
+  triggers.addTrigger(
+    triggers.Types.afterLogout,
     className,
     handler,
     Parse.applicationId
