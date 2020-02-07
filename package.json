@@ -85,7 +85,7 @@
     "jasmine": "3.5.0",
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "10.0.3",
+    "lint-staged": "10.0.7",
     "mongodb-runner": "4.8.0",
     "node-fetch": "2.6.0",
     "nyc": "15.0.0",
