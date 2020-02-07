@@ -3,7 +3,7 @@ const UserController = require('../lib/Controllers/UserController')
 const emailAdapter = require('./MockEmailAdapter');
 const AppCache = require('../lib/cache').AppCache;
 
-fdescribe('boo', function() {
+xdescribe('boo', function() {
   it('boo2', async () => {
     const user = await Parse.User.signUp('test', 'test');
     expect(user.getSessionToken).toBeDefined();
