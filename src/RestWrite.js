@@ -710,18 +710,6 @@ RestWrite.prototype._validateUserName = function() {
     Users should be able to make case sensitive usernames and
     login using the case they entered.  I.e. 'Snoopy' should preclude
     'snoopy' as a valid username.
-
-    However, authentication adapters require a looser check that takes
-    case into consideration when determining uniqueness.
-
-    The username field should have a unique index on the database as
-    Failure to enforce through an index allows for a potential collision
-    for adapter users (a low probability outcome) but more importantly
-    will have poor performance on this validation.
-
-    The check below has the potential to not allow a valid
-    username for an adapter other than anonymous, this should
-    be fixed.
   */
   return this.config.database
     .find(
@@ -729,7 +717,6 @@ RestWrite.prototype._validateUserName = function() {
       {
         username: this.data.username,
         objectId: { $ne: this.objectId() },
-        'authData.anonymous.id': null,
       },
       { limit: 1, caseInsensitive: true },
       {},
