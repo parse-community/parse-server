@@ -2014,4 +2014,1089 @@ describe('Pointer Permissions', () => {
       }
     });
   });
+
+  describe('Granular ', () => {
+    const className = 'AnObject';
+
+    const actionGet = id => new Parse.Query(className).get(id);
+    const actionFind = () => new Parse.Query(className).find();
+    const actionCount = () => new Parse.Query(className).count();
+    const actionCreate = () => new Parse.Object(className).save();
+    const actionUpdate = obj => obj.save({ revision: 2 });
+    const actionDelete = obj => obj.destroy();
+    const actionAddFieldOnCreate = () =>
+      new Parse.Object(className, { ['extra' + Date.now()]: 'field' }).save();
+    const actionAddFieldOnUpdate = obj =>
+      obj.save({ ['another' + Date.now()]: 'field' });
+
+    const OBJECT_NOT_FOUND = new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Object not found.'
+    );
+    const PERMISSION_DENIED = jasmine.stringMatching('Permission denied');
+
+    async function createUser(username, password = 'password') {
+      const user = new Parse.User({
+        username: username + Date.now(),
+        password,
+      });
+
+      await user.save();
+
+      return user;
+    }
+
+    async function logIn(userObject) {
+      await Parse.User.logIn(userObject.getUsername(), 'password');
+    }
+
+    async function updateCLP(clp) {
+      const config = Config.get(Parse.applicationId);
+      const schemaController = await config.database.loadSchema();
+
+      await schemaController.updateClass(className, {}, clp);
+    }
+
+    describe('on single-pointer fields', () => {
+      /** owns: **obj1** */
+      let user1;
+
+      /** owns: **obj2** */
+      let user2;
+
+      /** owned by: **user1** */
+      let obj1;
+
+      /** owned by: **user2** */
+      let obj2;
+
+      async function initialize() {
+        await Config.get(Parse.applicationId).database.schemaCache.clear();
+
+        [user1, user2] = await Promise.all([
+          createUser('user1'),
+          createUser('user2'),
+        ]);
+
+        obj1 = new Parse.Object(className, {
+          owner: user1,
+          revision: 0,
+        });
+
+        obj2 = new Parse.Object(className, {
+          owner: user2,
+          revision: 0,
+        });
+
+        await Parse.Object.saveAll([obj1, obj2], {
+          useMasterKey: true,
+        });
+      }
+
+      beforeEach(async () => {
+        await initialize();
+      });
+
+      describe('get action', () => {
+        it('should be allowed', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          const result = await actionGet(obj1.id);
+          expect(result).toBeDefined();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionGet(obj1.id)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('find action', () => {
+        it('should be allowed', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionFind()).toBeResolved();
+          done();
+        });
+
+        it('should be limited to objects where user is listed in field', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          const results = await actionFind();
+          expect(results.length).toBe(1);
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('count action', () => {
+        it('should be allowed', async done => {
+          await updateCLP({
+            count: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          const count = await actionCount();
+          expect(count).toBe(1);
+          done();
+        });
+
+        it('should be limited to objects where user is listed in field', async done => {
+          await updateCLP({
+            count: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          const user3 = await createUser('user3');
+          await logIn(user3);
+
+          const p = await actionCount();
+          expect(p).toBe(0);
+
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            count: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('update action', () => {
+        it('should be allowed', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+          await expectAsync(actionUpdate(obj1)).toBeResolved();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionUpdate(obj1)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionAddFieldOnCreate(),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('delete action', () => {
+        it('should be allowed', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionDelete(obj1)).toBeResolved();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionDelete(obj1)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('create action', () => {
+        // For Pointer permissions create is different from other operations
+        // since there's no object holding the pointer before created
+        it('should be denied (writelock) when no other permissions on class', async done => {
+          await updateCLP({
+            create: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+          await expectAsync(actionCreate()).toBeRejectedWith(PERMISSION_DENIED);
+          done();
+        });
+      });
+
+      describe('addField action', () => {
+        xit('should have no effect when creating object (and allowed by explicit userid permission)', async done => {
+          await updateCLP({
+            create: {
+              '*': true,
+            },
+            addField: {
+              [user1.id]: true,
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionAddFieldOnCreate()).toBeResolved();
+          done();
+        });
+
+        xit('should be denied when creating object (and no explicit permission)', async done => {
+          await updateCLP({
+            create: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          const newObject = new Parse.Object(className, {
+            owner: user1,
+            extra: 'field',
+          });
+          await expectAsync(newObject.save()).toBeRejectedWith(
+            PERMISSION_DENIED
+          );
+          done();
+        });
+
+        it('should be allowed when updating object', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+
+          done();
+        });
+
+        it('should be denied when updating object for user without addField permission', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['owner'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+
+          done();
+        });
+      });
+    });
+
+    describe('on array of pointers', () => {
+      /**
+       * owns: **obj1**
+       *
+       * moderates: **obj1** */
+      let user1;
+
+      /**
+       * owns: **obj2**
+       *
+       * moderates: **obj1, obj2** */
+      let user2;
+
+      /**
+       * owns: **obj3**
+       *
+       * moderates: **obj1, obj2, obj3 ** */
+      let user3;
+
+      /**
+       * owned by: **user1**
+       *
+       * moderated by: **user1, user2, user3** */
+      let obj1;
+
+      /**
+       * owned by: **user2**
+       *
+       * moderated by: **user2, user3** */
+      let obj2;
+
+      /**
+       * owned by: **user3**
+       *
+       * moderated by: **user3** */
+      let obj3;
+
+      /**
+       * owned by: **noboody**
+       *
+       * moderated by: **nobody** */
+      let objNobody;
+
+      async function initialize() {
+        await Config.get(Parse.applicationId).database.schemaCache.clear();
+
+        [user1, user2, user3] = await Promise.all([
+          createUser('user1'),
+          createUser('user2'),
+          createUser('user3'),
+        ]);
+
+        obj1 = new Parse.Object(className);
+        obj2 = new Parse.Object(className);
+        obj3 = new Parse.Object(className);
+        objNobody = new Parse.Object(className);
+
+        obj1.set({
+          owners: [user1],
+          moderators: [user3, user2, user1],
+          revision: 0,
+        });
+
+        obj2.set({
+          owners: [user2],
+          moderators: [user3, user2],
+          revision: 0,
+        });
+
+        obj3.set({
+          owners: [user3],
+          moderators: [user3],
+          revision: 0,
+        });
+
+        objNobody.set({
+          owners: [],
+          moderators: [],
+          revision: 0,
+        });
+
+        await Parse.Object.saveAll([obj1, obj2, obj3, objNobody], {
+          useMasterKey: true,
+        });
+      }
+
+      beforeEach(async () => {
+        await initialize();
+      });
+
+      describe('get action', () => {
+        it('should be allowed (1 user in array)', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          const result = await actionGet(obj1.id);
+          expect(result).toBeDefined();
+          done();
+        });
+
+        it('should be allowed (multiple users in array)', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          const result = await actionGet(obj1.id);
+          expect(result).toBeDefined();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionGet(obj3.id)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            get: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj2),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj2),
+              actionDelete(obj2),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('find action', () => {
+        it('should be allowed (1 user in array)', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          const results = await actionFind();
+          expect(results.length).toBe(1);
+          done();
+        });
+
+        it('should be allowed (multiple users in array)', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          const results = await actionFind();
+          expect(results.length).toBe(2);
+          done();
+        });
+
+        it('should be limited to objects where user is listed in field', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          const results = await actionFind();
+          expect(results.length).toBe(1);
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            find: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('count action', () => {
+        beforeEach(async () => {
+          await updateCLP({
+            count: {
+              pointerFields: ['moderators'],
+            },
+          });
+        });
+
+        it('should be allowed', async done => {
+          await logIn(user1);
+
+          const count = await actionCount();
+          expect(count).toBe(1);
+          done();
+        });
+
+        it('should be limited to objects where user is listed in field', async done => {
+          await logIn(user2);
+
+          const count = await actionCount();
+          expect(count).toBe(2);
+
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('update action', () => {
+        it('should be allowed (1 user in array)', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionUpdate(obj1)).toBeResolved();
+          done();
+        });
+
+        it('should be allowed (multiple users in array)', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionUpdate(obj1)).toBeResolved();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionUpdate(obj3)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            update: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
+              actionDelete(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('delete action', () => {
+        it('should be allowed (1 user in array)', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionDelete(obj1)).toBeResolved();
+          done();
+        });
+
+        it('should be allowed (multiple users in array)', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user3);
+
+          await expectAsync(actionDelete(obj2)).toBeResolved();
+          done();
+        });
+
+        it('should fail for user not listed', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['owners'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionDelete(obj3)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+          done();
+        });
+
+        it('should not allow other actions', async done => {
+          await updateCLP({
+            delete: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await Promise.all(
+            [
+              actionGet(obj1.id),
+              actionFind(),
+              actionCount(),
+              actionCreate(),
+              actionUpdate(obj1),
+              actionAddFieldOnCreate(),
+              actionAddFieldOnUpdate(obj1),
+            ].map(async p => {
+              await expectAsync(p).toBeRejectedWith(PERMISSION_DENIED);
+            })
+          );
+          done();
+        });
+      });
+
+      describe('create action', () => {
+        /* For Pointer permissions 'create' is different from other operations
+         since there's no object holding the pointer before created */
+        it('should be denied (writelock) when no other permissions on class', async done => {
+          await updateCLP({
+            create: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+          await expectAsync(actionCreate()).toBeRejectedWith(PERMISSION_DENIED);
+          done();
+        });
+      });
+
+      describe('addField action', () => {
+        it('should have no effect on create (allowed by explicit userid)', async done => {
+          await updateCLP({
+            create: {
+              '*': true,
+            },
+            addField: {
+              [user1.id]: true,
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionAddFieldOnCreate()).toBeResolved();
+          done();
+        });
+
+        it('should be denied when creating object (and no explicit permission)', async done => {
+          await updateCLP({
+            create: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          const newObject = new Parse.Object(className, {
+            moderators: user1,
+            extra: 'field',
+          });
+          await expectAsync(newObject.save()).toBeRejectedWith(
+            PERMISSION_DENIED
+          );
+          done();
+        });
+
+        it('should be allowed when updating object', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user2);
+
+          await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+
+          done();
+        });
+
+        it('should be restricted when updating object without addField permission', async done => {
+          await updateCLP({
+            update: {
+              '*': true,
+            },
+            addField: {
+              pointerFields: ['moderators'],
+            },
+          });
+
+          await logIn(user1);
+
+          await expectAsync(actionAddFieldOnUpdate(obj2)).toBeRejectedWith(
+            OBJECT_NOT_FOUND
+          );
+
+          done();
+        });
+      });
+    });
+
+    describe('combined with grouped', () => {
+      /**
+       * owns: **obj1**
+       *
+       * moderates: **obj2** */
+      let user1;
+
+      /**
+       * owns: **obj2**
+       *
+       * moderates: **obj1, obj2** */
+      let user2;
+
+      /**
+       * owned by: **user1**
+       *
+       * moderated by: **user2** */
+      let obj1;
+
+      /**
+       * owned by: **user2**
+       *
+       * moderated by: **user1, user2** */
+      let obj2;
+
+      async function initialize() {
+        await Config.get(Parse.applicationId).database.schemaCache.clear();
+
+        [user1, user2] = await Promise.all([
+          createUser('user1'),
+          createUser('user2'),
+        ]);
+
+        // User1 owns object1
+        // User2 owns object2
+        obj1 = new Parse.Object(className, {
+          owner: user1,
+          moderators: [user2],
+          revision: 0,
+        });
+
+        obj2 = new Parse.Object(className, {
+          owner: user2,
+          moderators: [user1, user2],
+          revision: 0,
+        });
+
+        await Parse.Object.saveAll([obj1, obj2], {
+          useMasterKey: true,
+        });
+      }
+
+      beforeEach(async () => {
+        await initialize();
+      });
+
+      it('should not limit the scope of grouped read permissions', async done => {
+        await updateCLP({
+          get: {
+            pointerFields: ['owner'],
+          },
+          readUserFields: ['moderators'],
+        });
+
+        await logIn(user2);
+
+        await expectAsync(actionGet(obj1.id)).toBeResolved();
+
+        const found = await actionFind();
+        expect(found.length).toBe(2);
+
+        const counted = await actionCount();
+        expect(counted).toBe(2);
+
+        done();
+      });
+
+      it('should not limit the scope of grouped write permissions', async done => {
+        await updateCLP({
+          update: {
+            pointerFields: ['owner'],
+          },
+          writeUserFields: ['moderators'],
+        });
+
+        await logIn(user2);
+
+        await expectAsync(actionUpdate(obj1)).toBeResolved();
+        await expectAsync(actionAddFieldOnUpdate(obj1)).toBeResolved();
+        await expectAsync(actionDelete(obj1)).toBeResolved();
+        // [create] and [addField on create] can't be enabled with pointer by design
+
+        done();
+      });
+
+      it('should not inherit scope of grouped read permissions from another field', async done => {
+        await updateCLP({
+          get: {
+            pointerFields: ['owner'],
+          },
+          readUserFields: ['moderators'],
+        });
+
+        await logIn(user1);
+
+        const found = await actionFind();
+        expect(found.length).toBe(1);
+
+        const counted = await actionCount();
+        expect(counted).toBe(1);
+
+        done();
+      });
+
+      it('should not inherit scope of grouped write permissions from another field', async done => {
+        await updateCLP({
+          update: {
+            pointerFields: ['moderators'],
+          },
+          writeUserFields: ['owner'],
+        });
+
+        await logIn(user1);
+
+        await expectAsync(actionDelete(obj2)).toBeRejectedWith(
+          OBJECT_NOT_FOUND
+        );
+
+        done();
+      });
+    });
+  });
 });

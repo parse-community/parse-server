@@ -45,7 +45,7 @@ const transformInputTypeToGraphQL = (
         return defaultGraphQLTypes.OBJECT;
       }
     case 'File':
-      return defaultGraphQLTypes.FILE;
+      return defaultGraphQLTypes.FILE_INPUT;
     case 'GeoPoint':
       return defaultGraphQLTypes.GEO_POINT_INPUT;
     case 'Polygon':

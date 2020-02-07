@@ -4,6 +4,7 @@ const req = require('../lib/request');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
+require('./helper');
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -907,7 +908,7 @@ describe('ParseGraphQLServer', () => {
             .map(field => field.name)
             .sort();
 
-          expect(inputFields).toEqual(['clientMutationId', 'userFields']);
+          expect(inputFields).toEqual(['clientMutationId', 'fields']);
         });
 
         it('should have clientMutationId in sign up mutation payload', async () => {
@@ -7114,7 +7115,7 @@ describe('ParseGraphQLServer', () => {
             variables: {
               input: {
                 clientMutationId,
-                userFields: {
+                fields: {
                   username: 'user1',
                   password: 'user1',
                   someField: 'someValue',
@@ -7127,6 +7128,63 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.signUp.viewer.sessionToken).toBeDefined();
           expect(result.data.signUp.viewer.user.someField).toEqual('someValue');
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
+        });
+
+        it('should login with user', async () => {
+          const clientMutationId = uuidv4();
+          const userSchema = new Parse.Schema('_User');
+          parseServer = await global.reconfigureServer({
+            publicServerURL: 'http://localhost:13377/parse',
+            auth: {
+              myAuth: {
+                module: global.mockCustomAuthenticator('parse', 'graphql'),
+              },
+            },
+          });
+
+          userSchema.addString('someField');
+          await userSchema.update();
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+          const result = await apolloClient.mutate({
+            mutation: gql`
+              mutation LogInWith($input: LogInWithInput!) {
+                logInWith(input: $input) {
+                  clientMutationId
+                  viewer {
+                    sessionToken
+                    user {
+                      someField
+                    }
+                  }
+                }
+              }
+            `,
+            variables: {
+              input: {
+                clientMutationId,
+                authData: {
+                  myAuth: {
+                    id: 'parse',
+                    password: 'graphql',
+                  },
+                },
+                fields: {
+                  someField: 'someValue',
+                },
+              },
+            },
+          });
+
+          expect(result.data.logInWith.clientMutationId).toEqual(
+            clientMutationId
+          );
+          expect(result.data.logInWith.viewer.sessionToken).toBeDefined();
+          expect(result.data.logInWith.viewer.user.someField).toEqual(
+            'someValue'
+          );
+          expect(typeof result.data.logInWith.viewer.sessionToken).toBe(
+            'string'
+          );
         });
 
         it('should log the user in', async () => {
@@ -9170,6 +9228,7 @@ describe('ParseGraphQLServer', () => {
             );
 
             const someFieldValue = result.data.createFile.fileInfo.name;
+            const someFieldObjectValue = result.data.createFile.fileInfo;
 
             await apolloClient.mutate({
               mutation: gql`
@@ -9195,17 +9254,25 @@ describe('ParseGraphQLServer', () => {
 
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
-            const createResult = await apolloClient.mutate({
-              mutation: gql`
+            const body2 = new FormData();
+            body2.append(
+              'operations',
+              JSON.stringify({
+                query: `
                 mutation CreateSomeObject(
                   $fields1: CreateSomeClassFieldsInput
                   $fields2: CreateSomeClassFieldsInput
+                  $fields3: CreateSomeClassFieldsInput
                 ) {
                   createSomeClass1: createSomeClass(
                     input: { fields: $fields1 }
                   ) {
                     someClass {
                       id
+                      someField {
+                        name
+                        url
+                      }
                     }
                   }
                   createSomeClass2: createSomeClass(
@@ -9213,19 +9280,78 @@ describe('ParseGraphQLServer', () => {
                   ) {
                     someClass {
                       id
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                  createSomeClass3: createSomeClass(
+                    input: { fields: $fields3 }
+                  ) {
+                    someClass {
+                      id
+                      someField {
+                        name
+                        url
+                      }
                     }
                   }
                 }
-              `,
-              variables: {
-                fields1: {
-                  someField: someFieldValue,
+                `,
+                variables: {
+                  fields1: {
+                    someField: { file: someFieldValue },
+                  },
+                  fields2: {
+                    someField: {
+                      file: {
+                        name: someFieldObjectValue.name,
+                        url: someFieldObjectValue.url,
+                        __type: 'File',
+                      },
+                    },
+                  },
+                  fields3: {
+                    someField: { upload: null },
+                  },
                 },
-                fields2: {
-                  someField: someFieldValue.name,
-                },
-              },
+              })
+            );
+            body2.append(
+              'map',
+              JSON.stringify({ 1: ['variables.fields3.someField.upload'] })
+            );
+            body2.append('1', 'My File Content', {
+              filename: 'myFileName.txt',
+              contentType: 'text/plain',
             });
+
+            res = await fetch('http://localhost:13377/graphql', {
+              method: 'POST',
+              headers,
+              body: body2,
+            });
+            expect(res.status).toEqual(200);
+            const result2 = JSON.parse(await res.text());
+            expect(
+              result2.data.createSomeClass1.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result2.data.createSomeClass1.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result2.data.createSomeClass2.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result2.data.createSomeClass2.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result2.data.createSomeClass3.someClass.someField.name
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
+            expect(
+              result2.data.createSomeClass3.someClass.someField.url
+            ).toEqual(jasmine.stringMatching(/_myFileName.txt$/));
 
             const schema = await new Parse.Schema('SomeClass').get();
             expect(schema.fields.someField.type).toEqual('File');
@@ -9266,7 +9392,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
               variables: {
-                id: createResult.data.createSomeClass1.someClass.id,
+                id: result2.data.createSomeClass1.someClass.id,
               },
             });
 
@@ -9277,8 +9403,8 @@ describe('ParseGraphQLServer', () => {
             expect(getResult.data.someClass.someField.url).toEqual(
               result.data.createFile.fileInfo.url
             );
-            expect(getResult.data.findSomeClass1.edges.length).toEqual(1);
-            expect(getResult.data.findSomeClass2.edges.length).toEqual(1);
+            expect(getResult.data.findSomeClass1.edges.length).toEqual(3);
+            expect(getResult.data.findSomeClass2.edges.length).toEqual(3);
 
             res = await fetch(getResult.data.someClass.someField.url);
 
@@ -9922,6 +10048,87 @@ describe('ParseGraphQLServer', () => {
             expect(typeof getResult.data.someClass.someField).toEqual('object');
             expect(getResult.data.someClass.someField).toEqual(someFieldValue);
             expect(getResult.data.someClasses.edges.length).toEqual(1);
+
+            const getGeoWhere = await apolloClient.query({
+              query: gql`
+                query GeoQuery($latitude: Float!, $longitude: Float!) {
+                  nearSphere: someClasses(
+                    where: {
+                      someField: {
+                        nearSphere: {
+                          latitude: $latitude
+                          longitude: $longitude
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                  geoWithin: someClasses(
+                    where: {
+                      someField: {
+                        geoWithin: {
+                          centerSphere: {
+                            distance: 10
+                            center: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                  within: someClasses(
+                    where: {
+                      someField: {
+                        within: {
+                          box: {
+                            bottomLeft: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                            upperRight: {
+                              latitude: $latitude
+                              longitude: $longitude
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                latitude: 45,
+                longitude: 45,
+              },
+            });
+            expect(getGeoWhere.data.nearSphere.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
+            expect(getGeoWhere.data.geoWithin.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
+            expect(getGeoWhere.data.within.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
           } catch (e) {
             handleError(e);
           }
@@ -10020,6 +10227,34 @@ describe('ParseGraphQLServer', () => {
               }))
             );
             expect(getResult.data.someClasses.edges.length).toEqual(1);
+            const getIntersect = await apolloClient.query({
+              query: gql`
+                query IntersectQuery($point: GeoPointInput!) {
+                  someClasses(
+                    where: {
+                      somePolygonField: { geoIntersects: { point: $point } }
+                    }
+                  ) {
+                    edges {
+                      node {
+                        id
+                        somePolygonField {
+                          latitude
+                          longitude
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                point: { latitude: 44, longitude: 45 },
+              },
+            });
+            expect(getIntersect.data.someClasses.edges.length).toEqual(1);
+            expect(getIntersect.data.someClasses.edges[0].node.id).toEqual(
+              createResult.data.createSomeClass.someClass.id
+            );
           } catch (e) {
             handleError(e);
           }
