@@ -271,7 +271,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
   });
 
-  it('handleShutdown, close connection', done => {
+  it('handleShutdown, close connection', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
 
     const schema = {
@@ -282,17 +282,17 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       },
     };
 
-    adapter.createObject('MyClass', schema, {}).then(() => {
-      expect(adapter.database.serverConfig.connections().length > 0).toEqual(
-        true
-      );
-      adapter.handleShutdown().then(() => {
-        expect(adapter.database.serverConfig.connections().length > 0).toEqual(
-          false
-        );
-        done();
-      });
-    });
+    await adapter.createObject('MyClass', schema, {});
+    const status = await adapter.database.admin().serverStatus();
+    expect(status.connections.current > 0).toEqual(true);
+
+    await adapter.handleShutdown();
+    try {
+      await adapter.database.admin().serverStatus();
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toEqual('topology was destroyed');
+    }
   });
 
   it('getClass if exists', async () => {

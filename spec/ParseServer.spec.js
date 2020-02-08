@@ -91,7 +91,7 @@ describe('Server Url Checks', () => {
     const parseServer = ParseServer.start(newConfiguration);
   });
 
-  it('does not have unhandled promise rejection in the case of load error', done => {
+  fit('does not have unhandled promise rejection in the case of load error', done => {
     const parseServerProcess = spawn(
       path.resolve(__dirname, './support/FailingServer.js')
     );
@@ -106,7 +106,7 @@ describe('Server Url Checks', () => {
     parseServerProcess.on('close', code => {
       expect(code).toEqual(1);
       expect(stdout).toBeUndefined();
-      expect(stderr).toContain('MongoNetworkError');
+      expect(stderr).toContain('MongoServerSelectionError');
       done();
     });
   });
