@@ -32,7 +32,7 @@ const getApplePublicKey = async () => {
   return currentKey;
 };
 
-const verifyIdToken = async ({ token, id }, clientID) => {
+const verifyIdToken = async ({ token, id }, clientIDs) => {
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -40,7 +40,18 @@ const verifyIdToken = async ({ token, id }, clientID) => {
     );
   }
   const applePublicKey = await getApplePublicKey();
-  const jwtClaims = jwt.verify(token, applePublicKey, { algorithms: 'RS256' });
+  let jwtClaims;
+  // this throws an error if token has expired, catching so that we can
+  // throw a parse error
+  try {
+    jwtClaims = jwt.verify(token, applePublicKey, {
+      algorithms: 'RS256',
+    });
+  } catch (exception) {
+    // const [name, message] = exception;
+    const message = exception.message;
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+  }
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
     throw new Parse.Error(
@@ -54,10 +65,36 @@ const verifyIdToken = async ({ token, id }, clientID) => {
       `auth data is invalid for this user.`
     );
   }
-  if (clientID !== undefined && jwtClaims.aud !== clientID) {
+
+  if (
+    typeof clientIDs === 'undefined' ||
+    clientIDs === undefined ||
+    clientIDs === null
+  ) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `jwt aud parameter does not include this client - is: ${jwtClaims.aud} | expected: ${clientID}`
+      `client ids do not exist`
+    );
+  }
+
+  if (!Array.isArray(clientIDs)) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `clientIDs need to be an array`
+    );
+  }
+
+  if (clientIDs.length === 0) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `need at least one client id, empty array provided`
+    );
+  }
+
+  if (!clientIDs.includes(jwtClaims.aud)) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `jwt aud parameter does not include this client - is: ${jwtClaims.aud} | expected: ${clientIDs}`
     );
   }
   return jwtClaims;
@@ -65,7 +102,7 @@ const verifyIdToken = async ({ token, id }, clientID) => {
 
 // Returns a promise that fulfills if this id token is valid
 function validateAuthData(authData, options = {}) {
-  return verifyIdToken(authData, options.client_id);
+  return verifyIdToken(authData, options.clientIDs);
 }
 
 // Returns a promise that fulfills if this app id is valid.

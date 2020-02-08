@@ -1139,7 +1139,7 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with missing id_token', async () => {
     try {
-      await apple.validateAuthData({}, { client_id: 'secret' });
+      await apple.validateAuthData({}, { clientIDs: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -1150,7 +1150,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { client_id: 'secret' }
+        { clientIDs: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1169,7 +1169,7 @@ describe('apple signin auth adapter', () => {
 
     const result = await apple.validateAuthData(
       { id: 'the_user_id', token: 'the_token' },
-      { client_id: 'secret' }
+      { clientIDs: ['secret'] }
     );
     expect(result).toEqual(fakeClaim);
   });
@@ -1184,7 +1184,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { client_id: 'secret' }
+        { clientIDs: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1205,7 +1205,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { client_id: 'secret' }
+        { clientIDs: ['secret'] }
       );
       fail();
     } catch (e) {
