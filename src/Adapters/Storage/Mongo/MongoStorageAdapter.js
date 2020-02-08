@@ -620,7 +620,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, readPreference, hint, explain, caseInsensitive }: QueryOptions
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      readPreference,
+      hint,
+      explain,
+      caseInsensitive,
+    }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -665,6 +674,47 @@ export class MongoStorageAdapter implements StorageAdapter {
           mongoObjectToParseObject(className, object, schema)
         );
       })
+      .catch(err => this.handleError(err));
+  }
+
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false
+  ): Promise<any> {
+    schema = convertParseSchemaToMongoSchema(schema);
+    const indexCreationRequest = {};
+    const mongoFieldNames = fieldNames.map(fieldName =>
+      transformKey(className, fieldName, schema)
+    );
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
+    });
+
+    const defaultOptions = { background: true, sparse: true };
+    const indexNameOptions = indexName ? { name: indexName } : {};
+    const caseInsensitiveOptions = caseInsensitive
+      ? { collation: { locale: 'en_US', strength: 2 } }
+      : {};
+    const indexOptions = {
+      ...defaultOptions,
+      ...caseInsensitiveOptions,
+      ...indexNameOptions,
+    };
+
+    return this._adaptiveCollection(className)
+      .then(
+        collection =>
+          new Promise((resolve, reject) =>
+            collection._mongoCollection.createIndex(
+              indexCreationRequest,
+              indexOptions,
+              error => (error ? reject(error) : resolve())
+            )
+          )
+      )
       .catch(err => this.handleError(err));
   }
 

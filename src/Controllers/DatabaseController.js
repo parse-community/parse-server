@@ -1732,6 +1732,24 @@ class DatabaseController {
         throw error;
       });
 
+    const usernameCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['username'],
+          'case_insensitive_username',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn(
+          'Unable to create case insensitive username index: ',
+          error
+        );
+        throw error;
+      });
+
     const emailUniqueness = userClassPromise
       .then(() =>
         this.adapter.ensureUniqueness(
@@ -1746,6 +1764,21 @@ class DatabaseController {
           'Unable to ensure uniqueness for user email addresses: ',
           error
         );
+        throw error;
+      });
+
+    const emailCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['email'],
+          'case_insensitive_email',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
@@ -1766,7 +1799,9 @@ class DatabaseController {
     });
     return Promise.all([
       usernameUniqueness,
+      usernameCaseInsensitiveIndex,
       emailUniqueness,
+      emailCaseInsensitiveIndex,
       roleUniqueness,
       adapterInit,
       indexPromise,

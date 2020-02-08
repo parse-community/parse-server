@@ -87,11 +87,17 @@ export interface StorageAdapter {
     query: QueryType,
     options: QueryOptions
   ): Promise<[any]>;
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName?: string,
+    caseSensitive?: boolean
+  ): Promise<any>;
   ensureUniqueness(
     className: string,
     schema: SchemaType,
-    fieldNames: Array<string>,
-    caseInsensitive?: boolean
+    fieldNames: Array<string>
   ): Promise<void>;
   count(
     className: string,
