@@ -313,7 +313,15 @@ describe('Parse.Object testing', () => {
 
   it('invalid __type', function(done) {
     const item = new Parse.Object('Item');
-    const types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes', 'Polygon'];
+    const types = [
+      'Pointer',
+      'File',
+      'Date',
+      'GeoPoint',
+      'Bytes',
+      'Polygon',
+      'Relation',
+    ];
     const tests = types.map(type => {
       const test = new Parse.Object('Item');
       test.set('foo', {
