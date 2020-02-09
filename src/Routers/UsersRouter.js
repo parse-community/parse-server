@@ -265,10 +265,13 @@ export class UsersRouter extends ClassesRouter {
 
     await createSession();
 
+    const afterLoginUser = Parse.User.fromJSON(
+      Object.assign({ className: '_User' }, user)
+    );
     maybeRunTrigger(
       TriggerTypes.afterLogin,
-      null,
-      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      { ...req.auth, user: afterLoginUser },
+      afterLoginUser,
       null,
       req.config
     );

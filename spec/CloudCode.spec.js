@@ -2647,10 +2647,10 @@ describe('afterLogin hook', () => {
   it('should have expected data in request', async done => {
     Parse.Cloud.afterLogin(req => {
       expect(req.object).toBeDefined();
-      expect(req.user).toBeUndefined();
+      expect(req.user).toBeDefined();
       expect(req.headers).toBeDefined();
       expect(req.ip).toBeDefined();
-      expect(req.installationId).toBeUndefined();
+      expect(req.installationId).toBeDefined();
       expect(req.context).toBeUndefined();
     });
 
