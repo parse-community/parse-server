@@ -15,7 +15,17 @@ export default class MongoCollection {
   // idea. Or even if this behavior is a good idea.
   find(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain, caseInsensitive } = {}
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      maxTimeMS,
+      readPreference,
+      hint,
+      explain,
+      caseInsensitive,
+    } = {}
   ) {
     // Support for Full Text Search - $text
     if (keys && keys.$score) {
@@ -69,9 +79,26 @@ export default class MongoCollection {
     });
   }
 
+  /**
+   * Collation to support case insensitive queries
+   */
+  _caseInsensitiveCollation() {
+    return { locale: 'en_US', strength: 2 };
+  }
+
   _rawFind(
     query,
-    { skip, limit, sort, keys, maxTimeMS, readPreference, hint, explain, caseInsensitive } = {}
+    {
+      skip,
+      limit,
+      sort,
+      keys,
+      maxTimeMS,
+      readPreference,
+      hint,
+      explain,
+      caseInsensitive,
+    } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
       skip,
@@ -86,7 +113,7 @@ export default class MongoCollection {
     }
 
     if (caseInsensitive) {
-      findOperation = findOperation.collation({ locale: 'en_US', strength: 2 });
+      findOperation = findOperation.collation(this._caseInsensitiveCollation());
     }
 
     if (maxTimeMS) {
