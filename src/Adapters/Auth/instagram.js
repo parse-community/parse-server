@@ -4,7 +4,7 @@ const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request('users/self/?access_token=' + authData.access_token).then(
+  return request('me?fields=&access_token=' + authData.access_token).then(
     response => {
       if (response && response.data && response.data.id == authData.id) {
         return;
@@ -24,7 +24,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(path) {
-  return httpsRequest.get('https://api.instagram.com/v1/' + path);
+  return httpsRequest.get('https://graph.instagram.com/' + path);
 }
 
 module.exports = {
