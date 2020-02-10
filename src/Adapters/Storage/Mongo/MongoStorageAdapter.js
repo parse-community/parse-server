@@ -661,9 +661,9 @@ export class MongoStorageAdapter implements StorageAdapter {
           keys: mongoKeys,
           maxTimeMS: this._maxTimeMS,
           readPreference,
-          caseInsensitive,
           hint,
           explain,
+          caseInsensitive,
         })
       )
       .then(objects => {
