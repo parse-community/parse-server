@@ -2512,6 +2512,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     );
     return result;
   }
+
+  // TODO: implement?
+  ensureIndex(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 function convertPolygonToSQL(polygon) {
