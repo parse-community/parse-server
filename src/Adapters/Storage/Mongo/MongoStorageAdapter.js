@@ -627,8 +627,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       keys,
       readPreference,
       hint,
-      explain,
       caseInsensitive,
+      explain,
     }: QueryOptions
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
@@ -662,8 +662,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           maxTimeMS: this._maxTimeMS,
           readPreference,
           hint,
-          explain,
           caseInsensitive,
+          explain,
         })
       )
       .then(objects => {

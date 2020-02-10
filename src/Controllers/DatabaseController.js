@@ -1317,8 +1317,8 @@ class DatabaseController {
       distinct,
       pipeline,
       readPreference,
-      caseInsensitive = false,
       hint,
+      caseInsensitive = false,
       explain,
     }: any = {},
     auth: any = {},
@@ -1369,8 +1369,8 @@ class DatabaseController {
               sort,
               keys,
               readPreference,
-              caseInsensitive,
               hint,
+              caseInsensitive,
               explain,
             };
             Object.keys(sort).forEach(fieldName => {

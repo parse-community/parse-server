@@ -23,8 +23,8 @@ export default class MongoCollection {
       maxTimeMS,
       readPreference,
       hint,
-      explain,
       caseInsensitive,
+      explain,
     } = {}
   ) {
     // Support for Full Text Search - $text
@@ -39,8 +39,8 @@ export default class MongoCollection {
       keys,
       maxTimeMS,
       readPreference,
-      caseInsensitive,
       hint,
+      caseInsensitive,
       explain,
     }).catch(error => {
       // Check for "no geoindex" error
@@ -70,8 +70,8 @@ export default class MongoCollection {
               keys,
               maxTimeMS,
               readPreference,
-              caseInsensitive,
               hint,
+              caseInsensitive,
               explain,
             })
           )
@@ -96,8 +96,8 @@ export default class MongoCollection {
       maxTimeMS,
       readPreference,
       hint,
-      explain,
       caseInsensitive,
+      explain,
     } = {}
   ) {
     let findOperation = this._mongoCollection.find(query, {
