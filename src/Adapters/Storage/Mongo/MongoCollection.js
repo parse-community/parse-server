@@ -82,7 +82,7 @@ export default class MongoCollection {
   /**
    * Collation to support case insensitive queries
    */
-  _caseInsensitiveCollation() {
+  static caseInsensitiveCollation() {
     return { locale: 'en_US', strength: 2 };
   }
 
@@ -113,7 +113,7 @@ export default class MongoCollection {
     }
 
     if (caseInsensitive) {
-      findOperation = findOperation.collation(this._caseInsensitiveCollation());
+      findOperation = findOperation.collation(this.caseInsensitiveCollation());
     }
 
     if (maxTimeMS) {

@@ -693,12 +693,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       indexCreationRequest[fieldName] = 1;
     });
 
-    const defaultOptions = { background: true, sparse: true };
-    const indexNameOptions = indexName ? { name: indexName } : {};
-    const caseInsensitiveOptions = caseInsensitive
-      ? { collation: { locale: 'en_US', strength: 2 } }
+    const defaultOptions: Object = { background: true, sparse: true };
+    const indexNameOptions: Object = indexName ? { name: indexName } : {};
+    const caseInsensitiveOptions: Object = caseInsensitive
+      ? { collation: MongoCollection.caseInsensitiveCollation }
       : {};
-    const indexOptions = {
+    const indexOptions: Object = {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
