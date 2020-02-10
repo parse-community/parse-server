@@ -1719,12 +1719,7 @@ class DatabaseController {
 
     const usernameUniqueness = userClassPromise
       .then(() =>
-        this.adapter.ensureUniqueness(
-          '_User',
-          requiredUserFields,
-          ['username'],
-          true
-        )
+        this.adapter.ensureUniqueness('_User', requiredUserFields, ['username'])
       )
       .catch(error => {
         logger.warn('Unable to ensure uniqueness for usernames: ', error);
