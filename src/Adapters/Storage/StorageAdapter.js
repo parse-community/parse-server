@@ -13,10 +13,10 @@ export type QueryOptions = {
   op?: string,
   distinct?: boolean,
   pipeline?: any,
-  caseInsensitive?: boolean,
   readPreference?: ?string,
   hint?: ?mixed,
   explain?: Boolean,
+  caseInsensitive?: boolean,
   action?: string,
   addsField?: boolean,
 };
