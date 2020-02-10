@@ -1751,12 +1751,7 @@ class DatabaseController {
 
     const emailUniqueness = userClassPromise
       .then(() =>
-        this.adapter.ensureUniqueness(
-          '_User',
-          requiredUserFields,
-          ['email'],
-          true
-        )
+        this.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
       )
       .catch(error => {
         logger.warn(
