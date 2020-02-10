@@ -68,10 +68,10 @@ const userinfoURL = config => {
   );
 };
 
-export class KeycloakAuthAdapter {
-  validateAppId() {
+module.exports = {
+  validateAppId: () => {
     return Promise.resolve();
-  }
+  },
 
   /*
   @param {Object} authData: the client provided authData
@@ -82,8 +82,8 @@ export class KeycloakAuthAdapter {
   @param {Object} options: additional options
   @param {Object} options.config: the config object passed during Parse Server instantiation
    */
-  validateAuthData({ access_token, id, roles, groups }, { config }) {
-    if (process.env.NODE_ENV === 'development') return Promise.resolve();
+  validateAuthData: ({ access_token, id, roles, groups }, { config }) => {
+    if (process.env.NODE_ENV !== 'development') return Promise.resolve();
 
     if (!(access_token && id))
       throw new Parse.Error(
@@ -129,7 +129,5 @@ export class KeycloakAuthAdapter {
           );
         }
       });
-  }
-}
-
-export default KeycloakAuthAdapter;
+  },
+};

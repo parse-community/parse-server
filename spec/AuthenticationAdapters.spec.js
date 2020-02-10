@@ -42,6 +42,7 @@ describe('AuthenticationProviders', function() {
     'weibo',
     'phantauth',
     'microsoft',
+    'keycloak',
   ].map(function(providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
