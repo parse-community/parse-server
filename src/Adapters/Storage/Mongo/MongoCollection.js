@@ -113,7 +113,9 @@ export default class MongoCollection {
     }
 
     if (caseInsensitive) {
-      findOperation = findOperation.collation(this.caseInsensitiveCollation());
+      findOperation = findOperation.collation(
+        MongoCollection.caseInsensitiveCollation()
+      );
     }
 
     if (maxTimeMS) {
