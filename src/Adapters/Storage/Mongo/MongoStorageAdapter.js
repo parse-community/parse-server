@@ -696,7 +696,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
-      ? { collation: MongoCollection.caseInsensitiveCollation }
+      ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
     const indexOptions: Object = {
       ...defaultOptions,
