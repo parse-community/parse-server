@@ -3,6 +3,7 @@
 ### master
 
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...master)
+- FIX: Prevent user sign up if username or email already exist when compared case insensitively.  For example if a user sign up with the name 'Jane', sign up will fail if there is already a user with the `username` 'jane'. [#5634](https://github.com/parse-community/parse-server/pull/5634). Thanks to [Arthur Cinader](https://github.com/acinader)
 
 ### 3.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...3.10.0)
