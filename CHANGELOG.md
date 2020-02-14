@@ -3,6 +3,7 @@
 ### master
 
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...master)
+- FIX: FIX: Prevent new usernames or emails that clash with existing users' email or username if it only differs by case.  For example, don't allow a new user with the name 'Jane' if we already have a user 'jane'. [#5634](https://github.com/parse-community/parse-server/pull/5634). Thanks to [Arthur Cinader](https://github.com/acinader)
 
 ### 3.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...3.10.0)

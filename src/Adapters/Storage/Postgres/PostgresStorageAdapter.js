@@ -254,7 +254,12 @@ interface WhereClause {
   sorts: Array<any>;
 }
 
-const buildWhereClause = ({ schema, query, index }): WhereClause => {
+const buildWhereClause = ({
+  schema,
+  query,
+  index,
+  caseInsensitive,
+}): WhereClause => {
   const patterns = [];
   let values = [];
   const sorts = [];
@@ -276,10 +281,24 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       }
     }
 
-    if (fieldName.indexOf('.') >= 0) {
+    const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+    if (authDataMatch) {
+      // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
+      continue;
+    } else if (
+      caseInsensitive &&
+      (fieldName === 'username' || fieldName === 'email')
+    ) {
+      patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
+      values.push(fieldName, fieldValue);
+      index += 2;
+    } else if (fieldName.indexOf('.') >= 0) {
       let name = transformDotField(fieldName);
       if (fieldValue === null) {
-        patterns.push(`${name} IS NULL`);
+        patterns.push(`$${index}:raw IS NULL`);
+        values.push(name);
+        index += 1;
+        continue;
       } else {
         if (fieldValue.$in) {
           name = transformDotFieldToComponents(fieldName).join('->');
@@ -325,7 +344,12 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach(subQuery => {
-        const clause = buildWhereClause({ schema, query: subQuery, index });
+        const clause = buildWhereClause({
+          schema,
+          query: subQuery,
+          index,
+          caseInsensitive,
+        });
         if (clause.pattern.length > 0) {
           clauses.push(clause.pattern);
           clauseValues.push(...clause.values);
@@ -464,10 +488,16 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
         }
       };
       if (fieldValue.$in) {
-        createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
+        createConstraint(
+          _.flatMap(fieldValue.$in, elt => elt),
+          false
+        );
       }
       if (fieldValue.$nin) {
-        createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
+        createConstraint(
+          _.flatMap(fieldValue.$nin, elt => elt),
+          true
+        );
       }
     } else if (typeof fieldValue.$in !== 'undefined') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
@@ -1437,7 +1467,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('deleteObjectsByQuery', className, query);
     const values = [className];
     const index = 2;
-    const where = buildWhereClause({ schema, index, query });
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      caseInsensitive: false,
+    });
     values.push(...where.values);
     if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
@@ -1744,7 +1779,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     }
 
-    const where = buildWhereClause({ schema, index, query });
+    const where = buildWhereClause({
+      schema,
+      index,
+      query,
+      caseInsensitive: false,
+    });
     values.push(...where.values);
 
     const whereClause =
@@ -1795,13 +1835,24 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys }: QueryOptions
+    { skip, limit, sort, keys, caseInsensitive }: QueryOptions
   ) {
-    debug('find', className, query, { skip, limit, sort, keys });
+    debug('find', className, query, {
+      skip,
+      limit,
+      sort,
+      keys,
+      caseInsensitive,
+    });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
-    const where = buildWhereClause({ schema, query, index: 2 });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      caseInsensitive,
+    });
     values.push(...where.values);
 
     const wherePattern =
@@ -2027,7 +2078,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ) {
     debug('count', className, query, readPreference, estimate);
     const values = [className];
-    const where = buildWhereClause({ schema, query, index: 2 });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 2,
+      caseInsensitive: false,
+    });
     values.push(...where.values);
 
     const wherePattern =
@@ -2080,7 +2136,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       schema.fields[fieldName] &&
       schema.fields[fieldName].type === 'Pointer';
     const values = [field, column, className];
-    const where = buildWhereClause({ schema, query, index: 4 });
+    const where = buildWhereClause({
+      schema,
+      query,
+      index: 4,
+      caseInsensitive: false,
+    });
     values.push(...where.values);
 
     const wherePattern =
@@ -2364,7 +2425,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
+  async createIndexes(
+    className: string,
+    indexes: any,
+    conn: ?any
+  ): Promise<void> {
     return (conn || this._client).tx(t =>
       t.batch(
         indexes.map(i => {
@@ -2384,10 +2449,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     type: any,
     conn: ?any
   ): Promise<void> {
-    await (conn || this._client).none(
-      'CREATE INDEX $1:name ON $2:name ($3:name)',
-      [fieldName, className, type]
-    );
+    await (
+      conn || this._client
+    ).none('CREATE INDEX $1:name ON $2:name ($3:name)', [
+      fieldName,
+      className,
+      type,
+    ]);
   }
 
   async dropIndexes(className: string, indexes: any, conn: any): Promise<void> {
@@ -2443,6 +2511,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       transactionalSession.t.batch(transactionalSession.batch)
     );
     return result;
+  }
+
+  // TODO: implement?
+  ensureIndex(): Promise<void> {
+    return Promise.resolve();
   }
 }
 
