@@ -2343,7 +2343,8 @@ describe('Parse.User testing', () => {
           'ABCDEFGHIJKLMNOp',
           'ABCDEFGHIJKLMNOP',
         ];
-        // Random String gets called a lot before we get to relevant code
+
+        // need a bunch of spare random strings per api request
         spyOn(cryptoUtils, 'randomString').and.returnValues(
           ...insensitiveCollisions
         );
