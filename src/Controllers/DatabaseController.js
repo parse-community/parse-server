@@ -1299,6 +1299,7 @@ class DatabaseController {
   //   acl     restrict this operation with an ACL for the provided array
   //           of user objectIds and roles. acl: null means no user.
   //           when this field is not present, don't do anything regarding ACLs.
+  //  caseInsensitive make string comparisons case insensitive
   // TODO: make userIds not needed here. The db adapter shouldn't know
   // anything about users, ideally. Then, improve the format of the ACL
   // arg to work like the others.
@@ -1317,6 +1318,7 @@ class DatabaseController {
       pipeline,
       readPreference,
       hint,
+      caseInsensitive = false,
       explain,
     }: any = {},
     auth: any = {},
@@ -1368,6 +1370,7 @@ class DatabaseController {
               keys,
               readPreference,
               hint,
+              caseInsensitive,
               explain,
             };
             Object.keys(sort).forEach(fieldName => {
@@ -1723,6 +1726,24 @@ class DatabaseController {
         throw error;
       });
 
+    const usernameCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['username'],
+          'case_insensitive_username',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn(
+          'Unable to create case insensitive username index: ',
+          error
+        );
+        throw error;
+      });
+
     const emailUniqueness = userClassPromise
       .then(() =>
         this.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
@@ -1732,6 +1753,21 @@ class DatabaseController {
           'Unable to ensure uniqueness for user email addresses: ',
           error
         );
+        throw error;
+      });
+
+    const emailCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['email'],
+          'case_insensitive_email',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
@@ -1752,7 +1788,9 @@ class DatabaseController {
     });
     return Promise.all([
       usernameUniqueness,
+      usernameCaseInsensitiveIndex,
       emailUniqueness,
+      emailCaseInsensitiveIndex,
       roleUniqueness,
       adapterInit,
       indexPromise,
