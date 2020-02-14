@@ -2353,14 +2353,16 @@ describe('Parse.User testing', () => {
       it('should not fail on case insensitive matches', async () => {
         const user1 = await Parse.AnonymousUtils.logIn();
         const username1 = user1.get('username');
-        expect(username1).not.toBeUndefined();
 
         const user2 = await Parse.AnonymousUtils.logIn();
         const username2 = user2.get('username');
-        expect(username2).not.toBeUndefined();
 
+        expect(username1).not.toBeUndefined();
+        expect(username2).not.toBeUndefined();
+        expect(username1.toLowerCase()).toBe('abcdefghijklmnop');
+        expect(username2.toLowerCase()).toBe('abcdefghijklmnop');
         expect(username2).not.toBe(username1);
-        expect(username2.toLowerCase()).toBe(username1.toLowerCase());
+        expect(username2.toLowerCase()).toBe(username1.toLowerCase()); // this is redundant :).
       });
     });
   });
