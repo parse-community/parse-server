@@ -10,7 +10,7 @@ const TOKEN_ISSUER = 'https://appleid.apple.com';
 
 let currentKey;
 
-const getApplePublicKey = async () => {
+const getApplePublicKey = async keyId => {
   let data;
   try {
     data = await httpsRequest.get('https://appleid.apple.com/auth/keys');
@@ -21,7 +21,7 @@ const getApplePublicKey = async () => {
     throw e;
   }
 
-  const key = data.keys[0];
+  const key = data.keys.find(key => key.kid === keyId);
 
   const pubKey = new NodeRSA();
   pubKey.importKey(
@@ -39,7 +39,10 @@ const verifyIdToken = async ({ token, id }, clientID) => {
       'id token is invalid for this user.'
     );
   }
-  const applePublicKey = await getApplePublicKey();
+
+  const decodedToken = jwt.decode(token, { complete: true });
+  const keyId = decodedToken.header.kid;
+  const applePublicKey = await getApplePublicKey(keyId);
   const jwtClaims = jwt.verify(token, applePublicKey, { algorithms: 'RS256' });
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
