@@ -10,6 +10,7 @@
   "files": [
     "bin/",
     "lib/",
+    "src/",
     "public_html/",
     "views/",
     "LICENSE",
