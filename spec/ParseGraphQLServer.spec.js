@@ -5,6 +5,8 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
+const { updateCLP } = require('./dev');
+
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -280,6 +282,7 @@ describe('ParseGraphQLServer', () => {
     let object2;
     let object3;
     let object4;
+    let object5;
     let objects = [];
 
     async function prepareData() {
@@ -410,6 +413,11 @@ describe('ParseGraphQLServer', () => {
       object4 = new Parse.Object('PublicClass');
       object4.set('someField', 'someValue4');
       await object4.save();
+
+      object5 = new Parse.Object('WithPointerClass');
+      object5.set('owner', user1);
+      object5.set('testers', [user2, user3]);
+      await object5.save();
 
       objects = [];
       objects.push(object1, object2, object3, object4);
@@ -4632,6 +4640,84 @@ describe('ParseGraphQLServer', () => {
             ).toBeDefined();
           });
 
+          it('should respect protectedFields', async done => {
+            await prepareData();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const className = 'GraphQLClass';
+
+            await updateCLP(
+              {
+                get: { '*': true },
+                find: { '*': true },
+
+                protectedFields: {
+                  '*': ['someField', 'someOtherField'],
+                  authenticated: ['someField'],
+                  'userField:pointerToUser': [],
+                  [user2.id]: [],
+                },
+              },
+              className
+            );
+
+            const getObject = async (className, id, user) => {
+              const headers = user
+                ? { ['X-Parse-Session-Token']: user.getSessionToken() }
+                : undefined;
+
+              const specificQueryResult = await apolloClient.query({
+                query: gql`
+                  query GetSomeObject($id: ID!) {
+                    get: graphQLClass(id: $id) {
+                      pointerToUser {
+                        username
+                        id
+                      }
+                      someField
+                      someOtherField
+                    }
+                  }
+                `,
+                variables: {
+                  id: id,
+                },
+                context: {
+                  headers: headers,
+                },
+              });
+
+              return specificQueryResult.data.get;
+            };
+
+            const id = object3.id;
+
+            /* not authenticated */
+            const objectPublic = await getObject(className, id, undefined);
+
+            expect(objectPublic.someField).toBeNull();
+            expect(objectPublic.someOtherField).toBeNull();
+
+            /* authenticated */
+            const objectAuth = await getObject(className, id, user1);
+
+            expect(objectAuth.someField).toBeNull();
+            expect(objectAuth.someOtherField).toBe('B');
+
+            /* pointer field */
+            const objectPointed = await getObject(className, id, user5);
+
+            expect(objectPointed.someField).toBe('someValue3');
+            expect(objectPointed.someOtherField).toBe('B');
+
+            /* for user id */
+            const objectForUser = await getObject(className, id, user2);
+
+            expect(objectForUser.someField).toBe('someValue3');
+            expect(objectForUser.someOtherField).toBe('B');
+
+            done();
+          });
           describe_only_db('mongo')('read preferences', () => {
             it('should read from primary by default', async () => {
               try {

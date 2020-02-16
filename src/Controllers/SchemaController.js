@@ -175,32 +175,65 @@ const volatileClasses = Object.freeze([
 
 // Anything that start with role
 const roleRegex = /^role:.*/;
-// Anything that starts with userField
-const pointerPermissionRegex = /^userField:.*/;
+// Anything that starts with userField (allowed for protected fields only)
+const protectedFieldsPointerRegex = /^userField:.*/;
 // * permission
 const publicRegex = /^\*$/;
 
+const authenticatedRegex = /^authenticated$/;
+
+/* @todo: deprecate , simply 'authenticated' fits better */
 const requireAuthenticationRegex = /^requiresAuthentication$/;
 
-const pointerFieldsRegex = /^pointerFields$/;
+const clpPointerRegex = /^pointerFields$/;
 
-const permissionKeyRegex = Object.freeze([
-  roleRegex,
-  pointerPermissionRegex,
+// regex for validating entities in protectedFields object
+const protectedFieldsRegex = Object.freeze([
+  protectedFieldsPointerRegex,
   publicRegex,
-  requireAuthenticationRegex,
-  pointerFieldsRegex,
+  authenticatedRegex,
+  requireAuthenticationRegex /* @todo: deprecate */,
+  roleRegex,
+]);
+
+// clp regex
+const clpFieldsRegex = Object.freeze([
+  clpPointerRegex,
+  publicRegex,
+  authenticatedRegex,
+  requireAuthenticationRegex /* @todo: deprecate */,
+  roleRegex,
 ]);
 
 function validatePermissionKey(key, userIdRegExp) {
   let matchesSome = false;
-  for (const regEx of permissionKeyRegex) {
+  for (const regEx of clpFieldsRegex) {
     if (key.match(regEx) !== null) {
       matchesSome = true;
       break;
     }
   }
 
+  // userId depends on startup options so it's dynamic
+  const valid = matchesSome || key.match(userIdRegExp) !== null;
+  if (!valid) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `'${key}' is not a valid key for class level permissions`
+    );
+  }
+}
+
+function validateProtectedFieldsKey(key, userIdRegExp) {
+  let matchesSome = false;
+  for (const regEx of protectedFieldsRegex) {
+    if (key.match(regEx) !== null) {
+      matchesSome = true;
+      break;
+    }
+  }
+
+  // userId regex depends on launch options so it's dynamic
   const valid = matchesSome || key.match(userIdRegExp) !== null;
   if (!valid) {
     throw new Parse.Error(
@@ -264,7 +297,7 @@ function validateCLP(
     if (operationKey === 'protectedFields') {
       for (const entity in operation) {
         // throws on unexpected key
-        validatePermissionKey(entity, userIdRegExp);
+        validateProtectedFieldsKey(entity, userIdRegExp);
 
         const protectedFields = operation[entity];
 
@@ -301,6 +334,8 @@ function validateCLP(
       // throws on unexpected key
       validatePermissionKey(entity, userIdRegExp);
 
+      // entity can be either:
+      // "pointerFields": string[]
       if (entity === 'pointerFields') {
         const pointerFields = operation[entity];
 
@@ -318,6 +353,7 @@ function validateCLP(
         continue;
       }
 
+      // or [entity]: boolean
       const permit = operation[entity];
 
       if (permit !== true) {
@@ -1390,7 +1426,7 @@ export default class SchemaController {
     const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
-    if (perms['requiresAuthentication']) {
+    if (perms['authenticated'] || perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
         throw new Parse.Error(
@@ -1405,6 +1441,8 @@ export default class SchemaController {
       }
       // requiresAuthentication passed, just move forward
       // probably would be wise at some point to rename to 'authenticatedUser'
+      // > 3.10.0 - allow both 'requiresAuthentication' and 'authenticated' syntax.
+      // todo: deprecate requireAuthenticated and replace in docs
       return Promise.resolve();
     }
 
