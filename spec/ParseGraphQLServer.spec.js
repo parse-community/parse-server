@@ -282,7 +282,6 @@ describe('ParseGraphQLServer', () => {
     let object2;
     let object3;
     let object4;
-    let object5;
     let objects = [];
 
     async function prepareData() {
@@ -413,11 +412,6 @@ describe('ParseGraphQLServer', () => {
       object4 = new Parse.Object('PublicClass');
       object4.set('someField', 'someValue4');
       await object4.save();
-
-      object5 = new Parse.Object('WithPointerClass');
-      object5.set('owner', user1);
-      object5.set('testers', [user2, user3]);
-      await object5.save();
 
       objects = [];
       objects.push(object1, object2, object3, object4);
