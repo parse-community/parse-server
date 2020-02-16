@@ -25,6 +25,12 @@ cache:
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  jobs:
+  - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
+  - MONGODB_VERSION=3.6.9
+  - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_CACHE=redis
+  - NODE_VERSION=12.12.0
 jobs:
   allow_failures:
   - env: NODE_VERSION=12.12.0
