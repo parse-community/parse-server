@@ -10,7 +10,7 @@ const TOKEN_ISSUER = 'https://appleid.apple.com';
 
 let currentKey;
 
-const getApplePublicKey = async () => {
+const getApplePublicKey = async keyId => {
   let data;
   try {
     data = await httpsRequest.get('https://appleid.apple.com/auth/keys');
@@ -21,7 +21,11 @@ const getApplePublicKey = async () => {
     throw e;
   }
 
-  const key = data.keys[0];
+  const key = data.keys.find(key => key.kid === keyId);
+
+  if (!key) {
+    throw Error('Public key with matching key ID to token not found');
+  }
 
   const pubKey = new NodeRSA();
   pubKey.importKey(
@@ -32,6 +36,17 @@ const getApplePublicKey = async () => {
   return currentKey;
 };
 
+const getKeyAndAlgoFromToken = token => {
+  const decodedToken = jwt.decode(token, { complete: true });
+  if (!decodedToken) {
+    throw Error('provided token does not decode as JWT');
+  }
+  const keyId = decodedToken.header.kid;
+  const algo = decodedToken.header.alg;
+
+  return { keyId, algo };
+};
+
 const verifyIdToken = async ({ token, id }, clientID) => {
   if (!token) {
     throw new Parse.Error(
@@ -39,8 +54,12 @@ const verifyIdToken = async ({ token, id }, clientID) => {
       'id token is invalid for this user.'
     );
   }
-  const applePublicKey = await getApplePublicKey();
-  const jwtClaims = jwt.verify(token, applePublicKey, { algorithms: 'RS256' });
+
+  const decodedToken = getKeyAndAlgoFromToken(token);
+  const applePublicKey = await getApplePublicKey(decodedToken.keyId);
+  const jwtClaims = jwt.verify(token, applePublicKey, {
+    algorithms: decodedToken.algo,
+  });
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
     throw new Parse.Error(

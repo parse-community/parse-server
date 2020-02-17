@@ -1136,6 +1136,7 @@ describe('oauth2 auth adapter', () => {
 describe('apple signin auth adapter', () => {
   const apple = require('../lib/Adapters/Auth/apple');
   const jwt = require('jsonwebtoken');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
   it('should throw error with missing id_token', async () => {
     try {
@@ -1146,7 +1147,89 @@ describe('apple signin auth adapter', () => {
     }
   });
 
+  it('should not decode invalid id_token', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('should throw error if public key used to encode token is not available', async () => {
+    try {
+      const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+      const fakeKeys = {
+        keys: [
+          {
+            e: 'AQAB',
+            kid: '123',
+            n: 'ABCDEFGH',
+          },
+        ],
+      };
+      spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+      spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
+
+      await apple.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { client_id: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'Public key with matching key ID to token not found'
+      );
+    }
+  });
+
+  it('should use algorithm from key header to verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeKeys = {
+      keys: [
+        {
+          e: 'AQAB',
+          kid: '123',
+          n: 'ABCDEFGH',
+        },
+      ],
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await apple.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { client_id: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+    expect(jwt.verify.calls.first().args[2].algorithms).toEqual(
+      fakeDecodedToken.header.alg
+    );
+  });
+
   it('should not verify invalid id_token', async () => {
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeKeys = {
+      keys: [
+        {
+          e: 'AQAB',
+          kid: '123',
+          n: 'ABCDEFGH',
+        },
+      ],
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
@@ -1165,6 +1248,18 @@ describe('apple signin auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeKeys = {
+      keys: [
+        {
+          e: 'AQAB',
+          kid: '123',
+          n: 'ABCDEFGH',
+        },
+      ],
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     const result = await apple.validateAuthData(
@@ -1179,6 +1274,18 @@ describe('apple signin auth adapter', () => {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
     };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeKeys = {
+      keys: [
+        {
+          e: 'AQAB',
+          kid: '123',
+          n: 'ABCDEFGH',
+        },
+      ],
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
@@ -1200,6 +1307,18 @@ describe('apple signin auth adapter', () => {
       aud: 'invalid_client_id',
       sub: 'the_user_id',
     };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeKeys = {
+      keys: [
+        {
+          e: 'AQAB',
+          kid: '123',
+          n: 'ABCDEFGH',
+        },
+      ],
+    };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(httpsRequest, 'get').and.callFake(() => fakeKeys);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
