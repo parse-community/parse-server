@@ -1285,8 +1285,14 @@ describe('ProtectedFields', function() {
 
       const object = await obj1.fetch();
 
-      expect(object.get('test')).toBe(undefined); //  field protected
-      expect(object.get('owner')).toBe(undefined); //  field protected
+      expect(object.get('test')).toBe(
+        undefined,
+        'Field should not be visible - protected by role'
+      );
+      expect(object.get('owner')).toBe(
+        undefined,
+        'Field should not be visible - protected by role'
+      );
       expect(object.get('testers')).toBeDefined();
 
       done();
@@ -1398,7 +1404,7 @@ describe('ProtectedFields', function() {
       await logIn(user2);
       const objectAgain = await obj1.fetch();
 
-      // being moder alloows "test" field,is higher in hierarchy => roleModer protectedFields used
+      // being moder allows "test" field
       expect(objectAgain.get('owner')).toBe(
         undefined,
         '"owner" should not be visible - protected for each role user belongs to'
@@ -1409,7 +1415,8 @@ describe('ProtectedFields', function() {
 
       done();
     });
-    it('should be able to unprotect fields for role (protected for authenticated)', async done => {
+
+    it('should be able to clear protected fields for role (protected for authenticated)', async done => {
       const role = await createRole({ users: user1 });
       const roleName = role.get('name');
 
@@ -1460,57 +1467,15 @@ describe('ProtectedFields', function() {
       done();
     });
 
-    it('should determine protectedFields as intersection of field sets for authenticated and role', async done => {
-      const role = await createRole({ users: user1 });
-      const roleName = role.get('name');
-
-      await updateCLP({
-        get: { '*': true },
-        find: { '*': true },
-        protectedFields: {
-          authenticated: ['test', 'owner'],
-          [`role:${roleName}`]: ['owner'],
-        },
-      });
-
-      // user has role, test field visible
-      await logIn(user1);
-      const object = await obj1.fetch();
-      expect(object.get('test')).toBe('test');
-
-      done();
-    });
-
-    it('should be determined as an intersection of protecedFields for public and role', async done => {
-      const role = await createRole({ users: user1 });
-      const roleName = role.get('name');
-
-      await updateCLP({
-        get: { '*': true },
-        find: { '*': true },
-        protectedFields: {
-          '*': ['test'],
-          [`role:${roleName}`]: ['owner'],
-        },
-      });
-
-      // user has role
-      await logIn(user1);
-      const object = await obj1.fetch();
-
-      // since owner allowed for everyone (*),
-      // and test is not protected for role, all fields visible
-      expect(object.get('test')).toBeDefined();
-      expect(object.get('owner')).toBeDefined();
-      expect(object.get('testers')).toBeDefined();
-
-      done();
-    });
-
     it('should be determined as an intersection of protecedFields for authenticated and role', async done => {
       const role = await createRole({ users: user1 });
       const roleName = role.get('name');
 
+      // this is an example of misunderstood configuration.
+      // If you allow (== do not restrict) some field for broader audience
+      // (having a role implies user inheres to 'authenticated' group)
+      // it's not possible to narrow by protecting field for a role.
+      // You'd have to protect it for 'authenticated' as well.
       await updateCLP({
         get: { '*': true },
         find: { '*': true },
@@ -1524,10 +1489,13 @@ describe('ProtectedFields', function() {
       await logIn(user1);
       const object = await obj1.fetch();
 
-      // being authenticated clears protection on 'owner',
-      // having a role clears protection on 'test'
-      expect(object.get('test')).toBeDefined();
-      expect(object.get('owner')).toBeDefined();
+      //
+      expect(object.get('test')).toBeDefined(
+        "Being both auhenticated and having a role leads to clearing protection on 'test' (by role rules)"
+      );
+      expect(object.get('owner')).toBeDefined(
+        'All authenticated users allowed to see "owner"'
+      );
       expect(object.get('testers')).toBeDefined();
 
       done();

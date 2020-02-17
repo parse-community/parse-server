@@ -3109,7 +3109,7 @@ describe('Pointer Permissions', () => {
       let obj;
 
       /**
-       * Clear cache, create user and object, login user and setup rest headers with token
+       * Clear cache, create user and object, login user
        */
       async function initialize() {
         await Config.get(Parse.applicationId).database.schemaCache.clear();
