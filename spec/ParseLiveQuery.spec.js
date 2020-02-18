@@ -46,7 +46,7 @@ describe('ParseLiveQuery', function() {
     //
     // 0x89 = 10001001 = ping
     // 0xfe = 11111110 = first bit is masking the remaining 7 are 1111110 or 126 the payload length
-    // https://tools.ietf.org/html/rfc6455#section-5.5
+    // https://tools.ietf.org/html/rfc6455#section-5.2
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.socket._socket.write(Buffer.from([0x89, 0xfe]));
 
