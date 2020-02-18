@@ -15,7 +15,7 @@ export class ParseWebSocketServer {
     wss.onConnection = ws => {
       ws.on('error', error => {
         logger.error(error.message);
-        logger.error(JSON.stringify(ws._receiver));
+        logger.error(JSON.stringify(ws));
       });
       onConnect(new ParseWebSocket(ws));
       // Send ping to client periodically
