@@ -803,31 +803,10 @@ describe('ProtectedFields', function() {
       done();
     });
 
-    it('should allow setting requiresAuthentication (deprecate)', async () => {
-      await expectAsync(
-        updateCLP({
-          protectedFields: {
-            requiresAuthentication: ['test'],
-          },
-        })
-      ).toBeResolved();
-    });
-
     it('should allow setting authenticated', async () => {
       await expectAsync(
         updateCLP({
           protectedFields: {
-            authenticated: ['test'],
-          },
-        })
-      ).toBeResolved();
-    });
-
-    it('should allow setting both requiresAuthentication(deprecate) and authenticated', async () => {
-      await expectAsync(
-        updateCLP({
-          protectedFields: {
-            requiresAuthentication: ['revision'],
             authenticated: ['test'],
           },
         })
@@ -918,7 +897,7 @@ describe('ProtectedFields', function() {
     });
   });
 
-  describe('targeting authenticated (requiresAuthentication)', () => {
+  describe('targeting authenticated', () => {
     /**
      * is **owner** of: _obj1_
      *
@@ -1088,31 +1067,12 @@ describe('ProtectedFields', function() {
       done();
     });
 
-    it('should hide fields for authenticated users (deprecate syntax)', async done => {
+    it('should protect multiple fields for authenticated users', async done => {
       await updateCLP({
         get: { '*': true },
         find: { '*': true },
         protectedFields: {
-          requiresAuthentication: ['test'],
-        },
-      });
-
-      // authenticated
-      await logIn(user1);
-      const object = await obj1.fetch();
-
-      expect(object.get('test')).toBe(undefined);
-
-      done();
-    });
-
-    it('should protect fields for authenticated users (merge deprecated and new syntax)', async done => {
-      await updateCLP({
-        get: { '*': true },
-        find: { '*': true },
-        protectedFields: {
-          requiresAuthentication: ['test'],
-          authenticated: ['owner'],
+          authenticated: ['test', 'owner'],
         },
       });
 
@@ -1122,25 +1082,6 @@ describe('ProtectedFields', function() {
 
       expect(object.get('test')).toBe(undefined);
       expect(object.get('owner')).toBe(undefined);
-
-      done();
-    });
-
-    it('should protect fields for authenticated users (new syntax does not override deprecated)', async done => {
-      await updateCLP({
-        get: { '*': true },
-        find: { '*': true },
-        protectedFields: {
-          requiresAuthentication: ['test'],
-          authenticated: [],
-        },
-      });
-
-      // authenticated
-      await logIn(user1);
-      const object = await obj1.fetch();
-
-      expect(object.get('test')).toBe(undefined);
 
       done();
     });

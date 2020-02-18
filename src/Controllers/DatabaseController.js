@@ -1707,37 +1707,34 @@ class DatabaseController {
             serverOnlyKeys.push(fieldName);
           }
         }
+        continue;
       }
 
       // add public tier
       if (key === '*') {
         protectedKeysSets.push(protectedFields[key]);
+        continue;
       }
 
-      // add applicable roles
       if (authenticated) {
+        if (key === 'authenticated') {
+          // for logged in users
+          protectedKeysSets.push(protectedFields[key]);
+          continue;
+        }
+
         if (roles[key] && key.startsWith('role:')) {
+          // add applicable roles
           protectedKeysSets.push(roles[key]);
         }
       }
     }
 
-    // collect sets for authenticated (merge with old syntax)
+    // check if there's a rule for current user's id
     if (authenticated) {
       const userId = auth.user.id;
       if (perms.protectedFields[userId]) {
         protectedKeysSets.push(perms.protectedFields[userId]);
-      }
-
-      if (
-        protectedFields['authenticated'] ||
-        protectedFields['requiresAuthentication']
-      ) {
-        // treat as single set of protected fields
-        protectedKeysSets.push([
-          ...(protectedFields['requiresAuthentication'] || []),
-          ...(protectedFields['authenticated'] || []),
-        ]);
       }
     }
 

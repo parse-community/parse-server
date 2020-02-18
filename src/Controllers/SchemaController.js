@@ -182,8 +182,7 @@ const publicRegex = /^\*$/;
 
 const authenticatedRegex = /^authenticated$/;
 
-/* @todo: deprecate , simply 'authenticated' fits better */
-const requireAuthenticationRegex = /^requiresAuthentication$/;
+const requiresAuthenticationRegex = /^requiresAuthentication$/;
 
 const clpPointerRegex = /^pointerFields$/;
 
@@ -192,7 +191,6 @@ const protectedFieldsRegex = Object.freeze([
   protectedFieldsPointerRegex,
   publicRegex,
   authenticatedRegex,
-  requireAuthenticationRegex /* @todo: deprecate */,
   roleRegex,
 ]);
 
@@ -200,8 +198,7 @@ const protectedFieldsRegex = Object.freeze([
 const clpFieldsRegex = Object.freeze([
   clpPointerRegex,
   publicRegex,
-  authenticatedRegex,
-  requireAuthenticationRegex /* @todo: deprecate */,
+  requiresAuthenticationRegex,
   roleRegex,
 ]);
 
@@ -1426,7 +1423,7 @@ export default class SchemaController {
     const perms = classPermissions[operation];
     // If only for authenticated users
     // make sure we have an aclGroup
-    if (perms['authenticated'] || perms['requiresAuthentication']) {
+    if (perms['requiresAuthentication']) {
       // If aclGroup has * (public)
       if (!aclGroup || aclGroup.length == 0) {
         throw new Parse.Error(
@@ -1441,8 +1438,6 @@ export default class SchemaController {
       }
       // requiresAuthentication passed, just move forward
       // probably would be wise at some point to rename to 'authenticatedUser'
-      // > 3.10.0 - allow both 'requiresAuthentication' and 'authenticated' syntax.
-      // todo: deprecate requireAuthenticated and replace in docs
       return Promise.resolve();
     }
 
