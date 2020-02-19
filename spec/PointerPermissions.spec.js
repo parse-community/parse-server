@@ -2047,7 +2047,7 @@ describe('Pointer Permissions', () => {
     }
 
     async function logIn(userObject) {
-      await Parse.User.logIn(userObject.getUsername(), 'password');
+      return await Parse.User.logIn(userObject.getUsername(), 'password');
     }
 
     async function updateCLP(clp) {
@@ -3095,6 +3095,56 @@ describe('Pointer Permissions', () => {
           OBJECT_NOT_FOUND
         );
 
+        done();
+      });
+    });
+
+    describe('using pointer-fields and queries with keys projection', () => {
+      let user1;
+      /**
+       * owner: user1
+       *
+       * testers: [user1]
+       */
+      let obj;
+
+      /**
+       * Clear cache, create user and object, login user
+       */
+      async function initialize() {
+        await Config.get(Parse.applicationId).database.schemaCache.clear();
+
+        user1 = await createUser('user1');
+        user1 = await logIn(user1);
+
+        obj = new Parse.Object(className);
+
+        obj.set('owner', user1);
+        obj.set('field', 'field');
+        obj.set('test', 'test');
+
+        await Parse.Object.saveAll([obj], { useMasterKey: true });
+
+        await obj.fetch();
+      }
+
+      beforeEach(async () => {
+        await initialize();
+      });
+
+      it('should be enforced regardless of pointer-field being included in keys (select)', async done => {
+        await updateCLP({
+          get: { '*': true },
+          find: { pointerFields: ['owner'] },
+          update: { pointerFields: ['owner'] },
+        });
+
+        const query = new Parse.Query('AnObject');
+        query.select('field', 'test');
+
+        const [object] = await query.find({ objectId: obj.id });
+        expect(object.get('field')).toBe('field');
+        expect(object.get('test')).toBe('test');
         done();
       });
     });
