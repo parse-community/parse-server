@@ -4868,4 +4868,36 @@ describe('Parse.Query testing', () => {
     const results = await query.find();
     equal(results[0].get('array').length, 105);
   });
+
+  it('exclude keys (sdk query)', async done => {
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const query = new Parse.Query('TestObject');
+    query.exclude('foo');
+
+    const object = await query.get(obj.id);
+    expect(object.get('foo')).toBeUndefined();
+    expect(object.get('hello')).toBe('world');
+    done();
+  });
+
+  xit('todo: exclude keys with select key (sdk query get)', async done => {
+    // there is some problem with js sdk caching
+
+    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    await obj.save();
+
+    const query = new Parse.Query('TestObject');
+
+    query.withJSON({
+      keys: 'hello',
+      excludeKeys: 'hello',
+    });
+
+    const object = await query.get(obj.id);
+    expect(object.get('foo')).toBeUndefined();
+    expect(object.get('hello')).toBeUndefined();
+    done();
+  });
 });

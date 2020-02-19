@@ -217,7 +217,7 @@ const filterSensitiveData = (
           return { key: key.substring(10), value: perms.protectedFields[key] };
         });
 
-      const newProtectedFields: Array<string> = [];
+      const newProtectedFields: Array<string>[] = [];
       let overrideProtectedFields = false;
 
       // check if the object grants the current user access based on the extracted fields
@@ -238,12 +238,28 @@ const filterSensitiveData = (
 
         if (pointerPermIncludesUser) {
           overrideProtectedFields = true;
-          newProtectedFields.push(...pointerPerm.value);
+          newProtectedFields.push(pointerPerm.value);
         }
       });
 
-      // if atleast one pointer-permission affected the current user override the protectedFields
-      if (overrideProtectedFields) protectedFields = newProtectedFields;
+      // if at least one pointer-permission affected the current user
+      // intersect vs protectedFields from previous stage (@see addProtectedFields)
+      // Sets theory (intersections): A x (B x C) == (A x B) x C
+      if (overrideProtectedFields && protectedFields) {
+        newProtectedFields.push(protectedFields);
+      }
+      // intersect all sets of protectedFields
+      newProtectedFields.forEach(fields => {
+        if (fields) {
+          // if there're no protctedFields by other criteria ( id / role / auth)
+          // then we must intersect each set (per userField)
+          if (!protectedFields) {
+            protectedFields = fields;
+          } else {
+            protectedFields = protectedFields.filter(v => fields.includes(v));
+          }
+        }
+      });
     }
   }
 
@@ -251,8 +267,15 @@ const filterSensitiveData = (
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
   the retrieved user */
-  if (!(isUserClass && userId && object.objectId === userId))
+  if (!(isUserClass && userId && object.objectId === userId)) {
     protectedFields && protectedFields.forEach(k => delete object[k]);
+
+    // fields not requested by client (excluded),
+    //but were needed to apply protecttedFields
+    perms.protectedFields &&
+      perms.protectedFields.temporaryKeys &&
+      perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
+  }
 
   if (!isUserClass) {
     return object;
@@ -1416,7 +1439,8 @@ class DatabaseController {
                     className,
                     query,
                     aclGroup,
-                    auth
+                    auth,
+                    queryOptions
                   );
                 }
                 if (!query) {
@@ -1638,7 +1662,8 @@ class DatabaseController {
     className: string,
     query: any = {},
     aclGroup: any[] = [],
-    auth: any = {}
+    auth: any = {},
+    queryOptions: FullQueryOptions = {}
   ): null | string[] {
     const perms = schema.getClassLevelPermissions(className);
     if (!perms) return null;
@@ -1648,14 +1673,85 @@ class DatabaseController {
 
     if (aclGroup.indexOf(query.objectId) > -1) return null;
 
-    // remove userField keys since they are filtered after querying
-    let protectedKeys = Object.keys(protectedFields).reduce((acc, val) => {
-      if (val.startsWith('userField:')) return acc;
-      return acc.concat(protectedFields[val]);
+    // for queries where "keys" are set and do not include all 'userField':{field},
+    // we have to transparently include it, and then remove before returning to client
+    // Because if such key not projected the permission won't be enforced properly
+    // PS this is called when 'excludeKeys' already reduced to 'keys'
+    const preserveKeys = queryOptions.keys;
+
+    // these are keys that need to be included only
+    // to be able to apply protectedFields by pointer
+    // and then unset before returning to client (later in  filterSensitiveFields)
+    const serverOnlyKeys = [];
+
+    const authenticated = auth.user;
+
+    // map to allow check without array search
+    const roles = (auth.userRoles || []).reduce((acc, r) => {
+      acc[r] = protectedFields[r];
+      return acc;
+    }, {});
+
+    // array of sets of protected fields. separate item for each applicable criteria
+    const protectedKeysSets = [];
+
+    for (const key in protectedFields) {
+      // skip userFields
+      if (key.startsWith('userField:')) {
+        if (preserveKeys) {
+          const fieldName = key.substring(10);
+          if (!preserveKeys.includes(fieldName)) {
+            // 1. put it there temporarily
+            queryOptions.keys && queryOptions.keys.push(fieldName);
+            // 2. preserve it delete later
+            serverOnlyKeys.push(fieldName);
+          }
+        }
+        continue;
+      }
+
+      // add public tier
+      if (key === '*') {
+        protectedKeysSets.push(protectedFields[key]);
+        continue;
+      }
+
+      if (authenticated) {
+        if (key === 'authenticated') {
+          // for logged in users
+          protectedKeysSets.push(protectedFields[key]);
+          continue;
+        }
+
+        if (roles[key] && key.startsWith('role:')) {
+          // add applicable roles
+          protectedKeysSets.push(roles[key]);
+        }
+      }
+    }
+
+    // check if there's a rule for current user's id
+    if (authenticated) {
+      const userId = auth.user.id;
+      if (perms.protectedFields[userId]) {
+        protectedKeysSets.push(perms.protectedFields[userId]);
+      }
+    }
+
+    // preserve fields to be removed before sending response to client
+    if (serverOnlyKeys.length > 0) {
+      perms.protectedFields.temporaryKeys = serverOnlyKeys;
+    }
+
+    let protectedKeys = protectedKeysSets.reduce((acc, next) => {
+      if (next) {
+        acc.push(...next);
+      }
+      return acc;
     }, []);
 
-    [...(auth.userRoles || [])].forEach(role => {
-      const fields = protectedFields[role];
+    // intersect all sets of protectedFields
+    protectedKeysSets.forEach(fields => {
       if (fields) {
         protectedKeys = protectedKeys.filter(v => fields.includes(v));
       }
