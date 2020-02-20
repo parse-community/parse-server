@@ -10526,5 +10526,57 @@ describe('ParseGraphQLServer', () => {
         expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
       });
     });
+    describe('Async Function Based Merge', () => {
+      let httpServer;
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      let apolloClient;
+
+      beforeAll(async () => {
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+          graphQLPath: '/graphql',
+          graphQLCustomTypeDefs: ({ autoSchema, mergeSchemas }) =>
+            mergeSchemas({ schemas: [autoSchema] }),
+        });
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve =>
+          httpServer.listen({ port: 13377 }, resolve)
+        );
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
+      });
+
+      afterAll(async () => {
+        await httpServer.close();
+      });
+
+      it('can resolve a query', async () => {
+        const result = await apolloClient.query({
+          query: gql`
+            query Health {
+              health
+            }
+          `,
+        });
+        expect(result.data.health).toEqual(true);
+      });
+    });
   });
 });
