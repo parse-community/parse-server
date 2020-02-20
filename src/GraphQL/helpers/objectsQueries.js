@@ -21,7 +21,7 @@ const getObject = async (
   parseClass
 ) => {
   const options = {};
-  if (keys && !needToGetAllKeys(parseClass.fields, keys)) {
+  if (!needToGetAllKeys(parseClass.fields, keys)) {
     options.keys = keys;
   }
   if (include) {
@@ -140,7 +140,6 @@ const findObjects = async (
         options.limit = config.maxLimit;
       }
       if (
-        keys &&
         !needToGetAllKeys(
           parseClasses.find(
             ({ className: parseClassName }) => className === parseClassName
