@@ -436,7 +436,7 @@ const load = (
                 );
                 const parseOrder = order && order.join(',');
 
-                return await objectsQueries.findObjects(
+                return objectsQueries.findObjects(
                   source[field].className,
                   {
                     $relatedTo: {
