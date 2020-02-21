@@ -114,7 +114,7 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "3.0.8"
+    "bcrypt": "4.0.0"
   },
   "collective": {
     "type": "opencollective",
