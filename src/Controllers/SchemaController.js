@@ -308,7 +308,10 @@ function validateCLP(
         // if the field is in form of array
         for (const field of protectedFields) {
           // field should exist on collection
-          if (!Object.prototype.hasOwnProperty.call(fields, field)) {
+          if (
+            !Object.prototype.hasOwnProperty.call(fields, field) &&
+            !defaultColumns._Default[field]
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_JSON,
               `Field '${field}' in protectedFields:${entity} does not exist`

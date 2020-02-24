@@ -777,7 +777,7 @@ describe('ProtectedFields', function() {
       object.set('revision', 0);
       object.set('test', 'test');
 
-      await object.save({ useMasterKey: true });
+      await object.save(null, { useMasterKey: true });
     }
 
     beforeEach(async () => {
@@ -811,6 +811,48 @@ describe('ProtectedFields', function() {
           },
         })
       ).toBeResolved();
+    });
+
+    it('should protect default fields (REST)', async () => {
+      await expectAsync(
+        updateCLP({
+          get: { '*': true },
+          protectedFields: {
+            '*': ['objectId', 'createdAt', 'updatedAt', 'ACL'],
+          },
+        })
+      ).toBeResolved();
+
+      const { data: result } = await request({
+        url: `${Parse.serverURL}/classes/${className}/${object.id}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Rest-API-Key': 'rest',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      expect(result.createdAt).toBe(undefined);
+      expect(result.updatedAt).toBe(undefined);
+      expect(result.ACL).toBe(undefined);
+      expect(result.objectId).toBe(undefined);
+    });
+
+    it('should allow protecting default fields (sdk)', async () => {
+      await updateCLP({
+        get: { '*': true },
+        protectedFields: {
+          '*': ['objectId', 'createdAt', 'updatedAt', 'ACL'],
+        },
+      });
+
+      const q = new Parse.Query(className);
+      const result = await q.get(object.id);
+
+      expect(result.id).toBe(undefined);
+      expect(result.getACL()).toBe(null);
+      expect(result.createdAt).toBe(undefined);
+      expect(result.updatedAt).toBe(undefined);
     });
   });
 
@@ -1310,10 +1352,10 @@ describe('ProtectedFields', function() {
 
       // admin supersets moder role
       moder.relation('roles').add(admin);
-      await moder.save({ useMasterKey: true });
+      await moder.save(null, { useMasterKey: true });
 
       tester.relation('roles').add(moder);
-      await tester.save({ useMasterKey: true });
+      await tester.save(null, { useMasterKey: true });
 
       const roleAdmin = `role:${admin.get('name')}`;
       const roleModer = `role:${moder.get('name')}`;
