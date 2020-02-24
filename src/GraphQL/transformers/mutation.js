@@ -122,7 +122,7 @@ const transformers = {
     parseGraphQLSchema,
     { config, auth, info }
   ) => {
-    if (Object.keys(value) === 0)
+    if (Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
         `You need to provide at least one operation on the relation mutation of field ${field}`
@@ -203,7 +203,7 @@ const transformers = {
     parseGraphQLSchema,
     { config, auth, info }
   ) => {
-    if (Object.keys(value) > 1 || Object.keys(value) === 0)
+    if (Object.keys(value).length > 1 || Object.keys(value).length === 0)
       throw new Parse.Error(
         Parse.Error.INVALID_POINTER,
         `You need to provide link OR createLink on the pointer mutation of field ${field}`

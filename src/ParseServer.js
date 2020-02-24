@@ -262,10 +262,12 @@ class ParseServer {
 
     if (options.mountGraphQL === true || options.mountPlayground === true) {
       let graphQLCustomTypeDefs = undefined;
-      if (options.graphQLSchema) {
+      if (typeof options.graphQLSchema === 'string') {
         graphQLCustomTypeDefs = parse(
           fs.readFileSync(options.graphQLSchema, 'utf8')
         );
+      } else if (typeof options.graphQLSchema === 'object') {
+        graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
       const parseGraphQLServer = new ParseGraphQLServer(this, {
