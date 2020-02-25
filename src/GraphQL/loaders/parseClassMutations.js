@@ -112,12 +112,12 @@ const load = function(
             include,
             ['id', 'objectId', 'createdAt', 'updatedAt']
           );
-          const hasCustomField = objectsQueries.hasCustomField(
+          const needToGetAllKeys = objectsQueries.needToGetAllKeys(
             parseClass.fields,
             keys
           );
           let optimizedObject = {};
-          if (needGet && !hasCustomField) {
+          if (needGet && !needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               createdObject.objectId,
@@ -130,7 +130,7 @@ const load = function(
               info,
               parseClass
             );
-          } else if (hasCustomField) {
+          } else if (needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               createdObject.objectId,
@@ -230,12 +230,12 @@ const load = function(
             include,
             ['id', 'objectId', 'updatedAt']
           );
-          const hasCustomField = objectsQueries.hasCustomField(
+          const needToGetAllKeys = objectsQueries.needToGetAllKeys(
             parseClass.fields,
             keys
           );
           let optimizedObject = {};
-          if (needGet && !hasCustomField) {
+          if (needGet && !needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               id,
@@ -248,7 +248,7 @@ const load = function(
               info,
               parseClass
             );
-          } else if (hasCustomField) {
+          } else if (needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               id,

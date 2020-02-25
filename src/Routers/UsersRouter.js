@@ -264,6 +264,18 @@ export class UsersRouter extends ClassesRouter {
     user.sessionToken = sessionData.sessionToken;
 
     await createSession();
+
+    const afterLoginUser = Parse.User.fromJSON(
+      Object.assign({ className: '_User' }, user)
+    );
+    maybeRunTrigger(
+      TriggerTypes.afterLogin,
+      { ...req.auth, user: afterLoginUser },
+      afterLoginUser,
+      null,
+      req.config
+    );
+
     return { response: user };
   }
 

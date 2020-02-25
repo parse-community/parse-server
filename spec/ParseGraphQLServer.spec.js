@@ -5,6 +5,8 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
+const { updateCLP } = require('./dev');
+
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -4640,6 +4642,84 @@ describe('ParseGraphQLServer', () => {
             ).toBeDefined();
           });
 
+          it('should respect protectedFields', async done => {
+            await prepareData();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const className = 'GraphQLClass';
+
+            await updateCLP(
+              {
+                get: { '*': true },
+                find: { '*': true },
+
+                protectedFields: {
+                  '*': ['someField', 'someOtherField'],
+                  authenticated: ['someField'],
+                  'userField:pointerToUser': [],
+                  [user2.id]: [],
+                },
+              },
+              className
+            );
+
+            const getObject = async (className, id, user) => {
+              const headers = user
+                ? { ['X-Parse-Session-Token']: user.getSessionToken() }
+                : undefined;
+
+              const specificQueryResult = await apolloClient.query({
+                query: gql`
+                  query GetSomeObject($id: ID!) {
+                    get: graphQLClass(id: $id) {
+                      pointerToUser {
+                        username
+                        id
+                      }
+                      someField
+                      someOtherField
+                    }
+                  }
+                `,
+                variables: {
+                  id: id,
+                },
+                context: {
+                  headers: headers,
+                },
+              });
+
+              return specificQueryResult.data.get;
+            };
+
+            const id = object3.id;
+
+            /* not authenticated */
+            const objectPublic = await getObject(className, id, undefined);
+
+            expect(objectPublic.someField).toBeNull();
+            expect(objectPublic.someOtherField).toBeNull();
+
+            /* authenticated */
+            const objectAuth = await getObject(className, id, user1);
+
+            expect(objectAuth.someField).toBeNull();
+            expect(objectAuth.someOtherField).toBe('B');
+
+            /* pointer field */
+            const objectPointed = await getObject(className, id, user5);
+
+            expect(objectPointed.someField).toBe('someValue3');
+            expect(objectPointed.someOtherField).toBe('B');
+
+            /* for user id */
+            const objectForUser = await getObject(className, id, user2);
+
+            expect(objectForUser.someField).toBe('someValue3');
+            expect(objectForUser.someOtherField).toBe('B');
+
+            done();
+          });
           describe_only_db('mongo')('read preferences', () => {
             it('should read from primary by default', async () => {
               try {
@@ -10759,6 +10839,58 @@ describe('ParseGraphQLServer', () => {
           'ANEWNAME'
         );
         expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
+      });
+    });
+    describe('Async Function Based Merge', () => {
+      let httpServer;
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      let apolloClient;
+
+      beforeAll(async () => {
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+          graphQLPath: '/graphql',
+          graphQLCustomTypeDefs: ({ autoSchema, mergeSchemas }) =>
+            mergeSchemas({ schemas: [autoSchema] }),
+        });
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve =>
+          httpServer.listen({ port: 13377 }, resolve)
+        );
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
+      });
+
+      afterAll(async () => {
+        await httpServer.close();
+      });
+
+      it('can resolve a query', async () => {
+        const result = await apolloClient.query({
+          query: gql`
+            query Health {
+              health
+            }
+          `,
+        });
+        expect(result.data.health).toEqual(true);
       });
     });
   });

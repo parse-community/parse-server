@@ -338,7 +338,7 @@ It’s possible to change the default pages of the app and redirect the user to 
 var server = ParseServer({
   ...otherOptions,
   
-  customPages {
+  customPages: {
     passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
     verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
     parseFrameURL: "http://yourapp.com/parseFrameURL",

@@ -227,6 +227,12 @@ class ParseGraphQLSchema {
           ],
           mergeDirectives: true,
         });
+      } else if (typeof this.graphQLCustomTypeDefs === 'function') {
+        this.graphQLSchema = await this.graphQLCustomTypeDefs({
+          directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
+          autoSchema: this.graphQLAutoSchema,
+          mergeSchemas,
+        });
       } else {
         this.graphQLSchema = mergeSchemas({
           schemas: [

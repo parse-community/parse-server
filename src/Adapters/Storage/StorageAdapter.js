@@ -16,6 +16,7 @@ export type QueryOptions = {
   readPreference?: ?string,
   hint?: ?mixed,
   explain?: Boolean,
+  caseInsensitive?: boolean,
   action?: string,
   addsField?: boolean,
 };
@@ -86,6 +87,13 @@ export interface StorageAdapter {
     query: QueryType,
     options: QueryOptions
   ): Promise<[any]>;
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName?: string,
+    caseSensitive?: boolean
+  ): Promise<any>;
   ensureUniqueness(
     className: string,
     schema: SchemaType,
