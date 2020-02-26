@@ -64,10 +64,6 @@ export interface ParseServerOptions {
   databaseOptions: ?any;
   /* Adapter module for the database */
   databaseAdapter: ?Adapter<StorageAdapter>;
-  /* Circumvent Parse workaround for historical MongoDB bug SERVER-13732
-  :ENV: PARSE_SKIP_MONGODB_SERVER_13732_WORKAROUND
-  :DEFAULT: false */
-  skipMongoDBServer13732Workaround: ?boolean;
   /* Full path to your cloud code main.js */
   cloud: ?string;
   /* A collection prefix for the classes
