@@ -371,12 +371,6 @@ module.exports.ParseServerOptions = {
     help: 'Disables console output',
     action: parsers.booleanParser,
   },
-  skipMongoDBServer13732Workaround: {
-    env: 'PARSE_SKIP_MONGODB_SERVER_13732_WORKAROUND',
-    help: 'Circumvent Parse workaround for historical MongoDB bug SERVER-13732',
-    action: parsers.booleanParser,
-    default: false,
-  },
   startLiveQueryServer: {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
