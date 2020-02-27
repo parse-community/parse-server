@@ -9,7 +9,7 @@ describe('DatabaseController', function() {
         _rperm: { $in: ['a', 'b'] },
         foo: 3,
       };
-      validateQuery(query, true);
+      validateQuery(query);
       expect(query).toEqual({
         $or: [{ a: 1 }, { a: 2 }],
         _rperm: { $in: ['a', 'b'] },
@@ -20,13 +20,13 @@ describe('DatabaseController', function() {
 
     it('should not restructure SERVER-13732 queries with $nears', done => {
       let query = { $or: [{ a: 1 }, { b: 1 }], c: { $nearSphere: {} } };
-      validateQuery(query, true);
+      validateQuery(query);
       expect(query).toEqual({
         $or: [{ a: 1 }, { b: 1 }],
         c: { $nearSphere: {} },
       });
       query = { $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } };
-      validateQuery(query, true);
+      validateQuery(query);
       expect(query).toEqual({ $or: [{ a: 1 }, { b: 1 }], c: { $near: {} } });
       done();
     });
@@ -36,7 +36,7 @@ describe('DatabaseController', function() {
         a: 1,
         $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
       };
-      validateQuery(query, true);
+      validateQuery(query);
       expect(query).toEqual({
         a: 1,
         $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
@@ -46,14 +46,12 @@ describe('DatabaseController', function() {
     });
 
     it('should reject invalid queries', done => {
-      expect(() => validateQuery({ $or: { a: 1 } }, true)).toThrow();
+      expect(() => validateQuery({ $or: { a: 1 } })).toThrow();
       done();
     });
 
     it('should accept valid queries', done => {
-      expect(() =>
-        validateQuery({ $or: [{ a: 1 }, { b: 2 }] }, true)
-      ).not.toThrow();
+      expect(() => validateQuery({ $or: [{ a: 1 }, { b: 2 }] })).not.toThrow();
       done();
     });
   });

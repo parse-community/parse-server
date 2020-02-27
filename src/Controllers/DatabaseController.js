@@ -76,7 +76,7 @@ const validateQuery = (query: any): void => {
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(el => validateQuery(el));
+      query.$or.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -87,7 +87,7 @@ const validateQuery = (query: any): void => {
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(el => validateQuery(el));
+      query.$and.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -98,7 +98,7 @@ const validateQuery = (query: any): void => {
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(el => validateQuery(el));
+      query.$nor.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -1824,7 +1824,7 @@ class DatabaseController {
     ]);
   }
 
-  static _validateQuery: (any, boolean) => void;
+  static _validateQuery: any => void;
 }
 
 module.exports = DatabaseController;
