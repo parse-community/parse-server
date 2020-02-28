@@ -54,7 +54,7 @@ after_script:
 jobs:
   allow_failures:
   - env: NODE_VERSION=12.12.0
-  include:    
+  include:
   - stage: release
     node_js: '10'
     env:
@@ -63,6 +63,7 @@ jobs:
     script:
     - "./release_docs.sh"
     deploy:
+    skip_cleanup: true
     - provider: pages
       cleanup: true
       token:
