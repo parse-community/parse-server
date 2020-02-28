@@ -1,10 +1,14 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.11.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...master)
 
-### 3.11.0
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...3.11.0)
+### 4.0
+BREAKING CHANGES:
+1. Remove Support for Mongo 3.2 & 3.4.  The new minimum supported version is Mongo 3.6.
+2. Change username and email validation to be case insensitive. See [#6414](https://github.com/parse-community/parse-server/pull/6414).
+
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 - NEW: add hint option to Parse.Query [#6322](https://github.com/parse-community/parse-server/pull/6322). Thanks to [Steve Stencil](https://github.com/stevestencil)
 - FIX: CLP objectId size validation fix [#6332](https://github.com/parse-community/parse-server/pull/6332). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 - FIX: Add volumes to Docker command [#6356](https://github.com/parse-community/parse-server/pull/6356). Thanks to [Kasra Bigdeli](https://github.com/githubsaturn)
@@ -14,12 +18,13 @@
 - NEW: Granular CLP pointer permissions [#6352](https://github.com/parse-community/parse-server/pull/6352). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 - FIX: Add missing colon for customPages [#6393](https://github.com/parse-community/parse-server/pull/6393). Thanks to [Jerome De Leon](https://github.com/JeromeDeLeon)
 NEW: `afterLogin` cloud code hook [#6387](https://github.com/parse-community/parse-server/pull/6387). Thanks to [David Corona](https://github.com/davesters)
-- FIX: Prevent new usernames or emails that clash with existing users' email or username if it only differs by case.  For example, don't allow a new user with the name 'Jane' if we already have a user 'jane'. [#5634](https://github.com/parse-community/parse-server/pull/5634). Thanks to [Arthur Cinader](https://github.com/acinader)
+- FIX: *BREAKING CHANGE* Prevent new usernames or emails that clash with existing users' email or username if it only differs by case.  For example, don't allow a new user with the name 'Jane' if we already have a user 'jane'. [#5634](https://github.com/parse-community/parse-server/pull/5634). Thanks to [Arthur Cinader](https://github.com/acinader)
 - FIX: Support Travis CI V2. [#6414](https://github.com/parse-community/parse-server/pull/6414). Thanks to [Diamond Lewis](https://github.com/dplewis)
 - FIX: Prevent crashing on websocket error. [#6418](https://github.com/parse-community/parse-server/pull/6418). Thanks to [Diamond Lewis](https://github.com/dplewis)
 - NEW: Allow protectedFields for Authenticated users and Public. [$6415](https://github.com/parse-community/parse-server/pull/6415). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 - FIX: Correct bug in determining GraphQL pointer errors when mutating. [#6413](https://github.com/parse-community/parse-server/pull/6431). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
 - NEW: Allow true GraphQL Schema Customization. [#6360](https://github.com/parse-community/parse-server/pull/6360). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- BREAKING CHANGE: Remove Support for Mongo version < 3.6 [#6445](https://github.com/parse-community/parse-server/pull/6445). Thanks to [Arthur Cinader](https://github.com/acinader)
 
 ### 3.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...3.10.0)
