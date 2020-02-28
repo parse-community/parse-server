@@ -777,7 +777,7 @@ describe('ProtectedFields', function() {
       object.set('revision', 0);
       object.set('test', 'test');
 
-      await object.save({ useMasterKey: true });
+      await object.save(null, { useMasterKey: true });
     }
 
     beforeEach(async () => {
@@ -811,6 +811,24 @@ describe('ProtectedFields', function() {
           },
         })
       ).toBeResolved();
+    });
+
+    it('should not allow protecting default fields', async () => {
+      const defaultFields = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
+      for (const field of defaultFields) {
+        await expectAsync(
+          updateCLP({
+            protectedFields: {
+              '*': [field],
+            },
+          })
+        ).toBeRejectedWith(
+          new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `Default field '${field}' can not be protected`
+          )
+        );
+      }
     });
   });
 
@@ -1310,10 +1328,10 @@ describe('ProtectedFields', function() {
 
       // admin supersets moder role
       moder.relation('roles').add(admin);
-      await moder.save({ useMasterKey: true });
+      await moder.save(null, { useMasterKey: true });
 
       tester.relation('roles').add(moder);
-      await tester.save({ useMasterKey: true });
+      await tester.save(null, { useMasterKey: true });
 
       const roleAdmin = `role:${admin.get('name')}`;
       const roleModer = `role:${moder.get('name')}`;
