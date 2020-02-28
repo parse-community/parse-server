@@ -6,7 +6,7 @@
 ### 4.0
 BREAKING CHANGES:
 1. Remove Support for Mongo 3.2 & 3.4.  The new minimum supported version is Mongo 3.6.
-2. Change username and email validation to be case insensitive. See [#6414](https://github.com/parse-community/parse-server/pull/6414).
+2. Change username and email validation to be case insensitive. This change should be transparent in most use cases.  The validation behavior should not behave 'as expected'. See [#6414](https://github.com/parse-community/parse-server/pull/6414) for details.
 
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 - NEW: add hint option to Parse.Query [#6322](https://github.com/parse-community/parse-server/pull/6322). Thanks to [Steve Stencil](https://github.com/stevestencil)
