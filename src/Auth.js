@@ -66,15 +66,13 @@ const getAuthForSessionToken = async function({
     const userJSON = await cacheController.user.get(sessionToken);
     if (userJSON) {
       const cachedUser = Parse.Object.fromJSON(userJSON);
-      return Promise.resolve(
-        new Auth({
-          config,
-          cacheController,
-          isMaster: false,
-          installationId,
-          user: cachedUser,
-        })
-      );
+      new Auth({
+        config,
+        cacheController,
+        isMaster: false,
+        installationId,
+        user: cachedUser,
+      })
     }
   }
 
