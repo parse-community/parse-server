@@ -1,7 +1,10 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...master)
+
+### 4.0.1
+- FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452)
 
 ### 4.0
 __BREAKING CHANGES:__
