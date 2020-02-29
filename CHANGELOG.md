@@ -9,7 +9,7 @@ __BREAKING CHANGES:__
 2. Change username and email validation to be case insensitive. This change should be transparent in most use cases. The validation behavior should now behave 'as expected'. See [#6414](https://github.com/parse-community/parse-server/pull/6414) for details.
 
 - FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
-- NEW: __BREAKING CHANGE__ Do not allow to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+- FIX: Better message on not allowed to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 
 ### 4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
