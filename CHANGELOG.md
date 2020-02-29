@@ -4,13 +4,14 @@
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...master)
 
 ### 4.0.1
-- FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452)
-
-### 4.0
 __BREAKING CHANGES:__
 1. Remove Support for Mongo 3.2 & 3.4. The new minimum supported version is Mongo 3.6.
 2. Change username and email validation to be case insensitive. This change should be transparent in most use cases. The validation behavior should now behave 'as expected'. See [#6414](https://github.com/parse-community/parse-server/pull/6414) for details.
 
+- FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
+- NEW: __BREAKING CHANGE__ Do not allow to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+
+### 4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 - NEW: add hint option to Parse.Query [#6322](https://github.com/parse-community/parse-server/pull/6322). Thanks to [Steve Stencil](https://github.com/stevestencil)
 - FIX: CLP objectId size validation fix [#6332](https://github.com/parse-community/parse-server/pull/6332). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
