@@ -1,13 +1,18 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...master)
 
-### 4.0.1
+### 4.0.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...4.0.2)
 __BREAKING CHANGES:__
 1. Remove Support for Mongo 3.2 & 3.4. The new minimum supported version is Mongo 3.6.
 2. Change username and email validation to be case insensitive. This change should be transparent in most use cases. The validation behavior should now behave 'as expected'. See [#6414](https://github.com/parse-community/parse-server/pull/6414) for details.
 
+FIX: attempt to get travis to deploy to npmjs again.  See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
+
+### 4.0.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...4.0.1)
 - FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
 - FIX: Better message on not allowed to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 
