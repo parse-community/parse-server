@@ -18,8 +18,6 @@
 </p>
 
 <p align="center">
-    <img alt="MongoDB 3.2" src="https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 3.4" src="https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
 </p>
@@ -80,7 +78,7 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 Before you start make sure you have installed:
 
-- [NodeJS](https://www.npmjs.com/) that includes `npm` 
+- [NodeJS](https://www.npmjs.com/) that includes `npm`
 - [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)
 - Optionally [Docker](https://www.docker.com/)
 
@@ -337,7 +335,7 @@ It’s possible to change the default pages of the app and redirect the user to 
 ```js
 var server = ParseServer({
   ...otherOptions,
-  
+
   customPages: {
     passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
     verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",

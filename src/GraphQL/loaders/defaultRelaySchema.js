@@ -30,7 +30,10 @@ const load = parseGraphQLSchema => {
             undefined,
             config,
             auth,
-            info
+            info,
+            parseGraphQLSchema.parseClasses.find(
+              ({ className }) => type === className
+            )
           )),
         };
       } catch (e) {
