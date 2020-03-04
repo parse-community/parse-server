@@ -185,7 +185,7 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          `Could not store file: ${fileObject.file._name}.`
+          e.message ? e.message : `Could not store file: ${fileObject.file._name}.`
         )
       );
     }
