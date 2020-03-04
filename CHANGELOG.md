@@ -1,8 +1,44 @@
 ## Parse Server Changelog
 
 ### master
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...master)
 
-[Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...master)
+### 4.1.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...4.1.0)
+_SECURITY RELEASE_: see [advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-h4mf-75hf-67w4) for details
+- SECURITY FIX: Patch Regex vulnerabilities. See [3a3a5ee](https://github.com/parse-community/parse-server/commit/3a3a5eee5ffa48da1352423312cb767de14de269). Special thanks to [W0lfw00d](https://github.com/W0lfw00d) for identifying and [responsibly reporting](https://github.com/parse-community/parse-server/blob/master/SECURITY.md) the vulnerability. Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo) for the speedy fix.
+
+### 4.0.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...4.0.2)
+__BREAKING CHANGES:__
+1. Remove Support for Mongo 3.2 & 3.4. The new minimum supported version is Mongo 3.6.
+2. Change username and email validation to be case insensitive. This change should be transparent in most use cases. The validation behavior should now behave 'as expected'. See [#6414](https://github.com/parse-community/parse-server/pull/6414) for details.
+
+FIX: attempt to get travis to deploy to npmjs again.  See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
+
+### 4.0.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...4.0.1)
+- FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
+- FIX: Better message on not allowed to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+
+### 4.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
+- NEW: add hint option to Parse.Query [#6322](https://github.com/parse-community/parse-server/pull/6322). Thanks to [Steve Stencil](https://github.com/stevestencil)
+- FIX: CLP objectId size validation fix [#6332](https://github.com/parse-community/parse-server/pull/6332). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+- FIX: Add volumes to Docker command [#6356](https://github.com/parse-community/parse-server/pull/6356). Thanks to [Kasra Bigdeli](https://github.com/githubsaturn)
+- NEW: GraphQL 3rd Party LoginWith Support [#6371](https://github.com/parse-community/parse-server/pull/6371). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- FIX: GraphQL Geo Queries [#6363](https://github.com/parse-community/parse-server/pull/6363). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- NEW: GraphQL Nested File Upload [#6372](https://github.com/parse-community/parse-server/pull/6372). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- NEW: Granular CLP pointer permissions [#6352](https://github.com/parse-community/parse-server/pull/6352). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+- FIX: Add missing colon for customPages [#6393](https://github.com/parse-community/parse-server/pull/6393). Thanks to [Jerome De Leon](https://github.com/JeromeDeLeon)
+NEW: `afterLogin` cloud code hook [#6387](https://github.com/parse-community/parse-server/pull/6387). Thanks to [David Corona](https://github.com/davesters)
+- FIX: __BREAKING CHANGE__ Prevent new usernames or emails that clash with existing users' email or username if it only differs by case.  For example, don't allow a new user with the name 'Jane' if we already have a user 'jane'. [#5634](https://github.com/parse-community/parse-server/pull/5634). Thanks to [Arthur Cinader](https://github.com/acinader)
+- FIX: Support Travis CI V2. [#6414](https://github.com/parse-community/parse-server/pull/6414). Thanks to [Diamond Lewis](https://github.com/dplewis)
+- FIX: Prevent crashing on websocket error. [#6418](https://github.com/parse-community/parse-server/pull/6418). Thanks to [Diamond Lewis](https://github.com/dplewis)
+- NEW: Allow protectedFields for Authenticated users and Public. [$6415](https://github.com/parse-community/parse-server/pull/6415). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+- FIX: Correct bug in determining GraphQL pointer errors when mutating. [#6413](https://github.com/parse-community/parse-server/pull/6431). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- NEW: Allow true GraphQL Schema Customization. [#6360](https://github.com/parse-community/parse-server/pull/6360). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
+- __BREAKING CHANGE__: Remove Support for Mongo version < 3.6 [#6445](https://github.com/parse-community/parse-server/pull/6445). Thanks to [Arthur Cinader](https://github.com/acinader)
 
 ### 3.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...3.10.0)
@@ -20,8 +56,8 @@
 - NEW: GraphQL: DX Relational Where Query [#6255](https://github.com/parse-community/parse-server/pull/6255). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
 - CHANGE: test against Postgres 11 [#6260](https://github.com/parse-community/parse-server/pull/6260). Thanks to [Diamond Lewis](https://github.com/dplewis)
 - CHANGE: test against Postgres 11 [#6260](https://github.com/parse-community/parse-server/pull/6260). Thanks to [Diamond Lewis](https://github.com/dplewis)
-- NEW: GraphQL alias for mutations in classConfigs [#6258](https://github.com/parse-community/parse-server/pull/6258). Thanks to [Old Grandpa ](https://github.com/BufferUnderflower)
-- NEW: GraphQL classConfig query alias [#6257](https://github.com/parse-community/parse-server/pull/6257). Thanks to [Old Grandpa ](https://github.com/BufferUnderflower)
+- NEW: GraphQL alias for mutations in classConfigs [#6258](https://github.com/parse-community/parse-server/pull/6258). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
+- NEW: GraphQL classConfig query alias [#6257](https://github.com/parse-community/parse-server/pull/6257). Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 - NEW: Allow validateFilename to return a string or Parse Error [#6246](https://github.com/parse-community/parse-server/pull/6246). Thanks to [Mike Patnode](https://github.com/mpatnode)
 - NEW: Relay Spec [#6089](https://github.com/parse-community/parse-server/pull/6089). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - CHANGE: Set default ACL for GraphQL [#6249](https://github.com/parse-community/parse-server/pull/6249). Thanks to [Antoine Cormouls](https://github.com/Moumouls)

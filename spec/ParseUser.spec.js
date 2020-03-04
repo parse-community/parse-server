@@ -12,6 +12,7 @@ const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageA
 const request = require('../lib/request');
 const passwordCrypto = require('../lib/password');
 const Config = require('../lib/Config');
+const cryptoUtils = require('../lib/cryptoUtils');
 
 function verifyACL(user) {
   const ACL = user.getACL();
@@ -2242,6 +2243,128 @@ describe('Parse.User testing', () => {
           done();
         }
       );
+  });
+
+  describe('case insensitive signup not allowed', () => {
+    it('signup should fail with duplicate case insensitive username with basic setter', async () => {
+      const user = new Parse.User();
+      user.set('username', 'test1');
+      user.set('password', 'test');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.set('username', 'Test1');
+      user2.set('password', 'test');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
+    });
+
+    it('signup should fail with duplicate case insensitive username with field specific setter', async () => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('Test1');
+      user2.setPassword('test');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.USERNAME_TAKEN,
+          'Account already exists for this username.'
+        )
+      );
+    });
+
+    it('signup should fail with duplicate case insensitive email', async () => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('test2');
+      user2.setPassword('test');
+      user2.setEmail('Test@Example.Com');
+      await expectAsync(user2.signUp()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email address.'
+        )
+      );
+    });
+
+    it('edit should fail with duplicate case insensitive email', async () => {
+      const user = new Parse.User();
+      user.setUsername('test1');
+      user.setPassword('test');
+      user.setEmail('test@example.com');
+      await user.signUp();
+
+      const user2 = new Parse.User();
+      user2.setUsername('test2');
+      user2.setPassword('test');
+      user2.setEmail('Foo@Example.Com');
+      await user2.signUp();
+
+      user2.setEmail('Test@Example.Com');
+      await expectAsync(user2.save()).toBeRejectedWith(
+        new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email address.'
+        )
+      );
+    });
+
+    describe('anonymous users', () => {
+      beforeEach(() => {
+        const insensitiveCollisions = [
+          'abcdefghijklmnop',
+          'Abcdefghijklmnop',
+          'ABcdefghijklmnop',
+          'ABCdefghijklmnop',
+          'ABCDefghijklmnop',
+          'ABCDEfghijklmnop',
+          'ABCDEFghijklmnop',
+          'ABCDEFGhijklmnop',
+          'ABCDEFGHijklmnop',
+          'ABCDEFGHIjklmnop',
+          'ABCDEFGHIJklmnop',
+          'ABCDEFGHIJKlmnop',
+          'ABCDEFGHIJKLmnop',
+          'ABCDEFGHIJKLMnop',
+          'ABCDEFGHIJKLMnop',
+          'ABCDEFGHIJKLMNop',
+          'ABCDEFGHIJKLMNOp',
+          'ABCDEFGHIJKLMNOP',
+        ];
+
+        // need a bunch of spare random strings per api request
+        spyOn(cryptoUtils, 'randomString').and.returnValues(
+          ...insensitiveCollisions
+        );
+      });
+
+      it('should not fail on case insensitive matches', async () => {
+        const user1 = await Parse.AnonymousUtils.logIn();
+        const username1 = user1.get('username');
+
+        const user2 = await Parse.AnonymousUtils.logIn();
+        const username2 = user2.get('username');
+
+        expect(username1).not.toBeUndefined();
+        expect(username2).not.toBeUndefined();
+        expect(username1.toLowerCase()).toBe('abcdefghijklmnop');
+        expect(username2.toLowerCase()).toBe('abcdefghijklmnop');
+        expect(username2).not.toBe(username1);
+        expect(username2.toLowerCase()).toBe(username1.toLowerCase()); // this is redundant :).
+      });
+    });
   });
 
   it('user cannot update email to existing user', done => {

@@ -69,73 +69,14 @@ const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
 };
 
-const validateQuery = (
-  query: any,
-  skipMongoDBServer13732Workaround: boolean
-): void => {
+const validateQuery = (query: any): void => {
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
 
   if (query.$or) {
     if (query.$or instanceof Array) {
-      query.$or.forEach(el =>
-        validateQuery(el, skipMongoDBServer13732Workaround)
-      );
-
-      if (!skipMongoDBServer13732Workaround) {
-        /* In MongoDB 3.2 & 3.4, $or queries which are not alone at the top
-         * level of the query can not make efficient use of indexes due to a
-         * long standing bug known as SERVER-13732.
-         *
-         * This bug was fixed in MongoDB version 3.6.
-         *
-         * For versions pre-3.6, the below logic produces a substantial
-         * performance improvement inside the database by avoiding the bug.
-         *
-         * For versions 3.6 and above, there is no performance improvement and
-         * the logic is unnecessary. Some query patterns are even slowed by
-         * the below logic, due to the bug having been fixed and better
-         * query plans being chosen.
-         *
-         * When versions before 3.4 are no longer supported by this project,
-         * this logic, and the accompanying `skipMongoDBServer13732Workaround`
-         * flag, can be removed.
-         *
-         * This block restructures queries in which $or is not the sole top
-         * level element by moving all other top-level predicates inside every
-         * subdocument of the $or predicate, allowing MongoDB's query planner
-         * to make full use of the most relevant indexes.
-         *
-         * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
-         * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
-         *
-         * The only exceptions are $near and $nearSphere operators, which are
-         * constrained to only 1 operator per query. As a result, these ops
-         * remain at the top level
-         *
-         * https://jira.mongodb.org/browse/SERVER-13732
-         * https://github.com/parse-community/parse-server/issues/3767
-         */
-        Object.keys(query).forEach(key => {
-          const noCollisions = !query.$or.some(subq =>
-            Object.prototype.hasOwnProperty.call(subq, key)
-          );
-          let hasNears = false;
-          if (query[key] != null && typeof query[key] == 'object') {
-            hasNears = '$near' in query[key] || '$nearSphere' in query[key];
-          }
-          if (key != '$or' && noCollisions && !hasNears) {
-            query.$or.forEach(subquery => {
-              subquery[key] = query[key];
-            });
-            delete query[key];
-          }
-        });
-        query.$or.forEach(el =>
-          validateQuery(el, skipMongoDBServer13732Workaround)
-        );
-      }
+      query.$or.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -146,9 +87,7 @@ const validateQuery = (
 
   if (query.$and) {
     if (query.$and instanceof Array) {
-      query.$and.forEach(el =>
-        validateQuery(el, skipMongoDBServer13732Workaround)
-      );
+      query.$and.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -159,9 +98,7 @@ const validateQuery = (
 
   if (query.$nor) {
     if (query.$nor instanceof Array && query.$nor.length > 0) {
-      query.$nor.forEach(el =>
-        validateQuery(el, skipMongoDBServer13732Workaround)
-      );
+      query.$nor.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
@@ -217,7 +154,7 @@ const filterSensitiveData = (
           return { key: key.substring(10), value: perms.protectedFields[key] };
         });
 
-      const newProtectedFields: Array<string> = [];
+      const newProtectedFields: Array<string>[] = [];
       let overrideProtectedFields = false;
 
       // check if the object grants the current user access based on the extracted fields
@@ -238,12 +175,28 @@ const filterSensitiveData = (
 
         if (pointerPermIncludesUser) {
           overrideProtectedFields = true;
-          newProtectedFields.push(...pointerPerm.value);
+          newProtectedFields.push(pointerPerm.value);
         }
       });
 
-      // if atleast one pointer-permission affected the current user override the protectedFields
-      if (overrideProtectedFields) protectedFields = newProtectedFields;
+      // if at least one pointer-permission affected the current user
+      // intersect vs protectedFields from previous stage (@see addProtectedFields)
+      // Sets theory (intersections): A x (B x C) == (A x B) x C
+      if (overrideProtectedFields && protectedFields) {
+        newProtectedFields.push(protectedFields);
+      }
+      // intersect all sets of protectedFields
+      newProtectedFields.forEach(fields => {
+        if (fields) {
+          // if there're no protctedFields by other criteria ( id / role / auth)
+          // then we must intersect each set (per userField)
+          if (!protectedFields) {
+            protectedFields = fields;
+          } else {
+            protectedFields = protectedFields.filter(v => fields.includes(v));
+          }
+        }
+      });
     }
   }
 
@@ -251,8 +204,15 @@ const filterSensitiveData = (
 
   /* special treat for the user class: don't filter protectedFields if currently loggedin user is
   the retrieved user */
-  if (!(isUserClass && userId && object.objectId === userId))
+  if (!(isUserClass && userId && object.objectId === userId)) {
     protectedFields && protectedFields.forEach(k => delete object[k]);
+
+    // fields not requested by client (excluded),
+    //but were needed to apply protecttedFields
+    perms.protectedFields &&
+      perms.protectedFields.temporaryKeys &&
+      perms.protectedFields.temporaryKeys.forEach(k => delete object[k]);
+  }
 
   if (!isUserClass) {
     return object;
@@ -464,21 +424,15 @@ class DatabaseController {
   adapter: StorageAdapter;
   schemaCache: any;
   schemaPromise: ?Promise<SchemaController.SchemaController>;
-  skipMongoDBServer13732Workaround: boolean;
   _transactionalSession: ?any;
 
-  constructor(
-    adapter: StorageAdapter,
-    schemaCache: any,
-    skipMongoDBServer13732Workaround: boolean
-  ) {
+  constructor(adapter: StorageAdapter, schemaCache: any) {
     this.adapter = adapter;
     this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
-    this.skipMongoDBServer13732Workaround = skipMongoDBServer13732Workaround;
     this._transactionalSession = null;
   }
 
@@ -553,9 +507,10 @@ class DatabaseController {
     className: string,
     object: any,
     query: any,
-    { acl }: QueryOptions
+    runOptions: QueryOptions
   ): Promise<boolean> {
     let schema;
+    const acl = runOptions.acl;
     const isMaster = acl === undefined;
     var aclGroup: string[] = acl || [];
     return this.loadSchema()
@@ -564,7 +519,13 @@ class DatabaseController {
         if (isMaster) {
           return Promise.resolve();
         }
-        return this.canAddField(schema, className, object, aclGroup);
+        return this.canAddField(
+          schema,
+          className,
+          object,
+          aclGroup,
+          runOptions
+        );
       })
       .then(() => {
         return schema.validateObject(className, object, query);
@@ -575,7 +536,7 @@ class DatabaseController {
     className: string,
     query: any,
     update: any,
-    { acl, many, upsert }: FullQueryOptions = {},
+    { acl, many, upsert, addsField }: FullQueryOptions = {},
     skipSanitization: boolean = false,
     validateOnly: boolean = false,
     validSchemaController: SchemaController.SchemaController
@@ -608,6 +569,21 @@ class DatabaseController {
                 query,
                 aclGroup
               );
+
+              if (addsField) {
+                query = {
+                  $and: [
+                    query,
+                    this.addPointerPermissions(
+                      schemaController,
+                      className,
+                      'addField',
+                      query,
+                      aclGroup
+                    ),
+                  ],
+                };
+              }
             }
             if (!query) {
               return Promise.resolve();
@@ -615,7 +591,7 @@ class DatabaseController {
             if (acl) {
               query = addWriteACL(query, acl);
             }
-            validateQuery(query, this.skipMongoDBServer13732Workaround);
+            validateQuery(query);
             return schemaController
               .getOneSchema(className, true)
               .catch(error => {
@@ -894,7 +870,7 @@ class DatabaseController {
           if (acl) {
             query = addWriteACL(query, acl);
           }
-          validateQuery(query, this.skipMongoDBServer13732Workaround);
+          validateQuery(query);
           return schemaController
             .getOneSchema(className)
             .catch(error => {
@@ -994,7 +970,8 @@ class DatabaseController {
     schema: SchemaController.SchemaController,
     className: string,
     object: any,
-    aclGroup: string[]
+    aclGroup: string[],
+    runOptions: QueryOptions
   ): Promise<void> {
     const classSchema = schema.schemaData[className];
     if (!classSchema) {
@@ -1014,7 +991,11 @@ class DatabaseController {
       return schemaFields.indexOf(field) < 0;
     });
     if (newKeys.length > 0) {
-      return schema.validatePermission(className, aclGroup, 'addField');
+      // adds a marker that new field is being adding during update
+      runOptions.addsField = true;
+
+      const action = runOptions.action;
+      return schema.validatePermission(className, aclGroup, 'addField', action);
     }
     return Promise.resolve();
   }
@@ -1272,6 +1253,7 @@ class DatabaseController {
   //   acl     restrict this operation with an ACL for the provided array
   //           of user objectIds and roles. acl: null means no user.
   //           when this field is not present, don't do anything regarding ACLs.
+  //  caseInsensitive make string comparisons case insensitive
   // TODO: make userIds not needed here. The db adapter shouldn't know
   // anything about users, ideally. Then, improve the format of the ACL
   // arg to work like the others.
@@ -1290,6 +1272,7 @@ class DatabaseController {
       pipeline,
       readPreference,
       hint,
+      caseInsensitive = false,
       explain,
     }: any = {},
     auth: any = {},
@@ -1341,6 +1324,7 @@ class DatabaseController {
               keys,
               readPreference,
               hint,
+              caseInsensitive,
               explain,
             };
             Object.keys(sort).forEach(fieldName => {
@@ -1386,7 +1370,8 @@ class DatabaseController {
                     className,
                     query,
                     aclGroup,
-                    auth
+                    auth,
+                    queryOptions
                   );
                 }
                 if (!query) {
@@ -1406,7 +1391,7 @@ class DatabaseController {
                     query = addReadACL(query, aclGroup);
                   }
                 }
-                validateQuery(query, this.skipMongoDBServer13732Workaround);
+                validateQuery(query);
                 if (count) {
                   if (!classExists) {
                     return 0;
@@ -1525,28 +1510,50 @@ class DatabaseController {
       });
   }
 
+  // Constraints query using CLP's pointer permissions (PP) if any.
+  // 1. Etract the user id from caller's ACLgroup;
+  // 2. Exctract a list of field names that are PP for target collection and operation;
+  // 3. Constraint the original query so that each PP field must
+  // point to caller's id (or contain it in case of PP field being an array)
   addPointerPermissions(
     schema: SchemaController.SchemaController,
     className: string,
     operation: string,
     query: any,
     aclGroup: any[] = []
-  ) {
+  ): any {
     // Check if class has public permission for operation
     // If the BaseCLP pass, let go through
     if (schema.testPermissionsForClassName(className, aclGroup, operation)) {
       return query;
     }
     const perms = schema.getClassLevelPermissions(className);
-    const field =
-      ['get', 'find'].indexOf(operation) > -1
-        ? 'readUserFields'
-        : 'writeUserFields';
+
     const userACL = aclGroup.filter(acl => {
       return acl.indexOf('role:') != 0 && acl != '*';
     });
+
+    const groupKey =
+      ['get', 'find', 'count'].indexOf(operation) > -1
+        ? 'readUserFields'
+        : 'writeUserFields';
+
+    const permFields = [];
+
+    if (perms[operation] && perms[operation].pointerFields) {
+      permFields.push(...perms[operation].pointerFields);
+    }
+
+    if (perms[groupKey]) {
+      for (const field of perms[groupKey]) {
+        if (!permFields.includes(field)) {
+          permFields.push(field);
+        }
+      }
+    }
     // the ACL should have exactly 1 user
-    if (perms && perms[field] && perms[field].length > 0) {
+    if (permFields.length > 0) {
+      // the ACL should have exactly 1 user
       // No user set return undefined
       // If the length is > 1, that means we didn't de-dupe users correctly
       if (userACL.length != 1) {
@@ -1559,7 +1566,6 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const permFields = perms[field];
       const ors = permFields.flatMap(key => {
         // constraint for single pointer setup
         const q = {
@@ -1587,8 +1593,9 @@ class DatabaseController {
     className: string,
     query: any = {},
     aclGroup: any[] = [],
-    auth: any = {}
-  ) {
+    auth: any = {},
+    queryOptions: FullQueryOptions = {}
+  ): null | string[] {
     const perms = schema.getClassLevelPermissions(className);
     if (!perms) return null;
 
@@ -1597,14 +1604,85 @@ class DatabaseController {
 
     if (aclGroup.indexOf(query.objectId) > -1) return null;
 
-    // remove userField keys since they are filtered after querying
-    let protectedKeys = Object.keys(protectedFields).reduce((acc, val) => {
-      if (val.startsWith('userField:')) return acc;
-      return acc.concat(protectedFields[val]);
+    // for queries where "keys" are set and do not include all 'userField':{field},
+    // we have to transparently include it, and then remove before returning to client
+    // Because if such key not projected the permission won't be enforced properly
+    // PS this is called when 'excludeKeys' already reduced to 'keys'
+    const preserveKeys = queryOptions.keys;
+
+    // these are keys that need to be included only
+    // to be able to apply protectedFields by pointer
+    // and then unset before returning to client (later in  filterSensitiveFields)
+    const serverOnlyKeys = [];
+
+    const authenticated = auth.user;
+
+    // map to allow check without array search
+    const roles = (auth.userRoles || []).reduce((acc, r) => {
+      acc[r] = protectedFields[r];
+      return acc;
+    }, {});
+
+    // array of sets of protected fields. separate item for each applicable criteria
+    const protectedKeysSets = [];
+
+    for (const key in protectedFields) {
+      // skip userFields
+      if (key.startsWith('userField:')) {
+        if (preserveKeys) {
+          const fieldName = key.substring(10);
+          if (!preserveKeys.includes(fieldName)) {
+            // 1. put it there temporarily
+            queryOptions.keys && queryOptions.keys.push(fieldName);
+            // 2. preserve it delete later
+            serverOnlyKeys.push(fieldName);
+          }
+        }
+        continue;
+      }
+
+      // add public tier
+      if (key === '*') {
+        protectedKeysSets.push(protectedFields[key]);
+        continue;
+      }
+
+      if (authenticated) {
+        if (key === 'authenticated') {
+          // for logged in users
+          protectedKeysSets.push(protectedFields[key]);
+          continue;
+        }
+
+        if (roles[key] && key.startsWith('role:')) {
+          // add applicable roles
+          protectedKeysSets.push(roles[key]);
+        }
+      }
+    }
+
+    // check if there's a rule for current user's id
+    if (authenticated) {
+      const userId = auth.user.id;
+      if (perms.protectedFields[userId]) {
+        protectedKeysSets.push(perms.protectedFields[userId]);
+      }
+    }
+
+    // preserve fields to be removed before sending response to client
+    if (serverOnlyKeys.length > 0) {
+      perms.protectedFields.temporaryKeys = serverOnlyKeys;
+    }
+
+    let protectedKeys = protectedKeysSets.reduce((acc, next) => {
+      if (next) {
+        acc.push(...next);
+      }
+      return acc;
     }, []);
 
-    [...(auth.userRoles || [])].forEach(role => {
-      const fields = protectedFields[role];
+    // intersect all sets of protectedFields
+    protectedKeysSets.forEach(fields => {
       if (fields) {
         protectedKeys = protectedKeys.filter(v => fields.includes(v));
       }
@@ -1675,6 +1753,24 @@ class DatabaseController {
         throw error;
       });
 
+    const usernameCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['username'],
+          'case_insensitive_username',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn(
+          'Unable to create case insensitive username index: ',
+          error
+        );
+        throw error;
+      });
+
     const emailUniqueness = userClassPromise
       .then(() =>
         this.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
@@ -1684,6 +1780,21 @@ class DatabaseController {
           'Unable to ensure uniqueness for user email addresses: ',
           error
         );
+        throw error;
+      });
+
+    const emailCaseInsensitiveIndex = userClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_User',
+          requiredUserFields,
+          ['email'],
+          'case_insensitive_email',
+          true
+        )
+      )
+      .catch(error => {
+        logger.warn('Unable to create case insensitive email index: ', error);
         throw error;
       });
 
@@ -1704,14 +1815,16 @@ class DatabaseController {
     });
     return Promise.all([
       usernameUniqueness,
+      usernameCaseInsensitiveIndex,
       emailUniqueness,
+      emailCaseInsensitiveIndex,
       roleUniqueness,
       adapterInit,
       indexPromise,
     ]);
   }
 
-  static _validateQuery: (any, boolean) => void;
+  static _validateQuery: any => void;
 }
 
 module.exports = DatabaseController;

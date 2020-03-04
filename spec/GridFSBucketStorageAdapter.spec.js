@@ -61,16 +61,20 @@ describe('GridFSBucket and GridStore interop', () => {
     await expectMissingFile(gfsAdapter, 'myFileName');
   });
 
-  it('handleShutdown, close connection', done => {
+  it('handleShutdown, close connection', async () => {
     const databaseURI = 'mongodb://localhost:27017/parse';
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
 
-    gfsAdapter._connect().then(db => {
-      expect(db.serverConfig.connections().length > 0).toEqual(true);
-      gfsAdapter.handleShutdown().then(() => {
-        expect(db.serverConfig.connections().length > 0).toEqual(false);
-        done();
-      });
-    });
+    const db = await gfsAdapter._connect();
+    const status = await db.admin().serverStatus();
+    expect(status.connections.current > 0).toEqual(true);
+
+    await gfsAdapter.handleShutdown();
+    try {
+      await db.admin().serverStatus();
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toEqual('topology was destroyed');
+    }
   });
 });

@@ -18,8 +18,6 @@
 </p>
 
 <p align="center">
-    <img alt="MongoDB 3.2" src="https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 3.4" src="https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
 </p>
@@ -80,7 +78,7 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 Before you start make sure you have installed:
 
-- [NodeJS](https://www.npmjs.com/) that includes `npm` 
+- [NodeJS](https://www.npmjs.com/) that includes `npm`
 - [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)
 - Optionally [Docker](https://www.docker.com/)
 
@@ -99,7 +97,7 @@ $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+$ docker run --name my-parse-server -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
@@ -337,8 +335,8 @@ It’s possible to change the default pages of the app and redirect the user to 
 ```js
 var server = ParseServer({
   ...otherOptions,
-  
-  customPages {
+
+  customPages: {
     passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
     verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
     parseFrameURL: "http://yourapp.com/parseFrameURL",
@@ -443,7 +441,7 @@ $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
+$ docker run --name my-parse-server --link my-mongo:mongo -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.

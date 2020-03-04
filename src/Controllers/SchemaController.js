@@ -175,29 +175,62 @@ const volatileClasses = Object.freeze([
 
 // Anything that start with role
 const roleRegex = /^role:.*/;
-// Anything that starts with userField
-const pointerPermissionRegex = /^userField:.*/;
+// Anything that starts with userField (allowed for protected fields only)
+const protectedFieldsPointerRegex = /^userField:.*/;
 // * permission
 const publicRegex = /^\*$/;
 
-const requireAuthenticationRegex = /^requiresAuthentication$/;
+const authenticatedRegex = /^authenticated$/;
 
-const permissionKeyRegex = Object.freeze([
-  roleRegex,
-  pointerPermissionRegex,
+const requiresAuthenticationRegex = /^requiresAuthentication$/;
+
+const clpPointerRegex = /^pointerFields$/;
+
+// regex for validating entities in protectedFields object
+const protectedFieldsRegex = Object.freeze([
+  protectedFieldsPointerRegex,
   publicRegex,
-  requireAuthenticationRegex,
+  authenticatedRegex,
+  roleRegex,
+]);
+
+// clp regex
+const clpFieldsRegex = Object.freeze([
+  clpPointerRegex,
+  publicRegex,
+  requiresAuthenticationRegex,
+  roleRegex,
 ]);
 
 function validatePermissionKey(key, userIdRegExp) {
   let matchesSome = false;
-  for (const regEx of permissionKeyRegex) {
+  for (const regEx of clpFieldsRegex) {
     if (key.match(regEx) !== null) {
       matchesSome = true;
       break;
     }
   }
 
+  // userId depends on startup options so it's dynamic
+  const valid = matchesSome || key.match(userIdRegExp) !== null;
+  if (!valid) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `'${key}' is not a valid key for class level permissions`
+    );
+  }
+}
+
+function validateProtectedFieldsKey(key, userIdRegExp) {
+  let matchesSome = false;
+  for (const regEx of protectedFieldsRegex) {
+    if (key.match(regEx) !== null) {
+      matchesSome = true;
+      break;
+    }
+  }
+
+  // userId regex depends on launch options so it's dynamic
   const valid = matchesSome || key.match(userIdRegExp) !== null;
   if (!valid) {
     throw new Parse.Error(
@@ -238,26 +271,19 @@ function validateCLP(
     }
 
     const operation = perms[operationKey];
-    if (!operation) {
-      // proceed with next operationKey
-      continue;
-    }
+    // proceed with next operationKey
 
-    // validate grouped pointer permissions
+    // throws when root fields are of wrong type
+    validateCLPjson(operation, operationKey);
+
     if (
       operationKey === 'readUserFields' ||
       operationKey === 'writeUserFields'
     ) {
+      // validate grouped pointer permissions
       // must be an array with field names
-      if (!Array.isArray(operation)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `'${operation}' is not a valid value for class level permissions ${operationKey}`
-        );
-      } else {
-        for (const fieldName of operation) {
-          validatePointerPermission(fieldName, fields, operationKey);
-        }
+      for (const fieldName of operation) {
+        validatePointerPermission(fieldName, fields, operationKey);
       }
       // readUserFields and writerUserFields do not have nesdted fields
       // proceed with next operationKey
@@ -268,7 +294,7 @@ function validateCLP(
     if (operationKey === 'protectedFields') {
       for (const entity in operation) {
         // throws on unexpected key
-        validatePermissionKey(entity, userIdRegExp);
+        validateProtectedFieldsKey(entity, userIdRegExp);
 
         const protectedFields = operation[entity];
 
@@ -281,6 +307,13 @@ function validateCLP(
 
         // if the field is in form of array
         for (const field of protectedFields) {
+          // do not alloow to protect default fields
+          if (defaultColumns._Default[field]) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_JSON,
+              `Default field '${field}' can not be protected`
+            );
+          }
           // field should exist on collection
           if (!Object.prototype.hasOwnProperty.call(fields, field)) {
             throw new Parse.Error(
@@ -299,11 +332,32 @@ function validateCLP(
     // "*" - Public,
     // "requiresAuthentication" - authenticated users,
     // "objectId" - _User id,
-    // "role:objectId",
+    // "role:rolename",
+    // "pointerFields" - array of field names containing pointers to users
     for (const entity in operation) {
       // throws on unexpected key
       validatePermissionKey(entity, userIdRegExp);
 
+      // entity can be either:
+      // "pointerFields": string[]
+      if (entity === 'pointerFields') {
+        const pointerFields = operation[entity];
+
+        if (Array.isArray(pointerFields)) {
+          for (const pointerField of pointerFields) {
+            validatePointerPermission(pointerField, fields, operation);
+          }
+        } else {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            `'${pointerFields}' is not a valid value for ${operationKey}[${entity}] - expected an array.`
+          );
+        }
+        // proceed with next entity key
+        continue;
+      }
+
+      // or [entity]: boolean
       const permit = operation[entity];
 
       if (permit !== true) {
@@ -316,13 +370,34 @@ function validateCLP(
   }
 }
 
+function validateCLPjson(operation: any, operationKey: string) {
+  if (operationKey === 'readUserFields' || operationKey === 'writeUserFields') {
+    if (!Array.isArray(operation)) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an array`
+      );
+    }
+  } else {
+    if (typeof operation === 'object' && operation !== null) {
+      // ok to proceed
+      return;
+    } else {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${operation}' is not a valid value for class level permissions ${operationKey} - must be an object`
+      );
+    }
+  }
+}
+
 function validatePointerPermission(
   fieldName: string,
   fields: Object,
   operation: string
 ) {
   // Uses collection schema to ensure the field is of type:
-  // - Pointer<_User> (pointers/relations)
+  // - Pointer<_User> (pointers)
   // - Array
   //
   //    It's not possible to enforce type on Array's items in schema
@@ -1340,7 +1415,8 @@ export default class SchemaController {
     classPermissions: ?any,
     className: string,
     aclGroup: string[],
-    operation: string
+    operation: string,
+    action?: string
   ) {
     if (
       SchemaController.testPermissions(classPermissions, aclGroup, operation)
@@ -1394,6 +1470,16 @@ export default class SchemaController {
     ) {
       return Promise.resolve();
     }
+
+    const pointerFields = classPermissions[operation].pointerFields;
+    if (Array.isArray(pointerFields) && pointerFields.length > 0) {
+      // any op except 'addField as part of create' is ok.
+      if (operation !== 'addField' || action === 'update') {
+        // We can allow adding field on update flow only.
+        return Promise.resolve();
+      }
+    }
+
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
       `Permission denied for action ${operation} on class ${className}.`
@@ -1401,12 +1487,18 @@ export default class SchemaController {
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className: string, aclGroup: string[], operation: string) {
+  validatePermission(
+    className: string,
+    aclGroup: string[],
+    operation: string,
+    action?: string
+  ) {
     return SchemaController.validatePermission(
       this.getClassLevelPermissions(className),
       className,
       aclGroup,
-      operation
+      operation,
+      action
     );
   }
 

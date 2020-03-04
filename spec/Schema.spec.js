@@ -1665,7 +1665,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       );
   });
 
-  it('required auth test get not authenitcated', done => {
+  it('required auth test get not authenticated', done => {
     config.database
       .loadSchema()
       .then(schema => {
@@ -1704,7 +1704,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       );
   });
 
-  it('required auth test find not authenitcated', done => {
+  it('required auth test find not authenticated', done => {
     config.database
       .loadSchema()
       .then(schema => {

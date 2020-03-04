@@ -167,6 +167,42 @@ ParseCloud.beforeLogin = function(handler) {
 
 /**
  *
+ * Registers the after login function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * This function is triggered after a user logs in successfully,
+ * and after a _Session object has been created.
+ *
+ * ```
+ * Parse.Cloud.afterLogin((request) => {
+ *   // code here
+ * })
+ *
+ * ```
+ *
+ * @method afterLogin
+ * @name Parse.Cloud.afterLogin
+ * @param {Function} func The function to run after a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
+ */
+ParseCloud.afterLogin = function(handler) {
+  let className = '_User';
+  if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
+    // validation will occur downstream, this is to maintain internal
+    // code consistency with the other hook types.
+    className = getClassName(handler);
+    handler = arguments[1];
+  }
+  triggers.addTrigger(
+    triggers.Types.afterLogin,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ *
  * Registers the after logout function.
  *
  * **Available in Cloud Code only.**
