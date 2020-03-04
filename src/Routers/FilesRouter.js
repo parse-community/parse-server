@@ -180,7 +180,6 @@ export class FilesRouter {
       res.json(saveResult);
 
     } catch (e) {
-      // TODO: Should the error message from a throw in beforeSaveFile hook be used here (instead of `Could not store file: ${filename}`)?
       logger.error('Error creating a file: ', e);
       next(
         new Parse.Error(
