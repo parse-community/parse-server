@@ -2644,7 +2644,7 @@ describe('beforeLogin hook', () => {
     try {
       await file.save({ useMasterKey: true });
     } catch (error) {
-      expect(error.message).toBe('Could not store file: popeye.txt.');
+      expect(error.message).toBe('some-error-message');
     }
   });
 
@@ -2754,8 +2754,7 @@ describe('beforeLogin hook', () => {
     try {
       await file.save({ useMasterKey: true });
     } catch (error) {
-      expect(error.message.indexOf('Could not store file: ')).toBe(0);
-      expect(error.message.indexOf(filename)).toBe(error.message.length - filename.length - 1);
+      expect(error.message).toBe('some-error-message');
     }
   });
 
