@@ -24,7 +24,7 @@ __BREAKING CHANGES:__
 > 
 > 2. Care is taken ensure that there is adequate compute capacity to create the index in the background while still servicing requests.
 
-- FIX: attempt to get travis to deploy to npmjs again.  See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
+- FIX: attempt to get travis to deploy to npmjs again. See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
 
 ### 4.0.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...4.0.1)
