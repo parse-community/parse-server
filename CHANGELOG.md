@@ -1,7 +1,20 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.1...master)
+
+### 4.1.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.1.1)
+
+__Special Note on Upgrading to Parse Server 4__
+
+In addition to the breaking changes noted below, [#5634](https://github.com/parse-community/parse-server/pull/5634) introduces a two new case insensitive indexes on the `User` collection.  Special care should be taken when upgrading to this version to ensure that:
+
+1. The new indexes can be successfully created (see issue [#6465](https://github.com/parse-community/parse-server/issues/6465) for details on a potential issue for your installation).
+
+2. Care is taken ensure that there is adequate compute capacity to create the index in the background while still servicing requests.
+
+DOC: Add above Special Note on Upgrading to Parse Server 4.  See [#6469](https://github.com/parse-community/parse-server/pull/6469). Thanks to [Arthur Cinader](https://github.com/acinader).
 
 ### 4.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...4.1.0)
