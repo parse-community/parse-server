@@ -1139,7 +1139,6 @@ describe('apple signin auth adapter', () => {
   const util = require('util');
 
   it('should throw error with missing id_token', async () => {
-    console.log(process.env.TESTING);
     try {
       await apple.validateAuthData({}, { client_id: 'secret' });
       fail();

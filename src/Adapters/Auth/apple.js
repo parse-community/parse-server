@@ -8,19 +8,12 @@ const jwt = require('jsonwebtoken');
 
 const TOKEN_ISSUER = 'https://appleid.apple.com';
 
-let currentKey;
-
-const getAppleKeyByKeyId = async keyId => {
-  if (currentKey && currentKey.kid === keyId) {
-    return currentKey;
-  }
-  const ONE_HOUR_IN_MS = 3600000;
-
+const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   const client = jwksClient({
     jwksUri: `${TOKEN_ISSUER}/auth/keys`,
     cache: true,
-    cacheMaxEntries: 5,
-    cacheMaxAge: ONE_HOUR_IN_MS,
+    cacheMaxEntries,
+    cacheMaxAge,
   });
 
   const asyncGetSigningKeyFunction = util.promisify(client.getSigningKey);
@@ -34,7 +27,6 @@ const getAppleKeyByKeyId = async keyId => {
       `Unable to find matching key for Key ID: ${keyId}`
     );
   }
-  currentKey = key;
   return key;
 };
 
@@ -46,7 +38,14 @@ const getHeaderFromToken = token => {
   return decodedToken.header;
 };
 
-const verifyIdToken = async ({ token, id }, clientID) => {
+const ONE_HOUR_IN_MS = 3600000;
+
+const verifyIdToken = async (
+  { token, id },
+  clientID,
+  cacheMaxEntries,
+  cacheMaxAge
+) => {
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -54,11 +53,15 @@ const verifyIdToken = async ({ token, id }, clientID) => {
     );
   }
 
-  const header = getHeaderFromToken(token);
-  const appleKey = await getAppleKeyByKeyId(header.kid);
+  const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const appleKey = await getAppleKeyByKeyId(
+    keyId,
+    cacheMaxEntries,
+    cacheMaxAge
+  );
   const signingKey = appleKey.publicKey || appleKey.rsaPublicKey;
   const jwtClaims = jwt.verify(token, signingKey, {
-    algorithms: header.alg,
+    algorithms: algorithm,
   });
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
@@ -83,8 +86,16 @@ const verifyIdToken = async ({ token, id }, clientID) => {
 };
 
 // Returns a promise that fulfills if this id token is valid
-function validateAuthData(authData, options = {}) {
-  return verifyIdToken(authData, options.client_id);
+function validateAuthData(
+  authData,
+  options = { cacheMaxEntries: 5, cacheMaxAge: ONE_HOUR_IN_MS }
+) {
+  return verifyIdToken(
+    authData,
+    options.client_id,
+    options.cacheMaxEntries,
+    options.cacheMaxAge
+  );
 }
 
 // Returns a promise that fulfills if this app id is valid.
