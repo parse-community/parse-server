@@ -38,13 +38,9 @@ const getHeaderFromToken = token => {
   return decodedToken.header;
 };
 
-const ONE_HOUR_IN_MS = 3600000;
-
 const verifyIdToken = async (
   { token, id },
-  clientID,
-  cacheMaxEntries,
-  cacheMaxAge
+  { clientID, cacheMaxEntries, cacheMaxAge }
 ) => {
   if (!token) {
     throw new Parse.Error(
@@ -54,12 +50,17 @@ const verifyIdToken = async (
   }
 
   const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const ONE_HOUR_IN_MS = 3600000;
+  cacheMaxAge = cacheMaxAge || ONE_HOUR_IN_MS;
+  cacheMaxEntries = cacheMaxEntries || 5;
+
   const appleKey = await getAppleKeyByKeyId(
     keyId,
     cacheMaxEntries,
     cacheMaxAge
   );
   const signingKey = appleKey.publicKey || appleKey.rsaPublicKey;
+
   const jwtClaims = jwt.verify(token, signingKey, {
     algorithms: algorithm,
   });
@@ -86,16 +87,8 @@ const verifyIdToken = async (
 };
 
 // Returns a promise that fulfills if this id token is valid
-function validateAuthData(
-  authData,
-  options = { cacheMaxEntries: 5, cacheMaxAge: ONE_HOUR_IN_MS }
-) {
-  return verifyIdToken(
-    authData,
-    options.client_id,
-    options.cacheMaxEntries,
-    options.cacheMaxAge
-  );
+function validateAuthData(authData, options = {}) {
+  return verifyIdToken(authData, options);
 }
 
 // Returns a promise that fulfills if this app id is valid.
