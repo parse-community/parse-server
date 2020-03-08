@@ -40,7 +40,7 @@ const getHeaderFromToken = token => {
 
 const verifyIdToken = async (
   { token, id },
-  { clientID, cacheMaxEntries, cacheMaxAge }
+  { clientId, cacheMaxEntries, cacheMaxAge }
 ) => {
   if (!token) {
     throw new Parse.Error(
@@ -77,10 +77,10 @@ const verifyIdToken = async (
       `auth data is invalid for this user.`
     );
   }
-  if (clientID !== undefined && jwtClaims.aud !== clientID) {
+  if (clientId !== undefined && jwtClaims.aud !== clientId) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `jwt aud parameter does not include this client - is: ${jwtClaims.aud} | expected: ${clientID}`
+      `jwt aud parameter does not include this client - is: ${jwtClaims.aud} | expected: ${clientId}`
     );
   }
   return jwtClaims;
