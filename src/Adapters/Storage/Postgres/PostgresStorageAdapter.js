@@ -2219,7 +2219,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             groupValues = value;
             const groupByFields = [];
             for (const alias in value) {
-              if ((typeof value[alias] === 'string') & (value[alias] !== '')) {
+              if (typeof value[alias] === 'string' && value[alias] !== '') {
                 const source = transformAggregateField(value[alias]);
                 if (!groupByFields.includes(`"${source}"`)) {
                   groupByFields.push(`"${source}"`);

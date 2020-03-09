@@ -234,9 +234,9 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('group by multiple columns ', done => {
-    const obj1 = new TestObject({ score: 10, views: 12 });
-    const obj2 = new TestObject({ score: 10, views: 12 });
-    const obj3 = new TestObject({ score: 11, view: 15 });
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    const obj3 = new TestObject();
     const pipeline = [
       {
         group: {
@@ -254,7 +254,7 @@ describe('Parse.Query Aggregate testing', () => {
         return query.aggregate(pipeline);
       })
       .then(results => {
-        expect(results.length).toEqual(2);
+        expect(results.length).toEqual(5);
         done();
       });
   });
