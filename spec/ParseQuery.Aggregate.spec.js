@@ -47,11 +47,19 @@ const loadTestData = () => {
     views: 700,
     size: ['S'],
   };
+  const data5 = {
+    score: 10,
+    name: 'baz',
+    sender: { group: 'B' },
+    views: 700,
+    size: ['S'],
+  };
   const obj1 = new TestObject(data1);
   const obj2 = new TestObject(data2);
   const obj3 = new TestObject(data3);
   const obj4 = new TestObject(data4);
-  return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
+  const obj5 = new TestObject(data5);
+  return Parse.Object.saveAll([obj1, obj2, obj3, obj4, obj5]);
 };
 
 const get = function(url, options) {
@@ -221,6 +229,32 @@ describe('Parse.Query Aggregate testing', () => {
       })
       .then(results => {
         expect(results[0].objectId).toEqual(null);
+        done();
+      });
+  });
+
+  it('group by multiple columns ', done => {
+    const obj1 = new TestObject({ score: 10, views: 12 });
+    const obj2 = new TestObject({ score: 10, views: 12 });
+    const obj3 = new TestObject({ score: 11, view: 15 });
+    const pipeline = [
+      {
+        group: {
+          objectId: {
+            score: '$score',
+            views: '$views',
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(2);
         done();
       });
   });
@@ -963,25 +997,29 @@ describe('Parse.Query Aggregate testing', () => {
     await Parse.Object.saveAll([obj1, obj2, obj3, obj4, obj5, obj6]);
 
     expect(
-      (await new Parse.Query('MyCollection').aggregate([
-        {
-          match: {
-            language: { $in: [null, 'en'] },
+      (
+        await new Parse.Query('MyCollection').aggregate([
+          {
+            match: {
+              language: { $in: [null, 'en'] },
+            },
           },
-        },
-      ]))
+        ])
+      )
         .map(value => value.otherField)
         .sort()
     ).toEqual([1, 2, 3, 4]);
 
     expect(
-      (await new Parse.Query('MyCollection').aggregate([
-        {
-          match: {
-            $or: [{ language: 'en' }, { language: null }],
+      (
+        await new Parse.Query('MyCollection').aggregate([
+          {
+            match: {
+              $or: [{ language: 'en' }, { language: null }],
+            },
           },
-        },
-      ]))
+        ])
+      )
         .map(value => value.otherField)
         .sort()
     ).toEqual([1, 2, 3, 4]);

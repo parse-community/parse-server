@@ -2219,20 +2219,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
             groupValues = value;
             const groupByFields = [];
             for (const alias in value) {
-              const operation = Object.keys(value[alias])[0];
-              const source = transformAggregateField(value[alias][operation]);
-              if (mongoAggregateToPostgres[operation]) {
+              if ((typeof value[alias] === 'string') & (value[alias] !== '')) {
+                const source = transformAggregateField(value[alias]);
                 if (!groupByFields.includes(`"${source}"`)) {
                   groupByFields.push(`"${source}"`);
                 }
-                columns.push(
-                  `EXTRACT(${
-                    mongoAggregateToPostgres[operation]
-                  } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index +
-                    1}:name`
-                );
                 values.push(source, alias);
+                columns.push(`$${index}:name AS $${index + 1}:name`);
                 index += 2;
+              } else {
+                const operation = Object.keys(value[alias])[0];
+                const source = transformAggregateField(value[alias][operation]);
+                if (mongoAggregateToPostgres[operation]) {
+                  if (!groupByFields.includes(`"${source}"`)) {
+                    groupByFields.push(`"${source}"`);
+                  }
+                  columns.push(
+                    `EXTRACT(${
+                      mongoAggregateToPostgres[operation]
+                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index +
+                      1}:name`
+                  );
+                  values.push(source, alias);
+                  index += 2;
+                }
               }
             }
             groupPattern = `GROUP BY $${index}:raw`;
