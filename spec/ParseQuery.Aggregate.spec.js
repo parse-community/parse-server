@@ -47,19 +47,11 @@ const loadTestData = () => {
     views: 700,
     size: ['S'],
   };
-  const data5 = {
-    score: 10,
-    name: 'baz',
-    sender: { group: 'B' },
-    views: 700,
-    size: ['S'],
-  };
   const obj1 = new TestObject(data1);
   const obj2 = new TestObject(data2);
   const obj3 = new TestObject(data3);
   const obj4 = new TestObject(data4);
-  const obj5 = new TestObject(data5);
-  return Parse.Object.saveAll([obj1, obj2, obj3, obj4, obj5]);
+  return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
 };
 
 const get = function(url, options) {
