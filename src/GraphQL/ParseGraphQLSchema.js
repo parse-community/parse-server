@@ -211,7 +211,29 @@ class ParseGraphQLSchema {
             const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
               customGraphQLSchemaType.name
             );
-            if (autoGraphQLSchemaType) {
+            if (
+              autoGraphQLSchemaType &&
+              typeof customGraphQLSchemaType.getFields === 'function'
+            ) {
+              const findLastType = type => {
+                if (type.name) {
+                  return type;
+                } else {
+                  if (type.ofType) {
+                    return findLastType(type.ofType);
+                  }
+                }
+              };
+              Object.values(customGraphQLSchemaType.getFields()).forEach(
+                field => {
+                  const type = findLastType(field.type);
+                  if (!this.graphQLAutoSchema.getType(type.name)) {
+                    // To avoid schema stitching (Unknow type) bug on variables
+                    // transfer the final type to the Auto Schema
+                    this.graphQLAutoSchema._typeMap[type.name] = type;
+                  }
+                }
+              );
               autoGraphQLSchemaType._fields = {
                 ...autoGraphQLSchemaType._fields,
                 ...customGraphQLSchemaType._fields,

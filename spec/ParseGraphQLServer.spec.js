@@ -10821,11 +10821,11 @@ describe('ParseGraphQLServer', () => {
         expect(result2.data.someClass.name).toEqual('aname');
         expect(result.data.someClass.language).toEqual('fr');
         const result3 = await apolloClient.mutate({
-          variables: { id: obj.id, name: 'anewname' },
+          variables: { id: obj.id, name: 'anewname', type: 'human' },
           mutation: gql`
-            mutation someClass($id: ID!, $name: String!) {
+            mutation someClass($id: ID!, $name: String!, $type: TypeEnum!) {
               updateSomeClass(
-                input: { id: $id, fields: { name: $name, type: human } }
+                input: { id: $id, fields: { name: $name, type: $type } }
               ) {
                 someClass {
                   nameUpperCase
