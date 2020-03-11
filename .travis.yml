@@ -2,7 +2,6 @@ language: node_js
 os: linux
 dist: xenial
 services:
-#- postgresql
 - redis
 - docker
 addons:
@@ -35,8 +34,6 @@ before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
 - npm install -g greenkeeper-lockfile@1
-#- sudo apt-get -qq update
-#- sudo apt-get install -y postgresql-11-postgis-2.5 postgresql-11-postgis-2.5-scripts
 - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
 - sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
 - sudo service postgresql stop
