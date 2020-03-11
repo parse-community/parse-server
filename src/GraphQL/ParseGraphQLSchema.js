@@ -215,22 +215,26 @@ class ParseGraphQLSchema {
               autoGraphQLSchemaType &&
               typeof customGraphQLSchemaType.getFields === 'function'
             ) {
-              const findLastType = type => {
+              const findAndAddLastType = type => {
                 if (type.name) {
-                  return type;
+                  if (!this.graphQLAutoSchema.getType(type)) {
+                    // To avoid schema stitching (Unknow type) bug on variables
+                    // transfer the final type to the Auto Schema
+                    this.graphQLAutoSchema._typeMap[type.name] = type;
+                  }
                 } else {
                   if (type.ofType) {
-                    return findLastType(type.ofType);
+                    findAndAddLastType(type.ofType);
                   }
                 }
               };
               Object.values(customGraphQLSchemaType.getFields()).forEach(
                 field => {
-                  const type = findLastType(field.type);
-                  if (!this.graphQLAutoSchema.getType(type.name)) {
-                    // To avoid schema stitching (Unknow type) bug on variables
-                    // transfer the final type to the Auto Schema
-                    this.graphQLAutoSchema._typeMap[type.name] = type;
+                  findAndAddLastType(field.type);
+                  if (field.args) {
+                    field.args.forEach(arg => {
+                      findAndAddLastType(arg.type);
+                    });
                   }
                 }
               );
