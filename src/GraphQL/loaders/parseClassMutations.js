@@ -114,7 +114,8 @@ const load = function(
           );
           const needToGetAllKeys = objectsQueries.needToGetAllKeys(
             parseClass.fields,
-            keys
+            keys,
+            parseGraphQLSchema.parseClasses
           );
           let optimizedObject = {};
           if (needGet && !needToGetAllKeys) {
@@ -128,7 +129,7 @@ const load = function(
               config,
               auth,
               info,
-              parseClass
+              parseGraphQLSchema.parseClasses
             );
           } else if (needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
@@ -141,7 +142,7 @@ const load = function(
               config,
               auth,
               info,
-              parseClass
+              parseGraphQLSchema.parseClasses
             );
           }
           return {
@@ -232,7 +233,8 @@ const load = function(
           );
           const needToGetAllKeys = objectsQueries.needToGetAllKeys(
             parseClass.fields,
-            keys
+            keys,
+            parseGraphQLSchema.parseClasses
           );
           let optimizedObject = {};
           if (needGet && !needToGetAllKeys) {
@@ -246,7 +248,7 @@ const load = function(
               config,
               auth,
               info,
-              parseClass
+              parseGraphQLSchema.parseClasses
             );
           } else if (needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
@@ -259,7 +261,7 @@ const load = function(
               config,
               auth,
               info,
-              parseClass
+              parseGraphQLSchema.parseClasses
             );
           }
           return {
@@ -337,7 +339,7 @@ const load = function(
               config,
               auth,
               info,
-              parseClass
+              parseGraphQLSchema.parseClasses
             );
           }
           await objectsMutations.deleteObject(
