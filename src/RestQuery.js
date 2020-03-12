@@ -747,27 +747,61 @@ RestQuery.prototype.handleExcludeKeys = function() {
 };
 
 // Augments this.response with data at the paths provided in this.include.
+//
+// Preconditions:
+// - `this.include` is an array of arrays of strings; (in flow parlance, Array<Array<string>>)
+//
+// - `this.include` is de-duplicated. This ensures that we don't try to fetch
+//   the same objects twice.
+//
+// - For each value in `this.include` with length > 1, there is also
+//   an earlier value for the prefix of that value.
+//
+//   Example: ['a', 'b', 'c'] in the array implies that ['a', 'b'] is also in
+//   the array, at an earlier position).
+//
+//   This prevents trying to follow pointers on unfetched objects.
 RestQuery.prototype.handleInclude = function() {
   if (this.include.length == 0) {
     return;
   }
 
-  var pathResponse = includePath(
-    this.config,
-    this.auth,
-    this.response,
-    this.include[0],
-    this.restOptions
-  );
-  if (pathResponse.then) {
-    return pathResponse.then(() => {
-      this.include = this.include.slice(1);
-      return this.handleInclude();
-    });
-  } else if (this.include.length > 0) {
-    this.include = this.include.slice(1);
-    return this.handleInclude();
-  }
+  // The list of includes form a sort of a tree - Each path should wait to
+  // start trying to load until its parent path has finished loading (so that
+  // the pointers it is trying to read and fetch are in the object tree).
+  //
+  // So, for instance, if we have an include of ['a', 'b', 'c'], that must
+  // wait on the include of ['a', 'b'] to finish, which must wait on the include
+  // of ['a'] to finish.
+  //
+  // This `promises` object is a map of dotted paths to promises that resolve
+  // when that path has finished loading into the tree. One special case is the
+  // empty path (represented by the empty string). This represents the root of
+  // the tree, which is `this.response` and is already fetched. We set a
+  // pre-resolved promise at that level, meaning that include paths with only
+  // one component (like `['a']`) will chain onto that resolved promise and
+  // are immediately unblocked.
+  const promises = { '': Promise.resolve() };
+
+  this.include.forEach(path => {
+    const dottedPath = path.join('.');
+
+    // Get the promise for the parent path
+    const parentDottedPath = path.slice(0, -1).join('.');
+    const parentPromise = promises[parentDottedPath];
+
+    // Once the parent promise has resolved, do this path's load step
+    const loadPromise = parentPromise.then(() =>
+      includePath(this.config, this.auth, this.response, path, this.restOptions)
+    );
+
+    // Put our promise into the promises map, so child paths can find and chain
+    // off of it
+    promises[dottedPath] = loadPromise;
+  });
+
+  // Wait for all includes to be fetched and merged in to the response tree
+  return Promise.all(Object.values(promises));
 };
 
 //Returns a promise of a processed set of results
