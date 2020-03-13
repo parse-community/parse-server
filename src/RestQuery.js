@@ -760,8 +760,7 @@ RestQuery.prototype.handleInclude = function() {
     this.restOptions
   );
   if (pathResponse.then) {
-    return pathResponse.then(newResponse => {
-      this.response = newResponse;
+    return pathResponse.then(() => {
       this.include = this.include.slice(1);
       return this.handleInclude();
     });
@@ -769,8 +768,6 @@ RestQuery.prototype.handleInclude = function() {
     this.include = this.include.slice(1);
     return this.handleInclude();
   }
-
-  return pathResponse;
 };
 
 //Returns a promise of a processed set of results
@@ -821,7 +818,10 @@ RestQuery.prototype.runAfterFindTrigger = function() {
 
 // Adds included values to the response.
 // Path is a list of field names.
-// Returns a promise for an augmented response.
+//
+// Modifies the response in place by replacing pointers with fetched objects
+// Returns a promise that resolves when all includes have been fetched and
+// substituted into the response.
 function includePath(config, auth, response, path, restOptions = {}) {
   var pointers = findPointers(response.results, path);
   if (pointers.length == 0) {
@@ -905,19 +905,12 @@ function includePath(config, auth, response, path, restOptions = {}) {
       return replace;
     }, {});
 
-    var resp = {
-      results: replacePointers(response.results, path, replace),
-    };
-    if (response.count) {
-      resp.count = response.count;
-    }
-    return resp;
+    replacePointers(response.results, path, replace);
   });
 }
 
 // Object may be a list of REST-format object to find pointers in, or
 // it may be a single object.
-// If the path yields things that aren't pointers, this throws an error.
 // Path is a list of fields to search into.
 // Returns a list of pointers in REST format.
 function findPointers(object, path) {
@@ -951,8 +944,8 @@ function findPointers(object, path) {
 // in, or it may be a single object.
 // Path is a list of fields to search into.
 // replace is a map from object id -> object.
-// Returns something analogous to object, but with the appropriate
-// pointers inflated.
+//
+// Performs in-place replacements on object
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
     return object
@@ -964,6 +957,7 @@ function replacePointers(object, path, replace) {
     return object;
   }
 
+  // base case: we're returning a replacement
   if (path.length === 0) {
     if (object && object.__type === 'Pointer') {
       return replace[object.objectId];
@@ -971,20 +965,19 @@ function replacePointers(object, path, replace) {
     return object;
   }
 
+  // penultimate case: we're looking at the object holding a reference
+  // to be mutated
+  else if (path.length === 1) {
+    object[path[0]] = replacePointers(object[path[0]], [], replace);
+    return;
+  }
+
   var subobject = object[path[0]];
   if (!subobject) {
     return object;
   }
-  var newsub = replacePointers(subobject, path.slice(1), replace);
-  var answer = {};
-  for (var key in object) {
-    if (key == path[0]) {
-      answer[key] = newsub;
-    } else {
-      answer[key] = object[key];
-    }
-  }
-  return answer;
+
+  return replacePointers(subobject, path.slice(1), replace);
 }
 
 // Finds a subobject that has the given key, if there is one.
