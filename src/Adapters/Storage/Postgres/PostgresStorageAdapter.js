@@ -2524,8 +2524,22 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   // TODO: implement?
-  ensureIndex(): Promise<void> {
-    return Promise.resolve();
+  ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false
+  ): Promise<void> {
+    
+    return this.setIndexesWithSchemaFormat(
+      className,
+      schema.indexes,
+      {},
+      schema.fields,
+      null
+    );
+    //return Promise.resolve();
   }
 }
 
