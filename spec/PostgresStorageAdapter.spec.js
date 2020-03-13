@@ -16,6 +16,13 @@ const dropTable = (client, className) => {
   return client.none('DROP TABLE IF EXISTS $<className:name>', { className });
 };
 
+const getQueryPlan = (client, query) => {
+  return client.any(
+    'EXPLAIN (ANALYZE, FORMAT JSON) $<query>',
+    { query }
+  );
+};
+
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
   let adapter;
   beforeEach(() => {
@@ -143,6 +150,34 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
       undefined
     );
+  });
+  
+  it('should use index for caseInsensitive query', async () => {
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    await user.signUp();
+
+    const database = Config.get(Parse.applicationId).database;
+    
+    const client = adapter._client;
+    
+    const preIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower('bugs')')
+
+    const schema = await new Parse.Schema('_User').get();
+
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['username'],
+      'case_insensitive_username',
+      true
+    );
+
+    const postIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower('bugs')')
+    
+    expect(preIndexPlan.executionStats.executionStages.stage).toBe('COLLSCAN');
+    expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 });
 
