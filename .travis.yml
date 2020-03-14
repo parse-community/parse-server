@@ -10,7 +10,6 @@ addons:
     packages:
     - postgresql-11-postgis-2.5
     - postgresql-11-postgis-2.5-scripts
-    #- postgresql-client-11
 branches:
   only:
   - master
@@ -25,11 +24,10 @@ cache:
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  #- PGPORT=5432
   jobs:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
-  - PARSE_SERVER_TEST_DB=postgres
+  #- PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
   - NODE_VERSION=12.12.0
 before_install:
@@ -42,10 +40,10 @@ before_install:
 - sudo service postgresql start 11
 before_script:
 - node -e 'require("./lib/index.js")'
-- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
-- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-- psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
-- psql -c 'ALTER EXTENSION postgis UPDATE; ALTER EXTENSION postgis_topology UPDATE;' -U postgres -d parse_server_postgres_adapter_test_database
+#- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
+#- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
+#- psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
+##- psql -c 'ALTER EXTENSION postgis UPDATE; ALTER EXTENSION postgis_topology UPDATE;' -U postgres -d parse_server_postgres_adapter_test_database
 - greenkeeper-lockfile-update
 script:
 - npm run lint
@@ -57,6 +55,13 @@ jobs:
   allow_failures:
   - env: NODE_VERSION=12.12.0
   include:
+  - stage:
+    env: PARSE_SERVER_TEST_DB=postgres
+    before_script:
+      - node -e 'require("./lib/index.js")'
+      - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
+      - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
+      - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
   - stage: release
     node_js: '10'
     env:
