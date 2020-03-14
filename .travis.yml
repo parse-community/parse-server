@@ -12,6 +12,7 @@ addons:
     #- postgresql-10-postgis-2.5-scripts
     - postgresql-11-postgis-2.5
     - postgresql-11-postgis-2.5-scripts
+    - postgresql-client-11
 branches:
   only:
   - master
@@ -38,7 +39,7 @@ before_install:
 - nvm use $NODE_VERSION
 - npm install -g greenkeeper-lockfile@1
 #- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
-#- sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
+- sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
 - sudo service postgresql stop
 - sudo service postgresql start 11
 before_script:
