@@ -43,30 +43,6 @@ jobs:
   - name: postgres-12
   include:
   - stage:
-    name: postgres-10
-    #services:
-    #  - postgresql: '10'
-    addons:
-      postgresql: "10"
-      apt:
-        packages:
-          - postgresql-10-postgis-2.5
-          - postgresql-10-postgis-2.5-scripts
-    env: PARSE_SERVER_TEST_DB=postgres
-    before_install:
-      - nvm install $NODE_VERSION
-      - nvm use $NODE_VERSION
-      - npm install -g greenkeeper-lockfile@1
-      - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
-      #- sudo cp /etc/postgresql/10/main/pg_hba.conf
-      - sudo service postgresql stop
-      - sudo service postgresql start 10
-    before_script:
-      - node -e 'require("./lib/index.js")'
-      - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
-      - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-      - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
-  - stage:
     name: postgres-11
     addons:
       postgresql: '11'
