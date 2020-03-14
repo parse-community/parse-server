@@ -88,7 +88,7 @@ jobs:
       - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
       - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
       - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
-    - stage:
+  - stage:
     name: postgres-12
     addons:
       postgresql: '12'
