@@ -38,8 +38,7 @@ after_script:
 - bash <(curl -s https://codecov.io/bash)
 jobs:
   allow_failures:
-  - env: NODE_VERSION=12.12.0
-  - name: postgres-11 postgres-12
+  - env: NODE_VERSION=12.12.0 PARSE_SERVER_TEST_DB=postgres
   include:
   - stage:
     name: postgres-11
