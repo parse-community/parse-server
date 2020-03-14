@@ -8,8 +8,6 @@ addons:
   postgresql: '11'
   apt:
     packages:
-    - postgresql-11-postgis-2.4
-    - postgresql-11-postgis-2.4-scripts
     - postgresql-11-postgis-2.5
     - postgresql-11-postgis-2.5-scripts
     #- postgresql-client-11
@@ -27,7 +25,7 @@ cache:
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - PGPORT=5432
+  #- PGPORT=5432
   jobs:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
