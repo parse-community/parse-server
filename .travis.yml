@@ -27,7 +27,7 @@ cache:
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - PGPORT=5433
+  - PGPORT=5432
   jobs:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
@@ -38,7 +38,7 @@ before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
 - npm install -g greenkeeper-lockfile@1
-#- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
+- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
 - sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
 - sudo service postgresql stop
 - sudo service postgresql start 11
