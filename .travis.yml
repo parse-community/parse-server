@@ -18,7 +18,6 @@ cache:
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - PGPORT=5432
   jobs:
   - MONGODB_VERSION=4.0.4 MONGODB_TOPOLOGY=replicaset MONGODB_STORAGE_ENGINE=wiredTiger
   - MONGODB_VERSION=3.6.9
@@ -50,7 +49,7 @@ jobs:
         packages:
           - postgresql-11-postgis-2.5
           - postgresql-11-postgis-2.5-scripts
-    env: PARSE_SERVER_TEST_DB=postgres
+    env: PARSE_SERVER_TEST_DB=postgres PGPORT=5432
     before_install:
       - nvm install $NODE_VERSION
       - nvm use $NODE_VERSION
@@ -72,7 +71,7 @@ jobs:
         packages:
           - postgresql-12-postgis-2.5
           - postgresql-12-postgis-2.5-scripts
-    env: PARSE_SERVER_TEST_DB=postgres
+    env: PARSE_SERVER_TEST_DB=postgres PGPORT=5432
     before_install:
       - nvm install $NODE_VERSION
       - nvm use $NODE_VERSION
@@ -80,7 +79,7 @@ jobs:
       - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/12/main/postgresql.conf
       - sudo cp /etc/postgresql/{10,12}/main/pg_hba.conf
       - sudo service postgresql stop
-      - sudo service postgresql start 12 #Round 2
+      - sudo service postgresql start 12 #Round 3
     before_script:
       - node -e 'require("./lib/index.js")'
       - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
