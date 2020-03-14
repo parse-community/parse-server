@@ -80,7 +80,7 @@ jobs:
       - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/12/main/postgresql.conf
       - sudo cp /etc/postgresql/{10,12}/main/pg_hba.conf
       - sudo service postgresql stop
-      - sudo service postgresql start 12
+      - sudo service postgresql start 12 #Round 2
     before_script:
       - node -e 'require("./lib/index.js")'
       - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
