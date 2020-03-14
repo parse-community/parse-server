@@ -43,10 +43,10 @@ jobs:
   include:
   - stage:
     name: postgres-10
-    services:
-      - postgresql: '10'
+    #services:
+    #  - postgresql: '10'
     addons:
-      #postgresql: "10"
+      postgresql: "10"
       apt:
         packages:
           - postgresql-10-postgis-2.5
@@ -56,8 +56,8 @@ jobs:
       - nvm install $NODE_VERSION
       - nvm use $NODE_VERSION
       - npm install -g greenkeeper-lockfile@1
-      #- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
-      #- sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
+      - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
+      - sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
       - sudo service postgresql stop
       - sudo service postgresql start 10
     before_script:
