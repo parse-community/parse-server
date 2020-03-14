@@ -57,7 +57,7 @@ jobs:
       - nvm use $NODE_VERSION
       - npm install -g greenkeeper-lockfile@1
       - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/10/main/postgresql.conf
-      - sudo cp /etc/postgresql/10/main/pg_hba.conf
+      #- sudo cp /etc/postgresql/10/main/pg_hba.conf
       - sudo service postgresql stop
       - sudo service postgresql start 10
     before_script:
