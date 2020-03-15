@@ -46,21 +46,19 @@ jobs:
     name: postgres-11
     addons:
       postgresql: '11'
-#      apt:
-#        packages:
-#          - postgresql-11-postgis-2.5
-#          - postgresql-11-postgis-2.5-scripts
+      apt:
+        packages:
+          - postgresql-11-postgis-2.5
+          - postgresql-11-postgis-2.5-scripts
     env: PARSE_SERVER_TEST_DB=postgres PGPORT=5432
     before_install:
       - nvm install $NODE_VERSION
       - nvm use $NODE_VERSION
       - npm install -g greenkeeper-lockfile@1
-      - sudo service postgresql stop
-      - sudo apt-get remove -q 'postgresql-*'
-      - sudo apt-get update -q
-      - sudo apt-get install -q postgresql-11 postgresql-11-postgis-2.5 postgresql-11-postgis-2.5-scripts
       - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
       - sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
+      - sudo service postgresql stop
+      - sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
       - sudo service postgresql start 11
     before_script:
       - node -e 'require("./lib/index.js")'
@@ -71,21 +69,19 @@ jobs:
     name: postgres-12
     addons:
       postgresql: '12'
-#      apt:
-#        packages:
-#          - postgresql-12-postgis-2.5
-#          - postgresql-12-postgis-2.5-scripts
+      apt:
+        packages:
+          - postgresql-12-postgis-2.5
+          - postgresql-12-postgis-2.5-scripts
     env: PARSE_SERVER_TEST_DB=postgres PGPORT=5432
     before_install:
       - nvm install $NODE_VERSION
       - nvm use $NODE_VERSION
       - npm install -g greenkeeper-lockfile@1
-      - sudo service postgresql stop
-      - sudo apt-get remove -q 'postgresql-*'
-      - sudo apt-get update -q
-      - sudo apt-get install -q postgresql-12 postgresql-12-postgis-2.5 postgresql-12-postgis-2.5-scripts
       - sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/12/main/postgresql.conf
       - sudo cp /etc/postgresql/{10,12}/main/pg_hba.conf
+      - sudo service postgresql stop
+      - sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
       - sudo service postgresql start 12
     before_script:
       - node -e 'require("./lib/index.js")'
