@@ -2280,9 +2280,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
             }
           }
         }
-      } else {
-        columns.push('*');
       }
+
       if (stage.$project) {
         if (columns.includes('*')) {
           columns = [];
@@ -2370,7 +2369,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     }
 
-    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    let qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${skipPattern}  ${groupPattern} ${sortPattern} ${limitPattern}`;
+
+    if (qs.includes('GROUP BY')) {
+      qs = qs.replace(/(\,\*)/g, '');
+    }
     debug(qs, values);
     return this._client
       .map(qs, values, a =>
