@@ -2281,7 +2281,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           }
         }
       } else {
-        columns.push('*');
+        // Ignore ALL selector until cases to do so comes up as it throws error as it sits.
+        //columns.push('*');
       }
       if (stage.$project) {
         if (columns.includes('*')) {
@@ -2370,7 +2371,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     }
 
-    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${limitPattern} ${skipPattern} ${groupPattern} ${sortPattern}`;
     debug(qs, values);
     return this._client
       .map(qs, values, a =>
