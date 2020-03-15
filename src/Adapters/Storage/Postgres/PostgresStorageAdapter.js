@@ -2280,6 +2280,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
             }
           }
         }
+      } else {
+        columns.push('*');
       }
 
       if (stage.$project) {
