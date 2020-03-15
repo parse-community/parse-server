@@ -2371,11 +2371,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
     }
 
-    let qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${skipPattern}  ${groupPattern} ${sortPattern} ${limitPattern}`;
-
-    if (qs.includes('GROUP BY')) {
-      qs = qs.replace(/(\,\*)/g, '');
+    if (groupPattern) {
+      columns.forEach((e, i, a) => {
+        if (e && e.trim() === '*') {
+          a[i] = '';
+        }
+      });
     }
+
+    const qs = `SELECT ${columns
+      .filter(Boolean)
+      .join()} FROM $1:name ${wherePattern} ${skipPattern} ${groupPattern} ${sortPattern} ${limitPattern}`;
+
     debug(qs, values);
     return this._client
       .map(qs, values, a =>
