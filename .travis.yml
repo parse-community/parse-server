@@ -84,7 +84,7 @@ jobs:
       - sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
       - sudo service postgresql start 12
     before_script:
-      - node -e 'require("./lib/index.js")'
+      - node -e 'require("./lib/index.js")' #Round 2
       - psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
       - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
       - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
