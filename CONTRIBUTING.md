@@ -66,7 +66,7 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_db('mongo')` // will make a test that only runs on mongo
   - `it_exclude_dbs(['postgres'])` // will make a test that runs against all DB's but postgres
 
-#### Run a Parse Postgres with Docker
+#### Run Postgres setup for Parse with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
