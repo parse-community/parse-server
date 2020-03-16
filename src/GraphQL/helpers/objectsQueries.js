@@ -3,6 +3,20 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
+const transformOrder = order =>
+  order
+    .map(o => {
+      const direction = o.indexOf('_ASC') > 0 ? '_ASC' : '_DESC';
+      let field = o.replace(direction, '');
+      field = field === 'id' ? 'objectId' : field;
+      if (direction === '_ASC') {
+        return `${field}`;
+      } else {
+        return `-${field}`;
+      }
+    })
+    .join(',');
+
 const needToGetAllKeys = (fields, keys) =>
   keys
     ? !!keys.split(',').find(keyName => !fields[keyName.split('.')[0]])
@@ -130,7 +144,7 @@ const findObjects = async (
     }
     if (options.limit !== 0) {
       if (order) {
-        options.order = order;
+        options.order = transformOrder(order);
       }
       if (skip) {
         options.skip = skip;
