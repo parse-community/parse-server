@@ -3,6 +3,11 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
+const needToGetAllKeys = (fields, keys) =>
+  keys
+    ? !!keys.split(',').find(keyName => !fields[keyName.split('.')[0]])
+    : true;
+
 const transformOrder = order =>
   order
     .map(o => {
@@ -16,11 +21,6 @@ const transformOrder = order =>
       }
     })
     .join(',');
-
-const needToGetAllKeys = (fields, keys) =>
-  keys
-    ? !!keys.split(',').find(keyName => !fields[keyName.split('.')[0]])
-    : true;
 
 const getObject = async (
   className,
