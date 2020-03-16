@@ -2374,7 +2374,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (groupPattern) {
       columns.forEach((e, i, a) => {
         if (e && e.trim() === '*') {
-          a[i] = '';
+          a[i] = ''; // Remove * when GROUP BY is present
         }
       });
     }
