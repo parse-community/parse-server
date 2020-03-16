@@ -139,12 +139,11 @@ const load = function(
               .filter(field => field.startsWith('edges.node.'))
               .map(field => field.replace('edges.node.', ''))
           );
-          const parseOrder = order && order.join(',');
 
           return await objectsQueries.findObjects(
             className,
             where,
-            parseOrder,
+            order,
             skip,
             first,
             after,

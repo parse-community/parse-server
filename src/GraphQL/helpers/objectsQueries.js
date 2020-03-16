@@ -30,6 +30,20 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
     : true;
 /* eslint-enable*/
 
+const transformOrder = order =>
+  order
+    .map(o => {
+      const direction = o.indexOf('_ASC') > 0 ? '_ASC' : '_DESC';
+      let field = o.replace(direction, '');
+      field = field === 'id' ? 'objectId' : field;
+      if (direction === '_ASC') {
+        return `${field}`;
+      } else {
+        return `-${field}`;
+      }
+    })
+    .join(',');
+
 const getObject = async (
   className,
   objectId,
@@ -164,7 +178,7 @@ const findObjects = async (
     }
     if (options.limit !== 0) {
       if (order) {
-        options.order = order;
+        options.order = transformOrder(order);
       }
       if (skip) {
         options.skip = skip;
