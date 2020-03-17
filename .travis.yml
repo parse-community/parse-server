@@ -48,7 +48,7 @@ jobs:
         packages:
           - postgresql-11-postgis-2.5
           - postgresql-11-postgis-2.5-scripts
-    env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres PGPORT=5433
+    env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres
     before_install: bash scripts/before_install_postgres.sh
     before_script: bash scripts/before_script_postgres.sh
   - stage:
@@ -58,7 +58,7 @@ jobs:
         packages:
           - postgresql-12-postgis-2.5
           - postgresql-12-postgis-2.5-scripts
-    env: POSTGRES_MAJOR_VERSION=12 PARSE_SERVER_TEST_DB=postgres PGPORT=5433
+    env: POSTGRES_MAJOR_VERSION=12 PARSE_SERVER_TEST_DB=postgres
     before_install: bash scripts/before_install_postgres.sh
     before_script: bash scripts/before_script_postgres.sh
   - stage: release
