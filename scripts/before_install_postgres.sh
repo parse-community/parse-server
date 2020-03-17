@@ -12,12 +12,12 @@ npm install -g greenkeeper-lockfile@1
 
 sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
 
-if (( ${POSTGRES_MAJOR_VERSION} < 11 )); then;
+if (( $POSTGRES_MAJOR_VERSION < 11 )); then;
   # Setup postgres 9 or 10
   sudo service postgresql stop
     
   # Remove correct version of postgres
-  if (( ${POSTGRES_MAJOR_VERSION} < 10 )); then;
+  if (( $POSTGRES_MAJOR_VERSION < 10 )); then;
     sudo apt-get remove -q 'postgresql-10.*'
   else
     sudo apt-get remove -q 'postgresql-9.*'
