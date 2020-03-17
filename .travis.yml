@@ -39,8 +39,8 @@ after_script:
 jobs:
   allow_failures:
   - env: NODE_VERSION=12.12.0
-  - name: postgres-11		
-  - name: postgres-12
+  - name: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres	
+  - name: POSTGRES_MAJOR_VERSION=12 PARSE_SERVER_TEST_DB=postgres
   include:
   - stage:
     addons:
