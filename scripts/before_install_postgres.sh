@@ -2,7 +2,7 @@
   
 set -e
 
-. ~/.bashrc
+source ~/.nvm/nvm.sh
 
 echo "[SCRIPT] Before Install Script :: Setup Postgres ${POSTGRES_MAJOR_VERSION}"
 
