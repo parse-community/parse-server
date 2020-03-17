@@ -2,6 +2,8 @@
   
 set -e
 
+. ~/.bashrc
+
 echo "[SCRIPT] Before Install Script :: Setup Postgres ${POSTGRES_MAJOR_VERSION}"
 
 nvm install $NODE_VERSION
