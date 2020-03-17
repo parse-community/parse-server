@@ -28,7 +28,7 @@ npm install -g greenkeeper-lockfile@1
 
 #else 
 # Setup postgres 11 or higher
-#sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
+sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
 sudo service postgresql stop
 # Remove previous versions of postgres
 #sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
