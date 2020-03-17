@@ -51,7 +51,7 @@ jobs:
           - postgresql-11-postgis-2.5
           - postgresql-11-postgis-2.5-scripts
     env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres PGPORT=5432
-    before_install: scripts/before_install_postgres.sh
+    before_install: bash scripts/before_install_postgres.sh
       #- nvm install $NODE_VERSION
       #- nvm use $NODE_VERSION
       #- npm install -g greenkeeper-lockfile@1
@@ -60,7 +60,7 @@ jobs:
       #- sudo service postgresql stop
       #- sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
       #- sudo service postgresql start 11
-    before_script: scripts/before_script_postgres.sh
+    before_script: bash scripts/before_script_postgres.sh
       #- node -e 'require("./lib/index.js")'
       #- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
       #- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
@@ -74,7 +74,7 @@ jobs:
           - postgresql-12-postgis-2.5
           - postgresql-12-postgis-2.5-scripts
     env: POSTGRES_MAJOR_VERSION=12 PARSE_SERVER_TEST_DB=postgres PGPORT=5432
-    before_install: scripts/before_install_postgres.sh
+    before_install: bash scripts/before_install_postgres.sh
       #- nvm install $NODE_VERSION
       #- nvm use $NODE_VERSION
       #- npm install -g greenkeeper-lockfile@1
@@ -83,7 +83,7 @@ jobs:
       #- sudo service postgresql stop
       #- sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
       #- sudo service postgresql start 12
-    before_script: scripts/before_script_postgres.sh
+    before_script: bash scripts/before_script_postgres.sh
       #- node -e 'require("./lib/index.js")'
       #- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
       #- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
