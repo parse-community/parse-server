@@ -43,30 +43,16 @@ jobs:
   - name: postgres-12
   include:
   - stage:
-    #name: postgres-11
     addons:
       postgresql: '11'
       apt:
         packages:
           - postgresql-11-postgis-2.5
           - postgresql-11-postgis-2.5-scripts
-    env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres PGPORT=5432
+    env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres
     before_install: bash scripts/before_install_postgres.sh
-      #- nvm install $NODE_VERSION
-      #- nvm use $NODE_VERSION
-      #- npm install -g greenkeeper-lockfile@1
-      #- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/11/main/postgresql.conf
-      #- sudo cp /etc/postgresql/{10,11}/main/pg_hba.conf
-      #- sudo service postgresql stop
-      #- sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
-      #- sudo service postgresql start 11
     before_script: bash scripts/before_script_postgres.sh
-      #- node -e 'require("./lib/index.js")'
-      #- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
-      #- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-      #- psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
   - stage:
-    #name: postgres-12
     addons:
       postgresql: '12'
       apt:
@@ -75,19 +61,7 @@ jobs:
           - postgresql-12-postgis-2.5-scripts
     env: POSTGRES_MAJOR_VERSION=12 PARSE_SERVER_TEST_DB=postgres PGPORT=5432
     before_install: bash scripts/before_install_postgres.sh
-      #- nvm install $NODE_VERSION
-      #- nvm use $NODE_VERSION
-      #- npm install -g greenkeeper-lockfile@1
-      #- sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/12/main/postgresql.conf
-      #- sudo cp /etc/postgresql/{10,12}/main/pg_hba.conf
-      #- sudo service postgresql stop
-      #- sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
-      #- sudo service postgresql start 12
     before_script: bash scripts/before_script_postgres.sh
-      #- node -e 'require("./lib/index.js")'
-      #- psql -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' -U postgres
-      #- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-      #- psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
   - stage: release
     node_js: '10'
     env:
