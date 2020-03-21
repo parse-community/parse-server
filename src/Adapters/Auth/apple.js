@@ -72,25 +72,15 @@ const verifyIdToken = async (
       algorithms: algorithm,
       // the audience can be checked against a string, a regular expression or a list of strings and/or regular expressions.
       audience: clientId,
+      // the issuer can be checked against a string or array of strings
+      issuer: TOKEN_ISSUER,
+      // the subject can be checked against a string
+      subject: id,
     });
   } catch (exception) {
     const message = exception.message;
 
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
-  }
-
-  if (jwtClaims.iss !== TOKEN_ISSUER) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
-    );
-  }
-
-  if (jwtClaims.sub !== id) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `auth data is invalid for this user.`
-    );
   }
 
   return jwtClaims;
