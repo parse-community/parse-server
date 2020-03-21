@@ -2523,7 +2523,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return result;
   }
 
-  // TODO: implement?
   ensureIndex(
     className: string,
     schema: SchemaType,
@@ -2532,18 +2531,39 @@ export class PostgresStorageAdapter implements StorageAdapter {
     caseInsensitive: boolean = false
   ): Promise<void> {
     
-    const indexCreationRequest = {};
-    postgresFieldNames.forEach(fieldName => {
-      indexCreationRequest[fieldName] = 1;
-    });
 
-    return this.setIndexesWithSchemaFormat(
-      className,
-      schema.indexes,
-      schema.indexes,
-      indexCreationRequest,
-      null
+    const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
+    const indexNameOptions: Object = indexName ? { name: indexName } : { name: defaultIndexName };
+    
+    const constraintPatterns =  caseInsensitive ? fieldNames.map(
+      (fieldName, index) => `lower($${index + 3}:name)`
+    ) : fieldNames.map(
+      (fieldName, index) => `$${index + 3}:name`
     );
+
+    const qs = caseInsensitive ? `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()}) varchar_pattern_ops)` : `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+   
+    return this._client
+      .none(qs, [indexName, className, ...fieldNames])
+      .catch(error => {
+        if (
+          error.code === PostgresDuplicateRelationError &&
+          error.message.includes(indexNameOptions)
+        ) {
+          // Index already exists. Ignore error.
+        } else if (
+          error.code === PostgresUniqueIndexViolationError &&
+          error.message.includes(indexNameOptions)
+        ) {
+          // Cast the error into the proper parse error
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+        } else {
+          throw error;//
+        }
+      });
     //return Promise.resolve();
   }
 }
