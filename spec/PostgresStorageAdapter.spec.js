@@ -151,24 +151,18 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       undefined
     );
   });
-  
+
   it('should use index for caseInsensitive query', async () => {
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
-
     const database = Config.get(Parse.applicationId).database;
-    
     const client = adapter._client;
-
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     await client.none('INSERT INTO "_User" (username, "objectId") SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,11000)');
-    
     const preIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')');
-
     const schema = await new Parse.Schema('_User').get();
-
     await database.adapter.ensureIndex(
       '_User',
       schema,
@@ -176,12 +170,9 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       'case_insensitive_username',
       true
     );
-    
     const postIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')');
-
     //Delete generated data in postgres
     await client.none('DELETE FROM "_User" WHERE "emailVerified" is null');
-    
     expect(preIndexPlan[0].Plan['Node Type']).toBe('Seq Scan');
     expect(postIndexPlan[0].Plan['Node Type']).not.toContain('Seq Scan');
   });

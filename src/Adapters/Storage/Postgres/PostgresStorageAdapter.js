@@ -2530,19 +2530,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
     indexName: ?string,
     caseInsensitive: boolean = false
   ): Promise<void> {
-    
-
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
     const indexNameOptions: Object = indexName ? { name: indexName } : { name: defaultIndexName };
-    
     const constraintPatterns =  caseInsensitive ? fieldNames.map(
       (fieldName, index) => `lower($${index + 3}:name)`
     ) : fieldNames.map(
       (fieldName, index) => `$${index + 3}:name`
     );
-
     const qs = caseInsensitive ? `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()}) varchar_pattern_ops)` : `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
-   
     return this._client
       .none(qs, [indexName, className, ...fieldNames])
       .catch(error => {
@@ -2564,7 +2559,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw error;//
         }
       });
-    //return Promise.resolve();
   }
 }
 
