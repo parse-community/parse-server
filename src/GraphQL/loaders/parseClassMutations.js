@@ -112,8 +112,12 @@ const load = function(
             include,
             ['id', 'objectId', 'createdAt', 'updatedAt']
           );
+          const needToGetAllKeys = objectsQueries.needToGetAllKeys(
+            parseClass.fields,
+            keys
+          );
           let optimizedObject = {};
-          if (needGet) {
+          if (needGet && !needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               createdObject.objectId,
@@ -123,7 +127,21 @@ const load = function(
               undefined,
               config,
               auth,
-              info
+              info,
+              parseClass
+            );
+          } else if (needToGetAllKeys) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              createdObject.objectId,
+              undefined,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info,
+              parseClass
             );
           }
           return {
@@ -212,9 +230,12 @@ const load = function(
             include,
             ['id', 'objectId', 'updatedAt']
           );
-
+          const needToGetAllKeys = objectsQueries.needToGetAllKeys(
+            parseClass.fields,
+            keys
+          );
           let optimizedObject = {};
-          if (needGet) {
+          if (needGet && !needToGetAllKeys) {
             optimizedObject = await objectsQueries.getObject(
               className,
               id,
@@ -224,7 +245,21 @@ const load = function(
               undefined,
               config,
               auth,
-              info
+              info,
+              parseClass
+            );
+          } else if (needToGetAllKeys) {
+            optimizedObject = await objectsQueries.getObject(
+              className,
+              id,
+              undefined,
+              include,
+              undefined,
+              undefined,
+              config,
+              auth,
+              info,
+              parseClass
             );
           }
           return {
@@ -301,7 +336,8 @@ const load = function(
               undefined,
               config,
               auth,
-              info
+              info,
+              parseClass
             );
           }
           await objectsMutations.deleteObject(

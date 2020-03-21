@@ -6,6 +6,7 @@ import Parse from 'parse/node';
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
   'include',
+  'excludeKeys',
   'readPreference',
   'includeReadPreference',
   'subqueryReadPreference',
@@ -68,6 +69,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.include) {
       options.include = String(body.include);
+    }
+    if (typeof body.excludeKeys == 'string') {
+      options.excludeKeys = body.excludeKeys;
     }
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
