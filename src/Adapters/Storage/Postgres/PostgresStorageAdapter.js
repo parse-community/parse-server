@@ -2532,11 +2532,16 @@ export class PostgresStorageAdapter implements StorageAdapter {
     caseInsensitive: boolean = false
   ): Promise<void> {
     
+    const indexCreationRequest = {};
+    postgresFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
+    });
+
     return this.setIndexesWithSchemaFormat(
       className,
       schema.indexes,
-      {},
-      schema.fields,
+      schema.indexes,
+      indexCreationRequest,
       null
     );
     //return Promise.resolve();
