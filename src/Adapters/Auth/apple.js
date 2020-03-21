@@ -92,7 +92,6 @@ const verifyIdToken = async (
       `auth data is invalid for this user.`
     );
   }
-
   return jwtClaims;
 };
 

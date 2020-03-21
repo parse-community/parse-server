@@ -1426,8 +1426,32 @@ describe('apple signin auth adapter', () => {
       expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
-});
 
+  it('should throw error with with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'invalid_client_id',
+      sub: 'a_different_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await apple.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
+    }
+  });
+});
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
 

@@ -207,13 +207,7 @@ afterEach(function(done) {
         'There were open connections to the server left after the test finished'
       );
     }
-    on_db(
-      'postgres',
-      () => {
-        TestUtils.destroyAllDataPermanently(true).then(done, done);
-      },
-      done
-    );
+    TestUtils.destroyAllDataPermanently(true).then(done, done);
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter
