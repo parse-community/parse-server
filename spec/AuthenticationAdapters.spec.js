@@ -1312,7 +1312,7 @@ describe('apple signin auth adapter', () => {
       await apple.validateAuthData(
         {
           id: 'INSERT ID HERE',
-          token: 'INSERT TOKEN HERE WITH INVALID JWT ISSUER',
+          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
         },
         { clientId: ['INSERT CLIENT ID HERE'] }
       );
@@ -1329,7 +1329,7 @@ describe('apple signin auth adapter', () => {
       await apple.validateAuthData(
         {
           id: 'INSERT ID HERE',
-          token: 'INSERT TOKEN HERE WITH INVALID JWT ISSUER',
+          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
         },
         { clientId: 'INSERT CLIENT ID HERE' }
       );
@@ -1344,7 +1344,7 @@ describe('apple signin auth adapter', () => {
   it('(using client id as string) should throw error with invalid jwt client_id', async () => {
     try {
       await apple.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT TOKEN HERE' },
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
         { clientId: 'secret' }
       );
       fail();
@@ -1356,7 +1356,7 @@ describe('apple signin auth adapter', () => {
   it('(using client id as array) should throw error with invalid jwt client_id', async () => {
     try {
       await apple.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT TOKEN HERE' },
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
         { clientId: ['secret'] }
       );
       fail();
@@ -1365,11 +1365,11 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should throw error with with invalid user id', async () => {
+  it('should throw error with invalid user id', async () => {
     try {
       await apple.validateAuthData(
-        { id: 'invalid user', token: 'INSERT TOKEN HERE' },
-        { clientId: 'INSERT CLIENT ID' }
+        { id: 'invalid user', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
     } catch (e) {
