@@ -89,7 +89,7 @@
     "mongodb-runner": "4.8.0",
     "node-fetch": "2.6.0",
     "nyc": "15.0.0",
-    "prettier": "2.0.0"
+    "prettier": "2.0.1"
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",
