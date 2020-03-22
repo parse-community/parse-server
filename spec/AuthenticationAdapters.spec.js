@@ -590,6 +590,41 @@ describe('AuthenticationProviders', function() {
   });
 });
 
+describe('instagram auth adapter', () => {
+  const instagram = require('../lib/Adapters/Auth/instagram');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should use default api', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ data: { id: 'userId' } });
+    });
+    await instagram.validateAuthData(
+      { id: 'userId', access_token: 'the_token' },
+      {}
+    );
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://api.instagram.com/v1/users/self/?access_token=the_token'
+    );
+  });
+
+  it('should pass in api url', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ data: { id: 'userId' } });
+    });
+    await instagram.validateAuthData(
+      {
+        id: 'userId',
+        access_token: 'the_token',
+        apiURL: 'https://new-api.instagram.com/v1/',
+      },
+      {}
+    );
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://new-api.instagram.com/v1/users/self/?access_token=the_token'
+    );
+  });
+});
+
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
