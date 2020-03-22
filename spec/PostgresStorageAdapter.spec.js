@@ -89,6 +89,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(columns).toContain('columnA');
         expect(columns).toContain('columnB');
         expect(columns).toContain('columnC');
+        dropTable(client, className);
         done();
       })
       .catch(error => done.fail(error));
@@ -117,6 +118,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(columns.length).toEqual(2);
         expect(columns).toContain('columnA');
         expect(columns).toContain('columnB');
+        dropTable(client, className);
         done();
       })
       .catch(done);
@@ -158,9 +160,9 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         email: { type: 'String' },
       },
     };
-
-    await adapter.createTable(tableName, schema);
     const client = adapter._client;
+    await dropTable(client, tableName);
+    await adapter.createTable(tableName, schema);
 
     client
       .none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
@@ -189,12 +191,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
                 expect(explained['QUERY PLAN'][0].Plan['Node Type']).toBe(
                   'Seq Scan'
                 );
+                const indexName = 'test_case_insensitive_column'
                 adapter
                   .ensureIndex(
                     tableName,
                     schema,
                     ['objectId'],
-                    'test_case_insensitive_column',
+                    indexName,
                     true
                   )
                   .then(() => {
@@ -204,12 +207,72 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
                         expect(
                           explained['QUERY PLAN'][0].Plan['Node Type']
                         ).not.toContain('Seq Scan');
+                        expect(
+                          explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
+                        ).toBe(indexName);
                         //Delete generated data in postgres
-                        client.none(
-                          'DELETE FROM $1:name WHERE $2:name is null',
-                          [tableName, 'email']
-                        );
+                        dropTable(client, tableName);
                       });
+                  });
+              });
+          });
+      });
+  });
+
+  it('should use index for caseInsensitive query using default indexname', async () => {
+    const tableName = 'CaseTable';
+    const schema = {
+      fields: {
+        objectId: { type: 'String' },
+        username: { type: 'String' },
+        email: { type: 'String' },
+      },
+    };
+    const client = adapter._client;
+    await dropTable(client, tableName);
+    await adapter.createTable(tableName, schema);
+
+    client
+      .none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
+        tableName,
+        'objectId',
+        'username',
+        'Bugs',
+        'Bunny',
+      ])
+      .then(() => {
+        //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
+        client
+          .none(
+            'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+            [tableName, 'objectId', 'username']
+          )
+          .then(() => {
+            const caseInsensitiveData = 'bugs';
+            const qs = createExplainableQuery(
+              client,
+              'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
+            );
+            adapter
+              .ensureIndex(
+                tableName,
+                schema,
+                ['objectId'],
+                null,
+                true
+              )
+              .then(() => {
+                client
+                  .one(qs, [tableName, 'objectId', caseInsensitiveData])
+                  .then(explained => {
+                    expect(
+                      explained['QUERY PLAN'][0].Plan['Node Type']
+                    ).not.toContain('Seq Scan');
+                    expect(
+                      explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
+                    ).toContain('parse_default');
+                    //Delete generated data in postgres
+                    dropTable(client, tableName);
                   });
               });
           });

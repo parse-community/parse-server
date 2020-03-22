@@ -2531,7 +2531,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     caseInsensitive: boolean = false
   ): Promise<any> {
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
-    const indexNameOptions: Object = indexName ? { name: indexName } : { name: defaultIndexName };
+    const indexNameOptions: Object = indexName != null ? { name: indexName } : { name: defaultIndexName };
     const constraintPatterns =  caseInsensitive ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`) :
       fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
