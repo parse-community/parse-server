@@ -2523,23 +2523,22 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return result;
   }
 
-  ensureIndex(
+  async ensureIndex(
     className: string,
     schema: SchemaType,
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false
-  ): Promise<void> {
+  ): Promise<any> {
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
     const indexNameOptions: Object = indexName ? { name: indexName } : { name: defaultIndexName };
     const constraintPatterns =  caseInsensitive ? fieldNames.map(
-      (fieldName, index) => `lower($${index + 3}:name)`
+      (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
     ) : fieldNames.map(
       (fieldName, index) => `$${index + 3}:name`
     );
-    const qs = caseInsensitive ? `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()}) varchar_pattern_ops)` : `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
-    return this._client
-      .none(qs, [indexName, className, ...fieldNames])
+    const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+    return this._client.none(qs, [indexName, className, ...fieldNames])
       .catch(error => {
         if (
           error.code === PostgresDuplicateRelationError &&
@@ -2556,7 +2555,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             'A duplicate value for a field with unique values was provided'
           );
         } else {
-          throw error;//
+          throw error;
         }
       });
   }
