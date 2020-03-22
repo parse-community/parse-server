@@ -2616,7 +2616,7 @@ describe('beforeLogin hook', () => {
     });
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
-    expect(result).toBe(result);
+    expect(result).toBe(file);
   });
 
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
@@ -2629,7 +2629,7 @@ describe('beforeLogin hook', () => {
     });
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
-    expect(result).toBe(result);
+    expect(result).toBe(file);
     expect(result._name).toBe('some-file.txt');
     expect(result._url).toBe('http://www.somewhere.com/parse/files/some-app-id/some-file.txt');
     expect(createFileSpy).not.toHaveBeenCalled();
@@ -2817,7 +2817,7 @@ describe('beforeLogin hook', () => {
     }
   })
 
-  it('afterDeleteFile should cal with fileObject', async (done) => {
+  it('afterDeleteFile should call with fileObject', async (done) => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     Parse.Cloud.beforeDeleteFile((req) => {
       expect(req.file).toBeInstanceOf(Parse.File);
