@@ -12,15 +12,12 @@ const getColumns = (client, className) => {
   );
 };
 
-const dropTable = (client, className) => {
-  return client.none('DROP TABLE IF EXISTS $<className:name>', { className });
+const getQueryPlan = (client, query) => {
+  return client.none('EXPLAIN (ANALYZE, FORMAT JSON) $<query>', { query });
 };
 
-const getQueryPlan = (client, query) => {
-  return client.any(
-    'EXPLAIN (ANALYZE, FORMAT JSON) $<query>',
-    { query }
-  );
+const dropTable = (client, className) => {
+  return client.none('DROP TABLE IF EXISTS $<className:name>', { className });
 };
 
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
@@ -160,8 +157,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const database = Config.get(Parse.applicationId).database;
     const client = adapter._client;
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
-    await client.none('INSERT INTO "_User" (username, "objectId") SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,11000)');
-    const preIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')');
+    await client.none(
+      'INSERT INTO "_User" (username, "objectId") SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,11000)'
+    ); //This isn't creanting what's its suppose to
+    const preIndexPlan = getQueryPlan(
+      client,
+      'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')'
+    ); //There's an error here, ' isn't escaping properly
     const schema = await new Parse.Schema('_User').get();
     await database.adapter.ensureIndex(
       '_User',
@@ -170,7 +172,10 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       'case_insensitive_username',
       true
     );
-    const postIndexPlan = getQueryPlan(client,'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')');
+    const postIndexPlan = getQueryPlan(
+      client,
+      'SELECT * FROM "_User" WHERE lower(username)=lower(\'bugs\')'
+    );
     //Delete generated data in postgres
     await client.none('DELETE FROM "_User" WHERE "emailVerified" is null');
     expect(preIndexPlan[0].Plan['Node Type']).toBe('Seq Scan');
