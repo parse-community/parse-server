@@ -321,11 +321,9 @@ export function allowMethodOverride(req, res, next) {
 export function handleParseErrors(err, req, res, next) {
   const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
-
     if (req.config && req.config.enableExpressErrorHandler) {
       return next(err);
     }
-
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -341,7 +339,6 @@ export function handleParseErrors(err, req, res, next) {
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
-
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
