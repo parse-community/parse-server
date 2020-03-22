@@ -33,7 +33,8 @@
   ```
 */
 
-var Parse = require('parse/node').Parse;
+const { Parse } = require('parse/node');
+const httpsRequest = require('./httpsRequest');
 
 const arraysEqual = (_arr1, _arr2) => {
   if (
@@ -53,27 +54,60 @@ const arraysEqual = (_arr1, _arr2) => {
   return true;
 };
 
-const userinfoURL = config => {
-  if (!(config['auth-server-url'] && config['realm']))
+const handleAuth = async (
+  { access_token, id, roles, groups } = {},
+  { config } = {}
+) => {
+  if (!(access_token && id)) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Missing access token and/or User id'
+    );
+  }
+  if (!config || !(config['auth-server-url'] && config['realm'])) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Missing keycloak configuration'
     );
-
-  return (
-    config['auth-server-url'] +
-    '/realms/' +
-    config['realm'] +
-    '/protocol/openid-connect/userinfo'
-  );
+  }
+  try {
+    const response = await httpsRequest.get({
+      host: config['auth-server-url'],
+      path: `/realms/${config['realm']}/protocol/openid-connect/userinfo`,
+      headers: {
+        Authorization: 'Bearer ' + access_token,
+      },
+    });
+    if (
+      response &&
+      response.data &&
+      response.data.sub == id &&
+      arraysEqual(response.data.roles, roles) &&
+      arraysEqual(response.data.groups, groups)
+    ) {
+      return;
+    }
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Invalid authentication'
+    );
+  } catch (e) {
+    if (e instanceof Parse.Error) {
+      throw e;
+    }
+    const error = JSON.parse(e.text);
+    if (error.error_description) {
+      throw new Parse.Error(Parse.Error.HOSTING_ERROR, error.error_description);
+    } else {
+      throw new Parse.Error(
+        Parse.Error.HOSTING_ERROR,
+        'Could not connect to the authentication server'
+      );
+    }
+  }
 };
 
-module.exports = {
-  validateAppId: () => {
-    return Promise.resolve();
-  },
-
-  /*
+/*
   @param {Object} authData: the client provided authData
   @param {string} authData.access_token: the access_token retrieved from client authentication in Keycloak
   @param {string} authData.id: the id retrieved from client authentication in Keycloak
@@ -81,53 +115,17 @@ module.exports = {
   @param {Array}  authData.groups: the groups retrieved from client authentication in Keycloak
   @param {Object} options: additional options
   @param {Object} options.config: the config object passed during Parse Server instantiation
-   */
-  validateAuthData: ({ access_token, id, roles, groups }, { config }) => {
-    if (process.env.NODE_ENV !== 'development') return Promise.resolve();
+*/
+function validateAuthData(authData, options = {}) {
+  return handleAuth(authData, options);
+}
 
-    if (!(access_token && id))
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Missing access token and/or User id'
-      );
-    if (!config)
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Missing keycloak configuration'
-      );
-    return Parse.Cloud.httpRequest({
-      url: userinfoURL(config),
-      headers: {
-        Authorization: 'Bearer ' + access_token,
-      },
-    })
-      .then(response => {
-        if (
-          response.data &&
-          response.data.sub == id &&
-          arraysEqual(response.data.roles, roles) &&
-          arraysEqual(response.data.groups, groups)
-        ) {
-          return;
-        }
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Invalid authentication'
-        );
-      })
-      .catch(e => {
-        const error = JSON.parse(e.text);
-        if (error.error_description) {
-          throw new Parse.Error(
-            Parse.Error.HOSTING_ERROR,
-            error.error_description
-          );
-        } else {
-          throw new Parse.Error(
-            Parse.Error.HOSTING_ERROR,
-            'Could not connect to the authentication server'
-          );
-        }
-      });
-  },
+// Returns a promise that fulfills if this app id is valid.
+function validateAppId() {
+  return Promise.resolve();
+}
+
+module.exports = {
+  validateAppId,
+  validateAuthData,
 };

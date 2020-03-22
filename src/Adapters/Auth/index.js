@@ -23,6 +23,7 @@ const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
+const keycloak = require('./keycloak');
 const ldap = require('./ldap');
 
 const anonymous = {
@@ -58,6 +59,7 @@ const providers = {
   weibo,
   phantauth,
   microsoft,
+  keycloak,
   ldap,
 };
 
