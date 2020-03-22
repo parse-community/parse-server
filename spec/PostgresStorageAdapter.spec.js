@@ -163,57 +163,39 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const client = adapter._client;
     await dropTable(client, tableName);
     await adapter.createTable(tableName, schema);
-
-    client
-      .none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
-        tableName,
-        'objectId',
-        'username',
-        'Bugs',
-        'Bunny',
-      ])
-      .then(() => {
-        //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
-        client
-          .none(
-            'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
-            [tableName, 'objectId', 'username']
-          )
+    await client.none(
+      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
+      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
+    );
+    //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
+    await client.none(
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      [tableName, 'objectId', 'username']
+    );
+    const caseInsensitiveData = 'bugs';
+    const qs = createExplainableQuery(
+      client,
+      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
+    );
+    await client
+      .one(qs, [tableName, 'objectId', caseInsensitiveData])
+      .then(explained => {
+        expect(explained['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan');
+        const indexName = 'test_case_insensitive_column';
+        adapter
+          .ensureIndex(tableName, schema, ['objectId'], indexName, true)
           .then(() => {
-            const caseInsensitiveData = 'bugs';
-            const qs = createExplainableQuery(
-              client,
-              'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
-            );
             client
               .one(qs, [tableName, 'objectId', caseInsensitiveData])
               .then(explained => {
-                expect(explained['QUERY PLAN'][0].Plan['Node Type']).toBe(
-                  'Seq Scan'
-                );
-                const indexName = 'test_case_insensitive_column'
-                adapter
-                  .ensureIndex(
-                    tableName,
-                    schema,
-                    ['objectId'],
-                    indexName,
-                    true
-                  )
-                  .then(() => {
-                    client
-                      .one(qs, [tableName, 'objectId', caseInsensitiveData])
-                      .then(explained => {
-                        expect(
-                          explained['QUERY PLAN'][0].Plan['Node Type']
-                        ).not.toContain('Seq Scan');
-                        expect(
-                          explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
-                        ).toBe(indexName);
-                        //Delete generated data in postgres
-                        dropTable(client, tableName);
-                      });
-                  });
+                expect(
+                  explained['QUERY PLAN'][0].Plan['Node Type']
+                ).not.toContain('Seq Scan');
+                expect(
+                  explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
+                ).toBe(indexName);
+                //Delete generated data in postgres
+                return dropTable(client, tableName);
               });
           });
       });
@@ -231,50 +213,35 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const client = adapter._client;
     await dropTable(client, tableName);
     await adapter.createTable(tableName, schema);
+    await client.none(
+      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
+      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
+    );
 
-    client
-      .none('INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)', [
-        tableName,
-        'objectId',
-        'username',
-        'Bugs',
-        'Bunny',
-      ])
+    //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
+    await client.none(
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      [tableName, 'objectId', 'username']
+    );
+    const caseInsensitiveData = 'bugs';
+    const qs = createExplainableQuery(
+      client,
+      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
+    );
+    await adapter
+      .ensureIndex(tableName, schema, ['objectId'], null, true)
       .then(() => {
-        //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
         client
-          .none(
-            'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
-            [tableName, 'objectId', 'username']
-          )
-          .then(() => {
-            const caseInsensitiveData = 'bugs';
-            const qs = createExplainableQuery(
-              client,
-              'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
+          .one(qs, [tableName, 'objectId', caseInsensitiveData])
+          .then(explained => {
+            expect(explained['QUERY PLAN'][0].Plan['Node Type']).not.toContain(
+              'Seq Scan'
             );
-            adapter
-              .ensureIndex(
-                tableName,
-                schema,
-                ['objectId'],
-                null,
-                true
-              )
-              .then(() => {
-                client
-                  .one(qs, [tableName, 'objectId', caseInsensitiveData])
-                  .then(explained => {
-                    expect(
-                      explained['QUERY PLAN'][0].Plan['Node Type']
-                    ).not.toContain('Seq Scan');
-                    expect(
-                      explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
-                    ).toContain('parse_default');
-                    //Delete generated data in postgres
-                    dropTable(client, tableName);
-                  });
-              });
+            expect(
+              explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
+            ).toContain('parse_default');
+            //Delete generated data in postgres
+            return dropTable(client, tableName);
           });
       });
   });
