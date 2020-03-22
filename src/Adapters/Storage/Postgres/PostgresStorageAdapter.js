@@ -2532,22 +2532,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<any> {
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
     const indexNameOptions: Object = indexName ? { name: indexName } : { name: defaultIndexName };
-    const constraintPatterns =  caseInsensitive ? fieldNames.map(
-      (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
-    ) : fieldNames.map(
-      (fieldName, index) => `$${index + 3}:name`
-    );
+    const constraintPatterns =  caseInsensitive ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`) :
+      fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
-    return this._client.none(qs, [indexName, className, ...fieldNames])
+    await this._client.none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch(error => {
         if (
           error.code === PostgresDuplicateRelationError &&
-          error.message.includes(indexNameOptions)
+          error.message.includes(indexNameOptions.name)
         ) {
           // Index already exists. Ignore error.
         } else if (
           error.code === PostgresUniqueIndexViolationError &&
-          error.message.includes(indexNameOptions)
+          error.message.includes(indexNameOptions.name)
         ) {
           // Cast the error into the proper parse error
           throw new Parse.Error(
