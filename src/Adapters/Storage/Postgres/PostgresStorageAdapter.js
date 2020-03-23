@@ -2392,33 +2392,27 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
-      .any(qs, values)
-      .then(results => {
-        if (explain){
-          return results;
+    .map(qs, values, a =>
+      this.postgresObjectToParseObject(className, a, schema)
+    )
+    .then(results => {
+      results.forEach(result => {
+        if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
+          result.objectId = null;
         }
-        results.map(
-          this.postgresObjectToParseObject(className, results, schema)
-        )
-          .then(results => {
-            results.forEach(result => {
-              if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
-                result.objectId = null;
-              }
-              if (groupValues) {
-                result.objectId = {};
-                for (const key in groupValues) {
-                  result.objectId[key] = result[key];
-                  delete result[key];
-                }
-              }
-              if (countField) {
-                result[countField] = parseInt(result[countField], 10);
-              }
-            });
-            return results;
-          });
+        if (groupValues) {
+          result.objectId = {};
+          for (const key in groupValues) {
+            result.objectId[key] = result[key];
+            delete result[key];
+          }
+        }
+        if (countField) {
+          result[countField] = parseInt(result[countField], 10);
+        }
       });
+      return results;
+    });
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {
