@@ -33,8 +33,12 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 const getHeaderFromToken = token => {
   const decodedToken = jwt.decode(token, { complete: true });
   if (!decodedToken) {
-    throw Error('provided token does not decode as JWT');
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `provided token does not decode as JWT`
+    );
   }
+
   return decodedToken.header;
 };
 
@@ -45,12 +49,14 @@ const verifyIdToken = async (
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'id token is invalid for this user.'
+      `id token is invalid for this user.`
     );
   }
 
   const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
   const ONE_HOUR_IN_MS = 3600000;
+  let jwtClaims;
+
   cacheMaxAge = cacheMaxAge || ONE_HOUR_IN_MS;
   cacheMaxEntries = cacheMaxEntries || 5;
 
@@ -61,9 +67,17 @@ const verifyIdToken = async (
   );
   const signingKey = appleKey.publicKey || appleKey.rsaPublicKey;
 
-  const jwtClaims = jwt.verify(token, signingKey, {
-    algorithms: algorithm,
-  });
+  try {
+    jwtClaims = jwt.verify(token, signingKey, {
+      algorithms: algorithm,
+      // the audience can be checked against a string, a regular expression or a list of strings and/or regular expressions.
+      audience: clientId,
+    });
+  } catch (exception) {
+    const message = exception.message;
+
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
+  }
 
   if (jwtClaims.iss !== TOKEN_ISSUER) {
     throw new Parse.Error(
@@ -71,16 +85,11 @@ const verifyIdToken = async (
       `id token not issued by correct OpenID provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
+
   if (jwtClaims.sub !== id) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       `auth data is invalid for this user.`
-    );
-  }
-  if (clientId !== undefined && jwtClaims.aud !== clientId) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `jwt aud parameter does not include this client - is: ${jwtClaims.aud} | expected: ${clientId}`
     );
   }
   return jwtClaims;

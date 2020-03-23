@@ -27,7 +27,7 @@
     "apollo-server-express": "2.11.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
-    "commander": "4.1.1",
+    "commander": "5.0.0",
     "cors": "2.8.5",
     "deepcopy": "2.0.0",
     "express": "4.17.1",
@@ -59,10 +59,10 @@
   },
   "devDependencies": {
     "@babel/cli": "7.8.4",
-    "@babel/core": "7.8.7",
-    "@babel/plugin-proposal-object-rest-spread": "7.8.3",
-    "@babel/plugin-transform-flow-strip-types": "7.8.3",
-    "@babel/preset-env": "7.8.7",
+    "@babel/core": "7.9.0",
+    "@babel/plugin-proposal-object-rest-spread": "7.9.0",
+    "@babel/plugin-transform-flow-strip-types": "7.9.0",
+    "@babel/preset-env": "7.9.0",
     "@parse/minami": "1.0.0",
     "apollo-cache-inmemory": "1.6.5",
     "apollo-client": "2.6.6",
@@ -89,7 +89,7 @@
     "mongodb-runner": "4.8.0",
     "node-fetch": "2.6.0",
     "nyc": "15.0.0",
-    "prettier": "1.19.0"
+    "prettier": "2.0.1"
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",

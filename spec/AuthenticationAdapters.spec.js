@@ -590,6 +590,41 @@ describe('AuthenticationProviders', function() {
   });
 });
 
+describe('instagram auth adapter', () => {
+  const instagram = require('../lib/Adapters/Auth/instagram');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('should use default api', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ data: { id: 'userId' } });
+    });
+    await instagram.validateAuthData(
+      { id: 'userId', access_token: 'the_token' },
+      {}
+    );
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://api.instagram.com/v1/users/self/?access_token=the_token'
+    );
+  });
+
+  it('should pass in api url', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ data: { id: 'userId' } });
+    });
+    await instagram.validateAuthData(
+      {
+        id: 'userId',
+        access_token: 'the_token',
+        apiURL: 'https://new-api.instagram.com/v1/',
+      },
+      {}
+    );
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://new-api.instagram.com/v1/users/self/?access_token=the_token'
+    );
+  });
+});
+
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
@@ -1138,9 +1173,18 @@ describe('apple signin auth adapter', () => {
   const jwt = require('jsonwebtoken');
   const util = require('util');
 
-  it('should throw error with missing id_token', async () => {
+  it('(using client id as string) should throw error with missing id_token', async () => {
     try {
       await apple.validateAuthData({}, { clientId: 'secret' });
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('id token is invalid for this user.');
+    }
+  });
+
+  it('(using client id as array) should throw error with missing id_token', async () => {
+    try {
+      await apple.validateAuthData({}, { client_id: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -1220,7 +1264,19 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should verify id_token', async () => {
+  it('(using client id as array) should not verify invalid id_token', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'the_user_id', token: 'the_token' },
+        { client_id: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  it('(using client id as string) should verify id_token', async () => {
     const fakeClaim = {
       iss: 'https://appleid.apple.com',
       aud: 'secret',
@@ -1242,7 +1298,51 @@ describe('apple signin auth adapter', () => {
     expect(result).toEqual(fakeClaim);
   });
 
-  it('should throw error with with invalid jwt issuer', async () => {
+  it('(using client id as array) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await apple.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as array with multiple items) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://appleid.apple.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await apple.validateAuthData(
+      { id: 'the_user_id', token: 'the_token' },
+      { clientId: ['secret', 'secret 123'] }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
     const fakeClaim = {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
@@ -1268,10 +1368,11 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should throw error with with invalid jwt client_id', async () => {
+  // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
+  // and a private key
+  xit('(using client id as array) should throw error with with invalid jwt issuer', async () => {
     const fakeClaim = {
-      iss: 'https://appleid.apple.com',
-      aud: 'invalid_client_id',
+      iss: 'https://not.apple.com',
       sub: 'the_user_id',
     };
     const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
@@ -1284,14 +1385,88 @@ describe('apple signin auth adapter', () => {
 
     try {
       await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: ['INSERT CLIENT ID HERE'] }
       );
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'jwt aud parameter does not include this client - is: invalid_client_id | expected: secret'
+        'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
       );
+    }
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.apple.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    const fakeGetSigningKeyAsyncFunction = () => {
+      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+    };
+    spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await apple.validateAuthData(
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
+        },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct OpenID provider - expected: https://appleid.apple.com | from: https://not.apple.com'
+      );
+    }
+  });
+
+  // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
+  // and a private key
+  xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
+  // and a private key
+  xit('(using client id as array) should throw error with invalid jwt client_id', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: ['secret'] }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
+  // and a private key
+  xit('should throw error with invalid user id', async () => {
+    try {
+      await apple.validateAuthData(
+        { id: 'invalid user', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
 
@@ -1320,6 +1495,7 @@ describe('apple signin auth adapter', () => {
     }
   });
 });
+
 describe('Apple Game Center Auth adapter', () => {
   const gcenter = require('../lib/Adapters/Auth/gcenter');
 
