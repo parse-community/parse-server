@@ -169,23 +169,40 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const originalQuery = 'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
-    const analyzedExplainQuery = adapter.createExplainableQuery(originalQuery, true);
+    const originalQuery =
+      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
+    const analyzedExplainQuery = adapter.createExplainableQuery(
+      originalQuery,
+      true
+    );
     await client
       .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
       .then(explained => {
         const preIndexPlan = explained;
 
-        expect(preIndexPlan['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan');
+        //Make sure search returned with only 1 result
+        expect(preIndexPlan['QUERY PLAN'][0].Plan['Actual Rows']).toBe(1);
+        expect(preIndexPlan['QUERY PLAN'][0].Plan['Node Type']).toBe(
+          'Seq Scan'
+        );
         const indexName = 'test_case_insensitive_column';
+
         adapter
           .ensureIndex(tableName, schema, ['objectId'], indexName, true)
           .then(() => {
             client
-              .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
+              .one(analyzedExplainQuery, [
+                tableName,
+                'objectId',
+                caseInsensitiveData,
+              ])
               .then(explained => {
                 const postIndexPlan = explained;
 
+                //Make sure search returned with only 1 result
+                expect(postIndexPlan['QUERY PLAN'][0].Plan['Actual Rows']).toBe(
+                  1
+                );
                 //Should not be a sequential scan
                 expect(
                   postIndexPlan['QUERY PLAN'][0].Plan['Node Type']
@@ -196,22 +213,24 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
                   postIndexPlan['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
                 ).toBe(indexName);
 
-                //Sequential should take more time to plan than indexed
-                expect(
-                  preIndexPlan['QUERY PLAN'][0]['Planning Time']
-                ).toBeGreaterThan(postIndexPlan['QUERY PLAN'][0]['Planning Time']);
-
                 //Sequential should take more time to execute than indexed
                 expect(
                   preIndexPlan['QUERY PLAN'][0]['Execution Time']
-                ).toBeGreaterThan(postIndexPlan['QUERY PLAN'][0]['Execution Time']);
+                ).toBeGreaterThan(
+                  postIndexPlan['QUERY PLAN'][0]['Execution Time']
+                );
 
                 //Test explaining without analyzing
-                const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
+                const basicExplainQuery = adapter.createExplainableQuery(
+                  originalQuery
+                );
                 client
-                  .one(basicExplainQuery, [tableName, 'objectId', caseInsensitiveData])
+                  .one(basicExplainQuery, [
+                    tableName,
+                    'objectId',
+                    caseInsensitiveData,
+                  ])
                   .then(explained => {
-
                     //Check that basic query plans isn't a sequential scan
                     expect(
                       explained['QUERY PLAN'][0].Plan['Node Type']
@@ -224,7 +243,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 
                     //Delete generated data in postgres
                     return dropTable(client, tableName);
-                  })
+                  });
               });
           });
       });
