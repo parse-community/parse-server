@@ -14,6 +14,7 @@ import {
   GraphQLBoolean,
   GraphQLUnionType,
 } from 'graphql';
+import { toGlobalId } from 'graphql-relay';
 import { GraphQLUpload } from 'graphql-upload';
 
 class TypeValidationError extends Error {
@@ -553,7 +554,7 @@ const ACL = new GraphQLObjectType({
         Object.keys(p).forEach(rule => {
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
-              userId: rule,
+              userId: toGlobalId('_User', rule),
               read: p[rule].read ? true : false,
               write: p[rule].write ? true : false,
             });

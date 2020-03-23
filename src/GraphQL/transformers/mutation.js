@@ -99,6 +99,10 @@ const transformers = {
     }
     if (value.users) {
       value.users.forEach(rule => {
+        const globalIdObject = fromGlobalId(rule.userId);
+        if (globalIdObject.type === '_User') {
+          rule.userId = globalIdObject.id;
+        }
         parseACL[rule.userId] = {
           read: rule.read,
           write: rule.write,
