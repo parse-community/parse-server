@@ -45,8 +45,8 @@ jobs:
       postgresql: '11'
       apt:
         packages:
-          - postgresql-11-postgis-3.0
-          - postgresql-11-postgis-3.0-scripts
+          - postgresql-11-postgis-3
+          - postgresql-11-postgis-3-scripts
     env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres
     before_install: bash scripts/before_install_postgres.sh
     before_script: bash scripts/before_script_postgres.sh
