@@ -286,8 +286,7 @@ const buildWhereClause = ({
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
       continue;
     } else if (
-      caseInsensitive &&
-      (fieldName === 'username' || fieldName === 'email')
+      caseInsensitive
     ) {
       patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
       values.push(fieldName, fieldValue);
@@ -1922,8 +1921,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
       values = values.concat(keys);
     }
 
-    const originaQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
-    const qs = explain ? this.createExplainableQuery(originaQuery) : originaQuery;
+    const originalQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
       .any(qs, values)
@@ -2198,7 +2197,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
   }
 
-  async aggregate(className: string, schema: any, pipeline: any) {
+  async aggregate(
+    className: string,
+    schema: any,
+    pipeline: any,
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean) {
     debug('aggregate', className, pipeline);
     const values = [className];
     let index: number = 2;
@@ -2383,31 +2388,36 @@ export class PostgresStorageAdapter implements StorageAdapter {
           sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
-
-    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const originalQuery = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
-      .map(qs, values, a =>
-        this.postgresObjectToParseObject(className, a, schema)
-      )
       .then(results => {
-        results.forEach(result => {
-          if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
-            result.objectId = null;
-          }
-          if (groupValues) {
-            result.objectId = {};
-            for (const key in groupValues) {
-              result.objectId[key] = result[key];
-              delete result[key];
-            }
-          }
-          if (countField) {
-            result[countField] = parseInt(result[countField], 10);
-          }
-        });
-        return results;
-      });
+        if (explain){
+          return results;
+        }
+        results.map(qs, values, a =>
+          this.postgresObjectToParseObject(className, a, schema)
+        )
+          .then(results => {
+            results.forEach(result => {
+              if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
+                result.objectId = null;
+              }
+              if (groupValues) {
+                result.objectId = {};
+                for (const key in groupValues) {
+                  result.objectId[key] = result[key];
+                  delete result[key];
+                }
+              }
+              if (countField) {
+                result[countField] = parseInt(result[countField], 10);
+              }
+            });
+            return results;
+          });
+      })
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {

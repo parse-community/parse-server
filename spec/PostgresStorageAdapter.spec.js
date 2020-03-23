@@ -246,51 +246,110 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
                   });
               });
           });
+      })
+      .catch(error => {
+        // Query on non existing table, don't crash
+        if (error.code !== '42P01') {
+          throw error;
+        }
+        return [];
       });
   });
 
-  it('should use index for caseInsensitive query using default indexname', async () => {
-    const tableName = 'CaseTable';
-    const schema = {
-      fields: {
-        objectId: { type: 'String' },
-        username: { type: 'String' },
-        email: { type: 'String' },
-      },
-    };
-    const client = adapter._client;
-    await dropTable(client, tableName);
-    await adapter.createTable(tableName, schema);
-    await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
-      [tableName, 'objectId', 'username', 'Bugs', 'Bunny']
-    );
+  it('should use index for caseInsensitive query using Parse find', async () => {
+    const tableName = '_User';
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    await user.signUp();
+    const database = Config.get(Parse.applicationId).database;
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
+    const client = adapter._client;
     await client.none(
       'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const qs = adapter.createExplainableQuery(
-      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
+    const fieldToSearch = 'username';
+    //Check using find method for Parse
+    const preIndexPlan = await database.find(
+      tableName,
+      { username: caseInsensitiveData },
+      { caseInsensitive: true, explain: true }
     );
+
+    //Check that basic query plans isn't a sequential scan, be careful as find uses "any" to query
+    expect(
+      preIndexPlan[0]['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan'
+    );
+
+    //Basic query plans shouldn't have an execution time
+    expect(
+      preIndexPlan[0]['QUERY PLAN'][0]['Execution Time']
+    ).toBeUndefined();
+
+    const indexName = 'test_case_insensitive_column';
+    const schema = await new Parse.Schema('_User').get();
     await adapter
-      .ensureIndex(tableName, schema, ['objectId'], null, true)
-      .then(() => {
-        client
-          .one(qs, [tableName, 'objectId', caseInsensitiveData])
-          .then(explained => {
-            expect(explained['QUERY PLAN'][0].Plan['Node Type']).not.toContain(
-              'Seq Scan'
-            );
-            expect(
-              explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
-            ).toContain('parse_default');
-            //Delete generated data in postgres by dropping table
-            return dropTable(client, tableName);
-          });
-      });
+      .ensureIndex(tableName, schema, [fieldToSearch], indexName, true);
+
+    //Check using find method for Parse
+    const postIndexPlan = await database.find(
+      tableName,
+      { username: caseInsensitiveData },
+      { caseInsensitive: true, explain: true }
+    );
+
+    //Check that basic query plans isn't a sequential scan
+    expect(
+      postIndexPlan[0]['QUERY PLAN'][0].Plan['Node Type']
+    ).not.toContain('Seq Scan');
+
+    //Basic query plans shouldn't have an execution time
+    expect(
+      postIndexPlan[0]['QUERY PLAN'][0]['Execution Time']
+    ).toBeUndefined();
+    //Delete generated data in postgres by dropping table
+    return dropTable(client, tableName);
+  });
+
+  it('should use index for caseInsensitive query using default indexname and non username/email field', async () => {
+    const tableName = '_User';
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    await user.signUp();
+    const database = Config.get(Parse.applicationId).database;
+    const fieldToSearch = 'objectId';
+    //Create index before data is inserted
+    const schema = await new Parse.Schema('_User').get();
+    await adapter
+      .ensureIndex(tableName, schema, [fieldToSearch], null, true);
+
+    //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
+    const client = adapter._client;
+    await client.none(
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      [tableName, 'objectId', 'username']
+    );
+
+    const caseInsensitiveData = 'bunny';
+    //Check using find method for Parse
+    const indexPlan = await database.find(
+      tableName,
+      { objectId: caseInsensitiveData },
+      { caseInsensitive: true, explain: true }
+    );
+
+    expect(indexPlan[0]['QUERY PLAN'][0].Plan['Node Type']).not.toContain(
+      'Seq Scan'
+    );
+    expect(
+      indexPlan[0]['QUERY PLAN'][0].Plan['Index Name']
+    ).toContain('parse_default');
+    //Delete generated data in postgres by dropping table
+    return dropTable(client, tableName);
   });
 });
 
