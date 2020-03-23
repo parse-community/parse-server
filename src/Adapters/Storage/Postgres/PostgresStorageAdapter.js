@@ -852,6 +852,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = false;
   }
 
+  createExplainableQuery (query: string) {
+    return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
+  }
+
   handleShutdown() {
     if (!this._client) {
       return;
@@ -1835,7 +1839,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, caseInsensitive }: QueryOptions
+    { skip, limit, sort, keys, caseInsensitive, explain }: QueryOptions
   ) {
     debug('find', className, query, {
       skip,
@@ -1843,6 +1847,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       sort,
       keys,
       caseInsensitive,
+      explain,
     });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
@@ -1912,7 +1917,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
       values = values.concat(keys);
     }
 
-    const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
+    const originaQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
+    const qs = explain ? this.createExplainableQuery(originaQuery) : originaQuery;
     debug(qs, values);
     return this._client
       .any(qs, values)
@@ -1923,10 +1929,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         return [];
       })
-      .then(results =>
-        results.map(object =>
+      .then(results => {
+        if (explain){
+          return results;
+        }
+        return results.map(object =>
           this.postgresObjectToParseObject(className, object, schema)
-        )
+        );}
       );
   }
 
@@ -2528,14 +2537,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     fieldNames: string[],
     indexName: ?string,
-    caseInsensitive: boolean = false
+    caseInsensitive: boolean = false,
+    conn: ?any = null
   ): Promise<any> {
+
+    conn = conn != null ? conn : this._client;
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
     const indexNameOptions: Object = indexName != null ? { name: indexName } : { name: defaultIndexName };
     const constraintPatterns =  caseInsensitive ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`) :
       fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
-    await this._client.none(qs, [indexNameOptions.name, className, ...fieldNames])
+    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch(error => {
         if (
           error.code === PostgresDuplicateRelationError &&

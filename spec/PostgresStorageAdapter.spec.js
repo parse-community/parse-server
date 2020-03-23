@@ -12,10 +12,6 @@ const getColumns = (client, className) => {
   );
 };
 
-const createExplainableQuery = (client, query) => {
-  return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
-};
-
 const dropTable = (client, className) => {
   return client.none('DROP TABLE IF EXISTS $<className:name>', { className });
 };
@@ -173,8 +169,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const qs = createExplainableQuery(
-      client,
+    const qs = adapter.createExplainableQuery(
       'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
     );
     await client
@@ -224,8 +219,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const qs = createExplainableQuery(
-      client,
+    const qs = adapter.createExplainableQuery(
       'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
     );
     await adapter
