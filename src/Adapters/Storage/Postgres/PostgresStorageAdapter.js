@@ -2204,7 +2204,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     readPreference: ?string,
     hint: ?mixed,
     explain?: boolean) {
-    debug('aggregate', className, pipeline);
+    debug('aggregate', className, pipeline, readPreference, hint, explain);
     const values = [className];
     let index: number = 2;
     let columns: string[] = [];
@@ -2392,12 +2392,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
+      .any(qs, values)
       .then(results => {
         if (explain){
           return results;
         }
-        results.map(qs, values, a =>
-          this.postgresObjectToParseObject(className, a, schema)
+        results.map(
+          this.postgresObjectToParseObject(className, results, schema)
         )
           .then(results => {
             results.forEach(result => {
@@ -2417,7 +2418,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             });
             return results;
           });
-      })
+      });
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {
