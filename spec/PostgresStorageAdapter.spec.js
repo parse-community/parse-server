@@ -234,7 +234,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
             expect(
               explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
             ).toContain('parse_default');
-            //Delete generated data in postgres
+            //Delete generated data in postgres by dropping table
             return dropTable(client, tableName);
           });
       });
