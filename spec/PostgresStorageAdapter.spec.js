@@ -314,14 +314,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     return dropTable(client, tableName);
   });
 
-  it('should use index for caseInsensitive query using default indexname and non username/email field', async () => {
+  it('should use index for caseInsensitive query using default indexname', async () => {
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
     const database = Config.get(Parse.applicationId).database;
-    const fieldToSearch = 'objectId';
+    const fieldToSearch = 'username';
     //Create index before data is inserted
     const schema = await new Parse.Schema('_User').get();
     await adapter
@@ -334,11 +334,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
 
-    const caseInsensitiveData = 'bunny';
+    const caseInsensitiveData = 'buGs';
     //Check using find method for Parse
     const indexPlan = await database.find(
       tableName,
-      { objectId: caseInsensitiveData },
+      { username: caseInsensitiveData },
       { caseInsensitive: true, explain: true }
     );
 

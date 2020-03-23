@@ -286,7 +286,8 @@ const buildWhereClause = ({
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
       continue;
     } else if (
-      caseInsensitive
+      caseInsensitive &&
+      (fieldName === 'username' || fieldName === 'email')
     ) {
       patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
       values.push(fieldName, fieldValue);
@@ -2392,27 +2393,55 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
-    .map(qs, values, a =>
-      this.postgresObjectToParseObject(className, a, schema)
-    )
-    .then(results => {
-      results.forEach(result => {
-        if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
-          result.objectId = null;
+      /*.any(qs, values)
+      .then(a => {
+        if (explain){
+          return results;
         }
-        if (groupValues) {
-          result.objectId = {};
-          for (const key in groupValues) {
-            result.objectId[key] = result[key];
-            delete result[key];
+        //There's a bug here
+        a.map(object => {
+          return this.postgresObjectToParseObject(className, object, schema)
+        })
+          .then(results => {
+            results.forEach(result => {
+              if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
+                result.objectId = null;
+              }
+              if (groupValues) {
+                result.objectId = {};
+                for (const key in groupValues) {
+                  result.objectId[key] = result[key];
+                  delete result[key];
+                }
+              }
+              if (countField) {
+                result[countField] = parseInt(result[countField], 10);
+              }
+            });
+            return results;
+          });
+      });*/
+      .map(qs, values, a =>
+        this.postgresObjectToParseObject(className, a, schema)
+      )
+      .then(results => {
+        results.forEach(result => {
+          if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
+            result.objectId = null;
           }
-        }
-        if (countField) {
-          result[countField] = parseInt(result[countField], 10);
-        }
+          if (groupValues) {
+            result.objectId = {};
+            for (const key in groupValues) {
+              result.objectId[key] = result[key];
+              delete result[key];
+            }
+          }
+          if (countField) {
+            result[countField] = parseInt(result[countField], 10);
+          }
+        });
+        return results;
       });
-      return results;
-    });
   }
 
   async performInitialization({ VolatileClassesSchemas }: any) {
