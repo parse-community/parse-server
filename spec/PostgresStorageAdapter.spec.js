@@ -169,28 +169,62 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
-    const qs = adapter.createExplainableQuery(
-      'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)'
-    );
+    const originalQuery = 'SELECT * FROM $1:name WHERE lower($2:name)=lower($3)';
+    const analyzedExplainQuery = adapter.createExplainableQuery(originalQuery, true);
     await client
-      .one(qs, [tableName, 'objectId', caseInsensitiveData])
+      .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
       .then(explained => {
-        expect(explained['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan');
+        const preIndexPlan = explained;
+
+        expect(preIndexPlan['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan');
         const indexName = 'test_case_insensitive_column';
         adapter
           .ensureIndex(tableName, schema, ['objectId'], indexName, true)
           .then(() => {
             client
-              .one(qs, [tableName, 'objectId', caseInsensitiveData])
+              .one(analyzedExplainQuery, [tableName, 'objectId', caseInsensitiveData])
               .then(explained => {
+                const postIndexPlan = explained;
+
+                //Should not be a sequential scan
                 expect(
-                  explained['QUERY PLAN'][0].Plan['Node Type']
+                  postIndexPlan['QUERY PLAN'][0].Plan['Node Type']
                 ).not.toContain('Seq Scan');
+
+                //Should be using the index created for this
                 expect(
-                  explained['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
+                  postIndexPlan['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
                 ).toBe(indexName);
-                //Delete generated data in postgres
-                return dropTable(client, tableName);
+
+                //Sequential should take more time to plan than indexed
+                expect(
+                  preIndexPlan['QUERY PLAN'][0]['Planning Time']
+                ).toBeGreaterThan(postIndexPlan['QUERY PLAN'][0]['Planning Time']);
+
+                //Sequential should take more time to execute than indexed
+                expect(
+                  preIndexPlan['QUERY PLAN'][0]['Execution Time']
+                ).toBeGreaterThan(postIndexPlan['QUERY PLAN'][0]['Execution Time']);
+
+                //Test explaining without analyzing
+                const basicExplainQuery = adapter.createExplainableQuery(originalQuery);
+                client
+                  .one(basicExplainQuery, [tableName, 'objectId', caseInsensitiveData])
+                  .then(explained => {
+
+                    //Check that basic query plans isn't a sequential scan
+                    expect(
+                      explained['QUERY PLAN'][0].Plan['Node Type']
+                    ).not.toContain('Seq Scan');
+
+                    //Basic query plans shouldn't have an execution time
+                    expect(
+                      explained['QUERY PLAN'][0]['Execution Time']
+                    ).toBeUndefined();
+
+                    //Delete generated data in postgres
+                    return dropTable(client, tableName);
+                  })
               });
           });
       });

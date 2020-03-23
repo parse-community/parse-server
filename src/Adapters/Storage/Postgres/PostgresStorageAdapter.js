@@ -852,8 +852,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = false;
   }
 
-  createExplainableQuery (query: string) {
-    return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
+  //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
+  createExplainableQuery (query: string, analyze:boolean = false) {
+    if (analyze){
+      return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
+    }else{
+      return 'EXPLAIN (FORMAT JSON) ' + query;
+    }
   }
 
   handleShutdown() {
