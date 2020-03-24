@@ -61,7 +61,7 @@ If your pull request introduces a change that may affect the storage or retrieva
 * Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres npm test`. You'll need to have postgres running on your machine and your configuratoin file setup [appropriately](https://github.com/postgres/postgres/blob/master/src/backend/utils/misc/postgresql.conf.sample#L63) along with [PostGIS](https://postgis.net) 2.2.0 higher installed, or use [`Docker`](#run-a-parse-postgres-with-docker).
 * The Postgres adapter has a special debugger that traces all the sql commands. You can enable it with setting the environment variable `PARSE_SERVER_LOG_LEVEL=debug`
 * If your feature is intended to only work with MongoDB, you should disable PostgreSQL-specific tests with:
-   
+
   - `describe_only_db('mongo')` // will create a `describe` that runs only on mongoDB
   - `it_only_db('mongo')` // will make a test that only runs on mongo
   - `it_exclude_dbs(['postgres'])` // will make a test that runs against all DB's but postgres
@@ -71,7 +71,7 @@ If your pull request introduces a change that may affect the storage or retrieva
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
 ```
-docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=postgres --rm postgis/postgis:11-2.5-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
+docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_USER=$USER -e POSTGRES_PASSWORD=postgres --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U $USER -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U $USER -c 'CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U $USER -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
 To stop the Postgres instance:
 
@@ -79,7 +79,7 @@ To stop the Postgres instance:
 docker stop parse-postgres
 ```
 
-You can also use the [postgis/postgis:11-2.5-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines: 
+You can also use the [postgis/postgis:11-3.0-alpine](https://hub.docker.com/r/postgis/postgis) image in a Dockerfile and copy this [script](https://github.com/parse-community/parse-server/blob/master/scripts/before_script_postgres.sh) to the image by adding the following lines:
 
 ```
 #Install additional scripts. These are run in abc order during initial start
@@ -91,7 +91,7 @@ Note that the script above will ONLY be executed during initialization of the co
 
 ### Generate Parse Server Config Definition
 
-If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs]. 
+If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs].
 
 To view docs run `npm run docs` and check the `/out` directory.
 
