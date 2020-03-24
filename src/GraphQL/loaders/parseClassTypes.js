@@ -347,12 +347,11 @@ const load = (
       const updatedSortFields = {
         ...sortFields,
       };
-      const value = field === 'id' ? 'objectId' : field;
       if (asc) {
-        updatedSortFields[`${field}_ASC`] = { value };
+        updatedSortFields[`${field}_ASC`] = {};
       }
       if (desc) {
-        updatedSortFields[`${field}_DESC`] = { value: `-${value}` };
+        updatedSortFields[`${field}_DESC`] = {};
       }
       return updatedSortFields;
     }, {}),
@@ -434,7 +433,6 @@ const load = (
                     .filter(field => field.startsWith('edges.node.'))
                     .map(field => field.replace('edges.node.', ''))
                 );
-                const parseOrder = order && order.join(',');
 
                 return objectsQueries.findObjects(
                   source[field].className,
@@ -449,7 +447,7 @@ const load = (
                     },
                     ...(where || {}),
                   },
-                  parseOrder,
+                  order,
                   skip,
                   first,
                   after,
