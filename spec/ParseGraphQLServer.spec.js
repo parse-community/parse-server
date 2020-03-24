@@ -10704,7 +10704,7 @@ describe('ParseGraphQLServer', () => {
         expect(result.data.hello2).toEqual('Hello world!');
       });
 
-      fit('order option should continue working', async () => {
+      it('order option should continue working', async () => {
         const schemaController = await parseServer.config.databaseController.loadSchema();
 
         await schemaController.addClassIfNotExists('SuperCar', {
