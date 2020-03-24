@@ -85,7 +85,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(columns).toContain('columnA');
         expect(columns).toContain('columnB');
         expect(columns).toContain('columnC');
-        dropTable(client, className);
+
         done();
       })
       .catch(error => done.fail(error));
@@ -114,7 +114,6 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(columns.length).toEqual(2);
         expect(columns).toContain('columnA');
         expect(columns).toContain('columnB');
-        dropTable(client, className);
         done();
       })
       .catch(done);
@@ -147,7 +146,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     );
   });
 
-  it('should use index for caseInsensitive query', async () => {
+  it('should use index for caseInsensitive query using Postgres', async () => {
     const tableName = '_User';
     const schema = {
       fields: {
@@ -157,7 +156,6 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       },
     };
     const client = adapter._client;
-    await dropTable(client, tableName);
     await adapter.createTable(tableName, schema);
     await client.none(
       'INSERT INTO $1:name ($2:name, $3:name) VALUES ($4, $5)',
@@ -180,11 +178,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       .then(explained => {
         const preIndexPlan = explained;
 
-        //Make sure search returned with only 1 result
-        expect(preIndexPlan['QUERY PLAN'][0].Plan['Actual Rows']).toBe(1);
-        expect(preIndexPlan['QUERY PLAN'][0].Plan['Node Type']).toBe(
-          'Seq Scan'
-        );
+        preIndexPlan['QUERY PLAN'].forEach(element => {
+          //Make sure search returned with only 1 result
+          expect(element.Plan['Actual Rows']).toBe(1);
+          expect(element.Plan['Node Type']).toBe('Seq Scan');
+        });
         const indexName = 'test_case_insensitive_column';
 
         adapter
@@ -199,26 +197,27 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
               .then(explained => {
                 const postIndexPlan = explained;
 
-                //Make sure search returned with only 1 result
-                expect(postIndexPlan['QUERY PLAN'][0].Plan['Actual Rows']).toBe(
-                  1
-                );
-                //Should not be a sequential scan
-                expect(
-                  postIndexPlan['QUERY PLAN'][0].Plan['Node Type']
-                ).not.toContain('Seq Scan');
+                postIndexPlan['QUERY PLAN'].forEach(element => {
+                  //Make sure search returned with only 1 result
+                  expect(element.Plan['Actual Rows']).toBe(1);
+                  //Should not be a sequential scan
+                  expect(element.Plan['Node Type']).not.toContain('Seq Scan');
 
-                //Should be using the index created for this
-                expect(
-                  postIndexPlan['QUERY PLAN'][0].Plan.Plans[0]['Index Name']
-                ).toBe(indexName);
+                  //Should be using the index created for this
+                  element.Plan.Plans.forEach(innerElement => {
+                    expect(innerElement['Index Name']).toBe(indexName);
+                  });
+                });
 
-                //Sequential should take more time to execute than indexed
-                expect(
-                  preIndexPlan['QUERY PLAN'][0]['Execution Time']
-                ).toBeGreaterThan(
-                  postIndexPlan['QUERY PLAN'][0]['Execution Time']
-                );
+                //These are the same query so should be the same size
+                for (let i = 0; i < preIndexPlan['QUERY PLAN'].length; i++) {
+                  //Sequential should take more time to execute than indexed
+                  expect(
+                    preIndexPlan['QUERY PLAN'][i]['Execution Time']
+                  ).toBeGreaterThan(
+                    postIndexPlan['QUERY PLAN'][i]['Execution Time']
+                  );
+                }
 
                 //Test explaining without analyzing
                 const basicExplainQuery = adapter.createExplainableQuery(
@@ -231,18 +230,15 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
                     caseInsensitiveData,
                   ])
                   .then(explained => {
-                    //Check that basic query plans isn't a sequential scan
-                    expect(
-                      explained['QUERY PLAN'][0].Plan['Node Type']
-                    ).not.toContain('Seq Scan');
+                    explained['QUERY PLAN'].forEach(element => {
+                      //Check that basic query plans isn't a sequential scan
+                      expect(element.Plan['Node Type']).not.toContain(
+                        'Seq Scan'
+                      );
 
-                    //Basic query plans shouldn't have an execution time
-                    expect(
-                      explained['QUERY PLAN'][0]['Execution Time']
-                    ).toBeUndefined();
-
-                    //Delete generated data in postgres
-                    return dropTable(client, tableName);
+                      //Basic query plans shouldn't have an execution time
+                      expect(element['Execution Time']).toBeUndefined();
+                    });
                   });
               });
           });
@@ -256,7 +252,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       });
   });
 
-  it('should use index for caseInsensitive query using Parse find', async () => {
+  it('should use index for caseInsensitive query', async () => {
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
@@ -279,20 +275,24 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       { caseInsensitive: true, explain: true }
     );
 
-    //Check that basic query plans isn't a sequential scan, be careful as find uses "any" to query
-    expect(
-      preIndexPlan[0]['QUERY PLAN'][0].Plan['Node Type']).toBe('Seq Scan'
-    );
-
-    //Basic query plans shouldn't have an execution time
-    expect(
-      preIndexPlan[0]['QUERY PLAN'][0]['Execution Time']
-    ).toBeUndefined();
+    preIndexPlan.forEach(element => {
+      element['QUERY PLAN'].forEach(innerElement => {
+        //Check that basic query plans isn't a sequential scan, be careful as find uses "any" to query
+        expect(innerElement.Plan['Node Type']).toBe('Seq Scan');
+        //Basic query plans shouldn't have an execution time
+        expect(innerElement['Execution Time']).toBeUndefined();
+      });
+    });
 
     const indexName = 'test_case_insensitive_column';
     const schema = await new Parse.Schema('_User').get();
-    await adapter
-      .ensureIndex(tableName, schema, [fieldToSearch], indexName, true);
+    await adapter.ensureIndex(
+      tableName,
+      schema,
+      [fieldToSearch],
+      indexName,
+      true
+    );
 
     //Check using find method for Parse
     const postIndexPlan = await database.find(
@@ -301,17 +301,15 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       { caseInsensitive: true, explain: true }
     );
 
-    //Check that basic query plans isn't a sequential scan
-    expect(
-      postIndexPlan[0]['QUERY PLAN'][0].Plan['Node Type']
-    ).not.toContain('Seq Scan');
+    postIndexPlan.forEach(element => {
+      element['QUERY PLAN'].forEach(innerElement => {
+        //Check that basic query plans isn't a sequential scan
+        expect(innerElement.Plan['Node Type']).not.toContain('Seq Scan');
 
-    //Basic query plans shouldn't have an execution time
-    expect(
-      postIndexPlan[0]['QUERY PLAN'][0]['Execution Time']
-    ).toBeUndefined();
-    //Delete generated data in postgres by dropping table
-    return dropTable(client, tableName);
+        //Basic query plans shouldn't have an execution time
+        expect(innerElement['Execution Time']).toBeUndefined();
+      });
+    });
   });
 
   it('should use index for caseInsensitive query using default indexname', async () => {
@@ -324,8 +322,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const fieldToSearch = 'username';
     //Create index before data is inserted
     const schema = await new Parse.Schema('_User').get();
-    await adapter
-      .ensureIndex(tableName, schema, [fieldToSearch], null, true);
+    await adapter.ensureIndex(tableName, schema, [fieldToSearch], null, true);
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
@@ -341,15 +338,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       { username: caseInsensitiveData },
       { caseInsensitive: true, explain: true }
     );
-
-    expect(indexPlan[0]['QUERY PLAN'][0].Plan['Node Type']).not.toContain(
-      'Seq Scan'
-    );
-    expect(
-      indexPlan[0]['QUERY PLAN'][0].Plan['Index Name']
-    ).toContain('parse_default');
-    //Delete generated data in postgres by dropping table
-    return dropTable(client, tableName);
+    indexPlan.forEach(element => {
+      element['QUERY PLAN'].forEach(innerElement => {
+        expect(innerElement.Plan['Node Type']).not.toContain('Seq Scan');
+        expect(innerElement.Plan['Index Name']).toContain('parse_default');
+      });
+    });
   });
 });
 
