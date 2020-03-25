@@ -25,4 +25,13 @@ if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
 
   sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
 
+else
+
+  # Setup postgres 11 or higher
+  sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
+  sudo service postgresql stop
+  sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
+
 fi
+
+
