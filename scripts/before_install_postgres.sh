@@ -31,6 +31,6 @@ else
   sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
   sudo service postgresql stop
   # Remove previous versions of postgres
-  sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
+  #sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
   sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
 fi
