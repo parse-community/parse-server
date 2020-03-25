@@ -6,11 +6,14 @@ source ~/.nvm/nvm.sh
 
 echo "[SCRIPT] Before Install Script :: Setup Postgres ${POSTGRES_MAJOR_VERSION}"
 
-#Stop the default service since changes are needed to the config file
-sudo service postgresql stop
 nvm install $NODE_VERSION
 nvm use $NODE_VERSION
 npm install -g greenkeeper-lockfile@1
+
+#Stop the default service since changes are needed to the config file
+sudo service postgresql stop
+#Switched installed default port to 5433 since URI is is using this port
+sudo sed -i 's/port = 5432/port = 5433/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
 
 # Currently the Xenial immage lists posgres < 11 are pre-installed, we can use those 
 # as long as we change the port of the one we need. Note that we leave PGPORT=5432
@@ -18,9 +21,6 @@ npm install -g greenkeeper-lockfile@1
 # when using the default port
 if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
   # Setup postgres 9 or 10
-
-  #Switched installed default port to 5433 since URI is is using this port
-  sudo sed -i 's/port = 5432/port = 5433/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
 
   sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
 
