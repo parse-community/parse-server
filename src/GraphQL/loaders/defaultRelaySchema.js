@@ -31,9 +31,7 @@ const load = parseGraphQLSchema => {
             config,
             auth,
             info,
-            parseGraphQLSchema.parseClasses.find(
-              ({ className }) => type === className
-            )
+            parseGraphQLSchema.parseClasses
           )),
         };
       } catch (e) {
