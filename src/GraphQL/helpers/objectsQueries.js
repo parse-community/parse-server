@@ -3,10 +3,46 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
-const needToGetAllKeys = (fields, keys) =>
+// Eslint/Prettier conflict
+/* eslint-disable*/
+const needToGetAllKeys = (fields, keys, parseClasses) =>
   keys
-    ? !!keys.split(',').find(keyName => !fields[keyName.split('.')[0]])
+    ? keys.split(',').some(keyName => {
+        const key = keyName.split('.');
+        if (fields[key[0]]) {
+          if (fields[key[0]].type === 'Pointer') {
+            const subClass = parseClasses.find(
+              ({ className: parseClassName }) =>
+                fields[key[0]].targetClass === parseClassName
+            );
+            if (subClass && subClass.fields[key[1]]) {
+              // Current sub key is not custom
+              return false;
+            }
+          } else if (!key[1]) {
+            // current key is not custom
+            return false;
+          }
+        }
+        // Key not found into Parse Schema so it's custom
+        return true;
+      })
     : true;
+/* eslint-enable*/
+
+const transformOrder = order =>
+  order
+    .map(o => {
+      const direction = o.indexOf('_ASC') > 0 ? '_ASC' : '_DESC';
+      let field = o.replace(direction, '');
+      field = field === 'id' ? 'objectId' : field;
+      if (direction === '_ASC') {
+        return `${field}`;
+      } else {
+        return `-${field}`;
+      }
+    })
+    .join(',');
 
 const getObject = async (
   className,
@@ -18,11 +54,23 @@ const getObject = async (
   config,
   auth,
   info,
-  parseClass
+  parseClasses
 ) => {
   const options = {};
-  if (!needToGetAllKeys(parseClass.fields, keys)) {
-    options.keys = keys;
+  try {
+    if (
+      !needToGetAllKeys(
+        parseClasses.find(
+          ({ className: parseClassName }) => className === parseClassName
+        ).fields,
+        keys,
+        parseClasses
+      )
+    ) {
+      options.keys = keys;
+    }
+  } catch (e) {
+    console.log(e);
   }
   if (include) {
     options.include = include;
@@ -130,7 +178,7 @@ const findObjects = async (
     }
     if (options.limit !== 0) {
       if (order) {
-        options.order = order;
+        options.order = transformOrder(order);
       }
       if (skip) {
         options.skip = skip;
@@ -144,7 +192,8 @@ const findObjects = async (
           parseClasses.find(
             ({ className: parseClassName }) => className === parseClassName
           ).fields,
-          keys
+          keys,
+          parseClasses
         )
       ) {
         options.keys = keys;
