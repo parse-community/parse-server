@@ -33,5 +33,5 @@ else
   sudo -u postgres /usr/lib/postgresql/${POSTGRES_MAJOR_VERSION}/bin/pg_ctl -D /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main start
   # Remove previous versions of postgres
   #sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
-  sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
+  #sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
 fi
