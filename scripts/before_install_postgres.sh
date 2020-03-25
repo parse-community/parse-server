@@ -10,7 +10,7 @@ nvm install $NODE_VERSION
 nvm use $NODE_VERSION
 npm install -g greenkeeper-lockfile@1
 
-sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
+#sudo sed -i 's/port = 5433/port = 5432/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
 
 if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
   # Setup postgres 9 or 10
