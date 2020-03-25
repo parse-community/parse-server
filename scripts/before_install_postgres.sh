@@ -29,7 +29,7 @@ if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
 else 
 
   # Setup postgres 11 or higher
-  rm -rf /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main
+  sudo rm -rf /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main
   sudo -u postgres /usr/lib/postgresql/${POSTGRES_MAJOR_VERSION}/bin/initdb -D /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main -E SQL_ASCII --no-locale
   sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
   sudo -u postgres /usr/lib/postgresql/${POSTGRES_MAJOR_VERSION}/bin/pg_ctl -D /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main -l /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main/serverlog start
