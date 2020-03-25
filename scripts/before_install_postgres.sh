@@ -30,7 +30,7 @@ else
 
   # Setup postgres 11 or higher
   sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
-  sudo /usr/lib/postgresql/${POSTGRES_MAJOR_VERSION}/bin/pg_ctl -D /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main -l logfile start
+  /usr/lib/postgresql/${POSTGRES_MAJOR_VERSION}/bin/pg_ctl -D /var/lib/postgresql/${POSTGRES_MAJOR_VERSION}/main -l logfile start
   # Remove previous versions of postgres
   #sudo apt-get remove -q 'postgresql-9.*' 'postgresql-10.*'
   sudo service postgresql start ${POSTGRES_MAJOR_VERSION}
