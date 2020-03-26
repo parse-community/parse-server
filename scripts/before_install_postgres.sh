@@ -13,7 +13,7 @@ npm install -g greenkeeper-lockfile@1
 
 if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
   # Setup postgres 9 or 10
-  sudo sed -i 's/port = 5432/port = 5433/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
+  sudo sed -i 's/port = 5432/port = ${PARSE_PG_PORT}/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
 
   # Stop the current running service
   sudo service postgresql stop
@@ -29,6 +29,7 @@ if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
 
 else 
   # Setup postgres 11 or higher
+  sudo sed -i 's/port = 5433/port = ${PARSE_PG_PORT}/' /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/postgresql.conf
   sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
   sudo systemctl stop postgresql@${POSTGRES_MAJOR_VERSION}-main
   sudo systemctl start postgresql@${POSTGRES_MAJOR_VERSION}-main
