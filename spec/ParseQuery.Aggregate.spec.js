@@ -1428,4 +1428,38 @@ describe('Parse.Query Aggregate testing', () => {
         });
     }
   );
+
+  it('geoNear with location query', async () => {
+    // Create objects
+    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(10.5, -10.5), date: new Date(0) });
+    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(11.5, -10.5), date: new Date(1) });
+    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(12.5, -10.5), date: new Date(2) });
+    await Parse.Object.saveAll(obj1, obj2, obj3);
+    // Create query
+    const pipeline = [
+      {
+        geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [10.5, -10.5],
+          },
+          key: 'location',
+          spherical: true,
+          distanceField: 'dist',
+          includeLocs: 'loc',
+          query: {
+            date: {
+              $gte: new Date(1),
+            },
+          },
+        },
+      },
+    ];
+    const query = new Parse.Query(TestObject);
+    const results = await query.aggregate(pipeline);
+    // Check results
+    expect(results.length).toEqual(2);
+    expect(results[0].value).toEqual(2);
+    expect(results[1].value).toEqual(3);
+  });
 });
