@@ -23,9 +23,7 @@ if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
 else 
   # Setup postgres 11 or higher
 
-  #Copy defauilt hba config file and tell postgres to reload it
+  #Copy defauilt hba config file and tell postgres to restart
   sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
-  psql -v ON_ERROR_STOP=1 -p 5433 --username "postgres" --dbname "${POSTGRES_DB}" <<-EOSQL
-    SELECT pg_reload_conf();  
-EOSQL
+  sudo systemctl restart postgresql@${POSTGRES_MAJOR_VERSION}-main
 fi
