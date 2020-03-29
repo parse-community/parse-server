@@ -682,7 +682,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     fieldNames: string[],
     indexName: ?string,
-    caseInsensitive: boolean = false
+    caseInsensitive: boolean = false,
+    indexType: any = 1
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
@@ -690,7 +691,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       transformKey(className, fieldName, schema)
     );
     mongoFieldNames.forEach(fieldName => {
-      indexCreationRequest[fieldName] = 1;
+      indexCreationRequest[fieldName] = indexType;
     });
 
     const defaultOptions: Object = { background: true, sparse: true };
