@@ -884,10 +884,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           mongoObjectToParseObject(className, object, schema)
         )
       )
-      .catch((err) => {
-        console.log(err);
-        this.handleError(err);
-      });
+      .catch(err => this.handleError(err));
   }
 
   // This function will recursively traverse the pipeline and convert any Pointer or Date columns.
