@@ -1440,12 +1440,12 @@ describe('Parse.Query Aggregate testing', () => {
       ['location'],
       'geoIndex',
       false,
-      "2dsphere"
+      '2dsphere'
     );
     // Create objects
-    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1000) });
-    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(2000) });
-    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(3000) });
+    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1585353600000) });
+    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(1585440000000) });
+    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(1585526400000) });
     await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
@@ -1460,7 +1460,7 @@ describe('Parse.Query Aggregate testing', () => {
           distanceField: 'dist',
           query: {
             date: {
-              $gte: new Date(2000)
+              $gte: new Date(1585440000000)
             }
           }
         }
