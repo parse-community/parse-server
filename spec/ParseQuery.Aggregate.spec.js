@@ -1433,9 +1433,9 @@ describe('Parse.Query Aggregate testing', () => {
   it_only_db('mongo')('geoNear with location query', async () => {
     // Create geo index which is required for `geoNear` query
     const database = Config.get(Parse.applicationId).database;
-    const schema = await new Parse.Schema('TestObject').get();
+    const schema = await new Parse.Schema('GeoObject').save();
     await database.adapter.ensureIndex(
-      'TestObject',
+      'GeoObject',
       schema,
       ['location'],
       'geoIndex',
@@ -1443,9 +1443,10 @@ describe('Parse.Query Aggregate testing', () => {
       '2dsphere'
     );
     // Create objects
-    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1585353600000) });
-    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(1585440000000) });
-    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(1585526400000) });
+    const GeoObject = Parse.Object.extend('GeoObject');
+    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1585353600000) });
+    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(1585440000000) });
+    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(1585526400000) });
     await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
@@ -1460,13 +1461,13 @@ describe('Parse.Query Aggregate testing', () => {
           distanceField: 'dist',
           query: {
             date: {
-              $gte: new Date(1585440000000)
+              $gte: new Date(1585400000000)
             }
           }
         }
       }
     ];
-    const query = new Parse.Query(TestObject);
+    const query = new Parse.Query(GeoObject);
     const results = await query.aggregate(pipeline);
     // Check results
     expect(results.length).toEqual(2);
