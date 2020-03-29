@@ -1444,9 +1444,9 @@ describe('Parse.Query Aggregate testing', () => {
     );
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');
-    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1585353600000) });
-    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(1585440000000) });
-    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(1585526400000) });
+    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1) });
+    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(2, 1), date: new Date(2) });
+    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(3, 1), date: new Date(3) });
     await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
@@ -1461,7 +1461,7 @@ describe('Parse.Query Aggregate testing', () => {
           distanceField: 'dist',
           query: {
             date: {
-              $gte: new Date(1585400000000)
+              $gte: new Date(2)
             }
           }
         }
