@@ -1,6 +1,7 @@
 'use strict';
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -1429,31 +1430,41 @@ describe('Parse.Query Aggregate testing', () => {
     }
   );
 
-  it('geoNear with location query', async () => {
+  it_only_db('mongo')('geoNear with location query', async () => {
+    // Create geo index which is required for `geoNear` query
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('TestObject').get();
+    await database.adapter.ensureIndex(
+      'TestObject',
+      schema,
+      ['location'],
+      'geoIndex',
+      false,
+      "2dsphere"
+    );
     // Create objects
-    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(10.5, -10.5), date: new Date(0) });
-    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(11.5, -10.5), date: new Date(1) });
-    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(12.5, -10.5), date: new Date(2) });
-    await Parse.Object.saveAll(obj1, obj2, obj3);
+    const obj1 = new TestObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1000) });
+    const obj2 = new TestObject({ value: 2, location: new Parse.GeoPoint(1, 1), date: new Date(2000) });
+    const obj3 = new TestObject({ value: 3, location: new Parse.GeoPoint(1, 1), date: new Date(3000) });
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
       {
         geoNear: {
           near: {
             type: 'Point',
-            coordinates: [10.5, -10.5],
+            coordinates: [1, 1]
           },
           key: 'location',
           spherical: true,
           distanceField: 'dist',
-          includeLocs: 'loc',
           query: {
             date: {
-              $gte: new Date(1),
-            },
-          },
-        },
-      },
+              $gte: new Date(2000)
+            }
+          }
+        }
+      }
     ];
     const query = new Parse.Query(TestObject);
     const results = await query.aggregate(pipeline);
