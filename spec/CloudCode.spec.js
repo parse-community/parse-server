@@ -2812,7 +2812,7 @@ describe('beforeLogin hook', () => {
     try {
       await file.destroy({ useMasterKey: true });
     } catch (error) {
-      expect(error.message).toBe('Could not delete file.');
+      expect(error.message).toBe('some error message');
       done();
     }
   })
