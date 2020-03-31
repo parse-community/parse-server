@@ -228,7 +228,7 @@ export class FilesRouter {
       res.end();
     } catch (e) {
       logger.error('Error deleting a file: ', e);
-      const errorMessage = errorMessageFromError(e) || `Could not store file.`;
+      const errorMessage = errorMessageFromError(e) || `Could not delete file.`;
       next(
         new Parse.Error(
           Parse.Error.FILE_DELETE_ERROR,
