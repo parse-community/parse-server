@@ -45,7 +45,7 @@
     "mime": "2.4.4",
     "mongodb": "3.5.4",
     "node-rsa": "1.0.7",
-    "parse": "2.11.0",
+    "parse": "2.12.0",
     "pg-promise": "10.4.4",
     "pluralize": "^8.0.0",
     "redis": "3.0.0",
