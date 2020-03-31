@@ -31,6 +31,15 @@ const addFileDataIfNeeded = async (file) => {
   return file;
 };
 
+const errorMessageFromError = (e) => {
+  if (typeof e === 'string') {
+    return e;
+  } else if (e && e.message) {
+    return e.message;
+  }
+  return undefined;
+}
+
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
@@ -181,10 +190,11 @@ export class FilesRouter {
 
     } catch (e) {
       logger.error('Error creating a file: ', e);
+      const errorMessage = errorMessageFromError(e) || `Could not store file: ${fileObject.file._name}.`;
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          e.message ? e.message : `Could not store file: ${fileObject.file._name}.`
+          errorMessage
         )
       );
     }
@@ -217,12 +227,12 @@ export class FilesRouter {
       // TODO: return useful JSON here?
       res.end();
     } catch (e) {
-      // TODO: Should the error message from a throw in beforeDeleteFile hook be used here (instead of 'Could not delete file')?
       logger.error('Error deleting a file: ', e);
+      const errorMessage = errorMessageFromError(e) || `Could not store file.`;
       next(
         new Parse.Error(
           Parse.Error.FILE_DELETE_ERROR,
-          'Could not delete file.'
+          errorMessage
         )
       );
     }
