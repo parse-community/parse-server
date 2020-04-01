@@ -169,6 +169,126 @@ var getAuthForLegacySessionToken = function({
   });
 };
 
+Auth.prototype.getUserRoles = function () {
+  if (this.isMaster || !this.user) {
+    return Promise.resolve([]);
+  }
+  if (this.fetchedRoles) {
+    return Promise.resolve(this.userRoles);
+  }
+  if (this.rolePromise) {
+    return this.rolePromise;
+  }
+  this.rolePromise = this._loadUserRolesForAccess();
+  return this.rolePromise;
+};
+
+Auth.prototype._loadUserRolesForAccess = async function () {
+  if (this.cacheController) {
+    const cachedRoles = await this.cacheController.role.get(this.user.id);
+    if (cachedRoles != null) {
+      this.fetchedRoles = true;
+      this.userRoles = cachedRoles;
+      return cachedRoles;
+    }
+  }
+
+  const { results } = await new RestQuery(
+    this.config,
+    master(this.config),
+    '_Join:users:_Role',
+    {},
+    {
+      pipeline: this._generateRoleGraphPipeline(),
+    }
+  ).execute();
+
+  const { directRoles, childRoles } = results[0];
+  const roles = [...directRoles, ...childRoles];
+  this.userRoles = roles.map((role) => `role:${role.name}`);
+  this.fetchedRoles = true;
+  this.rolePromise = null;
+  this.cacheRoles();
+  return this.userRoles;
+};
+
+Auth.prototype._generateRoleGraphPipeline = function () {
+  return [
+    {
+      $match: {
+        relatedId: this.user.id,
+      },
+    },
+    {
+      $graphLookup: {
+        from: '_Join:roles:_Role',
+        startWith: '$owningId',
+        connectFromField: 'owningId',
+        connectToField: 'relatedId',
+        as: 'childRolePath',
+      },
+    },
+    {
+      $facet: {
+        directRoles: [
+          {
+            $lookup: {
+              from: '_Role',
+              localField: 'owningId',
+              foreignField: '_id',
+              as: 'Roles',
+            },
+          },
+          {
+            $unwind: {
+              path: '$Roles',
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $ifNull: ['$Roles', { $literal: {} }],
+              },
+            },
+          },
+          {
+            $project: {
+              name: 1,
+            },
+          },
+        ],
+        childRoles: [
+          {
+            $lookup: {
+              from: '_Role',
+              localField: 'childRolePath.owningId',
+              foreignField: '_id',
+              as: 'Roles',
+            },
+          },
+          {
+            $unwind: {
+              path: '$Roles',
+            },
+          },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $ifNull: ['$Roles', { $literal: {} }],
+              },
+            },
+          },
+          {
+            $project: {
+              name: 1,
+            },
+          },
+        ],
+      },
+    },
+  ];
+};
+
 // Returns a promise that resolves to an array of role names
 Auth.prototype.getUserRoles = function() {
   if (this.isMaster || !this.user) {
