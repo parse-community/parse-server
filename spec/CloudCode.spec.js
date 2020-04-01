@@ -2724,6 +2724,21 @@ describe('beforeLogin hook', () => {
     expect(createFileSpy).toHaveBeenCalledWith(jasmine.any(String), jasmine.any(Buffer), 'text/plain', options);
   });
 
+  it('beforeSaveFile should return same file data with new file name', async () => {
+    await reconfigureServer({ filesAdapter: mockAdapter });
+    const config = Config.get('test');
+    config.filesController.options.preserveFileName = true;
+    Parse.Cloud.beforeSaveFile(async ({ file }) => {
+      expect(file.name()).toBe('popeye.txt');
+      const fileData = await file.getData();
+      const newFile = new Parse.File('2020-04-01.txt', { base64: fileData });
+      return newFile;
+    });
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    const result = await file.save({ useMasterKey: true });
+    expect(result.name()).toBe('2020-04-01.txt');
+  });
+
   it('afterSaveFile should set fileSize to null if beforeSave returns an already saved file', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();
