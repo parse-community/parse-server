@@ -33,6 +33,7 @@ export class FilesAdapter {
    * @param {object} options - (Optional) options to be passed to file adapter (S3 File Adapter Only)
    * - tags: object containing key value pairs that will be stored with file
    * - metadata: object containing key value pairs that will be sotred with file (https://docs.aws.amazon.com/AmazonS3/latest/user-guide/add-object-metadata.html)
+   * Note: options are not supported by all file adapters. Check the your adapter's documentation for compatibility
    * @discussion the contentType can be undefined if the controller was not able to determine it (https://docs.aws.amazon.com/AmazonS3/latest/user-guide/add-object-metadata.html)
    *
    * @return {Promise} a promise that should fail if the storage didn't succeed

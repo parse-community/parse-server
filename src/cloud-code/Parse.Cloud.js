@@ -362,7 +362,7 @@ ParseCloud.afterFind = function(parseClass, handler) {
 };
 
 /**
- * Registers an before save file function.
+ * Registers a before save file function.
  *
  * **Available in Cloud Code only.**
  *
@@ -408,7 +408,7 @@ ParseCloud.afterSaveFile = function(handler) {
 };
 
 /**
- * Registers an before delete file function.
+ * Registers a before delete file function.
  *
  * **Available in Cloud Code only.**
  *
