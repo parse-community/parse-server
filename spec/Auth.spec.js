@@ -1,7 +1,81 @@
 describe('Auth', () => {
   const { Auth, getAuthForSessionToken } = require('../lib/Auth.js');
   const Config = require('../lib/Config');
+
   describe('getUserRoles', () => {
+    let auth;
+    let config;
+    let currentRoles = null;
+    let currentUserId;
+
+    const createRoleForUser = async (name, userId) => {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
+      const role = new Parse.Role(name, acl);
+      const users = role.relation('users');
+      users.add(Parse.User.createWithoutData(userId));
+      return role.save(null, { useMasterKey: true });
+    };
+
+    const createChildRole = async (name, parentRoleId) => {
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
+      const role = new Parse.Role(name, acl);
+      const roles = role.relation('roles');
+      roles.add(Parse.Role.createWithoutData(parentRoleId));
+      return role.save(null, { useMasterKey: true });
+    };
+
+    beforeEach(() => {
+      currentUserId = 'userId';
+      currentRoles = ['role:userId'];
+
+      config = {
+        cacheController: {
+          role: {
+            get: () => Promise.resolve(currentRoles),
+            set: jasmine.createSpy('set'),
+            put: jasmine.createSpy('put'),
+          },
+        },
+      };
+      spyOn(config.cacheController.role, 'get').and.callThrough();
+
+      auth = new Auth({
+        config: config,
+        isMaster: false,
+        user: {
+          id: currentUserId,
+        },
+        installationId: 'installationId',
+      });
+    });
+
+    it('should work [in progress]', async (done) => {
+      const user = await createTestUser();
+      currentUserId = user.id;
+      currentRoles = null;
+      auth = new Auth({
+        config: Config.get('test'),
+        isMaster: false,
+        user: {
+          id: currentUserId,
+        },
+        installationId: 'installationId',
+      });
+
+      const ownerRole = await createRoleForUser('owner', user.id);
+      await createChildRole('manager', ownerRole.id);
+
+      const roles = await auth.getUserRoles();
+      expect(roles).toBeTruthy();
+      done();
+    });
+  });
+
+  xdescribe('getUserRoles [legacy to be removed]', () => {
     let auth;
     let config;
     let currentRoles = null;
@@ -30,8 +104,8 @@ describe('Auth', () => {
       });
     });
 
-    it('should get user roles from the cache', done => {
-      auth.getUserRoles().then(roles => {
+    it('should get user roles from the cache', (done) => {
+      auth.getUserRoles().then((roles) => {
         const firstSet = config.cacheController.role.set.calls.first();
         expect(firstSet).toEqual(undefined);
 
@@ -42,17 +116,17 @@ describe('Auth', () => {
       });
     });
 
-    it('should only query the roles once', done => {
+    it('should only query the roles once', (done) => {
       const loadRolesSpy = spyOn(auth, '_loadRoles').and.callThrough();
       auth
         .getUserRoles()
-        .then(roles => {
+        .then((roles) => {
           expect(roles).toEqual(currentRoles);
           return auth.getUserRoles();
         })
         .then(() => auth.getUserRoles())
         .then(() => auth.getUserRoles())
-        .then(roles => {
+        .then((roles) => {
           // Should only call the cache adapter once.
           expect(config.cacheController.role.get.calls.count()).toEqual(1);
           expect(loadRolesSpy.calls.count()).toEqual(1);
@@ -64,27 +138,27 @@ describe('Auth', () => {
         });
     });
 
-    it('should not have any roles with no user', done => {
+    it('should not have any roles with no user', (done) => {
       auth.user = null;
       auth
         .getUserRoles()
-        .then(roles => expect(roles).toEqual([]))
+        .then((roles) => expect(roles).toEqual([]))
         .then(() => done());
     });
 
-    it('should not have any user roles with master', done => {
+    it('should not have any user roles with master', (done) => {
       auth.isMaster = true;
       auth
         .getUserRoles()
-        .then(roles => expect(roles).toEqual([]))
+        .then((roles) => expect(roles).toEqual([]))
         .then(() => done());
     });
 
-    it('should properly handle bcrypt upgrade', done => {
+    it('should properly handle bcrypt upgrade', (done) => {
       const bcryptOriginal = require('bcrypt-nodejs');
       const bcryptNew = require('bcryptjs');
-      bcryptOriginal.hash('my1Long:password', null, null, function(err, res) {
-        bcryptNew.compare('my1Long:password', res, function(err, res) {
+      bcryptOriginal.hash('my1Long:password', null, null, function (err, res) {
+        bcryptNew.compare('my1Long:password', res, function (err, res) {
           expect(res).toBeTruthy();
           done();
         });
