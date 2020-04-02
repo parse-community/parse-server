@@ -203,7 +203,11 @@ Auth.prototype._loadUserRolesForAccess = async function () {
     }
   ).execute();
 
-  const { directRoles, childRoles } = results[0];
+  const { directRoles, childRoles } = results[0] || {
+    directRoles: [],
+    childRoles: [],
+  };
+
   const roles = [...directRoles, ...childRoles];
   this.userRoles = roles.map((role) => `role:${role.name}`);
   this.fetchedRoles = true;
