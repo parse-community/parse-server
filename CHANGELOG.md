@@ -1,7 +1,30 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...master)
+
+### 4.2.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
+- UPGRADE: Parse JS SDK to 2.12.0.  See [#6548](https://github.com/parse-community/parse-server/pull/6548)
+- DOC: Add warning in changelog regarding the upgrade to 4.0 and index creation. See [#6469](https://github.com/parse-community/parse-server/pull/6469). Thanks to [Tom Fox](https://github.com/TomWFox).
+- NEW: Support Group aggregation on multiple columns for Postgres [#6483](https://github.com/parse-community/parse-server/pull/6483).  Thanks to [Siddharth Ramesh](https://github.com/srameshr).
+- FIX: Improve test reliability by instructing Travis to only install one version of Postgres. See [#6490](https://github.com/parse-community/parse-server/pull/6490).  Thanks to
+[Corey Baker](https://github.com/cbaker6).
+- FIX: Unknown type bug on overloaded types.  See [#6494](https://github.com/parse-community/parse-server/pull/6494). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Improve reliability of 'SignIn with AppleID'. See [#6416](https://github.com/parse-community/parse-server/pull/6416).  Thanks to [Andy King](https://github.com/andrewking0207).
+- FIX: Improve Travis reliability by separating Postgres & Mongo scripts. See [https://github.com/parse-community/parse-server/pull/6505](#6505). Thanks to
+[Corey Baker](https://github.com/cbaker6).
+- NEW: Apple SignIn support for multiple IDs.  See [#6523](https://github.com/parse-community/parse-server/pull/6523).  Thanks to [UnderratedDev](https://github.com/UnderratedDev).
+- NEW: Add support for new Instagram API.  See [#6398](https://github.com/parse-community/parse-server/pull/6398).  Thanks to [Maravilho Singa](https://github.com/maravilhosinga).
+- FIX: Updating Postgres/Postgis Call and Postgis to 3.0. [#6528]().  Thanks to
+[Corey Baker](https://github.com/cbaker6).
+- FIX: enableExpressErrorHandler logic. See [#6423](https://github.com/parse-community/parse-server/pull/6423).  Thanks to [Nikolay Andryukhin](https://github.com/hybeats).
+- FIX: Change Order Enum Strategy for GraphQL.  See [#6515](https://github.com/parse-community/parse-server/pull/6515). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Switch ACL to Relay Global Id for GraphQL. See [#6495](https://github.com/parse-community/parse-server/pull/6495). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Handle keys for pointer fields properly for GraphQL.  See [#6499](https://github.com/parse-community/parse-server/pull/6499). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: GraphQL file mutation. See [#6507](https://github.com/parse-community/parse-server/pull/6507). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Aggregate geoNear with date query. See [#6540](https://github.com/parse-community/parse-server/pull/6540). Thanks to [Manuel](https://github.com/mtrezza).
+
 
 ### 4.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...4.1.0)
@@ -17,11 +40,11 @@ __BREAKING CHANGES:__
 2. Change username and email validation to be case insensitive. This change should be transparent in most use cases. The validation behavior should now behave 'as expected'. See [#5634](https://github.com/parse-community/parse-server/pull/5634) for details.
 
 > __Special Note on Upgrading to Parse Server 4.0.0 and above__
-> 
+>
 > In addition to the breaking changes noted above, [#5634](https://github.com/parse-community/parse-server/pull/5634) introduces a two new case insensitive indexes on the `User` collection. Special care should be taken when upgrading to this version to ensure that:
-> 
+>
 > 1. The new indexes can be successfully created (see issue [#6465](https://github.com/parse-community/parse-server/issues/6465) for details on a potential issue for your installation).
-> 
+>
 > 2. Care is taken ensure that there is adequate compute capacity to create the index in the background while still servicing requests.
 
 - FIX: attempt to get travis to deploy to npmjs again. See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
@@ -35,11 +58,11 @@ __BREAKING CHANGES:__
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 
 > __Special Note on Upgrading to Parse Server 4.0.0 and above__
-> 
+>
 > In addition to the breaking changes noted below, [#5634](https://github.com/parse-community/parse-server/pull/5634) introduces a two new case insensitive indexes on the `User` collection. Special care should be taken when upgrading to this version to ensure that:
-> 
+>
 > 1. The new indexes can be successfully created (see issue [#6465](https://github.com/parse-community/parse-server/issues/6465) for details on a potential issue for your installation).
-> 
+>
 > 2. Care is taken ensure that there is adequate compute capacity to create the index in the background while still servicing requests.
 
 - NEW: add hint option to Parse.Query [#6322](https://github.com/parse-community/parse-server/pull/6322). Thanks to [Steve Stencil](https://github.com/stevestencil)
