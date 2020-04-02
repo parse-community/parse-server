@@ -6,24 +6,24 @@
 ### 4.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
 - UPGRADE: Parse JS SDK to 2.12.0 [#6548](https://github.com/parse-community/parse-server/pull/6548)
-- NEW: Support Group aggregation on multiple columns for Postgres [#6483](https://github.com/parse-community/parse-server/pull/6483).  Thanks to [Siddharth Ramesh](https://github.com/srameshr).
-- FIX: Improve test reliability by instructing Travis to only install one version of Postgres [#6490](https://github.com/parse-community/parse-server/pull/6490).  Thanks to
+- NEW: Support Group aggregation on multiple columns for Postgres [#6483](https://github.com/parse-community/parse-server/pull/6483). Thanks to [Siddharth Ramesh](https://github.com/srameshr).
+- FIX: Improve test reliability by instructing Travis to only install one version of Postgres [#6490](https://github.com/parse-community/parse-server/pull/6490). Thanks to
 [Corey Baker](https://github.com/cbaker6).
 - FIX: Unknown type bug on overloaded types [#6494](https://github.com/parse-community/parse-server/pull/6494). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
-- FIX: Improve reliability of 'SignIn with AppleID' [#6416](https://github.com/parse-community/parse-server/pull/6416).  Thanks to [Andy King](https://github.com/andrewking0207).
+- FIX: Improve reliability of 'SignIn with AppleID' [#6416](https://github.com/parse-community/parse-server/pull/6416). Thanks to [Andy King](https://github.com/andrewking0207).
 - FIX: Improve Travis reliability by separating Postgres & Mongo scripts [#6505](https://github.com/parse-community/parse-server/pull/6505). Thanks to
 [Corey Baker](https://github.com/cbaker6).
-- NEW: Apple SignIn support for multiple IDs [#6523](https://github.com/parse-community/parse-server/pull/6523).  Thanks to [UnderratedDev](https://github.com/UnderratedDev).
-- NEW: Add support for new Instagram API [#6398](https://github.com/parse-community/parse-server/pull/6398).  Thanks to [Maravilho Singa](https://github.com/maravilhosinga).
-- FIX: Updating Postgres/Postgis Call and Postgis to 3.0 [#6528](https://github.com/parse-community/parse-server/pull/6528).  Thanks to
+- NEW: Apple SignIn support for multiple IDs [#6523](https://github.com/parse-community/parse-server/pull/6523). Thanks to [UnderratedDev](https://github.com/UnderratedDev).
+- NEW: Add support for new Instagram API [#6398](https://github.com/parse-community/parse-server/pull/6398). Thanks to [Maravilho Singa](https://github.com/maravilhosinga).
+- FIX: Updating Postgres/Postgis Call and Postgis to 3.0 [#6528](https://github.com/parse-community/parse-server/pull/6528). Thanks to
 [Corey Baker](https://github.com/cbaker6).
-- FIX: enableExpressErrorHandler logic [#6423](https://github.com/parse-community/parse-server/pull/6423).  Thanks to [Nikolay Andryukhin](https://github.com/hybeats).
+- FIX: enableExpressErrorHandler logic [#6423](https://github.com/parse-community/parse-server/pull/6423). Thanks to [Nikolay Andryukhin](https://github.com/hybeats).
 - FIX: Change Order Enum Strategy for GraphQL [#6515](https://github.com/parse-community/parse-server/pull/6515). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Switch ACL to Relay Global Id for GraphQL [#6495](https://github.com/parse-community/parse-server/pull/6495). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Handle keys for pointer fields properly for GraphQL [#6499](https://github.com/parse-community/parse-server/pull/6499). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: GraphQL file mutation [#6507](https://github.com/parse-community/parse-server/pull/6507). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Aggregate geoNear with date query [#6540](https://github.com/parse-community/parse-server/pull/6540). Thanks to [Manuel](https://github.com/mtrezza).
-- NEW: Add file triggers and file meta data. See [#6344](https://github.com/parse-community/parse-server/pull/6344).  Thanks to (stevestencil)[https://github.com/stevestencil].
+- NEW: Add file triggers and file meta data [#6344](https://github.com/parse-community/parse-server/pull/6344). Thanks to [stevestencil](https://github.com/stevestencil).
 
 ### 4.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...4.1.0)
