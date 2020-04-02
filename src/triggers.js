@@ -12,7 +12,13 @@ export const Types = {
   afterDelete: 'afterDelete',
   beforeFind: 'beforeFind',
   afterFind: 'afterFind',
+  beforeSaveFile: 'beforeSaveFile',
+  afterSaveFile: 'afterSaveFile',
+  beforeDeleteFile: 'beforeDeleteFile',
+  afterDeleteFile: 'afterDeleteFile',
 };
+
+const FileClassName = '@File';
 
 const baseStore = function() {
   const Validators = {};
@@ -122,6 +128,10 @@ export function addTrigger(type, className, handler, applicationId) {
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
 }
 
+export function addFileTrigger(type, handler, applicationId) {
+  add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
+}
+
 export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
@@ -145,6 +155,10 @@ export function getTrigger(className, triggerType, applicationId) {
     throw 'Missing ApplicationID';
   }
   return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
+}
+
+export function getFileTrigger(type, applicationId) {
+  return getTrigger(FileClassName, type, applicationId);
 }
 
 export function triggerExists(
@@ -671,4 +685,62 @@ export function runLiveQueryEventHandlers(
     return;
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
+}
+
+export function getRequestFileObject(triggerType, auth, fileObject, config) {
+  const request = {
+    ...fileObject,
+    triggerName: triggerType,
+    master: false,
+    log: config.loggerController,
+    headers: config.headers,
+    ip: config.ip,
+  };
+
+  if (!auth) {
+    return request;
+  }
+  if (auth.isMaster) {
+    request['master'] = true;
+  }
+  if (auth.user) {
+    request['user'] = auth.user;
+  }
+  if (auth.installationId) {
+    request['installationId'] = auth.installationId;
+  }
+  return request;
+}
+
+export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
+  const fileTrigger = getFileTrigger(triggerType, config.applicationId);
+  if (typeof fileTrigger === 'function') {
+    try {
+      const request = getRequestFileObject(
+        triggerType,
+        auth,
+        fileObject,
+        config
+      );
+      const result = await fileTrigger(request);
+      logTriggerSuccessBeforeHook(
+        triggerType,
+        'Parse.File',
+        { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
+        result,
+        auth,
+      )
+      return result || fileObject;
+    } catch (error) {
+      logTriggerErrorBeforeHook(
+        triggerType,
+        'Parse.File',
+        { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
+        auth,
+        error,
+      );
+      throw error;
+    }
+  }
+  return fileObject;
 }
