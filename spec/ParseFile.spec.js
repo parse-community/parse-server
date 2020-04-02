@@ -626,7 +626,11 @@ describe('Parse.File testing', () => {
     }).then(fail, response => {
       expect(response.status).toBe(400);
       const body = response.text;
-      expect(body).toEqual('{"code":153,"error":"Could not delete file."}');
+      expect(typeof body).toBe('string');
+      const { code, error } = JSON.parse(body);
+      expect(code).toBe(153);
+      expect(typeof error).toBe('string');
+      expect(error.length).toBeGreaterThan(0);
       done();
     });
   });
