@@ -24,6 +24,7 @@
 - FIX: Handle keys for pointer fields properly for GraphQL.  See [#6499](https://github.com/parse-community/parse-server/pull/6499). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: GraphQL file mutation. See [#6507](https://github.com/parse-community/parse-server/pull/6507). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Aggregate geoNear with date query. See [#6540](https://github.com/parse-community/parse-server/pull/6540). Thanks to [Manuel](https://github.com/mtrezza).
+- NEW: Add file triggers and file meta data. See [#6344](https://github.com/parse-community/parse-server/pull/6344).  Thanks to (stevestencil)[https://github.com/stevestencil].
 
 
 ### 4.1.0
