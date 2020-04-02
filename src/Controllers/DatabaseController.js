@@ -1418,7 +1418,7 @@ class DatabaseController {
                     );
                   }
                 } else if (pipeline) {
-                  if (!classExists) {
+                  if (!classExists || className === '_Join:users:_Role') {
                     return [];
                   } else {
                     return this.adapter.aggregate(
