@@ -1,25 +1,14 @@
 'use strict';
 
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
-const mongoURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
-  .default;
-const postgresURI =
-  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const Config = require('../lib/Config');
 const Parse = require('parse/node');
 const request = require('../lib/request');
 let databaseAdapter;
 
 const fullTextHelper = () => {
-  if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-    if (!databaseAdapter) {
-      databaseAdapter = new PostgresStorageAdapter({ uri: postgresURI });
-    }
-  } else {
-    databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
-  }
+  const config = Config.get('test');
+  databaseAdapter = config.database.adapter;
+
   const subjects = [
     'coffee',
     'Coffee Shopping',

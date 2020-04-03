@@ -114,6 +114,7 @@ export function handleParseHeaders(req, res, next) {
   }
 
   if (fileViaJSON) {
+    req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
     req.body = Buffer.from(base64, 'base64');
@@ -325,6 +326,9 @@ export function allowMethodOverride(req, res, next) {
 export function handleParseErrors(err, req, res, next) {
   const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
+    if (req.config && req.config.enableExpressErrorHandler) {
+      return next(err);
+    }
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -337,13 +341,9 @@ export function handleParseErrors(err, req, res, next) {
       default:
         httpStatus = 400;
     }
-
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
-    if (req.config && req.config.enableExpressErrorHandler) {
-      next(err);
-    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });

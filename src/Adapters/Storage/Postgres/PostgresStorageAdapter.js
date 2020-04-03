@@ -621,11 +621,11 @@ const buildWhereClause = ({
       const distance = fieldValue.$maxDistance;
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
-        `ST_distance_sphere($${index}:name::geometry, POINT($${index +
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index +
           1}, $${index + 2})::geometry) <= $${index + 3}`
       );
       sorts.push(
-        `ST_distance_sphere($${index}:name::geometry, POINT($${index +
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index +
           1}, $${index + 2})::geometry) ASC`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
@@ -673,7 +673,7 @@ const buildWhereClause = ({
       }
       const distanceInKM = distance * 6371 * 1000;
       patterns.push(
-        `ST_distance_sphere($${index}:name::geometry, POINT($${index +
+        `ST_DistanceSphere($${index}:name::geometry, POINT($${index +
           1}, $${index + 2})::geometry) <= $${index + 3}`
       );
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
@@ -850,6 +850,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._client = client;
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
+  }
+
+  //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
+  createExplainableQuery (query: string, analyze:boolean = false) {
+    if (analyze){
+      return 'EXPLAIN (ANALYZE, FORMAT JSON) ' + query;
+    }else{
+      return 'EXPLAIN (FORMAT JSON) ' + query;
+    }
   }
 
   handleShutdown() {
@@ -1835,7 +1844,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     className: string,
     schema: SchemaType,
     query: QueryType,
-    { skip, limit, sort, keys, caseInsensitive }: QueryOptions
+    { skip, limit, sort, keys, caseInsensitive, explain }: QueryOptions
   ) {
     debug('find', className, query, {
       skip,
@@ -1843,6 +1852,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       sort,
       keys,
       caseInsensitive,
+      explain,
     });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
@@ -1912,7 +1922,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
       values = values.concat(keys);
     }
 
-    const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
+    const originalQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
       .any(qs, values)
@@ -1923,10 +1934,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         return [];
       })
-      .then(results =>
-        results.map(object =>
+      .then(results => {
+        if (explain){
+          return results;
+        }
+        return results.map(object =>
           this.postgresObjectToParseObject(className, object, schema)
-        )
+        );}
       );
   }
 
@@ -2184,8 +2198,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
       );
   }
 
-  async aggregate(className: string, schema: any, pipeline: any) {
-    debug('aggregate', className, pipeline);
+  async aggregate(
+    className: string,
+    schema: any,
+    pipeline: any,
+    readPreference: ?string,
+    hint: ?mixed,
+    explain?: boolean) {
+    debug('aggregate', className, pipeline, readPreference, hint, explain);
     const values = [className];
     let index: number = 2;
     let columns: string[] = [];
@@ -2369,14 +2389,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
           sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
-
-    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const originalQuery = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
-      .map(qs, values, a =>
-        this.postgresObjectToParseObject(className, a, schema)
-      )
-      .then(results => {
+      .any(qs, values)
+      .then(a => {
+        if (explain){
+          return a;
+        }
+        const results =  a.map(object =>
+          this.postgresObjectToParseObject(className, object, schema)
+        );
         results.forEach(result => {
           if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
             result.objectId = null;
@@ -2523,9 +2547,41 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return result;
   }
 
-  // TODO: implement?
-  ensureIndex(): Promise<void> {
-    return Promise.resolve();
+  async ensureIndex(
+    className: string,
+    schema: SchemaType,
+    fieldNames: string[],
+    indexName: ?string,
+    caseInsensitive: boolean = false,
+    conn: ?any = null
+  ): Promise<any> {
+
+    conn = conn != null ? conn : this._client;
+    const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
+    const indexNameOptions: Object = indexName != null ? { name: indexName } : { name: defaultIndexName };
+    const constraintPatterns =  caseInsensitive ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`) :
+      fieldNames.map((fieldName, index) => `$${index + 3}:name`);
+    const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames])
+      .catch(error => {
+        if (
+          error.code === PostgresDuplicateRelationError &&
+          error.message.includes(indexNameOptions.name)
+        ) {
+          // Index already exists. Ignore error.
+        } else if (
+          error.code === PostgresUniqueIndexViolationError &&
+          error.message.includes(indexNameOptions.name)
+        ) {
+          // Cast the error into the proper parse error
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided'
+          );
+        } else {
+          throw error;
+        }
+      });
   }
 }
 
