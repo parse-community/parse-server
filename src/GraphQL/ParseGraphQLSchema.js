@@ -242,6 +242,16 @@ class ParseGraphQLSchema {
                 ...autoGraphQLSchemaType._fields,
                 ...customGraphQLSchemaType._fields,
               };
+              if (
+                customGraphQLSchemaType.name !== 'Query' &&
+                customGraphQLSchemaType.name !== 'Mutation' &&
+                customGraphQLSchemaType.name !== 'Subscription'
+              ) {
+                customGraphQLSchemaType._fields = {
+                  ...autoGraphQLSchemaType._fields,
+                  ...customGraphQLSchemaType._fields,
+                };
+              }
             }
           }
         );
