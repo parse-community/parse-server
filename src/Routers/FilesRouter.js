@@ -5,6 +5,40 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
+const triggers = require('../triggers');
+const http = require('http');
+
+const downloadFileFromURI = (uri) => {
+  return new Promise((res, rej) => {
+    http.get(uri, (response) => {
+      response.setDefaultEncoding('base64');
+      let body = `data:${response.headers['content-type']};base64,`;
+      response.on('data', data => body += data);
+      response.on('end', () => res(body));
+    }).on('error', (e) => {
+      rej(`Error downloading file from ${uri}: ${e.message}`);
+    });
+  });
+};
+
+const addFileDataIfNeeded = async (file) => {
+  if (file._source.format === 'uri') {
+    const base64 = await downloadFileFromURI(file._source.uri);
+    file._previousSave = file;
+    file._data = base64;
+    file._requestTask = null;
+  }
+  return file;
+};
+
+const errorMessageFromError = (e) => {
+  if (typeof e === 'string') {
+    return e;
+  } else if (e && e.message) {
+    return e.message;
+  }
+  return undefined;
+}
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -68,10 +102,10 @@ export class FilesRouter {
     }
   }
 
-  createHandler(req, res, next) {
+  async createHandler(req, res, next) {
     const config = req.config;
     const filesController = config.filesController;
-    const filename = req.params.filename;
+    const { filename } = req.params;
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
@@ -87,41 +121,121 @@ export class FilesRouter {
       return;
     }
 
-    filesController
-      .createFile(config, filename, req.body, contentType)
-      .then(result => {
-        res.status(201);
-        res.set('Location', result.url);
-        res.json(result);
-      })
-      .catch(e => {
-        logger.error('Error creating a file: ', e);
-        next(
-          new Parse.Error(
-            Parse.Error.FILE_SAVE_ERROR,
-            `Could not store file: ${filename}.`
-          )
+    const base64 = req.body.toString('base64');
+    const file = new Parse.File(filename, { base64 }, contentType);
+    const { metadata = {}, tags = {} } = req.fileData || {};
+    file.setTags(tags);
+    file.setMetadata(metadata);
+    const fileSize = Buffer.byteLength(req.body);
+    const fileObject = { file, fileSize };
+    try {
+      // run beforeSaveFile trigger
+      const triggerResult = await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeSaveFile,
+        fileObject,
+        config,
+        req.auth
+      )
+      let saveResult;
+      // if a new ParseFile is returned check if it's an already saved file
+      if (triggerResult instanceof Parse.File) {
+        fileObject.file = triggerResult;
+        if (triggerResult.url()) {
+          // set fileSize to null because we wont know how big it is here
+          fileObject.fileSize = null;
+          saveResult = {
+            url: triggerResult.url(),
+            name: triggerResult._name,
+          };
+        }
+      }
+      // if the file returned by the trigger has already been saved skip saving anything
+      if (!saveResult) {
+        // if the ParseFile returned is type uri, download the file before saving it
+        await addFileDataIfNeeded(fileObject.file);
+        // update fileSize
+        const bufferData = Buffer.from(fileObject.file._data, 'base64');
+        fileObject.fileSize = Buffer.byteLength(bufferData);
+        // save file
+        const createFileResult = await filesController.createFile(
+          config,
+          fileObject.file._name,
+          bufferData,
+          fileObject.file._source.type,
+          {
+            tags: fileObject.file._tags,
+            metadata: fileObject.file._metadata,
+          }
         );
-      });
+        // update file with new data
+        fileObject.file._name = createFileResult.name;
+        fileObject.file._url = createFileResult.url;
+        fileObject.file._requestTask = null;
+        fileObject.file._previousSave = Promise.resolve(fileObject.file);
+        saveResult = {
+          url: createFileResult.url,
+          name: createFileResult.name,
+        };
+      }
+      // run afterSaveFile trigger
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterSaveFile,
+        fileObject,
+        config,
+        req.auth
+      );
+      res.status(201);
+      res.set('Location', saveResult.url);
+      res.json(saveResult);
+
+    } catch (e) {
+      logger.error('Error creating a file: ', e);
+      const errorMessage = errorMessageFromError(e) || `Could not store file: ${fileObject.file._name}.`;
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          errorMessage
+        )
+      );
+    }
   }
 
-  deleteHandler(req, res, next) {
-    const filesController = req.config.filesController;
-    filesController
-      .deleteFile(req.config, req.params.filename)
-      .then(() => {
-        res.status(200);
-        // TODO: return useful JSON here?
-        res.end();
-      })
-      .catch(() => {
-        next(
-          new Parse.Error(
-            Parse.Error.FILE_DELETE_ERROR,
-            'Could not delete file.'
-          )
-        );
-      });
+  async deleteHandler(req, res, next) {
+    try {
+      const { filesController } = req.config;
+      const { filename } = req.params;
+      // run beforeDeleteFile trigger
+      const file = new Parse.File(filename);
+      file._url = filesController.adapter.getFileLocation(req.config, filename);
+      const fileObject = { file, fileSize: null }
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.beforeDeleteFile,
+        fileObject,
+        req.config,
+        req.auth
+      );
+      // delete file
+      await filesController.deleteFile(req.config, filename);
+      // run afterDeleteFile trigger
+      await triggers.maybeRunFileTrigger(
+        triggers.Types.afterDeleteFile,
+        fileObject,
+        req.config,
+        req.auth
+      );
+      res.status(200);
+      // TODO: return useful JSON here?
+      res.end();
+    } catch (e) {
+      logger.error('Error deleting a file: ', e);
+      const errorMessage = errorMessageFromError(e) || `Could not delete file.`;
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_DELETE_ERROR,
+          errorMessage
+        )
+      );
+    }
   }
 }
 
