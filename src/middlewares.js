@@ -183,6 +183,17 @@ export function handleParseHeaders(req, res, next) {
     delete info.sessionToken;
   }
 
+  if (req.userFromJWT) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+      user: req.userFromJWT,
+    });
+    next();
+    return;
+  }
+
   if (!info.sessionToken) {
     req.auth = new auth.Auth({
       config: req.config,
