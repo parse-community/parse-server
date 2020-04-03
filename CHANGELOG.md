@@ -24,9 +24,9 @@
 - FIX: GraphQL file mutation [#6507](https://github.com/parse-community/parse-server/pull/6507). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Aggregate geoNear with date query [#6540](https://github.com/parse-community/parse-server/pull/6540). Thanks to [Manuel](https://github.com/mtrezza).
 - NEW: Add file triggers and file meta data [#6344](https://github.com/parse-community/parse-server/pull/6344). Thanks to [stevestencil](https://github.com/stevestencil).
-- FIX: Improve local testing of postgres. See [#6531](https://github.com/parse-community/parse-server/pull/6531). Thanks to
+- FIX: Improve local testing of postgres [#6531](https://github.com/parse-community/parse-server/pull/6531). Thanks to
 [Corey Baker](https://github.com/cbaker6).
-- NEW: Case insensitive username and email indexing and query planning for Postgres [#6506)](https://github.com/parse-community/parse-server/issues/6441). Thanks to
+- NEW: Case insensitive username and email indexing and query planning for Postgres [#6506](https://github.com/parse-community/parse-server/issues/6441). Thanks to
 [Corey Baker](https://github.com/cbaker6).
 
 ### 4.1.0
