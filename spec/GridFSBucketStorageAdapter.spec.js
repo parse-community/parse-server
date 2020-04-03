@@ -14,7 +14,7 @@ async function expectMissingFile(gfsAdapter, name) {
   }
 }
 
-describe('GridFSBucket and GridStore interop', () => {
+describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   beforeEach(async () => {
     const gsAdapter = new GridStoreAdapter(databaseURI);
     const db = await gsAdapter._connect();
