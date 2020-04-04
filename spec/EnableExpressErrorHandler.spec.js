@@ -9,8 +9,6 @@ describe('Enable express error handler', () => {
     const masterKey = 'anOtherTestMasterKey';
     let server;
 
-    let lastError;
-
     const parseServer = ParseServer.ParseServer(
       Object.assign({}, defaultConfiguration, {
         appId: appId,
@@ -25,8 +23,8 @@ describe('Enable express error handler', () => {
           server = app.listen(12667);
 
           app.use(function(err, req, res, next) {
-            next;
-            lastError = err;
+            expect(err.message).toBe('Object not found.');
+            next(err);
           });
 
           request({
@@ -43,15 +41,8 @@ describe('Enable express error handler', () => {
               fail('Should throw error');
             })
             .catch(response => {
-              const reqError = response.data;
-              expect(reqError).toBeDefined();
-              expect(lastError).toBeDefined();
-
-              expect(lastError.code).toEqual(101);
-              expect(lastError.message).toEqual('Object not found.');
-
-              expect(lastError.code).toEqual(reqError.code);
-              expect(lastError.message).toEqual(reqError.error);
+              expect(response).toBeDefined();
+              expect(response.status).toEqual(500);
             })
             .then(() => {
               server.close(done);

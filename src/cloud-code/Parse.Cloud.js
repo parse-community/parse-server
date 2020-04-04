@@ -361,6 +361,98 @@ ParseCloud.afterFind = function(parseClass, handler) {
   );
 };
 
+/**
+ * Registers a before save file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.beforeSaveFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeSaveFile
+ * @name Parse.Cloud.beforeSaveFile
+ * @param {Function} func The function to run before saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
+ */
+ParseCloud.beforeSaveFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.beforeSaveFile,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ * Registers an after save file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.afterSaveFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method afterSaveFile
+ * @name Parse.Cloud.afterSaveFile
+ * @param {Function} func The function to run after saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
+ */
+ParseCloud.afterSaveFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.afterSaveFile,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ * Registers a before delete file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.beforeDeleteFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeDeleteFile
+ * @name Parse.Cloud.beforeDeleteFile
+ * @param {Function} func The function to run before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
+ */
+ParseCloud.beforeDeleteFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.beforeDeleteFile,
+    handler,
+    Parse.applicationId,
+  );
+};
+
+/**
+ * Registers an after delete file function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.afterDeleteFile(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method afterDeleteFile
+ * @name Parse.Cloud.afterDeleteFile
+ * @param {Function} func The function to after before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
+ */
+ParseCloud.afterDeleteFile = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.afterDeleteFile,
+    handler,
+    Parse.applicationId,
+  );
+};
+
 ParseCloud.onLiveQueryEvent = function(handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
@@ -391,6 +483,20 @@ module.exports = ParseCloud;
  * @property {String} triggerName The name of the trigger (`beforeSave`, `afterSave`, ...)
  * @property {Object} log The current logger inside Parse Server.
  * @property {Parse.Object} original If set, the object, as currently stored.
+ */
+
+/**
+ * @interface Parse.Cloud.FileTriggerRequest
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} master If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Parse.File} file The file that triggered the hook.
+ * @property {Integer} fileSize The size of the file in bytes.
+ * @property {Integer} contentLength The value from Content-Length header
+ * @property {String} ip The IP address of the client making the request.
+ * @property {Object} headers The original HTTP headers for the request.
+ * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
+ * @property {Object} log The current logger inside Parse Server.
  */
 
 /**
