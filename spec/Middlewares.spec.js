@@ -356,4 +356,15 @@ describe('middlewares', () => {
       middlewares.DEFAULT_ALLOWED_HEADERS
     );
   });
+
+  it('should use user provided on field userFromJWT', done => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+    });
+    fakeReq.userFromJWT = 'fake-user';
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeReq.auth.user).toEqual('fake-user');
+      done();
+    });
+  });
 });
