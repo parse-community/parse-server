@@ -2397,7 +2397,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
       });
     }
-
+     
     const originalQuery = `SELECT ${columns.filter(Boolean).join()} FROM $1:name ${wherePattern} ${skipPattern} ${groupPattern} ${sortPattern} ${limitPattern}`;
     const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
