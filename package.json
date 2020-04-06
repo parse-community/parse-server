@@ -83,7 +83,7 @@
     "graphql-tag": "^2.10.1",
     "husky": "4.2.3",
     "jasmine": "3.5.0",
-    "jsdoc": "3.6.3",
+    "jsdoc": "3.6.4",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.1.2",
     "mongodb-runner": "4.8.0",
