@@ -96,6 +96,7 @@
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "dev": "npm run build && node bin/dev",
     "lint": "flow && eslint --cache ./",
+    "lint-fix": "eslint --fix --cache ./",
     "build": "babel src/ -d lib/ --copy-files",
     "watch": "babel --watch src/ -d lib/ --copy-files",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} mongodb-runner start",
@@ -133,7 +134,7 @@
   "lint-staged": {
     "{src,spec}/**/*.js": [
       "prettier --write",
-      "eslint --cache",
+      "eslint --fix --cache",
       "git add"
     ]
   }
