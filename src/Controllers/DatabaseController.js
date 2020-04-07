@@ -1055,7 +1055,7 @@ class DatabaseController {
         joinTableName(className, key),
         relationSchema,
         { relatedId: { $in: relatedIds } },
-        {}
+        { keys: ['owningId'] }
       )
       .then((results) => results.map((result) => result.owningId));
   }

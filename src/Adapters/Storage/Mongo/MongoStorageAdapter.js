@@ -652,6 +652,13 @@ export class MongoStorageAdapter implements StorageAdapter {
       {}
     );
 
+    // If we aren't requesting the `_id` field, we need to explicitly opt out
+    // of it. Doing so in parse-server is unusual, but it can allow us to
+    // optimize some queries with covering indexes.
+    if (keys && !mongoKeys._id) {
+      mongoKeys._id = 0;
+    }
+
     readPreference = this._parseReadPreference(readPreference);
     return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
