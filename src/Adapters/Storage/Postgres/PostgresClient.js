@@ -1,9 +1,11 @@
+const parser = require('./PostgresConfigParser');
+
 export function createClient(uri, databaseOptions) {
-  const dbOptions = {};
+  let dbOptions = {};
   databaseOptions = databaseOptions || {};
 
   if (uri) {
-    dbOptions.connectionString = uri;
+    dbOptions = parser.getDatabaseOptionsFromURI(uri);
   }
 
   for (const key in databaseOptions) {
