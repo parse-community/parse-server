@@ -35,8 +35,37 @@ dbOptionsTest[
   poolSize: 10,
 };
 dbOptionsTest[`${baseURI}?ssl=&binary=aa`] = {
-  ssl: false,
   binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=true&ca=/path&pfx=/path&cert=/path&key=/path&binary=aa&passphrase=word&secureOptions=20`
+] = {
+  ssl: {
+    ca: '/path',
+    pfx: '/path',
+    cert: '/path',
+    key: '/path',
+    passphrase: 'word',
+    secureOptions: 20,
+  },
+  binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=false&ca=/path&pfx=/path&cert=/path&key=/path&binary=aa`
+] = {
+  ssl: { ca: '/path', pfx: '/path', cert: '/path', key: '/path' },
+  binary: false,
+};
+dbOptionsTest[`${baseURI}?rejectUnauthorized=true`] = {
+  ssl: { rejectUnauthorized: true },
+};
+dbOptionsTest[
+  `${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`
+] = {
+  max: 5,
+  query_timeout: 100,
+  idleTimeoutMillis: 1000,
+  keepAlive: true,
 };
 
 describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {
