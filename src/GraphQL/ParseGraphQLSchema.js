@@ -215,9 +215,34 @@ class ParseGraphQLSchema {
               autoGraphQLSchemaType &&
               typeof customGraphQLSchemaType.getFields === 'function'
             ) {
+              const findAndReplaceLastType = (parent, key) => {
+                if (parent[key].name) {
+                  if (
+                    this.graphQLAutoSchema.getType(parent[key].name) &&
+                    this.graphQLAutoSchema.getType(parent[key].name) !==
+                      parent[key]
+                  ) {
+                    // To avoid unresolved field on overloaded schema
+                    // replace the final type with the auto schema one
+                    parent[key] = this.graphQLAutoSchema.getType(
+                      parent[key].name
+                    );
+                  }
+                } else {
+                  if (parent[key].ofType) {
+                    findAndReplaceLastType(parent[key], 'ofType');
+                  }
+                }
+              };
+
+              Object.values(customGraphQLSchemaType.getFields()).forEach(
+                (field) => {
+                  findAndReplaceLastType(field, 'type');
+                }
+              );
               autoGraphQLSchemaType._fields = {
-                ...autoGraphQLSchemaType._fields,
-                ...customGraphQLSchemaType._fields,
+                ...autoGraphQLSchemaType.getFields(),
+                ...customGraphQLSchemaType.getFields(),
               };
             } else {
               this.graphQLAutoSchema._typeMap[
