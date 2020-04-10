@@ -350,6 +350,147 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
+  it('should never use case_insensitive_email index for regex query on email', async () => {
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    user.set('email', 'bugs@wabbits.com');
+    await user.signUp();
+
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('_User').get();
+
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['email'],
+      'case_insensitive_email',
+      true
+    );
+
+    const preIndexPlan = await database.find(
+      '_User',
+      { email: { $regex: 'bugs@wabbits.com' } },
+      { explain: true, caseInsensitive: true }
+    );
+
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['email'],
+      'email_1',
+      false
+    );
+
+    const postIndexPlan = await database.find(
+      '_User',
+      { email: { $regex: 'bugs@wabbits.com' } },
+      { explain: true }
+    );
+
+    const postIndexNoRegex = await database.find(
+      '_User',
+      { email: { $eq: 'bugs@wabbits.com' } },
+      { explain: true, caseInsensitive: true }
+    );
+
+    const caseInsensitiveWithHint = await database.find(
+      '_User',
+      { email: { $eq: 'bugs@wabbits.com' } },
+      { explain: true, caseInsensitive: true, hint: 'case_insensitive_email' }
+    );
+
+    // later tests seem to throw conflict errors unless we drop this index before this test ends
+    await database.adapter.dropIndex('_User', 'email_1');
+
+    expect(
+      preIndexPlan.executionStats.executionStages.inputStage.indexName
+    ).toBe('case_insensitive_email');
+    expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
+    expect(
+      postIndexPlan.executionStats.executionStages.inputStage.indexName
+    ).toBe('email_1');
+    expect(
+      postIndexNoRegex.executionStats.executionStages.inputStage.indexName
+    ).toBe('case_insensitive_email');
+    expect(
+      caseInsensitiveWithHint.executionStats.executionStages.inputStage
+        .indexName
+    ).toBe('case_insensitive_email');
+  });
+
+  it('should never use case_insensitive_username index for regex query on username', async () => {
+    const user = new Parse.User();
+    user.set('username', 'Bugs');
+    user.set('password', 'Bunny');
+    await user.signUp();
+
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('_User').get();
+
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['username'],
+      'case_insensitive_username',
+      true
+    );
+
+    const preIndexPlan = await database.find(
+      '_User',
+      { username: { $regex: 'bugs' } },
+      { explain: true }
+    );
+
+    await database.adapter.ensureIndex(
+      '_User',
+      schema,
+      ['username'],
+      'username_1',
+      false
+    );
+
+    const postIndexPlan = await database.find(
+      '_User',
+      { username: { $regex: 'bugs' } },
+      { explain: true }
+    );
+
+    const postIndexNoRegex = await database.find(
+      '_User',
+      { username: { $eq: 'bugs' } },
+      { explain: true, caseInsensitive: true }
+    );
+
+    const caseInsensitiveWithHint = await database.find(
+      '_User',
+      { username: { $eq: 'bugs' } },
+      {
+        explain: true,
+        caseInsensitive: true,
+        hint: 'case_insensitive_username',
+      }
+    );
+
+    // later tests seem to throw conflict errors unless we drop this index before this test ends
+    await database.adapter.dropIndex('_User', 'username_1');
+
+    expect(
+      preIndexPlan.executionStats.executionStages.inputStage.indexName
+    ).toBe('case_insensitive_username');
+    expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
+    expect(
+      postIndexPlan.executionStats.executionStages.inputStage.indexName
+    ).toBe('username_1');
+    expect(
+      postIndexNoRegex.executionStats.executionStages.inputStage.indexName
+    ).toBe('case_insensitive_username');
+    expect(
+      caseInsensitiveWithHint.executionStats.executionStages.inputStage
+        .indexName
+    ).toBe('case_insensitive_username');
+  });
+
   if (
     process.env.MONGODB_VERSION === '4.0.4' &&
     process.env.MONGODB_TOPOLOGY === 'replicaset' &&

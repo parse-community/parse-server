@@ -86,7 +86,7 @@ export default class MongoCollection {
     return { locale: 'en_US', strength: 2 };
   }
 
-  _rawFind(
+  async _rawFind(
     query,
     {
       skip,
@@ -112,7 +112,22 @@ export default class MongoCollection {
       findOperation = findOperation.project(keys);
     }
 
-    if (caseInsensitive) {
+    if (query.username?.$regex || query.email?.$regex) {
+      const indexName = query.username?.$regex ? 'username' : 'email';
+      const caseInsensitiveIndexExists = await this._mongoCollection.indexExists(
+        `case_insensitive_${indexName}`
+      );
+
+      if (caseInsensitiveIndexExists) {
+        const caseSensitiveIndexExists = await this._mongoCollection.indexExists(
+          `${indexName}_1`
+        );
+
+        if (caseSensitiveIndexExists) {
+          findOperation = findOperation.hint(`${indexName}_1`);
+        }
+      }
+    } else if (caseInsensitive) {
       findOperation = findOperation.collation(
         MongoCollection.caseInsensitiveCollation()
       );
