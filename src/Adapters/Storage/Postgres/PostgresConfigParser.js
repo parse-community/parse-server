@@ -1,5 +1,5 @@
 const url = require('url');
-
+const fs = require('fs');
 function getDatabaseOptionsFromURI(uri) {
   const databaseOptions = {};
 
@@ -31,16 +31,16 @@ function getDatabaseOptionsFromURI(uri) {
   ) {
     databaseOptions.ssl = {};
     if (queryParams.ca) {
-      databaseOptions.ssl.ca = queryParams.ca;
+      databaseOptions.ssl.ca = fs.readFileSync(queryParams.ca);
     }
     if (queryParams.pfx) {
-      databaseOptions.ssl.pfx = queryParams.pfx;
+      databaseOptions.ssl.pfx = fs.readFileSync(queryParams.pfx);
     }
     if (queryParams.cert) {
-      databaseOptions.ssl.cert = queryParams.cert;
+      databaseOptions.ssl.cert = fs.readFileSync(queryParams.cert);
     }
     if (queryParams.key) {
-      databaseOptions.ssl.key = queryParams.key;
+      databaseOptions.ssl.key = fs.readFileSync(queryParams.key);
     }
     if (queryParams.passphrase) {
       databaseOptions.ssl.passphrase = queryParams.passphrase;
