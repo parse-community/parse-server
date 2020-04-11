@@ -24,7 +24,7 @@ describe('PostgresConfigParser.parseQueryParams', () => {
 });
 
 const baseURI = 'postgres://username:password@localhost:5432/db-name';
-const testfile = fs.readFileSync('./Dockerfile');
+const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[
   `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=10`

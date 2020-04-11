@@ -31,16 +31,16 @@ function getDatabaseOptionsFromURI(uri) {
   ) {
     databaseOptions.ssl = {};
     if (queryParams.ca) {
-      databaseOptions.ssl.ca = fs.readFileSync(queryParams.ca);
+      databaseOptions.ssl.ca = fs.readFileSync(queryParams.ca).toString();
     }
     if (queryParams.pfx) {
-      databaseOptions.ssl.pfx = fs.readFileSync(queryParams.pfx);
+      databaseOptions.ssl.pfx = fs.readFileSync(queryParams.pfx).toString();
     }
     if (queryParams.cert) {
-      databaseOptions.ssl.cert = fs.readFileSync(queryParams.cert);
+      databaseOptions.ssl.cert = fs.readFileSync(queryParams.cert).toString();
     }
     if (queryParams.key) {
-      databaseOptions.ssl.key = fs.readFileSync(queryParams.key);
+      databaseOptions.ssl.key = fs.readFileSync(queryParams.key).toString();
     }
     if (queryParams.passphrase) {
       databaseOptions.ssl.passphrase = queryParams.passphrase;
