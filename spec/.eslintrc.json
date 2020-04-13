@@ -13,7 +13,6 @@
       "Item": true,
       "Container": true,
       "equal": true,
-      "expectAsync": true,
       "notEqual": true,
       "it_only_db": true,
       "it_exclude_dbs": true,
