@@ -112,7 +112,7 @@ export default class MongoCollection {
       findOperation = findOperation.project(keys);
     }
 
-    if ((query.username?.$regex || query.email?.$regex) && !hint) {
+    if ((query?.username?.$regex || query?.email?.$regex) && !hint) {
       const indexName = query.username?.$regex ? 'username' : 'email';
       const caseInsensitiveIndexExists = await this._mongoCollection.indexExists(
         `case_insensitive_${indexName}`
