@@ -39,7 +39,7 @@
     "graphql-upload": "10.0.0",
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
-    "jwks-rsa": "1.7.0",
+    "jwks-rsa": "1.8.0",
     "ldapjs": "1.0.2",
     "lodash": "4.17.15",
     "lru-cache": "5.1.1",
