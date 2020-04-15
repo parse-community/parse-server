@@ -8,7 +8,7 @@ import defaultLogger from './logger';
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
 
-const getMountForRequest = function(req) {
+const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
   return req.protocol + '://' + req.get('host') + mountPath;
@@ -59,7 +59,14 @@ export function handleParseHeaders(req, res, next) {
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
-      req.body = JSON.parse(req.body);
+      // https://github.com/parse-community/parse-server/issues/6589
+      // It is also possible that the client is trying to upload a file but forgot
+      // to provide x-parse-app-id in header and parse a binary file will fail
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        return invalidRequest(req, res);
+      }
       fileViaJSON = true;
     }
 
@@ -168,10 +175,10 @@ export function handleParseHeaders(req, res, next) {
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
-  const oneKeyConfigured = keys.some(function(key) {
+  const oneKeyConfigured = keys.some(function (key) {
     return req.config[key] !== undefined;
   });
-  const oneKeyMatches = keys.some(function(key) {
+  const oneKeyMatches = keys.some(function (key) {
     return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
@@ -225,13 +232,13 @@ export function handleParseHeaders(req, res, next) {
         });
       }
     })
-    .then(auth => {
+    .then((auth) => {
       if (auth) {
         req.auth = auth;
         next();
       }
     })
-    .catch(error => {
+    .catch((error) => {
       if (error instanceof Parse.Error) {
         next(error);
         return;
