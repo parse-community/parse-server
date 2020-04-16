@@ -37,7 +37,7 @@ const parseTypeToPostgresType = (type) => {
     case 'Boolean':
       return 'boolean';
     case 'Pointer':
-      return 'char(10)';
+      return 'text';
     case 'Number':
       return 'double precision';
     case 'GeoPoint':
