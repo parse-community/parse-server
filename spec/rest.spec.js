@@ -490,7 +490,7 @@ describe('rest create', () => {
       aPointer: {
         __type: 'Pointer',
         className: 'JustThePointer',
-        objectId: '49F62F92-9B56-46E7-A3D4-BBD14C52F666', // make it 10 chars to match PG storage
+        objectId: '49F62F92-9B56-46E7-A3D4-BBD14C52F666',
       },
     };
     rest
