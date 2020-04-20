@@ -7,9 +7,9 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
+import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 
 export class UsersRouter extends ClassesRouter {
-
   className() {
     return '_User';
   }
@@ -20,9 +20,9 @@ export class UsersRouter extends ClassesRouter {
    */
   static removeHiddenProperties(obj) {
     for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         // Regexp comes from Parse.Object.prototype.validate
-        if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+        if (key !== '__type' && !/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
           delete obj[key];
         }
       }
@@ -39,6 +39,7 @@ export class UsersRouter extends ClassesRouter {
     return new Promise((resolve, reject) => {
       // Use query parameters instead if provided in url
       let payload = req.body;
+<<<<<<< HEAD
       if (!payload.username && req.query.username || !payload.email && req.query.email) {
         payload = req.query;
       }
@@ -59,6 +60,38 @@ export class UsersRouter extends ClassesRouter {
         || email && typeof email !== 'string'
         || username && typeof username !== 'string') {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+=======
+      if (
+        (!payload.username && req.query.username) ||
+        (!payload.email && req.query.email)
+      ) {
+        payload = req.query;
+      }
+      const { username, email, password } = payload;
+
+      // TODO: use the right error codes / descriptions.
+      if (!username && !email) {
+        throw new Parse.Error(
+          Parse.Error.USERNAME_MISSING,
+          'username/email is required.'
+        );
+      }
+      if (!password) {
+        throw new Parse.Error(
+          Parse.Error.PASSWORD_MISSING,
+          'password is required.'
+        );
+      }
+      if (
+        typeof password !== 'string' ||
+        (email && typeof email !== 'string') ||
+        (username && typeof username !== 'string')
+      ) {
+        throw new Parse.Error(
+          Parse.Error.OBJECT_NOT_FOUND,
+          'Invalid username/password.'
+        );
+>>>>>>> master
       }
 
       let user;
@@ -71,6 +104,7 @@ export class UsersRouter extends ClassesRouter {
       } else {
         query = { $or: [{ username }, { email: username }] };
       }
+<<<<<<< HEAD
       return req.config.database.find('_User', query)
         .then((results) => {
           if (!results.length) {
@@ -80,30 +114,81 @@ export class UsersRouter extends ClassesRouter {
           if (results.length > 1) { // corner case where user1 has username == user2 email
             req.config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
             user = results.filter((user) => user.username === username)[0];
+=======
+      return req.config.database
+        .find('_User', query)
+        .then(results => {
+          if (!results.length) {
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Invalid username/password.'
+            );
+          }
+
+          if (results.length > 1) {
+            // corner case where user1 has username == user2 email
+            req.config.loggerController.warn(
+              "There is a user which email is the same as another user's username, logging in based on username"
+            );
+            user = results.filter(user => user.username === username)[0];
+>>>>>>> master
           } else {
             user = results[0];
           }
 
           return passwordCrypto.compare(password, user.password);
         })
+<<<<<<< HEAD
         .then((correct) => {
+=======
+        .then(correct => {
+>>>>>>> master
           isValidPassword = correct;
           const accountLockoutPolicy = new AccountLockout(user, req.config);
           return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
         })
         .then(() => {
           if (!isValidPassword) {
+<<<<<<< HEAD
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+=======
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Invalid username/password.'
+            );
+>>>>>>> master
           }
           // Ensure the user isn't locked out
           // A locked out user won't be able to login
           // To lock a user out, just set the ACL to `masterKey` only  ({}).
           // Empty ACL is OK
+<<<<<<< HEAD
           if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
           if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
             throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+=======
+          if (
+            !req.auth.isMaster &&
+            user.ACL &&
+            Object.keys(user.ACL).length == 0
+          ) {
+            throw new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'Invalid username/password.'
+            );
+          }
+          if (
+            req.config.verifyUserEmails &&
+            req.config.preventLoginWithUnverifiedEmail &&
+            !user.emailVerified
+          ) {
+            throw new Parse.Error(
+              Parse.Error.EMAIL_NOT_FOUND,
+              'User email is not verified.'
+            );
+>>>>>>> master
           }
 
           delete user.password;
@@ -111,7 +196,11 @@ export class UsersRouter extends ClassesRouter {
           // Sometimes the authData still has null on that keys
           // https://github.com/parse-community/parse-server/issues/935
           if (user.authData) {
+<<<<<<< HEAD
             Object.keys(user.authData).forEach((provider) => {
+=======
+            Object.keys(user.authData).forEach(provider => {
+>>>>>>> master
               if (user.authData[provider] === null) {
                 delete user.authData[provider];
               }
@@ -122,7 +211,12 @@ export class UsersRouter extends ClassesRouter {
           }
 
           return resolve(user);
+<<<<<<< HEAD
         }).catch((error) => {
+=======
+        })
+        .catch(error => {
+>>>>>>> master
           return reject(error);
         });
     });
@@ -130,17 +224,40 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
+<<<<<<< HEAD
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+=======
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        'Invalid session token'
+      );
+>>>>>>> master
     }
     const sessionToken = req.info.sessionToken;
-    return rest.find(req.config, Auth.master(req.config), '_Session',
-      { sessionToken },
-      { include: 'user' }, req.info.clientSDK)
-      .then((response) => {
-        if (!response.results ||
+    return rest
+      .find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { sessionToken },
+        { include: 'user' },
+        req.info.clientSDK
+      )
+      .then(response => {
+        if (
+          !response.results ||
           response.results.length == 0 ||
+<<<<<<< HEAD
           !response.results[0].user) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+=======
+          !response.results[0].user
+        ) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid session token'
+          );
+>>>>>>> master
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
@@ -154,6 +271,7 @@ export class UsersRouter extends ClassesRouter {
       });
   }
 
+<<<<<<< HEAD
   handleLogIn(req) {
     let user;
     return this._authenticateUserFromRequest(req)
@@ -216,6 +334,93 @@ export class UsersRouter extends ClassesRouter {
 
         return { response: user };
       }).catch((error) => {
+=======
+  async handleLogIn(req) {
+    const user = await this._authenticateUserFromRequest(req);
+
+    // handle password expiry policy
+    if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+      let changedAt = user._password_changed_at;
+
+      if (!changedAt) {
+        // password was created before expiry policy was enabled.
+        // simply update _User object so that it will start enforcing from now
+        changedAt = new Date();
+        req.config.database.update(
+          '_User',
+          { username: user.username },
+          { _password_changed_at: Parse._encode(changedAt) }
+        );
+      } else {
+        // check whether the password has expired
+        if (changedAt.__type == 'Date') {
+          changedAt = new Date(changedAt.iso);
+        }
+        // Calculate the expiry time.
+        const expiresAt = new Date(
+          changedAt.getTime() +
+            86400000 * req.config.passwordPolicy.maxPasswordAge
+        );
+        if (expiresAt < new Date())
+          // fail of current time is past password expiry time
+          throw new Parse.Error(
+            Parse.Error.OBJECT_NOT_FOUND,
+            'Your password has expired. Please reset your password.'
+          );
+      }
+    }
+
+    // Remove hidden properties.
+    UsersRouter.removeHiddenProperties(user);
+
+    req.config.filesController.expandFilesInObject(req.config, user);
+
+    // Before login trigger; throws if failure
+    await maybeRunTrigger(
+      TriggerTypes.beforeLogin,
+      req.auth,
+      Parse.User.fromJSON(Object.assign({ className: '_User' }, user)),
+      null,
+      req.config
+    );
+
+    const { sessionData, createSession } = Auth.createSession(req.config, {
+      userId: user.objectId,
+      createdWith: {
+        action: 'login',
+        authProvider: 'password',
+      },
+      installationId: req.info.installationId,
+    });
+
+    user.sessionToken = sessionData.sessionToken;
+
+    await createSession();
+
+    const afterLoginUser = Parse.User.fromJSON(
+      Object.assign({ className: '_User' }, user)
+    );
+    maybeRunTrigger(
+      TriggerTypes.afterLogin,
+      { ...req.auth, user: afterLoginUser },
+      afterLoginUser,
+      null,
+      req.config
+    );
+
+    return { response: user };
+  }
+
+  handleVerifyPassword(req) {
+    return this._authenticateUserFromRequest(req)
+      .then(user => {
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
+        return { response: user };
+      })
+      .catch(error => {
+>>>>>>> master
         throw error;
       });
   }
@@ -223,20 +428,44 @@ export class UsersRouter extends ClassesRouter {
   handleLogOut(req) {
     const success = { response: {} };
     if (req.info && req.info.sessionToken) {
-      return rest.find(req.config, Auth.master(req.config), '_Session',
-        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
-      ).then((records) => {
-        if (records.results && records.results.length) {
-          return rest.del(req.config, Auth.master(req.config), '_Session',
-            records.results[0].objectId
-          ).then(() => {
-            return Promise.resolve(success);
-          });
-        }
-        return Promise.resolve(success);
-      });
+      return rest
+        .find(
+          req.config,
+          Auth.master(req.config),
+          '_Session',
+          { sessionToken: req.info.sessionToken },
+          undefined,
+          req.info.clientSDK
+        )
+        .then(records => {
+          if (records.results && records.results.length) {
+            return rest
+              .del(
+                req.config,
+                Auth.master(req.config),
+                '_Session',
+                records.results[0].objectId
+              )
+              .then(() => {
+                this._runAfterLogoutTrigger(req, records.results[0]);
+                return Promise.resolve(success);
+              });
+          }
+          return Promise.resolve(success);
+        });
     }
     return Promise.resolve(success);
+  }
+
+  _runAfterLogoutTrigger(req, session) {
+    // After logout trigger
+    maybeRunTrigger(
+      TriggerTypes.afterLogout,
+      req.auth,
+      Parse.Session.fromJSON(Object.assign({ className: '_Session' }, session)),
+      null,
+      req.config
+    );
   }
 
   _throwOnBadEmailConfig(req) {
@@ -245,12 +474,16 @@ export class UsersRouter extends ClassesRouter {
         emailAdapter: req.config.userController.adapter,
         appName: req.config.appName,
         publicServerURL: req.config.publicServerURL,
-        emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration
+        emailVerifyTokenValidityDuration:
+          req.config.emailVerifyTokenValidityDuration,
       });
     } catch (e) {
       if (typeof e === 'string') {
         // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.');
+        throw new Parse.Error(
+          Parse.Error.INTERNAL_SERVER_ERROR,
+          'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.'
+        );
       } else {
         throw e;
       }
@@ -262,23 +495,36 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+      throw new Parse.Error(
+        Parse.Error.EMAIL_MISSING,
+        'you must provide an email'
+      );
     }
     if (typeof email !== 'string') {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
+      throw new Parse.Error(
+        Parse.Error.INVALID_EMAIL_ADDRESS,
+        'you must provide a valid email string'
+      );
     }
     const userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then(() => {
-      return Promise.resolve({
-        response: {}
-      });
-    }, err => {
-      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
-      } else {
-        throw err;
+    return userController.sendPasswordResetEmail(email).then(
+      () => {
+        return Promise.resolve({
+          response: {},
+        });
+      },
+      err => {
+        if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+          // Return success so that this endpoint can't
+          // be used to enumerate valid emails
+          return Promise.resolve({
+            response: {},
+          });
+        } else {
+          throw err;
+        }
       }
-    });
+    );
   }
 
   handleVerificationEmailRequest(req) {
@@ -286,15 +532,24 @@ export class UsersRouter extends ClassesRouter {
 
     const { email } = req.body;
     if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+      throw new Parse.Error(
+        Parse.Error.EMAIL_MISSING,
+        'you must provide an email'
+      );
     }
     if (typeof email !== 'string') {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
+      throw new Parse.Error(
+        Parse.Error.INVALID_EMAIL_ADDRESS,
+        'you must provide a valid email string'
+      );
     }
 
-    return req.config.database.find('_User', { email: email }).then((results) => {
+    return req.config.database.find('_User', { email: email }).then(results => {
       if (!results.length || results.length < 1) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
+        throw new Parse.Error(
+          Parse.Error.EMAIL_NOT_FOUND,
+          `No user found with email ${email}`
+        );
       }
       const user = results[0];
 
@@ -302,7 +557,10 @@ export class UsersRouter extends ClassesRouter {
       delete user.password;
 
       if (user.emailVerified) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          `Email ${email} is already verified.`
+        );
       }
 
       const userController = req.config.userController;
@@ -313,8 +571,8 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
-
   mountRoutes() {
+<<<<<<< HEAD
     this.route('GET', '/users', req => { return this.handleFind(req); });
     this.route('POST', '/users', req => { return this.handleCreate(req); });
     this.route('GET', '/users/me', req => { return this.handleMe(req); });
@@ -327,6 +585,44 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });
     this.route('GET', '/verifyPassword', req => { return this.handleVerifyPassword(req); });
+=======
+    this.route('GET', '/users', req => {
+      return this.handleFind(req);
+    });
+    this.route('POST', '/users', req => {
+      return this.handleCreate(req);
+    });
+    this.route('GET', '/users/me', req => {
+      return this.handleMe(req);
+    });
+    this.route('GET', '/users/:objectId', req => {
+      return this.handleGet(req);
+    });
+    this.route('PUT', '/users/:objectId', req => {
+      return this.handleUpdate(req);
+    });
+    this.route('DELETE', '/users/:objectId', req => {
+      return this.handleDelete(req);
+    });
+    this.route('GET', '/login', req => {
+      return this.handleLogIn(req);
+    });
+    this.route('POST', '/login', req => {
+      return this.handleLogIn(req);
+    });
+    this.route('POST', '/logout', req => {
+      return this.handleLogOut(req);
+    });
+    this.route('POST', '/requestPasswordReset', req => {
+      return this.handleResetRequest(req);
+    });
+    this.route('POST', '/verificationEmailRequest', req => {
+      return this.handleVerificationEmailRequest(req);
+    });
+    this.route('GET', '/verifyPassword', req => {
+      return this.handleVerifyPassword(req);
+    });
+>>>>>>> master
   }
 }
 
