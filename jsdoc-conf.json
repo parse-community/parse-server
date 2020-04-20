@@ -1,0 +1,23 @@
+{
+  "plugins": ["node_modules/jsdoc-babel", "plugins/markdown"],
+  "babel": {
+      "plugins": ["@babel/plugin-transform-flow-strip-types"]
+  },
+  "source": {
+    "include":  ["./README.md", "./src/cloud-code", "./src/Options/docs.js", "./src/ParseServer.js", "./src/Adapters"],
+    "excludePattern": "(^|\\/|\\\\)_"
+  },
+  "templates": {
+    "default": {
+      "outputSourceFiles": false,
+      "showInheritedInNav": false,
+      "useLongnameInNav": true
+    },
+    "cleverLinks": true,
+    "monospaceLinks": false
+  },
+  "opts": {
+    "template": "node_modules/@parse/minami",
+    "recurse": true
+  }
+}
