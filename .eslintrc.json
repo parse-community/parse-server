@@ -14,7 +14,7 @@
         "sourceType": "module"
     },
     "rules": {
-        "indent": ["error", 2],
+        "indent": ["error", 2, { "SwitchCase": 1 }],
         "linebreak-style": ["error", "unix"],
         "no-trailing-spaces": 2,
         "eol-last": 2,
@@ -22,6 +22,7 @@
         "no-multiple-empty-lines": 1,
         "prefer-const": "error",
         "space-infix-ops": "error",
-        "no-useless-escape": "off"
+        "no-useless-escape": "off",
+        "require-atomic-updates": "off"
     }
 }
