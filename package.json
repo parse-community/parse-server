@@ -130,8 +130,12 @@
     "mongodb-runner": "4.8.0",
     "node-fetch": "2.6.0",
     "nyc": "15.0.1",
+<<<<<<< HEAD
     "prettier": "2.0.3"
 >>>>>>> master
+=======
+    "prettier": "2.0.4"
+>>>>>>> greenkeeper/prettier-2.0.4
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",
