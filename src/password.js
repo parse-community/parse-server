@@ -4,7 +4,9 @@ var bcrypt = require('bcryptjs');
 
 try {
   bcrypt = require('bcrypt');
-} catch(e) { /* */ }
+} catch (e) {
+  /* */
+}
 
 // Returns a promise for a hashed password string.
 function hash(password) {
@@ -23,5 +25,5 @@ function compare(password, hashedPassword) {
 
 module.exports = {
   hash: hash,
-  compare: compare
+  compare: compare,
 };
