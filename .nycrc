@@ -4,8 +4,12 @@
     "text-summary"
   ],
   "exclude": [
+<<<<<<< HEAD
     "**/spec/**",
     "src/"
+=======
+    "**/spec/**"
+>>>>>>> master
   ]
 }
 
