@@ -1,5 +1,5 @@
-import { ParseMessageQueue }      from '../ParseMessageQueue';
-import rest                       from '../rest';
+import { ParseMessageQueue } from '../ParseMessageQueue';
+import rest from '../rest';
 import { applyDeviceTokenExists } from './utils';
 import Parse from 'parse/node';
 
@@ -30,33 +30,39 @@ export class PushQueue {
 
     // Order by objectId so no impact on the DB
     const order = 'objectId';
-    return Promise.resolve().then(() => {
-      return rest.find(config,
-        auth,
-        '_Installation',
-        where,
-        {limit: 0, count: true});
-    }).then(({results, count}) => {
-      if (!results || count == 0) {
-        return pushStatus.complete();
-      }
-      pushStatus.setRunning(Math.ceil(count / limit));
-      let skip = 0;
-      while (skip < count) {
-        const query = { where,
-          limit,
-          skip,
-          order };
-
-        const pushWorkItem = {
-          body,
-          query,
-          pushStatus: { objectId: pushStatus.objectId },
-          applicationId: config.applicationId
+    return Promise.resolve()
+      .then(() => {
+        return rest.find(config, auth, '_Installation', where, {
+          limit: 0,
+          count: true,
+        });
+      })
+      .then(({ results, count }) => {
+        if (!results || count == 0) {
+          return pushStatus.complete();
         }
-        this.parsePublisher.publish(this.channel, JSON.stringify(pushWorkItem));
-        skip += limit;
-      }
-    });
+        pushStatus.setRunning(Math.ceil(count / limit));
+        let skip = 0;
+        while (skip < count) {
+          const query = {
+            where,
+            limit,
+            skip,
+            order,
+          };
+
+          const pushWorkItem = {
+            body,
+            query,
+            pushStatus: { objectId: pushStatus.objectId },
+            applicationId: config.applicationId,
+          };
+          this.parsePublisher.publish(
+            this.channel,
+            JSON.stringify(pushWorkItem)
+          );
+          skip += limit;
+        }
+      });
   }
 }
