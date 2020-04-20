@@ -1,9 +1,18 @@
 import AppCache from './cache';
-import log from './logger';
 import Parse from 'parse/node';
 import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
+import defaultLogger from './logger';
+
+export const DEFAULT_ALLOWED_HEADERS =
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+
+const getMountForRequest = function (req) {
+  const mountPathLength = req.originalUrl.length - req.url.length;
+  const mountPath = req.originalUrl.slice(0, mountPathLength);
+  return req.protocol + '://' + req.get('host') + mountPath;
+};
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -12,9 +21,7 @@ import ClientSDK from './ClientSDK';
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 export function handleParseHeaders(req, res, next) {
-  var mountPathLength = req.originalUrl.length - req.url.length;
-  var mountPath = req.originalUrl.slice(0, mountPathLength);
-  var mount = req.protocol + '://' + req.get('host') + mountPath;
+  var mount = getMountForRequest(req);
 
   var info = {
     appId: req.get('X-Parse-Application-Id'),
@@ -25,7 +32,7 @@ export function handleParseHeaders(req, res, next) {
     javascriptKey: req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
-    clientVersion: req.get('X-Parse-Client-Version')
+    clientVersion: req.get('X-Parse-Client-Version'),
   };
 
   var basicAuth = httpAuth(req);
@@ -52,7 +59,14 @@ export function handleParseHeaders(req, res, next) {
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
-      req.body = JSON.parse(req.body);
+      // https://github.com/parse-community/parse-server/issues/6589
+      // It is also possible that the client is trying to upload a file but forgot
+      // to provide x-parse-app-id in header and parse a binary file will fail
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        return invalidRequest(req, res);
+      }
       fileViaJSON = true;
     }
 
@@ -60,10 +74,12 @@ export function handleParseHeaders(req, res, next) {
       delete req.body._RevocableSession;
     }
 
-    if (req.body &&
+    if (
+      req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey ||
+        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -96,14 +112,19 @@ export function handleParseHeaders(req, res, next) {
     }
   }
 
+  if (info.sessionToken && typeof info.sessionToken !== 'string') {
+    info.sessionToken = info.sessionToken.toString();
+  }
+
   if (info.clientVersion) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
   if (fileViaJSON) {
+    req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
-    req.body = new Buffer(base64, 'base64');
+    req.body = Buffer.from(base64, 'base64');
   }
 
   const clientIp = getClientIp(req);
@@ -114,32 +135,50 @@ export function handleParseHeaders(req, res, next) {
   req.config.ip = clientIp;
   req.info = info;
 
-  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(clientIp) === -1) {
+  if (
+    info.masterKey &&
+    req.config.masterKeyIps &&
+    req.config.masterKeyIps.length !== 0 &&
+    req.config.masterKeyIps.indexOf(clientIp) === -1
+  ) {
     return invalidRequest(req, res);
   }
 
-  var isMaster = (info.masterKey === req.config.masterKey);
+  var isMaster = info.masterKey === req.config.masterKey;
 
   if (isMaster) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: true,
+    });
     next();
     return;
   }
 
-  var isReadOnlyMaster = (info.masterKey === req.config.readOnlyMasterKey);
-  if (typeof req.config.readOnlyMasterKey != 'undefined' && req.config.readOnlyMasterKey && isReadOnlyMaster) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true, isReadOnly: true });
+  var isReadOnlyMaster = info.masterKey === req.config.readOnlyMasterKey;
+  if (
+    typeof req.config.readOnlyMasterKey != 'undefined' &&
+    req.config.readOnlyMasterKey &&
+    isReadOnlyMaster
+  ) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: true,
+      isReadOnly: true,
+    });
     next();
     return;
   }
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
-  const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
-  const oneKeyConfigured = keys.some(function(key) {
+  const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
+  const oneKeyConfigured = keys.some(function (key) {
     return req.config[key] !== undefined;
   });
-  const oneKeyMatches = keys.some(function(key){
+  const oneKeyMatches = keys.some(function (key) {
     return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
@@ -147,45 +186,74 @@ export function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
-  if (req.url == "/login") {
+  if (req.url == '/login') {
     delete info.sessionToken;
   }
 
-  if (!info.sessionToken) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
+  if (req.userFromJWT) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+      user: req.userFromJWT,
+    });
     next();
     return;
   }
 
-  return Promise.resolve().then(() => {
-    // handle the upgradeToRevocableSession path on it's own
-    if (info.sessionToken &&
+  if (!info.sessionToken) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+    });
+    next();
+    return;
+  }
+
+  return Promise.resolve()
+    .then(() => {
+      // handle the upgradeToRevocableSession path on it's own
+      if (
+        info.sessionToken &&
         req.url === '/upgradeToRevocableSession' &&
-        info.sessionToken.indexOf('r:') != 0) {
-      return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    } else {
-      return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    }
-  }).then((auth) => {
-    if (auth) {
-      req.auth = auth;
-      next();
-    }
-  })
+        info.sessionToken.indexOf('r:') != 0
+      ) {
+        return auth.getAuthForLegacySessionToken({
+          config: req.config,
+          installationId: info.installationId,
+          sessionToken: info.sessionToken,
+        });
+      } else {
+        return auth.getAuthForSessionToken({
+          config: req.config,
+          installationId: info.installationId,
+          sessionToken: info.sessionToken,
+        });
+      }
+    })
+    .then((auth) => {
+      if (auth) {
+        req.auth = auth;
+        next();
+      }
+    })
     .catch((error) => {
-      if(error instanceof Parse.Error) {
+      if (error instanceof Parse.Error) {
         next(error);
         return;
-      }
-      else {
+      } else {
         // TODO: Determine the correct error scenario.
-        log.error('error getting auth for sessionToken', error);
+        req.config.loggerController.error(
+          'error getting auth for sessionToken',
+          error
+        );
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
 }
 
-function getClientIp(req){
+function getClientIp(req) {
   if (req.headers['x-forwarded-for']) {
     // try to get from x-forwared-for if it set (behind reverse proxy)
     return req.headers['x-forwarded-for'].split(',')[0];
@@ -205,8 +273,7 @@ function getClientIp(req){
 }
 
 function httpAuth(req) {
-  if (!(req.req || req).headers.authorization)
-    return ;
+  if (!(req.req || req).headers.authorization) return;
 
   var header = (req.req || req).headers.authorization;
   var appId, masterKey, javascriptKey;
@@ -226,23 +293,23 @@ function httpAuth(req) {
 
       var jsKeyPrefix = 'javascript-key=';
 
-      var matchKey = key.indexOf(jsKeyPrefix)
+      var matchKey = key.indexOf(jsKeyPrefix);
       if (matchKey == 0) {
         javascriptKey = key.substring(jsKeyPrefix.length, key.length);
-      }
-      else {
+      } else {
         masterKey = key;
       }
     }
   }
 
-  return {appId: appId, masterKey: masterKey, javascriptKey: javascriptKey};
+  return { appId: appId, masterKey: masterKey, javascriptKey: javascriptKey };
 }
 
 function decodeBase64(str) {
-  return new Buffer(str, 'base64').toString()
+  return Buffer.from(str, 'base64').toString();
 }
 
+<<<<<<< HEAD
 export function allowCrossDomain(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -255,6 +322,29 @@ export function allowCrossDomain(req, res, next) {
   else {
     next();
   }
+=======
+export function allowCrossDomain(appId) {
+  return (req, res, next) => {
+    const config = Config.get(appId, getMountForRequest(req));
+    let allowHeaders = DEFAULT_ALLOWED_HEADERS;
+    if (config && config.allowHeaders) {
+      allowHeaders += `, ${config.allowHeaders.join(', ')}`;
+    }
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', allowHeaders);
+    res.header(
+      'Access-Control-Expose-Headers',
+      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
+    );
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  };
+>>>>>>> master
 }
 
 export function allowMethodOverride(req, res, next) {
@@ -267,40 +357,50 @@ export function allowMethodOverride(req, res, next) {
 }
 
 export function handleParseErrors(err, req, res, next) {
+  const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
+    if (req.config && req.config.enableExpressErrorHandler) {
+      return next(err);
+    }
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
-    case Parse.Error.INTERNAL_SERVER_ERROR:
-      httpStatus = 500;
-      break;
-    case Parse.Error.OBJECT_NOT_FOUND:
-      httpStatus = 404;
-      break;
-    default:
-      httpStatus = 400;
+      case Parse.Error.INTERNAL_SERVER_ERROR:
+        httpStatus = 500;
+        break;
+      case Parse.Error.OBJECT_NOT_FOUND:
+        httpStatus = 404;
+        break;
+      default:
+        httpStatus = 400;
     }
-
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
+<<<<<<< HEAD
     log.error(err.message, err);
     if (req.config && req.config.enableExpressErrorHandler) {
       next(err);
     }
+=======
+    log.error('Parse error: ', err);
+>>>>>>> master
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
-    next(err);
+    if (!(process && process.env.TESTING)) {
+      next(err);
+    }
   } else {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
     res.json({
       code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error.'
+      message: 'Internal server error.',
     });
-    next(err);
+    if (!(process && process.env.TESTING)) {
+      next(err);
+    }
   }
-
 }
 
 export function enforceMasterKeyAccess(req, res, next) {
@@ -316,7 +416,7 @@ export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
     const error = new Error();
     error.status = 403;
-    error.message = "unauthorized: master key is required";
+    error.message = 'unauthorized: master key is required';
     throw error;
   }
   return Promise.resolve();
