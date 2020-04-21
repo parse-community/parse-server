@@ -8,7 +8,7 @@ import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLControlle
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
-const getParseClassQueryConfig = function(
+const getParseClassQueryConfig = function (
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
   return (parseClassConfig && parseClassConfig.query) || {};
@@ -50,7 +50,7 @@ const getQuery = async (
   );
 };
 
-const load = function(
+const load = function (
   parseGraphQLSchema,
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -136,14 +136,15 @@ const load = function(
 
           const { keys, include } = extractKeysAndInclude(
             selectedFields
-              .filter(field => field.startsWith('edges.node.'))
-              .map(field => field.replace('edges.node.', ''))
+              .filter((field) => field.startsWith('edges.node.'))
+              .map((field) => field.replace('edges.node.', ''))
           );
+          const parseOrder = order && order.join(',');
 
           return await objectsQueries.findObjects(
             className,
             where,
-            order,
+            parseOrder,
             skip,
             first,
             after,
