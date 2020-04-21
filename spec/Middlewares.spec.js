@@ -373,10 +373,6 @@ describe('middlewares', () => {
       masterKey: 'masterKey',
     });
     fakeReq.body = Buffer.from('fake-file');
-    console.log('fakeReq.body.constructor');
-    console.log(fakeReq.body.constructor);
-    console.log('fakeReq.body instanceof Buffer');
-    console.log(fakeReq.body instanceof Buffer);
     middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
