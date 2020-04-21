@@ -1,6 +1,7 @@
 'use strict';
 const Parse = require('parse/node');
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -221,6 +222,32 @@ describe('Parse.Query Aggregate testing', () => {
       })
       .then(results => {
         expect(results[0].objectId).toEqual(null);
+        done();
+      });
+  });
+
+  it('group by multiple columns ', done => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    const obj3 = new TestObject();
+    const pipeline = [
+      {
+        group: {
+          objectId: {
+            score: '$score',
+            views: '$views',
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ];
+    Parse.Object.saveAll([obj1, obj2, obj3])
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.aggregate(pipeline);
+      })
+      .then(results => {
+        expect(results.length).toEqual(5);
         done();
       });
   });
@@ -963,25 +990,29 @@ describe('Parse.Query Aggregate testing', () => {
     await Parse.Object.saveAll([obj1, obj2, obj3, obj4, obj5, obj6]);
 
     expect(
-      (await new Parse.Query('MyCollection').aggregate([
-        {
-          match: {
-            language: { $in: [null, 'en'] },
+      (
+        await new Parse.Query('MyCollection').aggregate([
+          {
+            match: {
+              language: { $in: [null, 'en'] },
+            },
           },
-        },
-      ]))
+        ])
+      )
         .map(value => value.otherField)
         .sort()
     ).toEqual([1, 2, 3, 4]);
 
     expect(
-      (await new Parse.Query('MyCollection').aggregate([
-        {
-          match: {
-            $or: [{ language: 'en' }, { language: null }],
+      (
+        await new Parse.Query('MyCollection').aggregate([
+          {
+            match: {
+              $or: [{ language: 'en' }, { language: null }],
+            },
           },
-        },
-      ]))
+        ])
+      )
         .map(value => value.otherField)
         .sort()
     ).toEqual([1, 2, 3, 4]);
@@ -1398,4 +1429,49 @@ describe('Parse.Query Aggregate testing', () => {
         });
     }
   );
+
+  it_only_db('mongo')('geoNear with location query', async () => {
+    // Create geo index which is required for `geoNear` query
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('GeoObject').save();
+    await database.adapter.ensureIndex(
+      'GeoObject',
+      schema,
+      ['location'],
+      'geoIndex',
+      false,
+      '2dsphere'
+    );
+    // Create objects
+    const GeoObject = Parse.Object.extend('GeoObject');
+    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1) });
+    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(2, 1), date: new Date(2) });
+    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(3, 1), date: new Date(3) });
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+    // Create query
+    const pipeline = [
+      {
+        geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [1, 1]
+          },
+          key: 'location',
+          spherical: true,
+          distanceField: 'dist',
+          query: {
+            date: {
+              $gte: new Date(2)
+            }
+          }
+        }
+      }
+    ];
+    const query = new Parse.Query(GeoObject);
+    const results = await query.aggregate(pipeline);
+    // Check results
+    expect(results.length).toEqual(2);
+    expect(results[0].value).toEqual(2);
+    expect(results[1].value).toEqual(3);
+  });
 });

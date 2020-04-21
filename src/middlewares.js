@@ -8,7 +8,7 @@ import defaultLogger from './logger';
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
 
-const getMountForRequest = function(req) {
+const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
   return req.protocol + '://' + req.get('host') + mountPath;
@@ -59,7 +59,14 @@ export function handleParseHeaders(req, res, next) {
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
-      req.body = JSON.parse(req.body);
+      // https://github.com/parse-community/parse-server/issues/6589
+      // It is also possible that the client is trying to upload a file but forgot
+      // to provide x-parse-app-id in header and parse a binary file will fail
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        return invalidRequest(req, res);
+      }
       fileViaJSON = true;
     }
 
@@ -105,11 +112,16 @@ export function handleParseHeaders(req, res, next) {
     }
   }
 
+  if (info.sessionToken && typeof info.sessionToken !== 'string') {
+    info.sessionToken = info.sessionToken.toString();
+  }
+
   if (info.clientVersion) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
   if (fileViaJSON) {
+    req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
     req.body = Buffer.from(base64, 'base64');
@@ -163,10 +175,10 @@ export function handleParseHeaders(req, res, next) {
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
-  const oneKeyConfigured = keys.some(function(key) {
+  const oneKeyConfigured = keys.some(function (key) {
     return req.config[key] !== undefined;
   });
-  const oneKeyMatches = keys.some(function(key) {
+  const oneKeyMatches = keys.some(function (key) {
     return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
@@ -176,6 +188,17 @@ export function handleParseHeaders(req, res, next) {
 
   if (req.url == '/login') {
     delete info.sessionToken;
+  }
+
+  if (req.userFromJWT) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+      user: req.userFromJWT,
+    });
+    next();
+    return;
   }
 
   if (!info.sessionToken) {
@@ -209,13 +232,13 @@ export function handleParseHeaders(req, res, next) {
         });
       }
     })
-    .then(auth => {
+    .then((auth) => {
       if (auth) {
         req.auth = auth;
         next();
       }
     })
-    .catch(error => {
+    .catch((error) => {
       if (error instanceof Parse.Error) {
         next(error);
         return;
@@ -321,6 +344,9 @@ export function allowMethodOverride(req, res, next) {
 export function handleParseErrors(err, req, res, next) {
   const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
+    if (req.config && req.config.enableExpressErrorHandler) {
+      return next(err);
+    }
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -333,13 +359,9 @@ export function handleParseErrors(err, req, res, next) {
       default:
         httpStatus = 400;
     }
-
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
-    if (req.config && req.config.enableExpressErrorHandler) {
-      next(err);
-    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });

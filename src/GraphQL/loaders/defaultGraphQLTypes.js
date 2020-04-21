@@ -14,6 +14,7 @@ import {
   GraphQLBoolean,
   GraphQLUnionType,
 } from 'graphql';
+import { toGlobalId } from 'graphql-relay';
 import { GraphQLUpload } from 'graphql-upload';
 
 class TypeValidationError extends Error {
@@ -366,6 +367,20 @@ const FILE_INFO = new GraphQLObjectType({
   },
 });
 
+const FILE_INPUT = new GraphQLInputObjectType({
+  name: 'FileInput',
+  fields: {
+    file: {
+      description: 'A File Scalar can be an url or a FileInfo object.',
+      type: FILE,
+    },
+    upload: {
+      description: 'Use this field if you want to create a new file.',
+      type: GraphQLUpload,
+    },
+  },
+});
+
 const GEO_POINT_FIELDS = {
   latitude: {
     description: 'This is the latitude.',
@@ -539,7 +554,7 @@ const ACL = new GraphQLObjectType({
         Object.keys(p).forEach(rule => {
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
-              userId: rule,
+              userId: toGlobalId('_User', rule),
               read: p[rule].read ? true : false,
               write: p[rule].write ? true : false,
             });
@@ -1244,6 +1259,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(BYTES, true);
   parseGraphQLSchema.addGraphQLType(FILE, true);
   parseGraphQLSchema.addGraphQLType(FILE_INFO, true);
+  parseGraphQLSchema.addGraphQLType(FILE_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT_INPUT, true);
   parseGraphQLSchema.addGraphQLType(GEO_POINT, true);
   parseGraphQLSchema.addGraphQLType(PARSE_OBJECT, true);
@@ -1301,6 +1317,7 @@ export {
   SELECT_INPUT,
   FILE,
   FILE_INFO,
+  FILE_INPUT,
   GEO_POINT_FIELDS,
   GEO_POINT_INPUT,
   GEO_POINT,

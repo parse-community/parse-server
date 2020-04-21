@@ -8,13 +8,20 @@ import { ParseGraphQLClassConfig } from '../../Controllers/ParseGraphQLControlle
 import { transformClassNameToGraphQL } from '../transformers/className';
 import { extractKeysAndInclude } from '../parseGraphQLUtils';
 
-const getParseClassQueryConfig = function(
+const getParseClassQueryConfig = function (
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
   return (parseClassConfig && parseClassConfig.query) || {};
 };
 
-const getQuery = async (className, _source, args, context, queryInfo) => {
+const getQuery = async (
+  parseClass,
+  _source,
+  args,
+  context,
+  queryInfo,
+  parseClasses
+) => {
   let { id } = args;
   const { options } = args;
   const { readPreference, includeReadPreference } = options || {};
@@ -23,14 +30,14 @@ const getQuery = async (className, _source, args, context, queryInfo) => {
 
   const globalIdObject = fromGlobalId(id);
 
-  if (globalIdObject.type === className) {
+  if (globalIdObject.type === parseClass.className) {
     id = globalIdObject.id;
   }
 
   const { keys, include } = extractKeysAndInclude(selectedFields);
 
   return await objectsQueries.getObject(
-    className,
+    parseClass.className,
     id,
     keys,
     include,
@@ -38,11 +45,12 @@ const getQuery = async (className, _source, args, context, queryInfo) => {
     includeReadPreference,
     config,
     auth,
-    info
+    info,
+    parseClasses
   );
 };
 
-const load = function(
+const load = function (
   parseGraphQLSchema,
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
@@ -79,7 +87,14 @@ const load = function(
       ),
       async resolve(_source, args, context, queryInfo) {
         try {
-          return await getQuery(className, _source, args, context, queryInfo);
+          return await getQuery(
+            parseClass,
+            _source,
+            args,
+            context,
+            queryInfo,
+            parseGraphQLSchema.parseClasses
+          );
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
@@ -121,8 +136,8 @@ const load = function(
 
           const { keys, include } = extractKeysAndInclude(
             selectedFields
-              .filter(field => field.startsWith('edges.node.'))
-              .map(field => field.replace('edges.node.', ''))
+              .filter((field) => field.startsWith('edges.node.'))
+              .map((field) => field.replace('edges.node.', ''))
           );
           const parseOrder = order && order.join(',');
 

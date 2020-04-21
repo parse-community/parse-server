@@ -182,13 +182,17 @@ const transformQueryConstraintInputToParse = (
       return;
     }
     switch (fieldName) {
-      case '$point':
-      case '$nearSphere':
+      case 'point':
         if (typeof fieldValue === 'object' && !fieldValue.__type) {
           fieldValue.__type = 'GeoPoint';
         }
         break;
-      case '$box':
+      case 'nearSphere':
+        if (typeof fieldValue === 'object' && !fieldValue.__type) {
+          fieldValue.__type = 'GeoPoint';
+        }
+        break;
+      case 'box':
         if (
           typeof fieldValue === 'object' &&
           fieldValue.bottomLeft &&
@@ -204,10 +208,10 @@ const transformQueryConstraintInputToParse = (
               ...fieldValue.upperRight,
             },
           ];
-          constraints[fieldName] = fieldValue;
+          constraints[parseConstraintMap[fieldName]] = fieldValue;
         }
         break;
-      case '$polygon':
+      case 'polygon':
         if (fieldValue instanceof Array) {
           fieldValue.forEach(geoPoint => {
             if (typeof geoPoint === 'object' && !geoPoint.__type) {
@@ -216,7 +220,7 @@ const transformQueryConstraintInputToParse = (
           });
         }
         break;
-      case '$centerSphere':
+      case 'centerSphere':
         if (
           typeof fieldValue === 'object' &&
           fieldValue.center &&
@@ -229,7 +233,7 @@ const transformQueryConstraintInputToParse = (
             },
             fieldValue.distance,
           ];
-          constraints[fieldName] = fieldValue;
+          constraints[parseConstraintMap[fieldName]] = fieldValue;
         }
         break;
     }

@@ -3,6 +3,33 @@ import { offsetToCursor, cursorToOffset } from 'graphql-relay';
 import rest from '../../rest';
 import { transformQueryInputToParse } from '../transformers/query';
 
+// Eslint/Prettier conflict
+/* eslint-disable*/
+const needToGetAllKeys = (fields, keys, parseClasses) =>
+  keys
+    ? keys.split(',').some((keyName) => {
+        const key = keyName.split('.');
+        if (fields[key[0]]) {
+          if (fields[key[0]].type === 'Pointer') {
+            const subClass = parseClasses.find(
+              ({ className: parseClassName }) =>
+                fields[key[0]].targetClass === parseClassName
+            );
+            if (subClass && subClass.fields[key[1]]) {
+              // Current sub key is not custom
+              return false;
+            }
+          } else if (!key[1]) {
+            // current key is not custom
+            return false;
+          }
+        }
+        // Key not found into Parse Schema so it's custom
+        return true;
+      })
+    : true;
+/* eslint-enable*/
+
 const getObject = async (
   className,
   objectId,
@@ -12,11 +39,24 @@ const getObject = async (
   includeReadPreference,
   config,
   auth,
-  info
+  info,
+  parseClasses
 ) => {
   const options = {};
-  if (keys) {
-    options.keys = keys;
+  try {
+    if (
+      !needToGetAllKeys(
+        parseClasses.find(
+          ({ className: parseClassName }) => className === parseClassName
+        ).fields,
+        keys,
+        parseClasses
+      )
+    ) {
+      options.keys = keys;
+    }
+  } catch (e) {
+    console.log(e);
   }
   if (include) {
     options.include = include;
@@ -114,7 +154,7 @@ const findObjects = async (
 
   if (
     selectedFields.find(
-      field => field.startsWith('edges.') || field.startsWith('pageInfo.')
+      (field) => field.startsWith('edges.') || field.startsWith('pageInfo.')
     )
   ) {
     if (limit || limit === 0) {
@@ -133,7 +173,15 @@ const findObjects = async (
         // Silently replace the limit on the query with the max configured
         options.limit = config.maxLimit;
       }
-      if (keys) {
+      if (
+        !needToGetAllKeys(
+          parseClasses.find(
+            ({ className: parseClassName }) => className === parseClassName
+          ).fields,
+          keys,
+          parseClasses
+        )
+      ) {
         options.keys = keys;
       }
       if (includeAll === true) {
@@ -313,4 +361,4 @@ const calculateSkipAndLimit = (
   };
 };
 
-export { getObject, findObjects, calculateSkipAndLimit };
+export { getObject, findObjects, calculateSkipAndLimit, needToGetAllKeys };
