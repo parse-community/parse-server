@@ -10769,57 +10769,70 @@ describe('ParseGraphQLServer', () => {
             robot: { value: 'robot' },
           },
         });
-        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-          graphQLPath: '/graphql',
-          graphQLCustomTypeDefs: new GraphQLSchema({
-            query: new GraphQLObjectType({
-              name: 'Query',
-              fields: {
-                customQuery: {
-                  type: new GraphQLNonNull(GraphQLString),
-                  args: {
-                    message: { type: new GraphQLNonNull(GraphQLString) },
-                  },
-                  resolve: (p, { message }) => message,
-                },
+        const SomeClassType = new GraphQLObjectType({
+            name: 'SomeClass',
+            fields: {
+              nameUpperCase: {
+                type: new GraphQLNonNull(GraphQLString),
+                resolve: (p) => p.name.toUpperCase(),
               },
-            }),
-            types: [
-              new GraphQLInputObjectType({
-                name: 'CreateSomeClassFieldsInput',
-                fields: {
-                  type: { type: TypeEnum },
-                },
-              }),
-              new GraphQLInputObjectType({
-                name: 'UpdateSomeClassFieldsInput',
-                fields: {
-                  type: { type: TypeEnum },
-                },
-              }),
-              new GraphQLObjectType({
-                name: 'SomeClass',
-                fields: {
-                  nameUpperCase: {
-                    type: new GraphQLNonNull(GraphQLString),
-                    resolve: (p) => p.name.toUpperCase(),
+              type: { type: TypeEnum },
+              language: {
+                type: new GraphQLEnumType({
+                  name: 'LanguageEnum',
+                  values: {
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
                   },
-                  type: { type: TypeEnum },
-                  language: {
-                    type: new GraphQLEnumType({
-                      name: 'LanguageEnum',
-                      values: {
-                        fr: { value: 'fr' },
-                        en: { value: 'en' },
-                      },
-                    }),
-                    resolve: () => 'fr',
-                  },
-                },
-              }),
-            ],
+                }),
+                resolve: () => 'fr',
+              },
+            },
           }),
-        });
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            graphQLCustomTypeDefs: new GraphQLSchema({
+              query: new GraphQLObjectType({
+                name: 'Query',
+                fields: {
+                  customQuery: {
+                    type: new GraphQLNonNull(GraphQLString),
+                    args: {
+                      message: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: (p, { message }) => message,
+                  },
+                  customQueryWithAutoTypeReturn: {
+                    type: SomeClassType,
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      return obj.toJSON();
+                    },
+                  },
+                },
+              }),
+              types: [
+                new GraphQLInputObjectType({
+                  name: 'CreateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                new GraphQLInputObjectType({
+                  name: 'UpdateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                SomeClassType,
+              ],
+            }),
+          });
 
         parseGraphQLServer.applyGraphQL(expressApp);
         await new Promise((resolve) =>
@@ -10855,6 +10868,33 @@ describe('ParseGraphQLServer', () => {
           `,
         });
         expect(result.data.customQuery).toEqual('hello');
+      });
+
+      it('can resolve a custom query with auto type return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query CustomQuery($id: String!) {
+              customQueryWithAutoTypeReturn(id: $id) {
+                objectId
+                nameUpperCase
+                name
+                type
+              }
+            }
+          `,
+        });
+        expect(result.data.customQueryWithAutoTypeReturn.objectId).toEqual(
+          obj.id
+        );
+        expect(result.data.customQueryWithAutoTypeReturn.name).toEqual('aname');
+        expect(result.data.customQueryWithAutoTypeReturn.nameUpperCase).toEqual(
+          'ANAME'
+        );
+        expect(result.data.customQueryWithAutoTypeReturn.type).toEqual('robot');
       });
 
       it('can resolve a custom extend type', async () => {
