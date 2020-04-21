@@ -12,7 +12,7 @@ describe('middlewares', () => {
         _ApplicationId: 'FakeAppId',
       },
       headers: {},
-      get: key => {
+      get: (key) => {
         return fakeReq.headers[key.toLowerCase()];
       },
     };
@@ -24,7 +24,7 @@ describe('middlewares', () => {
     AppCache.del(fakeReq.body._ApplicationId);
   });
 
-  it('should use _ContentType if provided', done => {
+  it('should use _ContentType if provided', (done) => {
     expect(fakeReq.headers['content-type']).toEqual(undefined);
     const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
@@ -64,7 +64,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed when any one of the configured keys supplied', done => {
+  it('should succeed when any one of the configured keys supplied', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       clientKey: 'clientKey',
       masterKey: 'masterKey',
@@ -77,7 +77,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed when client key supplied but empty', done => {
+  it('should succeed when client key supplied but empty', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       clientKey: '',
       masterKey: 'masterKey',
@@ -90,7 +90,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed when no keys are configured and none supplied', done => {
+  it('should succeed when no keys are configured and none supplied', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
     });
@@ -110,22 +110,22 @@ describe('middlewares', () => {
 
   const BodyKeys = Object.keys(BodyParams);
 
-  BodyKeys.forEach(infoKey => {
+  BodyKeys.forEach((infoKey) => {
     const bodyKey = BodyParams[infoKey];
     const keyValue = 'Fake' + bodyKey;
     // javascriptKey is the only one that gets defaulted,
     const otherKeys = BodyKeys.filter(
-      otherKey => otherKey !== infoKey && otherKey !== 'javascriptKey'
+      (otherKey) => otherKey !== infoKey && otherKey !== 'javascriptKey'
     );
 
-    it(`it should pull ${bodyKey} into req.info`, done => {
+    it(`it should pull ${bodyKey} into req.info`, (done) => {
       fakeReq.body[bodyKey] = keyValue;
 
       middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
         expect(fakeReq.body[bodyKey]).toEqual(undefined);
         expect(fakeReq.info[infoKey]).toEqual(keyValue);
 
-        otherKeys.forEach(otherKey => {
+        otherKeys.forEach((otherKey) => {
           expect(fakeReq.info[otherKey]).toEqual(undefined);
         });
 
@@ -145,7 +145,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the ip does belong to masterKeyIps list', done => {
+  it('should succeed if the ip does belong to masterKeyIps list', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1', 'ip2'],
@@ -169,7 +169,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the connection.remoteAddress does belong to masterKeyIps list', done => {
+  it('should succeed if the connection.remoteAddress does belong to masterKeyIps list', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1', 'ip2'],
@@ -193,7 +193,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the socket.remoteAddress does belong to masterKeyIps list', done => {
+  it('should succeed if the socket.remoteAddress does belong to masterKeyIps list', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1', 'ip2'],
@@ -217,7 +217,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the connection.socket.remoteAddress does belong to masterKeyIps list', done => {
+  it('should succeed if the connection.socket.remoteAddress does belong to masterKeyIps list', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1', 'ip2'],
@@ -230,7 +230,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should allow any ip to use masterKey if masterKeyIps is empty', done => {
+  it('should allow any ip to use masterKey if masterKeyIps is empty', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: [],
@@ -243,7 +243,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed if xff header does belong to masterKeyIps', done => {
+  it('should succeed if xff header does belong to masterKeyIps', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1'],
@@ -256,7 +256,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should succeed if xff header with one ip does belong to masterKeyIps', done => {
+  it('should succeed if xff header with one ip does belong to masterKeyIps', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1'],
@@ -355,5 +355,25 @@ describe('middlewares', () => {
     expect(headers['Access-Control-Allow-Headers']).toContain(
       middlewares.DEFAULT_ALLOWED_HEADERS
     );
+  });
+
+  it('should use user provided on field userFromJWT', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+    });
+    fakeReq.userFromJWT = 'fake-user';
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeReq.auth.user).toEqual('fake-user');
+      done();
+    });
+  });
+
+  it('should give invalid response when upload file without x-parse-application-id in header', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+    });
+    fakeReq.body = Buffer.from('fake-file');
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 });

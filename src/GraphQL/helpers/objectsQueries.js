@@ -7,7 +7,7 @@ import { transformQueryInputToParse } from '../transformers/query';
 /* eslint-disable*/
 const needToGetAllKeys = (fields, keys, parseClasses) =>
   keys
-    ? keys.split(',').some(keyName => {
+    ? keys.split(',').some((keyName) => {
         const key = keyName.split('.');
         if (fields[key[0]]) {
           if (fields[key[0]].type === 'Pointer') {
@@ -29,20 +29,6 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
       })
     : true;
 /* eslint-enable*/
-
-const transformOrder = order =>
-  order
-    .map(o => {
-      const direction = o.indexOf('_ASC') > 0 ? '_ASC' : '_DESC';
-      let field = o.replace(direction, '');
-      field = field === 'id' ? 'objectId' : field;
-      if (direction === '_ASC') {
-        return `${field}`;
-      } else {
-        return `-${field}`;
-      }
-    })
-    .join(',');
 
 const getObject = async (
   className,
@@ -168,7 +154,7 @@ const findObjects = async (
 
   if (
     selectedFields.find(
-      field => field.startsWith('edges.') || field.startsWith('pageInfo.')
+      (field) => field.startsWith('edges.') || field.startsWith('pageInfo.')
     )
   ) {
     if (limit || limit === 0) {
@@ -178,7 +164,7 @@ const findObjects = async (
     }
     if (options.limit !== 0) {
       if (order) {
-        options.order = transformOrder(order);
+        options.order = order;
       }
       if (skip) {
         options.skip = skip;
