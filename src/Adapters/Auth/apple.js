@@ -4,9 +4,79 @@
 const Parse = require('parse/node').Parse;
 const jwksClient = require('jwks-rsa');
 const util = require('util');
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 const TOKEN_ISSUER = 'https://appleid.apple.com';
+
+const fs = require("fs");
+const request = require("request");
+
+function accessToken(configPath, code) {
+  const config = JSON.parse(fs.readFileSync(configPath));
+
+  return new Promise(
+    (resolve, reject) => {
+      generate()
+        .then(
+          (token) => {
+            const payload = {
+              grant_type: "authorization_code",
+              code,
+              redirect_uri: config.redirect_uri,
+              client_id: config.client_id,
+              client_secret: token
+            };
+
+            request.post("https://appleid.apple.com/auth/token", {
+              form: payload,
+              json: true
+            }, (error, response, body) => {
+              if (error) {
+                reject(`AppleAuth Error - An error occured while getting a response from Apple's servers: ${ response }`)
+                return;
+              }
+
+              resolve(body);
+            });
+          }
+        ).catch(
+          (error) => reject(error)
+        );
+    }
+  );
+}
+
+function generate(privateKeyPath) {
+  const privateKey = fs.readFileSync(privateKeyPath);
+
+  return new Promise(
+    (resolve, reject) => {
+      // make it expire within 6 months
+      const exp = Math.floor(Date.now() / 1000) + (86400 * 180);
+      const claims = {
+        iss: config.team_id,
+        iat: Math.floor(Date.now() / 1000),
+        exp,
+        aud: "https://appleid.apple.com",
+        sub: config.client_id
+      };
+
+      jwt.sign(claims, privateKey, {
+          algorithm: "ES256",
+          keyid: config.key_id
+        },
+        (error, token) => {
+          if (error) {
+            reject(`AppleAuth Error - Error occured while signing: ${ error }`);
+            return;
+          }
+
+          resolve(token);
+        }
+      );
+    }
+  );
+}
 
 const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   const client = jwksClient({
@@ -31,7 +101,9 @@ const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
 };
 
 const getHeaderFromToken = token => {
-  const decodedToken = jwt.decode(token, { complete: true });
+  const decodedToken = jwt.decode(token, {
+    complete: true
+  });
   if (!decodedToken) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -42,10 +114,21 @@ const getHeaderFromToken = token => {
   return decodedToken.header;
 };
 
-const verifyIdToken = async (
-  { token, id },
-  { clientId, cacheMaxEntries, cacheMaxAge }
-) => {
+const verifyIdToken = async ({
+  token,
+  id,
+  isWebUser
+}, {
+  clientId,
+  cacheMaxEntries,
+  cacheMaxAge,
+  p8FilePath,
+  configFilePath
+}) => {
+  if (isWebUser) {
+    
+  }
+  accessToken
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -53,7 +136,10 @@ const verifyIdToken = async (
     );
   }
 
-  const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
+  const {
+    kid: keyId,
+    alg: algorithm
+  } = getHeaderFromToken(token);
   const ONE_HOUR_IN_MS = 3600000;
   let jwtClaims;
 
