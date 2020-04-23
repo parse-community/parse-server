@@ -46,7 +46,7 @@
     "mime": "2.4.4",
     "mongodb": "3.5.6",
     "parse": "2.12.0",
-    "pg-promise": "10.5.1",
+    "pg-promise": "10.5.2",
     "pluralize": "^8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.2",
@@ -85,11 +85,11 @@
     "jasmine": "3.5.0",
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
-    "lint-staged": "10.1.5",
+    "lint-staged": "10.1.7",
     "mongodb-runner": "4.8.0",
     "node-fetch": "2.6.0",
     "nyc": "15.0.1",
-    "prettier": "2.0.3"
+    "prettier": "2.0.5"
   },
   "scripts": {
     "definitions": "node ./resources/buildConfigDefinitions.js",
