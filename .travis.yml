@@ -68,7 +68,6 @@ jobs:
         all_branches: true
     - provider: npm
       edge: true
-      strategy: npm
       api_token:
         secure: Yrng6jsnMAtzrrln9DwRuY4xpcxl/WYS/1A5fckyQF6DsLmNlvqVtu3MWF+zdJgANF63G3jIee11tNBpYRecHl8FjPGwO0kc1vEgvIRVnveyR0bwIIDH6s/mR9dg4rZikflwG4XExsLyaQd7ko8aTIOIayfxJiv/u0yqwuBuBW2bFrL/41b1cKGK5+Iq2a+PdFENUPenKXISkACGaMnQF4Y/KVF98UwCiGLf957yFWc2sD6TFbjNDbAENSccvg1J3fBb+djbtzKzldl29ntp2mKVGSVASiKCRa6hSfgQulHiidFqFIKgpYJ1uATRr3UFr/NRVt1WbrgLnzY74OCX7y02c/xiYQMMEPRl/P8hHJu+KjQ3PBWsBvmsRN0QMUJv3PEjUPE3AY8sw49NoxiJZzJr7574vUBuM/dk0byYI6K/gwmUrPIhQjljzZqinS8JJJ4FjGjCdzXRhT5Q+PZvt5bF1rMOZXayNJZa+cICtmiJoU3vO2Yf6TXC3wY1veKvmcs24nws5lp4keJePTKAi1Ig7VoSxwAlgs3EGANIh7oBKx9zWnXQYMdmxbYsvLXAWcnnM+PcSCvooLmXWso3BQBeRuUUSS2oLaBpsFMsiniLNbA1cW4fwMkgUGz4oEDRi8wTD89E/1J2oNxzqtWRPawcVKpMpnBbDJHrWJPEHMw=
       email:
