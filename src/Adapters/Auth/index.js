@@ -61,11 +61,11 @@ const providers = {
   ldap,
 };
 
-function authDataValidator(adapter, appIds, options) {
-  return function(authData) {
-    return adapter.validateAuthData(authData, options).then(() => {
+function authDataValidator(adapter, appIds, options, req) {
+  return function (authData) {
+    return adapter.validateAuthData(authData, options, req).then(() => {
       if (appIds) {
-        return adapter.validateAppId(appIds, authData, options);
+        return adapter.validateAppId(appIds, authData, options, req);
       }
       return Promise.resolve();
     });
@@ -98,7 +98,7 @@ function loadAuthAdapter(provider, authOptions) {
       providerOptions
     );
     if (optionalAdapter) {
-      ['validateAuthData', 'validateAppId'].forEach(key => {
+      ['validateAuthData', 'validateAppId'].forEach((key) => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
@@ -117,13 +117,13 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
-module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
+module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   let _enableAnonymousUsers = enableAnonymousUsers;
-  const setEnableAnonymousUsers = function(enable) {
+  const setEnableAnonymousUsers = function (enable) {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function(provider) {
+  const getValidatorForProvider = function (provider, req) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
@@ -133,7 +133,7 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
       authOptions
     );
 
-    return authDataValidator(adapter, appIds, providerOptions);
+    return authDataValidator(adapter, appIds, providerOptions, req);
   };
 
   return Object.freeze({
