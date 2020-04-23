@@ -11,12 +11,12 @@ const TOKEN_ISSUER = 'https://appleid.apple.com';
 const fs = require("fs");
 const request = require("request");
 
-function accessToken(configPath, code) {
+function accessToken(configPath, privateKeyPath, code) {
   const config = JSON.parse(fs.readFileSync(configPath));
 
   return new Promise(
     (resolve, reject) => {
-      generate()
+      generate(privateKeyPath)
         .then(
           (token) => {
             const payload = {
@@ -117,7 +117,7 @@ const getHeaderFromToken = token => {
 const verifyIdToken = async ({
   token,
   id,
-  isWebUser
+  code
 }, {
   clientId,
   cacheMaxEntries,
@@ -125,10 +125,12 @@ const verifyIdToken = async ({
   p8FilePath,
   configFilePath
 }) => {
-  if (isWebUser) {
-    
+  if (code) {
+    const response = await accessToken(configFilePath, p8FilePath, code);
+    token = response.id_token;
+    id = decodedToken = jwt.decode(token).sub;
   }
-  accessToken
+
   if (!token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
