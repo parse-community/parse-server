@@ -251,13 +251,7 @@ class ParseGraphQLSchema {
             }
           }
         );
-        this.graphQLSchema = mergeSchemas({
-          schemas: [
-            this.graphQLSchemaDirectivesDefinitions,
-            this.graphQLAutoSchema,
-          ],
-          mergeDirectives: true,
-        });
+        this.graphQLSchema = this.graphQLAutoSchema;
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
