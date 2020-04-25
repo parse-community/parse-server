@@ -119,7 +119,7 @@ const openConnections = {};
 let server;
 
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = changedConfiguration => {
+const reconfigureServer = (changedConfiguration) => {
   return new Promise((resolve, reject) => {
     if (server) {
       return server.close(() => {
@@ -134,7 +134,7 @@ const reconfigureServer = changedConfiguration => {
         defaultConfiguration,
         changedConfiguration,
         {
-          serverStartComplete: error => {
+          serverStartComplete: (error) => {
             if (error) {
               reject(error);
             } else {
@@ -147,13 +147,12 @@ const reconfigureServer = changedConfiguration => {
       );
       cache.clear();
       parseServer = ParseServer.start(newConfiguration);
-      parseServer.app.use(require('./testing-routes').router);
-      parseServer.expressApp.use('/1', err => {
+      parseServer.expressApp.use('/1', (err) => {
         console.error(err);
         fail('should not call next');
       });
       server = parseServer.server;
-      server.on('connection', connection => {
+      server.on('connection', (connection) => {
         const key = `${connection.remoteAddress}:${connection.remotePort}`;
         openConnections[key] = connection;
         connection.on('close', () => {
@@ -170,7 +169,7 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-beforeEach(done => {
+beforeEach((done) => {
   try {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
@@ -179,7 +178,7 @@ beforeEach(done => {
     }
   }
   TestUtils.destroyAllDataPermanently(true)
-    .catch(error => {
+    .catch((error) => {
       // For tests that connect to their own mongo, there won't be any data to delete.
       if (
         error.message === 'ns not found' ||
@@ -200,7 +199,7 @@ beforeEach(done => {
     .catch(done.fail);
 });
 
-afterEach(function(done) {
+afterEach(function (done) {
   const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
       fail(
@@ -212,11 +211,11 @@ afterEach(function(done) {
   Parse.Cloud._removeAllHooks();
   databaseAdapter
     .getAllClasses()
-    .then(allSchemas => {
-      allSchemas.forEach(schema => {
+    .then((allSchemas) => {
+      allSchemas.forEach((schema) => {
         const className = schema.className;
         expect(className).toEqual({
-          asymmetricMatch: className => {
+          asymmetricMatch: (className) => {
             if (!className.startsWith('_')) {
               return true;
             } else {
@@ -244,7 +243,7 @@ afterEach(function(done) {
     ) // swallow errors
     .then(() => {
       // Connection close events are not immediate on node 10+... wait a bit
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         setTimeout(resolve, 0);
       });
     })
@@ -326,13 +325,13 @@ function range(n) {
 
 function mockCustomAuthenticator(id, password) {
   const custom = {};
-  custom.validateAuthData = function(authData) {
+  custom.validateAuthData = function (authData) {
     if (authData.id === id && authData.password.startsWith(password)) {
       return Promise.resolve();
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'not validated');
   };
-  custom.validateAppId = function() {
+  custom.validateAppId = function () {
     return Promise.resolve();
   };
   return custom;
@@ -344,14 +343,14 @@ function mockCustom() {
 
 function mockFacebookAuthenticator(id, token) {
   const facebook = {};
-  facebook.validateAuthData = function(authData) {
+  facebook.validateAuthData = function (authData) {
     if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
       throw undefined;
     }
   };
-  facebook.validateAppId = function(appId, authData) {
+  facebook.validateAppId = function (appId, authData) {
     if (authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
@@ -368,17 +367,17 @@ function mockFacebook() {
 function mockShortLivedAuth() {
   const auth = {};
   let accessToken;
-  auth.setValidAccessToken = function(validAccessToken) {
+  auth.setValidAccessToken = function (validAccessToken) {
     accessToken = validAccessToken;
   };
-  auth.validateAuthData = function(authData) {
+  auth.validateAuthData = function (authData) {
     if (authData.access_token == accessToken) {
       return Promise.resolve();
     } else {
       return Promise.reject('Invalid access token');
     }
   };
-  auth.validateAppId = function() {
+  auth.validateAppId = function () {
     return Promise.resolve();
   };
   return auth;
@@ -403,11 +402,11 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
-global.jfail = function(err) {
+global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
 
-global.it_exclude_dbs = excluded => {
+global.it_exclude_dbs = (excluded) => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
   } else {
@@ -415,7 +414,7 @@ global.it_exclude_dbs = excluded => {
   }
 };
 
-global.it_only_db = db => {
+global.it_only_db = (db) => {
   if (
     process.env.PARSE_SERVER_TEST_DB === db ||
     (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
@@ -426,7 +425,7 @@ global.it_only_db = db => {
   }
 };
 
-global.fit_exclude_dbs = excluded => {
+global.fit_exclude_dbs = (excluded) => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
   } else {
@@ -434,7 +433,7 @@ global.fit_exclude_dbs = excluded => {
   }
 };
 
-global.describe_only_db = db => {
+global.describe_only_db = (db) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
     return describe;
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
@@ -444,7 +443,7 @@ global.describe_only_db = db => {
   }
 };
 
-global.describe_only = validator => {
+global.describe_only = (validator) => {
   if (validator()) {
     return describe;
   } else {
@@ -453,7 +452,7 @@ global.describe_only = validator => {
 };
 
 const libraryCache = {};
-jasmine.mockLibrary = function(library, name, mock) {
+jasmine.mockLibrary = function (library, name, mock) {
   const original = require(library)[name];
   if (!libraryCache[library]) {
     libraryCache[library] = {};
@@ -462,7 +461,7 @@ jasmine.mockLibrary = function(library, name, mock) {
   libraryCache[library][name] = original;
 };
 
-jasmine.restoreLibrary = function(library, name) {
+jasmine.restoreLibrary = function (library, name) {
   if (!libraryCache[library] || !libraryCache[library][name]) {
     throw 'Can not find library ' + library + ' ' + name;
   }
