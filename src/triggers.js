@@ -16,6 +16,8 @@ export const Types = {
   afterSaveFile: 'afterSaveFile',
   beforeDeleteFile: 'beforeDeleteFile',
   afterDeleteFile: 'afterDeleteFile',
+  beforeConnect:'beforeConnect',
+  beforeSubscribe:'beforeSubscribe'
 };
 
 const FileClassName = '@File';
