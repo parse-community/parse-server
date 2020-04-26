@@ -793,6 +793,10 @@ async function userForSessionToken(sessionToken) {
   if (!session) {
      return Promise.reject('No session found for session token');
   }
-  const user = await session.get('user').fetch({useMasterKey:true});
+  const user = session.get('user');
+  if (!user) {
+     return Promise.reject('No session found for session token');
+  } 
+  await user.fetch({useMasterKey:true});
   return user;
 }
