@@ -786,13 +786,13 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   }
   return request.query;
 }
-function userForSessionToken(sessionToken) {
+async function userForSessionToken(sessionToken) {
   var q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
-  return q.first({ useMasterKey: true }).then(function(session) {
-    if (!session) {
-      return Promise.reject('No session found for session token');
-    }
-    return session.get('user');
-  });
+  const session = await q.first({ useMasterKey: true })
+  if (!session) {
+     return Promise.reject('No session found for session token');
+  }
+  const user = await session.get('user').fetch({useMasterKey:true});
+  return user;
 }
