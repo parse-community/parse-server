@@ -576,7 +576,7 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  _handleConnect(parseWebsocket: any, request: any): any {
+  async _handleConnect(parseWebsocket: any, request: any): any {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
       logger.error('Key in request is not valid');
@@ -600,16 +600,17 @@ class ParseLiveQueryServer {
        useMasterKey: client.hasMasterKey,
        installationId: request.installationId,
       }
-    maybeRunConnectTrigger('beforeConnect',req).then(function(){
+    try {
+      await maybeRunConnectTrigger('beforeConnect',req)
       parseWebsocket.clientId = clientId;
       this.clients.set(parseWebsocket.clientId, client);
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
       client.pushConnect();
       runLiveQueryEventHandlers(req);
-    }).catch(function(e){
+    } catch(e) {
        Client.pushError(parseWebsocket, e.code || 101, e.message || e);
         logger.error(e);
-    });
+    }
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
