@@ -4900,4 +4900,19 @@ describe('Parse.Query testing', () => {
     expect(object.get('hello')).toBeUndefined();
     done();
   });
+
+  it('can use explain on User class', async () => {
+    // Create user
+    const user = new Parse.User();
+    user.set('username', 'foo');
+    user.set('password', 'bar');
+    await user.save();
+    // Query for user with explain
+    const query = new Parse.Query('_User');
+    query.equalTo('objectId', user.id);
+    query.explain();
+    const result = await query.find();
+    // Validate
+    expect(result.executionStats).not.toBeUndefined();
+  });
 });
