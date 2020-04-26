@@ -754,6 +754,14 @@ export async function maybeRunConnectTrigger(triggerType, client) {
   if (!trigger) {
     return client;
   }
-  await trigger() 
+  await trigger(client) 
   return client;
+}
+export async function maybeRunSubscribeTrigger(triggerType, className, client) {
+  const trigger = getTrigger(className, triggerType, config.applicationId);
+  if (!trigger) {
+    return client.query;
+  }
+  const result = await trigger(client) || client.query;
+  return result;
 }
