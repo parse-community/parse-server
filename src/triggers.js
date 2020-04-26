@@ -750,7 +750,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
   return fileObject;
 }
 export async function maybeRunConnectTrigger(triggerType, client) {
-  const trigger = getTrigger(ConnectClassName, triggerType, config.applicationId);
+  const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
   if (!trigger) {
     return client;
   }
@@ -758,7 +758,7 @@ export async function maybeRunConnectTrigger(triggerType, client) {
   return client;
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, client) {
-  const trigger = getTrigger(className, triggerType, config.applicationId);
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
   if (!trigger) {
     return client.query;
   }
