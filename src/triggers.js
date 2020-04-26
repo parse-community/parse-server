@@ -761,6 +761,12 @@ export async function maybeRunSubscribeTrigger(triggerType, className, client) {
   if (!trigger) {
     return client.query;
   }
-  const result = await trigger(client) || client.query;
-  return result;
+  const parseQuery = new Parse.Query(className);
+  parseQuery.withJSON(client.query);
+  client.query = parseQuery;
+  const result = await trigger(client);
+  if (result) {
+    return result.toJSON();
+  }
+  return client.query;
 }
