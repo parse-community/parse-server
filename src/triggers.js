@@ -752,10 +752,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
 export async function maybeRunConnectTrigger(triggerType, client) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
   if (!trigger) {
-    return client;
+    return;
   }
   await trigger(client) 
-  return client;
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, client) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
