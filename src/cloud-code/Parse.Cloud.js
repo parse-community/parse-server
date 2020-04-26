@@ -454,7 +454,7 @@ ParseCloud.afterDeleteFile = function(handler) {
 };
 
 ParseCloud.beforeConnect = function(handler) {
-  triggers.addFileTrigger(
+  triggers.addConnectTrigger(
     triggers.Types.beforeConnect,
     handler,
     Parse.applicationId,
