@@ -1499,18 +1499,132 @@ describe('apple signin auth adapter', () => {
     spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
-        { code: "code" },
+        { code: "INSERT VALID CODE" },
         {
-          clientId: "com.rungoapp.client",
-          p8FilePath: "src/AuthKey_F93FMQ7S43.p8",
-          configFilePath: "spec/config.json"
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: "INSERT CONFIG FILE PATH"
         }
       );
-      fail();
     } catch (e) {
-      expect(e.message).toBe('to be determined');
+      fail();
     }
   });
+
+  it('should throw error with no code or token provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: "INSERT CONFIG FILE PATH"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('token or code must be provided');
+    }
+  });
+
+  it('should throw error with invalid grant using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: "INSERT CONFIG FILE PATH"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('apple request with code has returned error: invalid_grant');
+    }
+  });
+
+  it('should throw error with no p8 file path provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "",
+          configFilePath: "INSERT CONFIG FILE PATH"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('p8 file path must be provided');
+    }
+  });
+
+  it('should throw error with no config file path provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: ""
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config file path must be provided');
+    }
+  });
+
+  it('should throw error with invalid p8 file path provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "src/invalid_file_path.p8",
+          configFilePath: "INSERT CONFIG FILE PATH"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe(`ENOENT: no such file or directory, open 'src/invalid_file_path.p8'`);
+    }
+  });
+
+  it('should throw error with invalid config file path provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: "spec/invalid_file_path.json"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe(`ENOENT: no such file or directory, open 'spec/invalid_file_path.json'`);
+    }
+  });
+
+  it('should throw error with config file parse failure using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          configFilePath: "spec/invalid_config.json"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config File JSON parse failed, syntax error');
+    }
+  });
+
+  
+
 });
 
 describe('Apple Game Center Auth adapter', () => {

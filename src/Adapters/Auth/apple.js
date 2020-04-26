@@ -12,11 +12,29 @@ const fs = require("fs");
 const request = require("request");
 
 function accessToken(configPath, privateKeyPath, code) {
-  const config = JSON.parse(fs.readFileSync(configPath));
-  console.log('config', config);
-
   return new Promise(
     (resolve, reject) => {
+      let config;
+      try {
+        config = JSON.parse(fs.readFileSync(configPath));
+      } catch (error) {
+        // if JSON Parse error, throw generic error instead of catching every
+        // possible syntax error from JSON.parse
+        // see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/JSON_bad_parse
+        if (error instanceof SyntaxError) {
+          reject(
+            new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              `config File JSON parse failed, syntax error`
+            )
+          );
+
+          return;
+        }
+
+        reject(error);
+      }
+
       generate(config, privateKeyPath)
         .then(
           (token) => {
@@ -49,10 +67,10 @@ function accessToken(configPath, privateKeyPath, code) {
 }
 
 function generate(config, privateKeyPath) {
-  const privateKey = fs.readFileSync(privateKeyPath);
-
   return new Promise(
     (resolve, reject) => {
+      const privateKey = fs.readFileSync(privateKeyPath);
+
       // make it expire within 6 months
       const exp = Math.floor(Date.now() / 1000) + (86400 * 180);
       const claims = {
@@ -82,7 +100,7 @@ function generate(config, privateKeyPath) {
 
 const getAppleKeyByKeyId = async (keyId, cacheMaxEntries, cacheMaxAge) => {
   const client = jwksClient({
-    jwksUri: `${TOKEN_ISSUER}/auth/keys`,
+    jwksUri: `${ TOKEN_ISSUER }/auth/keys`,
     cache: true,
     cacheMaxEntries,
     cacheMaxAge,
@@ -134,19 +152,43 @@ const verifyIdToken = async ({
     );
   }
 
-  console.log(configFilePath);
-  console.log(p8FilePath);
   if (code) {
-    console.log("code in here");
+    if (!p8FilePath) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `p8 file path must be provided`
+      );
+    }
+
+    if (!configFilePath) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `config file path must be provided`
+      );
+    }
+
     const response = await accessToken(configFilePath, p8FilePath, code);
-    console.log("code after in here");
 
-    console.log("response");
+    // TODO: find a way to test this
+    if (!response) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `no response from apple servers`
+      );
+    }
+
+    if (response.error) {
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        `apple request with code has returned error: ${ response.error }`
+      );
+    }
+    
     token = response.id_token;
-    id = decodedToken = jwt.decode(token).sub;
 
-    console.log(token);
-    console.log(id);
+    const decodedToken = jwt.decode(token);
+
+    id = decodedToken.sub
   }
 
   if (!token) {
@@ -154,8 +196,6 @@ const verifyIdToken = async ({
       Parse.Error.OBJECT_NOT_FOUND,
       `id token is invalid for this user.`
     );
-  } else {
-    console.log("token has been provided");
   }
 
   const {
