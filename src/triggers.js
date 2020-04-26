@@ -782,7 +782,7 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   }
   const result = await trigger(request);
   if (result) {
-    return result.toJSON();
+    request.query = result;
   }
   return request.query.toJSON();
 }
