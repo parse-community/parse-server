@@ -167,15 +167,9 @@ const verifyIdToken = async ({
       );
     }
 
+    // no need to check for no response as otherwise an error would be thrown
+    // in the accessToken function
     const response = await accessToken(configFilePath, p8FilePath, code);
-
-    // TODO: find a way to test this
-    if (!response) {
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        `no response from apple servers`
-      );
-    }
 
     if (response.error) {
       throw new Parse.Error(
