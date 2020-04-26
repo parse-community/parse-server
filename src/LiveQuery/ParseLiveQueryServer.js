@@ -11,6 +11,8 @@ import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
+import {maybeRunConnectTrigger} from '../triggers';
+import {maybeRunSubscribeTrigger} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -589,18 +591,24 @@ class ParseLiveQueryServer {
       request.sessionToken,
       request.installationId
     );
-    parseWebsocket.clientId = clientId;
-    this.clients.set(parseWebsocket.clientId, client);
-    logger.info(`Create new client: ${parseWebsocket.clientId}`);
-    client.pushConnect();
-    runLiveQueryEventHandlers({
-      client,
-      event: 'connect',
-      clients: this.clients.size,
-      subscriptions: this.subscriptions.size,
-      sessionToken: request.sessionToken,
-      useMasterKey: client.hasMasterKey,
-      installationId: request.installationId,
+    const req = {
+       client,
+       event: 'connect',
+       clients: this.clients.size,
+       subscriptions: this.subscriptions.size,
+       sessionToken: request.sessionToken,
+       useMasterKey: client.hasMasterKey,
+       installationId: request.installationId,
+      }
+    maybeRunConnectTrigger('beforeConnect',req).then(function(){
+      parseWebsocket.clientId = clientId;
+      this.clients.set(parseWebsocket.clientId, client);
+      logger.info(`Create new client: ${parseWebsocket.clientId}`);
+      client.pushConnect();
+      runLiveQueryEventHandlers(req);
+    }).catch(function(e){
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e);
+        logger.error(e);
     });
   }
 
@@ -650,16 +658,17 @@ class ParseLiveQueryServer {
       return;
     }
     const client = this.clients.get(parseWebsocket.clientId);
-
-    // Get subscription from subscriptions, create one if necessary
-    const subscriptionHash = queryHash(request.query);
-    // Add className to subscriptions if necessary
     const className = request.query.className;
-    if (!this.subscriptions.has(className)) {
-      this.subscriptions.set(className, new Map());
-    }
-    const classSubscriptions = this.subscriptions.get(className);
-    let subscription;
+    maybeRunSubscribeTrigger('beforeSubscribe', className, request).then((result) => {
+     request.query = result;
+    // Get subscription from subscriptions, create one if necessary
+     const subscriptionHash = queryHash(request.query);
+    // Add className to subscriptions if necessary
+      if (!this.subscriptions.has(className)) {
+       this.subscriptions.set(className, new Map());
+     }
+     const classSubscriptions = this.subscriptions.get(className);
+      let subscription;
     if (classSubscriptions.has(subscriptionHash)) {
       subscription = classSubscriptions.get(subscriptionHash);
     } else {
@@ -695,15 +704,19 @@ class ParseLiveQueryServer {
     logger.verbose(
       `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
     );
-    logger.verbose('Current client number: %d', this.clients.size);
-    runLiveQueryEventHandlers({
-      client,
-      event: 'subscribe',
-      clients: this.clients.size,
-      subscriptions: this.subscriptions.size,
-      sessionToken: request.sessionToken,
-      useMasterKey: client.hasMasterKey,
-      installationId: client.installationId,
+      logger.verbose('Current client number: %d', this.clients.size);
+      runLiveQueryEventHandlers({
+        client,
+        event: 'subscribe',
+        clients: this.clients.size,
+        subscriptions: this.subscriptions.size,
+       sessionToken: request.sessionToken,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
+      });
+    }).catch(function(e){
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e);
+      logger.error(e);
     });
   }
 
