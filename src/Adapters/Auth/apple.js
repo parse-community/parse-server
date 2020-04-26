@@ -13,10 +13,11 @@ const request = require("request");
 
 function accessToken(configPath, privateKeyPath, code) {
   const config = JSON.parse(fs.readFileSync(configPath));
+  console.log('config', config);
 
   return new Promise(
     (resolve, reject) => {
-      generate(privateKeyPath)
+      generate(config, privateKeyPath)
         .then(
           (token) => {
             const payload = {
@@ -32,7 +33,8 @@ function accessToken(configPath, privateKeyPath, code) {
               json: true
             }, (error, response, body) => {
               if (error) {
-                reject(`AppleAuth Error - An error occured while getting a response from Apple's servers: ${ response }`)
+                reject(`AppleAuth Error - An error occured while getting a response from Apple's servers: ${ response }`);
+
                 return;
               }
 
@@ -46,7 +48,7 @@ function accessToken(configPath, privateKeyPath, code) {
   );
 }
 
-function generate(privateKeyPath) {
+function generate(config, privateKeyPath) {
   const privateKey = fs.readFileSync(privateKeyPath);
 
   return new Promise(
@@ -125,10 +127,26 @@ const verifyIdToken = async ({
   p8FilePath,
   configFilePath
 }) => {
+  if (!code && !token) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      `token or code must be provided`
+    );
+  }
+
+  console.log(configFilePath);
+  console.log(p8FilePath);
   if (code) {
+    console.log("code in here");
     const response = await accessToken(configFilePath, p8FilePath, code);
+    console.log("code after in here");
+
+    console.log("response");
     token = response.id_token;
     id = decodedToken = jwt.decode(token).sub;
+
+    console.log(token);
+    console.log(id);
   }
 
   if (!token) {
@@ -136,6 +154,8 @@ const verifyIdToken = async ({
       Parse.Error.OBJECT_NOT_FOUND,
       `id token is invalid for this user.`
     );
+  } else {
+    console.log("token has been provided");
   }
 
   const {
@@ -167,6 +187,7 @@ const verifyIdToken = async ({
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
   }
 
+  // TODO: use jwt verify for issuer && subject
   if (jwtClaims.iss !== TOKEN_ISSUER) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -180,6 +201,7 @@ const verifyIdToken = async ({
       `auth data is invalid for this user.`
     );
   }
+
   return jwtClaims;
 };
 
