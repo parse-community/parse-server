@@ -749,12 +749,20 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
   }
   return fileObject;
 }
-export async function maybeRunConnectTrigger(triggerType, client) {
+export async function maybeRunConnectTrigger(triggerType, request) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
   if (!trigger) {
     return;
   }
-  await trigger(client) 
+  if (request.sessionToken) {
+    try {
+     const user = await userForSessionToken(request.sessionToken);
+      request.user = user;
+    } catch(e) {
+     delete request.sessionToken; 
+    }
+  }
+  await trigger(request) 
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
@@ -764,9 +772,27 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   const parseQuery = new Parse.Query(className);
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
+  if (request.sessionToken) {
+    try {
+     const user = await userForSessionToken(request.sessionToken);
+      request.user = user;
+    } catch(e) {
+     delete request.sessionToken; 
+    }
+  }
   const result = await trigger(request);
   if (result) {
     return result.toJSON();
   }
   return request.query;
+}
+function userForSessionToken(sessionToken) {
+  var q = new Parse.Query('_Session');
+  q.equalTo('sessionToken', sessionToken);
+  return q.first({ useMasterKey: true }).then(function(session) {
+    if (!session) {
+      return Promise.reject('No session found for session token');
+    }
+    return session.get('user');
+  });
 }
