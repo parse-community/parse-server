@@ -21,6 +21,7 @@ export const Types = {
 };
 
 const FileClassName = '@File';
+const ConnectClassName = '@Connect';
 
 const baseStore = function() {
   const Validators = {};
@@ -133,7 +134,9 @@ export function addTrigger(type, className, handler, applicationId) {
 export function addFileTrigger(type, handler, applicationId) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
 }
-
+export function addConnectTrigger(type, handler, applicationId) {
+  add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
+}
 export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
@@ -745,4 +748,12 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
     }
   }
   return fileObject;
+}
+export async function maybeRunConnectTrigger(triggerType, client) {
+  const trigger = getTrigger(ConnectClassName, triggerType, config.applicationId);
+  if (!trigger) {
+    return client;
+  }
+  await trigger() 
+  return client;
 }
