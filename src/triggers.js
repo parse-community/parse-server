@@ -784,7 +784,7 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   if (result) {
     return result.toJSON();
   }
-  return request.query;
+  return request.query.toJSON();
 }
 async function userForSessionToken(sessionToken) {
   var q = new Parse.Query('_Session');
