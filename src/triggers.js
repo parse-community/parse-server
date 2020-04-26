@@ -756,17 +756,17 @@ export async function maybeRunConnectTrigger(triggerType, client) {
   }
   await trigger(client) 
 }
-export async function maybeRunSubscribeTrigger(triggerType, className, client) {
+export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
   if (!trigger) {
-    return client.query;
+    return request.query;
   }
   const parseQuery = new Parse.Query(className);
-  parseQuery.withJSON(client.query);
-  client.query = parseQuery;
-  const result = await trigger(client);
+  parseQuery.withJSON(request.query);
+  request.query = parseQuery;
+  const result = await trigger(request);
   if (result) {
     return result.toJSON();
   }
-  return client.query;
+  return request.query;
 }
