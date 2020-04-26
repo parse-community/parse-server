@@ -453,6 +453,24 @@ ParseCloud.afterDeleteFile = function(handler) {
   );
 };
 
+ParseCloud.beforeConnect = function(handler) {
+  triggers.addFileTrigger(
+    triggers.Types.beforeConnect,
+    handler,
+    Parse.applicationId,
+  );
+};
+
+ParseCloud.beforeSubscribe = function(parseClass, handler) {
+  var className = getClassName(parseClass);
+  triggers.addTrigger(
+    triggers.Types.beforeSubscribe,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
 ParseCloud.onLiveQueryEvent = function(handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
