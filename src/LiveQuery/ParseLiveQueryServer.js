@@ -608,7 +608,7 @@ class ParseLiveQueryServer {
       client.pushConnect();
       runLiveQueryEventHandlers(req);
     } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e);
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
         logger.error(e);
     }
   }
@@ -645,7 +645,7 @@ class ParseLiveQueryServer {
     return isValid;
   }
 
-  _handleSubscribe(parseWebsocket: any, request: any): any {
+  async _handleSubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
     if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
@@ -660,8 +660,8 @@ class ParseLiveQueryServer {
     }
     const client = this.clients.get(parseWebsocket.clientId);
     const className = request.query.className;
-    maybeRunSubscribeTrigger('beforeSubscribe', className, request).then((result) => {
-     request.query = result;
+    try {
+      request.query = await maybeRunSubscribeTrigger('beforeSubscribe', className, request)
     // Get subscription from subscriptions, create one if necessary
      const subscriptionHash = queryHash(request.query);
     // Add className to subscriptions if necessary
@@ -715,10 +715,10 @@ class ParseLiveQueryServer {
         useMasterKey: client.hasMasterKey,
         installationId: client.installationId,
       });
-    }).catch(function(e){
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e);
+    } catch(e) {
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
       logger.error(e);
-    });
+    }
   }
 
   _handleUpdateSubscription(parseWebsocket: any, request: any): any {
