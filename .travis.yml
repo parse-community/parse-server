@@ -50,6 +50,9 @@ jobs:
     env: POSTGRES_MAJOR_VERSION=11 PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://localhost:5433/parse_server_postgres_adapter_test_database
     before_install: bash scripts/before_install_postgres.sh
     before_script: bash scripts/before_script_postgres.sh
+    script:
+      - npm run lint
+      - npm run coverage
   - stage: release
     node_js: '10'
     env:
