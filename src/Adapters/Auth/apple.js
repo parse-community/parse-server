@@ -14,8 +14,7 @@ const request = require("request");
 function accessToken(privateKeyPath, config, code) {
   return new Promise(
     (resolve, reject) => {
-      try {
-      } catch (error) {
+      try {} catch (error) {
         // if JSON Parse error, throw generic error instead of catching every
         // possible syntax error from JSON.parse
         // see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/JSON_bad_parse
@@ -178,7 +177,7 @@ const verifyIdToken = async ({
         `apple request with code has returned error: ${ response.error }`
       );
     }
-    
+
     token = response.id_token;
 
     const decodedToken = jwt.decode(token);

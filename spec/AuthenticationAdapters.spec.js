@@ -5,21 +5,52 @@ const defaultColumns = require('../lib/Controllers/SchemaController')
 const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
-  gpgames: { playerId: 'userId' },
-  instagram: { data: { id: 'userId' } },
-  janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
-  janraincapture: { stat: 'ok', result: 'userId' },
-  line: { userId: 'userId' },
-  vkontakte: { response: [{ id: 'userId' }] },
-  google: { sub: 'userId' },
-  wechat: { errcode: 0 },
-  weibo: { uid: 'userId' },
+  gpgames: {
+    playerId: 'userId'
+  },
+  instagram: {
+    data: {
+      id: 'userId'
+    }
+  },
+  janrainengage: {
+    stat: 'ok',
+    profile: {
+      identifier: 'userId'
+    }
+  },
+  janraincapture: {
+    stat: 'ok',
+    result: 'userId'
+  },
+  line: {
+    userId: 'userId'
+  },
+  vkontakte: {
+    response: [{
+      id: 'userId'
+    }]
+  },
+  google: {
+    sub: 'userId'
+  },
+  wechat: {
+    errcode: 0
+  },
+  weibo: {
+    uid: 'userId'
+  },
   qq: 'callback( {"openid":"userId"} );', // yes it's like that, run eval in the client :P
-  phantauth: { sub: 'userId' },
-  microsoft: { id: 'userId', mail: 'userMail' },
+  phantauth: {
+    sub: 'userId'
+  },
+  microsoft: {
+    id: 'userId',
+    mail: 'userMail'
+  },
 };
 
-describe('AuthenticationProviders', function() {
+describe('AuthenticationProviders', function () {
   [
     'apple',
     'gcenter',
@@ -42,7 +73,7 @@ describe('AuthenticationProviders', function() {
     'weibo',
     'phantauth',
     'microsoft',
-  ].map(function(providerName) {
+  ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
@@ -80,14 +111,18 @@ describe('AuthenticationProviders', function() {
               access_token: 'access_token',
             };
           }
-          return Promise.resolve(responses[providerName] || { id: 'userId' });
+          return Promise.resolve(responses[providerName] || {
+            id: 'userId'
+          });
         }
       );
       spyOn(
         require('../lib/Adapters/Auth/httpsRequest'),
         'request'
       ).and.callFake(() => {
-        return Promise.resolve(responses[providerName] || { id: 'userId' });
+        return Promise.resolve(responses[providerName] || {
+          id: 'userId'
+        });
       });
       const provider = require('../lib/Adapters/Auth/' + providerName);
       let params = {};
@@ -97,11 +132,13 @@ describe('AuthenticationProviders', function() {
           appSecret: 'appSecret',
         };
       }
-      await provider.validateAuthData({ id: 'userId' }, params);
+      await provider.validateAuthData({
+        id: 'userId'
+      }, params);
     });
   });
 
-  const getMockMyOauthProvider = function() {
+  const getMockMyOauthProvider = function () {
     return {
       authData: {
         id: '12345',
@@ -114,7 +151,7 @@ describe('AuthenticationProviders', function() {
       synchronizedAuthToken: null,
       synchronizedExpiration: null,
 
-      authenticate: function(options) {
+      authenticate: function (options) {
         if (this.shouldError) {
           options.error(this, 'An error occurred');
         } else if (this.shouldCancel) {
@@ -123,7 +160,7 @@ describe('AuthenticationProviders', function() {
           options.success(this, this.authData);
         }
       },
-      restoreAuthentication: function(authData) {
+      restoreAuthentication: function (authData) {
         if (!authData) {
           this.synchronizedUserId = null;
           this.synchronizedAuthToken = null;
@@ -135,10 +172,10 @@ describe('AuthenticationProviders', function() {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function() {
+      getAuthType: function () {
         return 'myoauth';
       },
-      deauthenticate: function() {
+      deauthenticate: function () {
         this.loggedOut = true;
         this.restoreAuthentication(null);
       },
@@ -146,16 +183,16 @@ describe('AuthenticationProviders', function() {
   };
 
   Parse.User.extend({
-    extended: function() {
+    extended: function () {
       return true;
     },
   });
 
-  const createOAuthUser = function(callback) {
+  const createOAuthUser = function (callback) {
     return createOAuthUserWithSessionToken(undefined, callback);
   };
 
-  const createOAuthUserWithSessionToken = function(token, callback) {
+  const createOAuthUserWithSessionToken = function (token, callback) {
     const jsonBody = {
       authData: {
         myoauth: getMockMyOauthProvider().authData,
@@ -202,7 +239,9 @@ describe('AuthenticationProviders', function() {
       const sessionToken = b.sessionToken;
       const q = new Parse.Query('_Session');
       q.equalTo('sessionToken', sessionToken);
-      q.first({ useMasterKey: true })
+      q.first({
+          useMasterKey: true
+        })
         .then(res => {
           if (!res) {
             fail('should not fail fetching the session');
@@ -253,7 +292,9 @@ describe('AuthenticationProviders', function() {
       .then(user => {
         return createOAuthUserWithSessionToken(user.getSessionToken());
       })
-      .then(fail, ({ data }) => {
+      .then(fail, ({
+        data
+      }) => {
         expect(data.code).toBe(208);
         expect(data.error).toBe('this auth is already used');
         done();
@@ -284,16 +325,14 @@ describe('AuthenticationProviders', function() {
     // make sure the auth data is properly deleted
     const config = Config.get(Parse.applicationId);
     const res = await config.database.adapter.find(
-      '_User',
-      {
-        fields: Object.assign(
-          {},
+      '_User', {
+        fields: Object.assign({},
           defaultColumns._Default,
           defaultColumns._Installation
         ),
-      },
-      { objectId: model.id },
-      {}
+      }, {
+        objectId: model.id
+      }, {}
     );
     expect(res.length).toBe(1);
     expect(res[0]._auth_data_myoauth).toBeUndefined();
@@ -336,10 +375,10 @@ describe('AuthenticationProviders', function() {
       token: 'world',
     };
     const adapter = {
-      validateAppId: function() {
+      validateAppId: function () {
         return Promise.resolve();
       },
-      validateAuthData: function(authData) {
+      validateAuthData: function (authData) {
         if (
           authData.id == validAuthData.id &&
           authData.token == validAuthData.token
@@ -405,7 +444,9 @@ describe('AuthenticationProviders', function() {
     const authenticationHandler = authenticationLoader({
       customAuthentication: {
         module: path.resolve('./spec/support/CustomAuthFunction.js'),
-        options: { token: 'valid-token' },
+        options: {
+          token: 'valid-token'
+        },
       },
     });
 
@@ -448,7 +489,9 @@ describe('AuthenticationProviders', function() {
   it('should handle Facebook appSecret for validating appIds', async () => {
     const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'a' });
+      return Promise.resolve({
+        id: 'a'
+      });
     });
     const options = {
       facebook: {
@@ -485,7 +528,10 @@ describe('AuthenticationProviders', function() {
       id: 'test',
       access_token: 'test',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'facebook',
       options
     );
@@ -536,7 +582,10 @@ describe('AuthenticationProviders', function() {
         appIds: [],
       },
     };
-    const { adapter, appIds } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      appIds
+    } = authenticationLoader.loadAuthAdapter(
       'facebookaccountkit',
       options
     );
@@ -556,7 +605,9 @@ describe('AuthenticationProviders', function() {
       id: 'fakeid',
       access_token: 'badtoken',
     };
-    const { adapter } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter
+    } = authenticationLoader.loadAuthAdapter(
       'facebookaccountkit',
       options
     );
@@ -578,7 +629,10 @@ describe('AuthenticationProviders', function() {
       id: 'fakeid',
       access_token: 'badtoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'facebookaccountkit',
       options
     );
@@ -596,12 +650,16 @@ describe('instagram auth adapter', () => {
 
   it('should use default api', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ data: { id: 'userId' } });
+      return Promise.resolve({
+        data: {
+          id: 'userId'
+        }
+      });
     });
-    await instagram.validateAuthData(
-      { id: 'userId', access_token: 'the_token' },
-      {}
-    );
+    await instagram.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token'
+    }, {});
     expect(httpsRequest.get).toHaveBeenCalledWith(
       'https://api.instagram.com/v1/users/self/?access_token=the_token'
     );
@@ -609,16 +667,17 @@ describe('instagram auth adapter', () => {
 
   it('should pass in api url', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ data: { id: 'userId' } });
+      return Promise.resolve({
+        data: {
+          id: 'userId'
+        }
+      });
     });
-    await instagram.validateAuthData(
-      {
-        id: 'userId',
-        access_token: 'the_token',
-        apiURL: 'https://new-api.instagram.com/v1/',
-      },
-      {}
-    );
+    await instagram.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token',
+      apiURL: 'https://new-api.instagram.com/v1/',
+    }, {});
     expect(httpsRequest.get).toHaveBeenCalledWith(
       'https://new-api.instagram.com/v1/users/self/?access_token=the_token'
     );
@@ -631,44 +690,63 @@ describe('google auth adapter', () => {
 
   it('should use id_token for validation is passed', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
+      return Promise.resolve({
+        sub: 'userId'
+      });
     });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+    await google.validateAuthData({
+      id: 'userId',
+      id_token: 'the_token'
+    }, {});
   });
 
   it('should use id_token for validation is passed and responds with user_id', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
+      return Promise.resolve({
+        user_id: 'userId'
+      });
     });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+    await google.validateAuthData({
+      id: 'userId',
+      id_token: 'the_token'
+    }, {});
   });
 
   it('should use access_token for validation is passed and responds with user_id', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
+      return Promise.resolve({
+        user_id: 'userId'
+      });
     });
-    await google.validateAuthData(
-      { id: 'userId', access_token: 'the_token' },
-      {}
-    );
+    await google.validateAuthData({
+      id: 'userId',
+      access_token: 'the_token'
+    }, {});
   });
 
   it('should use access_token for validation is passed with sub', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
+      return Promise.resolve({
+        sub: 'userId'
+      });
     });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+    await google.validateAuthData({
+      id: 'userId',
+      id_token: 'the_token'
+    }, {});
   });
 
   it('should fail when the id_token is invalid', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
+      return Promise.resolve({
+        sub: 'badId'
+      });
     });
     try {
-      await google.validateAuthData(
-        { id: 'userId', id_token: 'the_token' },
-        {}
-      );
+      await google.validateAuthData({
+        id: 'userId',
+        id_token: 'the_token'
+      }, {});
       fail();
     } catch (e) {
       expect(e.message).toBe('Google auth is invalid for this user.');
@@ -677,13 +755,15 @@ describe('google auth adapter', () => {
 
   it('should fail when the access_token is invalid', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
+      return Promise.resolve({
+        sub: 'badId'
+      });
     });
     try {
-      await google.validateAuthData(
-        { id: 'userId', access_token: 'the_token' },
-        {}
-      );
+      await google.validateAuthData({
+        id: 'userId',
+        access_token: 'the_token'
+      }, {});
       fail();
     } catch (e) {
       expect(e.message).toBe('Google auth is invalid for this user.');
@@ -697,7 +777,9 @@ describe('google play games service auth', () => {
 
   it('validateAuthData should pass validation', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ playerId: 'userId' });
+      return Promise.resolve({
+        playerId: 'userId'
+      });
     });
     await gpgames.validateAuthData({
       id: 'userId',
@@ -707,7 +789,9 @@ describe('google play games service auth', () => {
 
   it('validateAuthData should throw error', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ playerId: 'invalid' });
+      return Promise.resolve({
+        playerId: 'invalid'
+      });
     });
     try {
       await gpgames.validateAuthData({
@@ -919,7 +1003,9 @@ describe('oauth2 auth adapter', () => {
       providerOptions,
     } = authenticationLoader.loadAuthAdapter('oauth2Authentication', options);
     spyOn(httpsRequest, 'request').and.callFake(() => {
-      return Promise.resolve({ active: true });
+      return Promise.resolve({
+        active: true
+      });
     });
     try {
       await adapter.validateAppId(appIds, authData, providerOptions);
@@ -1037,7 +1123,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
     );
@@ -1065,7 +1154,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
     );
@@ -1077,8 +1169,7 @@ describe('oauth2 auth adapter', () => {
     } catch (e) {
       expect(e.message).toBe('OAuth2 access token is invalid for this user.');
     }
-    expect(httpsRequest.request).toHaveBeenCalledWith(
-      {
+    expect(httpsRequest.request).toHaveBeenCalledWith({
         hostname: 'example.com',
         path: '/introspect',
         method: 'POST',
@@ -1106,7 +1197,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
     );
@@ -1122,8 +1216,7 @@ describe('oauth2 auth adapter', () => {
       // Should not enter here
       fail(e);
     }
-    expect(httpsRequest.request).toHaveBeenCalledWith(
-      {
+    expect(httpsRequest.request).toHaveBeenCalledWith({
         hostname: 'example.com',
         path: '/introspect',
         method: 'POST',
@@ -1149,7 +1242,10 @@ describe('oauth2 auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+    const {
+      adapter,
+      providerOptions
+    } = authenticationLoader.loadAuthAdapter(
       'oauth2Authentication',
       options
     );
@@ -1177,7 +1273,11 @@ describe('apple signin auth adapter', () => {
   // figure out a way to generate fake tokens or alter subject on real ones
   xit('(using client id as string) should throw error with missing id_token', async () => {
     try {
-      await apple.validateAuthData({ token: "fake token" }, { clientId: 'secret' });
+      await apple.validateAuthData({
+        token: "fake token"
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('jwt subject invalid. expected:');
@@ -1188,7 +1288,11 @@ describe('apple signin auth adapter', () => {
   // figure out a way to generate fake tokens or alter subject on real ones
   xit('(using client id as array) should throw error with missing id_token', async () => {
     try {
-      await apple.validateAuthData({ token: "fake token" }, { client_id: ['secret'] });
+      await apple.validateAuthData({
+        token: "fake token"
+      }, {
+        client_id: ['secret']
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('jwt subject invalid. expected:');
@@ -1197,10 +1301,12 @@ describe('apple signin auth adapter', () => {
 
   it('should not decode invalid id_token', async () => {
     try {
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -1208,14 +1314,21 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error if public key used to encode token is not available', async () => {
-    const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '789',
+        alg: 'RS256'
+      }
+    };
     try {
       spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
 
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe(
@@ -1231,18 +1344,28 @@ describe('apple signin auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
-    const result = await apple.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
-    );
+    const result = await apple.validateAuthData({
+      id: 'the_user_id',
+      token: 'the_token'
+    }, {
+      clientId: 'secret'
+    });
     expect(result).toEqual(fakeClaim);
     expect(jwt.verify.calls.first().args[2].algorithms).toEqual(
       fakeDecodedToken.header.alg
@@ -1250,18 +1373,28 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should not verify invalid id_token', async () => {
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
     try {
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('jwt malformed');
@@ -1270,10 +1403,12 @@ describe('apple signin auth adapter', () => {
 
   it('(using client id as array) should not verify invalid id_token', async () => {
     try {
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { client_id: ['secret'] }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        client_id: ['secret']
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('provided token does not decode as JWT');
@@ -1287,18 +1422,28 @@ describe('apple signin auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    const result = await apple.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: 'secret' }
-    );
+    const result = await apple.validateAuthData({
+      id: 'the_user_id',
+      token: 'the_token'
+    }, {
+      clientId: 'secret'
+    });
     expect(result).toEqual(fakeClaim);
   });
 
@@ -1309,18 +1454,28 @@ describe('apple signin auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    const result = await apple.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret'] }
-    );
+    const result = await apple.validateAuthData({
+      id: 'the_user_id',
+      token: 'the_token'
+    }, {
+      clientId: ['secret']
+    });
     expect(result).toEqual(fakeClaim);
   });
 
@@ -1331,18 +1486,28 @@ describe('apple signin auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-    const result = await apple.validateAuthData(
-      { id: 'the_user_id', token: 'the_token' },
-      { clientId: ['secret', 'secret 123'] }
-    );
+    const result = await apple.validateAuthData({
+      id: 'the_user_id',
+      token: 'the_token'
+    }, {
+      clientId: ['secret', 'secret 123']
+    });
     expect(result).toEqual(fakeClaim);
   });
 
@@ -1355,19 +1520,29 @@ describe('apple signin auth adapter', () => {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe(
@@ -1383,22 +1558,29 @@ describe('apple signin auth adapter', () => {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
-      await apple.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: ['INSERT CLIENT ID HERE'] }
-      );
+      await apple.validateAuthData({
+        id: 'INSERT ID HERE',
+        token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
+      }, {
+        clientId: ['INSERT CLIENT ID HERE']
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe(
@@ -1416,22 +1598,29 @@ describe('apple signin auth adapter', () => {
       iss: 'https://not.apple.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
-      await apple.validateAuthData(
-        {
-          id: 'INSERT ID HERE',
-          token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
-        },
-        { clientId: 'INSERT CLIENT ID HERE' }
-      );
+      await apple.validateAuthData({
+        id: 'INSERT ID HERE',
+        token: 'INSERT APPLE TOKEN HERE WITH INVALID JWT ISSUER',
+      }, {
+        clientId: 'INSERT CLIENT ID HERE'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe(
@@ -1444,10 +1633,12 @@ describe('apple signin auth adapter', () => {
   // and a private key
   xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
     try {
-      await apple.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'INSERT ID HERE',
+        token: 'INSERT APPLE TOKEN HERE'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
@@ -1458,10 +1649,12 @@ describe('apple signin auth adapter', () => {
   // and a private key
   xit('(using client id as array) should throw error with invalid jwt client_id', async () => {
     try {
-      await apple.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
-        { clientId: ['secret'] }
-      );
+      await apple.validateAuthData({
+        id: 'INSERT ID HERE',
+        token: 'INSERT APPLE TOKEN HERE'
+      }, {
+        clientId: ['secret']
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('jwt audience invalid. expected: secret');
@@ -1472,10 +1665,12 @@ describe('apple signin auth adapter', () => {
   // and a private key
   xit('should throw error with invalid user id', async () => {
     try {
-      await apple.validateAuthData(
-        { id: 'invalid user', token: 'INSERT APPLE TOKEN HERE' },
-        { clientId: 'INSERT CLIENT ID HERE' }
-      );
+      await apple.validateAuthData({
+        id: 'invalid user',
+        token: 'INSERT APPLE TOKEN HERE'
+      }, {
+        clientId: 'INSERT CLIENT ID HERE'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
@@ -1492,19 +1687,29 @@ describe('apple signin auth adapter', () => {
       aud: 'invalid_client_id',
       sub: 'a_different_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: {
+        kid: '123',
+        alg: 'RS256'
+      }
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key'
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
     try {
-      await apple.validateAuthData(
-        { id: 'the_user_id', token: 'the_token' },
-        { clientId: 'secret' }
-      );
+      await apple.validateAuthData({
+        id: 'the_user_id',
+        token: 'the_token'
+      }, {
+        clientId: 'secret'
+      });
       fail();
     } catch (e) {
       expect(e.message).toBe('auth data is invalid for this user.');
@@ -1515,19 +1720,18 @@ describe('apple signin auth adapter', () => {
   // and a private key
   xit('should succeed with web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID", 
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       fail();
     }
@@ -1535,19 +1739,18 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with no code or token provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID", 
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: ""
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('token or code must be provided');
     }
@@ -1557,19 +1760,18 @@ describe('apple signin auth adapter', () => {
   // and a private key
   xit('should throw error with invalid grant using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID", 
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE THAT HAS BEEN USED ALREADY"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('apple request with code has returned error: invalid_grant');
     }
@@ -1577,19 +1779,18 @@ describe('apple signin auth adapter', () => {
 
   xit('should throw error with no p8 file path provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID", 
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('p8 file path must be provided');
     }
@@ -1597,13 +1798,12 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with no config provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH"
-        }
-      );
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH"
+      });
     } catch (e) {
       expect(e.message).toBe('config malformed or not provided');
     }
@@ -1611,18 +1811,17 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with malformed config (missing client id) provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            team_id: "INSERT TEAM ID",
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('config malformed or not provided');
     }
@@ -1630,18 +1829,17 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with malformed config (missing team id) provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('config malformed or not provided');
     }
@@ -1649,18 +1847,17 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with malformed config (missing key id) provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID",
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('config malformed or not provided');
     }
@@ -1668,18 +1865,17 @@ describe('apple signin auth adapter', () => {
 
   it('should throw error with malformed config (missing redirect uri) provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID",
-            key_id: "INSERT KEY ID",
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "INSERT P8 FILE PATH",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe('config malformed or not provided');
     }
@@ -1688,19 +1884,18 @@ describe('apple signin auth adapter', () => {
   // TODO: create apple account with real config file to test with
   xit('should throw error with invalid p8 file path provided using web code request', async () => {
     try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "src/invalid_file_path.p8",
-          config: {
-            client_id: "INSERT CLIENT ID",
-            team_id: "INSERT TEAM ID", 
-            key_id: "INSERT KEY ID", 
-            redirect_uri: "INSERT REDIRECT URI"
-          }
+      await apple.validateAuthData({
+        code: "INSERT CODE"
+      }, {
+        clientId: "INSERT CLIENT ID",
+        p8FilePath: "src/invalid_file_path.p8",
+        config: {
+          client_id: "INSERT CLIENT ID",
+          team_id: "INSERT TEAM ID",
+          key_id: "INSERT KEY ID",
+          redirect_uri: "INSERT REDIRECT URI"
         }
-      );
+      });
     } catch (e) {
       expect(e.message).toBe(`config malformed or not provided`);
     }
@@ -1717,8 +1912,7 @@ describe('Apple Game Center Auth adapter', () => {
       id: 'G:1965586982',
       publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-4.cer',
       timestamp: 1565257031287,
-      signature:
-        'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
+      signature: 'uqLBTr9Uex8zCpc1UQ1MIDMitb+HUat2Mah4Kw6AVLSGe0gGNJXlih2i5X+0ZwVY0S9zY2NHWi2gFjmhjt/4kxWGMkupqXX5H/qhE2m7hzox6lZJpH98ZEUbouWRfZX2ZhUlCkAX09oRNi7fI7mWL1/o88MaI/y6k6tLr14JTzmlxgdyhw+QRLxRPA6NuvUlRSJpyJ4aGtNH5/wHdKQWL8nUnFYiYmaY8R7IjzNxPfy8UJTUWmeZvMSgND4u8EjADPsz7ZtZyWAPi8kYcAb6M8k0jwLD3vrYCB8XXyO2RQb/FY2TM4zJuI7PzLlvvgOJXbbfVtHx7Evnm5NYoyzgzw==',
       salt: 'DzqqrQ==',
       bundleId: 'cloud.xtralife.gamecenterauth',
     };
@@ -1777,10 +1971,14 @@ describe('phant auth adapter', () => {
       id: 'fakeid',
       access_token: 'sometoken',
     };
-    const { adapter } = authenticationLoader.loadAuthAdapter('phantauth', {});
+    const {
+      adapter
+    } = authenticationLoader.loadAuthAdapter('phantauth', {});
 
     spyOn(httpsRequest, 'get').and.callFake(() =>
-      Promise.resolve({ sub: 'invalidID' })
+      Promise.resolve({
+        sub: 'invalidID'
+      })
     );
     try {
       await adapter.validateAuthData(authData);
@@ -1797,7 +1995,10 @@ describe('microsoft graph auth adapter', () => {
 
   it('should use access_token for validation is passed and responds with id and mail', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ id: 'userId', mail: 'userMail' });
+      return Promise.resolve({
+        id: 'userId',
+        mail: 'userMail'
+      });
     });
     await microsoft.validateAuthData({
       id: 'userId',
