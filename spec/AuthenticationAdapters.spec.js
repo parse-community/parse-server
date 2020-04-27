@@ -240,8 +240,8 @@ describe('AuthenticationProviders', function () {
       const q = new Parse.Query('_Session');
       q.equalTo('sessionToken', sessionToken);
       q.first({
-          useMasterKey: true
-        })
+        useMasterKey: true
+      })
         .then(res => {
           if (!res) {
             fail('should not fail fetching the session');
@@ -1170,16 +1170,16 @@ describe('oauth2 auth adapter', () => {
       expect(e.message).toBe('OAuth2 access token is invalid for this user.');
     }
     expect(httpsRequest.request).toHaveBeenCalledWith({
-        hostname: 'example.com',
-        path: '/introspect',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': 15,
-          Authorization: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
-        },
+      hostname: 'example.com',
+      path: '/introspect',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': 15,
+        Authorization: 'Basic dXNlcm5hbWU6cGFzc3dvcmQ=',
       },
-      'token=sometoken'
+    },
+    'token=sometoken'
     );
   });
 
@@ -1217,15 +1217,15 @@ describe('oauth2 auth adapter', () => {
       fail(e);
     }
     expect(httpsRequest.request).toHaveBeenCalledWith({
-        hostname: 'example.com',
-        path: '/introspect',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Content-Length': 15,
-        },
+      hostname: 'example.com',
+      path: '/introspect',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': 15,
       },
-      'token=sometoken'
+    },
+    'token=sometoken'
     );
   });
 

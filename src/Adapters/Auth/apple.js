@@ -1,37 +1,18 @@
 // Apple SignIn Auth
 // https://developer.apple.com/documentation/signinwithapplerestapi
 
-const Parse = require('parse/node').Parse;
-const jwksClient = require('jwks-rsa');
-const util = require('util');
+const Parse = require("parse/node").Parse;
+const jwksClient = require("jwks-rsa");
+const util = require("util");
 const jwt = require("jsonwebtoken");
-
-const TOKEN_ISSUER = 'https://appleid.apple.com';
-
 const fs = require("fs");
 const request = require("request");
+
+const TOKEN_ISSUER = "https://appleid.apple.com";
 
 function accessToken(privateKeyPath, config, code) {
   return new Promise(
     (resolve, reject) => {
-      try {} catch (error) {
-        // if JSON Parse error, throw generic error instead of catching every
-        // possible syntax error from JSON.parse
-        // see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/JSON_bad_parse
-        if (error instanceof SyntaxError) {
-          reject(
-            new Parse.Error(
-              Parse.Error.OBJECT_NOT_FOUND,
-              `config File JSON parse failed, syntax error`
-            )
-          );
-
-          return;
-        }
-
-        reject(error);
-      }
-
       generate(config, privateKeyPath)
         .then(
           (token) => {
@@ -79,17 +60,17 @@ function generate(config, privateKeyPath) {
       };
 
       jwt.sign(claims, privateKey, {
-          algorithm: "ES256",
-          keyid: config.key_id
-        },
-        (error, token) => {
-          if (error) {
-            reject(`AppleAuth Error - Error occured while signing: ${ error }`);
-            return;
-          }
-
-          resolve(token);
+        algorithm: "ES256",
+        keyid: config.key_id
+      },
+      (error, token) => {
+        if (error) {
+          reject(`AppleAuth Error - Error occured while signing: ${ error }`);
+          return;
         }
+
+        resolve(token);
+      }
       );
     }
   );
@@ -136,12 +117,12 @@ const verifyIdToken = async ({
   id,
   code
 }, {
-  clientId,
-  cacheMaxEntries,
-  cacheMaxAge,
-  config,
-  p8FilePath
-}) => {
+    clientId,
+    cacheMaxEntries,
+    cacheMaxAge,
+    config,
+    p8FilePath
+  }) => {
   if (!code && !token) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
@@ -158,7 +139,7 @@ const verifyIdToken = async ({
     }
 
     // config requires fields like client id again as the config can only have one client id and therefore cannot be an array
-    // also scope must be set at time of requesting token, that is independant of the token when retrieving a token from a 
+    // also scope must be set at time of requesting token, that is independant of the token when retrieving a token from a
     // request rather than from an apple device
     if (!config || (!config.client_id || !config.team_id || !config.key_id || !config.redirect_uri)) {
       throw new Parse.Error(
