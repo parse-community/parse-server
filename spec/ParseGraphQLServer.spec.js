@@ -9522,6 +9522,29 @@ describe('ParseGraphQLServer', () => {
 
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
+
+            const mutationResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation UnlinkFile($id: ID!) {
+                  updateSomeClass(
+                    input: { id: $id, fields: { someField: { file: null } } }
+                  ) {
+                    someClass {
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id: result2.data.createSomeClass3.someClass.id,
+              },
+            });
+            expect(
+              mutationResult.data.updateSomeClass.someClass.someField
+            ).toEqual(null);
           } catch (e) {
             handleError(e);
           }
