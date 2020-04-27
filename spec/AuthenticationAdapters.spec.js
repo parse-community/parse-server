@@ -1514,10 +1514,9 @@ describe('apple signin auth adapter', () => {
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
   xit('should succeed with web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
-        { code: "INSERT VALID CODE" },
+        { code: "INSERT CODE" },
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "INSERT P8 FILE PATH",
@@ -1535,7 +1534,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with no code or token provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "" },
@@ -1558,7 +1556,6 @@ describe('apple signin auth adapter', () => {
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
   xit('should throw error with invalid grant using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
@@ -1579,7 +1576,6 @@ describe('apple signin auth adapter', () => {
   });
 
   xit('should throw error with no p8 file path provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
@@ -1600,7 +1596,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with no config provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
@@ -1615,7 +1610,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with malformed config (missing client id) provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
@@ -1635,7 +1629,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with malformed config (missing team id) provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
@@ -1655,7 +1648,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with malformed config (missing key id) provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
@@ -1675,7 +1667,6 @@ describe('apple signin auth adapter', () => {
   });
 
   it('should throw error with malformed config (missing redirect uri) provided using web code request', async () => {
-    spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
         { code: "INSERT CODE" },
