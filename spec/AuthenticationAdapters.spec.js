@@ -1521,7 +1521,12 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: "INSERT CONFIG FILE PATH"
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID", 
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
@@ -1537,7 +1542,12 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: "INSERT CONFIG FILE PATH"
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID", 
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
@@ -1555,7 +1565,12 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: "INSERT CONFIG FILE PATH"
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID", 
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
@@ -1571,7 +1586,12 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "",
-          configFilePath: "INSERT CONFIG FILE PATH"
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID", 
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
@@ -1579,7 +1599,22 @@ describe('apple signin auth adapter', () => {
     }
   });
 
-  it('should throw error with no config file path provided using web code request', async () => {
+  it('should throw error with no config provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH"
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config malformed or not provided');
+    }
+  });
+
+  it('should throw error with malformed config (missing client id) provided using web code request', async () => {
     spyOn(console, "log").and.callThrough();
     try {
       await apple.validateAuthData(
@@ -1587,11 +1622,75 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: ""
+          config: {
+            team_id: "INSERT TEAM ID",
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
-      expect(e.message).toBe('config file path must be provided');
+      expect(e.message).toBe('config malformed or not provided');
+    }
+  });
+
+  it('should throw error with malformed config (missing team id) provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          config: {
+            client_id: "INSERT CLIENT ID",
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config malformed or not provided');
+    }
+  });
+
+  it('should throw error with malformed config (missing key id) provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID",
+            redirect_uri: "INSERT REDIRECT URI"
+          }
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config malformed or not provided');
+    }
+  });
+
+  it('should throw error with malformed config (missing redirect uri) provided using web code request', async () => {
+    spyOn(console, "log").and.callThrough();
+    try {
+      await apple.validateAuthData(
+        { code: "INSERT CODE" },
+        {
+          clientId: "INSERT CLIENT ID",
+          p8FilePath: "INSERT P8 FILE PATH",
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID",
+            key_id: "INSERT KEY ID",
+          }
+        }
+      );
+    } catch (e) {
+      expect(e.message).toBe('config malformed or not provided');
     }
   });
 
@@ -1603,41 +1702,16 @@ describe('apple signin auth adapter', () => {
         {
           clientId: "INSERT CLIENT ID",
           p8FilePath: "src/invalid_file_path.p8",
-          configFilePath: "INSERT CONFIG FILE PATH"
+          config: {
+            client_id: "INSERT CLIENT ID",
+            team_id: "INSERT TEAM ID", 
+            key_id: "INSERT KEY ID", 
+            redirect_uri: "INSERT REDIRECT URI"
+          }
         }
       );
     } catch (e) {
-      expect(e.message).toBe(`ENOENT: no such file or directory, open 'src/invalid_file_path.p8'`);
-    }
-  });
-
-  it('should throw error with invalid config file path provided using web code request', async () => {
-    try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: "spec/invalid_file_path.json"
-        }
-      );
-    } catch (e) {
-      expect(e.message).toBe(`ENOENT: no such file or directory, open 'spec/invalid_file_path.json'`);
-    }
-  });
-
-  xit('should throw error with config file parse failure using web code request', async () => {
-    try {
-      await apple.validateAuthData(
-        { code: "INSERT CODE THAT HAS BEEN USED ALREADY" },
-        {
-          clientId: "INSERT CLIENT ID",
-          p8FilePath: "INSERT P8 FILE PATH",
-          configFilePath: "spec/invalid_config.json"
-        }
-      );
-    } catch (e) {
-      expect(e.message).toBe('config File JSON parse failed, syntax error');
+      expect(e.message).toBe(`config malformed or not provided`);
     }
   });
 

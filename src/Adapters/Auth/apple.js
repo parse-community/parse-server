@@ -11,12 +11,10 @@ const TOKEN_ISSUER = 'https://appleid.apple.com';
 const fs = require("fs");
 const request = require("request");
 
-function accessToken(configPath, privateKeyPath, code) {
+function accessToken(privateKeyPath, config, code) {
   return new Promise(
     (resolve, reject) => {
-      let config;
       try {
-        config = JSON.parse(fs.readFileSync(configPath));
       } catch (error) {
         // if JSON Parse error, throw generic error instead of catching every
         // possible syntax error from JSON.parse
@@ -142,8 +140,8 @@ const verifyIdToken = async ({
   clientId,
   cacheMaxEntries,
   cacheMaxAge,
-  p8FilePath,
-  configFilePath
+  config,
+  p8FilePath
 }) => {
   if (!code && !token) {
     throw new Parse.Error(
@@ -160,16 +158,19 @@ const verifyIdToken = async ({
       );
     }
 
-    if (!configFilePath) {
+    // config requires fields like client id again as the config can only have one client id and therefore cannot be an array
+    // also scope must be set at time of requesting token, that is independant of the token when retrieving a token from a 
+    // request rather than from an apple device
+    if (!config || (!config.client_id || !config.team_id || !config.key_id || !config.redirect_uri)) {
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        `config file path must be provided`
+        `config malformed or not provided`
       );
     }
 
     // no need to check for no response as otherwise an error would be thrown
     // in the accessToken function
-    const response = await accessToken(configFilePath, p8FilePath, code);
+    const response = await accessToken(p8FilePath, config, code);
 
     if (response.error) {
       throw new Parse.Error(
