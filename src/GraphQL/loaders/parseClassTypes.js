@@ -26,13 +26,13 @@ import {
   getParseClassMutationConfig,
 } from '../parseGraphQLUtils';
 
-const getParseClassTypeConfig = function(
+const getParseClassTypeConfig = function (
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
   return (parseClassConfig && parseClassConfig.type) || {};
 };
 
-const getInputFieldsAndConstraints = function(
+const getInputFieldsAndConstraints = function (
   parseClass,
   parseClassConfig: ?ParseGraphQLClassConfig
 ) {
@@ -51,7 +51,7 @@ const getInputFieldsAndConstraints = function(
   let classSortFields;
 
   // All allowed customs fields
-  const classCustomFields = classFields.filter(field => {
+  const classCustomFields = classFields.filter((field) => {
     return (
       !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(field) &&
       field !== 'id'
@@ -59,14 +59,14 @@ const getInputFieldsAndConstraints = function(
   });
 
   if (allowedInputFields && allowedInputFields.create) {
-    classCreateFields = classCustomFields.filter(field => {
+    classCreateFields = classCustomFields.filter((field) => {
       return allowedInputFields.create.includes(field);
     });
   } else {
     classCreateFields = classCustomFields;
   }
   if (allowedInputFields && allowedInputFields.update) {
-    classUpdateFields = classCustomFields.filter(field => {
+    classUpdateFields = classCustomFields.filter((field) => {
       return allowedInputFields.update.includes(field);
     });
   } else {
@@ -74,7 +74,7 @@ const getInputFieldsAndConstraints = function(
   }
 
   if (allowedOutputFields) {
-    classOutputFields = classCustomFields.filter(field => {
+    classOutputFields = classCustomFields.filter((field) => {
       return allowedOutputFields.includes(field);
     });
   } else {
@@ -83,12 +83,12 @@ const getInputFieldsAndConstraints = function(
   // Filters the "password" field from class _User
   if (parseClass.className === '_User') {
     classOutputFields = classOutputFields.filter(
-      outputField => outputField !== 'password'
+      (outputField) => outputField !== 'password'
     );
   }
 
   if (allowedConstraintFields) {
-    classConstraintFields = classCustomFields.filter(field => {
+    classConstraintFields = classCustomFields.filter((field) => {
       return allowedConstraintFields.includes(field);
     });
   } else {
@@ -107,7 +107,7 @@ const getInputFieldsAndConstraints = function(
       });
     }
   } else {
-    classSortFields = classFields.map(field => {
+    classSortFields = classFields.map((field) => {
       return { field, asc: true, desc: true };
     });
   }
@@ -347,11 +347,12 @@ const load = (
       const updatedSortFields = {
         ...sortFields,
       };
+      const value = field === 'id' ? 'objectId' : field;
       if (asc) {
-        updatedSortFields[`${field}_ASC`] = {};
+        updatedSortFields[`${field}_ASC`] = { value };
       }
       if (desc) {
-        updatedSortFields[`${field}_DESC`] = {};
+        updatedSortFields[`${field}_DESC`] = { value: `-${value}` };
       }
       return updatedSortFields;
     }, {}),
@@ -382,7 +383,7 @@ const load = (
     parseGraphQLSchema.relayNodeInterface,
   ];
   const parseObjectFields = {
-    id: globalIdField(className, obj => obj.objectId),
+    id: globalIdField(className, (obj) => obj.objectId),
     ...defaultGraphQLTypes.PARSE_OBJECT_FIELDS,
   };
   const outputFields = () => {
@@ -430,9 +431,10 @@ const load = (
 
                 const { keys, include } = extractKeysAndInclude(
                   selectedFields
-                    .filter(field => field.startsWith('edges.node.'))
-                    .map(field => field.replace('edges.node.', ''))
+                    .filter((field) => field.startsWith('edges.node.'))
+                    .map((field) => field.replace('edges.node.', ''))
                 );
+                const parseOrder = order && order.join(',');
 
                 return objectsQueries.findObjects(
                   source[field].className,
@@ -447,7 +449,7 @@ const load = (
                     },
                     ...(where || {}),
                   },
-                  order,
+                  parseOrder,
                   skip,
                   first,
                   after,
@@ -481,7 +483,7 @@ const load = (
               : type,
             async resolve(source) {
               if (source[field] && source[field].coordinates) {
-                return source[field].coordinates.map(coordinate => ({
+                return source[field].coordinates.map((coordinate) => ({
                   latitude: coordinate[0],
                   longitude: coordinate[1],
                 }));
@@ -501,7 +503,7 @@ const load = (
               : type,
             async resolve(source) {
               if (!source[field]) return null;
-              return source[field].map(async elem => {
+              return source[field].map(async (elem) => {
                 if (
                   elem.className &&
                   elem.objectId &&

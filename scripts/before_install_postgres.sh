@@ -1,8 +1,13 @@
 #!/bin/bash
-  
+
 set -e
+source ~/.nvm/nvm.sh
 
 echo "[SCRIPT] Before Install Script :: Setup Postgres ${POSTGRES_MAJOR_VERSION}"
+
+nvm install $NODE_VERSION
+nvm use $NODE_VERSION
+npm install -g greenkeeper-lockfile@1
 
 if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
   # Setup postgres 9 or 10
@@ -20,7 +25,7 @@ if [[ $POSTGRES_MAJOR_VERSION -lt 11 ]]; then
 
   sudo service postgresql start
 
-else 
+else
   # Setup postgres 11 or higher
 
   #Copy defauilt hba config file and tell postgres to restart
