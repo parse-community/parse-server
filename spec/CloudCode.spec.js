@@ -2911,4 +2911,17 @@ describe('afterLogin hook', () => {
     await Parse.User.logIn('testuser', 'p@ssword');
     done();
   });
+
+  it('should have access to context as save argument', async () => {
+    // Declare triggers
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    // Save object
+    const obj = new TestObject();
+    await obj.save(null, { context: { a: 'a' } });
+  });
 });
