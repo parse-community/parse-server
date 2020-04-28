@@ -54,6 +54,10 @@ export class AggregateRouter extends ClassesRouter {
       options.explain = body.explain;
       delete body.explain;
     }
+    if (body.readPreference) {
+      options.readPreference = body.readPreference;
+      delete body.readPreference;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
