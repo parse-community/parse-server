@@ -106,7 +106,9 @@ describe_only(() => {
     const cache = new RedisCacheAdapter(null, 5);
 
     await cache.handleShutdown();
-    expect(cache.client.connected).toBe(false);
+    setTimeout(() => {
+      expect(cache.client.connected).toBe(false);
+    }, 0);
   });
 });
 
