@@ -122,7 +122,9 @@
     "url": "https://opencollective.com/parse-server",
     "logo": "https://opencollective.com/parse-server/logo.txt?reverse=true&variant=binary"
   },
-  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "funding": {
     "type": "opencollective",
     "url": "https://opencollective.com/parse-server"
