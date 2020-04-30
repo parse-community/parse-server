@@ -61,6 +61,14 @@ export class FilesAdapter {
    */
   getFileData(filename: string): Promise<any> {}
 
+  /** Responsible for retrieving metadata and tags
+   *
+   * @param {string} filename - the filename to retrieve metadata
+   *
+   * @return {Promise} a promise that should pass with metadata
+   */
+  getMetadata(filename: string): Promise<any> {}
+
   /** Returns an absolute URL where the file can be accessed
    *
    * @param {Config} config - server configuration
