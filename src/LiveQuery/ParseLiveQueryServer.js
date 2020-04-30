@@ -9,7 +9,7 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
-import uuid from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -60,7 +60,7 @@ class ParseLiveQueryServer {
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
       server,
-      parseWebsocket => this._onConnect(parseWebsocket),
+      (parseWebsocket) => this._onConnect(parseWebsocket),
       config
     );
 
@@ -165,13 +165,13 @@ class ParseLiveQueryServer {
               // Check ACL
               return this._matchesACL(acl, client, requestId);
             })
-            .then(isMatched => {
+            .then((isMatched) => {
               if (!isMatched) {
                 return null;
               }
               client.pushDelete(requestId, deletedParseObject);
             })
-            .catch(error => {
+            .catch((error) => {
               logger.error('Matching ACL error : ', error);
             });
         }
@@ -298,7 +298,7 @@ class ParseLiveQueryServer {
                   originalParseObject
                 );
               },
-              error => {
+              (error) => {
                 logger.error('Matching ACL error : ', error);
               }
             );
@@ -308,7 +308,7 @@ class ParseLiveQueryServer {
   }
 
   _onConnect(parseWebsocket: any): void {
-    parseWebsocket.on('message', request => {
+    parseWebsocket.on('message', (request) => {
       if (typeof request === 'string') {
         try {
           request = JSON.parse(request);
@@ -426,10 +426,10 @@ class ParseLiveQueryServer {
       cacheController: this.cacheController,
       sessionToken: sessionToken,
     })
-      .then(auth => {
+      .then((auth) => {
         return { auth, userId: auth && auth.user && auth.user.id };
       })
-      .catch(error => {
+      .catch((error) => {
         // There was an error with the session token
         const result = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
@@ -523,7 +523,7 @@ class ParseLiveQueryServer {
     return Promise.resolve()
       .then(async () => {
         // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some(key =>
+        const acl_has_roles = Object.keys(acl.permissionsById).some((key) =>
           key.startsWith('role:')
         );
         if (!acl_has_roles) {
@@ -581,7 +581,7 @@ class ParseLiveQueryServer {
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const clientId = uuid();
+    const clientId = uuidv4();
     const client = new Client(
       clientId,
       parseWebsocket,
