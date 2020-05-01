@@ -751,11 +751,11 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
 }
 export async function maybeRunConnectTrigger(triggerType, request) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
-  console.log(trigger);
-  if (!trigger) {
+  console.log("connectTrigger",trigger);
+  if (!trigger || trigger == null) {
     return;
   }
-  console.log(trigger);
+  console.log("connectTrigger1",trigger);
   if (request.sessionToken) {
     try {
      const user = await userForSessionToken(request.sessionToken);
