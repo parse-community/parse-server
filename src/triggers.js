@@ -754,7 +754,6 @@ export async function maybeRunConnectTrigger(triggerType, request) {
   if (!trigger) {
     return;
   }
-  console.log(trigger);
   if (request.sessionToken) {
     try {
      const user = await userForSessionToken(request.sessionToken);
