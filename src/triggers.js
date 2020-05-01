@@ -751,9 +751,11 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
 }
 export async function maybeRunConnectTrigger(triggerType, request) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
+  console.log(trigger);
   if (!trigger) {
     return;
   }
+  console.log(trigger);
   if (request.sessionToken) {
     try {
      const user = await userForSessionToken(request.sessionToken);
@@ -762,6 +764,7 @@ export async function maybeRunConnectTrigger(triggerType, request) {
      delete request.sessionToken; 
     }
   }
+  console.log(request);
   await trigger(request) 
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, request) {
