@@ -601,10 +601,8 @@ class ParseLiveQueryServer {
        installationId: request.installationId,
       }
     try {
-      console.log("yaya");
       console.log(this.client.size);
-      await maybeRunConnectTrigger('beforeConnect',req)
-      console.log("done");
+      //await maybeRunConnectTrigger('beforeConnect',req)
       parseWebsocket.clientId = clientId;
       this.clients.set(parseWebsocket.clientId, client);
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
