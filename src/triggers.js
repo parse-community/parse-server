@@ -769,7 +769,8 @@ export async function maybeRunConnectTrigger(triggerType, request) {
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
-  if (!trigger) {
+  console.log("subtrigger",trigger);
+  if (!trigger || trigger == null) {
     return request.query;
   }
   const parseQuery = new Parse.Query(className);
