@@ -576,7 +576,7 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  async _handleConnect(parseWebsocket: any, request: any): any {
+  _handleConnect(parseWebsocket: any, request: any): any {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
       logger.error('Key in request is not valid');
