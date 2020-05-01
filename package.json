@@ -55,7 +55,8 @@
     "uuid": "8.0.0",
     "winston": "3.2.1",
     "winston-daily-rotate-file": "4.4.2",
-    "ws": "7.2.5"
+    "ws": "7.2.5",
+    "snyk": "^1.316.1"
   },
   "devDependencies": {
     "@babel/cli": "7.8.4",
@@ -105,8 +106,9 @@
     "posttest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} mongodb-runner stop",
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
-    "prepare": "npm run build",
-    "postinstall": "node -p 'require(\"./postinstall.js\")()'"
+    "prepare": "npm run snyk-protect && npm run build",
+    "postinstall": "node -p 'require(\"./postinstall.js\")()'",
+    "snyk-protect": "snyk protect"
   },
   "engines": {
     "node": ">= 8"
@@ -140,5 +142,6 @@
       "eslint --fix --cache",
       "git add"
     ]
-  }
+  },
+  "snyk": true
 }
