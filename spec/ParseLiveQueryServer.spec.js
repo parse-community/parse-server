@@ -293,7 +293,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine
       .createSpy('validateKeys')
       .and.returnValue(true);
-    parseLiveQueryServer._handleConnect(parseWebSocket, {
+    await parseLiveQueryServer._handleConnect(parseWebSocket, {
       sessionToken: 'token',
     });
 
