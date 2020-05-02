@@ -316,7 +316,7 @@ describe('ParseLiveQueryServer', function() {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
-  it('can handle subscribe command with new query', function() {
+  it('can handle subscribe command with new query', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
     const clientId = 1;
@@ -338,7 +338,7 @@ describe('ParseLiveQueryServer', function() {
       requestId: requestId,
       sessionToken: 'sessionToken',
     };
-    parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
 
     // Make sure we add the subscription to the server
     const subscriptions = parseLiveQueryServer.subscriptions;
