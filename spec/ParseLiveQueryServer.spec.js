@@ -285,7 +285,7 @@ describe('ParseLiveQueryServer', function() {
       .catch(done.fail);
   });
 
-  it('can handle connect command', function() {
+  it('can handle connect command', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     const parseWebSocket = {
       clientId: -1,
