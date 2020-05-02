@@ -751,7 +751,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
 }
 export async function maybeRunConnectTrigger(triggerType, request) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
-  if (!trigger || trigger == null) {
+  if (!trigger) {
     return;
   }
   if (request.sessionToken) {
@@ -766,7 +766,7 @@ export async function maybeRunConnectTrigger(triggerType, request) {
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
-  if (!trigger || trigger == null) {
+  if (!trigger) {
     return request.query;
   }
   const parseQuery = new Parse.Query(className);
@@ -787,7 +787,7 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   return request.query.toJSON();
 }
 async function userForSessionToken(sessionToken) {
-  var q = new Parse.Query('_Session');
+  const q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
   const session = await q.first({ useMasterKey: true })
   if (!session) {
