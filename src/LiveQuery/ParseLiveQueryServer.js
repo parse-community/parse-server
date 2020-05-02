@@ -592,14 +592,14 @@ class ParseLiveQueryServer {
       request.installationId
     );
     const req = {
-       client,
-       event: 'connect',
-       clients: this.clients.size,
-       subscriptions: this.subscriptions.size,
-       sessionToken: request.sessionToken,
-       useMasterKey: client.hasMasterKey,
-       installationId: request.installationId,
-      }
+      client,
+      event: 'connect',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size,
+      sessionToken: request.sessionToken,
+      useMasterKey: client.hasMasterKey,
+      installationId: request.installationId,
+    }
     try {
       await maybeRunConnectTrigger('beforeConnect',req)
       parseWebsocket.clientId = clientId;
@@ -607,9 +607,9 @@ class ParseLiveQueryServer {
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
       client.pushConnect();
       runLiveQueryEventHandlers(req);
-    } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
-        logger.error(e);
+    } catch(error) {
+      Client.pushError(parseWebsocket, error.code || 101, error.message || error, false);
+      logger.error(error);
     }
   }
 
@@ -662,61 +662,59 @@ class ParseLiveQueryServer {
     const className = request.query.className;
     try {
       request.query = await maybeRunSubscribeTrigger('beforeSubscribe', className, request)
-    // Get subscription from subscriptions, create one if necessary
-     const subscriptionHash = queryHash(request.query);
-    // Add className to subscriptions if necessary
+      // Get subscription from subscriptions, create one if necessary
+      const subscriptionHash = queryHash(request.query);
+      // Add className to subscriptions if necessary
       if (!this.subscriptions.has(className)) {
-       this.subscriptions.set(className, new Map());
-     }
-     const classSubscriptions = this.subscriptions.get(className);
+        this.subscriptions.set(className, new Map());
+      }
+      const classSubscriptions = this.subscriptions.get(className);
       let subscription;
-    if (classSubscriptions.has(subscriptionHash)) {
-      subscription = classSubscriptions.get(subscriptionHash);
-    } else {
-      subscription = new Subscription(
-        className,
-        request.query.where,
-        subscriptionHash
+      if (classSubscriptions.has(subscriptionHash)) {
+        subscription = classSubscriptions.get(subscriptionHash);
+      } else {
+        subscription = new Subscription(
+          className,
+          request.query.where,
+          subscriptionHash
+        );
+        classSubscriptions.set(subscriptionHash, subscription);
+      }
+      // Add subscriptionInfo to client
+      const subscriptionInfo = {
+        subscription: subscription,
+      };
+      // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.fields) {
+        subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.sessionToken) {
+        subscriptionInfo.sessionToken = request.sessionToken;
+      }
+      client.addSubscriptionInfo(request.requestId, subscriptionInfo);
+
+      // Add clientId to subscription
+      subscription.addClientSubscription(
+        parseWebsocket.clientId,
+        request.requestId
       );
-      classSubscriptions.set(subscriptionHash, subscription);
-    }
+      client.pushSubscribe(request.requestId);
 
-    // Add subscriptionInfo to client
-    const subscriptionInfo = {
-      subscription: subscription,
-    };
-    // Add selected fields, sessionToken and installationId for this subscription if necessary
-    if (request.query.fields) {
-      subscriptionInfo.fields = request.query.fields;
-    }
-    if (request.sessionToken) {
-      subscriptionInfo.sessionToken = request.sessionToken;
-    }
-    client.addSubscriptionInfo(request.requestId, subscriptionInfo);
-
-    // Add clientId to subscription
-    subscription.addClientSubscription(
-      parseWebsocket.clientId,
-      request.requestId
-    );
-
-    client.pushSubscribe(request.requestId);
-
-    logger.verbose(
-      `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
-    );
+      logger.verbose(
+        `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
+      );
       logger.verbose('Current client number: %d', this.clients.size);
       runLiveQueryEventHandlers({
         client,
         event: 'subscribe',
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
-       sessionToken: request.sessionToken,
+        sessionToken: request.sessionToken,
         useMasterKey: client.hasMasterKey,
         installationId: client.installationId,
       });
     } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
       logger.error(e);
     }
   }

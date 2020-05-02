@@ -285,7 +285,7 @@ describe('ParseLiveQueryServer', function() {
       .catch(done.fail);
   });
 
-  it('can handle connect command', function() {
+  it('can handle connect command', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     const parseWebSocket = {
       clientId: -1,
@@ -293,7 +293,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine
       .createSpy('validateKeys')
       .and.returnValue(true);
-    parseLiveQueryServer._handleConnect(parseWebSocket, {
+    await parseLiveQueryServer._handleConnect(parseWebSocket, {
       sessionToken: 'token',
     });
 
@@ -316,7 +316,7 @@ describe('ParseLiveQueryServer', function() {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
-  it('can handle subscribe command with new query', function() {
+  it('can handle subscribe command with new query', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
     const clientId = 1;
@@ -338,7 +338,7 @@ describe('ParseLiveQueryServer', function() {
       requestId: requestId,
       sessionToken: 'sessionToken',
     };
-    parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
 
     // Make sure we add the subscription to the server
     const subscriptions = parseLiveQueryServer.subscriptions;
@@ -363,7 +363,7 @@ describe('ParseLiveQueryServer', function() {
     expect(client.pushSubscribe).toHaveBeenCalledWith(requestId);
   });
 
-  it('can handle subscribe command with existing query', function() {
+  it('can handle subscribe command with existing query', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add two mock clients
     const clientId = 1;
@@ -382,7 +382,7 @@ describe('ParseLiveQueryServer', function() {
       },
       fields: ['test'],
     };
-    addMockSubscription(
+    await addMockSubscription(
       parseLiveQueryServer,
       clientId,
       requestId,
@@ -401,7 +401,7 @@ describe('ParseLiveQueryServer', function() {
       fields: ['testAgain'],
     };
     const requestIdAgain = 1;
-    addMockSubscription(
+    await addMockSubscription(
       parseLiveQueryServer,
       clientIdAgain,
       requestIdAgain,
@@ -447,7 +447,7 @@ describe('ParseLiveQueryServer', function() {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
-  it('can handle unsubscribe command without not existed query', function() {
+  it('can handle unsubscribe command without not existed query', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
     const clientId = 1;
@@ -462,7 +462,7 @@ describe('ParseLiveQueryServer', function() {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
-  it('can handle unsubscribe command', function() {
+  it('can handle unsubscribe command', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
     const clientId = 1;
@@ -472,7 +472,7 @@ describe('ParseLiveQueryServer', function() {
       clientId: 1,
     };
     const requestId = 2;
-    const subscription = addMockSubscription(
+    const subscription = await addMockSubscription(
       parseLiveQueryServer,
       clientId,
       requestId,
@@ -696,7 +696,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onAfterDelete(message, {});
   });
 
-  it('can handle object delete command which does not match any subscription', function() {
+  it('can handle object delete command which does not match any subscription', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make deletedParseObject
     const parseObject = new Parse.Object(testClassName);
@@ -714,7 +714,7 @@ describe('ParseLiveQueryServer', function() {
     addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     const client = parseLiveQueryServer.clients.get(clientId);
     // Mock _matchesSubscription to return not matching
     parseLiveQueryServer._matchesSubscription = function() {
@@ -729,7 +729,7 @@ describe('ParseLiveQueryServer', function() {
     expect(client.pushDelete).not.toHaveBeenCalled();
   });
 
-  it('can handle object delete command which matches some subscriptions', function(done) {
+  it('can handle object delete command which matches some subscriptions', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make deletedParseObject
     const parseObject = new Parse.Object(testClassName);
@@ -746,7 +746,7 @@ describe('ParseLiveQueryServer', function() {
     addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     const client = parseLiveQueryServer.clients.get(clientId);
     // Mock _matchesSubscription to return matching
     parseLiveQueryServer._matchesSubscription = function() {
@@ -765,7 +765,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('has no subscription and can handle object save command', function() {
+  it('has no subscription and can handle object save command', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage();
@@ -773,7 +773,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onAfterSave(message);
   });
 
-  it('can handle object save command which does not match any subscription', function(done) {
+  it('can handle object save command which does not match any subscription', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage();
@@ -782,7 +782,7 @@ describe('ParseLiveQueryServer', function() {
     const client = addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return not matching
     parseLiveQueryServer._matchesSubscription = function() {
       return false;
@@ -804,7 +804,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle object enter command which matches some subscriptions', function(done) {
+  it('can handle object enter command which matches some subscriptions', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage(true);
@@ -813,7 +813,7 @@ describe('ParseLiveQueryServer', function() {
     const client = addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
     // In order to mimic a enter, we need original match return false
     // and the current match return true
@@ -841,7 +841,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle object update command which matches some subscriptions', function(done) {
+  it('can handle object update command which matches some subscriptions', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage(true);
@@ -850,7 +850,7 @@ describe('ParseLiveQueryServer', function() {
     const client = addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
     parseLiveQueryServer._matchesSubscription = function(parseObject) {
       if (!parseObject) {
@@ -874,7 +874,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle object leave command which matches some subscriptions', function(done) {
+  it('can handle object leave command which matches some subscriptions', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage(true);
@@ -883,7 +883,7 @@ describe('ParseLiveQueryServer', function() {
     const client = addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
     // In order to mimic a leave, we need original match return true
     // and the current match return false
@@ -911,7 +911,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle update command with original object', function(done) {
+  it('can handle update command with original object', async (done) => {
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
     const Client = require('../lib/LiveQuery/Client').Client;
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -930,7 +930,7 @@ describe('ParseLiveQueryServer', function() {
     // Add mock subscription
     const requestId = 2;
 
-    addMockSubscription(
+    await addMockSubscription(
       parseLiveQueryServer,
       clientId,
       requestId,
@@ -961,7 +961,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle object create command which matches some subscriptions', function(done) {
+  it('can handle object create command which matches some subscriptions', async (done) => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Make mock request message
     const message = generateMockMessage();
@@ -970,7 +970,7 @@ describe('ParseLiveQueryServer', function() {
     const client = addMockClient(parseLiveQueryServer, clientId);
     // Add mock subscription
     const requestId = 2;
-    addMockSubscription(parseLiveQueryServer, clientId, requestId);
+    await addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
     parseLiveQueryServer._matchesSubscription = function(parseObject) {
       if (!parseObject) {
@@ -994,7 +994,7 @@ describe('ParseLiveQueryServer', function() {
     }, jasmine.ASYNC_TEST_WAIT_TIME);
   });
 
-  it('can handle create command with fields', function(done) {
+  it('can handle create command with fields', async (done) => {
     jasmine.restoreLibrary('../lib/LiveQuery/Client', 'Client');
     const Client = require('../lib/LiveQuery/Client').Client;
     const parseLiveQueryServer = new ParseLiveQueryServer({});
@@ -1019,7 +1019,7 @@ describe('ParseLiveQueryServer', function() {
       },
       fields: ['test'],
     };
-    addMockSubscription(
+    await addMockSubscription(
       parseLiveQueryServer,
       clientId,
       requestId,
@@ -1842,7 +1842,7 @@ describe('ParseLiveQueryServer', function() {
     return client;
   }
 
-  function addMockSubscription(
+  async function addMockSubscription(
     parseLiveQueryServer,
     clientId,
     requestId,
@@ -1870,7 +1870,7 @@ describe('ParseLiveQueryServer', function() {
       requestId: requestId,
       sessionToken: 'sessionToken',
     };
-    parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
 
     // Make mock subscription
     const subscription = parseLiveQueryServer.subscriptions
