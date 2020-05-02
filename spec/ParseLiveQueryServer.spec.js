@@ -1842,7 +1842,7 @@ describe('ParseLiveQueryServer', function() {
     return client;
   }
 
-  function addMockSubscription(
+  async function addMockSubscription(
     parseLiveQueryServer,
     clientId,
     requestId,
@@ -1870,7 +1870,7 @@ describe('ParseLiveQueryServer', function() {
       requestId: requestId,
       sessionToken: 'sessionToken',
     };
-    parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
+    await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
 
     // Make mock subscription
     const subscription = parseLiveQueryServer.subscriptions
