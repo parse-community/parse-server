@@ -5,6 +5,7 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const { randomString } = require('../lib/cryptoUtils');
 const databaseURI = 'mongodb://localhost:27017/parse';
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 async function expectMissingFile(gfsAdapter, name) {
   try {
@@ -83,6 +84,22 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     });
     fileData = response.data;
     expect(fileData.metadata).toEqual(metadata);
+  });
+
+  it('should handle getMetadata error', async () => {
+    const config = Config.get('test');
+    config.filesController.getMetadata = () => Promise.reject();
+
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const response = await request({
+      method: 'GET',
+      headers,
+      url: `http://localhost:8378/1/files/test/metadata/filename.txt`,
+    });
+    expect(response.data).toEqual({});
   });
 
   it('properly fetches a large file from GridFS', async () => {
