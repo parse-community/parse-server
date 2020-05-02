@@ -592,25 +592,25 @@ class ParseLiveQueryServer {
       request.installationId
     );
     const req = {
-       client,
-       event: 'connect',
-       clients: this.clients.size,
-       subscriptions: this.subscriptions.size,
-       sessionToken: request.sessionToken,
-       useMasterKey: client.hasMasterKey,
-       installationId: request.installationId,
-      }
-    try {
-      await maybeRunConnectTrigger('beforeConnect',req)
+      client,
+      event: 'connect',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size,
+      sessionToken: request.sessionToken,
+      useMasterKey: client.hasMasterKey,
+      installationId: request.installationId,
+    }
+    //try {
+      //await maybeRunConnectTrigger('beforeConnect',req)
       parseWebsocket.clientId = clientId;
       this.clients.set(parseWebsocket.clientId, client);
       logger.info(`Create new client: ${parseWebsocket.clientId}`);
       client.pushConnect();
       runLiveQueryEventHandlers(req);
-    } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
-       logger.error(e);
-    }
+//     } catch(e) {
+//       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+//       logger.error(e);
+//     }
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
@@ -662,24 +662,24 @@ class ParseLiveQueryServer {
     const className = request.query.className;
     try {
       request.query = await maybeRunSubscribeTrigger('beforeSubscribe', className, request)
-    // Get subscription from subscriptions, create one if necessary
-     const subscriptionHash = queryHash(request.query);
-    // Add className to subscriptions if necessary
+      // Get subscription from subscriptions, create one if necessary
+      const subscriptionHash = queryHash(request.query);
+      // Add className to subscriptions if necessary
       if (!this.subscriptions.has(className)) {
-       this.subscriptions.set(className, new Map());
-     }
-     const classSubscriptions = this.subscriptions.get(className);
+        this.subscriptions.set(className, new Map());
+      }
+      const classSubscriptions = this.subscriptions.get(className);
       let subscription;
-    if (classSubscriptions.has(subscriptionHash)) {
-      subscription = classSubscriptions.get(subscriptionHash);
-    } else {
-      subscription = new Subscription(
-        className,
-        request.query.where,
-        subscriptionHash
-      );
-      classSubscriptions.set(subscriptionHash, subscription);
-    }
+      if (classSubscriptions.has(subscriptionHash)) {
+        subscription = classSubscriptions.get(subscriptionHash);
+      } else {
+        subscription = new Subscription(
+          className,
+          request.query.where,
+          subscriptionHash
+        );
+        classSubscriptions.set(subscriptionHash, subscription);
+     }
 
     // Add subscriptionInfo to client
     const subscriptionInfo = {
@@ -716,7 +716,7 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
       logger.error(e);
     }
   }
