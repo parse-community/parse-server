@@ -9,8 +9,10 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
+import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
+import {maybeRunConnectTrigger} from '../triggers';
+import {maybeRunSubscribeTrigger} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -60,7 +62,7 @@ class ParseLiveQueryServer {
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
       server,
-      (parseWebsocket) => this._onConnect(parseWebsocket),
+      parseWebsocket => this._onConnect(parseWebsocket),
       config
     );
 
@@ -165,13 +167,13 @@ class ParseLiveQueryServer {
               // Check ACL
               return this._matchesACL(acl, client, requestId);
             })
-            .then((isMatched) => {
+            .then(isMatched => {
               if (!isMatched) {
                 return null;
               }
               client.pushDelete(requestId, deletedParseObject);
             })
-            .catch((error) => {
+            .catch(error => {
               logger.error('Matching ACL error : ', error);
             });
         }
@@ -298,7 +300,7 @@ class ParseLiveQueryServer {
                   originalParseObject
                 );
               },
-              (error) => {
+              error => {
                 logger.error('Matching ACL error : ', error);
               }
             );
@@ -308,7 +310,7 @@ class ParseLiveQueryServer {
   }
 
   _onConnect(parseWebsocket: any): void {
-    parseWebsocket.on('message', (request) => {
+    parseWebsocket.on('message', request => {
       if (typeof request === 'string') {
         try {
           request = JSON.parse(request);
@@ -426,10 +428,10 @@ class ParseLiveQueryServer {
       cacheController: this.cacheController,
       sessionToken: sessionToken,
     })
-      .then((auth) => {
+      .then(auth => {
         return { auth, userId: auth && auth.user && auth.user.id };
       })
-      .catch((error) => {
+      .catch(error => {
         // There was an error with the session token
         const result = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
@@ -523,7 +525,7 @@ class ParseLiveQueryServer {
     return Promise.resolve()
       .then(async () => {
         // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some((key) =>
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key =>
           key.startsWith('role:')
         );
         if (!acl_has_roles) {
@@ -574,14 +576,14 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  _handleConnect(parseWebsocket: any, request: any): any {
+  async _handleConnect(parseWebsocket: any, request: any): any {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
       logger.error('Key in request is not valid');
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const clientId = uuidv4();
+    const clientId = uuid();
     const client = new Client(
       clientId,
       parseWebsocket,
@@ -589,19 +591,26 @@ class ParseLiveQueryServer {
       request.sessionToken,
       request.installationId
     );
-    parseWebsocket.clientId = clientId;
-    this.clients.set(parseWebsocket.clientId, client);
-    logger.info(`Create new client: ${parseWebsocket.clientId}`);
-    client.pushConnect();
-    runLiveQueryEventHandlers({
-      client,
-      event: 'connect',
-      clients: this.clients.size,
-      subscriptions: this.subscriptions.size,
-      sessionToken: request.sessionToken,
-      useMasterKey: client.hasMasterKey,
-      installationId: request.installationId,
-    });
+    const req = {
+       client,
+       event: 'connect',
+       clients: this.clients.size,
+       subscriptions: this.subscriptions.size,
+       sessionToken: request.sessionToken,
+       useMasterKey: client.hasMasterKey,
+       installationId: request.installationId,
+      }
+    try {
+      await maybeRunConnectTrigger('beforeConnect',req)
+      parseWebsocket.clientId = clientId;
+      this.clients.set(parseWebsocket.clientId, client);
+      logger.info(`Create new client: ${parseWebsocket.clientId}`);
+      client.pushConnect();
+      runLiveQueryEventHandlers(req);
+    } catch(e) {
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+       logger.error(e);
+    }
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
@@ -636,7 +645,7 @@ class ParseLiveQueryServer {
     return isValid;
   }
 
-  _handleSubscribe(parseWebsocket: any, request: any): any {
+  async _handleSubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
     if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
@@ -650,16 +659,17 @@ class ParseLiveQueryServer {
       return;
     }
     const client = this.clients.get(parseWebsocket.clientId);
-
-    // Get subscription from subscriptions, create one if necessary
-    const subscriptionHash = queryHash(request.query);
-    // Add className to subscriptions if necessary
     const className = request.query.className;
-    if (!this.subscriptions.has(className)) {
-      this.subscriptions.set(className, new Map());
-    }
-    const classSubscriptions = this.subscriptions.get(className);
-    let subscription;
+    try {
+      request.query = await maybeRunSubscribeTrigger('beforeSubscribe', className, request)
+    // Get subscription from subscriptions, create one if necessary
+     const subscriptionHash = queryHash(request.query);
+    // Add className to subscriptions if necessary
+      if (!this.subscriptions.has(className)) {
+       this.subscriptions.set(className, new Map());
+     }
+     const classSubscriptions = this.subscriptions.get(className);
+      let subscription;
     if (classSubscriptions.has(subscriptionHash)) {
       subscription = classSubscriptions.get(subscriptionHash);
     } else {
@@ -695,16 +705,20 @@ class ParseLiveQueryServer {
     logger.verbose(
       `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
     );
-    logger.verbose('Current client number: %d', this.clients.size);
-    runLiveQueryEventHandlers({
-      client,
-      event: 'subscribe',
-      clients: this.clients.size,
-      subscriptions: this.subscriptions.size,
-      sessionToken: request.sessionToken,
-      useMasterKey: client.hasMasterKey,
-      installationId: client.installationId,
-    });
+      logger.verbose('Current client number: %d', this.clients.size);
+      runLiveQueryEventHandlers({
+        client,
+        event: 'subscribe',
+        clients: this.clients.size,
+        subscriptions: this.subscriptions.size,
+       sessionToken: request.sessionToken,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
+      });
+    } catch(e) {
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      logger.error(e);
+    }
   }
 
   _handleUpdateSubscription(parseWebsocket: any, request: any): any {
