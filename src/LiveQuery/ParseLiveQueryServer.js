@@ -679,45 +679,43 @@ class ParseLiveQueryServer {
           subscriptionHash
         );
         classSubscriptions.set(subscriptionHash, subscription);
-     }
+      }
+      // Add subscriptionInfo to client
+      const subscriptionInfo = {
+        subscription: subscription,
+      };
+      // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.fields) {
+        subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.sessionToken) {
+        subscriptionInfo.sessionToken = request.sessionToken;
+      }
+      client.addSubscriptionInfo(request.requestId, subscriptionInfo);
+      
+      // Add clientId to subscription
+      subscription.addClientSubscription(
+        parseWebsocket.clientId,
+        request.requestId
+      );
+      client.pushSubscribe(request.requestId);
 
-    // Add subscriptionInfo to client
-    const subscriptionInfo = {
-      subscription: subscription,
-    };
-    // Add selected fields, sessionToken and installationId for this subscription if necessary
-    if (request.query.fields) {
-      subscriptionInfo.fields = request.query.fields;
-    }
-    if (request.sessionToken) {
-      subscriptionInfo.sessionToken = request.sessionToken;
-    }
-    client.addSubscriptionInfo(request.requestId, subscriptionInfo);
-
-    // Add clientId to subscription
-    subscription.addClientSubscription(
-      parseWebsocket.clientId,
-      request.requestId
-    );
-
-    client.pushSubscribe(request.requestId);
-
-    logger.verbose(
-      `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
-    );
+     logger.verbose(
+        `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
+      );
       logger.verbose('Current client number: %d', this.clients.size);
       runLiveQueryEventHandlers({
         client,
         event: 'subscribe',
         clients: this.clients.size,
         subscriptions: this.subscriptions.size,
-       sessionToken: request.sessionToken,
+        sessionToken: request.sessionToken,
         useMasterKey: client.hasMasterKey,
         installationId: client.installationId,
       });
     } catch(e) {
-      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
-      logger.error(e);
+       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+       logger.error(e);
     }
   }
 
