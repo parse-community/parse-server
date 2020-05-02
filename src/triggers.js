@@ -751,7 +751,6 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
 }
 export async function maybeRunConnectTrigger(triggerType, request) {
   const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
-  console.log("connectTrigger",trigger);
   if (!trigger || trigger == null) {
     return;
   }
