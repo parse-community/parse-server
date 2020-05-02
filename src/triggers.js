@@ -755,21 +755,18 @@ export async function maybeRunConnectTrigger(triggerType, request) {
   if (!trigger || trigger == null) {
     return;
   }
-  console.log("connectTrigger1",trigger);
   if (request.sessionToken) {
     try {
-     const user = await userForSessionToken(request.sessionToken);
+      const user = await userForSessionToken(request.sessionToken);
       request.user = user;
     } catch(e) {
-     delete request.sessionToken; 
+      delete request.sessionToken;
     }
   }
-  console.log(request);
-  await trigger(request) 
+  await trigger(request)
 }
 export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
-  console.log("subtrigger",trigger);
   if (!trigger || trigger == null) {
     return request.query;
   }
@@ -778,10 +775,10 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   request.query = parseQuery;
   if (request.sessionToken) {
     try {
-     const user = await userForSessionToken(request.sessionToken);
+      const user = await userForSessionToken(request.sessionToken);
       request.user = user;
     } catch(e) {
-     delete request.sessionToken; 
+      delete request.sessionToken;
     }
   }
   const result = await trigger(request);
@@ -795,12 +792,12 @@ async function userForSessionToken(sessionToken) {
   q.equalTo('sessionToken', sessionToken);
   const session = await q.first({ useMasterKey: true })
   if (!session) {
-     return Promise.reject('No session found for session token');
+    throw 'No session found for session token';
   }
   const user = session.get('user');
   if (!user) {
-     return Promise.reject('No session found for session token');
-  } 
+    throw 'No session found for session token';
+  }
   await user.fetch({useMasterKey:true});
   return user;
 }
