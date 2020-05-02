@@ -692,7 +692,7 @@ class ParseLiveQueryServer {
         subscriptionInfo.sessionToken = request.sessionToken;
       }
       client.addSubscriptionInfo(request.requestId, subscriptionInfo);
-      
+
       // Add clientId to subscription
       subscription.addClientSubscription(
         parseWebsocket.clientId,
@@ -700,7 +700,7 @@ class ParseLiveQueryServer {
       );
       client.pushSubscribe(request.requestId);
 
-     logger.verbose(
+      logger.verbose(
         `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
       );
       logger.verbose('Current client number: %d', this.clients.size);
@@ -714,8 +714,8 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch(e) {
-       Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
-       logger.error(e);
+      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      logger.error(e);
     }
   }
 
