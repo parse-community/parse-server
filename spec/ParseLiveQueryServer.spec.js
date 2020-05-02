@@ -462,7 +462,7 @@ describe('ParseLiveQueryServer', function() {
     expect(Client.pushError).toHaveBeenCalled();
   });
 
-  it('can handle unsubscribe command', function() {
+  it('can handle unsubscribe command', async () => {
     const parseLiveQueryServer = new ParseLiveQueryServer({});
     // Add mock client
     const clientId = 1;
