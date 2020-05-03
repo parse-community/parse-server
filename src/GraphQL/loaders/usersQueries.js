@@ -20,8 +20,8 @@ const getUserFromSessionToken = async (
   }
   const sessionToken = info.sessionToken;
   const selectedFields = getFieldNames(queryInfo)
-    .filter(field => field.startsWith(keysPrefix))
-    .map(field => field.replace(keysPrefix, ''));
+    .filter((field) => field.startsWith(keysPrefix))
+    .map((field) => field.replace(keysPrefix, ''));
 
   const keysAndInclude = extractKeysAndInclude(selectedFields);
   const { keys } = keysAndInclude;
@@ -39,13 +39,13 @@ const getUserFromSessionToken = async (
   if (keys) {
     options.keys = keys
       .split(',')
-      .map(key => `user.${key}`)
+      .map((key) => `user.${key}`)
       .join(',');
   }
   if (include) {
     options.include = include
       .split(',')
-      .map(included => `user.${included}`)
+      .map((included) => `user.${included}`)
       .join(',');
   }
 
@@ -55,7 +55,8 @@ const getUserFromSessionToken = async (
     '_Session',
     { sessionToken },
     options,
-    info.clientVersion
+    info.clientVersion,
+    info.context
   );
   if (
     !response.results ||
@@ -75,7 +76,7 @@ const getUserFromSessionToken = async (
   }
 };
 
-const load = parseGraphQLSchema => {
+const load = (parseGraphQLSchema) => {
   if (parseGraphQLSchema.isUsersClassDisabled) {
     return;
   }

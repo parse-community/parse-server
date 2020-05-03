@@ -14,7 +14,7 @@ var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 
 function checkTriggers(className, config, types) {
-  return types.some(triggerType => {
+  return types.some((triggerType) => {
     return triggers.getTrigger(
       className,
       triggers.Types[triggerType],
@@ -31,7 +31,15 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(config, auth, className, restWhere, restOptions, clientSDK) {
+function find(
+  config,
+  auth,
+  className,
+  restWhere,
+  restOptions,
+  clientSDK,
+  context
+) {
   enforceRoleSecurity('find', className, auth);
   return triggers
     .maybeRunQueryTrigger(
@@ -40,9 +48,10 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
       restWhere,
       restOptions,
       config,
-      auth
+      auth,
+      context
     )
-    .then(result => {
+    .then((result) => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
       const query = new RestQuery(
@@ -58,7 +67,15 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 }
 
 // get is just like find but only queries an objectId.
-const get = (config, auth, className, objectId, restOptions, clientSDK) => {
+const get = (
+  config,
+  auth,
+  className,
+  objectId,
+  restOptions,
+  clientSDK,
+  context
+) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
   return triggers
@@ -69,9 +86,10 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
       restOptions,
       config,
       auth,
+      context,
       true
     )
-    .then(result => {
+    .then((result) => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
       const query = new RestQuery(
@@ -87,7 +105,7 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
 };
 
 // Returns a promise that doesn't resolve to any useful value.
-function del(config, auth, className, objectId) {
+function del(config, auth, className, objectId, context) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
   }
@@ -114,7 +132,7 @@ function del(config, auth, className, objectId) {
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
           .execute({ op: 'delete' })
-          .then(response => {
+          .then((response) => {
             if (response && response.results && response.results.length) {
               const firstResult = response.results[0];
               firstResult.className = className;
@@ -134,7 +152,8 @@ function del(config, auth, className, objectId) {
                 auth,
                 inflatedObject,
                 null,
-                config
+                config,
+                context
               );
             }
             throw new Parse.Error(
@@ -153,7 +172,7 @@ function del(config, auth, className, objectId) {
       }
     })
     .then(() => config.database.loadSchema())
-    .then(s => {
+    .then((s) => {
       schemaController = s;
       const options = {};
       if (!auth.isMaster) {
@@ -187,16 +206,17 @@ function del(config, auth, className, objectId) {
         auth,
         inflatedObject,
         null,
-        config
+        config,
+        context
       );
     })
-    .catch(error => {
+    .catch((error) => {
       handleSessionMissingError(error, className, auth);
     });
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject, clientSDK) {
+function create(config, auth, className, restObject, clientSDK, context) {
   enforceRoleSecurity('create', className, auth);
   var write = new RestWrite(
     config,
@@ -205,7 +225,9 @@ function create(config, auth, className, restObject, clientSDK) {
     null,
     restObject,
     null,
-    clientSDK
+    clientSDK,
+    null,
+    context
   );
   return write.execute();
 }
@@ -213,7 +235,15 @@ function create(config, auth, className, restObject, clientSDK) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK) {
+function update(
+  config,
+  auth,
+  className,
+  restWhere,
+  restObject,
+  clientSDK,
+  context
+) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
@@ -252,10 +282,11 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
         restObject,
         originalRestObject,
         clientSDK,
-        'update'
+        'update',
+        context
       ).execute();
     })
-    .catch(error => {
+    .catch((error) => {
       handleSessionMissingError(error, className, auth);
     });
 }
