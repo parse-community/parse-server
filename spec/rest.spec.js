@@ -199,7 +199,9 @@ describe('rest create', () => {
           auth.nobody(config),
           'MyClass',
           { objectId: mob.objectId },
-          obj
+          obj,
+          null,
+          {}
         );
       })
       .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
