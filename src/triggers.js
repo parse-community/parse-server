@@ -233,7 +233,10 @@ export function getRequestObject(
     request.original = originalParseObject;
   }
 
-  if (context) {
+  if (triggerType === Types.beforeSave ||
+    triggerType === Types.afterSave ||
+    triggerType === Types.beforeDelete ||
+    triggerType === Types.afterDelete) {
     // Set a copy of the context on the request object.
     request.context = Object.assign({}, context);
   }
@@ -462,7 +465,6 @@ export function maybeRunQueryTrigger(
   restOptions,
   config,
   auth,
-  context,
   isGet
 ) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
@@ -488,7 +490,6 @@ export function maybeRunQueryTrigger(
     parseQuery,
     count,
     config,
-    context,
     isGet
   );
   return Promise.resolve()
@@ -609,7 +610,9 @@ export function maybeRunTrigger(
         );
         if (
           triggerType === Types.beforeSave ||
-          triggerType === Types.afterSave
+          triggerType === Types.afterSave ||
+          triggerType === Types.beforeDelete ||
+          triggerType === Types.afterDelete
         ) {
           Object.assign(context, request.context);
         }

@@ -70,6 +70,7 @@ const get = (config, auth, className, objectId, restOptions, clientSDK, context)
       restOptions,
       config,
       auth,
+      context,
       true
     )
     .then(result => {
