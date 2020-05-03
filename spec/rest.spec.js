@@ -184,7 +184,7 @@ describe('rest create', () => {
     });
 
     rest
-      .create(config, auth.nobody(config), 'MyClass', obj)
+      .create(config, auth.nobody(config), 'MyClass', obj, null, {})
       .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
       .then((results) => {
         expect(results.length).toEqual(1);

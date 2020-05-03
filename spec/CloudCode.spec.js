@@ -2925,6 +2925,33 @@ describe('afterLogin hook', () => {
     await obj.save(null, { context: { a: 'a' } });
   });
 
+  it('should have access to context as saveAll argument', async () => {
+    // Declare triggers
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    // Save object
+    const obj = new TestObject();
+    await Parse.Object.saveAll([obj], { context: { a: 'a' }});
+  });
+
+  it('should have access to context as destroyAll argument', async () => {
+    // Declare triggers
+    Parse.Cloud.beforeDelete('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterDelete('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    // Save object
+    const obj = new TestObject();
+    await Parse.Object.saveAll([obj]);
+    await Parse.Object.destroyAll([obj], { context: { a: 'a' } });
+  });
+
   it('should have access to context as destroy a object', async () => {
     // Declare triggers
     Parse.Cloud.beforeDelete('TestObject', (req) => {
