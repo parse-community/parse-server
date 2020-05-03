@@ -133,7 +133,8 @@ export class ClassesRouter extends PromiseRouter {
       this.className(req),
       where,
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 

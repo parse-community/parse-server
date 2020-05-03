@@ -85,7 +85,10 @@ export class PushController {
             master(config),
             '_Installation',
             restQuery.restWhere,
-            restUpdate
+            restUpdate,
+            null,
+            null,
+            {}
           );
           write.runOptions.many = true;
           return write.execute();
@@ -115,7 +118,10 @@ export class PushController {
             master(config),
             '_Audience',
             { objectId: audienceId },
-            updateAudience
+            updateAudience,
+            null,
+            null,
+            {}
           );
           write.execute();
         }
