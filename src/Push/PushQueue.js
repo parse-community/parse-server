@@ -35,7 +35,7 @@ export class PushQueue {
         return rest.find(config, auth, '_Installation', where, {
           limit: 0,
           count: true,
-        });
+        }, null, {});
       })
       .then(({ results, count }) => {
         if (!results || count == 0) {

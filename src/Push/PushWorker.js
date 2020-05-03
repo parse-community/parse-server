@@ -49,7 +49,7 @@ export class PushWorker {
     delete query.where;
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
     return rest
-      .find(config, auth, '_Installation', where, query)
+      .find(config, auth, '_Installation', where, query, null, {})
       .then(({ results }) => {
         if (results.length == 0) {
           return;

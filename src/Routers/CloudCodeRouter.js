@@ -57,7 +57,7 @@ export class CloudCodeRouter extends PromiseRouter {
 
   static getJobs(req) {
     return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {}, null, {})
       .then(scheduledJobs => {
         return {
           response: scheduledJobs.results,
@@ -69,7 +69,7 @@ export class CloudCodeRouter extends PromiseRouter {
     const config = req.config;
     const jobs = triggers.getJobs(config.applicationId) || {};
     return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {}, null, {})
       .then(scheduledJobs => {
         return {
           response: {
@@ -115,7 +115,7 @@ export class CloudCodeRouter extends PromiseRouter {
   static deleteJob(req) {
     const { objectId } = req.params;
     return rest
-      .del(req.config, req.auth, '_JobSchedule', objectId)
+      .del(req.config, req.auth, '_JobSchedule', objectId, req.info.context)
       .then(response => {
         return {
           response,

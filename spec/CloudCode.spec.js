@@ -2939,12 +2939,9 @@ describe('afterLogin hook', () => {
     await obj.destroy({ context: { a: 'a' } });
   });
 
-  it('should have access to context when query object', async () => {
+  it('should have access to context in beforeFind hook', async () => {
     // Declare triggers
     Parse.Cloud.beforeFind('TestObject', (req) => {
-      expect(req.context.a).toEqual('a');
-    });
-    Parse.Cloud.afterFind('TestObject', (req) => {
       expect(req.context.a).toEqual('a');
     });
     // find object

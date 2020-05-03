@@ -33,7 +33,7 @@ const updateObject = async (
 };
 
 const deleteObject = async (className, objectId, config, auth, info) => {
-  await rest.del(config, auth, className, objectId, info.clientSDK, info.context);
+  await rest.del(config, auth, className, objectId, info.context);
   return true;
 };
 
