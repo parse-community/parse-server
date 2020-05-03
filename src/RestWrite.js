@@ -32,8 +32,8 @@ function RestWrite(
   data,
   originalData,
   clientSDK,
-  action,
-  context
+  context,
+  action
 ) {
   if (auth.isReadOnly) {
     throw new Parse.Error(
@@ -106,7 +106,7 @@ function RestWrite(
 // write, in order.
 // Returns a promise for a {response, status, location} object.
 // status and location are optional.
-RestWrite.prototype.execute = function () {
+RestWrite.prototype.execute = function() {
   return Promise.resolve()
     .then(() => {
       return this.getUserAndRoleACL();
@@ -132,7 +132,7 @@ RestWrite.prototype.execute = function () {
     .then(() => {
       return this.validateSchema();
     })
-    .then((schemaController) => {
+    .then(schemaController => {
       this.validSchemaController = schemaController;
       return this.setRequiredFieldsIfNeeded();
     })
@@ -166,7 +166,7 @@ RestWrite.prototype.execute = function () {
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
-RestWrite.prototype.getUserAndRoleACL = function () {
+RestWrite.prototype.getUserAndRoleACL = function() {
   if (this.auth.isMaster) {
     return Promise.resolve();
   }
@@ -174,7 +174,7 @@ RestWrite.prototype.getUserAndRoleACL = function () {
   this.runOptions.acl = ['*'];
 
   if (this.auth.user) {
-    return this.auth.getUserRoles().then((roles) => {
+    return this.auth.getUserRoles().then(roles => {
       this.runOptions.acl = this.runOptions.acl.concat(roles, [
         this.auth.user.id,
       ]);
@@ -186,7 +186,7 @@ RestWrite.prototype.getUserAndRoleACL = function () {
 };
 
 // Validates this operation against the allowClientClassCreation config.
-RestWrite.prototype.validateClientClassCreation = function () {
+RestWrite.prototype.validateClientClassCreation = function() {
   if (
     this.config.allowClientClassCreation === false &&
     !this.auth.isMaster &&
@@ -194,8 +194,8 @@ RestWrite.prototype.validateClientClassCreation = function () {
   ) {
     return this.config.database
       .loadSchema()
-      .then((schemaController) => schemaController.hasClass(this.className))
-      .then((hasClass) => {
+      .then(schemaController => schemaController.hasClass(this.className))
+      .then(hasClass => {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
@@ -211,7 +211,7 @@ RestWrite.prototype.validateClientClassCreation = function () {
 };
 
 // Validates this operation against the schema.
-RestWrite.prototype.validateSchema = function () {
+RestWrite.prototype.validateSchema = function() {
   return this.config.database.validateObject(
     this.className,
     this.data,
@@ -222,7 +222,7 @@ RestWrite.prototype.validateSchema = function () {
 
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
-RestWrite.prototype.runBeforeSaveTrigger = function () {
+RestWrite.prototype.runBeforeSaveTrigger = function() {
   if (this.response) {
     return;
   }
@@ -275,7 +275,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         );
       }
       // In the case that there is no permission for the operation, it throws an error
-      return databasePromise.then((result) => {
+      return databasePromise.then(result => {
         if (!result || result.length <= 0) {
           throw new Parse.Error(
             Parse.Error.OBJECT_NOT_FOUND,
@@ -294,7 +294,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
         this.context
       );
     })
-    .then((response) => {
+    .then(response => {
       if (response && response.object) {
         this.storage.fieldsChangedByTrigger = _.reduce(
           response.object,
@@ -315,7 +315,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
     });
 };
 
-RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
+RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
   // Avoid doing any setup for triggers if there is no 'beforeLogin' trigger
   if (
     !triggers.triggerExists(
@@ -342,11 +342,11 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
   );
 };
 
-RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
+RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
   if (this.data) {
-    return this.validSchemaController.getAllClasses().then((allClasses) => {
+    return this.validSchemaController.getAllClasses().then(allClasses => {
       const schema = allClasses.find(
-        (oneClass) => oneClass.className === this.className
+        oneClass => oneClass.className === this.className
       );
       const setRequiredFieldIfNeeded = (fieldName, setDefault) => {
         if (
@@ -395,12 +395,12 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
           );
         }
         if (schema) {
-          Object.keys(schema.fields).forEach((fieldName) => {
+          Object.keys(schema.fields).forEach(fieldName => {
             setRequiredFieldIfNeeded(fieldName, true);
           });
         }
       } else if (schema) {
-        Object.keys(this.data).forEach((fieldName) => {
+        Object.keys(this.data).forEach(fieldName => {
           setRequiredFieldIfNeeded(fieldName, false);
         });
       }
@@ -412,7 +412,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function () {
 // Transforms auth data for a user object.
 // Does nothing if this isn't a user object.
 // Returns a promise for when we're done if it can't finish this tick.
-RestWrite.prototype.validateAuthData = function () {
+RestWrite.prototype.validateAuthData = function() {
   if (this.className !== '_User') {
     return;
   }
@@ -473,8 +473,8 @@ RestWrite.prototype.validateAuthData = function () {
   );
 };
 
-RestWrite.prototype.handleAuthDataValidation = function (authData) {
-  const validations = Object.keys(authData).map((provider) => {
+RestWrite.prototype.handleAuthDataValidation = function(authData) {
+  const validations = Object.keys(authData).map(provider => {
     if (authData[provider] === null) {
       return Promise.resolve();
     }
@@ -492,7 +492,7 @@ RestWrite.prototype.handleAuthDataValidation = function (authData) {
   return Promise.all(validations);
 };
 
-RestWrite.prototype.findUsersWithAuthData = function (authData) {
+RestWrite.prototype.findUsersWithAuthData = function(authData) {
   const providers = Object.keys(authData);
   const query = providers
     .reduce((memo, provider) => {
@@ -505,7 +505,7 @@ RestWrite.prototype.findUsersWithAuthData = function (authData) {
       memo.push(query);
       return memo;
     }, [])
-    .filter((q) => {
+    .filter(q => {
       return typeof q !== 'undefined';
     });
 
@@ -517,11 +517,11 @@ RestWrite.prototype.findUsersWithAuthData = function (authData) {
   return findPromise;
 };
 
-RestWrite.prototype.filteredObjectsByACL = function (objects) {
+RestWrite.prototype.filteredObjectsByACL = function(objects) {
   if (this.auth.isMaster) {
     return objects;
   }
-  return objects.filter((object) => {
+  return objects.filter(object => {
     if (!object.ACL) {
       return true; // legacy users that have no ACL field on them
     }
@@ -530,9 +530,9 @@ RestWrite.prototype.filteredObjectsByACL = function (objects) {
   });
 };
 
-RestWrite.prototype.handleAuthData = function (authData) {
+RestWrite.prototype.handleAuthData = function(authData) {
   let results;
-  return this.findUsersWithAuthData(authData).then(async (r) => {
+  return this.findUsersWithAuthData(authData).then(async r => {
     results = this.filteredObjectsByACL(r);
 
     if (results.length == 1) {
@@ -540,7 +540,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
 
       const userResult = results[0];
       const mutatedAuthData = {};
-      Object.keys(authData).forEach((provider) => {
+      Object.keys(authData).forEach(provider => {
         const providerData = authData[provider];
         const userAuthData = userResult.authData[provider];
         if (!_.isEqual(providerData, userAuthData)) {
@@ -590,7 +590,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
           // If we're not logging in, but just updating the current user, we can safely skip that part
           if (this.response) {
             // Assign the new authData in the response
-            Object.keys(mutatedAuthData).forEach((provider) => {
+            Object.keys(mutatedAuthData).forEach(provider => {
               this.response.response.authData[provider] =
                 mutatedAuthData[provider];
             });
@@ -634,7 +634,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
 };
 
 // The non-third-party parts of User transformation
-RestWrite.prototype.transformUser = function () {
+RestWrite.prototype.transformUser = function() {
   var promise = Promise.resolve();
 
   if (this.className !== '_User') {
@@ -658,8 +658,8 @@ RestWrite.prototype.transformUser = function () {
       },
     })
       .execute()
-      .then((results) => {
-        results.results.forEach((session) =>
+      .then(results => {
+        results.results.forEach(session =>
           this.config.cacheController.user.del(session.sessionToken)
         );
       });
@@ -682,12 +682,10 @@ RestWrite.prototype.transformUser = function () {
       }
 
       return this._validatePasswordPolicy().then(() => {
-        return passwordCrypto
-          .hash(this.data.password)
-          .then((hashedPassword) => {
-            this.data._hashed_password = hashedPassword;
-            delete this.data.password;
-          });
+        return passwordCrypto.hash(this.data.password).then(hashedPassword => {
+          this.data._hashed_password = hashedPassword;
+          delete this.data.password;
+        });
       });
     })
     .then(() => {
@@ -698,7 +696,7 @@ RestWrite.prototype.transformUser = function () {
     });
 };
 
-RestWrite.prototype._validateUserName = function () {
+RestWrite.prototype._validateUserName = function() {
   // Check for username uniqueness
   if (!this.data.username) {
     if (!this.query) {
@@ -725,7 +723,7 @@ RestWrite.prototype._validateUserName = function () {
       {},
       this.validSchemaController
     )
-    .then((results) => {
+    .then(results => {
       if (results.length > 0) {
         throw new Parse.Error(
           Parse.Error.USERNAME_TAKEN,
@@ -748,7 +746,7 @@ RestWrite.prototype._validateUserName = function () {
   Given that this lookup should be a relatively low use case and that the case sensitive
   unique index will be used by the db for the query, this is an adequate solution.
 */
-RestWrite.prototype._validateEmail = function () {
+RestWrite.prototype._validateEmail = function() {
   if (!this.data.email || this.data.email.__op === 'Delete') {
     return Promise.resolve();
   }
@@ -773,7 +771,7 @@ RestWrite.prototype._validateEmail = function () {
       {},
       this.validSchemaController
     )
-    .then((results) => {
+    .then(results => {
       if (results.length > 0) {
         throw new Parse.Error(
           Parse.Error.EMAIL_TAKEN,
@@ -793,14 +791,14 @@ RestWrite.prototype._validateEmail = function () {
     });
 };
 
-RestWrite.prototype._validatePasswordPolicy = function () {
+RestWrite.prototype._validatePasswordPolicy = function() {
   if (!this.config.passwordPolicy) return Promise.resolve();
   return this._validatePasswordRequirements().then(() => {
     return this._validatePasswordHistory();
   });
 };
 
-RestWrite.prototype._validatePasswordRequirements = function () {
+RestWrite.prototype._validatePasswordRequirements = function() {
   // check if the password conforms to the defined password policy if configured
   // If we specified a custom error in our configuration use it.
   // Example: "Passwords must include a Capital Letter, Lowercase Letter, and a number."
@@ -838,7 +836,7 @@ RestWrite.prototype._validatePasswordRequirements = function () {
       // retrieve the User object using objectId during password reset
       return this.config.database
         .find('_User', { objectId: this.objectId() })
-        .then((results) => {
+        .then(results => {
           if (results.length != 1) {
             throw undefined;
           }
@@ -856,7 +854,7 @@ RestWrite.prototype._validatePasswordRequirements = function () {
   return Promise.resolve();
 };
 
-RestWrite.prototype._validatePasswordHistory = function () {
+RestWrite.prototype._validatePasswordHistory = function() {
   // check whether password is repeating from specified history
   if (this.query && this.config.passwordPolicy.maxPasswordHistory) {
     return this.config.database
@@ -865,7 +863,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
         { objectId: this.objectId() },
         { keys: ['_password_history', '_hashed_password'] }
       )
-      .then((results) => {
+      .then(results => {
         if (results.length != 1) {
           throw undefined;
         }
@@ -879,8 +877,8 @@ RestWrite.prototype._validatePasswordHistory = function () {
         oldPasswords.push(user.password);
         const newPassword = this.data.password;
         // compare the new password hash with all old password hashes
-        const promises = oldPasswords.map(function (hash) {
-          return passwordCrypto.compare(newPassword, hash).then((result) => {
+        const promises = oldPasswords.map(function(hash) {
+          return passwordCrypto.compare(newPassword, hash).then(result => {
             if (result)
               // reject if there is a match
               return Promise.reject('REPEAT_PASSWORD');
@@ -892,7 +890,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
           .then(() => {
             return Promise.resolve();
           })
-          .catch((err) => {
+          .catch(err => {
             if (err === 'REPEAT_PASSWORD')
               // a match was found
               return Promise.reject(
@@ -908,7 +906,7 @@ RestWrite.prototype._validatePasswordHistory = function () {
   return Promise.resolve();
 };
 
-RestWrite.prototype.createSessionTokenIfNeeded = function () {
+RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.className !== '_User') {
     return;
   }
@@ -931,7 +929,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function () {
   return this.createSessionToken();
 };
 
-RestWrite.prototype.createSessionToken = async function () {
+RestWrite.prototype.createSessionToken = async function() {
   // cloud installationId from Cloud Code,
   // never create session tokens from there.
   if (this.auth.installationId && this.auth.installationId === 'cloud') {
@@ -955,7 +953,7 @@ RestWrite.prototype.createSessionToken = async function () {
 };
 
 // Delete email reset tokens if user is changing password or email.
-RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
+RestWrite.prototype.deleteEmailResetTokenIfNeeded = function() {
   if (this.className !== '_User' || this.query === null) {
     // null query means create
     return;
@@ -970,7 +968,7 @@ RestWrite.prototype.deleteEmailResetTokenIfNeeded = function () {
   }
 };
 
-RestWrite.prototype.destroyDuplicatedSessions = function () {
+RestWrite.prototype.destroyDuplicatedSessions = function() {
   // Only for _Session, and at creation time
   if (this.className != '_Session' || this.query) {
     return;
@@ -996,7 +994,7 @@ RestWrite.prototype.destroyDuplicatedSessions = function () {
 };
 
 // Handles any followup logic
-RestWrite.prototype.handleFollowup = function () {
+RestWrite.prototype.handleFollowup = function() {
   if (
     this.storage &&
     this.storage['clearSessions'] &&
@@ -1030,7 +1028,7 @@ RestWrite.prototype.handleFollowup = function () {
 
 // Handles the _Session class specialness.
 // Does nothing if this isn't an _Session object.
-RestWrite.prototype.handleSession = function () {
+RestWrite.prototype.handleSession = function() {
   if (this.response || this.className !== '_Session') {
     return;
   }
@@ -1081,7 +1079,7 @@ RestWrite.prototype.handleSession = function () {
       additionalSessionData,
     });
 
-    return createSession().then((results) => {
+    return createSession().then(results => {
       if (!results.response) {
         throw new Parse.Error(
           Parse.Error.INTERNAL_SERVER_ERROR,
@@ -1103,7 +1101,7 @@ RestWrite.prototype.handleSession = function () {
 // If an installation is found, this can mutate this.query and turn a create
 // into an update.
 // Returns a promise for when we're done if it can't finish this tick.
-RestWrite.prototype.handleInstallation = function () {
+RestWrite.prototype.handleInstallation = function() {
   if (this.response || this.className !== '_Installation') {
     return;
   }
@@ -1190,8 +1188,8 @@ RestWrite.prototype.handleInstallation = function () {
         {}
       );
     })
-    .then((results) => {
-      results.forEach((result) => {
+    .then(results => {
+      results.forEach(result => {
         if (
           this.query &&
           this.query.objectId &&
@@ -1297,16 +1295,14 @@ RestWrite.prototype.handleInstallation = function () {
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
-          this.config.database
-            .destroy('_Installation', delQuery)
-            .catch((err) => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored.
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+          this.config.database.destroy('_Installation', delQuery).catch(err => {
+            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+              // no deletions were made. Can be ignored.
+              return;
+            }
+            // rethrow the error
+            throw err;
+          });
           return;
         }
       } else {
@@ -1323,7 +1319,7 @@ RestWrite.prototype.handleInstallation = function () {
             .then(() => {
               return deviceTokenMatches[0]['objectId'];
             })
-            .catch((err) => {
+            .catch(err => {
               if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
                 // no deletions were made. Can be ignored
                 return;
@@ -1366,7 +1362,7 @@ RestWrite.prototype.handleInstallation = function () {
             }
             this.config.database
               .destroy('_Installation', delQuery)
-              .catch((err) => {
+              .catch(err => {
                 if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
                   // no deletions were made. Can be ignored.
                   return;
@@ -1380,7 +1376,7 @@ RestWrite.prototype.handleInstallation = function () {
         }
       }
     })
-    .then((objId) => {
+    .then(objId => {
       if (objId) {
         this.query = { objectId: objId };
         delete this.data.objectId;
@@ -1394,7 +1390,7 @@ RestWrite.prototype.handleInstallation = function () {
 // If we short-circuted the object response - then we need to make sure we expand all the files,
 // since this might not have a query, meaning it won't return the full result back.
 // TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
-RestWrite.prototype.expandFilesForExistingObjects = function () {
+RestWrite.prototype.expandFilesForExistingObjects = function() {
   // Check whether we have a short-circuited response - only then run expansion.
   if (this.response && this.response.response) {
     this.config.filesController.expandFilesInObject(
@@ -1404,7 +1400,7 @@ RestWrite.prototype.expandFilesForExistingObjects = function () {
   }
 };
 
-RestWrite.prototype.runDatabaseOperation = function () {
+RestWrite.prototype.runDatabaseOperation = function() {
   if (this.response) {
     return;
   }
@@ -1470,7 +1466,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           { objectId: this.objectId() },
           { keys: ['_password_history', '_hashed_password'] }
         )
-        .then((results) => {
+        .then(results => {
           if (results.length != 1) {
             throw undefined;
           }
@@ -1506,7 +1502,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
           false,
           this.validSchemaController
         )
-        .then((response) => {
+        .then(response => {
           response.updatedAt = this.updatedAt;
           this._updateResponseWithData(response, this.data);
           this.response = { response };
@@ -1542,7 +1538,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
         false,
         this.validSchemaController
       )
-      .catch((error) => {
+      .catch(error => {
         if (
           this.className !== '_User' ||
           error.code !== Parse.Error.DUPLICATE_VALUE
@@ -1586,7 +1582,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
             },
             { limit: 1 }
           )
-          .then((results) => {
+          .then(results => {
             if (results.length > 0) {
               throw new Parse.Error(
                 Parse.Error.USERNAME_TAKEN,
@@ -1599,7 +1595,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
               { limit: 1 }
             );
           })
-          .then((results) => {
+          .then(results => {
             if (results.length > 0) {
               throw new Parse.Error(
                 Parse.Error.EMAIL_TAKEN,
@@ -1612,7 +1608,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
             );
           });
       })
-      .then((response) => {
+      .then(response => {
         response.objectId = this.data.objectId;
         response.createdAt = this.data.createdAt;
 
@@ -1630,7 +1626,7 @@ RestWrite.prototype.runDatabaseOperation = function () {
 };
 
 // Returns nothing - doesn't wait for the trigger.
-RestWrite.prototype.runAfterSaveTrigger = function () {
+RestWrite.prototype.runAfterSaveTrigger = function() {
   if (!this.response || !this.response.response) {
     return;
   }
@@ -1667,7 +1663,7 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
     this.response.status || 200
   );
 
-  this.config.database.loadSchema().then((schemaController) => {
+  this.config.database.loadSchema().then(schemaController => {
     // Notifiy LiveQueryServer if possible
     const perms = schemaController.getClassLevelPermissions(
       updatedObject.className
@@ -1690,18 +1686,18 @@ RestWrite.prototype.runAfterSaveTrigger = function () {
       this.config,
       this.context
     )
-    .then((result) => {
+    .then(result => {
       if (result && typeof result === 'object') {
         this.response.response = result;
       }
     })
-    .catch(function (err) {
+    .catch(function(err) {
       logger.warn('afterSave caught an error', err);
     });
 };
 
 // A helper to figure out what location this operation happens at.
-RestWrite.prototype.location = function () {
+RestWrite.prototype.location = function() {
   var middle =
     this.className === '_User' ? '/users/' : '/classes/' + this.className + '/';
   return this.config.mount + middle + this.data.objectId;
@@ -1709,12 +1705,12 @@ RestWrite.prototype.location = function () {
 
 // A helper to get the object id for this operation.
 // Because it could be either on the query or on the data
-RestWrite.prototype.objectId = function () {
+RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
-RestWrite.prototype.sanitizedData = function () {
+RestWrite.prototype.sanitizedData = function() {
   const data = Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!/^[A-Za-z][0-9A-Za-z_]*$/.test(key)) {
@@ -1726,9 +1722,9 @@ RestWrite.prototype.sanitizedData = function () {
 };
 
 // Returns an updated copy of the object
-RestWrite.prototype.buildUpdatedObject = function (extraData) {
+RestWrite.prototype.buildUpdatedObject = function(extraData) {
   const updatedObject = triggers.inflate(extraData, this.originalData);
-  Object.keys(this.data).reduce(function (data, key) {
+  Object.keys(this.data).reduce(function(data, key) {
     if (key.indexOf('.') > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
       const splittedKey = key.split('.');
@@ -1748,11 +1744,11 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
   return updatedObject;
 };
 
-RestWrite.prototype.cleanUserAuthData = function () {
+RestWrite.prototype.cleanUserAuthData = function() {
   if (this.response && this.response.response && this.className === '_User') {
     const user = this.response.response;
     if (user.authData) {
-      Object.keys(user.authData).forEach((provider) => {
+      Object.keys(user.authData).forEach(provider => {
         if (user.authData[provider] === null) {
           delete user.authData[provider];
         }
@@ -1764,12 +1760,12 @@ RestWrite.prototype.cleanUserAuthData = function () {
   }
 };
 
-RestWrite.prototype._updateResponseWithData = function (response, data) {
+RestWrite.prototype._updateResponseWithData = function(response, data) {
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
   const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
-  this.storage.fieldsChangedByTrigger.forEach((fieldName) => {
+  this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
 
     if (!Object.prototype.hasOwnProperty.call(response, fieldName)) {

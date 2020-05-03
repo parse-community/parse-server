@@ -14,7 +14,7 @@ var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 
 function checkTriggers(className, config, types) {
-  return types.some((triggerType) => {
+  return types.some(triggerType => {
     return triggers.getTrigger(
       className,
       triggers.Types[triggerType],
@@ -31,15 +31,7 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(
-  config,
-  auth,
-  className,
-  restWhere,
-  restOptions,
-  clientSDK,
-  context
-) {
+function find(config, auth, className, restWhere, restOptions, clientSDK, context) {
   enforceRoleSecurity('find', className, auth);
   return triggers
     .maybeRunQueryTrigger(
@@ -51,7 +43,7 @@ function find(
       auth,
       context
     )
-    .then((result) => {
+    .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
       const query = new RestQuery(
@@ -67,15 +59,7 @@ function find(
 }
 
 // get is just like find but only queries an objectId.
-const get = (
-  config,
-  auth,
-  className,
-  objectId,
-  restOptions,
-  clientSDK,
-  context
-) => {
+const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
   return triggers
@@ -86,10 +70,9 @@ const get = (
       restOptions,
       config,
       auth,
-      context,
       true
     )
-    .then((result) => {
+    .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
       const query = new RestQuery(
@@ -132,7 +115,7 @@ function del(config, auth, className, objectId, context) {
       if (hasTriggers || hasLiveQuery || className == '_Session') {
         return new RestQuery(config, auth, className, { objectId })
           .execute({ op: 'delete' })
-          .then((response) => {
+          .then(response => {
             if (response && response.results && response.results.length) {
               const firstResult = response.results[0];
               firstResult.className = className;
@@ -172,7 +155,7 @@ function del(config, auth, className, objectId, context) {
       }
     })
     .then(() => config.database.loadSchema())
-    .then((s) => {
+    .then(s => {
       schemaController = s;
       const options = {};
       if (!auth.isMaster) {
@@ -210,7 +193,7 @@ function del(config, auth, className, objectId, context) {
         context
       );
     })
-    .catch((error) => {
+    .catch(error => {
       handleSessionMissingError(error, className, auth);
     });
 }
@@ -226,8 +209,7 @@ function create(config, auth, className, restObject, clientSDK, context) {
     restObject,
     null,
     clientSDK,
-    null,
-    context
+    context,
   );
   return write.execute();
 }
@@ -235,15 +217,7 @@ function create(config, auth, className, restObject, clientSDK, context) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(
-  config,
-  auth,
-  className,
-  restWhere,
-  restObject,
-  clientSDK,
-  context
-) {
+function update(config, auth, className, restWhere, restObject, clientSDK, context) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
@@ -282,11 +256,11 @@ function update(
         restObject,
         originalRestObject,
         clientSDK,
-        'update',
-        context
+        context,
+        'update'
       ).execute();
     })
-    .catch((error) => {
+    .catch(error => {
       handleSessionMissingError(error, className, auth);
     });
 }

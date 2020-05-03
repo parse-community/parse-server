@@ -20,12 +20,12 @@ export const Types = {
 
 const FileClassName = '@File';
 
-const baseStore = function () {
+const baseStore = function() {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
-  const Triggers = Object.keys(Types).reduce(function (base, key) {
+  const Triggers = Object.keys(Types).reduce(function(base, key) {
     base[key] = {};
     return base;
   }, {});
@@ -147,7 +147,7 @@ export function removeTrigger(type, className, applicationId) {
 }
 
 export function _unregisterAll() {
-  Object.keys(_triggerStore).forEach((appId) => delete _triggerStore[appId]);
+  Object.keys(_triggerStore).forEach(appId => delete _triggerStore[appId]);
 }
 
 export function getTrigger(className, triggerType, applicationId) {
@@ -180,7 +180,7 @@ export function getFunctionNames(applicationId) {
     {};
   const functionNames = [];
   const extractFunctionNames = (namespace, store) => {
-    Object.keys(store).forEach((name) => {
+    Object.keys(store).forEach(name => {
       const value = store[name];
       if (namespace) {
         name = `${namespace}.${name}`;
@@ -297,12 +297,12 @@ export function getRequestQueryObject(
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
   return {
-    success: function (response) {
+    success: function(response) {
       if (request.triggerName === Types.afterFind) {
         if (!response) {
           response = request.objects;
         }
-        response = response.map((object) => {
+        response = response.map(object => {
           return object.toJSON();
         });
         return resolve(response);
@@ -332,7 +332,7 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function (error) {
+    error: function(error) {
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
@@ -413,10 +413,10 @@ export function maybeRunAfterFindTrigger(
     const request = getRequestObject(triggerType, auth, null, null, config);
     const { success, error } = getResponseObject(
       request,
-      (object) => {
+      object => {
         resolve(object);
       },
-      (error) => {
+      error => {
         reject(error);
       }
     );
@@ -427,7 +427,7 @@ export function maybeRunAfterFindTrigger(
       JSON.stringify(objects),
       auth
     );
-    request.objects = objects.map((object) => {
+    request.objects = objects.map(object => {
       //setting the class name to transform into parse object
       object.className = className;
       return Parse.Object.fromJSON(object);
@@ -436,7 +436,7 @@ export function maybeRunAfterFindTrigger(
       .then(() => {
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
-          return response.then((results) => {
+          return response.then(results => {
             if (!results) {
               throw new Parse.Error(
                 Parse.Error.SCRIPT_FAILED,
@@ -449,7 +449,7 @@ export function maybeRunAfterFindTrigger(
         return response;
       })
       .then(success, error);
-  }).then((results) => {
+  }).then(results => {
     logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
     return results;
   });
@@ -496,7 +496,7 @@ export function maybeRunQueryTrigger(
       return trigger(requestObject);
     })
     .then(
-      (result) => {
+      result => {
         let queryResult = parseQuery;
         if (result && result instanceof Parse.Query) {
           queryResult = result;
@@ -556,7 +556,7 @@ export function maybeRunQueryTrigger(
           restOptions,
         };
       },
-      (err) => {
+      err => {
         if (typeof err === 'string') {
           throw new Parse.Error(1, err);
         } else {
@@ -582,7 +582,7 @@ export function maybeRunTrigger(
   if (!parseObject) {
     return Promise.resolve({});
   }
-  return new Promise(function (resolve, reject) {
+  return new Promise(function(resolve, reject) {
     var trigger = getTrigger(
       parseObject.className,
       triggerType,
@@ -599,7 +599,7 @@ export function maybeRunTrigger(
     );
     var { success, error } = getResponseObject(
       request,
-      (object) => {
+      object => {
         logTriggerSuccessBeforeHook(
           triggerType,
           parseObject.className,
@@ -615,7 +615,7 @@ export function maybeRunTrigger(
         }
         resolve(object);
       },
-      (error) => {
+      error => {
         logTriggerErrorBeforeHook(
           triggerType,
           parseObject.className,
@@ -650,7 +650,7 @@ export function maybeRunTrigger(
         // beforeSave is expected to return null (nothing)
         if (triggerType === Types.beforeSave) {
           if (promise && typeof promise.then === 'function') {
-            return promise.then((response) => {
+            return promise.then(response => {
               // response.object may come from express routing before hook
               if (response && response.object) {
                 return response;
@@ -688,7 +688,7 @@ export function runLiveQueryEventHandlers(
   ) {
     return;
   }
-  _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
+  _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
 }
 
 export function getRequestFileObject(triggerType, auth, fileObject, config) {
@@ -716,12 +716,7 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   return request;
 }
 
-export async function maybeRunFileTrigger(
-  triggerType,
-  fileObject,
-  config,
-  auth
-) {
+export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
@@ -737,8 +732,8 @@ export async function maybeRunFileTrigger(
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
-        auth
-      );
+        auth,
+      )
       return result || fileObject;
     } catch (error) {
       logTriggerErrorBeforeHook(
@@ -746,7 +741,7 @@ export async function maybeRunFileTrigger(
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
-        error
+        error,
       );
       throw error;
     }
