@@ -47,7 +47,7 @@ function RestWrite(
   this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
-  this.context = context || {};
+  this.context = context;
 
   if (action) {
     this.runOptions.action = action;

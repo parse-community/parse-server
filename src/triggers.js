@@ -465,6 +465,7 @@ export function maybeRunQueryTrigger(
   restOptions,
   config,
   auth,
+  context,
   isGet
 ) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
@@ -490,6 +491,7 @@ export function maybeRunQueryTrigger(
     parseQuery,
     count,
     config,
+    context,
     isGet
   );
   return Promise.resolve()

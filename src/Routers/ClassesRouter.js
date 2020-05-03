@@ -120,7 +120,8 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 

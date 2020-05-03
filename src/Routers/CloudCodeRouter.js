@@ -88,7 +88,8 @@ export class CloudCodeRouter extends PromiseRouter {
       req.auth,
       '_JobSchedule',
       formatJobSchedule(job_schedule),
-      req.client
+      req.client,
+      req.info.context,
     );
   }
 
