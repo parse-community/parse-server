@@ -119,7 +119,7 @@ export function handleParseHeaders(req, res, next) {
   if (info.appId) {
     // Request provided appId, just use that
     appId = info.appId;
-  } else if (AppCache.cache.length === 1) {
+  } else if (Object.keys(AppCache.cache).length === 1) {
     // Request did not provide appId, but there is only one app anyway, just use that
     appId = Object.keys(AppCache.cache)[0];
   } else {
