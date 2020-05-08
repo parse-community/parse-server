@@ -10,14 +10,16 @@ const http = require('http');
 
 const downloadFileFromURI = (uri) => {
   return new Promise((res, rej) => {
-    http.get(uri, (response) => {
-      response.setDefaultEncoding('base64');
-      let body = `data:${response.headers['content-type']};base64,`;
-      response.on('data', data => body += data);
-      response.on('end', () => res(body));
-    }).on('error', (e) => {
-      rej(`Error downloading file from ${uri}: ${e.message}`);
-    });
+    http
+      .get(uri, (response) => {
+        response.setDefaultEncoding('base64');
+        let body = `data:${response.headers['content-type']};base64,`;
+        response.on('data', (data) => (body += data));
+        response.on('end', () => res(body));
+      })
+      .on('error', (e) => {
+        rej(`Error downloading file from ${uri}: ${e.message}`);
+      });
   });
 };
 
@@ -38,14 +40,15 @@ const errorMessageFromError = (e) => {
     return e.message;
   }
   return undefined;
-}
+};
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
+    router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
-    router.post('/files', function(req, res, next) {
+    router.post('/files', function (req, res, next) {
       next(
         new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.')
       );
@@ -88,7 +91,7 @@ export class FilesRouter {
     } else {
       filesController
         .getFileData(config, filename)
-        .then(data => {
+        .then((data) => {
           res.status(200);
           res.set('Content-Type', contentType);
           res.set('Content-Length', data.length);
@@ -135,7 +138,7 @@ export class FilesRouter {
         fileObject,
         config,
         req.auth
-      )
+      );
       let saveResult;
       // if a new ParseFile is returned check if it's an already saved file
       if (triggerResult instanceof Parse.File) {
@@ -187,16 +190,12 @@ export class FilesRouter {
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
-
     } catch (e) {
       logger.error('Error creating a file: ', e);
-      const errorMessage = errorMessageFromError(e) || `Could not store file: ${fileObject.file._name}.`;
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          errorMessage
-        )
-      );
+      const errorMessage =
+        errorMessageFromError(e) ||
+        `Could not store file: ${fileObject.file._name}.`;
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, errorMessage));
     }
   }
 
@@ -207,7 +206,7 @@ export class FilesRouter {
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
       file._url = filesController.adapter.getFileLocation(req.config, filename);
-      const fileObject = { file, fileSize: null }
+      const fileObject = { file, fileSize: null };
       await triggers.maybeRunFileTrigger(
         triggers.Types.beforeDeleteFile,
         fileObject,
@@ -229,12 +228,21 @@ export class FilesRouter {
     } catch (e) {
       logger.error('Error deleting a file: ', e);
       const errorMessage = errorMessageFromError(e) || `Could not delete file.`;
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_DELETE_ERROR,
-          errorMessage
-        )
-      );
+      next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR, errorMessage));
+    }
+  }
+
+  async metadataHandler(req, res) {
+    const config = Config.get(req.params.appId);
+    const { filesController } = config;
+    const { filename } = req.params;
+    try {
+      const data = await filesController.getMetadata(filename);
+      res.status(200);
+      res.json(data);
+    } catch (e) {
+      res.status(200);
+      res.json({});
     }
   }
 }

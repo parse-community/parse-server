@@ -4,6 +4,8 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
   .GridFSBucketAdapter;
 const { randomString } = require('../lib/cryptoUtils');
 const databaseURI = 'mongodb://localhost:27017/parse';
+const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 async function expectMissingFile(gfsAdapter, name) {
   try {
@@ -31,6 +33,73 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     expect(gsResult.toString('utf8')).toBe(originalString);
     const gfsResult = await gfsAdapter.getFileData('myFileName');
     expect(gfsResult.toString('utf8')).toBe(originalString);
+  });
+
+  it('should save metadata', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    const originalString = 'abcdefghi';
+    const metadata = { hello: 'world' };
+    await gfsAdapter.createFile('myFileName', originalString, null, {
+      metadata,
+    });
+    const gfsResult = await gfsAdapter.getFileData('myFileName');
+    expect(gfsResult.toString('utf8')).toBe(originalString);
+    let gfsMetadata = await gfsAdapter.getMetadata('myFileName');
+    expect(gfsMetadata.metadata).toEqual(metadata);
+
+    // Empty json for file not found
+    gfsMetadata = await gfsAdapter.getMetadata('myUnknownFile');
+    expect(gfsMetadata).toEqual({});
+  });
+
+  it('should save metadata with file', async () => {
+    const gfsAdapter = new GridFSBucketAdapter(databaseURI);
+    await reconfigureServer({ filesAdapter: gfsAdapter });
+    const str = 'Hello World!';
+    const data = [];
+    for (let i = 0; i < str.length; i++) {
+      data.push(str.charCodeAt(i));
+    }
+    const metadata = { foo: 'bar' };
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    file.addMetadata('foo', 'bar');
+    await file.save();
+    let fileData = await gfsAdapter.getMetadata(file.name());
+    expect(fileData.metadata).toEqual(metadata);
+
+    // Can only add metadata on create
+    file.addMetadata('hello', 'world');
+    await file.save();
+    fileData = await gfsAdapter.getMetadata(file.name());
+    expect(fileData.metadata).toEqual(metadata);
+
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const response = await request({
+      method: 'GET',
+      headers,
+      url: `http://localhost:8378/1/files/test/metadata/${file.name()}`,
+    });
+    fileData = response.data;
+    expect(fileData.metadata).toEqual(metadata);
+  });
+
+  it('should handle getMetadata error', async () => {
+    const config = Config.get('test');
+    config.filesController.getMetadata = () => Promise.reject();
+
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+    };
+    const response = await request({
+      method: 'GET',
+      headers,
+      url: `http://localhost:8378/1/files/test/metadata/filename.txt`,
+    });
+    expect(response.data).toEqual({});
   });
 
   it('properly fetches a large file from GridFS', async () => {
