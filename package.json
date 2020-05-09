@@ -65,7 +65,7 @@
     "@babel/preset-env": "7.9.6",
     "@parse/minami": "1.0.0",
     "apollo-cache-inmemory": "1.6.6",
-    "apollo-client": "2.6.6",
+    "apollo-client": "2.6.9",
     "apollo-link": "1.2.14",
     "apollo-link-http": "1.5.17",
     "apollo-link-ws": "1.0.20",
