@@ -40,7 +40,7 @@ const portPattern = /:[0-9]*$/;
 // Special case for a simple path URL
 const simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/;
 
-const hostnameMaxLen = 255;
+const hostnameMaxLen = process.env.MONGODB_HOSTNAME_MAXLENGTH ? Number(process.env.MONGODB_HOSTNAME_MAXLENGTH) : null || 255;
 // protocols that can allow "unsafe" and "unwise" chars.
 const unsafeProtocol = {
   javascript: true,
