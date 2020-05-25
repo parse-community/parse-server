@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import { SchemaDirectiveVisitor } from 'graphql-tools';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
 export const definitions = gql`

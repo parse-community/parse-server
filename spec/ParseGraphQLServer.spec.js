@@ -10987,8 +10987,8 @@ describe('ParseGraphQLServer', () => {
         httpServer = http.createServer(expressApp);
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
           graphQLPath: '/graphql',
-          graphQLCustomTypeDefs: ({ autoSchema, mergeSchemas }) =>
-            mergeSchemas({ schemas: [autoSchema] }),
+          graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
+            stitchSchemas({ subschemas: [autoSchema] }),
         });
 
         parseGraphQLServer.applyGraphQL(expressApp);
