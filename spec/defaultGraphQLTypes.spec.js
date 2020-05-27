@@ -473,7 +473,7 @@ describe('defaultGraphQLTypes', () => {
 
       it('should serialize date', () => {
         const date = new Date();
-        expect(serialize(date)).toBe(date.toUTCString());
+        expect(serialize(date)).toBe(date.toISOString());
       });
 
       it('should return iso value if object', () => {
