@@ -25,8 +25,8 @@ export function toGraphQLError(error) {
 export const extractKeysAndInclude = (selectedFields) => {
   selectedFields = selectedFields.filter(
     (field) => !field.includes('__typename')
-  ); // Handles "id" field for both current and included objects
-
+  );
+  // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map((field) => {
     if (field === 'id') return 'objectId';
     return field.endsWith('.id')
@@ -37,13 +37,17 @@ export const extractKeysAndInclude = (selectedFields) => {
   let include = undefined;
 
   if (selectedFields.length > 0) {
-    keys = selectedFields.join(',');
+    keys = [...new Set(selectedFields)].join(',');
     // We can use this shortcut since optimization is handled
     // later on RestQuery, avoid overhead here.
     include = keys;
   }
+
   return {
-    keys,
+    // If authData is detected keys will not work properly
+    // since authData has a special storage behavior
+    // so we need to skip keys currently
+    keys: keys && keys.indexOf('authData') === -1 ? keys : undefined,
     include,
   };
 };
