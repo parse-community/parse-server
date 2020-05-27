@@ -5,7 +5,8 @@ import {
   DocumentNode,
   GraphQLNamedType,
 } from 'graphql';
-import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
+import { stitchSchemas } from '@graphql-tools/stitch';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -251,15 +252,21 @@ class ParseGraphQLSchema {
             }
           }
         );
-        this.graphQLSchema = this.graphQLAutoSchema;
+        this.graphQLSchema = stitchSchemas({
+          schemas: [
+            this.graphQLSchemaDirectivesDefinitions,
+            this.graphQLAutoSchema,
+          ],
+          mergeDirectives: true,
+        });
       } else if (typeof this.graphQLCustomTypeDefs === 'function') {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
           autoSchema: this.graphQLAutoSchema,
-          mergeSchemas,
+          stitchSchemas,
         });
       } else {
-        this.graphQLSchema = mergeSchemas({
+        this.graphQLSchema = stitchSchemas({
           schemas: [
             this.graphQLSchemaDirectivesDefinitions,
             this.graphQLAutoSchema,

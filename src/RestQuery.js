@@ -76,11 +76,11 @@ function RestQuery(
   if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
     const keysForInclude = restOptions.keys
       .split(',')
-      .filter(key => {
+      .filter((key) => {
         // At least 2 components
         return key.split('.').length > 1;
       })
-      .map(key => {
+      .map((key) => {
         // Slice the last component (a.b.c -> a.b)
         // Otherwise we'll include one level too much.
         return key.slice(0, key.lastIndexOf('.'));
@@ -108,7 +108,7 @@ function RestQuery(
       case 'excludeKeys': {
         const exclude = restOptions.excludeKeys
           .split(',')
-          .filter(k => AlwaysSelectedKeys.indexOf(k) < 0);
+          .filter((k) => AlwaysSelectedKeys.indexOf(k) < 0);
         this.excludeKeys = Array.from(new Set(exclude));
         break;
       }
@@ -159,7 +159,7 @@ function RestQuery(
         }, {});
 
         this.include = Object.keys(pathSet)
-          .map(s => {
+          .map((s) => {
             return s.split('.');
           })
           .sort((a, b) => {
@@ -188,7 +188,7 @@ function RestQuery(
 // Returns a promise for the response - an object with optional keys
 // 'results' and 'count'.
 // TODO: consolidate the replaceX functions
-RestQuery.prototype.execute = function(executeOptions) {
+RestQuery.prototype.execute = function (executeOptions) {
   return Promise.resolve()
     .then(() => {
       return this.buildRestWhere();
@@ -216,7 +216,7 @@ RestQuery.prototype.execute = function(executeOptions) {
     });
 };
 
-RestQuery.prototype.each = function(callback) {
+RestQuery.prototype.each = function (callback) {
   const { config, auth, className, restWhere, restOptions, clientSDK } = this;
   // if the limit is set, use it
   restOptions.limit = restOptions.limit || 100;
@@ -248,7 +248,7 @@ RestQuery.prototype.each = function(callback) {
   );
 };
 
-RestQuery.prototype.buildRestWhere = function() {
+RestQuery.prototype.buildRestWhere = function () {
   return Promise.resolve()
     .then(() => {
       return this.getUserAndRoleACL();
@@ -277,7 +277,7 @@ RestQuery.prototype.buildRestWhere = function() {
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
-RestQuery.prototype.getUserAndRoleACL = function() {
+RestQuery.prototype.getUserAndRoleACL = function () {
   if (this.auth.isMaster) {
     return Promise.resolve();
   }
@@ -285,7 +285,7 @@ RestQuery.prototype.getUserAndRoleACL = function() {
   this.findOptions.acl = ['*'];
 
   if (this.auth.user) {
-    return this.auth.getUserRoles().then(roles => {
+    return this.auth.getUserRoles().then((roles) => {
       this.findOptions.acl = this.findOptions.acl.concat(roles, [
         this.auth.user.id,
       ]);
@@ -298,7 +298,7 @@ RestQuery.prototype.getUserAndRoleACL = function() {
 
 // Changes the className if redirectClassNameForKey is set.
 // Returns a promise.
-RestQuery.prototype.redirectClassNameForKey = function() {
+RestQuery.prototype.redirectClassNameForKey = function () {
   if (!this.redirectKey) {
     return Promise.resolve();
   }
@@ -306,14 +306,14 @@ RestQuery.prototype.redirectClassNameForKey = function() {
   // We need to change the class name based on the schema
   return this.config.database
     .redirectClassNameForKey(this.className, this.redirectKey)
-    .then(newClassName => {
+    .then((newClassName) => {
       this.className = newClassName;
       this.redirectClassName = newClassName;
     });
 };
 
 // Validates this operation against the allowClientClassCreation config.
-RestQuery.prototype.validateClientClassCreation = function() {
+RestQuery.prototype.validateClientClassCreation = function () {
   if (
     this.config.allowClientClassCreation === false &&
     !this.auth.isMaster &&
@@ -321,8 +321,8 @@ RestQuery.prototype.validateClientClassCreation = function() {
   ) {
     return this.config.database
       .loadSchema()
-      .then(schemaController => schemaController.hasClass(this.className))
-      .then(hasClass => {
+      .then((schemaController) => schemaController.hasClass(this.className))
+      .then((hasClass) => {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
@@ -358,7 +358,7 @@ function transformInQuery(inQueryObject, className, results) {
 // $inQuery clause.
 // The $inQuery clause turns into an $in with values that are just
 // pointers to the objects returned in the subquery.
-RestQuery.prototype.replaceInQuery = function() {
+RestQuery.prototype.replaceInQuery = function () {
   var inQueryObject = findObjectWithKey(this.restWhere, '$inQuery');
   if (!inQueryObject) {
     return;
@@ -391,7 +391,7 @@ RestQuery.prototype.replaceInQuery = function() {
     inQueryValue.where,
     additionalOptions
   );
-  return subquery.execute().then(response => {
+  return subquery.execute().then((response) => {
     transformInQuery(inQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceInQuery();
@@ -419,7 +419,7 @@ function transformNotInQuery(notInQueryObject, className, results) {
 // $notInQuery clause.
 // The $notInQuery clause turns into a $nin with values that are just
 // pointers to the objects returned in the subquery.
-RestQuery.prototype.replaceNotInQuery = function() {
+RestQuery.prototype.replaceNotInQuery = function () {
   var notInQueryObject = findObjectWithKey(this.restWhere, '$notInQuery');
   if (!notInQueryObject) {
     return;
@@ -452,7 +452,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
     notInQueryValue.where,
     additionalOptions
   );
-  return subquery.execute().then(response => {
+  return subquery.execute().then((response) => {
     transformNotInQuery(notInQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceNotInQuery();
@@ -485,7 +485,7 @@ const transformSelect = (selectObject, key, objects) => {
 // The $select clause turns into an $in with values selected out of
 // the subquery.
 // Returns a possible-promise.
-RestQuery.prototype.replaceSelect = function() {
+RestQuery.prototype.replaceSelect = function () {
   var selectObject = findObjectWithKey(this.restWhere, '$select');
   if (!selectObject) {
     return;
@@ -525,7 +525,7 @@ RestQuery.prototype.replaceSelect = function() {
     selectValue.query.where,
     additionalOptions
   );
-  return subquery.execute().then(response => {
+  return subquery.execute().then((response) => {
     transformSelect(selectObject, selectValue.key, response.results);
     // Keep replacing $select clauses
     return this.replaceSelect();
@@ -550,7 +550,7 @@ const transformDontSelect = (dontSelectObject, key, objects) => {
 // The $dontSelect clause turns into an $nin with values selected out of
 // the subquery.
 // Returns a possible-promise.
-RestQuery.prototype.replaceDontSelect = function() {
+RestQuery.prototype.replaceDontSelect = function () {
   var dontSelectObject = findObjectWithKey(this.restWhere, '$dontSelect');
   if (!dontSelectObject) {
     return;
@@ -588,7 +588,7 @@ RestQuery.prototype.replaceDontSelect = function() {
     dontSelectValue.query.where,
     additionalOptions
   );
-  return subquery.execute().then(response => {
+  return subquery.execute().then((response) => {
     transformDontSelect(
       dontSelectObject,
       dontSelectValue.key,
@@ -599,10 +599,10 @@ RestQuery.prototype.replaceDontSelect = function() {
   });
 };
 
-const cleanResultAuthData = function(result) {
+const cleanResultAuthData = function (result) {
   delete result.password;
   if (result.authData) {
-    Object.keys(result.authData).forEach(provider => {
+    Object.keys(result.authData).forEach((provider) => {
       if (result.authData[provider] === null) {
         delete result.authData[provider];
       }
@@ -614,7 +614,7 @@ const cleanResultAuthData = function(result) {
   }
 };
 
-const replaceEqualityConstraint = constraint => {
+const replaceEqualityConstraint = (constraint) => {
   if (typeof constraint !== 'object') {
     return constraint;
   }
@@ -631,14 +631,14 @@ const replaceEqualityConstraint = constraint => {
   }
   if (hasDirectConstraint && hasOperatorConstraint) {
     constraint['$eq'] = equalToObject;
-    Object.keys(equalToObject).forEach(key => {
+    Object.keys(equalToObject).forEach((key) => {
       delete constraint[key];
     });
   }
   return constraint;
 };
 
-RestQuery.prototype.replaceEquality = function() {
+RestQuery.prototype.replaceEquality = function () {
   if (typeof this.restWhere !== 'object') {
     return;
   }
@@ -649,14 +649,14 @@ RestQuery.prototype.replaceEquality = function() {
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
-RestQuery.prototype.runFind = function(options = {}) {
+RestQuery.prototype.runFind = function (options = {}) {
   if (this.findOptions.limit === 0) {
     this.response = { results: [] };
     return Promise.resolve();
   }
   const findOptions = Object.assign({}, this.findOptions);
   if (this.keys) {
-    findOptions.keys = this.keys.map(key => {
+    findOptions.keys = this.keys.map((key) => {
       return key.split('.')[0];
     });
   }
@@ -665,8 +665,8 @@ RestQuery.prototype.runFind = function(options = {}) {
   }
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
-    .then(results => {
-      if (this.className === '_User') {
+    .then((results) => {
+      if (this.className === '_User' && findOptions.explain !== true) {
         for (var result of results) {
           cleanResultAuthData(result);
         }
@@ -685,7 +685,7 @@ RestQuery.prototype.runFind = function(options = {}) {
 
 // Returns a promise for whether it was successful.
 // Populates this.response.count with the count
-RestQuery.prototype.runCount = function() {
+RestQuery.prototype.runCount = function () {
   if (!this.doCount) {
     return;
   }
@@ -694,20 +694,20 @@ RestQuery.prototype.runCount = function() {
   delete this.findOptions.limit;
   return this.config.database
     .find(this.className, this.restWhere, this.findOptions)
-    .then(c => {
+    .then((c) => {
       this.response.count = c;
     });
 };
 
 // Augments this.response with all pointers on an object
-RestQuery.prototype.handleIncludeAll = function() {
+RestQuery.prototype.handleIncludeAll = function () {
   if (!this.includeAll) {
     return;
   }
   return this.config.database
     .loadSchema()
-    .then(schemaController => schemaController.getOneSchema(this.className))
-    .then(schema => {
+    .then((schemaController) => schemaController.getOneSchema(this.className))
+    .then((schema) => {
       const includeFields = [];
       const keyFields = [];
       for (const field in schema.fields) {
@@ -729,25 +729,25 @@ RestQuery.prototype.handleIncludeAll = function() {
 };
 
 // Updates property `this.keys` to contain all keys but the ones unselected.
-RestQuery.prototype.handleExcludeKeys = function() {
+RestQuery.prototype.handleExcludeKeys = function () {
   if (!this.excludeKeys) {
     return;
   }
   if (this.keys) {
-    this.keys = this.keys.filter(k => !this.excludeKeys.includes(k));
+    this.keys = this.keys.filter((k) => !this.excludeKeys.includes(k));
     return;
   }
   return this.config.database
     .loadSchema()
-    .then(schemaController => schemaController.getOneSchema(this.className))
-    .then(schema => {
+    .then((schemaController) => schemaController.getOneSchema(this.className))
+    .then((schema) => {
       const fields = Object.keys(schema.fields);
-      this.keys = fields.filter(k => !this.excludeKeys.includes(k));
+      this.keys = fields.filter((k) => !this.excludeKeys.includes(k));
     });
 };
 
 // Augments this.response with data at the paths provided in this.include.
-RestQuery.prototype.handleInclude = function() {
+RestQuery.prototype.handleInclude = function () {
   if (this.include.length == 0) {
     return;
   }
@@ -760,7 +760,7 @@ RestQuery.prototype.handleInclude = function() {
     this.restOptions
   );
   if (pathResponse.then) {
-    return pathResponse.then(newResponse => {
+    return pathResponse.then((newResponse) => {
       this.response = newResponse;
       this.include = this.include.slice(1);
       return this.handleInclude();
@@ -774,7 +774,7 @@ RestQuery.prototype.handleInclude = function() {
 };
 
 //Returns a promise of a processed set of results
-RestQuery.prototype.runAfterFindTrigger = function() {
+RestQuery.prototype.runAfterFindTrigger = function () {
   if (!this.response) {
     return;
   }
@@ -803,10 +803,10 @@ RestQuery.prototype.runAfterFindTrigger = function() {
       this.response.results,
       this.config
     )
-    .then(results => {
+    .then((results) => {
       // Ensure we properly set the className back
       if (this.redirectClassName) {
-        this.response.results = results.map(object => {
+        this.response.results = results.map((object) => {
           if (object instanceof Parse.Object) {
             object = object.toJSON();
           }
@@ -868,7 +868,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
 
-  const queryPromises = Object.keys(pointersHash).map(className => {
+  const queryPromises = Object.keys(pointersHash).map((className) => {
     const objectIds = Array.from(pointersHash[className]);
     let where;
     if (objectIds.length === 1) {
@@ -883,14 +883,14 @@ function includePath(config, auth, response, path, restOptions = {}) {
       where,
       includeRestOptions
     );
-    return query.execute({ op: 'get' }).then(results => {
+    return query.execute({ op: 'get' }).then((results) => {
       results.className = className;
       return Promise.resolve(results);
     });
   });
 
   // Get the objects for all these object ids
-  return Promise.all(queryPromises).then(responses => {
+  return Promise.all(queryPromises).then((responses) => {
     var replace = responses.reduce((replace, includeResponse) => {
       for (var obj of includeResponse.results) {
         obj.__type = 'Object';
@@ -956,8 +956,8 @@ function findPointers(object, path) {
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
     return object
-      .map(obj => replacePointers(obj, path, replace))
-      .filter(obj => typeof obj !== 'undefined');
+      .map((obj) => replacePointers(obj, path, replace))
+      .filter((obj) => typeof obj !== 'undefined');
   }
 
   if (typeof object !== 'object' || !object) {

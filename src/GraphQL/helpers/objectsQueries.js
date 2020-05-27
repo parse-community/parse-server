@@ -19,7 +19,11 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
               // Current sub key is not custom
               return false;
             }
-          } else if (!key[1]) {
+          } else if (
+            !key[1] ||
+            fields[key[0]].type === 'Array' ||
+            fields[key[0]].type === 'Object'
+          ) {
             // current key is not custom
             return false;
           }

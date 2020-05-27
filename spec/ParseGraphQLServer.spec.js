@@ -29,7 +29,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 function handleError(e) {
   if (
@@ -10987,8 +10987,8 @@ describe('ParseGraphQLServer', () => {
         httpServer = http.createServer(expressApp);
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
           graphQLPath: '/graphql',
-          graphQLCustomTypeDefs: ({ autoSchema, mergeSchemas }) =>
-            mergeSchemas({ schemas: [autoSchema] }),
+          graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
+            stitchSchemas({ subschemas: [autoSchema] }),
         });
 
         parseGraphQLServer.applyGraphQL(expressApp);

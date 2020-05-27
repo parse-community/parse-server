@@ -15,7 +15,7 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import { GraphQLUpload } from 'graphql-upload';
+import { GraphQLUpload } from '@graphql-tools/links';
 
 class TypeValidationError extends Error {
   constructor(value, type) {

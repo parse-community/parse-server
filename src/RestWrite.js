@@ -53,6 +53,11 @@ function RestWrite(
   }
 
   if (!query) {
+    // Parse context
+    if (data._context && data._context instanceof Object) {
+      this.context = data._context;
+      delete data._context;
+    }
     if (this.config.allowCustomObjectId) {
       if (
         Object.prototype.hasOwnProperty.call(data, 'objectId') &&
