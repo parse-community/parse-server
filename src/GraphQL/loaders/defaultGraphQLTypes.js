@@ -162,7 +162,7 @@ const serializeDateIso = (value) => {
     return value;
   }
   if (value instanceof Date) {
-    return value.toUTCString();
+    return value.toISOString();
   }
 
   throw new TypeValidationError(value, 'Date');
