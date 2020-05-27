@@ -59,7 +59,7 @@
     "ws": "7.3.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.10.0",
+    "@babel/cli": "7.10.1",
     "@babel/core": "7.10.0",
     "@babel/plugin-proposal-object-rest-spread": "7.10.0",
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
