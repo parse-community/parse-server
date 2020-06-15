@@ -2912,7 +2912,7 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it('should have access to context as save argument', async () => {
+  it('should have access to context when saving a new object', async () => {
     // Declare triggers
     Parse.Cloud.beforeSave('TestObject', (req) => {
       expect(req.context.a).toEqual('a');
@@ -2923,5 +2923,38 @@ describe('afterLogin hook', () => {
     // Save object
     const obj = new TestObject();
     await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving an existing object', async () => {
+    // Save object
+    const obj = new TestObject();
+    await obj.save(null);
+    // Declare triggers
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    // Update object
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving a new object in a trigger', async () => {
+    // Declare triggers
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TriggerObject', async () => {
+      // Save object
+      const obj = new TestObject();
+      await obj.save(null, { context: { a: 'a' } });
+    });
+    // Save object
+    const obj = new Parse.Object('TriggerObject');
+    await obj.save(null);
   });
 });
