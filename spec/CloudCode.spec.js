@@ -2957,4 +2957,25 @@ describe('afterLogin hook', () => {
     const obj = new Parse.Object('TriggerObject');
     await obj.save(null);
   });
+
+  it('should have access to context when cascade-saving objects', async () => {
+    // Declare triggers
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.beforeSave('TestObject2', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject2', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    // Cascade save objects
+    const obj = new Parse.Object("TestObject");
+    const obj2 = new Parse.Object("TestObject2");
+    obj.set("obj2", obj2);
+    await obj.save(null, { context: { a: 'a' } });
+  });
 });
