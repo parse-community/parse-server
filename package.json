@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.24",
     "@graphql-tools/stitch": "^6.0.0",
-    "@graphql-tools/utils": "^6.0.0",
+    "@graphql-tools/utils": "^6.0.1",
     "@parse/fs-files-adapter": "1.0.1",
     "@parse/push-adapter": "3.2.0",
     "@parse/s3-files-adapter": "1.4.0",
