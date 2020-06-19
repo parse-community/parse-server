@@ -41,7 +41,7 @@ export function getControllers(options: ParseServerOptions) {
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
-  const databaseController = getDatabaseController(options, cacheController);
+  const databaseController = getDatabaseController(options);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
   const parseGraphQLController = getParseGraphQLController(options, {
@@ -165,15 +165,12 @@ export function getLiveQueryController(
 }
 
 export function getDatabaseController(
-  options: ParseServerOptions,
-  cacheController: CacheController
+  options: ParseServerOptions
 ): DatabaseController {
   const {
     databaseURI,
     databaseOptions,
-    collectionPrefix,
-    schemaCacheTTL,
-    enableSingleSchemaCache,
+    collectionPrefix
   } = options;
   let { databaseAdapter } = options;
   if (
@@ -193,8 +190,7 @@ export function getDatabaseController(
     databaseAdapter = loadAdapter(databaseAdapter);
   }
   return new DatabaseController(
-    databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
+    databaseAdapter
   );
 }
 

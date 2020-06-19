@@ -130,6 +130,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   _uri: string;
   _collectionPrefix: string;
   _mongoOptions: Object;
+  _stream: any;
+  _onchange: any;
   // Public
   connectionPromise: ?Promise<any>;
   database: any;
@@ -147,11 +149,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._mongoOptions = mongoOptions;
     this._mongoOptions.useNewUrlParser = true;
     this._mongoOptions.useUnifiedTopology = true;
+    this._onchange = () => {};
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     delete mongoOptions.maxTimeMS;
+  }
+
+  watch(callback) {
+    this._onchange = callback;
   }
 
   connect() {
@@ -219,7 +226,13 @@ export class MongoStorageAdapter implements StorageAdapter {
   _schemaCollection(): Promise<MongoSchemaCollection> {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
-      .then((collection) => new MongoSchemaCollection(collection));
+      .then((collection) => {
+        if (!this._stream) {
+          this._stream = collection._mongoCollection.watch();
+          this._stream.on('change', this._onchange);
+        }
+        return new MongoSchemaCollection(collection);
+      });
   }
 
   classExists(name: string) {

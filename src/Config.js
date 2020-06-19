@@ -3,7 +3,6 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
-import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 
@@ -27,14 +26,8 @@ export class Config {
     config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach(key => {
       if (key == 'databaseController') {
-        const schemaCache = new SchemaCache(
-          cacheInfo.cacheController,
-          cacheInfo.schemaCacheTTL,
-          cacheInfo.enableSingleSchemaCache
-        );
         config.database = new DatabaseController(
-          cacheInfo.databaseController.adapter,
-          schemaCache
+          cacheInfo.databaseController.adapter
         );
       } else {
         config[key] = cacheInfo[key];

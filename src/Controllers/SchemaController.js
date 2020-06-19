@@ -695,15 +695,15 @@ const typeToString = (type: SchemaField | string): string => {
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
   _dbAdapter: StorageAdapter;
-  schemaData: { [string]: Schema };
   _cache: any;
+  schemaData: { [string]: Schema };
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
 
-  constructor(databaseAdapter: StorageAdapter, schemaCache: any) {
+  constructor(databaseAdapter: StorageAdapter, singleSchemaCache: Object) {
     this._dbAdapter = databaseAdapter;
-    this._cache = schemaCache;
+    this._cache = singleSchemaCache;
     this.schemaData = new SchemaData();
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
@@ -713,6 +713,10 @@ export default class SchemaController {
     const autoIdRegEx = /^[a-zA-Z0-9]{1,}$/;
 
     this.userIdRegEx = customIds ? customIdRegEx : autoIdRegEx;
+
+    this._dbAdapter.watch(() => {
+      this.reloadData({clearCache: true});
+    })
   }
 
   reloadData(options: LoadSchemaOptions = { clearCache: false }): Promise<any> {
@@ -741,12 +745,10 @@ export default class SchemaController {
     if (options.clearCache) {
       return this.setAllClasses();
     }
-    return this._cache.getAllClasses().then(allClasses => {
-      if (allClasses && allClasses.length) {
-        return Promise.resolve(allClasses);
-      }
-      return this.setAllClasses();
-    });
+    if (this._cache.allClasses && this._cache.allClasses.length) {
+      return Promise.resolve(this._cache.allClasses);
+    }
+    return this.setAllClasses();
   }
 
   setAllClasses(): Promise<Array<Schema>> {
@@ -754,13 +756,7 @@ export default class SchemaController {
       .getAllClasses()
       .then(allSchemas => allSchemas.map(injectDefaultSchema))
       .then(allSchemas => {
-        /* eslint-disable no-console */
-        this._cache
-          .setAllClasses(allSchemas)
-          .catch(error =>
-            console.error('Error saving schema to cache:', error)
-          );
-        /* eslint-enable no-console */
+        this._cache.allClasses = allSchemas;
         return allSchemas;
       });
   }
@@ -770,34 +766,28 @@ export default class SchemaController {
     allowVolatileClasses: boolean = false,
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<Schema> {
-    let promise = Promise.resolve();
     if (options.clearCache) {
-      promise = this._cache.clear();
+      this._cache.allClasses = undefined;
     }
-    return promise.then(() => {
-      if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
-        const data = this.schemaData[className];
-        return Promise.resolve({
-          className,
-          fields: data.fields,
-          classLevelPermissions: data.classLevelPermissions,
-          indexes: data.indexes,
-        });
-      }
-      return this._cache.getOneSchema(className).then(cached => {
-        if (cached && !options.clearCache) {
-          return Promise.resolve(cached);
-        }
-        return this.setAllClasses().then(allSchemas => {
-          const oneSchema = allSchemas.find(
-            schema => schema.className === className
-          );
-          if (!oneSchema) {
-            return Promise.reject(undefined);
-          }
-          return oneSchema;
-        });
+    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+      const data = this.schemaData[className];
+      return Promise.resolve({
+        className,
+        fields: data.fields,
+        classLevelPermissions: data.classLevelPermissions,
+        indexes: data.indexes,
       });
+    }
+    const oneSchema = (this._cache.allClasses || []).find(schema => schema.className === className);
+    if (oneSchema && !options.clearCache) {
+      return Promise.resolve(oneSchema);
+    }
+    return this.setAllClasses().then(allSchemas => {
+      const oneSchema = allSchemas.find(schema => schema.className === className);
+      if (!oneSchema) {
+        return Promise.reject(undefined);
+      }
+      return oneSchema;
     });
   }
 
@@ -1296,7 +1286,10 @@ export default class SchemaController {
             );
           });
       })
-      .then(() => this._cache.clear());
+      .then(() => {
+        this._cache.allClasses = undefined;
+        return Promise.resolve();
+      });
   }
 
   // Validates an object provided in REST format.
@@ -1531,13 +1524,14 @@ export default class SchemaController {
   }
 }
 
+const singleSchemaCache = {};
+
 // Returns a promise for a new Schema.
 const load = (
   dbAdapter: StorageAdapter,
-  schemaCache: any,
   options: any
 ): Promise<SchemaController> => {
-  const schema = new SchemaController(dbAdapter, schemaCache);
+  const schema = new SchemaController(dbAdapter, singleSchemaCache);
   return schema.reloadData(options).then(() => schema);
 };
 
