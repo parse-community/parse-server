@@ -2062,9 +2062,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     schema: SchemaType,
     fieldNames: string[]
   ) {
-    // Use the same name for every ensureUniqueness attempt, because postgres
-    // Will happily create the same index with multiple names.
-    const constraintName = `unique_${fieldNames.sort().join('_')}`;
+    const constraintName = `${className}_unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map(
       (fieldName, index) => `$${index + 3}:name`
     );
