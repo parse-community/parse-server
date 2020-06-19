@@ -15,7 +15,6 @@ import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
 import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
-import SchemaCache from './SchemaCache';
 
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
