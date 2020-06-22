@@ -391,7 +391,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     indexPlan.forEach((element) => {
       element['QUERY PLAN'].forEach((innerElement) => {
         expect(innerElement.Plan['Node Type']).not.toContain('Seq Scan');
-        expect(innerElement.Plan['Index Name']).toContain(firstTableName);
+        expect(innerElement.Plan['Index Name']).toContain(uniqueField);
       });
     });
     const indexPlan2 = await database.find(
@@ -402,7 +402,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     indexPlan2.forEach((element) => {
       element['QUERY PLAN'].forEach((innerElement) => {
         expect(innerElement.Plan['Node Type']).not.toContain('Seq Scan');
-        expect(innerElement.Plan['Index Name']).toContain(secondTableName);
+        expect(innerElement.Plan['Index Name']).toContain(uniqueField);
       });
     });
   });
