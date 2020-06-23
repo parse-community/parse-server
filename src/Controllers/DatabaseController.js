@@ -1571,14 +1571,6 @@ class DatabaseController {
       };
 
       const ors = permFields.map((key) => {
-        console.log(
-          'Key details is:',
-          query,
-          key,
-          className,
-          schema.getExpectedType(className, key)
-        );
-
         const fieldDescriptor = schema.getExpectedType(className, key);
         const fieldType = fieldDescriptor.type;
         let queryClause;
