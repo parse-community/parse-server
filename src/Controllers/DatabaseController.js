@@ -1570,23 +1570,41 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const ors = permFields.flatMap((key) => {
-        // constraint for single pointer setup
-        const q = {
-          [key]: userPointer,
-        };
-        // constraint for users-array setup
-        const qa = {
-          [key]: { $all: [userPointer] },
-        };
+      const ors = permFields.map((key) => {
+        console.log(
+          'Key details is:',
+          query,
+          key,
+          className,
+          schema.getExpectedType(className, key)
+        );
+
+        const fieldDescriptor = schema.getExpectedType(className, key);
+        const fieldType = fieldDescriptor.type;
+        let queryClause;
+
+        if (fieldType === 'Pointer') {
+          // constraint for single pointer setup
+          queryClause = { [key]: userPointer };
+        } else if (fieldType === 'Array') {
+          // constraint for users-array setup
+          queryClause = { [key]: { $all: [userPointer] } };
+        } else {
+          // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
+          // why is being treated as an error.
+          throw Error(
+            `Unexpected condition occurred when resolving pointer permissions: ${className} ${key} ${fieldType}`
+          );
+        }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return [{ $and: [q, query] }, { $and: [qa, query] }];
+          return { $and: [queryClause, query] };
         }
         // otherwise just add the constaint
-        return [Object.assign({}, query, q), Object.assign({}, query, qa)];
+        return Object.assign({}, query, queryClause);
       });
-      return { $or: ors };
+
+      return ors.length === 1 ? ors[0] : { $or: ors };
     } else {
       return query;
     }
