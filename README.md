@@ -32,8 +32,8 @@
 
 </p>
 <p align="center">
-  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/backers/badge.svg" /></a>
-  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/sponsors/badge.svg" /></a>
+  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/tiers/backers/badge.svg" /></a>
+  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/tiers/sponsors/badge.svg" /></a>
 </p>
 <br>
 
