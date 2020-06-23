@@ -2,6 +2,7 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...master)
+- FIX: Optimize query decoration based on pointer CLPs by looking at the class schema to determine the field's type.
 
 ### 4.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
