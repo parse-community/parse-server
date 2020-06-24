@@ -692,7 +692,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false,
-    indexType: any = 1
+    indexType: any = 1,
+    ttl: ?Number,
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
@@ -705,6 +706,7 @@ export class MongoStorageAdapter implements StorageAdapter {
 
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
+    const ttlOptions: Object = ttl !== undefined ? { expireAfterSeconds: ttl } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -712,6 +714,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
+      ...ttlOptions,
     };
 
     return this._adaptiveCollection(className)

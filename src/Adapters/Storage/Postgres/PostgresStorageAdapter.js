@@ -1209,6 +1209,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             '_GlobalConfig',
             '_GraphQLConfig',
             '_Audience',
+            '_Idempotency',
             ...results.map((result) => result.className),
             ...joins,
           ];

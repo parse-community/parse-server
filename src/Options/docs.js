@@ -36,6 +36,7 @@
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
  * @property {LiveQueryServerOptions} liveQueryServerOptions Live query server configuration options (will start the liveQuery server)
+ * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {Adapter<LoggerAdapter>} loggerAdapter Adapter module for the logging sub-system
  * @property {String} logLevel Sets the level for logs
  * @property {String} logsFolder Folder for the logs (defaults to './logs'); set to null to disable file based logging
@@ -109,4 +110,12 @@
  * @property {String} serverURL This string should match the serverURL in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same serverURL.
  * @property {Number} websocketTimeout Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).
  * @property {Adapter<WSSAdapter>} wssAdapter Adapter module for the WebSocketServer
+ */
+
+/**
+ * @interface IdempotencyOptions
+ * @property {String[]} functions Array of function names, use `*` for all, default is none.
+ * @property {String[]} jobs Array of job names, use `*` for all, default is none.
+ * @property {String[]} classes Array of class names, use `*` for all, default is none.
+ * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, default is 300s.
  */

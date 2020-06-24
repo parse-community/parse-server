@@ -115,6 +115,13 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  idempotencyOptions: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS',
+    help:
+      'Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.objectParser,
+    default: {},
+  },
   dotNetKey: {
     env: 'PARSE_SERVER_DOT_NET_KEY',
     help: 'Key for Unity and .Net SDK',
@@ -521,5 +528,29 @@ module.exports.LiveQueryServerOptions = {
     env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',
     action: parsers.moduleOrObjectParser,
+  },
+};
+
+module.exports.IdempotencyOptions = {
+  functions: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_FUNCTIONS',
+    help: 'Array of function names, use `*` for all, default is none.',
+    action: parsers.arrayParser,
+  },
+  jobs: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_JOBS',
+    help: 'Array of job names, use `*` for all, default is none.',
+    action: parsers.arrayParser,
+  },
+  classes: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_CLASSES',
+    help: 'Array of class names, use `*` for all, default is none.',
+    action: parsers.arrayParser,
+  },
+  ttl: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL',
+    help: 'The duration in seconds after which a request record is discarded from the database, default is 300s.',
+    action: parsers.numberParser,
+    default: 300,
   },
 };

@@ -93,7 +93,8 @@ export interface StorageAdapter {
     fieldNames: string[],
     indexName?: string,
     caseSensitive?: boolean,
-    indexType?: any
+    indexType?: any,
+    ttl?: number,
   ): Promise<any>;
   ensureUniqueness(
     className: string,

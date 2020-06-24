@@ -4,6 +4,7 @@ import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
+import rest from './rest';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
@@ -398,6 +399,43 @@ export function promiseEnforceMasterKeyAccess(request) {
     throw error;
   }
   return Promise.resolve();
+}
+
+/**
+ * Deduplicates a request to ensure idempotency. Duplicates are determined by the request ID
+ * in the request header. If a request has no request ID, it is executed anyway.
+ * @param {*} req The request to evaluate.
+ * @returns Promise<{}>
+ */
+export function promiseEnsureIdempotency(req) {
+  // Get request ID
+  const requestId = req.headers["x-parse-request-id"];
+  if (!requestId) { return Promise.resolve(); }
+  const { functions, jobs, classes, ttl } = req.config.idempotencyOptions;
+  // Determine whether idempotency is enabled for current request path
+  const split = req.path.match(/^\/([^\/]*)\/([^\/]*)/i);
+  const route = split[1];
+  const item = split[2];
+  const functionMatch = functions && route == "functions" && (functions.includes("*") || functions.includes(item));
+  const jobMatch = jobs && route == "jobs" && (jobs.includes("*") || jobs.includes(item));
+  const classMatch = classes && route == "classes" && (classes.includes("*") || classes.includes(item));
+  if (!functionMatch && !jobMatch && !classMatch) { return Promise.resolve(); }
+  // Try to track request
+  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
+  return rest.create(
+    req.config,
+    auth.nobody(req.config),
+    '_Idempotency',
+    { reqId: requestId, expire: Parse._encode(expiryDate) }
+  ).catch (e => {
+    if (e.code == Parse.Error.DUPLICATE_VALUE) {
+      throw new Parse.Error(
+        Parse.Error.DUPLICATE_REQUEST,
+        'Duplicate request'
+      );
+    }
+    throw e;
+  });
 }
 
 function invalidRequest(req, res) {

@@ -17,6 +17,7 @@ import type {
   QueryOptions,
   FullQueryOptions,
 } from '../Adapters/Storage/StorageAdapter';
+import Config from '../Config';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -1747,6 +1748,9 @@ class DatabaseController {
     const roleClassPromise = this.loadSchema().then((schema) =>
       schema.enforceClassExists('_Role')
     );
+    const idempotencyClassPromise = this.loadSchema().then((schema) =>
+      schema.enforceClassExists('_Idempotency')
+    );
 
     const usernameUniqueness = userClassPromise
       .then(() =>
@@ -1802,6 +1806,42 @@ class DatabaseController {
         throw error;
       });
 
+    const idempotencyRequestIdUniqueness = idempotencyClassPromise
+      .then(() => {
+        return this.adapter.ensureUniqueness(
+          '_Idempotency',
+          requiredUserFields,
+          ['reqId']
+        );
+      })
+      .catch((error) => {
+        logger.warn(
+          'Unable to ensure uniqueness for idempotency request ID: ',
+          error
+        );
+        throw error;
+      });
+
+    const idempotencyExpireIndex = idempotencyClassPromise
+      .then(() => {
+        return this.adapter.ensureIndex(
+          '_Idempotency',
+          requiredUserFields,
+          ['expire'],
+          'ttl',
+          false,
+          undefined,
+          0
+        )
+      })
+      .catch((error) => {
+        logger.warn(
+          'Unable to create TTL index for idempotency expire date: ',
+          error
+        );
+        throw error;
+      });
+
     const roleUniqueness = roleClassPromise
       .then(() =>
         this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name'])
@@ -1823,6 +1863,8 @@ class DatabaseController {
       emailUniqueness,
       emailCaseInsensitiveIndex,
       roleUniqueness,
+      idempotencyRequestIdUniqueness,
+      idempotencyExpireIndex,
       adapterInit,
       indexPromise,
     ]);
