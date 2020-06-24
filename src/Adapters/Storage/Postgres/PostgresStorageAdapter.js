@@ -1128,7 +1128,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (type.type !== 'Relation') {
         try {
           await t.none(
-            'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
+            'ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>',
             {
               className,
               fieldName,
@@ -1270,10 +1270,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         { schema, className }
       );
       if (values.length > 1) {
-        await t.none(
-          `ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`,
-          values
-        );
+        await t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values);
       }
     });
   }
@@ -2069,7 +2066,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const constraintPatterns = fieldNames.map(
       (fieldName, index) => `$${index + 3}:name`
     );
-    const qs = `ALTER TABLE $1:name ADD CONSTRAINT IF NOT EXISTS $2:name UNIQUE (${constraintPatterns.join()})`;
+    const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join()})`;
     return this._client
       .none(qs, [className, constraintName, ...fieldNames])
       .catch((error) => {
@@ -2587,7 +2584,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
       )
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
-    const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
+    const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
     await conn
       .none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch((error) => {
