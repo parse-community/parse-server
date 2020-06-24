@@ -2577,9 +2577,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false,
-    conn: ?any = null
+    options?: Object = {},
   ): Promise<any> {
-    conn = conn != null ? conn : this._client;
+    const conn = options.conn !== undefined ? options.conn : this._client;
     const defaultIndexName = `parse_default_${fieldNames.sort().join('_')}`;
     const indexNameOptions: Object =
       indexName != null ? { name: indexName } : { name: defaultIndexName };

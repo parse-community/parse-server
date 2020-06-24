@@ -692,8 +692,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false,
-    indexType: any = 1,
-    ttl: ?number,
+    options?: Object = {},
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
@@ -701,12 +700,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       transformKey(className, fieldName, schema)
     );
     mongoFieldNames.forEach((fieldName) => {
-      indexCreationRequest[fieldName] = indexType;
+      indexCreationRequest[fieldName] = options.indexType !== undefined ? options.indexType : 1;
     });
 
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
-    const ttlOptions: Object = ttl !== undefined ? { expireAfterSeconds: ttl } : {};
+    const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};

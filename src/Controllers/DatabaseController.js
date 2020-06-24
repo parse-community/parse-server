@@ -1829,8 +1829,7 @@ class DatabaseController {
           ['expire'],
           'ttl',
           false,
-          undefined,
-          0
+          { ttl: 0 },
         )
       })
       .catch((error) => {
