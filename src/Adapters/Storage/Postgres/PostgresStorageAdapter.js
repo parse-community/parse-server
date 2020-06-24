@@ -2584,7 +2584,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
       )
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
-    const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+    const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
     await conn
       .none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch((error) => {
