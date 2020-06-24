@@ -1811,40 +1811,40 @@ class DatabaseController {
         throw error;
       });
 
-    // const idempotencyRequestIdUniqueness = idempotencyClassPromise
-    //   .then(() => {
-    //     return this.adapter.ensureUniqueness(
-    //       '_Idempotency',
-    //       requiredIdempotencyFields,
-    //       ['reqId']
-    //     );
-    //   })
-    //   .catch((error) => {
-    //     logger.warn(
-    //       'Unable to ensure uniqueness for idempotency request ID: ',
-    //       error
-    //     );
-    //     throw error;
-    //   });
-
-    const idempotencyExpireIndex = idempotencyClassPromise
-      .then(() =>
-        this.adapter.ensureIndex(
+    const idempotencyRequestIdUniqueness = idempotencyClassPromise
+      .then(() => {
+        return this.adapter.ensureUniqueness(
           '_Idempotency',
           requiredIdempotencyFields,
-          ['expire'],
-          'ttl',
-          false,
-          { ttl: 0 },
-        )
-      )
+          ['reqId']
+        );
+      })
       .catch((error) => {
         logger.warn(
-          'Unable to create TTL index for idempotency expire date: ',
+          'Unable to ensure uniqueness for idempotency request ID: ',
           error
         );
         throw error;
       });
+
+    // const idempotencyExpireIndex = idempotencyClassPromise
+    //   .then(() =>
+    //     this.adapter.ensureIndex(
+    //       '_Idempotency',
+    //       requiredIdempotencyFields,
+    //       ['expire'],
+    //       'ttl',
+    //       false,
+    //       { ttl: 0 },
+    //     )
+    //   )
+    //   .catch((error) => {
+    //     logger.warn(
+    //       'Unable to create TTL index for idempotency expire date: ',
+    //       error
+    //     );
+    //     throw error;
+    //   });
 
     const roleUniqueness = roleClassPromise
       .then(() =>
