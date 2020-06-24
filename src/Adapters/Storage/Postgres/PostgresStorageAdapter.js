@@ -2488,11 +2488,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return (conn || this._client).tx((t) =>
       t.batch(
         indexes.map((i) => {
-          return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [
-            i.name,
-            className,
-            i.key,
-          ]);
+          return t.none(
+            'CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)',
+            [i.name, className, i.key]
+          );
         })
       )
     );
@@ -2506,7 +2505,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ): Promise<void> {
     await (
       conn || this._client
-    ).none('CREATE INDEX $1:name ON $2:name ($3:name)', [
+    ).none('CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)', [
       fieldName,
       className,
       type,
@@ -2585,7 +2584,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
       )
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
-    const qs = `CREATE INDEX $1:name ON $2:name (${constraintPatterns.join()})`;
+    const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
     await conn
       .none(qs, [indexNameOptions.name, className, ...fieldNames])
       .catch((error) => {
