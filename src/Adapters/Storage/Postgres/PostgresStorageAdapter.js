@@ -1128,7 +1128,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (type.type !== 'Relation') {
         try {
           await t.none(
-            'ALTER TABLE $<className:name> ADD COLUMN IF NOT EXISTS $<fieldName:name> $<postgresType:raw>',
+            'ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>',
             {
               className,
               fieldName,
