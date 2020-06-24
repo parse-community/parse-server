@@ -1740,6 +1740,12 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Role,
       },
     };
+    const requiredIdempotencyFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._Idempotency,
+      },
+    };
 
     const userClassPromise = this.loadSchema().then((schema) =>
       schema.enforceClassExists('_User')
@@ -1809,7 +1815,7 @@ class DatabaseController {
       .then(() => {
         return this.adapter.ensureUniqueness(
           '_Idempotency',
-          requiredUserFields,
+          requiredIdempotencyFields,
           ['reqId']
         );
       })
@@ -1825,7 +1831,7 @@ class DatabaseController {
       .then(() =>
         this.adapter.ensureIndex(
           '_Idempotency',
-          requiredUserFields,
+          requiredIdempotencyFields,
           ['expire'],
           'ttl',
           false,
