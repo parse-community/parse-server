@@ -409,7 +409,7 @@ export function promiseEnforceMasterKeyAccess(request) {
  */
 export function promiseEnsureIdempotency(req) {
   // Get request ID
-  const requestId = req.headers["x-parse-request-id"];
+  const requestId = ((req || {}).headers || {})["x-parse-request-id"];
   if (!requestId) { return Promise.resolve(); }
   const { functions, jobs, classes, ttl } = req.config.idempotencyOptions;
   // Determine whether idempotency is enabled for current request path
