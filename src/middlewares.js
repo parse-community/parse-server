@@ -409,7 +409,7 @@ export function promiseEnforceMasterKeyAccess(request) {
  * @returns Promise<{}>
  */
 export function promiseEnsureIdempotency(req) {
-  // Disable for Postgres
+  // Enable feature only for MongoDB
   if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
   // Get request ID
   const requestId = ((req || {}).headers || {})["x-parse-request-id"];
