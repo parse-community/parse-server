@@ -1827,24 +1827,24 @@ class DatabaseController {
     //     throw error;
     //   });
 
-    // const idempotencyExpireIndex = idempotencyClassPromise
-    //   .then(() =>
-    //     this.adapter.ensureIndex(
-    //       '_Idempotency',
-    //       requiredIdempotencyFields,
-    //       ['expire'],
-    //       'ttl',
-    //       false,
-    //       { ttl: 0 },
-    //     )
-    //   )
-    //   .catch((error) => {
-    //     logger.warn(
-    //       'Unable to create TTL index for idempotency expire date: ',
-    //       error
-    //     );
-    //     throw error;
-    //   });
+    const idempotencyExpireIndex = idempotencyClassPromise
+      .then(() =>
+        this.adapter.ensureIndex(
+          '_Idempotency',
+          requiredIdempotencyFields,
+          ['expire'],
+          'ttl',
+          false,
+          { ttl: 0 },
+        )
+      )
+      .catch((error) => {
+        logger.warn(
+          'Unable to create TTL index for idempotency expire date: ',
+          error
+        );
+        throw error;
+      });
 
     const roleUniqueness = roleClassPromise
       .then(() =>
@@ -1867,7 +1867,7 @@ class DatabaseController {
       emailUniqueness,
       emailCaseInsensitiveIndex,
       roleUniqueness,
-      // idempotencyRequestIdUniqueness,
+      idempotencyRequestIdUniqueness,
       // idempotencyExpireIndex,
       adapterInit,
       indexPromise,
