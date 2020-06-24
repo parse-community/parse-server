@@ -17,7 +17,6 @@ import type {
   QueryOptions,
   FullQueryOptions,
 } from '../Adapters/Storage/StorageAdapter';
-import Config from '../Config';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
