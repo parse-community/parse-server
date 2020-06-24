@@ -8,6 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -442,7 +443,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/users', req => {
       return this.handleFind(req);
     });
-    this.route('POST', '/users', req => {
+    this.route('POST', '/users', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
     this.route('GET', '/users/me', req => {
@@ -451,7 +452,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/users/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('PUT', '/users/:objectId', req => {
+    this.route('PUT', '/users/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/users/:objectId', req => {

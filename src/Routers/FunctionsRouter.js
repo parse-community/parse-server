@@ -4,7 +4,7 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess } from '../middlewares';
+import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
@@ -34,11 +34,13 @@ export class FunctionsRouter extends PromiseRouter {
     this.route(
       'POST',
       '/functions/:functionName',
+      promiseEnsureIdempotency,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
       'POST',
       '/jobs/:jobName',
+      promiseEnsureIdempotency,
       promiseEnforceMasterKeyAccess,
       function(req) {
         return FunctionsRouter.handleCloudJob(req);
