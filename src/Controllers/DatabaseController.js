@@ -1570,7 +1570,7 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const ors = permFields.map((key) => {
+      const queries = permFields.map((key) => {
         const fieldDescriptor = schema.getExpectedType(className, key);
         const fieldType =
           fieldDescriptor &&
@@ -1602,7 +1602,7 @@ class DatabaseController {
         return Object.assign({}, query, queryClause);
       });
 
-      return ors.length === 1 ? ors[0] : { $or: ors };
+      return queries.length === 1 ? queries[0] : { $or: queries };
     } else {
       return query;
     }
