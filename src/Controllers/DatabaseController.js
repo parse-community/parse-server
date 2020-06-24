@@ -1822,8 +1822,8 @@ class DatabaseController {
       });
 
     const idempotencyExpireIndex = idempotencyClassPromise
-      .then(() => {
-        return this.adapter.ensureIndex(
+      .then(() =>
+        this.adapter.ensureIndex(
           '_Idempotency',
           requiredUserFields,
           ['expire'],
@@ -1831,7 +1831,7 @@ class DatabaseController {
           false,
           { ttl: 0 },
         )
-      })
+      )
       .catch((error) => {
         logger.warn(
           'Unable to create TTL index for idempotency expire date: ',
