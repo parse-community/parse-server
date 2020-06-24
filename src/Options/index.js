@@ -283,5 +283,5 @@ export interface IdempotencyOptions {
   /* Array of class names, use `*` for all, default is none. */
   classes: ?(string[]);
   /* The duration in seconds after which a request record is discarded from the database, default is 300s. */
-  ttl: ?Number;
+  ttl: ?number;
 }

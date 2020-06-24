@@ -693,7 +693,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     indexName: ?string,
     caseInsensitive: boolean = false,
     indexType: any = 1,
-    ttl: ?Number,
+    ttl: ?number,
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
