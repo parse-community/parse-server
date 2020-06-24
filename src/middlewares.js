@@ -8,7 +8,7 @@ import rest from './rest';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
 export const DEFAULT_ALLOWED_HEADERS =
-  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
 
 const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
