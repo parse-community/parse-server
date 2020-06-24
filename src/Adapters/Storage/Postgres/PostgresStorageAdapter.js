@@ -2069,7 +2069,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const constraintPatterns = fieldNames.map(
       (fieldName, index) => `$${index + 3}:name`
     );
-    const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join()})`;
+    const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $2:name ON $1:name(${constraintPatterns.join()})`;
     return this._client
       .none(qs, [className, constraintName, ...fieldNames])
       .catch((error) => {
