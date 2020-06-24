@@ -5,6 +5,7 @@ import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
 import rest from './rest';
+import MongoStorageAdapter from '../lib/Adapters/Storage/Mongo/MongoStorageAdapter';
 
 export const DEFAULT_ALLOWED_HEADERS =
   'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
@@ -408,6 +409,8 @@ export function promiseEnforceMasterKeyAccess(request) {
  * @returns Promise<{}>
  */
 export function promiseEnsureIdempotency(req) {
+  // Disable for Postgres
+  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
   // Get request ID
   const requestId = ((req || {}).headers || {})["x-parse-request-id"];
   if (!requestId) { return Promise.resolve(); }
