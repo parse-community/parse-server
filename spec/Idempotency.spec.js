@@ -28,7 +28,7 @@ describe_only_db('mongo')('idempotency for cloud code functions', () => {
   }
   // Setups
   beforeEach(async () => {
-    if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200_000; }
+    if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000; }
     await reconfigureServer({
       appId: Parse.applicationId,
       masterKey: Parse.masterKey,
@@ -87,7 +87,7 @@ describe_only_db('mongo')('idempotency for cloud code functions', () => {
     if (SIMULATE_TTL) {
       await deleteRequestEntry('abc-123');
     } else {
-      await new Promise(resolve => setTimeout(resolve, 130_000));
+      await new Promise(resolve => setTimeout(resolve, 130000));
     }
     await expectAsync(request(params)).toBeResolved();
     expect(counter).toBe(2);
