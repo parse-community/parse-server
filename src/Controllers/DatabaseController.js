@@ -1754,9 +1754,9 @@ class DatabaseController {
     const roleClassPromise = this.loadSchema().then((schema) =>
       schema.enforceClassExists('_Role')
     );
-    const idempotencyClassPromise = this.loadSchema().then((schema) =>
-      schema.enforceClassExists('_Idempotency')
-    );
+    const idempotencyClassPromise = this.adapter instanceof MongoStorageAdapter
+      ? this.loadSchema().then((schema) => schema.enforceClassExists('_Idempotency'))
+      : Promise.resolve();
 
     const usernameUniqueness = userClassPromise
       .then(() =>
@@ -1821,23 +1821,25 @@ class DatabaseController {
         throw error;
       });
 
-    const idempotencyIndices = this.adapter instanceof MongoStorageAdapter ? [
-      idempotencyClassPromise
+    const idempotencyRequestIdIndex = this.adapter instanceof MongoStorageAdapter
+      ? idempotencyClassPromise
         .then(() =>
           this.adapter.ensureUniqueness(
             '_Idempotency',
             requiredIdempotencyFields,
             ['reqId']
-          )
-        )
+          ))
         .catch((error) => {
           logger.warn(
             'Unable to ensure uniqueness for idempotency request ID: ',
             error
           );
           throw error;
-        }),
-      idempotencyClassPromise
+        })
+      : Promise.resolve();
+
+    const idempotencyExpireIndex = this.adapter instanceof MongoStorageAdapter
+      ? idempotencyClassPromise
         .then(() =>
           this.adapter.ensureIndex(
             '_Idempotency',
@@ -1846,8 +1848,7 @@ class DatabaseController {
             'ttl',
             false,
             { ttl: 0 },
-          )
-        )
+          ))
         .catch((error) => {
           logger.warn(
             'Unable to create TTL index for idempotency expire date: ',
@@ -1855,7 +1856,7 @@ class DatabaseController {
           );
           throw error;
         })
-    ] : [];
+      : Promise.resolve();
 
     const indexPromise = this.adapter.updateSchemaWithIndexes();
 
@@ -1869,7 +1870,8 @@ class DatabaseController {
       emailUniqueness,
       emailCaseInsensitiveIndex,
       roleUniqueness,
-      ...idempotencyIndices,
+      idempotencyRequestIdIndex,
+      idempotencyExpireIndex,
       adapterInit,
       indexPromise,
     ]);
