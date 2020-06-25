@@ -230,7 +230,6 @@ afterEach(function(done) {
                   '_Session',
                   '_Product',
                   '_Audience',
-                  '_Idempotency'
                 ].indexOf(className) >= 0
               );
             }

@@ -1742,7 +1742,6 @@ class DatabaseController {
     };
     const requiredIdempotencyFields = {
       fields: {
-        ...SchemaController.defaultColumns._Default,
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
