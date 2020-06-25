@@ -427,7 +427,7 @@ export function promiseEnsureIdempotency(req) {
   const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
   return rest.create(
     req.config,
-    auth.nobody(req.config),
+    auth.master(req.config),
     '_Idempotency',
     { reqId: requestId, expire: Parse._encode(expiryDate) }
   ).catch (e => {
