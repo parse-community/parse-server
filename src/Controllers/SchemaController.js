@@ -669,7 +669,7 @@ const _AudienceSchema = convertSchemaToAdapterSchema(
 const _IdempotencySchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
     className: '_Idempotency',
-    fields: {},
+    fields: defaultColumns._Idempotency,
     classLevelPermissions: {},
   })
 );
