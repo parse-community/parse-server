@@ -857,6 +857,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this.canSortOnJoinTables = false;
   }
 
+  watch(callback: () => void):void {
+    // this._onchange = callback;
+  }
+
   //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
   createExplainableQuery(query: string, analyze: boolean = false) {
     if (analyze) {

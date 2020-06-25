@@ -157,7 +157,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     delete mongoOptions.maxTimeMS;
   }
 
-  watch(callback) {
+  watch(callback: () => void):void {
     this._onchange = callback;
   }
 

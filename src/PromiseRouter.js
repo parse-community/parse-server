@@ -153,7 +153,6 @@ function makeExpressHandler(appId, promiseHandler) {
       promiseHandler(req)
         .then(
           result => {
-            clearSchemaCache(req);
             if (!result.response && !result.location && !result.text) {
               log.error(
                 'the handler did not include a "response" or a "location" field'
@@ -188,17 +187,14 @@ function makeExpressHandler(appId, promiseHandler) {
             res.json(result.response);
           },
           error => {
-            clearSchemaCache(req);
             next(error);
           }
         )
         .catch(e => {
-          clearSchemaCache(req);
           log.error(`Error generating response. ${inspect(e)}`, { error: e });
           next(e);
         });
     } catch (e) {
-      clearSchemaCache(req);
       log.error(`Error handling request: ${inspect(e)}`, { error: e });
       next(e);
     }
@@ -215,10 +211,4 @@ function maskSensitiveUrl(req) {
     maskUrl = log.maskSensitiveUrl(maskUrl);
   }
   return maskUrl;
-}
-
-function clearSchemaCache(req) {
-  if (req.config && !req.config.enableSingleSchemaCache) {
-    req.config.database.schemaCache.clear();
-  }
 }
