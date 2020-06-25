@@ -5,7 +5,7 @@ const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
 const uuid = require('uuid');
 
-describe_only_db('mongo')('idempotency for cloud code functions', () => {
+describe_only_db('mongo')('Idempotency', () => {
   // Parameters
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
    runss only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
