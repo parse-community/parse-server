@@ -1867,8 +1867,8 @@ class DatabaseController {
       emailUniqueness,
       emailCaseInsensitiveIndex,
       roleUniqueness,
-      // idempotencyRequestIdUniqueness,
-      // idempotencyExpireIndex,
+      idempotencyRequestIdUniqueness,
+      idempotencyExpireIndex,
       adapterInit,
       indexPromise,
     ]);
