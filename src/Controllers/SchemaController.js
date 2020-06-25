@@ -164,8 +164,7 @@ const systemClasses = Object.freeze([
   '_PushStatus',
   '_JobStatus',
   '_JobSchedule',
-  '_Audience',
-  '_Idempotency'
+  '_Audience'
 ]);
 
 const volatileClasses = Object.freeze([
@@ -669,7 +668,7 @@ const _AudienceSchema = convertSchemaToAdapterSchema(
 const _IdempotencySchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
     className: '_Idempotency',
-    fields: defaultColumns._Idempotency,
+    fields: {},
     classLevelPermissions: {},
   })
 );
