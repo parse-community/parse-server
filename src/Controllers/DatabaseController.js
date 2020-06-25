@@ -1742,6 +1742,7 @@ class DatabaseController {
     };
     const requiredIdempotencyFields = {
       fields: {
+        ...SchemaController.defaultColumns._Default,
         ...SchemaController.defaultColumns._Idempotency,
       },
     };
@@ -1810,21 +1811,21 @@ class DatabaseController {
         throw error;
       });
 
-    // const idempotencyRequestIdUniqueness = idempotencyClassPromise
-    //   .then(() =>
-    //     this.adapter.ensureUniqueness(
-    //       '_Idempotency',
-    //       requiredIdempotencyFields,
-    //       ['reqId']
-    //     )
-    //   )
-    //   .catch((error) => {
-    //     logger.warn(
-    //       'Unable to ensure uniqueness for idempotency request ID: ',
-    //       error
-    //     );
-    //     throw error;
-    //   });
+    const idempotencyRequestIdUniqueness = idempotencyClassPromise
+      .then(() =>
+        this.adapter.ensureUniqueness(
+          '_Idempotency',
+          requiredIdempotencyFields,
+          ['reqId']
+        )
+      )
+      .catch((error) => {
+        logger.warn(
+          'Unable to ensure uniqueness for idempotency request ID: ',
+          error
+        );
+        throw error;
+      });
 
     const idempotencyExpireIndex = idempotencyClassPromise
       .then(() =>
@@ -1867,7 +1868,7 @@ class DatabaseController {
       emailCaseInsensitiveIndex,
       roleUniqueness,
       // idempotencyRequestIdUniqueness,
-      idempotencyExpireIndex,
+      // idempotencyExpireIndex,
       adapterInit,
       indexPromise,
     ]);
