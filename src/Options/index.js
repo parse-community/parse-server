@@ -282,6 +282,7 @@ export interface IdempotencyOptions {
   jobs: ?(string[]);
   /* Array of class names, use `*` for all, default is none. */
   classes: ?(string[]);
-  /* The duration in seconds after which a request record is discarded from the database, default is 300s. */
+  /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+  :DEFAULT: 300 */
   ttl: ?number;
 }

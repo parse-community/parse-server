@@ -117,6 +117,6 @@
  * @property {String[]} classes Array of class names, use `*` for all, default is none.
  * @property {String[]} functions Array of function names, use `*` for all, default is none.
  * @property {String[]} jobs Array of job names, use `*` for all, default is none.
- * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, default is 300s.
+ * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
  */
 

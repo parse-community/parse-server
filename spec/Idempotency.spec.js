@@ -8,7 +8,7 @@ const uuid = require('uuid');
 describe_only_db('mongo')('Idempotency', () => {
   // Parameters
   /** Enable TTL expiration simulated by removing entry instead of waiting for MongoDB TTL monitor which
-   runss only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
+   runs only every 60s, so it can take up to 119s until entry removal - ain't nobody got time for that */
   const SIMULATE_TTL = true;
   // Helpers
   async function deleteRequestEntry(reqId) {
@@ -26,20 +26,22 @@ describe_only_db('mongo')('Idempotency', () => {
       '_Idempotency',
       res.results[0].objectId);
   }
-  // Setups
-  beforeEach(async () => {
-    if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000; }
+  async function setup(options) {
     await reconfigureServer({
       appId: Parse.applicationId,
       masterKey: Parse.masterKey,
       serverURL: Parse.serverURL,
-      idempotencyOptions: {
-        ttl: 30,
-        functions: ["*"],
-        jobs: ["*"],
-        classes: ["*"],
-      },
-    })
+      idempotencyOptions: options,
+    });
+  }
+  // Setups
+  beforeEach(async () => {
+    if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000; }
+    await setup({
+      functions: ["*"],
+      jobs: ["*"],
+      classes: ["*"],
+    });
   });
   // Tests
   it('should enforce idempotency for cloud code function', async () => {

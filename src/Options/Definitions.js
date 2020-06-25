@@ -522,7 +522,8 @@ module.exports.IdempotencyOptions = {
   },
   "ttl": {
     "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL",
-    "help": "The duration in seconds after which a request record is discarded from the database, default is 300s.",
-    "action": parsers.numberParser("ttl")
+    "help": "The duration in seconds after which a request record is discarded from the database, defaults to 300s.",
+    "action": parsers.numberParser("ttl"),
+    "default": 300
   }
 };
