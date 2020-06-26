@@ -7,8 +7,6 @@ import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import { IdempotencyOptions } from './Options/Definitions';
-import { isType } from 'graphql';
-import { isTypedArray } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
