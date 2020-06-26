@@ -412,22 +412,29 @@ export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
   if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
   // Get parameters
-  const { functions, jobs, classes, ttl } = req.config.idempotencyOptions;
+  const config = req.config;
   const requestId = ((req || {}).headers || {})["x-parse-request-id"];
-  if (!requestId || !req.config.idempotencyOptions) { return Promise.resolve(); }
+  const { paths, ttl } = config.idempotencyOptions;
+  if (!requestId || !config.idempotencyOptions) { return Promise.resolve(); }
+  // Request path may contain trailing slashes, depending on the original request, so remove
+  // leading and trailing slashes to make it easier to specify paths in the configuration
+  const reqPath = req.path.replace(/^\/|\/$/, '');
   // Determine whether idempotency is enabled for current request path
-  const split = req.path.match(/^\/([^\/]*)\/([^\/]*)/i);
-  const route = split[1];
-  const item = split[2];
-  const functionMatch = functions && route == "functions" && (functions.includes("*") || functions.includes(item));
-  const jobMatch = jobs && route == "jobs" && (jobs.includes("*") || jobs.includes(item));
-  const classMatch = classes && route == "classes" && (classes.includes("*") || classes.includes(item));
-  if (!functionMatch && !jobMatch && !classMatch) { return Promise.resolve(); }
+  let match = false;
+  for (const path of paths) {
+    // Assume one wants a path to always match from the beginning to prevent any mistakes
+    const regex = new RegExp(path.charAt(0) === '^' ? path : '^' + path);
+    if (reqPath.match(regex)) {
+      match = true;
+      break;
+    }
+  }
+  if (!match) { return Promise.resolve(); }
   // Try to store request
   const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
   return rest.create(
-    req.config,
-    auth.master(req.config),
+    config,
+    auth.master(config),
     '_Idempotency',
     { reqId: requestId, expire: Parse._encode(expiryDate) }
   ).catch (e => {

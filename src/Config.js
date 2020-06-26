@@ -7,6 +7,8 @@ import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import { IdempotencyOptions } from './Options/Definitions';
+import { isType } from 'graphql';
+import { isTypedArray } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -115,10 +117,17 @@ export class Config {
 
   static validateIdempotencyOptions(idempotencyOptions) {
     if (!idempotencyOptions) { return; }
-    if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
+    if (idempotencyOptions.ttl === undefined) {
+      idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
+    } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
       throw 'idempotency TTL value must be greater than 0 seconds';
     } else if (isNaN(idempotencyOptions.ttl)) {
-      idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
+      throw 'idempotency TTL value must be a number';
+    }
+    if (!idempotencyOptions.paths) {
+      idempotencyOptions.paths = IdempotencyOptions.paths.default;
+    } else if (!(idempotencyOptions.paths instanceof Array)) {
+      throw 'idempotency paths must be of an array of strings';
     }
   }
 

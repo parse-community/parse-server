@@ -415,9 +415,7 @@ let api = new ParseServer({
 | Parameter | Optional | Type  | Default value | Environment variable | Description |
 |-----------|----------|--------|---------------|----------------------|-------------|
 | `idempotencyOptions` | yes | `Object` | `undefined` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified routes. |
-| `idempotencyOptions.functions`| yes | `Array<String>`  | `undefined` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_FUNCTIONS | An array of function names for which the feature should be enabled. Add `*` for all. |
-| `idempotencyOptions.jobs` | yes | `Array<String>`  | `undefined` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_JOBS | An array of job names for which the feature should be enabled. Add `*` for all. |
-| `idempotencyOptions.classes` | yes | `Array<String>` | `undefined` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_CLASSES | An array of class names for which the feature should be enabled. Add `*` for all. |
+| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths. |
 | `idempotencyOptions.ttl` | yes | `Integer`  | `300` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. |
 
 #### Notes

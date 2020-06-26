@@ -505,20 +505,11 @@ module.exports.LiveQueryServerOptions = {
   }
 };
 module.exports.IdempotencyOptions = {
-  "classes": {
-    "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_CLASSES",
-    "help": "Array of class names, use `*` for all, default is none.",
-    "action": parsers.arrayParser
-  },
-  "functions": {
-    "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_FUNCTIONS",
-    "help": "Array of function names, use `*` for all, default is none.",
-    "action": parsers.arrayParser
-  },
-  "jobs": {
-    "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_JOBS",
-    "help": "Array of job names, use `*` for all, default is none.",
-    "action": parsers.arrayParser
+  "paths": {
+    "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS",
+    "help": "An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.",
+    "action": parsers.arrayParser,
+    "default": []
   },
   "ttl": {
     "env": "PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL",

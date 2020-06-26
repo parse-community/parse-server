@@ -1,5 +1,6 @@
 'use strict';
 const Config = require('../lib/Config');
+const Definitions = require('../lib/Options/Definitions');
 const request = require('../lib/request');
 const rest = require('../lib/rest');
 const auth = require('../lib/Auth');
@@ -38,9 +39,13 @@ describe_only_db('mongo')('Idempotency', () => {
   beforeEach(async () => {
     if (SIMULATE_TTL) { jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000; }
     await setup({
-      functions: ["*"],
-      jobs: ["*"],
-      classes: ["*"],
+      paths: [
+        "functions/.*",
+        "jobs/.*",
+        "classes/.*",
+        "users",
+        "installations"
+      ],
       ttl: 30,
     });
   });
@@ -144,6 +149,62 @@ describe_only_db('mongo')('Idempotency', () => {
     expect(counter).toBe(1);
   });
 
+  it('should enforce idempotency for user object creation', async () => {
+    // Declare trigger
+    let counter = 0;
+    Parse.Cloud.afterSave('_User', () => {
+      counter++;
+    });
+    // Create object
+    const params = {
+      method: 'POST',
+      url: 'http://localhost:8378/1/users',
+      body: {
+        username: "user",
+        password: "pass"
+      },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Request-Id': 'abc-123'
+      }
+    };
+    await expectAsync(request(params)).toBeResolved();
+    await request(params).then(fail, e => {
+      expect(e.status).toEqual(400);
+      expect(e.data.error).toEqual("Duplicate request");
+    });
+    expect(counter).toBe(1);
+  });
+
+  it('should enforce idempotency for installation object creation', async () => {
+    // Declare trigger
+    let counter = 0;
+    Parse.Cloud.afterSave('_Installation', () => {
+      counter++;
+    });
+    // Create object
+    const params = {
+      method: 'POST',
+      url: 'http://localhost:8378/1/installations',
+      body: {
+        installationId: "1",
+        deviceType: "ios"
+      },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Request-Id': 'abc-123'
+      }
+    };
+    await expectAsync(request(params)).toBeResolved();
+    await request(params).then(fail, e => {
+      expect(e.status).toEqual(400);
+      expect(e.data.error).toEqual("Duplicate request");
+    });
+    expect(counter).toBe(1);
+  });
+
   it('should not interfere with calls of different request ID', async () => {
     // Declare trigger
     let counter = 0;
@@ -187,5 +248,20 @@ describe_only_db('mongo')('Idempotency', () => {
       expect(e.status).toEqual(400);
       expect(e.data.error).toEqual("some other error");
     });
+  });
+
+  it('should use default configuration when none is set', async () => {
+    // Configure server with minimal params
+    await setup({});
+    expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(Definitions.IdempotencyOptions.ttl.default);
+    expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(Definitions.IdempotencyOptions.paths.default);
+  });
+
+  it('should throw on invalid configuration', async () => {
+    // Configure server with invalid params
+    await expectAsync(setup({ paths: 1 })).toBeRejected();
+    await expectAsync(setup({ ttl: 'a' })).toBeRejected();
+    await expectAsync(setup({ ttl: 0 })).toBeRejected();
+    await expectAsync(setup({ ttl: -1 })).toBeRejected();
   });
 });

@@ -276,12 +276,9 @@ export interface LiveQueryServerOptions {
 }
 
 export interface IdempotencyOptions {
-  /* Array of function names, use `*` for all, default is none. */
-  functions: ?(string[]);
-  /* Array of job names, use `*` for all, default is none. */
-  jobs: ?(string[]);
-  /* Array of class names, use `*` for all, default is none. */
-  classes: ?(string[]);
+  /* An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
+  :DEFAULT: [] */
+  paths: ?(string[]);
   /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
   :DEFAULT: 300 */
   ttl: ?number;
