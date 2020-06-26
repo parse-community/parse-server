@@ -398,25 +398,24 @@ Identical requests are identified by their request header `X-Parse-Request-Id`. 
 
 > This feature needs to be enabled on the client side to send the header and on the server to process the header. Refer to the specific Parse SDK docs to see whether the feature is supported yet.
 
+Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
+
 #### Configuration example
 ```
 let api = new ParseServer({
     idempotencyOptions: {
-        functions: ["*"],       // enforce for all functions
-        classes: ["User"]       // enforce only for the User class
-        jobs: ["jobA", "jobB"], // enforce only for jobA and jobB
-        ttl: 120                // keep request IDs for 120s
+        paths: [".*"],       // enforce for all requests
+        ttl: 120             // keep request IDs for 120s
     }
-    ...
 }
 ```
 #### Parameters
 
-| Parameter | Optional | Type  | Default value | Environment variable | Description |
-|-----------|----------|--------|---------------|----------------------|-------------|
-| `idempotencyOptions` | yes | `Object` | `undefined` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified routes. |
-| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths. |
-| `idempotencyOptions.ttl` | yes | `Integer`  | `300` | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. |
+| Parameter | Optional | Type  | Default value | Example values | Environment variable | Description |
+|-----------|----------|--------|---------------|-----------|-----------|-------------|
+| `idempotencyOptions` | yes | `Object` | `undefined` |   | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified routes. |
+| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` |  `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.ttl` | yes | `Integer` | `300` | `60` (60 seconds) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`. |
 
 #### Notes
 
