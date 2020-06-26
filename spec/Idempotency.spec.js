@@ -41,6 +41,7 @@ describe_only_db('mongo')('Idempotency', () => {
       functions: ["*"],
       jobs: ["*"],
       classes: ["*"],
+      ttl: 30,
     });
   });
   // Tests

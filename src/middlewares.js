@@ -412,9 +412,10 @@ export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
   if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
   // Get request ID
+  // Get parameters
+  const { functions, jobs, classes, ttl = 300 } = req.config.idempotencyOptions;
   const requestId = ((req || {}).headers || {})["x-parse-request-id"];
-  if (!requestId) { return Promise.resolve(); }
-  const { functions, jobs, classes, ttl } = req.config.idempotencyOptions;
+  if (!requestId || !req.config.idempotencyOptions) { return Promise.resolve(); }
   // Determine whether idempotency is enabled for current request path
   const split = req.path.match(/^\/([^\/]*)\/([^\/]*)/i);
   const route = split[1];
