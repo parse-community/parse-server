@@ -411,9 +411,8 @@ export function promiseEnforceMasterKeyAccess(request) {
 export function promiseEnsureIdempotency(req) {
   // Enable feature only for MongoDB
   if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
-  // Get request ID
   // Get parameters
-  const { functions, jobs, classes, ttl = 300 } = req.config.idempotencyOptions;
+  const { functions, jobs, classes, ttl } = req.config.idempotencyOptions;
   const requestId = ((req || {}).headers || {})["x-parse-request-id"];
   if (!requestId || !req.config.idempotencyOptions) { return Promise.resolve(); }
   // Determine whether idempotency is enabled for current request path
@@ -424,7 +423,7 @@ export function promiseEnsureIdempotency(req) {
   const jobMatch = jobs && route == "jobs" && (jobs.includes("*") || jobs.includes(item));
   const classMatch = classes && route == "classes" && (classes.includes("*") || classes.includes(item));
   if (!functionMatch && !jobMatch && !classMatch) { return Promise.resolve(); }
-  // Try to track request
+  // Try to store request
   const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
   return rest.create(
     req.config,
