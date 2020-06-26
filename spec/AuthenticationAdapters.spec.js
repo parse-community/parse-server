@@ -66,7 +66,7 @@ describe('AuthenticationProviders', function() {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      const noResponse = ['twitter', 'apple', 'gcenter'];
+      const noResponse = ['twitter', 'apple', 'gcenter', 'google'];
       if (noResponse.includes(providerName)) {
         return;
       }
@@ -627,68 +627,126 @@ describe('instagram auth adapter', () => {
 
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
+  const https = require('https');
+  const jwt = require('jsonwebtoken');
   const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
 
-  it('should use id_token for validation is passed', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+  it('should throw error with missing id_token', async () => {
+    try {
+      await google.validateAuthData({}, {});
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('id token is invalid for this user.');
+    }
   });
 
-  it('should use id_token for validation is passed and responds with user_id', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
+  it('should not decode invalid id_token', async () => {
+    try {
+      await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
   });
 
-  it('should use access_token for validation is passed and responds with user_id', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
-    });
-    await google.validateAuthData(
-      { id: 'userId', access_token: 'the_token' },
-      {}
+  // it('should throw error if public key used to encode token is not available', async () => {
+  //   const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+  //   try {
+  //     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+  //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+  //     fail();
+  //   } catch (e) {
+  //     expect(e.message).toBe(
+  //       `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
+  //     );
+  //   }
+  // });
+
+  it('(using client id as string) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await google.validateAuthData(
+      { id: 'the_user_id', id_token: 'the_token' },
+      { clientId: 'secret' }
     );
+    expect(result).toEqual(fakeClaim);
   });
 
-  it('should use access_token for validation is passed with sub', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
-  });
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.google.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
 
-  it('should fail when the id_token is invalid', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
-    });
     try {
       await google.validateAuthData(
-        { id: 'userId', id_token: 'the_token' },
-        {}
+        { id: 'the_user_id', id_token: 'the_token' },
+        { clientId: 'secret' }
       );
       fail();
     } catch (e) {
-      expect(e.message).toBe('Google auth is invalid for this user.');
+      expect(e.message).toBe(
+        'id token not issued by correct provider - expected: https://accounts.google.com | from: https://not.google.com'
+      );
     }
   });
 
-  it('should fail when the access_token is invalid', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
-    });
+  xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
     try {
       await google.validateAuthData(
-        { id: 'userId', access_token: 'the_token' },
-        {}
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'secret' }
       );
       fail();
     } catch (e) {
-      expect(e.message).toBe('Google auth is invalid for this user.');
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  })
+
+  xit('should throw error with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await google.validateAuthData(
+        { id: 'invalid user', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
+
 });
 
 describe('google play games service auth', () => {
