@@ -166,4 +166,26 @@ describe_only_db('mongo')('Idempotency', () => {
     await expectAsync(Promise.all(promises)).toBeResolved();
     expect(counter).toBe(100);
   });
+
+  it('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
+    // Throw on DB write
+    spyOn(rest, 'create').and.callFake(() => {
+      throw new Parse.Error(0, "some other error");
+    });
+    // Run function
+    Parse.Cloud.define('myFunction', () => {});
+    const params = {
+      method: 'POST',
+      url: 'http://localhost:8378/1/functions/myFunction',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': Parse.masterKey,
+        'X-Parse-Request-Id': 'abc-123'
+      }
+    };
+    await request(params).then(fail, e => {
+      expect(e.status).toEqual(400);
+      expect(e.data.error).toEqual("some other error");
+    });
+  });
 });
