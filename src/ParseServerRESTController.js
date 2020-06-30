@@ -101,7 +101,10 @@ function ParseServerRESTController(applicationId, router) {
     return new Promise((resolve, reject) => {
       getAuth(options, config).then(auth => {
         const request = {
-          body: data,
+          body: {
+            ...data,
+            _context: options.context
+          },
           config,
           auth,
           info: {
