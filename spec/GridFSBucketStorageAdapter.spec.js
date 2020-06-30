@@ -39,7 +39,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const gsAdapter = new GridStoreAdapter(databaseURI);
     const gfsAdapter = new GridFSBucketAdapter(
       databaseURI,
-      { useNewUrlParser: true, useUnifiedTopology: true },
+      {},
       '89E4AFF1-DFE4-4603-9574-BFA16BB446FD'
     );
     await expectMissingFile(gfsAdapter, 'myFileName');
