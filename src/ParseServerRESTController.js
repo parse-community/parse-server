@@ -102,9 +102,10 @@ function ParseServerRESTController(applicationId, router) {
       let body = data;
       
       if (options.context !== null && typeof options.context === 'object') {
-        body = _objectSpread({}, data, {
-          _context: options.context
-        });
+        body = {
+          ...data,
+          _context: options.context,
+        };
         delete options.context;
       }
       
