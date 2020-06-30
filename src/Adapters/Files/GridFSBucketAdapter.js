@@ -125,7 +125,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
             iv
           );
           decipher.setAuthTag(authTag);
-          resolve(
+          return resolve(
             Buffer.concat([decipher.update(encrypted), decipher.final()])
           );
         }
