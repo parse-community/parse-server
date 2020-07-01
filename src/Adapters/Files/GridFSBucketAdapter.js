@@ -21,16 +21,16 @@ export class GridFSBucketAdapter extends FilesAdapter {
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
     mongoOptions = {},
-    secretKey = undefined
+    fileKey = undefined
   ) {
     super();
     this._databaseURI = mongoDatabaseURI;
     this._algorithm = 'aes-256-gcm';
-    this._secretKey =
-      secretKey !== undefined
+    this._fileKey =
+      fileKey !== undefined
         ? crypto
           .createHash('sha256')
-          .update(String(secretKey))
+          .update(String(fileKey))
           .digest('base64')
           .substr(0, 32)
         : null;
@@ -65,13 +65,9 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
-    if (this._secretKey !== null) {
+    if (this._fileKey !== null) {
       const iv = crypto.randomBytes(16);
-      const cipher = crypto.createCipheriv(
-        this._algorithm,
-        this._secretKey,
-        iv
-      );
+      const cipher = crypto.createCipheriv(this._algorithm, this._fileKey, iv);
       const encryptedResult = Buffer.concat([
         cipher.update(data),
         cipher.final(),
@@ -113,7 +109,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
       });
       stream.on('end', () => {
         const data = Buffer.concat(chunks);
-        if (this._secretKey !== null) {
+        if (this._fileKey !== null) {
           const authTagLocation = data.length - 16;
           const ivLocation = data.length - 32;
           const authTag = data.slice(authTagLocation);
@@ -121,7 +117,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
           const encrypted = data.slice(0, ivLocation);
           const decipher = crypto.createDecipheriv(
             this._algorithm,
-            this._secretKey,
+            this._fileKey,
             iv
           );
           decipher.setAuthTag(authTag);
