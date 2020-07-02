@@ -166,6 +166,71 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     expect(encryptedData2).toBeUndefined();
   });
 
+  it('should rotate key of all old encrypted GridFS files to unencrypted files', async () => {
+    const oldFileKey = 'oldKeyThatILoved';
+    const oldEncryptedAdapter = new GridFSBucketAdapter(
+      databaseURI,
+      {},
+      oldFileKey
+    );
+    const unEncryptedAdapter = new GridFSBucketAdapter(databaseURI);
+    const fileName1 = 'file1.txt';
+    const data1 = 'hello world';
+    const fileName2 = 'file2.txt';
+    const data2 = 'hello new world';
+    //Store unecrypted files
+    await oldEncryptedAdapter.createFile(fileName1, data1);
+    const oldEncryptedResult1 = await oldEncryptedAdapter.getFileData(
+      fileName1
+    );
+    expect(oldEncryptedResult1.toString('utf8')).toBe(data1);
+    await oldEncryptedAdapter.createFile(fileName2, data2);
+    const oldEncryptedResult2 = await oldEncryptedAdapter.getFileData(
+      fileName2
+    );
+    expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
+    //Check if unEncrypted adapter can read data and make sure it's not the same as oldEncrypted adapter
+    const { rotated, notRotated } = await unEncryptedAdapter.rotateFileKey({
+      oldKey: oldFileKey,
+    });
+    expect(rotated.length).toEqual(2);
+    expect(
+      rotated.filter(function (value) {
+        return value === fileName1;
+      }).length
+    ).toEqual(1);
+    expect(
+      rotated.filter(function (value) {
+        return value === fileName2;
+      }).length
+    ).toEqual(1);
+    expect(notRotated.length).toEqual(0);
+    let result = await unEncryptedAdapter.getFileData(fileName1);
+    expect(result instanceof Buffer).toBe(true);
+    expect(result.toString('utf-8')).toEqual(data1);
+    let decryptionError1;
+    let encryptedData1;
+    try {
+      encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
+    } catch (err) {
+      decryptionError1 = err;
+    }
+    expect(decryptionError1).toMatch('Error');
+    expect(encryptedData1).toBeUndefined();
+    result = await unEncryptedAdapter.getFileData(fileName2);
+    expect(result instanceof Buffer).toBe(true);
+    expect(result.toString('utf-8')).toEqual(data2);
+    let decryptionError2;
+    let encryptedData2;
+    try {
+      encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
+    } catch (err) {
+      decryptionError2 = err;
+    }
+    expect(decryptionError2).toMatch('Error');
+    expect(encryptedData2).toBeUndefined();
+  });
+
   it('should only encrypt specified fileNames', async () => {
     const oldFileKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(
