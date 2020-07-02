@@ -2912,16 +2912,60 @@ describe('afterLogin hook', () => {
     done();
   });
 
-  it('should have access to context as save argument', async () => {
-    // Declare triggers
+  it('should have access to context when saving a new object', async () => {
     Parse.Cloud.beforeSave('TestObject', (req) => {
       expect(req.context.a).toEqual('a');
     });
     Parse.Cloud.afterSave('TestObject', (req) => {
       expect(req.context.a).toEqual('a');
     });
-    // Save object
     const obj = new TestObject();
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving an existing object', async () => {
+    const obj = new TestObject();
+    await obj.save(null);
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    await obj.save(null, { context: { a: 'a' } });
+  });
+
+  it('should have access to context when saving a new object in a trigger', async () => {
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TriggerObject', async () => {
+      const obj = new TestObject();
+      await obj.save(null, { context: { a: 'a' } });
+    });
+    const obj = new Parse.Object('TriggerObject');
+    await obj.save(null);
+  });
+
+  it('should have access to context when cascade-saving objects', async () => {
+    Parse.Cloud.beforeSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.beforeSave('TestObject2', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('TestObject2', (req) => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new Parse.Object("TestObject");
+    const obj2 = new Parse.Object("TestObject2");
+    obj.set("obj2", obj2);
     await obj.save(null, { context: { a: 'a' } });
   });
 });
