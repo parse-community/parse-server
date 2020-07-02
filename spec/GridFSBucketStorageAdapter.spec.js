@@ -143,22 +143,26 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     let result = await encryptedAdapter.getFileData(fileName1);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
+    let decryptionError1;
     let encryptedData1;
     try {
       encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError1 = err;
     }
+    expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
+    let decryptionError2;
     let encryptedData2;
     try {
       encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError2 = err;
     }
+    expect(decryptionError2).toMatch('Error');
     expect(encryptedData2).toBeUndefined();
   });
 
@@ -219,22 +223,26 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     let result = await encryptedAdapter.getFileData(fileName1);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
+    let decryptionError1;
     let encryptedData1;
     try {
       encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError1 = err;
     }
+    expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
+    let decryptionError2;
     let encryptedData2;
     try {
       encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError2 = err;
     }
+    expect(decryptionError2).toMatch('Error');
     expect(encryptedData2).toBeUndefined();
   });
 
@@ -294,22 +302,26 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     let result = await encryptedAdapter.getFileData(fileName1);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data1);
+    let decryptionError1;
     let encryptedData1;
     try {
       encryptedData1 = await oldEncryptedAdapter.getFileData(fileName1);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError1 = err;
     }
+    expect(decryptionError1).toMatch('Error');
     expect(encryptedData1).toBeUndefined();
     result = await encryptedAdapter.getFileData(fileName2);
     expect(result instanceof Buffer).toBe(true);
     expect(result.toString('utf-8')).toEqual(data2);
+    let decryptionError2;
     let encryptedData2;
     try {
       encryptedData2 = await oldEncryptedAdapter.getFileData(fileName2);
     } catch (err) {
-      expect(err).toMatch('Error');
+      decryptionError2 = err;
     }
+    expect(decryptionError2).toMatch('Error');
     expect(encryptedData2).toBeUndefined();
   });
 
