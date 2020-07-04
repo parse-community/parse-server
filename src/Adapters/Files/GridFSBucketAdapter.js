@@ -173,12 +173,12 @@ export class GridFSBucketAdapter extends FilesAdapter {
         fileNames.push(file.filename);
       });
     }
-    var fileNamesNotRotated = fileNames;
-    var fileNamesRotated = [];
-    var fileNameTotal = fileNames.length;
-    var fileNameIndex = 0;
     return new Promise((resolve) => {
-      for (const fileName of fileNames) {
+      var fileNamesNotRotated = fileNames;
+      var fileNamesRotated = [];
+      var fileNameTotal = fileNames.length;
+      var fileNameIndex = 0;
+      fileNames.forEach((fileName) => {
         oldKeyFileAdapter
           .getFileData(fileName)
           .then((plainTextData) => {
@@ -218,7 +218,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
               });
             }
           });
-      }
+      });
     });
   }
 
