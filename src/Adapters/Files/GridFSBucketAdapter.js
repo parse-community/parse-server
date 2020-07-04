@@ -81,7 +81,6 @@ export class GridFSBucketAdapter extends FilesAdapter {
         ]);
         await stream.write(encryptedResult);
       } catch (err) {
-        stream.end();
         return new Promise((resolve, reject) => {
           return reject(err);
         });
@@ -142,7 +141,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
             return reject(err);
           }
         }
-        return resolve(data);
+        resolve(data);
       });
       stream.on('error', (err) => {
         reject(err);
