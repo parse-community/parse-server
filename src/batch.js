@@ -6,7 +6,7 @@ const batchPath = '/batch';
 
 // Mounts a batch-handler onto a PromiseRouter.
 function mountOnto(router) {
-  router.route('POST', batchPath, req => {
+  router.route('POST', batchPath, (req) => {
     return handleBatch(router, req);
   });
 }
@@ -25,7 +25,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   const apiPrefixLength = originalUrl.length - batchPath.length;
   let apiPrefix = originalUrl.slice(0, apiPrefixLength);
 
-  const makeRoutablePath = function(requestPath) {
+  const makeRoutablePath = function (requestPath) {
     // The routablePath is the path minus the api prefix
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
       throw new Parse.Error(
@@ -41,7 +41,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     const publicPath = publicServerURL.path;
     // Override the api prefix
     apiPrefix = localPath;
-    return function(requestPath) {
+    return function (requestPath) {
       // Build the new path by removing the public path
       // and joining with the local path
       const newPath = path.posix.join(
@@ -89,10 +89,10 @@ function handleBatch(router, req) {
   }
 
   return initialPromise.then(() => {
-    const promises = req.body.requests.map(restRequest => {
+    const promises = req.body.requests.map((restRequest) => {
       const routablePath = makeRoutablePath(restRequest.path);
-      // Construct a request that we can send to a handler
 
+      // Construct a request that we can send to a handler
       const request = {
         body: restRequest.body,
         config: req.config,
@@ -100,21 +100,26 @@ function handleBatch(router, req) {
         info: req.info,
       };
 
+      // Add context to request body
+      if (req.body._context) {
+        request.body._context = req.body._context;
+      }
+
       return router
         .tryRouteRequest(restRequest.method, routablePath, request)
         .then(
-          response => {
+          (response) => {
             return { success: response.response };
           },
-          error => {
+          (error) => {
             return { error: { code: error.code, error: error.message } };
           }
         );
     });
 
-    return Promise.all(promises).then(results => {
+    return Promise.all(promises).then((results) => {
       if (req.body.transaction === true) {
-        if (results.find(result => typeof result.error === 'object')) {
+        if (results.find((result) => typeof result.error === 'object')) {
           return req.config.database.abortTransactionalSession().then(() => {
             return Promise.reject({ response: results });
           });

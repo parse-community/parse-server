@@ -45,6 +45,13 @@ export class FilesController extends AdaptableController {
     return this.adapter.deleteFile(filename);
   }
 
+  getMetadata(filename) {
+    if (typeof this.adapter.getMetadata === 'function') {
+      return this.adapter.getMetadata(filename);
+    }
+    return Promise.resolve({});
+  }
+
   /**
    * Find file references in REST-format object and adds the url key
    * with the current mount point and app id.
@@ -52,7 +59,7 @@ export class FilesController extends AdaptableController {
    */
   expandFilesInObject(config, object) {
     if (object instanceof Array) {
-      object.map(obj => this.expandFilesInObject(config, obj));
+      object.map((obj) => this.expandFilesInObject(config, obj));
       return;
     }
     if (typeof object !== 'object') {
