@@ -7,7 +7,7 @@ export const definitions = gql`
   directive @mock(with: Any!) on FIELD_DEFINITION
 `;
 
-const load = (parseGraphQLSchema) => {
+const load = parseGraphQLSchema => {
   parseGraphQLSchema.graphQLSchemaDirectivesDefinitions = definitions;
 
   class ResolveDirectiveVisitor extends SchemaDirectiveVisitor {
@@ -21,17 +21,15 @@ const load = (parseGraphQLSchema) => {
             functionName = this.args.to;
           }
 
-          return (
-            await FunctionsRouter.handleCloudFunction({
-              params: {
-                functionName,
-              },
-              config,
-              auth,
-              info,
-              body: args,
-            })
-          ).response.result;
+          return (await FunctionsRouter.handleCloudFunction({
+            params: {
+              functionName,
+            },
+            config,
+            auth,
+            info,
+            body: args,
+          })).response.result;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
