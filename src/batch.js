@@ -100,11 +100,6 @@ function handleBatch(router, req) {
         info: req.info,
       };
 
-      // Add context to request body
-      if (req.body._context) {
-        request.body._context = req.body._context;
-      }
-
       return router
         .tryRouteRequest(restRequest.method, routablePath, request)
         .then(
