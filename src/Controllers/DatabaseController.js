@@ -1591,7 +1591,7 @@ class DatabaseController {
           // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
           // why is being treated as an error.
           throw Error(
-            `An unexpected condition ocurred when resolving pointer permissions: ${className} ${key}`
+            `An unexpected condition occurred when resolving pointer permissions: ${className} ${key}`
           );
         }
         // if we already have a constraint on the key, use the $and

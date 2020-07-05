@@ -213,6 +213,37 @@ describe('DatabaseController', function () {
 
       done();
     });
+
+    it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', (done) => {
+      const clp = buildCLP(['user']);
+      const query = { a: 'b' };
+
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions
+        .withArgs(CLASS_NAME)
+        .and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Number' });
+
+      expect(() => {
+        databaseController.addPointerPermissions(
+          schemaController,
+          CLASS_NAME,
+          OPERATION,
+          query,
+          ACL_GROUP
+        );
+      }).toThrow(
+        Error(
+          `An unexpected condition occurred when resolving pointer permissions: ${CLASS_NAME} user`
+        )
+      );
+
+      done();
+    });
   });
 });
 
