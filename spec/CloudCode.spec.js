@@ -2963,9 +2963,9 @@ describe('afterLogin hook', () => {
     Parse.Cloud.afterSave('TestObject2', (req) => {
       expect(req.context.a).toEqual('a');
     });
-    const obj = new Parse.Object('TestObject');
-    const obj2 = new Parse.Object('TestObject2');
-    obj.set('obj2', obj2);
+    const obj = new Parse.Object("TestObject");
+    const obj2 = new Parse.Object("TestObject2");
+    obj.set("obj2", obj2);
     await obj.save(null, { context: { a: 'a' } });
   });
 

@@ -200,8 +200,8 @@ RestWrite.prototype.validateClientClassCreation = function() {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
             'This user is not allowed to access ' +
-            'non-existent class: ' +
-            this.className
+              'non-existent class: ' +
+              this.className
           );
         }
       });
@@ -1115,7 +1115,7 @@ RestWrite.prototype.handleInstallation = function() {
     throw new Parse.Error(
       135,
       'at least one ID field (deviceToken, installationId) ' +
-      'must be specified in this operation'
+        'must be specified in this operation'
     );
   }
 
@@ -1278,7 +1278,7 @@ RestWrite.prototype.handleInstallation = function() {
           throw new Parse.Error(
             132,
             'Must specify installationId when deviceToken ' +
-            'matches multiple Installation objects'
+              'matches multiple Installation objects'
           );
         } else {
           // Multiple device token matches and we specified an installation ID,
@@ -1482,7 +1482,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
           while (
             oldPasswords.length >
             Math.max(0, this.config.passwordPolicy.maxPasswordHistory - 2)
-            ) {
+          ) {
             oldPasswords.shift();
           }
           oldPasswords.push(user.password);
