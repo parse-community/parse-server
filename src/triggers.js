@@ -276,7 +276,7 @@ export function getRequestQueryObject(
     isGet,
     headers: config.headers,
     ip: config.ip,
-    context: context,
+    context: context || {},
   };
 
   if (!auth) {

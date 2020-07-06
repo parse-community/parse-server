@@ -929,6 +929,6 @@ describe('Parse.ACL', () => {
       }
     });
 
-    rest.create(config, auth.nobody(config), '_User', anonUser, null, {});
+    rest.create(config, auth.nobody(config), '_User', anonUser);
   });
 });

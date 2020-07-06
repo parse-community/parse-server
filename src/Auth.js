@@ -377,10 +377,7 @@ const createSession = function(
         master(config),
         '_Session',
         null,
-        sessionData,
-        null,
-        null,
-        {}
+        sessionData
       ).execute(),
   };
 };

@@ -74,7 +74,7 @@ export class UserController extends AdaptableController {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
-      return rest.update(this.config, masterAuth, '_User', query, updateFields, null, {});
+      return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
   }
 
@@ -298,9 +298,7 @@ function updateUserPassword(userId, password, config) {
     { objectId: userId },
     {
       password: password,
-    },
-    null,
-    {}
+    }
   );
 }
 

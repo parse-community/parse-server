@@ -436,7 +436,7 @@ describe('RestQuery.each', () => {
     });
 
     rest
-      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }, null, {})
+      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
       .then(response => {
         expect(response.response.toadd).toBeTruthy();
         expect(response.response.tokeep).toBeTruthy();

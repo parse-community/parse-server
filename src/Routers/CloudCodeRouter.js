@@ -57,7 +57,7 @@ export class CloudCodeRouter extends PromiseRouter {
 
   static getJobs(req) {
     return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {}, null, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {})
       .then(scheduledJobs => {
         return {
           response: scheduledJobs.results,
@@ -69,7 +69,7 @@ export class CloudCodeRouter extends PromiseRouter {
     const config = req.config;
     const jobs = triggers.getJobs(config.applicationId) || {};
     return rest
-      .find(req.config, req.auth, '_JobSchedule', {}, {}, null, {})
+      .find(req.config, req.auth, '_JobSchedule', {}, {})
       .then(scheduledJobs => {
         return {
           response: {

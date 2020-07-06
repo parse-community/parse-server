@@ -58,7 +58,7 @@ function restStatusHandler(className, config) {
   function create(object) {
     lastPromise = lastPromise.then(() => {
       return rest
-        .create(config, auth, className, object, null, {})
+        .create(config, auth, className, object)
         .then(({ response }) => {
           // merge the objects
           return Promise.resolve(Object.assign({}, object, response));
