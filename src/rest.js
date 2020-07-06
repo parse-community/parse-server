@@ -210,7 +210,7 @@ function create(config, auth, className, restObject, clientSDK, context) {
     restObject,
     null,
     clientSDK,
-    context,
+    context
   );
   return write.execute();
 }

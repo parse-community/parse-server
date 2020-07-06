@@ -22,7 +22,7 @@ export class InstallationsRouter extends ClassesRouter {
         body.where,
         options,
         req.info.clientSDK,
-        req.info.context,
+        req.info.context
       )
       .then(response => {
         return { response: response };

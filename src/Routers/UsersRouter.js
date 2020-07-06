@@ -179,7 +179,7 @@ export class UsersRouter extends ClassesRouter {
         { sessionToken },
         { include: 'user' },
         req.info.clientSDK,
-        req.info.context,
+        req.info.context
       )
       .then(response => {
         if (

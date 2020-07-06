@@ -52,7 +52,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
       { productIdentifier: productIdentifier },
       undefined,
       req.info.clientSDK,
-      req.info.context,
+      req.info.context
     )
     .then(function(result) {
       const products = result.results;

@@ -71,7 +71,7 @@ function restStatusHandler(className, config) {
     // TODO: when we have updateWhere, use that for proper interfacing
     lastPromise = lastPromise.then(() => {
       return rest
-        .update(config, auth, className, { objectId: where.objectId }, object, null, {})
+        .update(config, auth, className, { objectId: where.objectId }, object)
         .then(({ response }) => {
           // merge the objects
           return Promise.resolve(Object.assign({}, object, response));
