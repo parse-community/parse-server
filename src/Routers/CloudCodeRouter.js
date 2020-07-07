@@ -104,7 +104,7 @@ export class CloudCodeRouter extends PromiseRouter {
         '_JobSchedule',
         { objectId },
         formatJobSchedule(job_schedule),
-        null,
+        undefined,
         req.info.context
       )
       .then(response => {
