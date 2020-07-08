@@ -1587,6 +1587,9 @@ class DatabaseController {
         } else if (fieldType === 'Array') {
           // constraint for users-array setup
           queryClause = { [key]: { $all: [userPointer] } };
+        } else if (fieldType === 'Object') {
+          // constraint for object setup
+          queryClause = { [key]: userPointer };
         } else {
           // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
           // why is being treated as an error.

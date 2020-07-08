@@ -93,7 +93,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if a pointer CLP is present', (done) => {
+    it('should decorate query if a pointer CLP entry is present', (done) => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -120,7 +120,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if an array CLP is present', (done) => {
+    it('should decorate query if an array CLP entry is present', (done) => {
       const clp = buildCLP(['users']);
       const query = { a: 'b' };
 
@@ -145,6 +145,36 @@ describe('DatabaseController', function () {
       expect(output).toEqual({
         ...query,
         users: { $all: [createUserPointer(USER_ID)] },
+      });
+
+      done();
+    });
+
+    it('should decorate query if an object CLP entry is present', (done) => {
+      const clp = buildCLP(['user']);
+      const query = { a: 'b' };
+
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions
+        .withArgs(CLASS_NAME)
+        .and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Object' });
+
+      const output = databaseController.addPointerPermissions(
+        schemaController,
+        CLASS_NAME,
+        OPERATION,
+        query,
+        ACL_GROUP
+      );
+
+      expect(output).toEqual({
+        ...query,
+        user: createUserPointer(USER_ID),
       });
 
       done();
@@ -180,7 +210,7 @@ describe('DatabaseController', function () {
     });
 
     it('should transform the query to an $or query if multiple array/pointer CLPs are present', (done) => {
-      const clp = buildCLP(['user', 'users']);
+      const clp = buildCLP(['user', 'users', 'userObject']);
       const query = { a: 'b' };
 
       schemaController.testPermissionsForClassName
@@ -195,6 +225,9 @@ describe('DatabaseController', function () {
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'userObject')
+        .and.returnValue({ type: 'Object' });
 
       const output = databaseController.addPointerPermissions(
         schemaController,
@@ -208,6 +241,7 @@ describe('DatabaseController', function () {
         $or: [
           { ...query, user: createUserPointer(USER_ID) },
           { ...query, users: { $all: [createUserPointer(USER_ID)] } },
+          { ...query, userObject: createUserPointer(USER_ID) },
         ],
       });
 
