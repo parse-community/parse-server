@@ -51,12 +51,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
   // Tests
   it('should enforce idempotency for cloud code function', async () => {
-    // Declare function
     let counter = 0;
     Parse.Cloud.define('myFunction', () => {
       counter++;
     });
-    // Run function
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/functions/myFunction',
@@ -76,12 +74,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should delete request entry after TTL', async () => {
-    // Declare function
     let counter = 0;
     Parse.Cloud.define('myFunction', () => {
       counter++;
     });
-    // Run function
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/functions/myFunction',
@@ -102,12 +98,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should enforce idempotency for cloud code jobs', async () => {
-    // Declare job
     let counter = 0;
     Parse.Cloud.job('myJob', () => {
       counter++;
     });
-    // Run job
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/jobs/myJob',
@@ -126,12 +120,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should enforce idempotency for class object creation', async () => {
-    // Declare trigger
     let counter = 0;
     Parse.Cloud.afterSave('MyClass', () => {
       counter++;
     });
-    // Create object
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/classes/MyClass',
@@ -150,12 +142,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should enforce idempotency for user object creation', async () => {
-    // Declare trigger
     let counter = 0;
     Parse.Cloud.afterSave('_User', () => {
       counter++;
     });
-    // Create object
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/users',
@@ -178,12 +168,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should enforce idempotency for installation object creation', async () => {
-    // Declare trigger
     let counter = 0;
     Parse.Cloud.afterSave('_Installation', () => {
       counter++;
     });
-    // Create object
     const params = {
       method: 'POST',
       url: 'http://localhost:8378/1/installations',
@@ -206,12 +194,10 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should not interfere with calls of different request ID', async () => {
-    // Declare trigger
     let counter = 0;
     Parse.Cloud.afterSave('MyClass', () => {
       counter++;
     });
-    // Create 100 objects
     const promises = [...Array(100).keys()].map(() => {
       const params = {
         method: 'POST',
@@ -247,14 +233,12 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should use default configuration when none is set', async () => {
-    // Configure server with minimal params
     await setup({});
     expect(Config.get(Parse.applicationId).idempotencyOptions.ttl).toBe(Definitions.IdempotencyOptions.ttl.default);
     expect(Config.get(Parse.applicationId).idempotencyOptions.paths).toBe(Definitions.IdempotencyOptions.paths.default);
   });
 
   it('should throw on invalid configuration', async () => {
-    // Configure server with invalid params
     await expectAsync(setup({ paths: 1 })).toBeRejected();
     await expectAsync(setup({ ttl: 'a' })).toBeRejected();
     await expectAsync(setup({ ttl: 0 })).toBeRejected();
