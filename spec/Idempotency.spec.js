@@ -229,11 +229,7 @@ describe_only_db('mongo')('Idempotency', () => {
   });
 
   it('should re-throw any other error unchanged when writing request entry fails for any other reason', async () => {
-    // Throw on DB write
-    spyOn(rest, 'create').and.callFake(() => {
-      throw new Parse.Error(0, "some other error");
-    });
-    // Run function
+    spyOn(rest, 'create').and.rejectWith(new Parse.Error(0, "some other error"));
     Parse.Cloud.define('myFunction', () => {});
     const params = {
       method: 'POST',
