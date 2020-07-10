@@ -91,14 +91,17 @@ function handleBatch(router, req) {
   return initialPromise.then(() => {
     const promises = req.body.requests.map(restRequest => {
       const routablePath = makeRoutablePath(restRequest.path);
-      // Construct a request that we can send to a handler
 
+      // Construct a request that we can send to a handler
       const request = {
         body: restRequest.body,
         config: req.config,
         auth: req.auth,
         info: req.info,
       };
+
+      // Add context to request body
+      if (req.body._context) { request.body._context = req.body._context; }
 
       return router
         .tryRouteRequest(restRequest.method, routablePath, request)
