@@ -316,7 +316,8 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    res.header('Access-Control-Allow-Origin', '*');
+    const allowOrigin = (config && config.allowOrigin) || '*';
+    res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header(
