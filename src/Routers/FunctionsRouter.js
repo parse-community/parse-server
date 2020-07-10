@@ -148,6 +148,7 @@ export class FunctionsRouter extends PromiseRouter {
       headers: req.config.headers,
       ip: req.config.ip,
       functionName,
+      context: req.info.context,
     };
 
     if (theValidator && typeof theValidator === 'function') {

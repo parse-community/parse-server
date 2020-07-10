@@ -51,7 +51,8 @@ function getFileForProductIdentifier(productIdentifier, req) {
       '_Product',
       { productIdentifier: productIdentifier },
       undefined,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     )
     .then(function(result) {
       const products = result.results;
