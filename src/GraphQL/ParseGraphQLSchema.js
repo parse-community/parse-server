@@ -5,7 +5,8 @@ import {
   DocumentNode,
   GraphQLNamedType,
 } from 'graphql';
-import { mergeSchemas, SchemaDirectiveVisitor } from 'graphql-tools';
+import { stitchSchemas } from '@graphql-tools/stitch';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 import requiredParameter from '../requiredParameter';
 import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
@@ -199,6 +200,22 @@ class ParseGraphQLSchema {
 
       if (typeof this.graphQLCustomTypeDefs.getTypeMap === 'function') {
         const customGraphQLSchemaTypeMap = this.graphQLCustomTypeDefs.getTypeMap();
+        const findAndReplaceLastType = (parent, key) => {
+          if (parent[key].name) {
+            if (
+              this.graphQLAutoSchema.getType(parent[key].name) &&
+              this.graphQLAutoSchema.getType(parent[key].name) !== parent[key]
+            ) {
+              // To avoid unresolved field on overloaded schema
+              // replace the final type with the auto schema one
+              parent[key] = this.graphQLAutoSchema.getType(parent[key].name);
+            }
+          } else {
+            if (parent[key].ofType) {
+              findAndReplaceLastType(parent[key], 'ofType');
+            }
+          }
+        };
         Object.values(customGraphQLSchemaTypeMap).forEach(
           (customGraphQLSchemaType) => {
             if (
@@ -211,30 +228,30 @@ class ParseGraphQLSchema {
             const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
               customGraphQLSchemaType.name
             );
+            if (!autoGraphQLSchemaType) {
+              this.graphQLAutoSchema._typeMap[
+                customGraphQLSchemaType.name
+              ] = customGraphQLSchemaType;
+            }
+          }
+        );
+        Object.values(customGraphQLSchemaTypeMap).forEach(
+          (customGraphQLSchemaType) => {
+            if (
+              !customGraphQLSchemaType ||
+              !customGraphQLSchemaType.name ||
+              customGraphQLSchemaType.name.startsWith('__')
+            ) {
+              return;
+            }
+            const autoGraphQLSchemaType = this.graphQLAutoSchema.getType(
+              customGraphQLSchemaType.name
+            );
+
             if (
               autoGraphQLSchemaType &&
               typeof customGraphQLSchemaType.getFields === 'function'
             ) {
-              const findAndReplaceLastType = (parent, key) => {
-                if (parent[key].name) {
-                  if (
-                    this.graphQLAutoSchema.getType(parent[key].name) &&
-                    this.graphQLAutoSchema.getType(parent[key].name) !==
-                      parent[key]
-                  ) {
-                    // To avoid unresolved field on overloaded schema
-                    // replace the final type with the auto schema one
-                    parent[key] = this.graphQLAutoSchema.getType(
-                      parent[key].name
-                    );
-                  }
-                } else {
-                  if (parent[key].ofType) {
-                    findAndReplaceLastType(parent[key], 'ofType');
-                  }
-                }
-              };
-
               Object.values(customGraphQLSchemaType.getFields()).forEach(
                 (field) => {
                   findAndReplaceLastType(field, 'type');
@@ -244,14 +261,10 @@ class ParseGraphQLSchema {
                 ...autoGraphQLSchemaType.getFields(),
                 ...customGraphQLSchemaType.getFields(),
               };
-            } else {
-              this.graphQLAutoSchema._typeMap[
-                customGraphQLSchemaType.name
-              ] = customGraphQLSchemaType;
             }
           }
         );
-        this.graphQLSchema = mergeSchemas({
+        this.graphQLSchema = stitchSchemas({
           schemas: [
             this.graphQLSchemaDirectivesDefinitions,
             this.graphQLAutoSchema,
@@ -262,10 +275,10 @@ class ParseGraphQLSchema {
         this.graphQLSchema = await this.graphQLCustomTypeDefs({
           directivesDefinitionsSchema: this.graphQLSchemaDirectivesDefinitions,
           autoSchema: this.graphQLAutoSchema,
-          mergeSchemas,
+          stitchSchemas,
         });
       } else {
-        this.graphQLSchema = mergeSchemas({
+        this.graphQLSchema = stitchSchemas({
           schemas: [
             this.graphQLSchemaDirectivesDefinitions,
             this.graphQLAutoSchema,

@@ -54,6 +54,10 @@ export class AggregateRouter extends ClassesRouter {
       options.explain = body.explain;
       delete body.explain;
     }
+    if (body.readPreference) {
+      options.readPreference = body.readPreference;
+      delete body.readPreference;
+    }
     options.pipeline = AggregateRouter.getPipeline(body);
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
@@ -65,9 +69,10 @@ export class AggregateRouter extends ClassesRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
-      .then(response => {
+      .then((response) => {
         for (const result of response.results) {
           if (typeof result === 'object') {
             UsersRouter.removeHiddenProperties(result);
@@ -105,12 +110,12 @@ export class AggregateRouter extends ClassesRouter {
   static getPipeline(body) {
     let pipeline = body.pipeline || body;
     if (!Array.isArray(pipeline)) {
-      pipeline = Object.keys(pipeline).map(key => {
+      pipeline = Object.keys(pipeline).map((key) => {
         return { [key]: pipeline[key] };
       });
     }
 
-    return pipeline.map(stage => {
+    return pipeline.map((stage) => {
       const keys = Object.keys(stage);
       if (keys.length != 1) {
         throw new Error(
@@ -152,7 +157,7 @@ export class AggregateRouter extends ClassesRouter {
       'GET',
       '/aggregate/:className',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleFind(req);
       }
     );

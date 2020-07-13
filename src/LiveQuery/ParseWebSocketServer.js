@@ -12,8 +12,8 @@ export class ParseWebSocketServer {
     wss.onListen = () => {
       logger.info('Parse LiveQuery Server starts running');
     };
-    wss.onConnection = ws => {
-      ws.on('error', error => {
+    wss.onConnection = (ws) => {
+      ws.on('error', (error) => {
         logger.error(error.message);
         logger.error(JSON.stringify(ws));
       });
@@ -27,7 +27,7 @@ export class ParseWebSocketServer {
         }
       }, config.websocketTimeout || 10 * 1000);
     };
-    wss.onError = error => {
+    wss.onError = (error) => {
       logger.error(error);
     };
     wss.start();
@@ -46,7 +46,7 @@ export class ParseWebSocket extends events.EventEmitter {
 
   constructor(ws: any) {
     super();
-    ws.onmessage = request =>
+    ws.onmessage = (request) =>
       this.emit('message', request && request.data ? request.data : request);
     ws.onclose = () => this.emit('disconnect');
     this.ws = ws;

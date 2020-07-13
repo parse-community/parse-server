@@ -32,7 +32,7 @@ export class GraphQLRouter extends PromiseRouter {
       'GET',
       GraphQLConfigPath,
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.getGraphQLConfig(req);
       }
     );
@@ -40,7 +40,7 @@ export class GraphQLRouter extends PromiseRouter {
       'PUT',
       GraphQLConfigPath,
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.updateGraphQLConfig(req);
       }
     );

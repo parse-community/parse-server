@@ -21,10 +21,11 @@ export class AudiencesRouter extends ClassesRouter {
         '_Audience',
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
-      .then(response => {
-        response.results.forEach(item => {
+      .then((response) => {
+        response.results.forEach((item) => {
           item.query = JSON.parse(item.query);
         });
 
@@ -33,7 +34,7 @@ export class AudiencesRouter extends ClassesRouter {
   }
 
   handleGet(req) {
-    return super.handleGet(req).then(data => {
+    return super.handleGet(req).then((data) => {
       data.response.query = JSON.parse(data.response.query);
 
       return data;
@@ -45,7 +46,7 @@ export class AudiencesRouter extends ClassesRouter {
       'GET',
       '/push_audiences',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleFind(req);
       }
     );
@@ -53,7 +54,7 @@ export class AudiencesRouter extends ClassesRouter {
       'GET',
       '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleGet(req);
       }
     );
@@ -61,7 +62,7 @@ export class AudiencesRouter extends ClassesRouter {
       'POST',
       '/push_audiences',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleCreate(req);
       }
     );
@@ -69,7 +70,7 @@ export class AudiencesRouter extends ClassesRouter {
       'PUT',
       '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleUpdate(req);
       }
     );
@@ -77,7 +78,7 @@ export class AudiencesRouter extends ClassesRouter {
       'DELETE',
       '/push_audiences/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handleDelete(req);
       }
     );

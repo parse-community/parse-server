@@ -23,9 +23,10 @@ export class SessionsRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
-      .then(response => {
+      .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(
             Parse.Error.INVALID_SESSION_TOKEN,
@@ -73,25 +74,25 @@ export class SessionsRouter extends ClassesRouter {
   }
 
   mountRoutes() {
-    this.route('GET', '/sessions/me', req => {
+    this.route('GET', '/sessions/me', (req) => {
       return this.handleMe(req);
     });
-    this.route('GET', '/sessions', req => {
+    this.route('GET', '/sessions', (req) => {
       return this.handleFind(req);
     });
-    this.route('GET', '/sessions/:objectId', req => {
+    this.route('GET', '/sessions/:objectId', (req) => {
       return this.handleGet(req);
     });
-    this.route('POST', '/sessions', req => {
+    this.route('POST', '/sessions', (req) => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/sessions/:objectId', req => {
+    this.route('PUT', '/sessions/:objectId', (req) => {
       return this.handleUpdate(req);
     });
-    this.route('DELETE', '/sessions/:objectId', req => {
+    this.route('DELETE', '/sessions/:objectId', (req) => {
       return this.handleDelete(req);
     });
-    this.route('POST', '/upgradeToRevocableSession', req => {
+    this.route('POST', '/upgradeToRevocableSession', (req) => {
       return this.handleUpdateToRevocableSession(req);
     });
   }

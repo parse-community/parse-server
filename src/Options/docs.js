@@ -4,6 +4,7 @@
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
+ * @property {String} allowOrigin Sets the origin to Access-Control-Allow-Origin
  * @property {Adapter<AnalyticsAdapter>} analyticsAdapter Adapter module for the analytics
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
@@ -23,7 +24,7 @@
  * @property {String} dotNetKey Key for Unity and .Net SDK
  * @property {Adapter<MailAdapter>} emailAdapter Adapter module for email sending
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
- * @property {Boolean} enableAnonymousUsers Enable (or disable) anon users, defaults to true
+ * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
  * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true

@@ -76,7 +76,7 @@ function urlParse(url, parseQueryString, slashesDenoteHost) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
+Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   if (typeof url !== 'string') {
     throw new TypeError('Parameter "url" must be a string, not ' + typeof url);
   }
@@ -528,7 +528,7 @@ function urlFormat(obj) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.format = function() {
+Url.prototype.format = function () {
   var auth = this.auth || '';
   if (auth) {
     auth = encodeAuth(auth);
@@ -611,7 +611,7 @@ function urlResolve(source, relative) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.resolve = function(relative) {
+Url.prototype.resolve = function (relative) {
   return this.resolveObject(urlParse(relative, false, true)).format();
 };
 
@@ -622,7 +622,7 @@ function urlResolveObject(source, relative) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.resolveObject = function(relative) {
+Url.prototype.resolveObject = function (relative) {
   if (typeof relative === 'string') {
     var rel = new Url();
     rel.parse(relative, false, true);
@@ -912,7 +912,7 @@ Url.prototype.resolveObject = function(relative) {
 };
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.parseHost = function() {
+Url.prototype.parseHost = function () {
   var host = this.host;
   var port = portPattern.exec(host);
   if (port) {

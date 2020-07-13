@@ -33,6 +33,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
+    context: {},
   };
 
   var basicAuth = httpAuth(req);
@@ -102,6 +103,10 @@ export function handleParseHeaders(req, res, next) {
       if (req.body._MasterKey) {
         info.masterKey = req.body._MasterKey;
         delete req.body._MasterKey;
+      }
+      if (req.body._context && req.body._context instanceof Object) {
+        info.context = req.body._context;
+        delete req.body._context;
       }
       if (req.body._ContentType) {
         req.headers['content-type'] = req.body._ContentType;
@@ -316,7 +321,8 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    res.header('Access-Control-Allow-Origin', '*');
+    const allowOrigin = (config && config.allowOrigin) || '*';
+    res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header(

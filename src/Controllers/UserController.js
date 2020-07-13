@@ -70,7 +70,7 @@ export class UserController extends AdaptableController {
       '_User',
       { username: username, emailVerified: true }
     );
-    return checkIfAlreadyVerified.execute().then(result => {
+    return checkIfAlreadyVerified.execute().then((result) => {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
@@ -88,7 +88,7 @@ export class UserController extends AdaptableController {
         },
         { limit: 1 }
       )
-      .then(results => {
+      .then((results) => {
         if (results.length != 1) {
           throw 'Failed to reset password: username / email / token is invalid';
         }
@@ -127,7 +127,7 @@ export class UserController extends AdaptableController {
       '_User',
       where
     );
-    return query.execute().then(function(result) {
+    return query.execute().then(function (result) {
       if (result.results.length != 1) {
         throw undefined;
       }
@@ -141,7 +141,7 @@ export class UserController extends AdaptableController {
     }
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then(user => {
+    this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
 
       const link = buildEmailLink(
@@ -179,7 +179,7 @@ export class UserController extends AdaptableController {
   }
 
   resendVerificationEmail(username) {
-    return this.getUserIfNeeded({ username: username }).then(aUser => {
+    return this.getUserIfNeeded({ username: username }).then((aUser) => {
       if (!aUser || aUser.emailVerified) {
         throw undefined;
       }
@@ -216,7 +216,7 @@ export class UserController extends AdaptableController {
       //  TODO: No adapter?
     }
 
-    return this.setPasswordResetToken(email).then(user => {
+    return this.setPasswordResetToken(email).then((user) => {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
 
@@ -244,8 +244,8 @@ export class UserController extends AdaptableController {
 
   updatePassword(username, token, password) {
     return this.checkResetTokenValidity(username, token)
-      .then(user => updateUserPassword(user.objectId, password, this.config))
-      .catch(error => {
+      .then((user) => updateUserPassword(user.objectId, password, this.config))
+      .catch((error) => {
         if (error && error.message) {
           // in case of Parse.Error, fail with the error message only
           return Promise.reject(error.message);

@@ -88,7 +88,7 @@ class Client {
   }
 
   _pushEvent(type: string): Function {
-    return function(
+    return function (
       subscriptionId: number,
       parseObjectJSON: any,
       parseOriginalObjectJSON: any

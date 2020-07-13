@@ -29,12 +29,12 @@ export class PushRouter extends PromiseRouter {
 
     const where = PushRouter.getQueryCondition(req);
     let resolve;
-    const promise = new Promise(_resolve => {
+    const promise = new Promise((_resolve) => {
       resolve = _resolve;
     });
     let pushStatusId;
     pushController
-      .sendPush(req.body, where, req.config, req.auth, objectId => {
+      .sendPush(req.body, where, req.config, req.auth, (objectId) => {
         pushStatusId = objectId;
         resolve({
           headers: {
@@ -45,7 +45,7 @@ export class PushRouter extends PromiseRouter {
           },
         });
       })
-      .catch(err => {
+      .catch((err) => {
         req.config.loggerController.error(
           `_PushStatus ${pushStatusId}: error while sending push`,
           err

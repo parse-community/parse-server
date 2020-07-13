@@ -29,6 +29,8 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
+  /* Sets the origin to Access-Control-Allow-Origin */
+  allowOrigin: ?string;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
@@ -93,7 +95,7 @@ export interface ParseServerOptions {
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
-  /* Enable (or disable) anon users, defaults to true
+  /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;

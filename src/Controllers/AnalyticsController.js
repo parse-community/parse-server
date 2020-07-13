@@ -7,7 +7,7 @@ export class AnalyticsController extends AdaptableController {
       .then(() => {
         return this.adapter.appOpened(req.body, req);
       })
-      .then(response => {
+      .then((response) => {
         return { response: response || {} };
       })
       .catch(() => {
@@ -20,7 +20,7 @@ export class AnalyticsController extends AdaptableController {
       .then(() => {
         return this.adapter.trackEvent(req.params.eventName, req.body, req);
       })
-      .then(response => {
+      .then((response) => {
         return { response: response || {} };
       })
       .catch(() => {

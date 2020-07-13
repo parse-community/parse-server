@@ -29,7 +29,7 @@ const {
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 function handleError(e) {
   if (
@@ -9522,6 +9522,29 @@ describe('ParseGraphQLServer', () => {
 
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
+
+            const mutationResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation UnlinkFile($id: ID!) {
+                  updateSomeClass(
+                    input: { id: $id, fields: { someField: { file: null } } }
+                  ) {
+                    someClass {
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id: result2.data.createSomeClass3.someClass.id,
+              },
+            });
+            expect(
+              mutationResult.data.updateSomeClass.someClass.someField
+            ).toEqual(null);
           } catch (e) {
             handleError(e);
           }
@@ -10964,8 +10987,8 @@ describe('ParseGraphQLServer', () => {
         httpServer = http.createServer(expressApp);
         parseGraphQLServer = new ParseGraphQLServer(parseServer, {
           graphQLPath: '/graphql',
-          graphQLCustomTypeDefs: ({ autoSchema, mergeSchemas }) =>
-            mergeSchemas({ schemas: [autoSchema] }),
+          graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
+            stitchSchemas({ subschemas: [autoSchema] }),
         });
 
         parseGraphQLServer.applyGraphQL(expressApp);

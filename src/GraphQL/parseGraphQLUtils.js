@@ -22,13 +22,13 @@ export function toGraphQLError(error) {
   return new ApolloError(message, code);
 }
 
-export const extractKeysAndInclude = selectedFields => {
+export const extractKeysAndInclude = (selectedFields) => {
   selectedFields = selectedFields.filter(
-    field => !field.includes('__typename')
+    (field) => !field.includes('__typename')
   );
 
   // Handles "id" field for both current and included objects
-  selectedFields = selectedFields.map(field => {
+  selectedFields = selectedFields.map((field) => {
     if (field === 'id') return 'objectId';
     return field.endsWith('.id')
       ? `${field.substring(0, field.lastIndexOf('.id'))}.objectId`
@@ -57,6 +57,6 @@ export const extractKeysAndInclude = selectedFields => {
   return { keys, include };
 };
 
-export const getParseClassMutationConfig = function(parseClassConfig) {
+export const getParseClassMutationConfig = function (parseClassConfig) {
   return (parseClassConfig && parseClassConfig.mutation) || {};
 };
