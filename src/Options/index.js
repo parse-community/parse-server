@@ -93,7 +93,7 @@ export interface ParseServerOptions {
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
-  /* Enable (or disable) anon users, defaults to true
+  /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;
