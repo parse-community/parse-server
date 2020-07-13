@@ -6,13 +6,13 @@ export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
     return config.hooksController
       .createHook(aHook)
-      .then((hook) => ({ response: hook }));
+      .then(hook => ({ response: hook }));
   }
 
   updateHook(aHook, config) {
     return config.hooksController
       .updateHook(aHook)
-      .then((hook) => ({ response: hook }));
+      .then(hook => ({ response: hook }));
   }
 
   handlePost(req) {
@@ -24,7 +24,7 @@ export class HooksRouter extends PromiseRouter {
     if (req.params.functionName) {
       return hooksController
         .getFunction(req.params.functionName)
-        .then((foundFunction) => {
+        .then(foundFunction => {
           if (!foundFunction) {
             throw new Parse.Error(
               143,
@@ -36,10 +36,10 @@ export class HooksRouter extends PromiseRouter {
     }
 
     return hooksController.getFunctions().then(
-      (functions) => {
+      functions => {
         return { response: functions || [] };
       },
-      (err) => {
+      err => {
         throw err;
       }
     );
@@ -50,7 +50,7 @@ export class HooksRouter extends PromiseRouter {
     if (req.params.className && req.params.triggerName) {
       return hooksController
         .getTrigger(req.params.className, req.params.triggerName)
-        .then((foundTrigger) => {
+        .then(foundTrigger => {
           if (!foundTrigger) {
             throw new Parse.Error(
               143,
@@ -63,7 +63,7 @@ export class HooksRouter extends PromiseRouter {
 
     return hooksController
       .getTriggers()
-      .then((triggers) => ({ response: triggers || [] }));
+      .then(triggers => ({ response: triggers || [] }));
   }
 
   handleDelete(req) {

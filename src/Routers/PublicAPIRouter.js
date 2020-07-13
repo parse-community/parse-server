@@ -191,14 +191,14 @@ export class PublicAPIRouter extends PromiseRouter {
             success: true,
           });
         },
-        (err) => {
+        err => {
           return Promise.resolve({
             success: false,
             err,
           });
         }
       )
-      .then((result) => {
+      .then(result => {
         const params = qs.stringify({
           username: username,
           token: token,
@@ -277,10 +277,10 @@ export class PublicAPIRouter extends PromiseRouter {
     this.route(
       'GET',
       '/apps/:appId/verify_email',
-      (req) => {
+      req => {
         this.setConfig(req);
       },
-      (req) => {
+      req => {
         return this.verifyEmail(req);
       }
     );
@@ -288,25 +288,25 @@ export class PublicAPIRouter extends PromiseRouter {
     this.route(
       'POST',
       '/apps/:appId/resend_verification_email',
-      (req) => {
+      req => {
         this.setConfig(req);
       },
-      (req) => {
+      req => {
         return this.resendVerificationEmail(req);
       }
     );
 
-    this.route('GET', '/apps/choose_password', (req) => {
+    this.route('GET', '/apps/choose_password', req => {
       return this.changePassword(req);
     });
 
     this.route(
       'POST',
       '/apps/:appId/request_password_reset',
-      (req) => {
+      req => {
         this.setConfig(req);
       },
-      (req) => {
+      req => {
         return this.resetPassword(req);
       }
     );
@@ -314,10 +314,10 @@ export class PublicAPIRouter extends PromiseRouter {
     this.route(
       'GET',
       '/apps/:appId/request_password_reset',
-      (req) => {
+      req => {
         this.setConfig(req);
       },
-      (req) => {
+      req => {
         return this.requestResetPassword(req);
       }
     );

@@ -61,7 +61,7 @@ export class LoggerController extends AdaptableController {
   }
 
   maskSensitive(argArray) {
-    return argArray.map((e) => {
+    return argArray.map(e => {
       if (!e) {
         return e;
       }
@@ -78,7 +78,7 @@ export class LoggerController extends AdaptableController {
           e.url = this.maskSensitiveUrl(e.url);
         } else if (Array.isArray(e.url)) {
           // for strings in array
-          e.url = e.url.map((item) => {
+          e.url = e.url.map(item => {
             if (typeof item === 'string') {
               return this.maskSensitiveUrl(item);
             }
@@ -115,7 +115,7 @@ export class LoggerController extends AdaptableController {
     args = this.maskSensitive([...args]);
     args = [].concat(
       level,
-      args.map((arg) => {
+      args.map(arg => {
         if (typeof arg === 'function') {
           return arg();
         }

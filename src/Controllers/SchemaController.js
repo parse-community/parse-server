@@ -545,7 +545,7 @@ class SchemaData {
   constructor(allSchemas = [], protectedFields = {}) {
     this.__data = {};
     this.__protectedFields = protectedFields;
-    allSchemas.forEach((schema) => {
+    allSchemas.forEach(schema => {
       if (volatileClasses.includes(schema.className)) {
         return;
       }
@@ -580,7 +580,7 @@ class SchemaData {
     });
 
     // Inject the in-memory classes
-    volatileClasses.forEach((className) => {
+    volatileClasses.forEach(className => {
       Object.defineProperty(this, className, {
         get: () => {
           if (!this.__data[className]) {
@@ -721,11 +721,11 @@ export default class SchemaController {
     }
     this.reloadDataPromise = this.getAllClasses(options)
       .then(
-        (allSchemas) => {
+        allSchemas => {
           this.schemaData = new SchemaData(allSchemas, this.protectedFields);
           delete this.reloadDataPromise;
         },
-        (err) => {
+        err => {
           this.schemaData = new SchemaData();
           delete this.reloadDataPromise;
           throw err;
@@ -741,7 +741,7 @@ export default class SchemaController {
     if (options.clearCache) {
       return this.setAllClasses();
     }
-    return this._cache.getAllClasses().then((allClasses) => {
+    return this._cache.getAllClasses().then(allClasses => {
       if (allClasses && allClasses.length) {
         return Promise.resolve(allClasses);
       }
@@ -752,12 +752,12 @@ export default class SchemaController {
   setAllClasses(): Promise<Array<Schema>> {
     return this._dbAdapter
       .getAllClasses()
-      .then((allSchemas) => allSchemas.map(injectDefaultSchema))
-      .then((allSchemas) => {
+      .then(allSchemas => allSchemas.map(injectDefaultSchema))
+      .then(allSchemas => {
         /* eslint-disable no-console */
         this._cache
           .setAllClasses(allSchemas)
-          .catch((error) =>
+          .catch(error =>
             console.error('Error saving schema to cache:', error)
           );
         /* eslint-enable no-console */
@@ -784,13 +784,13 @@ export default class SchemaController {
           indexes: data.indexes,
         });
       }
-      return this._cache.getOneSchema(className).then((cached) => {
+      return this._cache.getOneSchema(className).then(cached => {
         if (cached && !options.clearCache) {
           return Promise.resolve(cached);
         }
-        return this.setAllClasses().then((allSchemas) => {
+        return this.setAllClasses().then(allSchemas => {
           const oneSchema = allSchemas.find(
-            (schema) => schema.className === className
+            schema => schema.className === className
           );
           if (!oneSchema) {
             return Promise.reject(undefined);
@@ -841,7 +841,7 @@ export default class SchemaController {
         })
       )
       .then(convertAdapterSchemaToParseSchema)
-      .catch((error) => {
+      .catch(error => {
         if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
           throw new Parse.Error(
             Parse.Error.INVALID_CLASS_NAME,
@@ -861,9 +861,9 @@ export default class SchemaController {
     database: DatabaseController
   ) {
     return this.getOneSchema(className)
-      .then((schema) => {
+      .then(schema => {
         const existingFields = schema.fields;
-        Object.keys(submittedFields).forEach((name) => {
+        Object.keys(submittedFields).forEach(name => {
           const field = submittedFields[name];
           if (existingFields[name] && field.__op !== 'Delete') {
             throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
@@ -899,7 +899,7 @@ export default class SchemaController {
         // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
         const deletedFields: string[] = [];
         const insertedFields = [];
-        Object.keys(submittedFields).forEach((fieldName) => {
+        Object.keys(submittedFields).forEach(fieldName => {
           if (submittedFields[fieldName].__op === 'Delete') {
             deletedFields.push(fieldName);
           } else {
@@ -916,14 +916,14 @@ export default class SchemaController {
           deletePromise // Delete Everything
             .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
             .then(() => {
-              const promises = insertedFields.map((fieldName) => {
+              const promises = insertedFields.map(fieldName => {
                 const type = submittedFields[fieldName];
                 return this.enforceFieldExists(className, fieldName, type);
               });
               return Promise.all(promises);
             })
-            .then((results) => {
-              enforceFields = results.filter((result) => !!result);
+            .then(results => {
+              enforceFields = results.filter(result => !!result);
               return this.setPermissions(
                 className,
                 classLevelPermissions,
@@ -955,7 +955,7 @@ export default class SchemaController {
             })
         );
       })
-      .catch((error) => {
+      .catch(error => {
         if (error === undefined) {
           throw new Parse.Error(
             Parse.Error.INVALID_CLASS_NAME,
@@ -1095,7 +1095,7 @@ export default class SchemaController {
     }
 
     const geoPoints = Object.keys(fields).filter(
-      (key) => fields[key] && fields[key].type === 'GeoPoint'
+      key => fields[key] && fields[key].type === 'GeoPoint'
     );
     if (geoPoints.length > 1) {
       return {
@@ -1180,7 +1180,7 @@ export default class SchemaController {
 
     return this._dbAdapter
       .addFieldIfNotExists(className, fieldName, type)
-      .catch((error) => {
+      .catch(error => {
         if (error.code == Parse.Error.INCORRECT_TYPE) {
           // Make sure that we throw errors when it is appropriate to do so.
           throw error;
@@ -1244,7 +1244,7 @@ export default class SchemaController {
       );
     }
 
-    fieldNames.forEach((fieldName) => {
+    fieldNames.forEach(fieldName => {
       if (!fieldNameIsValid(fieldName)) {
         throw new Parse.Error(
           Parse.Error.INVALID_KEY_NAME,
@@ -1258,7 +1258,7 @@ export default class SchemaController {
     });
 
     return this.getOneSchema(className, false, { clearCache: true })
-      .catch((error) => {
+      .catch(error => {
         if (error === undefined) {
           throw new Parse.Error(
             Parse.Error.INVALID_CLASS_NAME,
@@ -1268,8 +1268,8 @@ export default class SchemaController {
           throw error;
         }
       })
-      .then((schema) => {
-        fieldNames.forEach((fieldName) => {
+      .then(schema => {
+        fieldNames.forEach(fieldName => {
           if (!schema.fields[fieldName]) {
             throw new Parse.Error(
               255,
@@ -1283,7 +1283,7 @@ export default class SchemaController {
           .deleteFields(className, schema, fieldNames)
           .then(() => {
             return Promise.all(
-              fieldNames.map((fieldName) => {
+              fieldNames.map(fieldName => {
                 const field = schemaFields[fieldName];
                 if (field && field.type === 'Relation') {
                   //For relations, drop the _Join table
@@ -1335,7 +1335,7 @@ export default class SchemaController {
       promises.push(schema.enforceFieldExists(className, fieldName, expected));
     }
     const results = await Promise.all(promises);
-    const enforceFields = results.filter((result) => !!result);
+    const enforceFields = results.filter(result => !!result);
 
     if (enforceFields.length !== 0) {
       await this.reloadData({ clearCache: true });
@@ -1401,7 +1401,7 @@ export default class SchemaController {
     }
     // Check permissions against the aclGroup provided (array of userId/roles)
     if (
-      aclGroup.some((acl) => {
+      aclGroup.some(acl => {
         return perms[acl] === true;
       })
     ) {
@@ -1594,7 +1594,7 @@ function buildMergedSchemaObject(
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
 function thenValidateRequiredColumns(schemaPromise, className, object, query) {
-  return schemaPromise.then((schema) => {
+  return schemaPromise.then(schema => {
     return schema.validateRequiredColumns(className, object, query);
   });
 }

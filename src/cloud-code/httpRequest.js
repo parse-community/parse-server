@@ -12,7 +12,7 @@ const clients = {
 function makeCallback(resolve, reject) {
   return function (response) {
     const chunks = [];
-    response.on('data', (chunk) => {
+    response.on('data', chunk => {
       chunks.push(chunk);
     });
     response.on('end', () => {
@@ -34,7 +34,7 @@ const encodeBody = function ({ body, headers = {} }) {
   if (typeof body !== 'object') {
     return { body, headers };
   }
-  var contentTypeKeys = Object.keys(headers).filter((key) => {
+  var contentTypeKeys = Object.keys(headers).filter(key => {
     return key.match(/content-type/i) != null;
   });
 
@@ -118,7 +118,7 @@ module.exports = function httpRequest(options) {
     followRedirects: options.followRedirects === true,
   };
   if (requestOptions.headers) {
-    Object.keys(requestOptions.headers).forEach((key) => {
+    Object.keys(requestOptions.headers).forEach(key => {
       if (typeof requestOptions.headers[key] === 'undefined') {
         delete requestOptions.headers[key];
       }
@@ -144,7 +144,7 @@ module.exports = function httpRequest(options) {
     if (options.body) {
       req.write(options.body);
     }
-    req.on('error', (error) => {
+    req.on('error', error => {
       reject(error);
     });
     req.end();
