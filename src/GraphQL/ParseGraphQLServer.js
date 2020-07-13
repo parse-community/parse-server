@@ -46,7 +46,7 @@ class ParseGraphQLServer {
           config: req.config,
           auth: req.auth,
         },
-        formatError: (error) => {
+        formatError: error => {
           // Allow to console.log here to debug
           return error;
         },
@@ -91,7 +91,7 @@ class ParseGraphQLServer {
     app.use(this.config.graphQLPath, handleParseErrors);
     app.use(
       this.config.graphQLPath,
-      graphqlExpress(async (req) => await this._getGraphQLOptions(req))
+      graphqlExpress(async req => await this._getGraphQLOptions(req))
     );
   }
 

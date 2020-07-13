@@ -29,7 +29,7 @@ export function getLocalesFromPush(body) {
   return [
     ...new Set(
       Object.keys(data).reduce((memo, key) => {
-        localizableKeys.forEach((localizableKey) => {
+        localizableKeys.forEach(localizableKey => {
           if (key.indexOf(`${localizableKey}-`) == 0) {
             memo.push(key.slice(localizableKey.length + 1));
           }
@@ -46,7 +46,7 @@ export function transformPushBodyForLocale(body, locale) {
     return body;
   }
   body = deepcopy(body);
-  localizableKeys.forEach((key) => {
+  localizableKeys.forEach(key => {
     const localeValue = body.data[`${key}-${locale}`];
     if (localeValue) {
       body.data[key] = localeValue;
@@ -59,8 +59,8 @@ export function stripLocalesFromBody(body) {
   if (!body.data) {
     return body;
   }
-  Object.keys(body.data).forEach((key) => {
-    localizableKeys.forEach((localizableKey) => {
+  Object.keys(body.data).forEach(key => {
+    localizableKeys.forEach(localizableKey => {
       if (key.indexOf(`${localizableKey}-`) == 0) {
         delete body.data[key];
       }
@@ -84,7 +84,7 @@ export function groupByLocaleIdentifier(installations, locales = []) {
   return installations.reduce(
     (map, installation) => {
       let added = false;
-      locales.forEach((locale) => {
+      locales.forEach(locale => {
         if (added) {
           return;
         }

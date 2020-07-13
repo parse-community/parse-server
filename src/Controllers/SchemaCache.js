@@ -41,9 +41,9 @@ export default class SchemaCache {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.get(this.prefix + MAIN_SCHEMA).then((cachedSchemas) => {
+    return this.cache.get(this.prefix + MAIN_SCHEMA).then(cachedSchemas => {
       cachedSchemas = cachedSchemas || [];
-      const schema = cachedSchemas.find((cachedSchema) => {
+      const schema = cachedSchemas.find(cachedSchema => {
         return cachedSchema.className === className;
       });
       if (schema) {

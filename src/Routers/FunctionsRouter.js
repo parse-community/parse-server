@@ -11,7 +11,7 @@ import { logger } from '../logger';
 
 function parseObject(obj) {
   if (Array.isArray(obj)) {
-    return obj.map((item) => {
+    return obj.map(item => {
       return parseObject(item);
     });
   } else if (obj && obj.__type == 'Date') {
@@ -68,7 +68,7 @@ export class FunctionsRouter extends PromiseRouter {
       message: jobHandler.setMessage.bind(jobHandler),
     };
 
-    return jobHandler.setRunning(jobName, params).then((jobStatus) => {
+    return jobHandler.setRunning(jobName, params).then(jobStatus => {
       request.jobId = jobStatus.objectId;
       // run the function async
       process.nextTick(() => {
@@ -77,10 +77,10 @@ export class FunctionsRouter extends PromiseRouter {
             return jobFunction(request);
           })
           .then(
-            (result) => {
+            result => {
               jobHandler.setSucceeded(result);
             },
-            (error) => {
+            error => {
               jobHandler.setFailed(error);
             }
           );
@@ -166,7 +166,7 @@ export class FunctionsRouter extends PromiseRouter {
         req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
       const { success, error, message } = FunctionsRouter.createResponseObject(
-        (result) => {
+        result => {
           try {
             const cleanResult = logger.truncateLogMessage(
               JSON.stringify(result.response.result)
@@ -184,7 +184,7 @@ export class FunctionsRouter extends PromiseRouter {
             reject(e);
           }
         },
-        (error) => {
+        error => {
           try {
             logger.error(
               `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` +

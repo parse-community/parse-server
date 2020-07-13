@@ -58,7 +58,7 @@ export class CloudCodeRouter extends PromiseRouter {
   static getJobs(req) {
     return rest
       .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then((scheduledJobs) => {
+      .then(scheduledJobs => {
         return {
           response: scheduledJobs.results,
         };
@@ -70,10 +70,10 @@ export class CloudCodeRouter extends PromiseRouter {
     const jobs = triggers.getJobs(config.applicationId) || {};
     return rest
       .find(req.config, req.auth, '_JobSchedule', {}, {})
-      .then((scheduledJobs) => {
+      .then(scheduledJobs => {
         return {
           response: {
-            in_use: scheduledJobs.results.map((job) => job.jobName),
+            in_use: scheduledJobs.results.map(job => job.jobName),
             jobs: Object.keys(jobs),
           },
         };
@@ -107,7 +107,7 @@ export class CloudCodeRouter extends PromiseRouter {
         undefined,
         req.info.context
       )
-      .then((response) => {
+      .then(response => {
         return {
           response,
         };
@@ -118,7 +118,7 @@ export class CloudCodeRouter extends PromiseRouter {
     const { objectId } = req.params;
     return rest
       .del(req.config, req.auth, '_JobSchedule', objectId, req.info.context)
-      .then((response) => {
+      .then(response => {
         return {
           response,
         };

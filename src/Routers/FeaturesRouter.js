@@ -8,7 +8,7 @@ export class FeaturesRouter extends PromiseRouter {
       'GET',
       '/serverInfo',
       middleware.promiseEnforceMasterKeyAccess,
-      (req) => {
+      req => {
         const { config } = req;
         const features = {
           globalConfig: {

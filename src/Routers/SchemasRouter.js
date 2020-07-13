@@ -16,17 +16,17 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 function getAllSchemas(req) {
   return req.config.database
     .loadSchema({ clearCache: true })
-    .then((schemaController) => schemaController.getAllClasses(true))
-    .then((schemas) => ({ response: { results: schemas } }));
+    .then(schemaController => schemaController.getAllClasses(true))
+    .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
   return req.config.database
     .loadSchema({ clearCache: true })
-    .then((schemaController) => schemaController.getOneSchema(className, true))
-    .then((schema) => ({ response: schema }))
-    .catch((error) => {
+    .then(schemaController => schemaController.getOneSchema(className, true))
+    .then(schema => ({ response: schema }))
+    .catch(error => {
       if (error === undefined) {
         throw new Parse.Error(
           Parse.Error.INVALID_CLASS_NAME,
@@ -64,7 +64,7 @@ function createSchema(req) {
 
   return req.config.database
     .loadSchema({ clearCache: true })
-    .then((schema) =>
+    .then(schema =>
       schema.addClassIfNotExists(
         className,
         req.body.fields,
@@ -72,7 +72,7 @@ function createSchema(req) {
         req.body.indexes
       )
     )
-    .then((schema) => ({ response: schema }));
+    .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {
@@ -91,7 +91,7 @@ function modifySchema(req) {
 
   return req.config.database
     .loadSchema({ clearCache: true })
-    .then((schema) =>
+    .then(schema =>
       schema.updateClass(
         className,
         submittedFields,
@@ -100,10 +100,10 @@ function modifySchema(req) {
         req.config.database
       )
     )
-    .then((result) => ({ response: result }));
+    .then(result => ({ response: result }));
 }
 
-const deleteSchema = (req) => {
+const deleteSchema = req => {
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,

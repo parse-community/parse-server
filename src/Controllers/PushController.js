@@ -137,7 +137,7 @@ export class PushController {
           pushStatus
         );
       })
-      .catch((err) => {
+      .catch(err => {
         return pushStatus.fail(err).then(() => {
           throw err;
         });

@@ -76,7 +76,7 @@ export class PushWorker {
         installations,
         locales
       );
-      const promises = Object.keys(grouppedInstallations).map((locale) => {
+      const promises = Object.keys(grouppedInstallations).map(locale => {
         const installations = grouppedInstallations[locale];
         const body = bodiesPerLocales[locale];
         return this.sendToAdapter(
@@ -94,7 +94,7 @@ export class PushWorker {
       logger.verbose(`Sending push to ${installations.length}`);
       return this.adapter
         .send(body, installations, pushStatus.objectId)
-        .then((results) => {
+        .then(results => {
           return pushStatus.trackSent(results, UTCOffset).then(() => results);
         });
     }
@@ -103,7 +103,7 @@ export class PushWorker {
     const badgeInstallationsMap = groupByBadge(installations);
 
     // Map the on the badges count and return the send result
-    const promises = Object.keys(badgeInstallationsMap).map((badge) => {
+    const promises = Object.keys(badgeInstallationsMap).map(badge => {
       const payload = deepcopy(body);
       payload.data.badge = parseInt(badge);
       const installations = badgeInstallationsMap[badge];
