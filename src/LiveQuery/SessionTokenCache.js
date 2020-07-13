@@ -5,7 +5,7 @@ import logger from '../logger';
 function userForSessionToken(sessionToken) {
   var q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
-  return q.first({ useMasterKey: true }).then(function(session) {
+  return q.first({ useMasterKey: true }).then(function (session) {
     if (!session) {
       return Promise.reject('No session found for session token');
     }
@@ -40,7 +40,7 @@ class SessionTokenCache {
       return Promise.resolve(userId);
     }
     return userForSessionToken(sessionToken).then(
-      user => {
+      (user) => {
         logger.verbose(
           'Fetch userId %s of sessionToken %s from Parse',
           user.id,
@@ -50,7 +50,7 @@ class SessionTokenCache {
         this.cache.set(sessionToken, userId);
         return Promise.resolve(userId);
       },
-      error => {
+      (error) => {
         logger.error(
           'Can not fetch userId for sessionToken %j, error %j',
           sessionToken,

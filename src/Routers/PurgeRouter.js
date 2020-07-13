@@ -21,7 +21,7 @@ export class PurgeRouter extends PromiseRouter {
         }
         return { response: {} };
       })
-      .catch(error => {
+      .catch((error) => {
         if (!error || (error && error.code === Parse.Error.OBJECT_NOT_FOUND)) {
           return { response: {} };
         }
@@ -34,7 +34,7 @@ export class PurgeRouter extends PromiseRouter {
       'DELETE',
       '/purge/:className',
       middleware.promiseEnforceMasterKeyAccess,
-      req => {
+      (req) => {
         return this.handlePurge(req);
       }
     );

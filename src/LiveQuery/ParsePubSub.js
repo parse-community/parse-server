@@ -10,7 +10,7 @@ function useRedis(config: any): boolean {
   return typeof redisURL !== 'undefined' && redisURL !== '';
 }
 
-ParsePubSub.createPublisher = function(config: any): any {
+ParsePubSub.createPublisher = function (config: any): any {
   if (useRedis(config)) {
     return RedisPubSub.createPublisher(config);
   } else {
@@ -26,7 +26,7 @@ ParsePubSub.createPublisher = function(config: any): any {
   }
 };
 
-ParsePubSub.createSubscriber = function(config: any): void {
+ParsePubSub.createSubscriber = function (config: any): void {
   if (useRedis(config)) {
     return RedisPubSub.createSubscriber(config);
   } else {

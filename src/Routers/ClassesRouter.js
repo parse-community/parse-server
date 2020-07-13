@@ -41,9 +41,9 @@ export class ClassesRouter extends PromiseRouter {
         body.where,
         options,
         req.info.clientSDK,
-        req.info.context,
+        req.info.context
       )
-      .then(response => {
+      .then((response) => {
         return { response: response };
       });
   }
@@ -93,7 +93,7 @@ export class ClassesRouter extends PromiseRouter {
         options,
         req.info.clientSDK
       )
-      .then(response => {
+      .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(
             Parse.Error.OBJECT_NOT_FOUND,
@@ -241,19 +241,19 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   mountRoutes() {
-    this.route('GET', '/classes/:className', req => {
+    this.route('GET', '/classes/:className', (req) => {
       return this.handleFind(req);
     });
-    this.route('GET', '/classes/:className/:objectId', req => {
+    this.route('GET', '/classes/:className/:objectId', (req) => {
       return this.handleGet(req);
     });
-    this.route('POST', '/classes/:className', req => {
+    this.route('POST', '/classes/:className', (req) => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', req => {
+    this.route('PUT', '/classes/:className/:objectId', (req) => {
       return this.handleUpdate(req);
     });
-    this.route('DELETE', '/classes/:className/:objectId', req => {
+    this.route('DELETE', '/classes/:className/:objectId', (req) => {
       return this.handleDelete(req);
     });
   }
