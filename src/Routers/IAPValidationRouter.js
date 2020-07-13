@@ -32,7 +32,7 @@ function validateWithAppStore(url, receipt) {
     headers: {
       'Content-Type': 'application/json',
     },
-  }).then(httpResponse => {
+  }).then((httpResponse) => {
     const body = httpResponse.data;
     if (body && body.status === 0) {
       // No need to pass anything, status is OK
@@ -54,7 +54,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
       req.info.clientSDK,
       req.info.context
     )
-    .then(function(result) {
+    .then(function (result) {
       const products = result.results;
       if (!products || products.length != 1) {
         // Error not found or too many
@@ -106,13 +106,13 @@ export class IAPValidationRouter extends PromiseRouter {
       () => {
         return successCallback();
       },
-      error => {
+      (error) => {
         if (error.status == 21007) {
           return validateWithAppStore(IAP_SANDBOX_URL, receipt).then(
             () => {
               return successCallback();
             },
-            error => {
+            (error) => {
               return errorCallback(error);
             }
           );

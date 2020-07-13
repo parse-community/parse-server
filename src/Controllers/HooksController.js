@@ -27,9 +27,9 @@ export class HooksController {
   }
 
   load() {
-    return this._getHooks().then(hooks => {
+    return this._getHooks().then((hooks) => {
       hooks = hooks || [];
-      hooks.forEach(hook => {
+      hooks.forEach((hook) => {
         this.addHookToTriggers(hook);
       });
     });
@@ -37,7 +37,7 @@ export class HooksController {
 
   getFunction(functionName) {
     return this._getHooks({ functionName: functionName }).then(
-      results => results[0]
+      (results) => results[0]
     );
   }
 
@@ -49,7 +49,7 @@ export class HooksController {
     return this._getHooks({
       className: className,
       triggerName: triggerName,
-    }).then(results => results[0]);
+    }).then((results) => results[0]);
   }
 
   getTriggers() {
@@ -75,8 +75,8 @@ export class HooksController {
   _getHooks(query = {}) {
     return this.database
       .find(DefaultHooksCollectionName, query)
-      .then(results => {
-        return results.map(result => {
+      .then((results) => {
+        return results.map((result) => {
           delete result.objectId;
           return result;
         });
@@ -156,7 +156,7 @@ export class HooksController {
 
   createHook(aHook) {
     if (aHook.functionName) {
-      return this.getFunction(aHook.functionName).then(result => {
+      return this.getFunction(aHook.functionName).then((result) => {
         if (result) {
           throw new Parse.Error(
             143,
@@ -168,13 +168,11 @@ export class HooksController {
       });
     } else if (aHook.className && aHook.triggerName) {
       return this.getTrigger(aHook.className, aHook.triggerName).then(
-        result => {
+        (result) => {
           if (result) {
             throw new Parse.Error(
               143,
-              `class ${aHook.className} already has trigger ${
-                aHook.triggerName
-              }`
+              `class ${aHook.className} already has trigger ${aHook.triggerName}`
             );
           }
           return this.createOrUpdateHook(aHook);
@@ -187,7 +185,7 @@ export class HooksController {
 
   updateHook(aHook) {
     if (aHook.functionName) {
-      return this.getFunction(aHook.functionName).then(result => {
+      return this.getFunction(aHook.functionName).then((result) => {
         if (result) {
           return this.createOrUpdateHook(aHook);
         }
@@ -198,7 +196,7 @@ export class HooksController {
       });
     } else if (aHook.className && aHook.triggerName) {
       return this.getTrigger(aHook.className, aHook.triggerName).then(
-        result => {
+        (result) => {
           if (result) {
             return this.createOrUpdateHook(aHook);
           }
@@ -211,7 +209,7 @@ export class HooksController {
 }
 
 function wrapToHTTPRequest(hook, key) {
-  return req => {
+  return (req) => {
     const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
@@ -245,7 +243,7 @@ function wrapToHTTPRequest(hook, key) {
         'Making outgoing webhook request without webhookKey being set!'
       );
     }
-    return request(jsonRequest).then(response => {
+    return request(jsonRequest).then((response) => {
       let err;
       let result;
       let body = response.data;

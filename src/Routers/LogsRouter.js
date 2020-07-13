@@ -9,7 +9,7 @@ export class LogsRouter extends PromiseRouter {
       '/scriptlog',
       middleware.promiseEnforceMasterKeyAccess,
       this.validateRequest,
-      req => {
+      (req) => {
         return this.handleGET(req);
       }
     );
@@ -50,7 +50,7 @@ export class LogsRouter extends PromiseRouter {
       level,
     };
 
-    return req.config.loggerController.getLogs(options).then(result => {
+    return req.config.loggerController.getLogs(options).then((result) => {
       return Promise.resolve({
         response: result,
       });

@@ -5,7 +5,7 @@ import cluster from 'cluster';
 import os from 'os';
 import runner from './utils/runner';
 
-const help = function() {
+const help = function () {
   console.log('  Get Started guide:');
   console.log('');
   console.log('    Please have a look at the get started guide!');
@@ -39,7 +39,7 @@ runner({
   definitions,
   help,
   usage: '[options] <path/to/configuration.json>',
-  start: function(program, options, logOptions) {
+  start: function (program, options, logOptions) {
     if (!options.appId || !options.masterKey) {
       program.outputHelp();
       console.error('');
