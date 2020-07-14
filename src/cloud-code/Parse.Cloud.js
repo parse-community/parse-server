@@ -453,6 +453,21 @@ ParseCloud.afterDeleteFile = function (handler) {
   );
 };
 
+/**
+ * Registers a before live query server connect function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.beforeConnect(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeConnect
+ * @name Parse.Cloud.beforeConnect
+ * @param {Function} func The function to before connection is made. This function can be async and should take just one parameter, {@link Parse.Cloud.ConnectTriggerRequest}.
+ */
 ParseCloud.beforeConnect = function (handler) {
   triggers.addConnectTrigger(
     triggers.Types.beforeConnect,
@@ -461,6 +476,27 @@ ParseCloud.beforeConnect = function (handler) {
   );
 };
 
+/**
+ * Registers a before live query subscription function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * If you want to use beforeSubscribe for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * ```
+ * Parse.Cloud.beforeSubscribe('MyCustomClass', (request) => {
+ *   // code here
+ * })
+ *
+ * Parse.Cloud.beforeSubscribe(Parse.User, (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeSubscribe
+ * @name Parse.Cloud.beforeSubscribe
+ * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before subscription function for. This can instead be a String that is the className of the subclass.
+ * @param {Function} func The function to run before a subscription. This function can be async and should take one parameter, a {@link Parse.Cloud.TriggerRequest}.
+ */
 ParseCloud.beforeSubscribe = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
@@ -515,6 +551,16 @@ module.exports = ParseCloud;
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
  * @property {Object} log The current logger inside Parse Server.
+ */
+
+/**
+ * @interface Parse.Cloud.ConnectTriggerRequest
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} useMasterKey If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Integer} clients The number of clients connected.
+ * @property {Integer} subscriptions The number of subscriptions connected.
+ * @property {String} sessionToken If set, the session of the user that made the request.
  */
 
 /**

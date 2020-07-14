@@ -10,9 +10,11 @@ import { ParsePubSub } from './ParsePubSub';
 import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { runLiveQueryEventHandlers } from '../triggers';
-import { maybeRunConnectTrigger } from '../triggers';
-import { maybeRunSubscribeTrigger } from '../triggers';
+import {
+  runLiveQueryEventHandlers,
+  maybeRunConnectTrigger,
+  maybeRunSubscribeTrigger,
+} from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
 import LRU from 'lru-cache';
@@ -576,23 +578,22 @@ class ParseLiveQueryServer {
     return false;
   }
 
-  _handleConnect(parseWebsocket: any, request: any): any {
-    return new Promise((resolve) => {
-      if (!this._validateKeys(request, this.keyPairs)) {
-        Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
-        logger.error('Key in request is not valid');
-        resolve();
-        return;
-      }
-      const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-      const clientId = uuidv4();
-      const client = new Client(
-        clientId,
-        parseWebsocket,
-        hasMasterKey,
-        request.sessionToken,
-        request.installationId
-      );
+  async _handleConnect(parseWebsocket: any, request: any): any {
+    if (!this._validateKeys(request, this.keyPairs)) {
+      Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
+      logger.error('Key in request is not valid');
+      return;
+    }
+    const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
+    const clientId = uuidv4();
+    const client = new Client(
+      clientId,
+      parseWebsocket,
+      hasMasterKey,
+      request.sessionToken,
+      request.installationId
+    );
+    try {
       const req = {
         client,
         event: 'connect',
@@ -602,30 +603,24 @@ class ParseLiveQueryServer {
         useMasterKey: client.hasMasterKey,
         installationId: request.installationId,
       };
-      maybeRunConnectTrigger('beforeConnect', req).then(
-        () => {
-          parseWebsocket.clientId = clientId;
-          this.clients.set(parseWebsocket.clientId, client);
-          logger.info(`Create new client: ${parseWebsocket.clientId}`);
-          client.pushConnect();
-          runLiveQueryEventHandlers(req);
-          resolve();
-        },
-        (error) => {
-          Client.pushError(
-            parseWebsocket,
-            error.code || 101,
-            error.message || error,
-            false
-          );
-          logger.error(
-            `Failed running beforeConnect for session ${req.sessionToken} with:\n Error: ` +
-              JSON.stringify(error)
-          );
-          resolve();
-        }
+      await maybeRunConnectTrigger('beforeConnect', req);
+      parseWebsocket.clientId = clientId;
+      this.clients.set(parseWebsocket.clientId, client);
+      logger.info(`Create new client: ${parseWebsocket.clientId}`);
+      client.pushConnect();
+      runLiveQueryEventHandlers(req);
+    } catch (error) {
+      Client.pushError(
+        parseWebsocket,
+        error.code || 101,
+        error.message || error,
+        false
       );
-    });
+      logger.error(
+        `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
+          JSON.stringify(error)
+      );
+    }
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
@@ -660,96 +655,85 @@ class ParseLiveQueryServer {
     return isValid;
   }
 
-  _handleSubscribe(parseWebsocket: any, request: any): any {
+  async _handleSubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
-    return new Promise((resolve) => {
-      if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
-        Client.pushError(
-          parseWebsocket,
-          2,
-          'Can not find this client, make sure you connect to server before subscribing'
-        );
-        logger.error(
-          'Can not find this client, make sure you connect to server before subscribing'
-        );
-        resolve();
-        return;
-      }
-      const client = this.clients.get(parseWebsocket.clientId);
-      const className = request.query.className;
-      maybeRunSubscribeTrigger('beforeSubscribe', className, request).then(
-        () => {
-          // Get subscription from subscriptions, create one if necessary
-          const subscriptionHash = queryHash(request.query);
-          // Add className to subscriptions if necessary
-
-          if (!this.subscriptions.has(className)) {
-            this.subscriptions.set(className, new Map());
-          }
-          const classSubscriptions = this.subscriptions.get(className);
-          let subscription;
-          if (classSubscriptions.has(subscriptionHash)) {
-            subscription = classSubscriptions.get(subscriptionHash);
-          } else {
-            subscription = new Subscription(
-              className,
-              request.query.where,
-              subscriptionHash
-            );
-            classSubscriptions.set(subscriptionHash, subscription);
-          }
-
-          // Add subscriptionInfo to client
-          const subscriptionInfo = {
-            subscription: subscription,
-          };
-          // Add selected fields, sessionToken and installationId for this subscription if necessary
-          if (request.query.fields) {
-            subscriptionInfo.fields = request.query.fields;
-          }
-          if (request.sessionToken) {
-            subscriptionInfo.sessionToken = request.sessionToken;
-          }
-          client.addSubscriptionInfo(request.requestId, subscriptionInfo);
-
-          // Add clientId to subscription
-          subscription.addClientSubscription(
-            parseWebsocket.clientId,
-            request.requestId
-          );
-
-          client.pushSubscribe(request.requestId);
-
-          logger.verbose(
-            `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
-          );
-          logger.verbose('Current client number: %d', this.clients.size);
-          runLiveQueryEventHandlers({
-            client,
-            event: 'subscribe',
-            clients: this.clients.size,
-            subscriptions: this.subscriptions.size,
-            sessionToken: request.sessionToken,
-            useMasterKey: client.hasMasterKey,
-            installationId: client.installationId,
-          });
-          resolve();
-        },
-        (e) => {
-          Client.pushError(
-            parseWebsocket,
-            e.code || 101,
-            e.message || e,
-            false
-          );
-          logger.error(
-            `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
-              JSON.stringify(e)
-          );
-          resolve();
-        }
+    if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
+      Client.pushError(
+        parseWebsocket,
+        2,
+        'Can not find this client, make sure you connect to server before subscribing'
       );
-    });
+      logger.error(
+        'Can not find this client, make sure you connect to server before subscribing'
+      );
+      return;
+    }
+    const client = this.clients.get(parseWebsocket.clientId);
+    const className = request.query.className;
+    try {
+      await maybeRunSubscribeTrigger('beforeSubscribe', className, request);
+
+      // Get subscription from subscriptions, create one if necessary
+      const subscriptionHash = queryHash(request.query);
+      // Add className to subscriptions if necessary
+
+      if (!this.subscriptions.has(className)) {
+        this.subscriptions.set(className, new Map());
+      }
+      const classSubscriptions = this.subscriptions.get(className);
+      let subscription;
+      if (classSubscriptions.has(subscriptionHash)) {
+        subscription = classSubscriptions.get(subscriptionHash);
+      } else {
+        subscription = new Subscription(
+          className,
+          request.query.where,
+          subscriptionHash
+        );
+        classSubscriptions.set(subscriptionHash, subscription);
+      }
+
+      // Add subscriptionInfo to client
+      const subscriptionInfo = {
+        subscription: subscription,
+      };
+      // Add selected fields, sessionToken and installationId for this subscription if necessary
+      if (request.query.fields) {
+        subscriptionInfo.fields = request.query.fields;
+      }
+      if (request.sessionToken) {
+        subscriptionInfo.sessionToken = request.sessionToken;
+      }
+      client.addSubscriptionInfo(request.requestId, subscriptionInfo);
+
+      // Add clientId to subscription
+      subscription.addClientSubscription(
+        parseWebsocket.clientId,
+        request.requestId
+      );
+
+      client.pushSubscribe(request.requestId);
+
+      logger.verbose(
+        `Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`
+      );
+      logger.verbose('Current client number: %d', this.clients.size);
+      runLiveQueryEventHandlers({
+        client,
+        event: 'subscribe',
+        clients: this.clients.size,
+        subscriptions: this.subscriptions.size,
+        sessionToken: request.sessionToken,
+        useMasterKey: client.hasMasterKey,
+        installationId: client.installationId,
+      });
+    } catch (e) {
+      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      logger.error(
+        `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
+          JSON.stringify(e)
+      );
+    }
   }
 
   _handleUpdateSubscription(parseWebsocket: any, request: any): any {
