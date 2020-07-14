@@ -5,7 +5,7 @@ import logger from '../logger';
 function userForSessionToken(sessionToken) {
   var q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
-  return q.first({ useMasterKey: true }).then(function(session) {
+  return q.first({ useMasterKey: true }).then(function (session) {
     if (!session) {
       return Promise.reject('No session found for session token');
     }

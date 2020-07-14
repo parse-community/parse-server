@@ -40,7 +40,8 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         return { response: response };
@@ -120,7 +121,8 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
@@ -132,7 +134,8 @@ export class ClassesRouter extends PromiseRouter {
       this.className(req),
       where,
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
@@ -143,7 +146,7 @@ export class ClassesRouter extends PromiseRouter {
         req.auth,
         this.className(req),
         req.params.objectId,
-        req.info.clientSDK
+        req.info.context
       )
       .then(() => {
         return { response: {} };

@@ -28,6 +28,10 @@ module.exports.ParseServerOptions = {
     help: 'Add headers to Access-Control-Allow-Headers',
     action: parsers.arrayParser,
   },
+  allowOrigin: {
+    env: 'PARSE_SERVER_ALLOW_ORIGIN',
+    help: 'Sets the origin to Access-Control-Allow-Origin',
+  },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
     help: 'Adapter module for the analytics',
@@ -131,7 +135,7 @@ module.exports.ParseServerOptions = {
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
-    help: 'Enable (or disable) anon users, defaults to true',
+    help: 'Enable (or disable) anonymous users, defaults to true',
     action: parsers.booleanParser,
     default: true,
   },

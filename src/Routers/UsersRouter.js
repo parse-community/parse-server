@@ -178,7 +178,8 @@ export class UsersRouter extends ClassesRouter {
         '_Session',
         { sessionToken },
         { include: 'user' },
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (
@@ -302,7 +303,8 @@ export class UsersRouter extends ClassesRouter {
           '_Session',
           { sessionToken: req.info.sessionToken },
           undefined,
-          req.info.clientSDK
+          req.info.clientSDK,
+          req.info.context
         )
         .then(records => {
           if (records.results && records.results.length) {
@@ -311,7 +313,8 @@ export class UsersRouter extends ClassesRouter {
                 req.config,
                 Auth.master(req.config),
                 '_Session',
-                records.results[0].objectId
+                records.results[0].objectId,
+                req.info.context
               )
               .then(() => {
                 this._runAfterLogoutTrigger(req, records.results[0]);

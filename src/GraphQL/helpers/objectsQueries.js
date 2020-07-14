@@ -74,7 +74,8 @@ const getObject = async (
     className,
     objectId,
     options,
-    info.clientSDK
+    info.clientSDK,
+    info.context
   );
 
   if (!response.results || response.results.length == 0) {
@@ -142,7 +143,8 @@ const findObjects = async (
         className,
         where,
         preCountOptions,
-        info.clientSDK
+        info.clientSDK,
+        info.context
       )
     ).count;
     if ((skip || 0) + limit < preCount) {
@@ -222,7 +224,8 @@ const findObjects = async (
       className,
       where,
       options,
-      info.clientSDK
+      info.clientSDK,
+      info.context
     );
     results = findResult.results;
     count = findResult.count;
