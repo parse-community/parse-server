@@ -70,7 +70,7 @@ export class AggregateRouter extends ClassesRouter {
         body.where,
         options,
         req.info.clientSDK,
-        req.info.context,
+        req.info.context
       )
       .then(response => {
         for (const result of response.results) {

@@ -41,7 +41,7 @@ export class ClassesRouter extends PromiseRouter {
         body.where,
         options,
         req.info.clientSDK,
-        req.info.context,
+        req.info.context
       )
       .then(response => {
         return { response: response };

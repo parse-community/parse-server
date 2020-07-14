@@ -135,7 +135,7 @@ module.exports.ParseServerOptions = {
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
-    help: 'Enable (or disable) anon users, defaults to true',
+    help: 'Enable (or disable) anonymous users, defaults to true',
     action: parsers.booleanParser,
     default: true,
   },

@@ -59,7 +59,7 @@ export class FilesController extends AdaptableController {
    */
   expandFilesInObject(config, object) {
     if (object instanceof Array) {
-      object.map((obj) => this.expandFilesInObject(config, obj));
+      object.map(obj => this.expandFilesInObject(config, obj));
       return;
     }
     if (typeof object !== 'object') {
