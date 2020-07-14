@@ -232,7 +232,7 @@ describe('ParseLiveQueryServer', function () {
         classNames: ['Yolo'],
       },
     })
-      .then((parseServer) => {
+      .then(parseServer => {
         saveSpy = spyOn(parseServer.config.liveQueryController, 'onAfterSave');
         deleteSpy = spyOn(
           parseServer.config.liveQueryController,
@@ -247,7 +247,7 @@ describe('ParseLiveQueryServer', function () {
         const obj = new Parse.Object('Yolo');
         return obj.save();
       })
-      .then((obj) => {
+      .then(obj => {
         return obj.destroy();
       })
       .then(() => {
@@ -1546,7 +1546,7 @@ describe('ParseLiveQueryServer', function () {
   });
 
   describe('class level permissions', () => {
-    it('matches CLP when find is closed', (done) => {
+    it('matches CLP when find is closed', done => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
       const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
@@ -1571,13 +1571,13 @@ describe('ParseLiveQueryServer', function () {
           requestId,
           'find'
         )
-        .then((isMatched) => {
+        .then(isMatched => {
           expect(isMatched).toBe(false);
           done();
         });
     });
 
-    it('matches CLP when find is open', (done) => {
+    it('matches CLP when find is open', done => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
       const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
@@ -1602,13 +1602,13 @@ describe('ParseLiveQueryServer', function () {
           requestId,
           'find'
         )
-        .then((isMatched) => {
+        .then(isMatched => {
           expect(isMatched).toBe(true);
           done();
         });
     });
 
-    it('matches CLP when find is restricted to userIds', (done) => {
+    it('matches CLP when find is restricted to userIds', done => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
       const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
@@ -1633,13 +1633,13 @@ describe('ParseLiveQueryServer', function () {
           requestId,
           'find'
         )
-        .then((isMatched) => {
+        .then(isMatched => {
           expect(isMatched).toBe(true);
           done();
         });
     });
 
-    it('matches CLP when find is restricted to userIds', (done) => {
+    it('matches CLP when find is restricted to userIds', done => {
       const parseLiveQueryServer = new ParseLiveQueryServer({});
       const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
@@ -1664,7 +1664,7 @@ describe('ParseLiveQueryServer', function () {
           requestId,
           'find'
         )
-        .then((isMatched) => {
+        .then(isMatched => {
           expect(isMatched).toBe(false);
           done();
         });
@@ -2001,7 +2001,7 @@ describe('LiveQueryController', () => {
         classNames: ['Yolo'],
       },
     })
-      .then((parseServer) => {
+      .then(parseServer => {
         saveSpy = spyOn(
           parseServer.config.liveQueryController,
           'onAfterSave'
@@ -2019,7 +2019,7 @@ describe('LiveQueryController', () => {
         const obj = new Parse.Object('Yolo');
         return obj.save();
       })
-      .then((obj) => {
+      .then(obj => {
         return obj.destroy();
       })
       .then(() => {
@@ -2098,50 +2098,4 @@ describe('LiveQueryController', () => {
       original: undefined,
     });
   });
-});
-
-it('basic beforeConnect rejection', async () => {
-  Parse.Cloud.beforeConnect(function () {
-    throw new Error('You shall not pass!');
-  });
-  const parseLiveQueryServer = new ParseLiveQueryServer({});
-  const parseWebSocket = {
-    clientId: -1,
-  };
-  await parseLiveQueryServer._handleConnect(parseWebSocket, {
-    sessionToken: 'token',
-  });
-  expect(parseLiveQueryServer.clients.size).toBe(0);
-  const Client = require('../lib/LiveQuery/Client').Client;
-  expect(Client.pushError).toHaveBeenCalled();
-});
-
-it('basic beforeSubscribe rejection', async () => {
-  Parse.Cloud.beforeSubscribe('test', function () {
-    throw new Error('You shall not pass!');
-  });
-  const parseLiveQueryServer = new ParseLiveQueryServer({});
-  const parseWebSocket = {
-    clientId: -1,
-  };
-  await parseLiveQueryServer._handleConnect(parseWebSocket, {
-    sessionToken: 'token',
-  });
-  const query = {
-    className: 'test',
-    where: {
-      key: 'value',
-    },
-    fields: ['test'],
-  };
-  const requestId = 2;
-  const request = {
-    query: query,
-    requestId: requestId,
-    sessionToken: 'sessionToken',
-  };
-  await parseLiveQueryServer._handleSubscribe(parseWebSocket, request);
-  expect(parseLiveQueryServer.clients.size).toBe(0);
-  const Client = require('../lib/LiveQuery/Client').Client;
-  expect(Client.pushError).toHaveBeenCalled();
 });
