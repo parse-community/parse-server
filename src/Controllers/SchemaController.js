@@ -1367,7 +1367,7 @@ export default class SchemaController {
       return Promise.resolve(this);
     }
 
-    const missingColumns = columns.filter(function(column) {
+    const missingColumns = columns.filter(function (column) {
       if (query && query.objectId) {
         if (object[column] && typeof object[column] === 'object') {
           // Trying to delete a required column

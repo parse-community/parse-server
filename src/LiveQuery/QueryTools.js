@@ -191,7 +191,7 @@ function matchesKeyConstraints(object, key, constraints) {
   var compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
-      return equalObjectsGeneric(object[key], constraints, function(obj, ptr) {
+      return equalObjectsGeneric(object[key], constraints, function (obj, ptr) {
         return (
           typeof obj !== 'undefined' &&
           ptr.className === obj.className &&

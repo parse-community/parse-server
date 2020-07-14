@@ -55,7 +55,8 @@ const getUserFromSessionToken = async (
     '_Session',
     { sessionToken },
     options,
-    info.clientVersion
+    info.clientVersion,
+    info.context,
   );
   if (
     !response.results ||
