@@ -59,3 +59,7 @@ lib/
 
 # Redis Dump
 dump.rdb
+
+# Apple
+*.p8
+config.json
