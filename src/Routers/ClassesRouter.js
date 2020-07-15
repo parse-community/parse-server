@@ -2,6 +2,7 @@ import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -247,10 +248,10 @@ export class ClassesRouter extends PromiseRouter {
     this.route('GET', '/classes/:className/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/classes/:className', req => {
+    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', req => {
+    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/classes/:className/:objectId', req => {

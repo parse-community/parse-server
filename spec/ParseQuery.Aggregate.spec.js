@@ -1440,7 +1440,7 @@ describe('Parse.Query Aggregate testing', () => {
       ['location'],
       'geoIndex',
       false,
-      '2dsphere'
+      { indexType: '2dsphere' },
     );
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');

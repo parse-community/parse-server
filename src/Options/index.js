@@ -188,6 +188,10 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+  /* Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
+  :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
+  :DEFAULT: false */
+  idempotencyOptions: ?IdempotencyOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -271,4 +275,13 @@ export interface LiveQueryServerOptions {
   pubSubAdapter: ?Adapter<PubSubAdapter>;
   /* Adapter module for the WebSocketServer */
   wssAdapter: ?Adapter<WSSAdapter>;
+}
+
+export interface IdempotencyOptions {
+  /* An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
+  :DEFAULT: [] */
+  paths: ?(string[]);
+  /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+  :DEFAULT: 300 */
+  ttl: ?number;
 }

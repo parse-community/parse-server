@@ -52,6 +52,9 @@ function getENVPrefix(iface) {
   if (iface.id.name === 'LiveQueryOptions') {
     return 'PARSE_SERVER_LIVEQUERY_';
   }
+  if (iface.id.name === 'IdempotencyOptions') {
+    return 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_';
+  }
 }
 
 function processProperty(property, iface) {
@@ -164,6 +167,13 @@ function parseDefaultValue(elt, value, t) {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
     if (type == 'CustomPagesOptions') {
+      const object = parsers.objectParser(value);
+      const props = Object.keys(object).map((key) => {
+        return t.objectProperty(key, object[value]);
+      });
+      literalValue = t.objectExpression(props);
+    }
+    if (type == 'IdempotencyOptions') {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);

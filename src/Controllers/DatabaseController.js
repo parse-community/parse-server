@@ -244,6 +244,7 @@ const filterSensitiveData = (
 };
 
 import type { LoadSchemaOptions } from './types';
+import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
@@ -1736,6 +1737,12 @@ class DatabaseController {
         ...SchemaController.defaultColumns._Role,
       },
     };
+    const requiredIdempotencyFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._Idempotency,
+      },
+    };
 
     const userClassPromise = this.loadSchema().then(schema =>
       schema.enforceClassExists('_User')
@@ -1743,6 +1750,9 @@ class DatabaseController {
     const roleClassPromise = this.loadSchema().then(schema =>
       schema.enforceClassExists('_Role')
     );
+    const idempotencyClassPromise = this.adapter instanceof MongoStorageAdapter
+      ? this.loadSchema().then((schema) => schema.enforceClassExists('_Idempotency'))
+      : Promise.resolve();
 
     const usernameUniqueness = userClassPromise
       .then(() =>
@@ -1807,6 +1817,43 @@ class DatabaseController {
         throw error;
       });
 
+    const idempotencyRequestIdIndex = this.adapter instanceof MongoStorageAdapter
+      ? idempotencyClassPromise
+        .then(() =>
+          this.adapter.ensureUniqueness(
+            '_Idempotency',
+            requiredIdempotencyFields,
+            ['reqId']
+          ))
+        .catch((error) => {
+          logger.warn(
+            'Unable to ensure uniqueness for idempotency request ID: ',
+            error
+          );
+          throw error;
+        })
+      : Promise.resolve();
+
+    const idempotencyExpireIndex = this.adapter instanceof MongoStorageAdapter
+      ? idempotencyClassPromise
+        .then(() =>
+          this.adapter.ensureIndex(
+            '_Idempotency',
+            requiredIdempotencyFields,
+            ['expire'],
+            'ttl',
+            false,
+            { ttl: 0 },
+          ))
+        .catch((error) => {
+          logger.warn(
+            'Unable to create TTL index for idempotency expire date: ',
+            error
+          );
+          throw error;
+        })
+      : Promise.resolve();
+
     const indexPromise = this.adapter.updateSchemaWithIndexes();
 
     // Create tables for volatile classes
@@ -1819,6 +1866,8 @@ class DatabaseController {
       emailUniqueness,
       emailCaseInsensitiveIndex,
       roleUniqueness,
+      idempotencyRequestIdIndex,
+      idempotencyExpireIndex,
       adapterInit,
       indexPromise,
     ]);
