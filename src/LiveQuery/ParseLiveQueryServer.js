@@ -728,7 +728,13 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch (e) {
-      Client.pushError(parseWebsocket, e.code || 101, e.message || e, false);
+      Client.pushError(
+        parseWebsocket,
+        e.code || 101,
+        e.message || e,
+        false,
+        request.requestId
+      );
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(e)
