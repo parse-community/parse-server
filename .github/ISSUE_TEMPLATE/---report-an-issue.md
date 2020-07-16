@@ -1,21 +1,26 @@
 ---
 name: "\U0001F41B Report an issue"
 about: Report an issue on parse-server
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
-<!--- 
-
-**We use GitHub Issues for reporting bugs with parse-server.**
-
-If you have a *question*, you should join the [Parse Community's Discourse forum](https://community.parseplatform.org/c/parse-server).
-
-If you have a vulnerability disclosure, please follow our policy available here https://github.com/parse-community/parse-server/blob/master/SECURITY.md
+We use GitHub Issues for reporting bugs with parse-server.
 
 You may also search through existing issues before opening a new one: https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=is%3Aissue 
 
---- Please use this template. If you don't use this template, your issue may be closed without comment. ---
---->
+Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Dashboard!
+
+- [ ] This isn't a vulnerability disclosure, if it is please follow our [security policy](https://github.com/parse-community/parse-server/blob/master/SECURITY.md)
+
+- [ ] You're running version >=2.3.2 of Parse Server.
+
+- [ ] This isn't a question, code level questions should be posted on Stack Overflow with the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) & other questions can be posted on the [community forum](https://community.parseplatform.org)
+
+- [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue), your issue may have been reported or resolved before.
+
 ### Issue Description
 
 <!--- Describe your issue in as much detail as possible. -->
