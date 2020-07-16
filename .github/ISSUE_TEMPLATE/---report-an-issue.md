@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-We use GitHub Issues for reporting bugs with parse-server.
+We use GitHub Issues for reporting bugs with Parse Server.
 
 Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
 
