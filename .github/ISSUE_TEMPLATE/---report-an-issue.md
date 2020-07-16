@@ -9,9 +9,7 @@ assignees: ''
 
 We use GitHub Issues for reporting bugs with parse-server.
 
-You may also search through existing issues before opening a new one: https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=is%3Aissue 
-
-Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Dashboard!
+Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
 
 - [ ] This isn't a vulnerability disclosure, if it is please follow our [security policy](https://github.com/parse-community/parse-server/blob/master/SECURITY.md)
 
