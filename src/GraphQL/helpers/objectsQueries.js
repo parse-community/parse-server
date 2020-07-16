@@ -7,7 +7,7 @@ import { transformQueryInputToParse } from '../transformers/query';
 /* eslint-disable*/
 const needToGetAllKeys = (fields, keys, parseClasses) =>
   keys
-    ? keys.split(',').some((keyName) => {
+    ? keys.split(',').some(keyName => {
         const key = keyName.split('.');
         if (fields[key[0]]) {
           if (fields[key[0]].type === 'Pointer') {
@@ -78,7 +78,8 @@ const getObject = async (
     className,
     objectId,
     options,
-    info.clientSDK
+    info.clientSDK,
+    info.context
   );
 
   if (!response.results || response.results.length == 0) {
@@ -146,7 +147,8 @@ const findObjects = async (
         className,
         where,
         preCountOptions,
-        info.clientSDK
+        info.clientSDK,
+        info.context
       )
     ).count;
     if ((skip || 0) + limit < preCount) {
@@ -158,7 +160,7 @@ const findObjects = async (
 
   if (
     selectedFields.find(
-      (field) => field.startsWith('edges.') || field.startsWith('pageInfo.')
+      field => field.startsWith('edges.') || field.startsWith('pageInfo.')
     )
   ) {
     if (limit || limit === 0) {
@@ -226,7 +228,8 @@ const findObjects = async (
       className,
       where,
       options,
-      info.clientSDK
+      info.clientSDK,
+      info.context
     );
     results = findResult.results;
     count = findResult.count;

@@ -55,7 +55,7 @@ const loadTestData = () => {
   return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
 };
 
-const get = function(url, options) {
+const get = function (url, options) {
   options.qs = options.body;
   delete options.body;
   Object.keys(options.qs).forEach(key => {
@@ -1345,10 +1345,10 @@ describe('Parse.Query Aggregate testing', () => {
     user.set('score', score);
     user
       .signUp()
-      .then(function() {
+      .then(function () {
         return get(Parse.serverURL + '/aggregate/_User', options);
       })
-      .then(function(resp) {
+      .then(function (resp) {
         expect(resp.results.length).toBe(1);
         const result = resp.results[0];
 
@@ -1369,7 +1369,7 @@ describe('Parse.Query Aggregate testing', () => {
 
         done();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         fail(err);
       });
   });
@@ -1440,13 +1440,25 @@ describe('Parse.Query Aggregate testing', () => {
       ['location'],
       'geoIndex',
       false,
-      '2dsphere'
+      { indexType: '2dsphere' }
     );
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');
-    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1) });
-    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(2, 1), date: new Date(2) });
-    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(3, 1), date: new Date(3) });
+    const obj1 = new GeoObject({
+      value: 1,
+      location: new Parse.GeoPoint(1, 1),
+      date: new Date(1),
+    });
+    const obj2 = new GeoObject({
+      value: 2,
+      location: new Parse.GeoPoint(2, 1),
+      date: new Date(2),
+    });
+    const obj3 = new GeoObject({
+      value: 3,
+      location: new Parse.GeoPoint(3, 1),
+      date: new Date(3),
+    });
     await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
@@ -1454,18 +1466,18 @@ describe('Parse.Query Aggregate testing', () => {
         geoNear: {
           near: {
             type: 'Point',
-            coordinates: [1, 1]
+            coordinates: [1, 1],
           },
           key: 'location',
           spherical: true,
           distanceField: 'dist',
           query: {
             date: {
-              $gte: new Date(2)
-            }
-          }
-        }
-      }
+              $gte: new Date(2),
+            },
+          },
+        },
+      },
     ];
     const query = new Parse.Query(GeoObject);
     const results = await query.aggregate(pipeline);
