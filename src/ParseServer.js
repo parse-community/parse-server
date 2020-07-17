@@ -270,7 +270,7 @@ class ParseServer {
         graphQLCustomTypeDefs = parse(
           fs.readFileSync(options.graphQLSchema, 'utf8')
         );
-      } else if (typeof options.graphQLSchema === 'object') {
+      } else if (typeof options.graphQLSchema === 'object' || typeof options.graphQLSchema === 'function') {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 

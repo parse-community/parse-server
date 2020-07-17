@@ -105,12 +105,13 @@ export function getFilesController(
     filesAdapter,
     databaseAdapter,
     preserveFileName,
+    fileKey,
   } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridFSBucketAdapter(databaseURI);
+    return new GridFSBucketAdapter(databaseURI, {}, fileKey);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,

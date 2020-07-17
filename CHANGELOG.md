@@ -3,6 +3,7 @@
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...master)
 - FIX: Optimize query decoration based on pointer CLPs by looking at the class schema to determine the field's type.
+- NEW (EXPERIMENTAL): Idempotency enforcement for client requests. This deduplicates requests where the client intends to send one request to Parse Server but due to network issues the server receives the request multiple times. **Caution, this is an experimental feature that may not be appropriate for production.** [#6744](https://github.com/parse-community/parse-server/issues/6744). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 
 ### 4.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
