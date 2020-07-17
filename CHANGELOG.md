@@ -23,7 +23,6 @@
 - FIX: Fix context for cascade-saving and saving existing object [#6735](https://github.com/parse-community/parse-server/pull/6735). Thanks to [Manuel](https://github.com/mtrezza).
 - NEW: Add file bucket encryption using fileKey [#6765](https://github.com/parse-community/parse-server/pull/6765). Thanks to [Corey Baker](https://github.com/cbaker6).
 - FIX: Removed gaze from dev dependencies and removed not working dev script [#6745](https://github.com/parse-community/parse-server/pull/6745). Thanks to [Vincent Semrau](https://github.com/vince1995).
-- FIX: Fix Sponsors badge on README [#6711](https://github.com/parse-community/parse-server/pull/6711). Thanks to [Olle Jonsson](https://github.com/olleolleolle).
 - IMPROVE: Upgrade graphql-tools to v6 [#6701](https://github.com/parse-community/parse-server/pull/6701). Thanks to [Yaacov Rydzinski](https://github.com/yaacovCR).
 - NEW: Support Metadata in GridFSAdapter [#6660](https://github.com/parse-community/parse-server/pull/6660). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - NEW: Allow to unset file from graphql [#6651](https://github.com/parse-community/parse-server/pull/6651). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
