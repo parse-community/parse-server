@@ -388,6 +388,39 @@ Parse Server allows developers to choose from several options when hosting files
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
+### Idempodency Enforcement
+ 
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+This feature deduplicates identical requests that are received by Parse Server mutliple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
+
+Identical requests are identified by their request header `X-Parse-Request-Id`. Therefore a client request has to include this header for deduplication to be applied. Requests that do not contain this header cannot be deduplicated and are processed normally by Parse Server. This means rolling out this feature to clients is seamless as Parse Server still processes request without this header when this feature is enbabled.
+
+> This feature needs to be enabled on the client side to send the header and on the server to process the header. Refer to the specific Parse SDK docs to see whether the feature is supported yet.
+
+Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
+
+#### Configuration example
+```
+let api = new ParseServer({
+    idempotencyOptions: {
+        paths: [".*"],       // enforce for all requests
+        ttl: 120             // keep request IDs for 120s
+    }
+}
+```
+#### Parameters
+
+| Parameter | Optional | Type  | Default value | Example values | Environment variable | Description |
+|-----------|----------|--------|---------------|-----------|-----------|-------------|
+| `idempotencyOptions` | yes | `Object` | `undefined` |   | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths. |
+| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` |  `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.ttl` | yes | `Integer` | `300` | `60` (60 seconds) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`. |
+
+#### Notes
+
+- This feature is currently only available for MongoDB and not for Postgres.
+
 ### Logging
 
 Parse Server will, by default, log:

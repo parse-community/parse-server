@@ -38,7 +38,7 @@ var ParseCloud = {};
  * @param {String} name The name of the Cloud Function
  * @param {Function} data The Cloud Function to register. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}.
  */
-ParseCloud.define = function(functionName, handler, validationHandler) {
+ParseCloud.define = function (functionName, handler, validationHandler) {
   triggers.addFunction(
     functionName,
     handler,
@@ -58,7 +58,7 @@ ParseCloud.define = function(functionName, handler, validationHandler) {
  * @param {Function} func The Background Job to register. This function can be async should take a single parameters a {@link Parse.Cloud.JobRequest}
  *
  */
-ParseCloud.job = function(functionName, handler) {
+ParseCloud.job = function (functionName, handler) {
   triggers.addJob(functionName, handler, Parse.applicationId);
 };
 
@@ -85,7 +85,7 @@ ParseCloud.job = function(functionName, handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a save. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.beforeSave = function(parseClass, handler) {
+ParseCloud.beforeSave = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeSave,
@@ -116,7 +116,7 @@ ParseCloud.beforeSave = function(parseClass, handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before delete function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a delete. This function can be async and should take one parameter, a {@link Parse.Cloud.TriggerRequest}.
  */
-ParseCloud.beforeDelete = function(parseClass, handler) {
+ParseCloud.beforeDelete = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeDelete,
@@ -149,7 +149,7 @@ ParseCloud.beforeDelete = function(parseClass, handler) {
  * @name Parse.Cloud.beforeLogin
  * @param {Function} func The function to run before a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.beforeLogin = function(handler) {
+ParseCloud.beforeLogin = function (handler) {
   let className = '_User';
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
@@ -185,7 +185,7 @@ ParseCloud.beforeLogin = function(handler) {
  * @name Parse.Cloud.afterLogin
  * @param {Function} func The function to run after a login. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.afterLogin = function(handler) {
+ParseCloud.afterLogin = function (handler) {
   let className = '_User';
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
@@ -220,7 +220,7 @@ ParseCloud.afterLogin = function(handler) {
  * @name Parse.Cloud.afterLogout
  * @param {Function} func The function to run after a logout. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
  */
-ParseCloud.afterLogout = function(handler) {
+ParseCloud.afterLogout = function (handler) {
   let className = '_Session';
   if (typeof handler === 'string' || isParseObjectConstructor(handler)) {
     // validation will occur downstream, this is to maintain internal
@@ -258,7 +258,7 @@ ParseCloud.afterLogout = function(handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run after a save. This function can be an async function and should take just one parameter, {@link Parse.Cloud.TriggerRequest}.
  */
-ParseCloud.afterSave = function(parseClass, handler) {
+ParseCloud.afterSave = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.afterSave,
@@ -289,7 +289,7 @@ ParseCloud.afterSave = function(parseClass, handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after delete function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run after a delete. This function can be async and should take just one parameter, {@link Parse.Cloud.TriggerRequest}.
  */
-ParseCloud.afterDelete = function(parseClass, handler) {
+ParseCloud.afterDelete = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.afterDelete,
@@ -320,7 +320,7 @@ ParseCloud.afterDelete = function(parseClass, handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before find function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a find. This function can be async and should take just one parameter, {@link Parse.Cloud.BeforeFindRequest}.
  */
-ParseCloud.beforeFind = function(parseClass, handler) {
+ParseCloud.beforeFind = function (parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeFind,
@@ -351,7 +351,7 @@ ParseCloud.beforeFind = function(parseClass, handler) {
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after find function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a find. This function can be async and should take just one parameter, {@link Parse.Cloud.AfterFindRequest}.
  */
-ParseCloud.afterFind = function(parseClass, handler) {
+ParseCloud.afterFind = function (parseClass, handler) {
   const className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.afterFind,
@@ -376,7 +376,7 @@ ParseCloud.afterFind = function(parseClass, handler) {
  * @name Parse.Cloud.beforeSaveFile
  * @param {Function} func The function to run before saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
  */
-ParseCloud.beforeSaveFile = function(handler) {
+ParseCloud.beforeSaveFile = function (handler) {
   triggers.addFileTrigger(
     triggers.Types.beforeSaveFile,
     handler,
@@ -399,7 +399,7 @@ ParseCloud.beforeSaveFile = function(handler) {
  * @name Parse.Cloud.afterSaveFile
  * @param {Function} func The function to run after saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
  */
-ParseCloud.afterSaveFile = function(handler) {
+ParseCloud.afterSaveFile = function (handler) {
   triggers.addFileTrigger(
     triggers.Types.afterSaveFile,
     handler,
@@ -422,11 +422,11 @@ ParseCloud.afterSaveFile = function(handler) {
  * @name Parse.Cloud.beforeDeleteFile
  * @param {Function} func The function to run before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
  */
-ParseCloud.beforeDeleteFile = function(handler) {
+ParseCloud.beforeDeleteFile = function (handler) {
   triggers.addFileTrigger(
     triggers.Types.beforeDeleteFile,
     handler,
-    Parse.applicationId,
+    Parse.applicationId
   );
 };
 
@@ -445,15 +445,69 @@ ParseCloud.beforeDeleteFile = function(handler) {
  * @name Parse.Cloud.afterDeleteFile
  * @param {Function} func The function to after before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
  */
-ParseCloud.afterDeleteFile = function(handler) {
+ParseCloud.afterDeleteFile = function (handler) {
   triggers.addFileTrigger(
     triggers.Types.afterDeleteFile,
     handler,
-    Parse.applicationId,
+    Parse.applicationId
   );
 };
 
-ParseCloud.onLiveQueryEvent = function(handler) {
+/**
+ * Registers a before live query server connect function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.beforeConnect(async (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeConnect
+ * @name Parse.Cloud.beforeConnect
+ * @param {Function} func The function to before connection is made. This function can be async and should take just one parameter, {@link Parse.Cloud.ConnectTriggerRequest}.
+ */
+ParseCloud.beforeConnect = function (handler) {
+  triggers.addConnectTrigger(
+    triggers.Types.beforeConnect,
+    handler,
+    Parse.applicationId
+  );
+};
+
+/**
+ * Registers a before live query subscription function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * If you want to use beforeSubscribe for a predefined class in the Parse JavaScript SDK (e.g. {@link Parse.User}), you should pass the class itself and not the String for arg1.
+ * ```
+ * Parse.Cloud.beforeSubscribe('MyCustomClass', (request) => {
+ *   // code here
+ * })
+ *
+ * Parse.Cloud.beforeSubscribe(Parse.User, (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method beforeSubscribe
+ * @name Parse.Cloud.beforeSubscribe
+ * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before subscription function for. This can instead be a String that is the className of the subclass.
+ * @param {Function} func The function to run before a subscription. This function can be async and should take one parameter, a {@link Parse.Cloud.TriggerRequest}.
+ */
+ParseCloud.beforeSubscribe = function (parseClass, handler) {
+  var className = getClassName(parseClass);
+  triggers.addTrigger(
+    triggers.Types.beforeSubscribe,
+    className,
+    handler,
+    Parse.applicationId
+  );
+};
+
+ParseCloud.onLiveQueryEvent = function (handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
 
@@ -497,6 +551,16 @@ module.exports = ParseCloud;
  * @property {Object} headers The original HTTP headers for the request.
  * @property {String} triggerName The name of the trigger (`beforeSaveFile`, `afterSaveFile`)
  * @property {Object} log The current logger inside Parse Server.
+ */
+
+/**
+ * @interface Parse.Cloud.ConnectTriggerRequest
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} useMasterKey If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Integer} clients The number of clients connected.
+ * @property {Integer} subscriptions The number of subscriptions connected.
+ * @property {String} sessionToken If set, the session of the user that made the request.
  */
 
 /**

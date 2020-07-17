@@ -4,9 +4,11 @@ import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
+import rest from './rest';
+import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
 export const DEFAULT_ALLOWED_HEADERS =
-  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
 
 const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
@@ -33,6 +35,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
+    context: {},
   };
 
   var basicAuth = httpAuth(req);
@@ -102,6 +105,10 @@ export function handleParseHeaders(req, res, next) {
       if (req.body._MasterKey) {
         info.masterKey = req.body._MasterKey;
         delete req.body._MasterKey;
+      }
+      if (req.body._context && req.body._context instanceof Object) {
+        info.context = req.body._context;
+        delete req.body._context;
       }
       if (req.body._ContentType) {
         req.headers['content-type'] = req.body._ContentType;
@@ -316,7 +323,8 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    res.header('Access-Control-Allow-Origin', '*');
+    const allowOrigin = (config && config.allowOrigin) || '*';
+    res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header(
@@ -398,6 +406,52 @@ export function promiseEnforceMasterKeyAccess(request) {
     throw error;
   }
   return Promise.resolve();
+}
+
+/**
+ * Deduplicates a request to ensure idempotency. Duplicates are determined by the request ID
+ * in the request header. If a request has no request ID, it is executed anyway.
+ * @param {*} req The request to evaluate.
+ * @returns Promise<{}>
+ */
+export function promiseEnsureIdempotency(req) {
+  // Enable feature only for MongoDB
+  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
+  // Get parameters
+  const config = req.config;
+  const requestId = ((req || {}).headers || {})["x-parse-request-id"];
+  const { paths, ttl } = config.idempotencyOptions;
+  if (!requestId || !config.idempotencyOptions) { return Promise.resolve(); }
+  // Request path may contain trailing slashes, depending on the original request, so remove
+  // leading and trailing slashes to make it easier to specify paths in the configuration
+  const reqPath = req.path.replace(/^\/|\/$/, '');
+  // Determine whether idempotency is enabled for current request path
+  let match = false;
+  for (const path of paths) {
+    // Assume one wants a path to always match from the beginning to prevent any mistakes
+    const regex = new RegExp(path.charAt(0) === '^' ? path : '^' + path);
+    if (reqPath.match(regex)) {
+      match = true;
+      break;
+    }
+  }
+  if (!match) { return Promise.resolve(); }
+  // Try to store request
+  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
+  return rest.create(
+    config,
+    auth.master(config),
+    '_Idempotency',
+    { reqId: requestId, expire: Parse._encode(expiryDate) }
+  ).catch (e => {
+    if (e.code == Parse.Error.DUPLICATE_VALUE) {
+      throw new Parse.Error(
+        Parse.Error.DUPLICATE_REQUEST,
+        'Duplicate request'
+      );
+    }
+    throw e;
+  });
 }
 
 function invalidRequest(req, res) {
