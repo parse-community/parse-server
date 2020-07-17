@@ -517,7 +517,7 @@ describe('ParseServerRESTController', () => {
       });
   });
 
-  it('should handle a POST request', async () => {
+  it('should handle a POST request with context', async () => {
     Parse.Cloud.beforeSave('MyObject', req => {
       expect(req.context.a).toEqual('a');
     });
