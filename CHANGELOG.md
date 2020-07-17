@@ -40,7 +40,6 @@
 - FIX: Catch JSON.parse and return 403 properly [#6589](https://github.com/parse-community/parse-server/pull/6589). Thanks to [Gordon Sun](https://github.com/sunshineo).
 - PERFORMANCE: Allow covering relation queries with minimal index [#6581](https://github.com/parse-community/parse-server/pull/6581). Thanks to [Noah Silas](https://github.com/noahsilas).
 - FIX: Fix Postgres group aggregation [#6522](https://github.com/parse-community/parse-server/pull/6522). Thanks to [Siddharth Ramesh](https://github.com/srameshr).
-- NEW: Remove Beta Tag from GraphQL API [#6565](https://github.com/parse-community/parse-server/pull/6565). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - NEW: Allow set user mapped from JWT directly on request [#6411](https://github.com/parse-community/parse-server/pull/6411). Thanks to [Gordon Sun](https://github.com/sunshineo).
 
 ### 4.2.0
