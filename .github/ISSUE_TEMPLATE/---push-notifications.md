@@ -1,6 +1,9 @@
 ---
 name: "\U0001F4F2 Push Notifications"
 about: Issues with setting up or delivering push notifications
+title: ''
+labels: ''
+assignees: ''
 
 ---
 
@@ -46,4 +49,3 @@ Please provide a copy of your `push` configuration here, obfuscating any sensiti
 ### Logs/Trace
 
 <!--- Include all relevant logs. You can turn on additional logging by configuring VERBOSE=1 in your environment. --->
-
