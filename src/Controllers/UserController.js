@@ -127,7 +127,7 @@ export class UserController extends AdaptableController {
       '_User',
       where
     );
-    return query.execute().then(function(result) {
+    return query.execute().then(function (result) {
       if (result.results.length != 1) {
         throw undefined;
       }

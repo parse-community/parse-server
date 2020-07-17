@@ -161,9 +161,9 @@ describe('ParseServerRESTController', () => {
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
                 );
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
+                expect(
+                  results.map(result => result.get('key')).sort()
+                ).toEqual(['value1', 'value2']);
                 done();
               });
             });
@@ -515,6 +515,22 @@ describe('ParseServerRESTController', () => {
         jfail(err);
         done();
       });
+  });
+
+  it('should handle a POST request with context', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('MyObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+
+    await RESTController.request(
+      'POST',
+      '/classes/MyObject',
+      { key: 'value' },
+      { context: { a: 'a' } }
+    );
   });
 
   it('ensures sessionTokens are properly handled', done => {

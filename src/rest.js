@@ -31,7 +31,7 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(config, auth, className, restWhere, restOptions, clientSDK) {
+function find(config, auth, className, restWhere, restOptions, clientSDK, context) {
   enforceRoleSecurity('find', className, auth);
   return triggers
     .maybeRunQueryTrigger(
@@ -40,7 +40,8 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
       restWhere,
       restOptions,
       config,
-      auth
+      auth,
+      context
     )
     .then(result => {
       restWhere = result.restWhere || restWhere;
@@ -58,7 +59,7 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 }
 
 // get is just like find but only queries an objectId.
-const get = (config, auth, className, objectId, restOptions, clientSDK) => {
+const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
   return triggers
@@ -69,6 +70,7 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
       restOptions,
       config,
       auth,
+      context,
       true
     )
     .then(result => {
@@ -87,7 +89,7 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
 };
 
 // Returns a promise that doesn't resolve to any useful value.
-function del(config, auth, className, objectId) {
+function del(config, auth, className, objectId, context) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad objectId');
   }
@@ -134,7 +136,8 @@ function del(config, auth, className, objectId) {
                 auth,
                 inflatedObject,
                 null,
-                config
+                config,
+                context
               );
             }
             throw new Parse.Error(
@@ -187,7 +190,8 @@ function del(config, auth, className, objectId) {
         auth,
         inflatedObject,
         null,
-        config
+        config,
+        context
       );
     })
     .catch(error => {
@@ -196,7 +200,7 @@ function del(config, auth, className, objectId) {
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject, clientSDK) {
+function create(config, auth, className, restObject, clientSDK, context) {
   enforceRoleSecurity('create', className, auth);
   var write = new RestWrite(
     config,
@@ -205,7 +209,8 @@ function create(config, auth, className, restObject, clientSDK) {
     null,
     restObject,
     null,
-    clientSDK
+    clientSDK,
+    context
   );
   return write.execute();
 }
@@ -213,7 +218,7 @@ function create(config, auth, className, restObject, clientSDK) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK) {
+function update(config, auth, className, restWhere, restObject, clientSDK, context) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()
@@ -252,6 +257,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
         restObject,
         originalRestObject,
         clientSDK,
+        context,
         'update'
       ).execute();
     })
@@ -278,6 +284,7 @@ const classesWithMasterOnlyAccess = [
   '_Hooks',
   '_GlobalConfig',
   '_JobSchedule',
+  '_Idempotency',
 ];
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {

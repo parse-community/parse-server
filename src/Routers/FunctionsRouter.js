@@ -4,7 +4,7 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess } from '../middlewares';
+import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
@@ -34,17 +34,19 @@ export class FunctionsRouter extends PromiseRouter {
     this.route(
       'POST',
       '/functions/:functionName',
+      promiseEnsureIdempotency,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
       'POST',
       '/jobs/:jobName',
+      promiseEnsureIdempotency,
       promiseEnforceMasterKeyAccess,
-      function(req) {
+      function (req) {
         return FunctionsRouter.handleCloudJob(req);
       }
     );
-    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function(req) {
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function (req) {
       return FunctionsRouter.handleCloudJob(req);
     });
   }
@@ -96,14 +98,14 @@ export class FunctionsRouter extends PromiseRouter {
 
   static createResponseObject(resolve, reject, message) {
     return {
-      success: function(result) {
+      success: function (result) {
         resolve({
           response: {
             result: Parse._encode(result),
           },
         });
       },
-      error: function(message) {
+      error: function (message) {
         // parse error, process away
         if (message instanceof Parse.Error) {
           return reject(message);
@@ -148,6 +150,7 @@ export class FunctionsRouter extends PromiseRouter {
       headers: req.config.headers,
       ip: req.config.ip,
       functionName,
+      context: req.info.context,
     };
 
     if (theValidator && typeof theValidator === 'function') {
@@ -160,7 +163,7 @@ export class FunctionsRouter extends PromiseRouter {
       }
     }
 
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
       const userString =
         req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
