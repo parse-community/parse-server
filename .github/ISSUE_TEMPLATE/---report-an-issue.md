@@ -15,7 +15,7 @@ Make sure these boxes are checked before submitting your issue - thanks for repo
 
 - [ ] You're running version >=2.3.2 of Parse Server, we can't accept issues for very outdated releases, please update to a newer version.
 
-- [ ] This isn't a question, code level questions should be posted on Stack Overflow with the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) & other questions can be posted on the [community forum](https://community.parseplatform.org).
+- [ ] This isn't a question, if you need if you have questions about code please use Stack Overflow with the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) & other questions can be posted on the [community forum](https://community.parseplatform.org).
 
 - [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue), your issue may have been reported or resolved before.
 
