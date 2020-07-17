@@ -3,7 +3,6 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
-import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
 import { IdempotencyOptions } from './Options/Definitions';
 
@@ -105,7 +104,9 @@ export class Config {
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
-    if (!idempotencyOptions) { return; }
+    if (!idempotencyOptions) {
+      return;
+    }
     if (idempotencyOptions.ttl === undefined) {
       idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
     } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
