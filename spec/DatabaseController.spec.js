@@ -3,7 +3,7 @@ const validateQuery = DatabaseController._validateQuery;
 
 describe('DatabaseController', function () {
   describe('validateQuery', function () {
-    it('should not restructure simple cases of SERVER-13732', (done) => {
+    it('should not restructure simple cases of SERVER-13732', done => {
       const query = {
         $or: [{ a: 1 }, { a: 2 }],
         _rperm: { $in: ['a', 'b'] },
@@ -18,7 +18,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should not restructure SERVER-13732 queries with $nears', (done) => {
+    it('should not restructure SERVER-13732 queries with $nears', done => {
       let query = { $or: [{ a: 1 }, { b: 1 }], c: { $nearSphere: {} } };
       validateQuery(query);
       expect(query).toEqual({
@@ -31,7 +31,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should not push refactored keys down a tree for SERVER-13732', (done) => {
+    it('should not push refactored keys down a tree for SERVER-13732', done => {
       const query = {
         a: 1,
         $or: [{ $or: [{ b: 1 }, { b: 2 }] }, { $or: [{ c: 1 }, { c: 2 }] }],
@@ -45,12 +45,12 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should reject invalid queries', (done) => {
+    it('should reject invalid queries', done => {
       expect(() => validateQuery({ $or: { a: 1 } })).toThrow();
       done();
     });
 
-    it('should accept valid queries', (done) => {
+    it('should accept valid queries', done => {
       expect(() => validateQuery({ $or: [{ a: 1 }, { b: 2 }] })).not.toThrow();
       done();
     });
@@ -69,7 +69,7 @@ describe('DatabaseController', function () {
       'getExpectedType',
     ]);
 
-    it('should not decorate query if no pointer CLPs are present', (done) => {
+    it('should not decorate query if no pointer CLPs are present', done => {
       const clp = buildCLP();
       const query = { a: 'b' };
 
@@ -93,7 +93,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if a pointer CLP entry is present', (done) => {
+    it('should decorate query if a pointer CLP entry is present', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -120,7 +120,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if an array CLP entry is present', (done) => {
+    it('should decorate query if an array CLP entry is present', done => {
       const clp = buildCLP(['users']);
       const query = { a: 'b' };
 
@@ -150,7 +150,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if an object CLP entry is present', (done) => {
+    it('should decorate query if an object CLP entry is present', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
@@ -180,7 +180,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should decorate query if a pointer CLP is present and the same field is part of the query', (done) => {
+    it('should decorate query if a pointer CLP is present and the same field is part of the query', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b', user: 'a' };
 
@@ -209,7 +209,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should transform the query to an $or query if multiple array/pointer CLPs are present', (done) => {
+    it('should transform the query to an $or query if multiple array/pointer CLPs are present', done => {
       const clp = buildCLP(['user', 'users', 'userObject']);
       const query = { a: 'b' };
 
@@ -248,7 +248,7 @@ describe('DatabaseController', function () {
       done();
     });
 
-    it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', (done) => {
+    it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
 
