@@ -7,25 +7,19 @@ assignees: ''
 
 ---
 
-We use GitHub Issues for reporting bugs with Parse Server.
+<!--- We use GitHub Issues for reporting bugs with Parse Server. Make sure these boxes are checked before submitting your issue - thanks for reporting issues back to Parse Server! -->
 
-Make sure these boxes are checked before submitting your issue - thanks for reporting issues back to Parse Server!
-
-- [ ] This isn't a vulnerability disclosure, if it is please follow our [security policy](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-
-- [ ] You're running version >=2.3.2 of Parse Server, we can't accept issues for very outdated releases, please update to a newer version.
-
-- [ ] This isn't a question, if you need if you have questions about code please use Stack Overflow with the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) & other questions can be posted on the [community forum](https://community.parseplatform.org).
-
-- [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue), your issue may have been reported or resolved before.
-
+- [ ] This isn't a vulnerability disclosure, if so please follow our [security policy](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
+- [ ] You're running version >=2.3.2 of Parse Server, we can't accept issues for very outdated releases.
+- [ ] This isn't a question, for questions about code use the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) on Stack Overlfow & for other questions use the [community forum](https://community.parseplatform.org).
+- [ ] I searched for [existing GitHub issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 ### Issue Description
 
 <!--- Describe your issue in as much detail as possible. -->
 
 ### Steps to reproduce
 
-<!--- Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable.  --->
+<!--- Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable. --->
  
 ### Expected Results
 
