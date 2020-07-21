@@ -7,42 +7,42 @@ assignees: ''
 
 ---
 
-<!--- We use GitHub Issues for reporting bugs with Parse Server. Make sure these boxes are checked before submitting your issue - thanks for reporting issues back to Parse Server! -->
+### New Issue Checklist
+<!-- Please check the following boxes [ ] -> [x] before submitting your issue. Click the "Preview" tab for better readability. Thanks for reporting issues back to Parse Server! -->
 
-- [ ] This isn't a vulnerability disclosure, if so please follow our [security policy](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-- [ ] You're running version >=2.3.2 of Parse Server, we can't accept issues for very outdated releases.
-- [ ] This isn't a question, for questions about code use the [parse-platform tag](https://stackoverflow.com/questions/tagged/parse-platform) on Stack Overlfow & for other questions use the [community forum](https://community.parseplatform.org).
-- [ ] I searched for [existing GitHub issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
+- [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
+- [ ] I am not just asking a [question](https://github.com/parse-community/parse-server#support).
+- [ ] I have searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
+- [ ] I can reproduce the issue with the [latest version of Parse Server](https://github.com/parse-community/parse-server/releases). <!-- We don't investigate issues for outdated releases. -->
+
 ### Issue Description
-
-<!--- Describe your issue in as much detail as possible. -->
+<!-- What is the specific issue with Parse Server? -->
 
 ### Steps to reproduce
-
-<!--- Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable. --->
- 
-### Expected Results
-
-<!--- What you expected to happen. --->
+<!-- How can someone else reproduce the issue? -->
 
 ### Actual Outcome
+<!-- What outcome, for example query result, did you get? -->
 
-<!--- What is happening instead. --->
+### Expected Outcome
+<!-- What outcome, for example query result, did you expect? -->
 
-### Environment Setup
+###  Environment
+<!-- Be specific with versions, don't use "latest" or semver ranges like "~x.y.z" or "^x.y.z". -->
 
-- **Server**
-  - parse-server version (Be specific! Don't say 'latest'.) : [FILL THIS OUT]
-  - Operating System:     [FILL THIS OUT]
-  - Hardware:             [FILL THIS OUT]
-  - Localhost or remote server? (AWS, Heroku, Azure, Digital Ocean, etc): [FILL THIS OUT]
+Server
+- Parse Server version: `FILL_THIS_OUT`
+- Operating system: `FILL_THIS_OUT`
+- Local or remote host (AWS, Azure, Google Cloud, Heroku, Digital Ocean, etc): `FILL_THIS_OUT`
 
-- **Database**
-  - MongoDB version: [FILL THIS OUT]
-  - Storage engine:  [FILL THIS OUT]
-  - Hardware:        [FILL THIS OUT]
-  - Localhost or remote server? (AWS, mLab, ObjectRocket, Digital Ocean, etc): [FILL THIS OUT]
+Database
+- System (MongoDB or Postgres): `FILL_THIS_OUT`
+- Database version: `FILL_THIS_OUT`
+- Local or remote host (MongoDB Atlas, mLab, AWS, Azure, Google Cloud, etc): `FILL_THIS_OUT`
 
-### Logs/Trace
+Client
+- SDK (iOS, Android, JavaScript, PHP, Unity, etc): `FILL_THIS_OUT`
+- SDK version: `FILL_THIS_OUT`
 
-<!--- Include all relevant logs. You can turn on additional logging by configuring VERBOSE=1 in your environment. --->
+### Logs
+<!-- Include relevant logs here. Turn on additional logging by configuring VERBOSE=1 in your environment. -->
