@@ -361,6 +361,40 @@ export class UsersRouter extends ClassesRouter {
     }
   }
 
+  handlePasswordReset(req) {
+    this._throwOnBadEmailConfig(req);
+
+    const { username, token, new_password } = req.body;
+
+    if (!username) {
+      throw new Parse.Error(
+        Parse.Error.USERNAME_MISSING,
+        'you must provide an username'
+      );
+    }
+    return req.config.database
+      .find('_User', {
+        username: username,
+      })
+      .then(results => {
+        if (!results.length || results.length < 1) {
+          throw new Parse.Error(
+            Parse.Error.USERNAME_NOT_FOUND,
+            `No user found with ${username}`
+          );
+        }
+
+        const userController = req.config.userController;
+        return userController
+          .updatePassword(username, token, new_password)
+          .then(() => {
+            return {
+              response: {},
+            };
+          });
+      });
+  }
+
   handleResetRequest(req) {
     this._throwOnBadEmailConfig(req);
 
@@ -472,6 +506,9 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
+    });
+    this.route('POST', '/passwordReset', req => {
+      return this.handlePasswordReset(req);
     });
     this.route('POST', '/verificationEmailRequest', req => {
       return this.handleVerificationEmailRequest(req);

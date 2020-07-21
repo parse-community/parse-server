@@ -203,7 +203,7 @@ export class PublicAPIRouter extends PromiseRouter {
           username: username,
           token: token,
           id: config.applicationId,
-          error: result.err,
+          error: result.err.message,
           app: config.appName,
         });
 
