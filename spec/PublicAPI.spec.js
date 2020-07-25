@@ -213,7 +213,7 @@ describe('public API supplied with invalid application id', () => {
     );
   });
 
-  fdescribe('resetPassword', () => {
+  describe('resetPassword', () => {
     let makeRequest;
     const re = new RegExp('^(?=.*[a-z]).{8,}');
     let sendEmailOptions;
