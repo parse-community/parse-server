@@ -11,7 +11,7 @@ assignees: ''
 <!-- Please check the following boxes [ ] -> [x] before submitting your issue. Click the "Preview" tab for better readability. Thanks for reporting issues back to Parse Server! -->
 
 - [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-- [ ] I am not just asking a [question](https://github.com/parse-community/parse-server#support).
+- [ ] I am not just asking a [question](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
 - [ ] I have searched through [existing issues](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 - [ ] I can reproduce the issue with the [latest version of Parse Server](https://github.com/parse-community/parse-server/releases). <!-- We don't investigate issues for outdated releases. -->
 
