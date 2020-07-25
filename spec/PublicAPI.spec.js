@@ -1,9 +1,13 @@
 const req = require('../lib/request');
+const Config = require('../lib/Config');
 
-const request = function(url, callback) {
+const request = function (url, callback) {
   return req({
     url,
-  }).then(response => callback(null, response), err => callback(err, err));
+  }).then(
+    response => callback(null, response),
+    err => callback(err, err)
+  );
 };
 
 describe('public API', () => {
@@ -207,5 +211,257 @@ describe('public API supplied with invalid application id', () => {
         done();
       }
     );
+  });
+
+  fdescribe('resetPassword', () => {
+    let makeRequest;
+    const re = new RegExp('^(?=.*[a-z]).{8,}');
+    let sendEmailOptions;
+    const emailAdapter = {
+      sendVerificationEmail: {},
+      sendPasswordResetEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendMail: () => {},
+    };
+
+    const serverURL = 'http://localhost:8378/1';
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Installation-Id': 'yolo',
+    };
+
+    beforeEach(() => {
+      makeRequest = reconfigureServer({
+        appName: 'coolapp',
+        publicServerURL: 'http://localhost:1337/1',
+        emailAdapter: emailAdapter,
+        passwordPolicy: {
+          validatorPattern: re,
+          doNotAllowUsername: true,
+          maxPasswordHistory: 1,
+          resetTokenValidityDuration: 0.5, // 0.5 second
+        },
+      }).then(() => {
+        const config = Config.get('test');
+        const user = new Parse.User();
+        user.setPassword('asdsweqwasas');
+        user.setUsername('test');
+        user.set('email', 'test@parse.com');
+        return user
+          .signUp(null)
+          .then(() => {
+            // build history
+            user.setPassword('aaaaaaaaaaaa');
+            return user.save();
+          })
+          .then(() => Parse.User.requestPasswordReset('test@parse.com'))
+          .then(() =>
+            config.database.adapter.find(
+              '_User',
+              { fields: {} },
+              { username: 'test' },
+              { limit: 1 }
+            )
+          );
+      });
+    });
+
+    it('Password reset failed due to password policy', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test',
+            token: results[0]['_perishable_token'],
+            new_password: 'zxcv',
+          }),
+        }).then(
+          () => {
+            fail('Expected to be failed');
+            done();
+          },
+          err => {
+            // TODO: Parse.Error.VALIDATION_ERROR is generic, there should be another error code like Parse.Error.PASSWORD_POLICY_NOT_MEET
+            expect(err.data.code).not.toBe(undefined);
+            expect(err.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+            done();
+          }
+        );
+      });
+    });
+
+    it('Password reset failed due to invalid token', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test',
+            token: results[0]['_perishable_token'] + 'invalid',
+            new_password: 'zxcv',
+          }),
+        }).then(
+          () => {
+            fail('Expected to be failed');
+            done();
+          },
+          err => {
+            // TODO: Missing Parse.Error code, only string message, there should be an error code like Parse.Error.RESET_PASSWORD_ERROR
+            expect(err.data.code).not.toBe(undefined);
+            done();
+          }
+        );
+      });
+    });
+
+    it('Password reset failed due to password is repeated', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test',
+            token: results[0]['_perishable_token'],
+            new_password: 'aaaaaaaaaaaa',
+          }),
+        }).then(
+          () => {
+            fail('Expected to be failed');
+            done();
+          },
+          err => {
+            // TODO: Parse.Error.VALIDATION_ERROR is generic, there should be another error code like Parse.Error.PASSWORD_POLICY_REPEAT
+            expect(err.data.code).not.toBe(undefined);
+            expect(err.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+            done();
+          }
+        );
+      });
+    });
+
+    it('Password reset failed due to it contains username', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test',
+            token: results[0]['_perishable_token'],
+            new_password: 'asdsweqwasastest',
+          }),
+        }).then(
+          () => {
+            fail('Expected to be failed');
+            done();
+          },
+          err => {
+            // TODO: Parse.Error.VALIDATION_ERROR is generic, there should be another error code like Parse.Error.PASSWORD_POLICY_USERNAME
+            expect(err.data.code).not.toBe(undefined);
+            expect(err.data.code).toBe(Parse.Error.VALIDATION_ERROR);
+            done();
+          }
+        );
+      });
+    });
+
+    it('Password reset username not found', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test1',
+            token: results[0]['_perishable_token'],
+            new_password: 'asdsweqwasastest',
+          }),
+        }).then(
+          () => {
+            fail('Expected to be failed');
+            done();
+          },
+          err => {
+            // TODO: Missing Parse.Error code, only string message, there should be an error code like Parse.Error.USERNAME_NOT_FOUND
+            expect(err.data.code).not.toBe(undefined);
+            done();
+          }
+        );
+      });
+    });
+
+    it('Password reset failed due to link has expired', done => {
+      makeRequest
+        .then(results => {
+          // wait for a bit more than the validity duration set
+          setTimeout(() => {
+            expect(sendEmailOptions).not.toBeUndefined();
+
+            req({
+              url: `${serverURL}/passwordReset`,
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                _method: 'POST',
+                username: 'test',
+                token: results[0]['_perishable_token'],
+                new_password: 'asdsweqwasas',
+              }),
+            })
+              .then(() => {
+                fail('Expected to be failed');
+                done();
+              })
+              .catch(error => {
+                // TODO: Missing Parse.Error code, only string message, there should be an error code like Parse.Error.RESET_LINK_EXPIRED
+                expect(error.data.code).not.toBe(undefined);
+                expect(error.data.code).toBe(Parse.Error.RESET_LINK_EXPIRED);
+              });
+            done();
+          }, 1000);
+        })
+        .catch(err => {
+          jfail(err);
+          done();
+        });
+    });
+
+    it('Password successfully reset', done => {
+      makeRequest.then(results => {
+        req({
+          url: `${serverURL}/passwordReset`,
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            _method: 'POST',
+            username: 'test',
+            token: results[0]['_perishable_token'],
+            new_password: 'asdsweqwasas',
+          }),
+        }).then(
+          res => {
+            expect(res.status).toBe(200);
+            done();
+          },
+          () => {
+            fail('Expected to not fail');
+            done();
+          }
+        );
+      });
+    });
   });
 });
