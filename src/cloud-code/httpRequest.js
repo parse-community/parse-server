@@ -10,7 +10,7 @@ const clients = {
 };
 
 function makeCallback(resolve, reject) {
-  return function(response) {
+  return function (response) {
     const chunks = [];
     response.on('data', chunk => {
       chunks.push(chunk);
@@ -30,7 +30,7 @@ function makeCallback(resolve, reject) {
   };
 }
 
-const encodeBody = function({ body, headers = {} }) {
+const encodeBody = function ({ body, headers = {} }) {
   if (typeof body !== 'object') {
     return { body, headers };
   }

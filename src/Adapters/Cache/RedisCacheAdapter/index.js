@@ -9,7 +9,7 @@ function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
-const isValidTTL = ttl => typeof ttl === 'number' && ttl > 0;
+const isValidTTL = (ttl) => typeof ttl === 'number' && ttl > 0;
 
 export class RedisCacheAdapter {
   constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
@@ -18,13 +18,27 @@ export class RedisCacheAdapter {
     this.queue = new KeyPromiseQueue();
   }
 
+  handleShutdown() {
+    if (!this.client) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      this.client.quit((err) => {
+        if (err) {
+          logger.error('RedisCacheAdapter error on shutdown', { error: err });
+        }
+        resolve();
+      });
+    });
+  }
+
   get(key) {
     debug('get', key);
     return this.queue.enqueue(
       key,
       () =>
-        new Promise(resolve => {
-          this.client.get(key, function(err, res) {
+        new Promise((resolve) => {
+          this.client.get(key, function (err, res) {
             debug('-> get', key, res);
             if (!res) {
               return resolve(null);
@@ -48,8 +62,8 @@ export class RedisCacheAdapter {
       return this.queue.enqueue(
         key,
         () =>
-          new Promise(resolve => {
-            this.client.set(key, value, function() {
+          new Promise((resolve) => {
+            this.client.set(key, value, function () {
               resolve();
             });
           })
@@ -63,8 +77,8 @@ export class RedisCacheAdapter {
     return this.queue.enqueue(
       key,
       () =>
-        new Promise(resolve => {
-          this.client.psetex(key, ttl, value, function() {
+        new Promise((resolve) => {
+          this.client.psetex(key, ttl, value, function () {
             resolve();
           });
         })
@@ -76,8 +90,8 @@ export class RedisCacheAdapter {
     return this.queue.enqueue(
       key,
       () =>
-        new Promise(resolve => {
-          this.client.del(key, function() {
+        new Promise((resolve) => {
+          this.client.del(key, function () {
             resolve();
           });
         })
@@ -89,8 +103,8 @@ export class RedisCacheAdapter {
     return this.queue.enqueue(
       FLUSH_DB_KEY,
       () =>
-        new Promise(resolve => {
-          this.client.flushdb(function() {
+        new Promise((resolve) => {
+          this.client.flushdb(function () {
             resolve();
           });
         })

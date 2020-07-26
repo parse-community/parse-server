@@ -357,6 +357,42 @@ describe('middlewares', () => {
     );
   });
 
+  it('should set default Access-Control-Allow-Origin if allowOrigin is empty', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowOrigin: undefined,
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual('*');
+  });
+
+  it('should set custom origin to Access-Control-Allow-Origin if allowOrigin is provided', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      allowOrigin: 'https://parseplatform.org/',
+    });
+    const headers = {};
+    const res = {
+      header: (key, value) => {
+        headers[key] = value;
+      },
+    };
+    const allowCrossDomain = middlewares.allowCrossDomain(
+      fakeReq.body._ApplicationId
+    );
+    allowCrossDomain(fakeReq, res, () => {});
+    expect(headers['Access-Control-Allow-Origin']).toEqual(
+      'https://parseplatform.org/'
+    );
+  });
+
   it('should use user provided on field userFromJWT', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',

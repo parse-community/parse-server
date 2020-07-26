@@ -109,6 +109,7 @@ class ParseGraphQLServer {
         res.write(
           renderPlaygroundPage({
             endpoint: this.config.graphQLPath,
+            version: '1.7.25',
             subscriptionEndpoint: this.config.subscriptionsPath,
             headers: {
               'X-Parse-Application-Id': this.parseServer.config.appId,
