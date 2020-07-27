@@ -1438,7 +1438,7 @@ describe('Parse.Query Aggregate testing', () => {
       'GeoObject',
       schema,
       ['location'],
-      'geoIndex',
+      undefined,
       false,
       { indexType: '2dsphere' },
     );
@@ -1483,7 +1483,7 @@ describe('Parse.Query Aggregate testing', () => {
       'GeoObject',
       schema,
       ['location'],
-      'geoIndex',
+      undefined,
       false,
       '2dsphere'
     );
@@ -1521,7 +1521,7 @@ describe('Parse.Query Aggregate testing', () => {
       'GeoObject',
       schema,
       ['location'],
-      'geoIndex',
+      undefined,
       false,
       '2dsphere'
     );
