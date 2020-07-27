@@ -2,6 +2,7 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...master)
+- IMPROVE: Optimized deletion of class field from schema by using an index if available to do an index scan instead of a collection scan. [#6815](https://github.com/parse-community/parse-server/issues/6815). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 
 ### 4.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...4.3.0)
