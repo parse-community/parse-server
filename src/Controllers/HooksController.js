@@ -172,9 +172,7 @@ export class HooksController {
           if (result) {
             throw new Parse.Error(
               143,
-              `class ${aHook.className} already has trigger ${
-                aHook.triggerName
-              }`
+              `class ${aHook.className} already has trigger ${aHook.triggerName}`
             );
           }
           return this.createOrUpdateHook(aHook);

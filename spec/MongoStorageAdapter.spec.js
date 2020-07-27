@@ -8,6 +8,7 @@ const databaseURI =
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
+const semver = require('semver');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -350,8 +351,45 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
+  it('should delete field without index', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    const obj = new Parse.Object('MyObject');
+    obj.set("test", 1);
+    await obj.save();
+    const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
+    await database.adapter.deleteFields(
+      "MyObject",
+      schemaBeforeDeletion,
+      ["test"]
+    );
+    const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
+    expect(schemaBeforeDeletion.fields.test).toBeDefined();
+    expect(schemaAfterDeletion.fields.test).toBeUndefined();
+  });
+
+  it('should delete field with index', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    const obj = new Parse.Object('MyObject');
+    obj.set("test", 1);
+    await obj.save();
+    const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
+    await database.adapter.ensureIndex(
+      'MyObject',
+      schemaBeforeDeletion,
+      ['test']
+    );
+    await database.adapter.deleteFields(
+      "MyObject",
+      schemaBeforeDeletion,
+      ["test"]
+    );
+    const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
+    expect(schemaBeforeDeletion.fields.test).toBeDefined();
+    expect(schemaAfterDeletion.fields.test).toBeUndefined();
+  });
+
   if (
-    process.env.MONGODB_VERSION === '4.0.4' &&
+    semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
     process.env.MONGODB_TOPOLOGY === 'replicaset' &&
     process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
   ) {

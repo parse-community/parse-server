@@ -433,6 +433,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       collectionUpdate['$unset'][name] = null;
     });
 
+    const collectionFilter = { $or: [] };
+    mongoFormatNames.forEach(name => {
+      collectionFilter['$or'].push({ [name]: { $exists: true } });
+    });
+
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach((name) => {
       schemaUpdate['$unset'][name] = null;
@@ -440,7 +445,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
 
     return this._adaptiveCollection(className)
-      .then((collection) => collection.updateMany({}, collectionUpdate))
+      .then((collection) => collection.updateMany(collectionFilter, collectionUpdate))
       .then(() => this._schemaCollection())
       .then((schemaCollection) =>
         schemaCollection.updateSchema(className, schemaUpdate)
@@ -692,7 +697,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     fieldNames: string[],
     indexName: ?string,
     caseInsensitive: boolean = false,
-    indexType: any = 1
+    options?: Object = {},
   ): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const indexCreationRequest = {};
@@ -700,11 +705,12 @@ export class MongoStorageAdapter implements StorageAdapter {
       transformKey(className, fieldName, schema)
     );
     mongoFieldNames.forEach((fieldName) => {
-      indexCreationRequest[fieldName] = indexType;
+      indexCreationRequest[fieldName] = options.indexType !== undefined ? options.indexType : 1;
     });
 
     const defaultOptions: Object = { background: true, sparse: true };
     const indexNameOptions: Object = indexName ? { name: indexName } : {};
+    const ttlOptions: Object = options.ttl !== undefined ? { expireAfterSeconds: options.ttl } : {};
     const caseInsensitiveOptions: Object = caseInsensitive
       ? { collation: MongoCollection.caseInsensitiveCollation() }
       : {};
@@ -712,6 +718,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       ...defaultOptions,
       ...caseInsensitiveOptions,
       ...indexNameOptions,
+      ...ttlOptions,
     };
 
     return this._adaptiveCollection(className)

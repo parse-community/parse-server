@@ -8,6 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -178,7 +179,8 @@ export class UsersRouter extends ClassesRouter {
         '_Session',
         { sessionToken },
         { include: 'user' },
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (
@@ -302,7 +304,8 @@ export class UsersRouter extends ClassesRouter {
           '_Session',
           { sessionToken: req.info.sessionToken },
           undefined,
-          req.info.clientSDK
+          req.info.clientSDK,
+          req.info.context
         )
         .then(records => {
           if (records.results && records.results.length) {
@@ -311,7 +314,8 @@ export class UsersRouter extends ClassesRouter {
                 req.config,
                 Auth.master(req.config),
                 '_Session',
-                records.results[0].objectId
+                records.results[0].objectId,
+                req.info.context
               )
               .then(() => {
                 this._runAfterLogoutTrigger(req, records.results[0]);
@@ -442,7 +446,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/users', req => {
       return this.handleFind(req);
     });
-    this.route('POST', '/users', req => {
+    this.route('POST', '/users', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
     this.route('GET', '/users/me', req => {
@@ -451,7 +455,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/users/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('PUT', '/users/:objectId', req => {
+    this.route('PUT', '/users/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/users/:objectId', req => {

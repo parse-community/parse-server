@@ -35,6 +35,22 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     expect(gfsResult.toString('utf8')).toBe(originalString);
   });
 
+  it('an encypted file created in GridStore should be available in GridFS', async () => {
+    const gsAdapter = new GridStoreAdapter(databaseURI);
+    const gfsAdapter = new GridFSBucketAdapter(
+      databaseURI,
+      {},
+      '89E4AFF1-DFE4-4603-9574-BFA16BB446FD'
+    );
+    await expectMissingFile(gfsAdapter, 'myFileName');
+    const originalString = 'abcdefghi';
+    await gfsAdapter.createFile('myFileName', originalString);
+    const gsResult = await gsAdapter.getFileData('myFileName');
+    expect(gsResult.toString('utf8')).not.toBe(originalString);
+    const gfsResult = await gfsAdapter.getFileData('myFileName');
+    expect(gfsResult.toString('utf8')).toBe(originalString);
+  });
+
   it('should save metadata', async () => {
     const gfsAdapter = new GridFSBucketAdapter(databaseURI);
     const originalString = 'abcdefghi';
