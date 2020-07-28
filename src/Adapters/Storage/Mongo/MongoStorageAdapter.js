@@ -19,6 +19,7 @@ import {
   transformWhere,
   transformUpdate,
   transformPointerString,
+  transformIndicesForSchemaUpdate as transformIndexForSchemaUpdate,
 } from './MongoTransform';
 // @flow-disable-next
 import Parse from 'parse/node';
@@ -286,9 +287,10 @@ export class MongoStorageAdapter implements StorageAdapter {
             );
           }
         });
-        existingIndexes[name] = field;
+        const transformedField = transformIndexForSchemaUpdate(className, field, {fields});
+        existingIndexes[name] = transformedField;
         insertedIndexes.push({
-          key: field,
+          key: transformedField,
           name,
         });
       }

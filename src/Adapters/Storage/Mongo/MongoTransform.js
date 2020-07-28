@@ -35,6 +35,19 @@ const transformKey = (className, fieldName, schema) => {
   return fieldName;
 };
 
+const transformIndexForSchemaUpdate = (
+  className,
+  field,
+  schema,
+) => {
+  const transformedField = {};
+  Object.keys(field).forEach((key) => {
+    const transformedKey = transformKey(className, key, schema);
+    transformedField[transformedKey] = field[key];
+  });
+  return transformedField;
+}
+
 const transformKeyValueForUpdate = (
   className,
   restKey,
@@ -1686,4 +1699,5 @@ module.exports = {
   relativeTimeToDate,
   transformConstraint,
   transformPointerString,
+  transformIndicesForSchemaUpdate: transformIndexForSchemaUpdate,
 };
