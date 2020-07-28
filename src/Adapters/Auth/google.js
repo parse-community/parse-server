@@ -6,7 +6,7 @@ var Parse = require('parse/node').Parse;
 const https = require('https');
 const jwt = require('jsonwebtoken');
 
-const TOKEN_ISSUER = 'https://accounts.google.com';
+const TOKEN_ISSUER = 'accounts.google.com';
 
 let cache = {};
 
