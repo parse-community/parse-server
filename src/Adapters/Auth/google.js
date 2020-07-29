@@ -6,6 +6,7 @@ var Parse = require('parse/node').Parse;
 const https = require('https');
 const jwt = require('jsonwebtoken');
 
+// Https and without Https token issues because google sends it in multiple forms
 const TOKEN_ISSUER = 'accounts.google.com';
 const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
 
