@@ -701,7 +701,7 @@ describe('google auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct provider - expected: https://accounts.google.com | from: https://not.google.com'
+        'id token not issued by correct provider - expected: accounts.google.com or https://accounts.google.com | from: https://not.google.com'
       );
     }
   });
