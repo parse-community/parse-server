@@ -51,9 +51,10 @@ function getFileForProductIdentifier(productIdentifier, req) {
       '_Product',
       { productIdentifier: productIdentifier },
       undefined,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     )
-    .then(function(result) {
+    .then(function (result) {
       const products = result.results;
       if (!products || products.length != 1) {
         // Error not found or too many

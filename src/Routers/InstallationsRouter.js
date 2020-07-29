@@ -2,6 +2,7 @@
 
 import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 export class InstallationsRouter extends ClassesRouter {
   className() {
@@ -21,7 +22,8 @@ export class InstallationsRouter extends ClassesRouter {
         '_Installation',
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         return { response: response };
@@ -35,10 +37,10 @@ export class InstallationsRouter extends ClassesRouter {
     this.route('GET', '/installations/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/installations', req => {
+    this.route('POST', '/installations', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/installations/:objectId', req => {
+    this.route('PUT', '/installations/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/installations/:objectId', req => {

@@ -8,22 +8,22 @@ import logger from '../logger';
 const triggers = require('../triggers');
 const http = require('http');
 
-const downloadFileFromURI = (uri) => {
+const downloadFileFromURI = uri => {
   return new Promise((res, rej) => {
     http
-      .get(uri, (response) => {
+      .get(uri, response => {
         response.setDefaultEncoding('base64');
         let body = `data:${response.headers['content-type']};base64,`;
-        response.on('data', (data) => (body += data));
+        response.on('data', data => (body += data));
         response.on('end', () => res(body));
       })
-      .on('error', (e) => {
+      .on('error', e => {
         rej(`Error downloading file from ${uri}: ${e.message}`);
       });
   });
 };
 
-const addFileDataIfNeeded = async (file) => {
+const addFileDataIfNeeded = async file => {
   if (file._source.format === 'uri') {
     const base64 = await downloadFileFromURI(file._source.uri);
     file._previousSave = file;
@@ -33,7 +33,7 @@ const addFileDataIfNeeded = async (file) => {
   return file;
 };
 
-const errorMessageFromError = (e) => {
+const errorMessageFromError = e => {
   if (typeof e === 'string') {
     return e;
   } else if (e && e.message) {
@@ -91,7 +91,7 @@ export class FilesRouter {
     } else {
       filesController
         .getFileData(config, filename)
-        .then((data) => {
+        .then(data => {
           res.status(200);
           res.set('Content-Type', contentType);
           res.set('Content-Length', data.length);

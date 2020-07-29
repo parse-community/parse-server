@@ -144,6 +144,10 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     lastUsed: { type: 'Date' },
     timesUsed: { type: 'Number' },
   },
+  _Idempotency: {
+    reqId: { type: 'String' },
+    expire: { type: 'Date' },
+  }
 });
 
 const requiredColumns = Object.freeze({
@@ -161,6 +165,7 @@ const systemClasses = Object.freeze([
   '_JobStatus',
   '_JobSchedule',
   '_Audience',
+  '_Idempotency'
 ]);
 
 const volatileClasses = Object.freeze([
@@ -171,6 +176,7 @@ const volatileClasses = Object.freeze([
   '_GraphQLConfig',
   '_JobSchedule',
   '_Audience',
+  '_Idempotency'
 ]);
 
 // Anything that start with role
@@ -660,6 +666,13 @@ const _AudienceSchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+const _IdempotencySchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_Idempotency',
+    fields: defaultColumns._Idempotency,
+    classLevelPermissions: {},
+  })
+);
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -668,6 +681,7 @@ const VolatileClassesSchemas = [
   _GlobalConfigSchema,
   _GraphQLConfigSchema,
   _AudienceSchema,
+  _IdempotencySchema
 ];
 
 const dbTypeMatchesObjectType = (
@@ -1353,7 +1367,7 @@ export default class SchemaController {
       return Promise.resolve(this);
     }
 
-    const missingColumns = columns.filter(function(column) {
+    const missingColumns = columns.filter(function (column) {
       if (query && query.objectId) {
         if (object[column] && typeof object[column] === 'object') {
           // Trying to delete a required column
