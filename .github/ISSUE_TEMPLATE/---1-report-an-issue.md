@@ -1,6 +1,6 @@
 ---
 name: "\U0001F41B Report an issue"
-about: Report an issue on parse-server
+about: A feature of Parse Server is not working as expected.
 title: ''
 labels: ''
 assignees: ''
