@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🙋🏽‍♀️ Getting help with code
+    url: https://stackoverflow.com/questions/tagged/parse-platform
+    about: Get help with code-level questions on Stack Overflow.
+  - name: 🙋 Getting general help
+    url: https://community.parseplatform.org
+    about: Get help with other questions on our Community Forum.

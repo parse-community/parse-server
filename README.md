@@ -766,18 +766,6 @@ All the Cloud Code interfaces also have been updated to reflect those changes, a
 
 We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
 
-# Support
-
-Please take a look at our [support document](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
-
-If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
-
-- [ ] You've met the [prerequisites](http://docs.parseplatform.org/parse-server/guide/#prerequisites).
-
-- [ ] You're running the [latest version](https://github.com/parse-community/parse-server/releases) of Parse Server.
-
-- [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
-
 # Want to ride the bleeding edge?
 
 It is recommend to use builds deployed npm for many reasons, but if you want to use
