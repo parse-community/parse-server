@@ -6,6 +6,7 @@ import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
+import { IdempotencyOptions } from './Options/Definitions';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -73,6 +74,7 @@ export class Config {
     masterKey,
     readOnlyMasterKey,
     allowHeaders,
+    idempotencyOptions,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -104,14 +106,27 @@ export class Config {
         throw 'publicServerURL should be a valid HTTPS URL starting with https://';
       }
     }
-
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
-
     this.validateMasterKeyIps(masterKeyIps);
-
     this.validateMaxLimit(maxLimit);
-
     this.validateAllowHeaders(allowHeaders);
+    this.validateIdempotencyOptions(idempotencyOptions);
+  }
+
+  static validateIdempotencyOptions(idempotencyOptions) {
+    if (!idempotencyOptions) { return; }
+    if (idempotencyOptions.ttl === undefined) {
+      idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
+    } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {
+      throw 'idempotency TTL value must be greater than 0 seconds';
+    } else if (isNaN(idempotencyOptions.ttl)) {
+      throw 'idempotency TTL value must be a number';
+    }
+    if (!idempotencyOptions.paths) {
+      idempotencyOptions.paths = IdempotencyOptions.paths.default;
+    } else if (!(idempotencyOptions.paths instanceof Array)) {
+      throw 'idempotency paths must be of an array of strings';
+    }
   }
 
   static validateAccountLockoutPolicy(accountLockout) {

@@ -33,6 +33,7 @@
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
+ * @property {IdempotencyOptions} idempotencyOptions Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} javascriptKey Key for the Javascript SDK
  * @property {Boolean} jsonLogs Log as structured JSON objects
  * @property {LiveQueryOptions} liveQuery parse-server's LiveQuery configuration object
@@ -111,3 +112,10 @@
  * @property {Number} websocketTimeout Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).
  * @property {Adapter<WSSAdapter>} wssAdapter Adapter module for the WebSocketServer
  */
+
+/**
+ * @interface IdempotencyOptions
+ * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
+ * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+ */
+

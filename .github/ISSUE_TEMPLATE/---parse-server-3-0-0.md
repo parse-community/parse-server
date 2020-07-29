@@ -1,6 +1,9 @@
 ---
 name: "\U0001F525 parse-server 3.0.0"
 about: Report an issue while migrating to parse-server 3.0.0
+title: ''
+labels: ''
+assignees: ''
 
 ---
 

@@ -16,16 +16,19 @@ export const Types = {
   afterSaveFile: 'afterSaveFile',
   beforeDeleteFile: 'beforeDeleteFile',
   afterDeleteFile: 'afterDeleteFile',
+  beforeConnect: 'beforeConnect',
+  beforeSubscribe: 'beforeSubscribe',
 };
 
 const FileClassName = '@File';
+const ConnectClassName = '@Connect';
 
-const baseStore = function() {
+const baseStore = function () {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
-  const Triggers = Object.keys(Types).reduce(function(base, key) {
+  const Triggers = Object.keys(Types).reduce(function (base, key) {
     base[key] = {};
     return base;
   }, {});
@@ -132,6 +135,10 @@ export function addFileTrigger(type, handler, applicationId) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
 }
 
+export function addConnectTrigger(type, handler, applicationId) {
+  add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
+}
+
 export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
@@ -233,10 +240,12 @@ export function getRequestObject(
     request.original = originalParseObject;
   }
 
-  if (triggerType === Types.beforeSave ||
+  if (
+    triggerType === Types.beforeSave ||
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
-    triggerType === Types.afterDelete) {
+    triggerType === Types.afterDelete
+  ) {
     // Set a copy of the context on the request object.
     request.context = Object.assign({}, context);
   }
@@ -300,7 +309,7 @@ export function getRequestQueryObject(
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
   return {
-    success: function(response) {
+    success: function (response) {
       if (request.triggerName === Types.afterFind) {
         if (!response) {
           response = request.objects;
@@ -335,7 +344,7 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function(error) {
+    error: function (error) {
       if (error instanceof Parse.Error) {
         reject(error);
       } else if (error instanceof Error) {
@@ -585,7 +594,7 @@ export function maybeRunTrigger(
   if (!parseObject) {
     return Promise.resolve({});
   }
-  return new Promise(function(resolve, reject) {
+  return new Promise(function (resolve, reject) {
     var trigger = getTrigger(
       parseObject.className,
       triggerType,
@@ -721,7 +730,12 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   return request;
 }
 
-export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
+export async function maybeRunFileTrigger(
+  triggerType,
+  fileObject,
+  config,
+  auth
+) {
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
@@ -737,8 +751,8 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
-        auth,
-      )
+        auth
+      );
       return result || fileObject;
     } catch (error) {
       logTriggerErrorBeforeHook(
@@ -746,10 +760,57 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
-        error,
+        error
       );
       throw error;
     }
   }
   return fileObject;
+}
+
+export async function maybeRunConnectTrigger(triggerType, request) {
+  const trigger = getTrigger(
+    ConnectClassName,
+    triggerType,
+    Parse.applicationId
+  );
+  if (!trigger) {
+    return;
+  }
+  request.user = await userForSessionToken(request.sessionToken);
+  return trigger(request);
+}
+
+export async function maybeRunSubscribeTrigger(
+  triggerType,
+  className,
+  request
+) {
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  const parseQuery = new Parse.Query(className);
+  parseQuery.withJSON(request.query);
+  request.query = parseQuery;
+  request.user = await userForSessionToken(request.sessionToken);
+  return trigger(request);
+}
+
+async function userForSessionToken(sessionToken) {
+  if (!sessionToken) {
+    return;
+  }
+  const q = new Parse.Query('_Session');
+  q.equalTo('sessionToken', sessionToken);
+  const session = await q.first({ useMasterKey: true });
+  if (!session) {
+    return;
+  }
+  const user = session.get('user');
+  if (!user) {
+    return;
+  }
+  await user.fetch({ useMasterKey: true });
+  return user;
 }
