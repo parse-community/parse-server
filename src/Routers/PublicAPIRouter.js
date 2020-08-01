@@ -215,7 +215,7 @@ export class PublicAPIRouter extends PromiseRouter {
             });
           }
           if (result.err) {
-            throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+            throw result.err;
           }
         }
 
