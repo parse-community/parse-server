@@ -225,6 +225,7 @@ describe('Password Policy: ', () => {
           done();
         })
         .catch(error => {
+          // ToDO: 142 error is too generic, a more specific error code should be thrown like Parse.Error.PASSWORD_POLICY_USERNAME
           expect(error.code).toEqual(142);
           done();
         });
