@@ -306,7 +306,7 @@ describe('Password Policy: ', () => {
           Parse.User.logOut()
             .then(() => {
               Parse.User.logIn('user1', '1digit')
-                .then(function () {
+                .then(function() {
                   done();
                 })
                 .catch(err => {
@@ -349,7 +349,7 @@ describe('Password Policy: ', () => {
           Parse.User.logOut()
             .then(() => {
               Parse.User.logIn('user1', 'p@sswrod')
-                .then(function () {
+                .then(function() {
                   done();
                 })
                 .catch(err => {
@@ -419,7 +419,7 @@ describe('Password Policy: ', () => {
           Parse.User.logOut()
             .then(() => {
               Parse.User.logIn('user1', 'oneUpper')
-                .then(function () {
+                .then(function() {
                   done();
                 })
                 .catch(err => {
@@ -517,7 +517,7 @@ describe('Password Policy: ', () => {
           Parse.User.logOut()
             .then(() => {
               Parse.User.logIn('user1', 'oneUpper')
-                .then(function () {
+                .then(function() {
                   done();
                 })
                 .catch(err => {
@@ -580,7 +580,7 @@ describe('Password Policy: ', () => {
                 );
 
                 Parse.User.logIn('user1', 'has2init')
-                  .then(function () {
+                  .then(function() {
                     done();
                   })
                   .catch(err => {
@@ -672,7 +672,7 @@ describe('Password Policy: ', () => {
                 );
 
                 Parse.User.logIn('user1', 'has 1 digit')
-                  .then(function () {
+                  .then(function() {
                     done();
                   })
                   .catch(err => {
@@ -862,7 +862,7 @@ describe('Password Policy: ', () => {
                 );
 
                 Parse.User.logIn('user1', 'r@nd0m')
-                  .then(function () {
+                  .then(function() {
                     done();
                   })
                   .catch(err => {
@@ -1014,7 +1014,7 @@ describe('Password Policy: ', () => {
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
-                  .then(function () {
+                  .then(function() {
                     done();
                   })
                   .catch(err => {
@@ -1286,7 +1286,7 @@ describe('Password Policy: ', () => {
                 );
 
                 Parse.User.logIn('user1', 'uuser11')
-                  .then(function () {
+                  .then(function() {
                     done();
                   })
                   .catch(err => {
