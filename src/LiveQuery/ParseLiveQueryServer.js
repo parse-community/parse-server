@@ -183,11 +183,12 @@ class ParseLiveQueryServer {
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(newObj => {
-              if (res.object != deletedParseObject) {
+              if (res.object && typeof res.object.toJSON === 'function') {
                 deletedParseObject = res.object.toJSON();
                 deletedParseObject.className = className;
               }
-              if (newObj) {
+
+              if (newObj && typeof newObj.toJSON === 'function') {
                 deletedParseObject = newObj.toJSON();
                 deletedParseObject.className = newObj.className;
               }
@@ -324,24 +325,29 @@ class ParseLiveQueryServer {
             })
             .then(
               newObj => {
-                if (res.object != currentParseObject) {
+                if (res.object && typeof res.object.toJSON === 'function') {
                   currentParseObject = res.object.toJSON();
                   currentParseObject.className = className;
                 }
-                if (res.original != originalParseObject) {
+
+                if (res.original && typeof res.original.toJSON === 'function') {
                   originalParseObject = res.original.toJSON();
                   originalParseObject.className = className;
                 }
-                if (newObj) {
+
+                if (newObj && typeof newObj.toJSON === 'function') {
                   currentParseObject = newObj.toJSON();
                   currentParseObject.className = newObj.className;
                 }
+
                 const functionName = 'push' + message.event;
-                client[functionName](
-                  requestId,
-                  currentParseObject,
-                  originalParseObject
-                );
+                if (client[functionName]) {
+                  client[functionName](
+                    requestId,
+                    currentParseObject,
+                    originalParseObject
+                  );
+                }
               },
               error => {
                 logger.error('Matching ACL error : ', error);
