@@ -807,8 +807,8 @@ export async function maybeRunAfterEventTrigger(
   if (!trigger) {
     return;
   }
-  if (request.current) {
-    request.current = Parse.Object.fromJSON(request.current);
+  if (request.object) {
+    request.object = Parse.Object.fromJSON(request.object);
   }
   if (request.original) {
     request.original = Parse.Object.fromJSON(request.original);
