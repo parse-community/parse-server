@@ -35,7 +35,7 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       expect(req.event).toBe('Create');
       expect(req.user).toBeUndefined();
-      expect(req.current.get('foo')).toBe('bar');
+      expect(req.object.get('foo')).toBe('bar');
     });
 
     const query = new Parse.Query(TestObject);
@@ -65,7 +65,7 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       expect(req.event).toBe('Update');
       expect(req.user).toBeUndefined();
-      expect(req.current.get('foo')).toBe('bar');
+      expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
       done();
     });
@@ -89,7 +89,7 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       expect(req.event).toBe('Enter');
       expect(req.user).toBeUndefined();
-      expect(req.current.get('foo')).toBe('bar');
+      expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
     });
 
@@ -120,7 +120,7 @@ describe('ParseLiveQuery', function () {
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       expect(req.event).toBe('Leave');
       expect(req.user).toBeUndefined();
-      expect(req.current.get('foo')).toBeUndefined();
+      expect(req.object.get('foo')).toBeUndefined();
       expect(req.original.get('foo')).toBe('bar');
     });
 
@@ -140,6 +140,36 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('expect afterEvent delete', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
+      expect(req.event).toBe('Delete');
+      expect(req.user).toBeUndefined();
+      req.object.set('foo', 'bar');
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+
+    const subscription = await query.subscribe();
+    subscription.on('delete', object => {
+      expect(object.get('foo')).toBe('bar');
+      done();
+    });
+
+    await object.destroy();
+  });
+
   it('can handle afterEvent modification', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -153,7 +183,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      const current = req.current;
+      const current = req.object;
       current.set('foo', 'yolo');
 
       const original = req.original;
@@ -215,7 +245,7 @@ describe('ParseLiveQuery', function () {
     await Parse.Object.saveAll([parent, child]);
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', async req => {
-      const current = req.current;
+      const current = req.object;
       const pointer = current.get('child');
       await pointer.fetch();
     });
@@ -246,7 +276,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      const current = req.current;
+      const current = req.object;
       const original = req.original;
 
       setTimeout(() => {

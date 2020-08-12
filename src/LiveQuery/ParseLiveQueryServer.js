@@ -125,7 +125,7 @@ class ParseLiveQueryServer {
   _onAfterDelete(message: any): void {
     logger.verbose(Parse.applicationId + 'afterDelete is triggered');
 
-    const deletedParseObject = message.currentParseObject.toJSON();
+    let deletedParseObject = message.currentParseObject.toJSON();
     const classLevelPermissions = message.classLevelPermissions;
     const className = deletedParseObject.className;
     logger.verbose(
@@ -159,6 +159,7 @@ class ParseLiveQueryServer {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
+          let res;
           this._matchesCLP(
             classLevelPermissions,
             message.currentParseObject,
@@ -173,6 +174,22 @@ class ParseLiveQueryServer {
             .then(isMatched => {
               if (!isMatched) {
                 return null;
+              }
+              res = {
+                event: 'Delete',
+                sessionToken: client.sessionToken,
+                object: deletedParseObject,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
+            })
+            .then(newObj => {
+              if (res.object != deletedParseObject) {
+                deletedParseObject = res.object.toJSON();
+                deletedParseObject.className = className;
+              }
+              if (newObj) {
+                deletedParseObject = newObj.toJSON();
+                deletedParseObject.className = newObj.className;
               }
               client.pushDelete(requestId, deletedParseObject);
             })
@@ -300,15 +317,15 @@ class ParseLiveQueryServer {
               res = {
                 event: type,
                 sessionToken: client.sessionToken,
-                current: currentParseObject,
+                object: currentParseObject,
                 original: originalParseObject,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(
               newObj => {
-                if (res.current != currentParseObject) {
-                  currentParseObject = res.current.toJSON();
+                if (res.object != currentParseObject) {
+                  currentParseObject = res.object.toJSON();
                   currentParseObject.className = className;
                 }
                 if (res.original != originalParseObject) {
