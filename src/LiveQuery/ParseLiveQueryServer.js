@@ -14,7 +14,6 @@ import {
   runLiveQueryEventHandlers,
   maybeRunConnectTrigger,
   maybeRunSubscribeTrigger,
-  maybeRunAfterEventTrigger,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -212,7 +211,7 @@ class ParseLiveQueryServer {
       originalParseObject = message.originalParseObject.toJSON();
     }
     const classLevelPermissions = message.classLevelPermissions;
-    let currentParseObject = message.currentParseObject.toJSON();
+    const currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
     logger.verbose(
       'ClassName: %s | ObjectId: %s',
@@ -262,7 +261,6 @@ class ParseLiveQueryServer {
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
-          let res;
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
