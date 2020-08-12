@@ -158,7 +158,7 @@ class ParseLiveQueryServer {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
-          let res;
+          let res = {};
           this._matchesCLP(
             classLevelPermissions,
             message.currentParseObject,
@@ -261,6 +261,7 @@ class ParseLiveQueryServer {
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
+          let res = {};
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
