@@ -333,7 +333,6 @@ describe('ParseLiveQuery', function () {
     const query = new Parse.Query(TestObject);
     query.equalTo('objectId', object.id);
     const subscription = await query.subscribe();
-    
     subscription.on('update', object => {
       expect(object.get('foo')).toBe('bar');
       done();
