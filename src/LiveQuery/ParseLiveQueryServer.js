@@ -14,6 +14,7 @@ import {
   runLiveQueryEventHandlers,
   maybeRunConnectTrigger,
   maybeRunSubscribeTrigger,
+  maybeRunAfterEventTrigger,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -193,7 +194,7 @@ class ParseLiveQueryServer {
       originalParseObject = message.originalParseObject.toJSON();
     }
     const classLevelPermissions = message.classLevelPermissions;
-    const currentParseObject = message.currentParseObject.toJSON();
+    let currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
     logger.verbose(
       'ClassName: %s | ObjectId: %s',
@@ -243,6 +244,7 @@ class ParseLiveQueryServer {
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
+          let res;
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
@@ -267,35 +269,58 @@ class ParseLiveQueryServer {
                 currentACLCheckingPromise,
               ]);
             })
-            .then(
-              ([isOriginalMatched, isCurrentMatched]) => {
-                logger.verbose(
-                  'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
-                  originalParseObject,
-                  currentParseObject,
-                  isOriginalSubscriptionMatched,
-                  isCurrentSubscriptionMatched,
-                  isOriginalMatched,
-                  isCurrentMatched,
-                  subscription.hash
-                );
+            .then(([isOriginalMatched, isCurrentMatched]) => {
+              logger.verbose(
+                'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
+                originalParseObject,
+                currentParseObject,
+                isOriginalSubscriptionMatched,
+                isCurrentSubscriptionMatched,
+                isOriginalMatched,
+                isCurrentMatched,
+                subscription.hash
+              );
 
-                // Decide event type
-                let type;
-                if (isOriginalMatched && isCurrentMatched) {
-                  type = 'Update';
-                } else if (isOriginalMatched && !isCurrentMatched) {
-                  type = 'Leave';
-                } else if (!isOriginalMatched && isCurrentMatched) {
-                  if (originalParseObject) {
-                    type = 'Enter';
-                  } else {
-                    type = 'Create';
-                  }
+              // Decide event type
+              let type;
+              if (isOriginalMatched && isCurrentMatched) {
+                type = 'Update';
+              } else if (isOriginalMatched && !isCurrentMatched) {
+                type = 'Leave';
+              } else if (!isOriginalMatched && isCurrentMatched) {
+                if (originalParseObject) {
+                  type = 'Enter';
                 } else {
-                  return null;
+                  type = 'Create';
                 }
-                const functionName = 'push' + type;
+              } else {
+                return null;
+              }
+              message.event = type;
+              res = {
+                event: type,
+                sessionToken: client.sessionToken,
+                current: currentParseObject,
+                original: originalParseObject,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
+            })
+            .then(
+              newObj => {
+                if (res.current != currentParseObject) {
+                  currentParseObject = res.current.toJSON();
+                  currentParseObject.className = className;
+                }
+                if (res.original != originalParseObject) {
+                  originalParseObject = res.original.toJSON();
+                  originalParseObject.className = className;
+                }
+                if (newObj) {
+                  currentParseObject = newObj.toJSON();
+                  currentParseObject.className = newObj.className;
+                }
+
+                const functionName = 'push' + message.event;
                 client[functionName](
                   requestId,
                   currentParseObject,
