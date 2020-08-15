@@ -1244,7 +1244,7 @@ describe('apple signin auth adapter', () => {
 
   it('(using client id as array) should throw error with missing id_token', async () => {
     try {
-      await apple.validateAuthData({}, { client_id: ['secret'] });
+      await apple.validateAuthData({}, { clientId: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -1328,7 +1328,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { client_id: ['secret'] }
+        { clientId: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1490,7 +1490,7 @@ describe('apple signin auth adapter', () => {
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
-  xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
+  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
     try {
       await apple.validateAuthData(
         { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
@@ -1504,7 +1504,7 @@ describe('apple signin auth adapter', () => {
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
-  xit('(using client id as array) should throw error with invalid jwt client_id', async () => {
+  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
     try {
       await apple.validateAuthData(
         { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
