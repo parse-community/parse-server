@@ -794,7 +794,12 @@ export async function maybeRunSubscribeTrigger(
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
-  return trigger(request);
+  const result = (await trigger(request)) || request.query;
+  const query = result.toJSON();
+  if (query.keys) {
+    query.fields = query.keys.split(',');
+  }
+  request.query = query;
 }
 
 async function userForSessionToken(sessionToken) {
