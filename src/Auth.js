@@ -169,6 +169,7 @@ var getAuthForLegacySessionToken = function({
   });
 };
 
+// Returns a promise that resolves to an array of role names
 Auth.prototype.getUserRoles = function () {
   if (this.isMaster || !this.user) {
     return Promise.resolve([]);
@@ -291,21 +292,6 @@ Auth.prototype._generateRoleGraphPipeline = function () {
       },
     },
   ];
-};
-
-// Returns a promise that resolves to an array of role names
-Auth.prototype.getUserRoles = function() {
-  if (this.isMaster || !this.user) {
-    return Promise.resolve([]);
-  }
-  if (this.fetchedRoles) {
-    return Promise.resolve(this.userRoles);
-  }
-  if (this.rolePromise) {
-    return this.rolePromise;
-  }
-  this.rolePromise = this._loadRoles();
-  return this.rolePromise;
 };
 
 Auth.prototype.getRolesForUser = async function() {
