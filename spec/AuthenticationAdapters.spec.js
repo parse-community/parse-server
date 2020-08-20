@@ -25,7 +25,6 @@ describe('AuthenticationProviders', function () {
     'gcenter',
     'gpgames',
     'facebook',
-    'facebookaccountkit',
     'github',
     'instagram',
     'google',
@@ -43,7 +42,7 @@ describe('AuthenticationProviders', function () {
     'phantauth',
     'microsoft',
   ].map(function (providerName) {
-    it('Should validate structure of ' + providerName, (done) => {
+    it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
       jequal(typeof provider.validateAppId, 'function');
@@ -71,7 +70,7 @@ describe('AuthenticationProviders', function () {
         return;
       }
       spyOn(require('../lib/Adapters/Auth/httpsRequest'), 'get').and.callFake(
-        (options) => {
+        options => {
           if (
             options ===
             'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.59&grant_type=client_credentials'
@@ -175,7 +174,7 @@ describe('AuthenticationProviders', function () {
       body: jsonBody,
     };
     return request(options)
-      .then((response) => {
+      .then(response => {
         if (callback) {
           callback(null, response, response.data);
         }
@@ -184,7 +183,7 @@ describe('AuthenticationProviders', function () {
           body: response.data,
         };
       })
-      .catch((error) => {
+      .catch(error => {
         if (callback) {
           callback(error);
         }
@@ -192,7 +191,7 @@ describe('AuthenticationProviders', function () {
       });
   };
 
-  it('should create user with REST API', (done) => {
+  it('should create user with REST API', done => {
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
       const b = body;
@@ -203,7 +202,7 @@ describe('AuthenticationProviders', function () {
       const q = new Parse.Query('_Session');
       q.equalTo('sessionToken', sessionToken);
       q.first({ useMasterKey: true })
-        .then((res) => {
+        .then(res => {
           if (!res) {
             fail('should not fail fetching the session');
             done();
@@ -219,7 +218,7 @@ describe('AuthenticationProviders', function () {
     });
   });
 
-  it('should only create a single user with REST API', (done) => {
+  it('should only create a single user with REST API', done => {
     let objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
@@ -239,9 +238,9 @@ describe('AuthenticationProviders', function () {
     });
   });
 
-  it("should fail to link if session token don't match user", (done) => {
+  it("should fail to link if session token don't match user", done => {
     Parse.User.signUp('myUser', 'password')
-      .then((user) => {
+      .then(user => {
         return createOAuthUserWithSessionToken(user.getSessionToken());
       })
       .then(() => {
@@ -250,7 +249,7 @@ describe('AuthenticationProviders', function () {
       .then(() => {
         return Parse.User.signUp('myUser2', 'password');
       })
-      .then((user) => {
+      .then(user => {
         return createOAuthUserWithSessionToken(user.getSessionToken());
       })
       .then(fail, ({ data }) => {
@@ -330,7 +329,7 @@ describe('AuthenticationProviders', function () {
     expect(typeof authAdapter.validateAppId).toBe('function');
   }
 
-  it('properly loads custom adapter', (done) => {
+  it('properly loads custom adapter', done => {
     const validAuthData = {
       id: 'hello',
       token: 'world',
@@ -370,14 +369,14 @@ describe('AuthenticationProviders', function () {
         expect(appIdSpy).not.toHaveBeenCalled();
         done();
       },
-      (err) => {
+      err => {
         jfail(err);
         done();
       }
     );
   });
 
-  it('properly loads custom adapter module object', (done) => {
+  it('properly loads custom adapter module object', done => {
     const authenticationHandler = authenticationLoader({
       customAuthentication: path.resolve('./spec/support/CustomAuth.js'),
     });
@@ -394,14 +393,14 @@ describe('AuthenticationProviders', function () {
       () => {
         done();
       },
-      (err) => {
+      err => {
         jfail(err);
         done();
       }
     );
   });
 
-  it('properly loads custom adapter module object (again)', (done) => {
+  it('properly loads custom adapter module object (again)', done => {
     const authenticationHandler = authenticationLoader({
       customAuthentication: {
         module: path.resolve('./spec/support/CustomAuthFunction.js'),
@@ -421,7 +420,7 @@ describe('AuthenticationProviders', function () {
       () => {
         done();
       },
-      (err) => {
+      err => {
         jfail(err);
         done();
       }
@@ -511,84 +510,6 @@ describe('AuthenticationProviders', function () {
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
-  });
-
-  it('properly loads Facebook accountkit adapter with options', () => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-        appSecret: 'secret',
-      },
-    };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
-    validateAuthenticationAdapter(adapter);
-    expect(appIds).toEqual(['a', 'b']);
-    expect(providerOptions.appSecret).toEqual('secret');
-  });
-
-  it('should fail if Facebook appIds is not configured properly', (done) => {
-    const options = {
-      facebookaccountkit: {
-        appIds: [],
-      },
-    };
-    const { adapter, appIds } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter.validateAppId(appIds).then(done.fail, (err) => {
-      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      done();
-    });
-  });
-
-  it('should fail to validate Facebook accountkit auth with bad token', (done) => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-      },
-    };
-    const authData = {
-      id: 'fakeid',
-      access_token: 'badtoken',
-    };
-    const { adapter } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter.validateAuthData(authData).then(done.fail, (err) => {
-      expect(err.code).toBe(190);
-      expect(err.type).toBe('OAuthException');
-      done();
-    });
-  });
-
-  it('should fail to validate Facebook accountkit auth with bad token regardless of app secret proof', (done) => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-        appSecret: 'badsecret',
-      },
-    };
-    const authData = {
-      id: 'fakeid',
-      access_token: 'badtoken',
-    };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter
-      .validateAuthData(authData, providerOptions)
-      .then(done.fail, (err) => {
-        expect(err.code).toBe(190);
-        expect(err.type).toBe('OAuthException');
-        done();
-      });
   });
 });
 
@@ -701,7 +622,7 @@ describe('google auth adapter', () => {
       fail();
     } catch (e) {
       expect(e.message).toBe(
-        'id token not issued by correct provider - expected: https://accounts.google.com | from: https://not.google.com'
+        'id token not issued by correct provider - expected: accounts.google.com or https://accounts.google.com | from: https://not.google.com'
       );
     }
   });
@@ -1653,13 +1574,13 @@ describe('microsoft graph auth adapter', () => {
     });
   });
 
-  it('should fail to validate Microsoft Graph auth with bad token', (done) => {
+  it('should fail to validate Microsoft Graph auth with bad token', done => {
     const authData = {
       id: 'fake-id',
       mail: 'fake@mail.com',
       access_token: 'very.long.bad.token',
     };
-    microsoft.validateAuthData(authData).then(done.fail, (err) => {
+    microsoft.validateAuthData(authData).then(done.fail, err => {
       expect(err.code).toBe(101);
       expect(err.message).toBe(
         'Microsoft Graph auth is invalid for this user.'

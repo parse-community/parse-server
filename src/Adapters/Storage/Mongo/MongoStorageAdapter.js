@@ -433,6 +433,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       collectionUpdate['$unset'][name] = null;
     });
 
+    const collectionFilter = { $or: [] };
+    mongoFormatNames.forEach(name => {
+      collectionFilter['$or'].push({ [name]: { $exists: true } });
+    });
+
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach((name) => {
       schemaUpdate['$unset'][name] = null;
@@ -440,7 +445,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
 
     return this._adaptiveCollection(className)
-      .then((collection) => collection.updateMany({}, collectionUpdate))
+      .then((collection) => collection.updateMany(collectionFilter, collectionUpdate))
       .then(() => this._schemaCollection())
       .then((schemaCollection) =>
         schemaCollection.updateSchema(className, schemaUpdate)

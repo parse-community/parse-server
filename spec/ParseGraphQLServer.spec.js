@@ -170,7 +170,7 @@ describe('ParseGraphQLServer', () => {
         new ParseGraphQLServer(parseServer, {
           graphQLPath: 'somepath',
         }).applyGraphQL({
-          use: (path) => {
+          use: path => {
             useCount++;
             expect(path).toEqual('somepath');
           },
@@ -208,7 +208,7 @@ describe('ParseGraphQLServer', () => {
           graphQLPath: 'graphQL',
           playgroundPath: 'somepath',
         }).applyPlayground({
-          get: (path) => {
+          get: path => {
             useCount++;
             expect(path).toEqual('somepath');
           },
@@ -436,9 +436,7 @@ describe('ParseGraphQLServer', () => {
       parseGraphQLServer.applyGraphQL(expressApp);
       parseGraphQLServer.applyPlayground(expressApp);
       parseGraphQLServer.createSubscriptions(httpServer);
-      await new Promise((resolve) =>
-        httpServer.listen({ port: 13377 }, resolve)
-      );
+      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
 
       const subscriptionClient = new SubscriptionClient(
         'ws://localhost:13377/subscriptions',
@@ -506,7 +504,7 @@ describe('ParseGraphQLServer', () => {
         let checked = false;
         const apolloClient = new ApolloClient({
           link: new ApolloLink((operation, forward) => {
-            return forward(operation).map((response) => {
+            return forward(operation).map(response => {
               const context = operation.getContext();
               const {
                 response: { headers },
@@ -541,7 +539,7 @@ describe('ParseGraphQLServer', () => {
       it('should handle Parse headers', async () => {
         let checked = false;
         const originalGetGraphQLOptions = parseGraphQLServer._getGraphQLOptions;
-        parseGraphQLServer._getGraphQLOptions = async (req) => {
+        parseGraphQLServer._getGraphQLOptions = async req => {
           expect(req.info).toBeDefined();
           expect(req.config).toBeDefined();
           expect(req.auth).toBeDefined();
@@ -643,7 +641,7 @@ describe('ParseGraphQLServer', () => {
             })
           ).data['__type'];
           expect(fileType.kind).toEqual('OBJECT');
-          expect(fileType.fields.map((field) => field.name).sort()).toEqual([
+          expect(fileType.fields.map(field => field.name).sort()).toEqual([
             'name',
             'url',
           ]);
@@ -665,7 +663,7 @@ describe('ParseGraphQLServer', () => {
             })
           ).data['__type'];
           expect(classType.kind).toEqual('INTERFACE');
-          expect(classType.fields.map((field) => field.name).sort()).toEqual([
+          expect(classType.fields.map(field => field.name).sort()).toEqual([
             'ACL',
             'createdAt',
             'objectId',
@@ -690,7 +688,7 @@ describe('ParseGraphQLServer', () => {
           ).data['__type'];
           expect(readPreferenceType.kind).toEqual('ENUM');
           expect(
-            readPreferenceType.enumValues.map((value) => value.name).sort()
+            readPreferenceType.enumValues.map(value => value.name).sort()
           ).toEqual([
             'NEAREST',
             'PRIMARY',
@@ -731,7 +729,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__schema'].types.map((type) => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
             'ParseObject',
@@ -741,7 +739,7 @@ describe('ParseGraphQLServer', () => {
             'Upload',
           ];
           expect(
-            expectedTypes.every((type) => schemaTypes.indexOf(type) !== -1)
+            expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
           ).toBeTruthy(JSON.stringify(schemaTypes.types));
         });
       });
@@ -768,7 +766,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__schema'].types.map((type) => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
           expect(schemaTypes).toContain('Node');
         });
@@ -786,7 +784,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__type'].fields.map((field) => field.name);
+          ).data['__type'].fields.map(field => field.name);
 
           expect(queryFields).toContain('node');
         });
@@ -804,7 +802,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__type'].fields.map((field) => field.name);
+          ).data['__type'].fields.map(field => field.name);
 
           expect(userFields).toContain('id');
           expect(userFields).toContain('objectId');
@@ -824,7 +822,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createFileInputFields).toEqual(['clientMutationId', 'upload']);
@@ -844,7 +842,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createFilePayloadFields).toEqual([
@@ -869,7 +867,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(callFunctionInputFields).toEqual([
@@ -895,7 +893,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(callFunctionPayloadFields).toEqual([
@@ -918,7 +916,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual(['clientMutationId', 'fields']);
@@ -938,7 +936,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
@@ -958,7 +956,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual([
@@ -982,7 +980,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
@@ -1002,7 +1000,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual(['clientMutationId']);
@@ -1022,7 +1020,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
@@ -1042,7 +1040,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual([
@@ -1066,7 +1064,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['class', 'clientMutationId']);
@@ -1086,7 +1084,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual([
@@ -1110,7 +1108,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['class', 'clientMutationId']);
@@ -1130,7 +1128,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(inputFields).toEqual(['clientMutationId', 'name']);
@@ -1150,7 +1148,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(payloadFields).toEqual(['class', 'clientMutationId']);
@@ -1175,7 +1173,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectInputFields).toEqual([
@@ -1203,7 +1201,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
@@ -1231,7 +1229,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectInputFields).toEqual([
@@ -1260,7 +1258,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
@@ -1288,7 +1286,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].inputFields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectInputFields).toEqual(['clientMutationId', 'id']);
@@ -1313,7 +1311,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'].fields
-            .map((field) => field.name)
+            .map(field => field.name)
             .sort();
 
           expect(createObjectPayloadFields).toEqual([
@@ -1339,7 +1337,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__schema'].types.map((type) => type.name);
+          ).data['__schema'].types.map(type => type.name);
 
           const expectedTypes = [
             'Role',
@@ -1354,7 +1352,7 @@ describe('ParseGraphQLServer', () => {
             'UpdateUserFieldsInput',
           ];
           expect(
-            expectedTypes.every((type) => schemaTypes.indexOf(type) !== -1)
+            expectedTypes.every(type => schemaTypes.indexOf(type) !== -1)
           ).toBeTruthy(JSON.stringify(schemaTypes));
         });
 
@@ -1373,7 +1371,7 @@ describe('ParseGraphQLServer', () => {
               `,
             })
           ).data['__type'];
-          const possibleTypes = objectType.possibleTypes.map((o) => o.name);
+          const possibleTypes = objectType.possibleTypes.map(o => o.name);
           expect(possibleTypes).toContain('User');
           expect(possibleTypes).toContain('Role');
           expect(possibleTypes).toContain('Element');
@@ -1397,7 +1395,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__type'].fields.map((field) => field.name);
+          ).data['__type'].fields.map(field => field.name);
           expect(userFields.indexOf('foo') !== -1).toBeTruthy();
         });
 
@@ -1414,7 +1412,7 @@ describe('ParseGraphQLServer', () => {
                 }
               `,
             })
-          ).data['__type'].fields.map((field) => field.name);
+          ).data['__type'].fields.map(field => field.name);
           expect(userFields.includes('password')).toBeFalsy();
         });
       });
@@ -1896,13 +1894,13 @@ describe('ParseGraphQLServer', () => {
             `,
           });
           expect(
-            __type.inputFields.find((o) => o.name === 'price').type.kind
+            __type.inputFields.find(o => o.name === 'price').type.kind
           ).toEqual('SCALAR');
           expect(
-            __type.inputFields.find((o) => o.name === 'engine').type.kind
+            __type.inputFields.find(o => o.name === 'engine').type.kind
           ).toEqual('NON_NULL');
           expect(
-            __type.inputFields.find((o) => o.name === 'doors').type.kind
+            __type.inputFields.find(o => o.name === 'doors').type.kind
           ).toEqual('NON_NULL');
 
           const {
@@ -1922,13 +1920,13 @@ describe('ParseGraphQLServer', () => {
             `,
           });
           expect(
-            __type2.fields.find((o) => o.name === 'price').type.kind
+            __type2.fields.find(o => o.name === 'price').type.kind
           ).toEqual('SCALAR');
           expect(
-            __type2.fields.find((o) => o.name === 'engine').type.kind
+            __type2.fields.find(o => o.name === 'engine').type.kind
           ).toEqual('NON_NULL');
           expect(
-            __type2.fields.find((o) => o.name === 'doors').type.kind
+            __type2.fields.find(o => o.name === 'doors').type.kind
           ).toEqual('NON_NULL');
         });
 
@@ -2403,585 +2401,580 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-
-          it_only_db('mongo')(
-            'Id inputs should work either with global id or object id',
-            async () => {
-              try {
-                await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateClasses {
-                      secondaryObject: createClass(
-                        input: {
-                          name: "SecondaryObject"
-                          schemaFields: { addStrings: [{ name: "someField" }] }
-                        }
-                      ) {
-                        clientMutationId
+          // TODO: (moumouls, davimacedo) Fix flaky test
+          xit('Id inputs should work either with global id or object id', async () => {
+            try {
+              await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateClasses {
+                    secondaryObject: createClass(
+                      input: {
+                        name: "SecondaryObject"
+                        schemaFields: { addStrings: [{ name: "someField" }] }
                       }
-                      primaryObject: createClass(
-                        input: {
-                          name: "PrimaryObject"
-                          schemaFields: {
-                            addStrings: [{ name: "stringField" }]
-                            addArrays: [{ name: "arrayField" }]
-                            addPointers: [
-                              {
-                                name: "pointerField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                            addRelations: [
-                              {
-                                name: "relationField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                          }
-                        }
-                      ) {
-                        clientMutationId
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                await resetGraphQLCache();
-
-                const createSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateSecondaryObjects {
-                      secondaryObject1: createSecondaryObject(
-                        input: { fields: { someField: "some value 1" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: createSecondaryObject(
-                        input: { fields: { someField: "some value 2" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: createSecondaryObject(
-                        input: { fields: { someField: "some value 3" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: createSecondaryObject(
-                        input: { fields: { someField: "some value 4" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: createSecondaryObject(
-                        input: { fields: { someField: "some value 5" } }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: createSecondaryObject(
-                        input: { fields: { someField: "some value 6" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
-                      secondaryObject7: createSecondaryObject(
-                        input: { fields: { someField: "some value 7" } }
-                      ) {
-                        secondaryObject {
-                          someField
-                        }
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const updateSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdateSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
                     ) {
-                      secondaryObject1: updateSecondaryObject(
-                        input: {
-                          id: $id1
-                          fields: { someField: "some value 11" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: updateSecondaryObject(
-                        input: {
-                          id: $id2
-                          fields: { someField: "some value 22" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: updateSecondaryObject(
-                        input: {
-                          id: $id3
-                          fields: { someField: "some value 33" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: updateSecondaryObject(
-                        input: {
-                          id: $id4
-                          fields: { someField: "some value 44" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: updateSecondaryObject(
-                        input: {
-                          id: $id5
-                          fields: { someField: "some value 55" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: updateSecondaryObject(
-                        input: {
-                          id: $id6
-                          fields: { someField: "some value 66" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      createSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id2:
-                      createSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id3:
-                      createSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      createSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                    id5:
-                      createSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      createSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const deleteSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation DeleteSecondaryObjects(
-                      $id1: ID!
-                      $id3: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    primaryObject: createClass(
+                      input: {
+                        name: "PrimaryObject"
+                        schemaFields: {
+                          addStrings: [{ name: "stringField" }]
+                          addArrays: [{ name: "arrayField" }]
+                          addPointers: [
+                            {
+                              name: "pointerField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                          addRelations: [
+                            {
+                              name: "relationField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                        }
+                      }
                     ) {
-                      secondaryObject1: deleteSecondaryObject(
-                        input: { id: $id1 }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject3: deleteSecondaryObject(
-                        input: { id: $id3 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject5: deleteSecondaryObject(
-                        input: { id: $id5 }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: deleteSecondaryObject(
-                        input: { id: $id6 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      updateSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id3:
-                      updateSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id5:
-                      updateSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      updateSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                const getSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query GetSecondaryObjects($id2: ID!, $id4: ID!) {
-                      secondaryObject2: secondaryObject(id: $id2) {
+              await resetGraphQLCache();
+
+              const createSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateSecondaryObjects {
+                    secondaryObject1: createSecondaryObject(
+                      input: { fields: { someField: "some value 1" } }
+                    ) {
+                      secondaryObject {
                         id
                         objectId
                         someField
                       }
-                      secondaryObject4: secondaryObject(id: $id4) {
+                    }
+                    secondaryObject2: createSecondaryObject(
+                      input: { fields: { someField: "some value 2" } }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: createSecondaryObject(
+                      input: { fields: { someField: "some value 3" } }
+                    ) {
+                      secondaryObject {
                         objectId
                         someField
                       }
                     }
-                  `,
-                  variables: {
-                    id2:
-                      updateSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id4:
-                      updateSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const findSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query FindSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    secondaryObject4: createSecondaryObject(
+                      input: { fields: { someField: "some value 4" } }
                     ) {
-                      secondaryObjects(
-                        where: {
-                          AND: [
-                            {
-                              OR: [
-                                { id: { equalTo: $id2 } }
-                                {
-                                  AND: [
-                                    { id: { equalTo: $id4 } }
-                                    { objectId: { equalTo: $id4 } }
-                                  ]
-                                }
-                              ]
-                            }
-                            { id: { notEqualTo: $id1 } }
-                            { id: { notEqualTo: $id3 } }
-                            { objectId: { notEqualTo: $id2 } }
-                            { objectId: { notIn: [$id5, $id6] } }
-                            { id: { in: [$id2, $id4] } }
-                          ]
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: createSecondaryObject(
+                      input: { fields: { someField: "some value 5" } }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: createSecondaryObject(
+                      input: { fields: { someField: "some value 6" } }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                    secondaryObject7: createSecondaryObject(
+                      input: { fields: { someField: "some value 7" } }
+                    ) {
+                      secondaryObject {
+                        someField
+                      }
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const updateSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdateSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: updateSecondaryObject(
+                      input: {
+                        id: $id1
+                        fields: { someField: "some value 11" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject2: updateSecondaryObject(
+                      input: {
+                        id: $id2
+                        fields: { someField: "some value 22" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: updateSecondaryObject(
+                      input: {
+                        id: $id3
+                        fields: { someField: "some value 33" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject4: updateSecondaryObject(
+                      input: {
+                        id: $id4
+                        fields: { someField: "some value 44" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: updateSecondaryObject(
+                      input: {
+                        id: $id5
+                        fields: { someField: "some value 55" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: updateSecondaryObject(
+                      input: {
+                        id: $id6
+                        fields: { someField: "some value 66" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    createSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id2:
+                    createSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id3:
+                    createSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4:
+                    createSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                  id5:
+                    createSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    createSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const deleteSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation DeleteSecondaryObjects(
+                    $id1: ID!
+                    $id3: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: deleteSecondaryObject(
+                      input: { id: $id1 }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject3: deleteSecondaryObject(
+                      input: { id: $id3 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject5: deleteSecondaryObject(
+                      input: { id: $id5 }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: deleteSecondaryObject(
+                      input: { id: $id6 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    updateSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id3:
+                    updateSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id5:
+                    updateSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    updateSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const getSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query GetSecondaryObjects($id2: ID!, $id4: ID!) {
+                    secondaryObject2: secondaryObject(id: $id2) {
+                      id
+                      objectId
+                      someField
+                    }
+                    secondaryObject4: secondaryObject(id: $id4) {
+                      objectId
+                      someField
+                    }
+                  }
+                `,
+                variables: {
+                  id2:
+                    updateSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id4:
+                    updateSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const findSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query FindSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObjects(
+                      where: {
+                        AND: [
+                          {
+                            OR: [
+                              { id: { equalTo: $id2 } }
+                              {
+                                AND: [
+                                  { id: { equalTo: $id4 } }
+                                  { objectId: { equalTo: $id4 } }
+                                ]
+                              }
+                            ]
+                          }
+                          { id: { notEqualTo: $id1 } }
+                          { id: { notEqualTo: $id3 } }
+                          { objectId: { notEqualTo: $id2 } }
+                          { objectId: { notIn: [$id5, $id6] } }
+                          { id: { in: [$id2, $id4] } }
+                        ]
+                      }
+                      order: [id_ASC, objectId_ASC]
+                    ) {
+                      edges {
+                        node {
+                          id
+                          objectId
+                          someField
                         }
-                        order: [id_ASC, objectId_ASC]
-                      ) {
-                        edges {
-                          node {
-                            id
-                            objectId
+                      }
+                      count
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    deleteSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.objectId,
+                  id2: getSecondaryObjectsResult.data.secondaryObject2.id,
+                  id3:
+                    deleteSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4: getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  id5:
+                    deleteSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    deleteSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.count
+              ).toEqual(2);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .id
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .id
+              );
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .objectId
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .objectId
+              );
+
+              const createPrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreatePrimaryObject(
+                    $pointer: Any
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    createPrimaryObject(
+                      input: {
+                        fields: {
+                          stringField: "some value"
+                          arrayField: [1, "abc", $pointer]
+                          pointerField: { link: $secondaryObject2 }
+                          relationField: {
+                            add: [$secondaryObject2, $secondaryObject4]
+                          }
+                        }
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
                             someField
                           }
                         }
-                        count
-                      }
-                    }
-                  `,
-                  variables: {
-                    id1:
-                      deleteSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.objectId,
-                    id2: getSecondaryObjectsResult.data.secondaryObject2.id,
-                    id3:
-                      deleteSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
-                    id5:
-                      deleteSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      deleteSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.count
-                ).toEqual(2);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges
-                    .map((value) => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .id
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .id
-                );
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .objectId
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .objectId
-                );
-
-                const createPrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreatePrimaryObject(
-                      $pointer: Any
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      createPrimaryObject(
-                        input: {
-                          fields: {
-                            stringField: "some value"
-                            arrayField: [1, "abc", $pointer]
-                            pointerField: { link: $secondaryObject2 }
-                            relationField: {
-                              add: [$secondaryObject2, $secondaryObject4]
-                            }
-                          }
-                        }
-                      ) {
-                        primaryObject {
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    pointer: {
-                      __type: 'Pointer',
-                      className: 'SecondaryObject',
-                      objectId:
-                        getSecondaryObjectsResult.data.secondaryObject4
-                          .objectId,
-                    },
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
+                  }
+                `,
+                variables: {
+                  pointer: {
+                    __type: 'Pointer',
+                    className: 'SecondaryObject',
+                    objectId:
                       getSecondaryObjectsResult.data.secondaryObject4.objectId,
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                });
+                },
+              });
 
-                const updatePrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdatePrimaryObject(
-                      $id: ID!
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      updatePrimaryObject(
-                        input: {
-                          id: $id
-                          fields: {
-                            pointerField: { link: $secondaryObject4 }
-                            relationField: {
-                              remove: [$secondaryObject2, $secondaryObject4]
-                            }
+              const updatePrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdatePrimaryObject(
+                    $id: ID!
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    updatePrimaryObject(
+                      input: {
+                        id: $id
+                        fields: {
+                          pointerField: { link: $secondaryObject4 }
+                          relationField: {
+                            remove: [$secondaryObject2, $secondaryObject4]
                           }
                         }
-                      ) {
-                        primaryObject {
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
+                            someField
+                          }
+                        }
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    id:
-                      createPrimaryObjectResult.data.createPrimaryObject
-                        .primaryObject.id,
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  }
+                `,
+                variables: {
+                  id:
+                    createPrimaryObjectResult.data.createPrimaryObject
+                      .primaryObject.id,
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 22');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
-                    .map((value) => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 44');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.relationField.edges
-                ).toEqual([]);
-              } catch (e) {
-                handleError(e);
-              }
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 22');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 44');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .relationField.edges
+              ).toEqual([]);
+            } catch (e) {
+              handleError(e);
             }
-          );
+          });
         });
       });
 
@@ -3193,7 +3186,7 @@ describe('ParseGraphQLServer', () => {
                 },
               },
             });
-            const classes = Object.keys(result.data).map((fieldName) => ({
+            const classes = Object.keys(result.data).map(fieldName => ({
               clientMutationId: result.data[fieldName].clientMutationId,
               class: {
                 name: result.data[fieldName].class.name,
@@ -3358,9 +3351,9 @@ describe('ParseGraphQLServer', () => {
               },
             });
             findResult.data.classes = findResult.data.classes
-              .filter((schemaClass) => !schemaClass.name.startsWith('_'))
+              .filter(schemaClass => !schemaClass.name.startsWith('_'))
               .sort((a, b) => (a.name > b.name ? 1 : -1));
-            findResult.data.classes.forEach((schemaClass) => {
+            findResult.data.classes.forEach(schemaClass => {
               schemaClass.schemaFields = schemaClass.schemaFields.sort((a, b) =>
                 a.name > b.name ? 1 : -1
               );
@@ -4277,10 +4270,10 @@ describe('ParseGraphQLServer', () => {
               expect(result.manyRelations.length).toEqual(2);
 
               const customerSubObject = result.manyRelations.find(
-                (o) => o.objectId === obj1.id
+                o => o.objectId === obj1.id
               );
               const someClassSubObject = result.manyRelations.find(
-                (o) => o.objectId === obj2.id
+                o => o.objectId === obj2.id
               );
 
               expect(customerSubObject).toBeDefined();
@@ -4289,7 +4282,7 @@ describe('ParseGraphQLServer', () => {
                 'imCustomerOne'
               );
               const formatedArrayField = customerSubObject.arrayField.map(
-                (elem) => elem.value
+                elem => elem.value
               );
               expect(formatedArrayField).toEqual(arrayField);
               expect(someClassSubObject.someClassField).toEqual(
@@ -4445,7 +4438,7 @@ describe('ParseGraphQLServer', () => {
             await Promise.all(
               objects
                 .slice(0, 3)
-                .map((obj) =>
+                .map(obj =>
                   expectAsync(
                     getObject(obj.className, obj.id)
                   ).toBeRejectedWith(jasmine.stringMatching('Object not found'))
@@ -4456,7 +4449,7 @@ describe('ParseGraphQLServer', () => {
                 .someField
             ).toEqual('someValue4');
             await Promise.all(
-              objects.map(async (obj) =>
+              objects.map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
@@ -4467,7 +4460,7 @@ describe('ParseGraphQLServer', () => {
               )
             );
             await Promise.all(
-              objects.map(async (obj) =>
+              objects.map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
@@ -4478,7 +4471,7 @@ describe('ParseGraphQLServer', () => {
               )
             );
             await Promise.all(
-              objects.map(async (obj) =>
+              objects.map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
@@ -4494,7 +4487,7 @@ describe('ParseGraphQLServer', () => {
               })
             ).toBeRejectedWith(jasmine.stringMatching('Object not found'));
             await Promise.all(
-              [object1, object3, object4].map(async (obj) =>
+              [object1, object3, object4].map(async obj =>
                 expect(
                   (
                     await getObject(obj.className, obj.id, {
@@ -4505,7 +4498,7 @@ describe('ParseGraphQLServer', () => {
               )
             );
             await Promise.all(
-              objects.slice(0, 3).map((obj) =>
+              objects.slice(0, 3).map(obj =>
                 expectAsync(
                   getObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user4.getSessionToken(),
@@ -4521,7 +4514,7 @@ describe('ParseGraphQLServer', () => {
               ).data.get.someField
             ).toEqual('someValue4');
             await Promise.all(
-              objects.slice(0, 2).map((obj) =>
+              objects.slice(0, 2).map(obj =>
                 expectAsync(
                   getObject(obj.className, obj.id, {
                     'X-Parse-Session-Token': user5.getSessionToken(),
@@ -4646,7 +4639,7 @@ describe('ParseGraphQLServer', () => {
             ).toBeDefined();
           });
 
-          it('should respect protectedFields', async (done) => {
+          it('should respect protectedFields', async done => {
             await prepareData();
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
@@ -4762,7 +4755,7 @@ describe('ParseGraphQLServer', () => {
                 let foundUserClassReadPreference = false;
                 databaseAdapter.database.serverConfig.cursor.calls
                   .all()
-                  .forEach((call) => {
+                  .forEach(call => {
                     if (
                       call.args[0].ns.collection.indexOf('GraphQLClass') >= 0
                     ) {
@@ -4826,7 +4819,7 @@ describe('ParseGraphQLServer', () => {
               let foundUserClassReadPreference = false;
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
-                .forEach((call) => {
+                .forEach(call => {
                   if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
                     expect(call.args[0].options.readPreference.mode).toBe(
@@ -4886,7 +4879,7 @@ describe('ParseGraphQLServer', () => {
               let foundUserClassReadPreference = false;
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
-                .forEach((call) => {
+                .forEach(call => {
                   if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
                     expect(call.args[0].options.readPreference.mode).toBe(
@@ -4936,7 +4929,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(result.data.customers.edges.length).toEqual(2);
 
-            result.data.customers.edges.forEach((resultObj) => {
+            result.data.customers.edges.forEach(resultObj => {
               const obj = resultObj.node.objectId === obj1.id ? obj1 : obj2;
               expect(resultObj.node.objectId).toEqual(obj.id);
               expect(resultObj.node.someField).toEqual(obj.get('someField'));
@@ -4977,12 +4970,12 @@ describe('ParseGraphQLServer', () => {
 
             expect(
               (await findObjects('GraphQLClass')).data.find.edges.map(
-                (object) => object.node.someField
+                object => object.node.someField
               )
             ).toEqual([]);
             expect(
               (await findObjects('PublicClass')).data.find.edges.map(
-                (object) => object.node.someField
+                object => object.node.someField
               )
             ).toEqual(['someValue4']);
             expect(
@@ -4991,7 +4984,7 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Master-Key': 'test',
                 })
               ).data.find.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
@@ -4999,7 +4992,7 @@ describe('ParseGraphQLServer', () => {
                 await findObjects('PublicClass', {
                   'X-Parse-Master-Key': 'test',
                 })
-              ).data.find.edges.map((object) => object.node.someField)
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
               (
@@ -5007,7 +5000,7 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Session-Token': user1.getSessionToken(),
                 })
               ).data.find.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
@@ -5015,7 +5008,7 @@ describe('ParseGraphQLServer', () => {
                 await findObjects('PublicClass', {
                   'X-Parse-Session-Token': user1.getSessionToken(),
                 })
-              ).data.find.edges.map((object) => object.node.someField)
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue4']);
             expect(
               (
@@ -5023,7 +5016,7 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Session-Token': user2.getSessionToken(),
                 })
               ).data.find.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2', 'someValue3']);
             expect(
@@ -5032,7 +5025,7 @@ describe('ParseGraphQLServer', () => {
                   'X-Parse-Session-Token': user3.getSessionToken(),
                 })
               ).data.find.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
             expect(
@@ -5040,14 +5033,14 @@ describe('ParseGraphQLServer', () => {
                 await findObjects('GraphQLClass', {
                   'X-Parse-Session-Token': user4.getSessionToken(),
                 })
-              ).data.find.edges.map((object) => object.node.someField)
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual([]);
             expect(
               (
                 await findObjects('GraphQLClass', {
                   'X-Parse-Session-Token': user5.getSessionToken(),
                 })
-              ).data.find.edges.map((object) => object.node.someField)
+              ).data.find.edges.map(object => object.node.someField)
             ).toEqual(['someValue3']);
           });
 
@@ -5100,7 +5093,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(
               result.data.graphQLClasses.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue3']);
           });
@@ -5178,7 +5171,7 @@ describe('ParseGraphQLServer', () => {
 
             expect(
               result.data.graphQLClasses.edges
-                .map((object) => object.node.someField)
+                .map(object => object.node.someField)
                 .sort()
             ).toEqual(['someValue1', 'someValue2']);
           });
@@ -5345,7 +5338,7 @@ describe('ParseGraphQLServer', () => {
             });
 
             expect(
-              result.data.find.edges.map((obj) => obj.node.someField)
+              result.data.find.edges.map(obj => obj.node.someField)
             ).toEqual(['someValue14', 'someValue17']);
           });
 
@@ -5416,7 +5409,7 @@ describe('ParseGraphQLServer', () => {
 
             let result = await find();
             expect(
-              result.data.someClasses.edges.map((edge) => edge.node.numberField)
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
             ).toEqual(numberArray(0, 99));
             expect(result.data.someClasses.count).toEqual(100);
             expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
@@ -5432,7 +5425,7 @@ describe('ParseGraphQLServer', () => {
 
             result = await find({ first: 10 });
             expect(
-              result.data.someClasses.edges.map((edge) => edge.node.numberField)
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
             ).toEqual(numberArray(0, 9));
             expect(result.data.someClasses.count).toEqual(100);
             expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
@@ -5451,7 +5444,7 @@ describe('ParseGraphQLServer', () => {
               after: result.data.someClasses.pageInfo.endCursor,
             });
             expect(
-              result.data.someClasses.edges.map((edge) => edge.node.numberField)
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
             ).toEqual(numberArray(10, 19));
             expect(result.data.someClasses.count).toEqual(100);
             expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
@@ -5467,7 +5460,7 @@ describe('ParseGraphQLServer', () => {
 
             result = await find({ last: 10 });
             expect(
-              result.data.someClasses.edges.map((edge) => edge.node.numberField)
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
             ).toEqual(numberArray(90, 99));
             expect(result.data.someClasses.count).toEqual(100);
             expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
@@ -5486,7 +5479,7 @@ describe('ParseGraphQLServer', () => {
               before: result.data.someClasses.pageInfo.startCursor,
             });
             expect(
-              result.data.someClasses.edges.map((edge) => edge.node.numberField)
+              result.data.someClasses.edges.map(edge => edge.node.numberField)
             ).toEqual(numberArray(80, 89));
             expect(result.data.someClasses.count).toEqual(100);
             expect(result.data.someClasses.pageInfo.hasPreviousPage).toEqual(
@@ -5820,7 +5813,7 @@ describe('ParseGraphQLServer', () => {
               let foundUserClassReadPreference = false;
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
-                .forEach((call) => {
+                .forEach(call => {
                   if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
                     expect(call.args[0].options.readPreference.mode).toBe(
@@ -5877,7 +5870,7 @@ describe('ParseGraphQLServer', () => {
               let foundUserClassReadPreference = false;
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
-                .forEach((call) => {
+                .forEach(call => {
                   if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
                     expect(call.args[0].options.readPreference.mode).toBe(
@@ -5937,7 +5930,7 @@ describe('ParseGraphQLServer', () => {
               let foundUserClassReadPreference = false;
               databaseAdapter.database.serverConfig.cursor.calls
                 .all()
-                .forEach((call) => {
+                .forEach(call => {
                   if (call.args[0].ns.collection.indexOf('GraphQLClass') >= 0) {
                     foundGraphQLClassReadPreference = true;
                     expect(call.args[0].options.readPreference.mode).toBe(
@@ -6008,7 +6001,7 @@ describe('ParseGraphQLServer', () => {
                 let foundUserClassReadPreference = false;
                 databaseAdapter.database.serverConfig.cursor.calls
                   .all()
-                  .forEach((call) => {
+                  .forEach(call => {
                     if (
                       call.args[0].ns.collection.indexOf('GraphQLClass') >= 0
                     ) {
@@ -6067,7 +6060,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             expect(
-              result.data.graphQLClasses.edges.map((edge) => edge.node.objectId)
+              result.data.graphQLClasses.edges.map(edge => edge.node.objectId)
             ).toEqual([object3.id, object1.id, object2.id]);
           });
 
@@ -6120,7 +6113,7 @@ describe('ParseGraphQLServer', () => {
 
               expect(
                 result.data.parentClass.graphQLClasses.edges.map(
-                  (edge) => edge.node.objectId
+                  edge => edge.node.objectId
                 )
               ).toEqual([object3.id, object1.id, object2.id]);
             }
@@ -6384,7 +6377,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(obj.className, obj.id, {
@@ -6405,7 +6398,7 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue1');
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6421,7 +6414,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6437,7 +6430,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6453,7 +6446,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              [object1, object3, object4].map(async (obj) => {
+              [object1, object3, object4].map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6480,7 +6473,7 @@ describe('ParseGraphQLServer', () => {
             await object2.fetch({ useMasterKey: true });
             expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
@@ -6507,7 +6500,7 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue6');
             await Promise.all(
-              objects.slice(0, 2).map(async (obj) => {
+              objects.slice(0, 2).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
@@ -6583,7 +6576,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(obj.className, obj.id, {
@@ -6607,7 +6600,7 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue1');
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6626,7 +6619,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6645,7 +6638,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.map(async (obj) => {
+              objects.map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6664,7 +6657,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              [object1, object3, object4].map(async (obj) => {
+              [object1, object3, object4].map(async obj => {
                 expect(
                   (
                     await updateObject(
@@ -6694,7 +6687,7 @@ describe('ParseGraphQLServer', () => {
             await object2.fetch({ useMasterKey: true });
             expect(object2.get('someField')).toEqual(originalFieldValue);
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
@@ -6724,7 +6717,7 @@ describe('ParseGraphQLServer', () => {
             await object4.fetch({ useMasterKey: true });
             expect(object4.get('someField')).toEqual('changedValue6');
             await Promise.all(
-              objects.slice(0, 2).map(async (obj) => {
+              objects.slice(0, 2).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   updateObject(
@@ -6851,7 +6844,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id)
@@ -6861,7 +6854,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id, {
@@ -6952,7 +6945,7 @@ describe('ParseGraphQLServer', () => {
             }
 
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id)
@@ -6962,7 +6955,7 @@ describe('ParseGraphQLServer', () => {
               })
             );
             await Promise.all(
-              objects.slice(0, 3).map(async (obj) => {
+              objects.slice(0, 3).map(async obj => {
                 const originalFieldValue = obj.get('someField');
                 await expectAsync(
                   deleteObject(obj.className, obj.id, {
@@ -7184,6 +7177,56 @@ describe('ParseGraphQLServer', () => {
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
           expect(resultFoo.bar).toEqual('hello');
+        });
+        it('should return logged user and do not by pass pointer security', async () => {
+          const masterKeyOnlyACL = new Parse.ACL();
+          masterKeyOnlyACL.setPublicReadAccess(false);
+          masterKeyOnlyACL.setPublicWriteAccess(false);
+          const foo = new Parse.Object('Foo');
+          foo.setACL(masterKeyOnlyACL);
+          foo.set('bar', 'hello');
+          await foo.save(null, { useMasterKey: true });
+          const userName = 'userx1',
+            password = 'user1',
+            email = 'emailUserx1@parse.com';
+
+          const user = new Parse.User();
+          user.setUsername(userName);
+          user.setPassword(password);
+          user.setEmail(email);
+          user.set('userFoo', foo);
+          await user.signUp();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const session = await Parse.Session.current();
+          const result = await apolloClient.query({
+            query: gql`
+              query GetCurrentUser {
+                viewer {
+                  sessionToken
+                  user {
+                    id
+                    objectId
+                    userFoo {
+                      bar
+                    }
+                  }
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Session-Token': session.getSessionToken(),
+              },
+            },
+          });
+
+          const sessionToken = result.data.viewer.sessionToken;
+          const { objectId, userFoo: resultFoo } = result.data.viewer.user;
+          expect(objectId).toEqual(user.id);
+          expect(sessionToken).toBeDefined();
+          expect(resultFoo).toEqual(null);
         });
       });
 
@@ -7635,8 +7678,8 @@ describe('ParseGraphQLServer', () => {
           }
         });
 
-        it('should accept different params', (done) => {
-          Parse.Cloud.define('hello', async (req) => {
+        it('should accept different params', done => {
+          Parse.Cloud.define('hello', async req => {
             expect(req.params.date instanceof Date).toBe(true);
             expect(req.params.date.getTime()).toBe(1463907600000);
             expect(req.params.dateList[0] instanceof Date).toBe(true);
@@ -7772,7 +7815,7 @@ describe('ParseGraphQLServer', () => {
             ).data['__type'];
             expect(functionEnum.kind).toEqual('ENUM');
             expect(
-              functionEnum.enumValues.map((value) => value.name).sort()
+              functionEnum.enumValues.map(value => value.name).sort()
             ).toEqual(['_underscored', 'a', 'b', 'contains1Number']);
           } catch (e) {
             handleError(e);
@@ -7814,12 +7857,12 @@ describe('ParseGraphQLServer', () => {
             ).data['__type'];
             expect(functionEnum.kind).toEqual('ENUM');
             expect(
-              functionEnum.enumValues.map((value) => value.name).sort()
+              functionEnum.enumValues.map(value => value.name).sort()
             ).toEqual(['a']);
             expect(
               parseGraphQLServer.parseGraphQLSchema.log.warn.calls
                 .all()
-                .map((call) => call.args[0])
+                .map(call => call.args[0])
                 .sort()
             ).toEqual([
               'Function 1NumberInTheBeggning could not be added to the auto schema because GraphQL names must match /^[_a-zA-Z][_a-zA-Z0-9]*$/.',
@@ -8715,13 +8758,13 @@ describe('ParseGraphQLServer', () => {
             expect(result.name).toEqual('imACountry2');
             expect(result.companies.edges.length).toEqual(3);
             expect(
-              result.companies.edges.some((o) => o.node.objectId === company.id)
+              result.companies.edges.some(o => o.node.objectId === company.id)
             ).toBeTruthy();
             expect(
-              result.companies.edges.some((o) => o.node.name === 'imACompany2')
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
             expect(
-              result.companies.edges.some((o) => o.node.name === 'imACompany3')
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
           }
         );
@@ -8806,16 +8849,16 @@ describe('ParseGraphQLServer', () => {
           expect(result.companies.edges.length).toEqual(2);
           expect(
             result.companies.edges.some(
-              (c) =>
+              c =>
                 c.node.name === 'imACompany2' &&
-                c.node.teams.edges.some((t) => t.node.name === 'imATeam2')
+                c.node.teams.edges.some(t => t.node.name === 'imATeam2')
             )
           ).toBeTruthy();
           expect(
             result.companies.edges.some(
-              (c) =>
+              c =>
                 c.node.name === 'imACompany3' &&
-                c.node.teams.edges.some((t) => t.node.name === 'imATeam3')
+                c.node.teams.edges.some(t => t.node.name === 'imATeam3')
             )
           ).toBeTruthy();
         });
@@ -8884,17 +8927,13 @@ describe('ParseGraphQLServer', () => {
             expect(result.objectId).toEqual(country.id);
             expect(result.companies.edges.length).toEqual(2);
             expect(
-              result.companies.edges.some(
-                (o) => o.node.objectId === company2.id
-              )
+              result.companies.edges.some(o => o.node.objectId === company2.id)
             ).toBeTruthy();
             expect(
-              result.companies.edges.some((o) => o.node.name === 'imACompany3')
+              result.companies.edges.some(o => o.node.name === 'imACompany3')
             ).toBeTruthy();
             expect(
-              result.companies.edges.some(
-                (o) => o.node.objectId === company1.id
-              )
+              result.companies.edges.some(o => o.node.objectId === company1.id)
             ).toBeFalsy();
           }
         );
@@ -8966,7 +9005,7 @@ describe('ParseGraphQLServer', () => {
             expect(result.name).toEqual('imACountry2');
             expect(result.companies.edges.length).toEqual(1);
             expect(
-              result.companies.edges.some((o) => o.node.name === 'imACompany2')
+              result.companies.edges.some(o => o.node.name === 'imACompany2')
             ).toBeTruthy();
           }
         );
@@ -9017,10 +9056,10 @@ describe('ParseGraphQLServer', () => {
           expect(result1.objectId).toEqual(country.id);
           expect(result1.companies.edges.length).toEqual(2);
           expect(
-            result1.companies.edges.some((o) => o.node.objectId === company1.id)
+            result1.companies.edges.some(o => o.node.objectId === company1.id)
           ).toBeTruthy();
           expect(
-            result1.companies.edges.some((o) => o.node.objectId === company2.id)
+            result1.companies.edges.some(o => o.node.objectId === company2.id)
           ).toBeTruthy();
 
           // With where
@@ -9762,12 +9801,12 @@ describe('ParseGraphQLServer', () => {
             const { edges } = someClasses;
             expect(edges.length).toEqual(2);
             expect(
-              edges.find((result) => result.node.id === create1.someClass.id)
-                .node.someField
+              edges.find(result => result.node.id === create1.someClass.id).node
+                .someField
             ).toEqual(someFieldValue);
             expect(
-              edges.find((result) => result.node.id === create2.someClass.id)
-                .node.someField
+              edges.find(result => result.node.id === create2.someClass.id).node
+                .someField
             ).toEqual(someFieldValue2);
           } catch (e) {
             handleError(e);
@@ -9859,7 +9898,7 @@ describe('ParseGraphQLServer', () => {
 
             const { someField } = getResult.data.someClass;
             expect(Array.isArray(someField)).toBeTruthy();
-            expect(someField.map((element) => element.value)).toEqual(
+            expect(someField.map(element => element.value)).toEqual(
               someFieldValue
             );
             expect(getResult.data.someClasses.edges.length).toEqual(1);
@@ -10276,7 +10315,7 @@ describe('ParseGraphQLServer', () => {
               [46, 47],
               [48, 49],
               [44, 45],
-            ].map((point) => ({
+            ].map(point => ({
               latitude: point[0],
               longitude: point[1],
             }));
@@ -10356,7 +10395,7 @@ describe('ParseGraphQLServer', () => {
               'object'
             );
             expect(getResult.data.someClass.somePolygonField).toEqual(
-              somePolygonFieldValue.map((geoPoint) => ({
+              somePolygonFieldValue.map(geoPoint => ({
                 ...geoPoint,
                 __typename: 'GeoPoint',
               }))
@@ -10672,7 +10711,7 @@ describe('ParseGraphQLServer', () => {
           `,
         });
         parseGraphQLServer.applyGraphQL(expressApp);
-        await new Promise((resolve) =>
+        await new Promise(resolve =>
           httpServer.listen({ port: 13377 }, resolve)
         );
         const httpLink = createUploadLink({
@@ -10797,7 +10836,7 @@ describe('ParseGraphQLServer', () => {
             fields: {
               nameUpperCase: {
                 type: new GraphQLNonNull(GraphQLString),
-                resolve: (p) => p.name.toUpperCase(),
+                resolve: p => p.name.toUpperCase(),
               },
               type: { type: TypeEnum },
               language: {
@@ -10858,7 +10897,7 @@ describe('ParseGraphQLServer', () => {
           });
 
         parseGraphQLServer.applyGraphQL(expressApp);
-        await new Promise((resolve) =>
+        await new Promise(resolve =>
           httpServer.listen({ port: 13377 }, resolve)
         );
         const httpLink = createUploadLink({
@@ -10992,7 +11031,7 @@ describe('ParseGraphQLServer', () => {
         });
 
         parseGraphQLServer.applyGraphQL(expressApp);
-        await new Promise((resolve) =>
+        await new Promise(resolve =>
           httpServer.listen({ port: 13377 }, resolve)
         );
         const httpLink = createUploadLink({
