@@ -794,8 +794,8 @@ export async function maybeRunSubscribeTrigger(
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
-  const result = (await trigger(request)) || request.query;
-  const query = result.toJSON();
+  await trigger(request);
+  const query = request.query.toJSON();
   if (query.keys) {
     query.fields = query.keys.split(',');
   }

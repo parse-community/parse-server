@@ -155,10 +155,10 @@ describe('ParseLiveQuery', function () {
       verbose: false,
       silent: true,
     });
-    Parse.Cloud.beforeSubscribe(TestObject, () => {
+    Parse.Cloud.beforeSubscribe(TestObject, request => {
       const query = new Parse.Query(TestObject);
       query.equalTo('foo', 'yolo');
-      return query;
+      request.query = query;
     });
 
     const query = new Parse.Query(TestObject);
