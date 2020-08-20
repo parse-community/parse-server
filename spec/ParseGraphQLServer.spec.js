@@ -2401,585 +2401,580 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-
-          it_only_db('mongo')(
-            'Id inputs should work either with global id or object id',
-            async () => {
-              try {
-                await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateClasses {
-                      secondaryObject: createClass(
-                        input: {
-                          name: "SecondaryObject"
-                          schemaFields: { addStrings: [{ name: "someField" }] }
-                        }
-                      ) {
-                        clientMutationId
+          // TODO: (moumouls, davimacedo) Fix flaky test
+          xit('Id inputs should work either with global id or object id', async () => {
+            try {
+              await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateClasses {
+                    secondaryObject: createClass(
+                      input: {
+                        name: "SecondaryObject"
+                        schemaFields: { addStrings: [{ name: "someField" }] }
                       }
-                      primaryObject: createClass(
-                        input: {
-                          name: "PrimaryObject"
-                          schemaFields: {
-                            addStrings: [{ name: "stringField" }]
-                            addArrays: [{ name: "arrayField" }]
-                            addPointers: [
-                              {
-                                name: "pointerField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                            addRelations: [
-                              {
-                                name: "relationField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                          }
-                        }
-                      ) {
-                        clientMutationId
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                await resetGraphQLCache();
-
-                const createSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateSecondaryObjects {
-                      secondaryObject1: createSecondaryObject(
-                        input: { fields: { someField: "some value 1" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: createSecondaryObject(
-                        input: { fields: { someField: "some value 2" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: createSecondaryObject(
-                        input: { fields: { someField: "some value 3" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: createSecondaryObject(
-                        input: { fields: { someField: "some value 4" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: createSecondaryObject(
-                        input: { fields: { someField: "some value 5" } }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: createSecondaryObject(
-                        input: { fields: { someField: "some value 6" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
-                      secondaryObject7: createSecondaryObject(
-                        input: { fields: { someField: "some value 7" } }
-                      ) {
-                        secondaryObject {
-                          someField
-                        }
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const updateSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdateSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
                     ) {
-                      secondaryObject1: updateSecondaryObject(
-                        input: {
-                          id: $id1
-                          fields: { someField: "some value 11" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: updateSecondaryObject(
-                        input: {
-                          id: $id2
-                          fields: { someField: "some value 22" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: updateSecondaryObject(
-                        input: {
-                          id: $id3
-                          fields: { someField: "some value 33" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: updateSecondaryObject(
-                        input: {
-                          id: $id4
-                          fields: { someField: "some value 44" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: updateSecondaryObject(
-                        input: {
-                          id: $id5
-                          fields: { someField: "some value 55" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: updateSecondaryObject(
-                        input: {
-                          id: $id6
-                          fields: { someField: "some value 66" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      createSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id2:
-                      createSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id3:
-                      createSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      createSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                    id5:
-                      createSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      createSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const deleteSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation DeleteSecondaryObjects(
-                      $id1: ID!
-                      $id3: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    primaryObject: createClass(
+                      input: {
+                        name: "PrimaryObject"
+                        schemaFields: {
+                          addStrings: [{ name: "stringField" }]
+                          addArrays: [{ name: "arrayField" }]
+                          addPointers: [
+                            {
+                              name: "pointerField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                          addRelations: [
+                            {
+                              name: "relationField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                        }
+                      }
                     ) {
-                      secondaryObject1: deleteSecondaryObject(
-                        input: { id: $id1 }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject3: deleteSecondaryObject(
-                        input: { id: $id3 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject5: deleteSecondaryObject(
-                        input: { id: $id5 }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: deleteSecondaryObject(
-                        input: { id: $id6 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      updateSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id3:
-                      updateSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id5:
-                      updateSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      updateSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                const getSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query GetSecondaryObjects($id2: ID!, $id4: ID!) {
-                      secondaryObject2: secondaryObject(id: $id2) {
+              await resetGraphQLCache();
+
+              const createSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateSecondaryObjects {
+                    secondaryObject1: createSecondaryObject(
+                      input: { fields: { someField: "some value 1" } }
+                    ) {
+                      secondaryObject {
                         id
                         objectId
                         someField
                       }
-                      secondaryObject4: secondaryObject(id: $id4) {
+                    }
+                    secondaryObject2: createSecondaryObject(
+                      input: { fields: { someField: "some value 2" } }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: createSecondaryObject(
+                      input: { fields: { someField: "some value 3" } }
+                    ) {
+                      secondaryObject {
                         objectId
                         someField
                       }
                     }
-                  `,
-                  variables: {
-                    id2:
-                      updateSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id4:
-                      updateSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const findSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query FindSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    secondaryObject4: createSecondaryObject(
+                      input: { fields: { someField: "some value 4" } }
                     ) {
-                      secondaryObjects(
-                        where: {
-                          AND: [
-                            {
-                              OR: [
-                                { id: { equalTo: $id2 } }
-                                {
-                                  AND: [
-                                    { id: { equalTo: $id4 } }
-                                    { objectId: { equalTo: $id4 } }
-                                  ]
-                                }
-                              ]
-                            }
-                            { id: { notEqualTo: $id1 } }
-                            { id: { notEqualTo: $id3 } }
-                            { objectId: { notEqualTo: $id2 } }
-                            { objectId: { notIn: [$id5, $id6] } }
-                            { id: { in: [$id2, $id4] } }
-                          ]
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: createSecondaryObject(
+                      input: { fields: { someField: "some value 5" } }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: createSecondaryObject(
+                      input: { fields: { someField: "some value 6" } }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                    secondaryObject7: createSecondaryObject(
+                      input: { fields: { someField: "some value 7" } }
+                    ) {
+                      secondaryObject {
+                        someField
+                      }
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const updateSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdateSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: updateSecondaryObject(
+                      input: {
+                        id: $id1
+                        fields: { someField: "some value 11" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject2: updateSecondaryObject(
+                      input: {
+                        id: $id2
+                        fields: { someField: "some value 22" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: updateSecondaryObject(
+                      input: {
+                        id: $id3
+                        fields: { someField: "some value 33" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject4: updateSecondaryObject(
+                      input: {
+                        id: $id4
+                        fields: { someField: "some value 44" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: updateSecondaryObject(
+                      input: {
+                        id: $id5
+                        fields: { someField: "some value 55" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: updateSecondaryObject(
+                      input: {
+                        id: $id6
+                        fields: { someField: "some value 66" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    createSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id2:
+                    createSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id3:
+                    createSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4:
+                    createSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                  id5:
+                    createSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    createSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const deleteSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation DeleteSecondaryObjects(
+                    $id1: ID!
+                    $id3: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: deleteSecondaryObject(
+                      input: { id: $id1 }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject3: deleteSecondaryObject(
+                      input: { id: $id3 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject5: deleteSecondaryObject(
+                      input: { id: $id5 }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: deleteSecondaryObject(
+                      input: { id: $id6 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    updateSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id3:
+                    updateSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id5:
+                    updateSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    updateSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const getSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query GetSecondaryObjects($id2: ID!, $id4: ID!) {
+                    secondaryObject2: secondaryObject(id: $id2) {
+                      id
+                      objectId
+                      someField
+                    }
+                    secondaryObject4: secondaryObject(id: $id4) {
+                      objectId
+                      someField
+                    }
+                  }
+                `,
+                variables: {
+                  id2:
+                    updateSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id4:
+                    updateSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const findSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query FindSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObjects(
+                      where: {
+                        AND: [
+                          {
+                            OR: [
+                              { id: { equalTo: $id2 } }
+                              {
+                                AND: [
+                                  { id: { equalTo: $id4 } }
+                                  { objectId: { equalTo: $id4 } }
+                                ]
+                              }
+                            ]
+                          }
+                          { id: { notEqualTo: $id1 } }
+                          { id: { notEqualTo: $id3 } }
+                          { objectId: { notEqualTo: $id2 } }
+                          { objectId: { notIn: [$id5, $id6] } }
+                          { id: { in: [$id2, $id4] } }
+                        ]
+                      }
+                      order: [id_ASC, objectId_ASC]
+                    ) {
+                      edges {
+                        node {
+                          id
+                          objectId
+                          someField
                         }
-                        order: [id_ASC, objectId_ASC]
-                      ) {
-                        edges {
-                          node {
-                            id
-                            objectId
+                      }
+                      count
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    deleteSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.objectId,
+                  id2: getSecondaryObjectsResult.data.secondaryObject2.id,
+                  id3:
+                    deleteSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4: getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  id5:
+                    deleteSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    deleteSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.count
+              ).toEqual(2);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .id
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .id
+              );
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .objectId
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .objectId
+              );
+
+              const createPrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreatePrimaryObject(
+                    $pointer: Any
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    createPrimaryObject(
+                      input: {
+                        fields: {
+                          stringField: "some value"
+                          arrayField: [1, "abc", $pointer]
+                          pointerField: { link: $secondaryObject2 }
+                          relationField: {
+                            add: [$secondaryObject2, $secondaryObject4]
+                          }
+                        }
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
                             someField
                           }
                         }
-                        count
-                      }
-                    }
-                  `,
-                  variables: {
-                    id1:
-                      deleteSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.objectId,
-                    id2: getSecondaryObjectsResult.data.secondaryObject2.id,
-                    id3:
-                      deleteSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
-                    id5:
-                      deleteSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      deleteSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.count
-                ).toEqual(2);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges
-                    .map(value => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .id
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .id
-                );
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .objectId
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .objectId
-                );
-
-                const createPrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreatePrimaryObject(
-                      $pointer: Any
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      createPrimaryObject(
-                        input: {
-                          fields: {
-                            stringField: "some value"
-                            arrayField: [1, "abc", $pointer]
-                            pointerField: { link: $secondaryObject2 }
-                            relationField: {
-                              add: [$secondaryObject2, $secondaryObject4]
-                            }
-                          }
-                        }
-                      ) {
-                        primaryObject {
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    pointer: {
-                      __type: 'Pointer',
-                      className: 'SecondaryObject',
-                      objectId:
-                        getSecondaryObjectsResult.data.secondaryObject4
-                          .objectId,
-                    },
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
+                  }
+                `,
+                variables: {
+                  pointer: {
+                    __type: 'Pointer',
+                    className: 'SecondaryObject',
+                    objectId:
                       getSecondaryObjectsResult.data.secondaryObject4.objectId,
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                });
+                },
+              });
 
-                const updatePrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdatePrimaryObject(
-                      $id: ID!
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      updatePrimaryObject(
-                        input: {
-                          id: $id
-                          fields: {
-                            pointerField: { link: $secondaryObject4 }
-                            relationField: {
-                              remove: [$secondaryObject2, $secondaryObject4]
-                            }
+              const updatePrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdatePrimaryObject(
+                    $id: ID!
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    updatePrimaryObject(
+                      input: {
+                        id: $id
+                        fields: {
+                          pointerField: { link: $secondaryObject4 }
+                          relationField: {
+                            remove: [$secondaryObject2, $secondaryObject4]
                           }
                         }
-                      ) {
-                        primaryObject {
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
+                            someField
+                          }
+                        }
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    id:
-                      createPrimaryObjectResult.data.createPrimaryObject
-                        .primaryObject.id,
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  }
+                `,
+                variables: {
+                  id:
+                    createPrimaryObjectResult.data.createPrimaryObject
+                      .primaryObject.id,
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 22');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
-                    .map(value => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 44');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.relationField.edges
-                ).toEqual([]);
-              } catch (e) {
-                handleError(e);
-              }
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 22');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 44');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .relationField.edges
+              ).toEqual([]);
+            } catch (e) {
+              handleError(e);
             }
-          );
+          });
         });
       });
 
