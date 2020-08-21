@@ -14,6 +14,7 @@ import {
   runLiveQueryEventHandlers,
   maybeRunConnectTrigger,
   maybeRunSubscribeTrigger,
+  maybeRunAfterEventTrigger,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -211,7 +212,7 @@ class ParseLiveQueryServer {
       originalParseObject = message.originalParseObject.toJSON();
     }
     const classLevelPermissions = message.classLevelPermissions;
-    const currentParseObject = message.currentParseObject.toJSON();
+    let currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
     logger.verbose(
       'ClassName: %s | ObjectId: %s',
