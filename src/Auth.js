@@ -218,6 +218,7 @@ Auth.prototype._loadUserRolesForAccess = async function () {
 };
 
 Auth.prototype._generateRoleGraphPipeline = function () {
+  const prefix = this.config.database.adapter._collectionPrefix;
   return [
     {
       $match: {
@@ -226,7 +227,7 @@ Auth.prototype._generateRoleGraphPipeline = function () {
     },
     {
       $graphLookup: {
-        from: '_Join:roles:_Role',
+        from: `${prefix}_Join:roles:_Role`,
         startWith: '$owningId',
         connectFromField: 'owningId',
         connectToField: 'relatedId',
@@ -238,7 +239,7 @@ Auth.prototype._generateRoleGraphPipeline = function () {
         directRoles: [
           {
             $lookup: {
-              from: '_Role',
+              from: `${prefix}_Role`,
               localField: 'owningId',
               foreignField: '_id',
               as: 'Roles',
@@ -265,7 +266,7 @@ Auth.prototype._generateRoleGraphPipeline = function () {
         childRoles: [
           {
             $lookup: {
-              from: '_Role',
+              from: `${prefix}_Role`,
               localField: 'childRolePath.owningId',
               foreignField: '_id',
               as: 'Roles',
