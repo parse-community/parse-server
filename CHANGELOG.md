@@ -45,6 +45,10 @@
 
 ### 4.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
+
+__BREAKING CHANGES:__
+- CHANGE: The Sign-In with Apple authentication adapter parameter `client_id` has been changed to `clientId`. If using the Apple authentication adapter, this change requires to update the Parse Server configuration accordingly. See [#6523](https://github.com/parse-community/parse-server/pull/6523) for details.
+___
 - UPGRADE: Parse JS SDK to 2.12.0 [#6548](https://github.com/parse-community/parse-server/pull/6548)
 - NEW: Support Group aggregation on multiple columns for Postgres [#6483](https://github.com/parse-community/parse-server/pull/6483). Thanks to [Siddharth Ramesh](https://github.com/srameshr).
 - FIX: Improve test reliability by instructing Travis to only install one version of Postgres [#6490](https://github.com/parse-community/parse-server/pull/6490). Thanks to
