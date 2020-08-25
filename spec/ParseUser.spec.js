@@ -1524,6 +1524,36 @@ describe('Parse.User testing', () => {
     done();
   });
 
+  it('login with provider should be blockable by beforeLogin even when the user has a attached file', async done => {
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    let hit = 0;
+    Parse.Cloud.beforeLogin(req => {
+      hit++;
+      if (req.object.get('isBanned')) {
+        throw new Error('banned account');
+      }
+    });
+
+    const user = await Parse.User._logInWith('facebook');
+    const base64 = 'aHR0cHM6Ly9naXRodWIuY29tL2t2bmt1YW5n';
+    const file = new Parse.File('myfile.txt', { base64 });
+    await file.save();
+    await user.save({ isBanned: true, file });
+    await Parse.User.logOut();
+
+    try {
+      await Parse.User._logInWith('facebook');
+      throw new Error('should not have continued login.');
+    } catch (e) {
+      expect(e.message).toBe('banned account');
+    }
+
+    expect(hit).toBe(1);
+    done();
+  });
+
   it('logout with provider should call afterLogout trigger', async done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
