@@ -43,7 +43,7 @@ describe('Auth', () => {
     });
 
     it('should only query the roles once', done => {
-      const loadRolesSpy = spyOn(auth, '_loadRoles').and.callThrough();
+      const loadRolesSpy = spyOn(auth, '_loadUserRolesForAccess').and.callThrough();
       auth
         .getUserRoles()
         .then(roles => {
