@@ -95,12 +95,11 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 ```bash
 $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
-$ docker build --tag parse-server .
-$ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+$ docker-compose build
+$ docker-compose up -d
 ```
 
-You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
+You can update [.env](.env) to use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
 That's it! You are now running a standalone version of Parse Server on your machine.
 

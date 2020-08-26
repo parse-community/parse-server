@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  parse-server:
+    build: .
+    volumes:
+        - cloud-code-vol:/parse-server/cloud
+        - config-vol:/parse-server/config
+    ports:
+        - 1337:1337
+    links:
+        - mongodb:mongo
+    command: --appId ${APPLICATION_ID} --masterKey ${MASTER_KEY} --databaseURI mongodb://mongo/${test}
+
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - mongodb_data_container:/data/db
+
+volumes:
+  mongodb_data_container:
+  cloud-code-vol:
+  config-vol:
