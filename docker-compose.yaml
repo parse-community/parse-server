@@ -9,7 +9,7 @@ services:
         - 1337:1337
     links:
         - mongodb:mongo
-    command: --appId ${APPLICATION_ID} --masterKey ${MASTER_KEY} --databaseURI mongodb://mongo/${test}
+    command: --appId ${APPLICATION_ID} --masterKey ${MASTER_KEY} --databaseURI mongodb://mongo/${DB_NAME}
 
   mongodb:
     image: mongo:latest
