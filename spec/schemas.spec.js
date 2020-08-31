@@ -2861,6 +2861,35 @@ describe('schemas', () => {
     done();
   });
 
+  it('should be rejected if CLP pointerFields is not an array', async done => {
+    const config = Config.get(Parse.applicationId);
+    const schemaController = await config.database.loadSchema();
+
+    const operationKey = 'get';
+    const entity = 'pointerFields';
+    const value = {};
+
+    const schemaSetup = async () =>
+      await schemaController.addClassIfNotExists(
+        'AnObject',
+        {},
+        {
+          [operationKey]: {
+            [entity]: value,
+          },
+        }
+      );
+
+    await expectAsync(schemaSetup()).toBeRejectedWith(
+      new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        `'${value}' is not a valid value for ${operationKey}[${entity}] - expected an array.`
+      )
+    );
+
+    done();
+  });
+
   describe('index management', () => {
     beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
     it('cannot create index if field does not exist', done => {

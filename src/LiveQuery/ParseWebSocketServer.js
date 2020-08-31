@@ -13,6 +13,10 @@ export class ParseWebSocketServer {
       logger.info('Parse LiveQuery Server starts running');
     };
     wss.onConnection = ws => {
+      ws.on('error', error => {
+        logger.error(error.message);
+        logger.error(JSON.stringify(ws));
+      });
       onConnect(new ParseWebSocket(ws));
       // Send ping to client periodically
       const pingIntervalId = setInterval(() => {

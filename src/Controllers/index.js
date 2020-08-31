@@ -105,12 +105,13 @@ export function getFilesController(
     filesAdapter,
     databaseAdapter,
     preserveFileName,
+    fileKey,
   } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-    return new GridFSBucketAdapter(databaseURI);
+    return new GridFSBucketAdapter(databaseURI, {}, fileKey);
   });
   return new FilesController(filesControllerAdapter, appId, {
     preserveFileName,
@@ -171,7 +172,6 @@ export function getDatabaseController(
   const {
     databaseURI,
     databaseOptions,
-    skipMongoDBServer13732Workaround,
     collectionPrefix,
     schemaCacheTTL,
     enableSingleSchemaCache,
@@ -195,8 +195,7 @@ export function getDatabaseController(
   }
   return new DatabaseController(
     databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache),
-    skipMongoDBServer13732Workaround
+    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
   );
 }
 

@@ -144,6 +144,10 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     lastUsed: { type: 'Date' },
     timesUsed: { type: 'Number' },
   },
+  _Idempotency: {
+    reqId: { type: 'String' },
+    expire: { type: 'Date' },
+  }
 });
 
 const requiredColumns = Object.freeze({
@@ -161,6 +165,7 @@ const systemClasses = Object.freeze([
   '_JobStatus',
   '_JobSchedule',
   '_Audience',
+  '_Idempotency'
 ]);
 
 const volatileClasses = Object.freeze([
@@ -171,36 +176,67 @@ const volatileClasses = Object.freeze([
   '_GraphQLConfig',
   '_JobSchedule',
   '_Audience',
+  '_Idempotency'
 ]);
 
 // Anything that start with role
 const roleRegex = /^role:.*/;
-// Anything that starts with userField
-const pointerPermissionRegex = /^userField:.*/;
+// Anything that starts with userField (allowed for protected fields only)
+const protectedFieldsPointerRegex = /^userField:.*/;
 // * permission
 const publicRegex = /^\*$/;
 
-const requireAuthenticationRegex = /^requiresAuthentication$/;
+const authenticatedRegex = /^authenticated$/;
 
-const pointerFieldsRegex = /^pointerFields$/;
+const requiresAuthenticationRegex = /^requiresAuthentication$/;
 
-const permissionKeyRegex = Object.freeze([
-  roleRegex,
-  pointerPermissionRegex,
+const clpPointerRegex = /^pointerFields$/;
+
+// regex for validating entities in protectedFields object
+const protectedFieldsRegex = Object.freeze([
+  protectedFieldsPointerRegex,
   publicRegex,
-  requireAuthenticationRegex,
-  pointerFieldsRegex,
+  authenticatedRegex,
+  roleRegex,
+]);
+
+// clp regex
+const clpFieldsRegex = Object.freeze([
+  clpPointerRegex,
+  publicRegex,
+  requiresAuthenticationRegex,
+  roleRegex,
 ]);
 
 function validatePermissionKey(key, userIdRegExp) {
   let matchesSome = false;
-  for (const regEx of permissionKeyRegex) {
+  for (const regEx of clpFieldsRegex) {
     if (key.match(regEx) !== null) {
       matchesSome = true;
       break;
     }
   }
 
+  // userId depends on startup options so it's dynamic
+  const valid = matchesSome || key.match(userIdRegExp) !== null;
+  if (!valid) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `'${key}' is not a valid key for class level permissions`
+    );
+  }
+}
+
+function validateProtectedFieldsKey(key, userIdRegExp) {
+  let matchesSome = false;
+  for (const regEx of protectedFieldsRegex) {
+    if (key.match(regEx) !== null) {
+      matchesSome = true;
+      break;
+    }
+  }
+
+  // userId regex depends on launch options so it's dynamic
   const valid = matchesSome || key.match(userIdRegExp) !== null;
   if (!valid) {
     throw new Parse.Error(
@@ -264,7 +300,7 @@ function validateCLP(
     if (operationKey === 'protectedFields') {
       for (const entity in operation) {
         // throws on unexpected key
-        validatePermissionKey(entity, userIdRegExp);
+        validateProtectedFieldsKey(entity, userIdRegExp);
 
         const protectedFields = operation[entity];
 
@@ -277,6 +313,13 @@ function validateCLP(
 
         // if the field is in form of array
         for (const field of protectedFields) {
+          // do not alloow to protect default fields
+          if (defaultColumns._Default[field]) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_JSON,
+              `Default field '${field}' can not be protected`
+            );
+          }
           // field should exist on collection
           if (!Object.prototype.hasOwnProperty.call(fields, field)) {
             throw new Parse.Error(
@@ -301,6 +344,8 @@ function validateCLP(
       // throws on unexpected key
       validatePermissionKey(entity, userIdRegExp);
 
+      // entity can be either:
+      // "pointerFields": string[]
       if (entity === 'pointerFields') {
         const pointerFields = operation[entity];
 
@@ -311,13 +356,14 @@ function validateCLP(
         } else {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            `'${pointerFields}' is not a valid value for protectedFields[${entity}] - expected an array.`
+            `'${pointerFields}' is not a valid value for ${operationKey}[${entity}] - expected an array.`
           );
         }
         // proceed with next entity key
         continue;
       }
 
+      // or [entity]: boolean
       const permit = operation[entity];
 
       if (permit !== true) {
@@ -620,6 +666,13 @@ const _AudienceSchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+const _IdempotencySchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_Idempotency',
+    fields: defaultColumns._Idempotency,
+    classLevelPermissions: {},
+  })
+);
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -628,6 +681,7 @@ const VolatileClassesSchemas = [
   _GlobalConfigSchema,
   _GraphQLConfigSchema,
   _AudienceSchema,
+  _IdempotencySchema
 ];
 
 const dbTypeMatchesObjectType = (
@@ -1313,7 +1367,7 @@ export default class SchemaController {
       return Promise.resolve(this);
     }
 
-    const missingColumns = columns.filter(function(column) {
+    const missingColumns = columns.filter(function (column) {
       if (query && query.objectId) {
         if (object[column] && typeof object[column] === 'object') {
           // Trying to delete a required column

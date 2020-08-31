@@ -18,8 +18,6 @@
 </p>
 
 <p align="center">
-    <img alt="MongoDB 3.2" src="https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 3.4" src="https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
 </p>
@@ -34,8 +32,8 @@
 
 </p>
 <p align="center">
-  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/backers/badge.svg" /></a>
-  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/sponsors/badge.svg" /></a>
+  <a href="#backers"><img alt="Backers on Open Collective" src="https://opencollective.com/parse-server/tiers/backers/badge.svg" /></a>
+  <a href="#sponsors"><img alt="Sponsors on Open Collective" src="https://opencollective.com/parse-server/tiers/sponsors/badge.svg" /></a>
 </p>
 <br>
 
@@ -62,7 +60,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
         - [Configuring File Adapters](#configuring-file-adapters)
         - [Logging](#logging)
 - [Live Queries](#live-queries)
-- [GraphQL (beta)](#graphql-beta)
+- [GraphQL](#graphql)
 - [Upgrading to 3.0.0](#upgrading-to-300)
 - [Support](#support)
 - [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
@@ -80,8 +78,8 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 Before you start make sure you have installed:
 
-- [NodeJS](https://www.npmjs.com/) that includes `npm` 
-- [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)
+- [NodeJS](https://www.npmjs.com/) that includes `npm`
+- [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)(with [PostGIS](https://postgis.net) 2.2.0 or higher)
 - Optionally [Docker](https://www.docker.com/)
 
 ### Locally
@@ -337,8 +335,8 @@ It’s possible to change the default pages of the app and redirect the user to 
 ```js
 var server = ParseServer({
   ...otherOptions,
-  
-  customPages {
+
+  customPages: {
     passwordResetSuccess: "http://yourapp.com/passwordResetSuccess",
     verifyEmailSuccess: "http://yourapp.com/verifyEmailSuccess",
     parseFrameURL: "http://yourapp.com/parseFrameURL",
@@ -390,6 +388,39 @@ Parse Server allows developers to choose from several options when hosting files
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
+### Idempodency Enforcement
+ 
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+This feature deduplicates identical requests that are received by Parse Server mutliple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
+
+Identical requests are identified by their request header `X-Parse-Request-Id`. Therefore a client request has to include this header for deduplication to be applied. Requests that do not contain this header cannot be deduplicated and are processed normally by Parse Server. This means rolling out this feature to clients is seamless as Parse Server still processes request without this header when this feature is enbabled.
+
+> This feature needs to be enabled on the client side to send the header and on the server to process the header. Refer to the specific Parse SDK docs to see whether the feature is supported yet.
+
+Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
+
+#### Configuration example
+```
+let api = new ParseServer({
+    idempotencyOptions: {
+        paths: [".*"],       // enforce for all requests
+        ttl: 120             // keep request IDs for 120s
+    }
+}
+```
+#### Parameters
+
+| Parameter | Optional | Type  | Default value | Example values | Environment variable | Description |
+|-----------|----------|--------|---------------|-----------|-----------|-------------|
+| `idempotencyOptions` | yes | `Object` | `undefined` |   | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths. |
+| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` |  `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.ttl` | yes | `Integer` | `300` | `60` (60 seconds) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`. |
+
+#### Notes
+
+- This feature is currently only available for MongoDB and not for Postgres.
+
 ### Logging
 
 Parse Server will, by default, log:
@@ -412,11 +443,9 @@ Live queries are meant to be used in real-time reactive applications, where just
 
 Take a look at [Live Query Guide](https://docs.parseplatform.org/parse-server/guide/#live-queries), [Live Query Server Setup Guide](https://docs.parseplatform.org/parse-server/guide/#scalability) and [Live Query Protocol Specification](https://github.com/parse-community/parse-server/wiki/Parse-LiveQuery-Protocol-Specification). You can setup a standalone server or multiple instances for scalability (recommended).
 
-# GraphQL (beta)
+# GraphQL
 
 [GraphQL](https://graphql.org/), developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema. Parse Server also allows you to define your custom GraphQL queries and mutations, whose resolvers can be bound to your cloud code functions.
-
-⚠️ The Parse GraphQL ```beta``` implementation is fully functional but discussions are taking place on how to improve it. So new versions of Parse Server can bring breaking changes to the current API.
 
 ## Running
 
@@ -736,18 +765,6 @@ In short, parse SDK v2.0 removes the backbone style callbacks as well as the Par
 All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
 
 We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
-
-# Support
-
-Please take a look at our [support document](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
-
-If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
-
-- [ ] You've met the [prerequisites](http://docs.parseplatform.org/parse-server/guide/#prerequisites).
-
-- [ ] You're running the [latest version](https://github.com/parse-community/parse-server/releases) of Parse Server.
-
-- [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
 
 # Want to ride the bleeding edge?
 

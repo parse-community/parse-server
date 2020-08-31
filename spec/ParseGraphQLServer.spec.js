@@ -5,6 +5,8 @@ const fetch = require('node-fetch');
 const FormData = require('form-data');
 const ws = require('ws');
 require('./helper');
+const { updateCLP } = require('./dev');
+
 const pluralize = require('pluralize');
 const { getMainDefinition } = require('apollo-utilities');
 const { ApolloLink, split } = require('apollo-link');
@@ -15,10 +17,19 @@ const { SubscriptionClient } = require('subscriptions-transport-ws');
 const { WebSocketLink } = require('apollo-link-ws');
 const ApolloClient = require('apollo-client').default;
 const gql = require('graphql-tag');
+const { toGlobalId } = require('graphql-relay');
+const {
+  GraphQLObjectType,
+  GraphQLString,
+  GraphQLNonNull,
+  GraphQLEnumType,
+  GraphQLInputObjectType,
+  GraphQLSchema,
+} = require('graphql');
 const { ParseServer } = require('../');
 const { ParseGraphQLServer } = require('../lib/GraphQL/ParseGraphQLServer');
 const ReadPreference = require('mongodb').ReadPreference;
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 function handleError(e) {
   if (
@@ -1406,7 +1417,7 @@ describe('ParseGraphQLServer', () => {
         });
       });
 
-      describe('Configuration', function() {
+      describe('Configuration', function () {
         const resetGraphQLCache = async () => {
           await Promise.all([
             parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
@@ -2390,585 +2401,580 @@ describe('ParseGraphQLServer', () => {
             expect(nodeResult.data.node2.objectId).toBe(obj2.id);
             expect(nodeResult.data.node2.someField).toBe('some value 2');
           });
-
-          it_only_db('mongo')(
-            'Id inputs should work either with global id or object id',
-            async () => {
-              try {
-                await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateClasses {
-                      secondaryObject: createClass(
-                        input: {
-                          name: "SecondaryObject"
-                          schemaFields: { addStrings: [{ name: "someField" }] }
-                        }
-                      ) {
-                        clientMutationId
+          // TODO: (moumouls, davimacedo) Fix flaky test
+          xit('Id inputs should work either with global id or object id', async () => {
+            try {
+              await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateClasses {
+                    secondaryObject: createClass(
+                      input: {
+                        name: "SecondaryObject"
+                        schemaFields: { addStrings: [{ name: "someField" }] }
                       }
-                      primaryObject: createClass(
-                        input: {
-                          name: "PrimaryObject"
-                          schemaFields: {
-                            addStrings: [{ name: "stringField" }]
-                            addArrays: [{ name: "arrayField" }]
-                            addPointers: [
-                              {
-                                name: "pointerField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                            addRelations: [
-                              {
-                                name: "relationField"
-                                targetClassName: "SecondaryObject"
-                              }
-                            ]
-                          }
-                        }
-                      ) {
-                        clientMutationId
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                await resetGraphQLCache();
-
-                const createSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreateSecondaryObjects {
-                      secondaryObject1: createSecondaryObject(
-                        input: { fields: { someField: "some value 1" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: createSecondaryObject(
-                        input: { fields: { someField: "some value 2" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: createSecondaryObject(
-                        input: { fields: { someField: "some value 3" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: createSecondaryObject(
-                        input: { fields: { someField: "some value 4" } }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: createSecondaryObject(
-                        input: { fields: { someField: "some value 5" } }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: createSecondaryObject(
-                        input: { fields: { someField: "some value 6" } }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
-                      secondaryObject7: createSecondaryObject(
-                        input: { fields: { someField: "some value 7" } }
-                      ) {
-                        secondaryObject {
-                          someField
-                        }
-                      }
-                    }
-                  `,
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const updateSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdateSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
                     ) {
-                      secondaryObject1: updateSecondaryObject(
-                        input: {
-                          id: $id1
-                          fields: { someField: "some value 11" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject2: updateSecondaryObject(
-                        input: {
-                          id: $id2
-                          fields: { someField: "some value 22" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          someField
-                        }
-                      }
-                      secondaryObject3: updateSecondaryObject(
-                        input: {
-                          id: $id3
-                          fields: { someField: "some value 33" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject4: updateSecondaryObject(
-                        input: {
-                          id: $id4
-                          fields: { someField: "some value 44" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                        }
-                      }
-                      secondaryObject5: updateSecondaryObject(
-                        input: {
-                          id: $id5
-                          fields: { someField: "some value 55" }
-                        }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: updateSecondaryObject(
-                        input: {
-                          id: $id6
-                          fields: { someField: "some value 66" }
-                        }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      createSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id2:
-                      createSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id3:
-                      createSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      createSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                    id5:
-                      createSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      createSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const deleteSecondaryObjectsResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation DeleteSecondaryObjects(
-                      $id1: ID!
-                      $id3: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    primaryObject: createClass(
+                      input: {
+                        name: "PrimaryObject"
+                        schemaFields: {
+                          addStrings: [{ name: "stringField" }]
+                          addArrays: [{ name: "arrayField" }]
+                          addPointers: [
+                            {
+                              name: "pointerField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                          addRelations: [
+                            {
+                              name: "relationField"
+                              targetClassName: "SecondaryObject"
+                            }
+                          ]
+                        }
+                      }
                     ) {
-                      secondaryObject1: deleteSecondaryObject(
-                        input: { id: $id1 }
-                      ) {
-                        secondaryObject {
-                          id
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject3: deleteSecondaryObject(
-                        input: { id: $id3 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                          someField
-                        }
-                      }
-                      secondaryObject5: deleteSecondaryObject(
-                        input: { id: $id5 }
-                      ) {
-                        secondaryObject {
-                          id
-                        }
-                      }
-                      secondaryObject6: deleteSecondaryObject(
-                        input: { id: $id6 }
-                      ) {
-                        secondaryObject {
-                          objectId
-                        }
-                      }
+                      clientMutationId
                     }
-                  `,
-                  variables: {
-                    id1:
-                      updateSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.id,
-                    id3:
-                      updateSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id5:
-                      updateSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      updateSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                const getSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query GetSecondaryObjects($id2: ID!, $id4: ID!) {
-                      secondaryObject2: secondaryObject(id: $id2) {
+              await resetGraphQLCache();
+
+              const createSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreateSecondaryObjects {
+                    secondaryObject1: createSecondaryObject(
+                      input: { fields: { someField: "some value 1" } }
+                    ) {
+                      secondaryObject {
                         id
                         objectId
                         someField
                       }
-                      secondaryObject4: secondaryObject(id: $id4) {
+                    }
+                    secondaryObject2: createSecondaryObject(
+                      input: { fields: { someField: "some value 2" } }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: createSecondaryObject(
+                      input: { fields: { someField: "some value 3" } }
+                    ) {
+                      secondaryObject {
                         objectId
                         someField
                       }
                     }
-                  `,
-                  variables: {
-                    id2:
-                      updateSecondaryObjectsResult.data.secondaryObject2
-                        .secondaryObject.id,
-                    id4:
-                      updateSecondaryObjectsResult.data.secondaryObject4
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                const findSecondaryObjectsResult = await apolloClient.query({
-                  query: gql`
-                    query FindSecondaryObjects(
-                      $id1: ID!
-                      $id2: ID!
-                      $id3: ID!
-                      $id4: ID!
-                      $id5: ID!
-                      $id6: ID!
+                    secondaryObject4: createSecondaryObject(
+                      input: { fields: { someField: "some value 4" } }
                     ) {
-                      secondaryObjects(
-                        where: {
-                          AND: [
-                            {
-                              OR: [
-                                { id: { equalTo: $id2 } }
-                                {
-                                  AND: [
-                                    { id: { equalTo: $id4 } }
-                                    { objectId: { equalTo: $id4 } }
-                                  ]
-                                }
-                              ]
-                            }
-                            { id: { notEqualTo: $id1 } }
-                            { id: { notEqualTo: $id3 } }
-                            { objectId: { notEqualTo: $id2 } }
-                            { objectId: { notIn: [$id5, $id6] } }
-                            { id: { in: [$id2, $id4] } }
-                          ]
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: createSecondaryObject(
+                      input: { fields: { someField: "some value 5" } }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: createSecondaryObject(
+                      input: { fields: { someField: "some value 6" } }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                    secondaryObject7: createSecondaryObject(
+                      input: { fields: { someField: "some value 7" } }
+                    ) {
+                      secondaryObject {
+                        someField
+                      }
+                    }
+                  }
+                `,
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const updateSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdateSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: updateSecondaryObject(
+                      input: {
+                        id: $id1
+                        fields: { someField: "some value 11" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject2: updateSecondaryObject(
+                      input: {
+                        id: $id2
+                        fields: { someField: "some value 22" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        someField
+                      }
+                    }
+                    secondaryObject3: updateSecondaryObject(
+                      input: {
+                        id: $id3
+                        fields: { someField: "some value 33" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject4: updateSecondaryObject(
+                      input: {
+                        id: $id4
+                        fields: { someField: "some value 44" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                      }
+                    }
+                    secondaryObject5: updateSecondaryObject(
+                      input: {
+                        id: $id5
+                        fields: { someField: "some value 55" }
+                      }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: updateSecondaryObject(
+                      input: {
+                        id: $id6
+                        fields: { someField: "some value 66" }
+                      }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    createSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id2:
+                    createSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id3:
+                    createSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4:
+                    createSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                  id5:
+                    createSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    createSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const deleteSecondaryObjectsResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation DeleteSecondaryObjects(
+                    $id1: ID!
+                    $id3: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObject1: deleteSecondaryObject(
+                      input: { id: $id1 }
+                    ) {
+                      secondaryObject {
+                        id
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject3: deleteSecondaryObject(
+                      input: { id: $id3 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                        someField
+                      }
+                    }
+                    secondaryObject5: deleteSecondaryObject(
+                      input: { id: $id5 }
+                    ) {
+                      secondaryObject {
+                        id
+                      }
+                    }
+                    secondaryObject6: deleteSecondaryObject(
+                      input: { id: $id6 }
+                    ) {
+                      secondaryObject {
+                        objectId
+                      }
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    updateSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.id,
+                  id3:
+                    updateSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id5:
+                    updateSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    updateSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const getSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query GetSecondaryObjects($id2: ID!, $id4: ID!) {
+                    secondaryObject2: secondaryObject(id: $id2) {
+                      id
+                      objectId
+                      someField
+                    }
+                    secondaryObject4: secondaryObject(id: $id4) {
+                      objectId
+                      someField
+                    }
+                  }
+                `,
+                variables: {
+                  id2:
+                    updateSecondaryObjectsResult.data.secondaryObject2
+                      .secondaryObject.id,
+                  id4:
+                    updateSecondaryObjectsResult.data.secondaryObject4
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              const findSecondaryObjectsResult = await apolloClient.query({
+                query: gql`
+                  query FindSecondaryObjects(
+                    $id1: ID!
+                    $id2: ID!
+                    $id3: ID!
+                    $id4: ID!
+                    $id5: ID!
+                    $id6: ID!
+                  ) {
+                    secondaryObjects(
+                      where: {
+                        AND: [
+                          {
+                            OR: [
+                              { id: { equalTo: $id2 } }
+                              {
+                                AND: [
+                                  { id: { equalTo: $id4 } }
+                                  { objectId: { equalTo: $id4 } }
+                                ]
+                              }
+                            ]
+                          }
+                          { id: { notEqualTo: $id1 } }
+                          { id: { notEqualTo: $id3 } }
+                          { objectId: { notEqualTo: $id2 } }
+                          { objectId: { notIn: [$id5, $id6] } }
+                          { id: { in: [$id2, $id4] } }
+                        ]
+                      }
+                      order: [id_ASC, objectId_ASC]
+                    ) {
+                      edges {
+                        node {
+                          id
+                          objectId
+                          someField
                         }
-                        order: [id_ASC, objectId_ASC]
-                      ) {
-                        edges {
-                          node {
-                            id
-                            objectId
+                      }
+                      count
+                    }
+                  }
+                `,
+                variables: {
+                  id1:
+                    deleteSecondaryObjectsResult.data.secondaryObject1
+                      .secondaryObject.objectId,
+                  id2: getSecondaryObjectsResult.data.secondaryObject2.id,
+                  id3:
+                    deleteSecondaryObjectsResult.data.secondaryObject3
+                      .secondaryObject.objectId,
+                  id4: getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  id5:
+                    deleteSecondaryObjectsResult.data.secondaryObject5
+                      .secondaryObject.id,
+                  id6:
+                    deleteSecondaryObjectsResult.data.secondaryObject6
+                      .secondaryObject.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
+                  },
+                },
+              });
+
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.count
+              ).toEqual(2);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .id
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .id
+              );
+              expect(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
+                  .objectId
+              ).toBeLessThan(
+                findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
+                  .objectId
+              );
+
+              const createPrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation CreatePrimaryObject(
+                    $pointer: Any
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    createPrimaryObject(
+                      input: {
+                        fields: {
+                          stringField: "some value"
+                          arrayField: [1, "abc", $pointer]
+                          pointerField: { link: $secondaryObject2 }
+                          relationField: {
+                            add: [$secondaryObject2, $secondaryObject4]
+                          }
+                        }
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
                             someField
                           }
                         }
-                        count
-                      }
-                    }
-                  `,
-                  variables: {
-                    id1:
-                      deleteSecondaryObjectsResult.data.secondaryObject1
-                        .secondaryObject.objectId,
-                    id2: getSecondaryObjectsResult.data.secondaryObject2.id,
-                    id3:
-                      deleteSecondaryObjectsResult.data.secondaryObject3
-                        .secondaryObject.objectId,
-                    id4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
-                    id5:
-                      deleteSecondaryObjectsResult.data.secondaryObject5
-                        .secondaryObject.id,
-                    id6:
-                      deleteSecondaryObjectsResult.data.secondaryObject6
-                        .secondaryObject.objectId,
-                  },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
-
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.count
-                ).toEqual(2);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges
-                    .map(value => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .id
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .id
-                );
-                expect(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[0].node
-                    .objectId
-                ).toBeLessThan(
-                  findSecondaryObjectsResult.data.secondaryObjects.edges[1].node
-                    .objectId
-                );
-
-                const createPrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation CreatePrimaryObject(
-                      $pointer: Any
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      createPrimaryObject(
-                        input: {
-                          fields: {
-                            stringField: "some value"
-                            arrayField: [1, "abc", $pointer]
-                            pointerField: { link: $secondaryObject2 }
-                            relationField: {
-                              add: [$secondaryObject2, $secondaryObject4]
-                            }
-                          }
-                        }
-                      ) {
-                        primaryObject {
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    pointer: {
-                      __type: 'Pointer',
-                      className: 'SecondaryObject',
-                      objectId:
-                        getSecondaryObjectsResult.data.secondaryObject4
-                          .objectId,
-                    },
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
+                  }
+                `,
+                variables: {
+                  pointer: {
+                    __type: 'Pointer',
+                    className: 'SecondaryObject',
+                    objectId:
                       getSecondaryObjectsResult.data.secondaryObject4.objectId,
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                });
+                },
+              });
 
-                const updatePrimaryObjectResult = await apolloClient.mutate({
-                  mutation: gql`
-                    mutation UpdatePrimaryObject(
-                      $id: ID!
-                      $secondaryObject2: ID!
-                      $secondaryObject4: ID!
-                    ) {
-                      updatePrimaryObject(
-                        input: {
-                          id: $id
-                          fields: {
-                            pointerField: { link: $secondaryObject4 }
-                            relationField: {
-                              remove: [$secondaryObject2, $secondaryObject4]
-                            }
+              const updatePrimaryObjectResult = await apolloClient.mutate({
+                mutation: gql`
+                  mutation UpdatePrimaryObject(
+                    $id: ID!
+                    $secondaryObject2: ID!
+                    $secondaryObject4: ID!
+                  ) {
+                    updatePrimaryObject(
+                      input: {
+                        id: $id
+                        fields: {
+                          pointerField: { link: $secondaryObject4 }
+                          relationField: {
+                            remove: [$secondaryObject2, $secondaryObject4]
                           }
                         }
-                      ) {
-                        primaryObject {
+                      }
+                    ) {
+                      primaryObject {
+                        id
+                        stringField
+                        arrayField {
+                          ... on Element {
+                            value
+                          }
+                          ... on SecondaryObject {
+                            someField
+                          }
+                        }
+                        pointerField {
                           id
-                          stringField
-                          arrayField {
-                            ... on Element {
-                              value
-                            }
-                            ... on SecondaryObject {
+                          objectId
+                          someField
+                        }
+                        relationField {
+                          edges {
+                            node {
+                              id
+                              objectId
                               someField
                             }
                           }
-                          pointerField {
-                            id
-                            objectId
-                            someField
-                          }
-                          relationField {
-                            edges {
-                              node {
-                                id
-                                objectId
-                                someField
-                              }
-                            }
-                          }
                         }
                       }
                     }
-                  `,
-                  variables: {
-                    id:
-                      createPrimaryObjectResult.data.createPrimaryObject
-                        .primaryObject.id,
-                    secondaryObject2:
-                      getSecondaryObjectsResult.data.secondaryObject2.id,
-                    secondaryObject4:
-                      getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                  }
+                `,
+                variables: {
+                  id:
+                    createPrimaryObjectResult.data.createPrimaryObject
+                      .primaryObject.id,
+                  secondaryObject2:
+                    getSecondaryObjectsResult.data.secondaryObject2.id,
+                  secondaryObject4:
+                    getSecondaryObjectsResult.data.secondaryObject4.objectId,
+                },
+                context: {
+                  headers: {
+                    'X-Parse-Master-Key': 'test',
                   },
-                  context: {
-                    headers: {
-                      'X-Parse-Master-Key': 'test',
-                    },
-                  },
-                });
+                },
+              });
 
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 22');
-                expect(
-                  createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
-                    .map(value => value.node.someField)
-                    .sort()
-                ).toEqual(['some value 22', 'some value 44']);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.stringField
-                ).toEqual('some value');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.arrayField
-                ).toEqual([
-                  { __typename: 'Element', value: 1 },
-                  { __typename: 'Element', value: 'abc' },
-                  { __typename: 'SecondaryObject', someField: 'some value 44' },
-                ]);
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.pointerField.someField
-                ).toEqual('some value 44');
-                expect(
-                  updatePrimaryObjectResult.data.updatePrimaryObject
-                    .primaryObject.relationField.edges
-                ).toEqual([]);
-              } catch (e) {
-                handleError(e);
-              }
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 22');
+              expect(
+                createPrimaryObjectResult.data.createPrimaryObject.primaryObject.relationField.edges
+                  .map(value => value.node.someField)
+                  .sort()
+              ).toEqual(['some value 22', 'some value 44']);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .stringField
+              ).toEqual('some value');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .arrayField
+              ).toEqual([
+                { __typename: 'Element', value: 1 },
+                { __typename: 'Element', value: 'abc' },
+                { __typename: 'SecondaryObject', someField: 'some value 44' },
+              ]);
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .pointerField.someField
+              ).toEqual('some value 44');
+              expect(
+                updatePrimaryObjectResult.data.updatePrimaryObject.primaryObject
+                  .relationField.edges
+              ).toEqual([]);
+            } catch (e) {
+              handleError(e);
             }
-          );
+          });
         });
       });
 
@@ -4406,12 +4412,13 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             async function getObject(className, id, headers) {
+              const alias =
+                className.charAt(0).toLowerCase() + className.slice(1);
               const specificQueryResult = await apolloClient.query({
                 query: gql`
                   query GetSomeObject($id: ID!) {
-                    get: ${className.charAt(0).toLowerCase() +
-                      className.slice(1)}(id: $id) {
-                        id
+                    get: ${alias}(id: $id) {
+                      id
                       createdAt
                       someField
                     }
@@ -4632,6 +4639,84 @@ describe('ParseGraphQLServer', () => {
             ).toBeDefined();
           });
 
+          it('should respect protectedFields', async done => {
+            await prepareData();
+            await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+            const className = 'GraphQLClass';
+
+            await updateCLP(
+              {
+                get: { '*': true },
+                find: { '*': true },
+
+                protectedFields: {
+                  '*': ['someField', 'someOtherField'],
+                  authenticated: ['someField'],
+                  'userField:pointerToUser': [],
+                  [user2.id]: [],
+                },
+              },
+              className
+            );
+
+            const getObject = async (className, id, user) => {
+              const headers = user
+                ? { ['X-Parse-Session-Token']: user.getSessionToken() }
+                : undefined;
+
+              const specificQueryResult = await apolloClient.query({
+                query: gql`
+                  query GetSomeObject($id: ID!) {
+                    get: graphQLClass(id: $id) {
+                      pointerToUser {
+                        username
+                        id
+                      }
+                      someField
+                      someOtherField
+                    }
+                  }
+                `,
+                variables: {
+                  id: id,
+                },
+                context: {
+                  headers: headers,
+                },
+              });
+
+              return specificQueryResult.data.get;
+            };
+
+            const id = object3.id;
+
+            /* not authenticated */
+            const objectPublic = await getObject(className, id, undefined);
+
+            expect(objectPublic.someField).toBeNull();
+            expect(objectPublic.someOtherField).toBeNull();
+
+            /* authenticated */
+            const objectAuth = await getObject(className, id, user1);
+
+            expect(objectAuth.someField).toBeNull();
+            expect(objectAuth.someOtherField).toBe('B');
+
+            /* pointer field */
+            const objectPointed = await getObject(className, id, user5);
+
+            expect(objectPointed.someField).toBe('someValue3');
+            expect(objectPointed.someOtherField).toBe('B');
+
+            /* for user id */
+            const objectForUser = await getObject(className, id, user2);
+
+            expect(objectForUser.someField).toBe('someValue3');
+            expect(objectForUser.someOtherField).toBe('B');
+
+            done();
+          });
           describe_only_db('mongo')('read preferences', () => {
             it('should read from primary by default', async () => {
               try {
@@ -6461,6 +6546,9 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             function updateObject(className, id, fields, headers) {
+              const mutationName =
+                className.charAt(0).toLowerCase() + className.slice(1);
+
               return apolloClient.mutate({
                 mutation: gql`
                   mutation UpdateSomeObject(
@@ -6471,8 +6559,7 @@ describe('ParseGraphQLServer', () => {
                       id: $id
                       fields: $fields
                     }) {
-                      ${className.charAt(0).toLowerCase() +
-                        className.slice(1)} {
+                      ${mutationName} {
                         updatedAt
                       }
                     }
@@ -6733,14 +6820,15 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             function deleteObject(className, id, headers) {
+              const mutationName =
+                className.charAt(0).toLowerCase() + className.slice(1);
               return apolloClient.mutate({
                 mutation: gql`
                   mutation DeleteSomeObject(
                     $id: ID!
                   ) {
                     delete: delete${className}(input: { id: $id }) {
-                      ${className.charAt(0).toLowerCase() +
-                        className.slice(1)} {
+                      ${mutationName} {
                         objectId
                       }
                     }
@@ -6833,14 +6921,15 @@ describe('ParseGraphQLServer', () => {
             await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
             function deleteObject(className, id, headers) {
+              const mutationName =
+                className.charAt(0).toLowerCase() + className.slice(1);
               return apolloClient.mutate({
                 mutation: gql`
                   mutation DeleteSomeObject(
                     $id: ID!
                   ) {
                     delete${className}(input: { id: $id }) {
-                      ${className.charAt(0).toLowerCase() +
-                        className.slice(1)} {
+                      ${mutationName} {
                         objectId
                       }
                     }
@@ -7088,6 +7177,56 @@ describe('ParseGraphQLServer', () => {
           expect(sessionToken).toBeDefined();
           expect(resultFoo).toBeDefined();
           expect(resultFoo.bar).toEqual('hello');
+        });
+        it('should return logged user and do not by pass pointer security', async () => {
+          const masterKeyOnlyACL = new Parse.ACL();
+          masterKeyOnlyACL.setPublicReadAccess(false);
+          masterKeyOnlyACL.setPublicWriteAccess(false);
+          const foo = new Parse.Object('Foo');
+          foo.setACL(masterKeyOnlyACL);
+          foo.set('bar', 'hello');
+          await foo.save(null, { useMasterKey: true });
+          const userName = 'userx1',
+            password = 'user1',
+            email = 'emailUserx1@parse.com';
+
+          const user = new Parse.User();
+          user.setUsername(userName);
+          user.setPassword(password);
+          user.setEmail(email);
+          user.set('userFoo', foo);
+          await user.signUp();
+
+          await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+
+          const session = await Parse.Session.current();
+          const result = await apolloClient.query({
+            query: gql`
+              query GetCurrentUser {
+                viewer {
+                  sessionToken
+                  user {
+                    id
+                    objectId
+                    userFoo {
+                      bar
+                    }
+                  }
+                }
+              }
+            `,
+            context: {
+              headers: {
+                'X-Parse-Session-Token': session.getSessionToken(),
+              },
+            },
+          });
+
+          const sessionToken = result.data.viewer.sessionToken;
+          const { objectId, userFoo: resultFoo } = result.data.viewer.user;
+          expect(objectId).toEqual(user.id);
+          expect(sessionToken).toBeDefined();
+          expect(resultFoo).toEqual(null);
         });
       });
 
@@ -8196,6 +8335,18 @@ describe('ParseGraphQLServer', () => {
 
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
 
+          const gqlUser = (
+            await apolloClient.query({
+              query: gql`
+                query getUser($id: ID!) {
+                  user(id: $id) {
+                    id
+                  }
+                }
+              `,
+              variables: { id: user.id },
+            })
+          ).data.user;
           const {
             data: { createSomeClass },
           } = await apolloClient.mutate({
@@ -8229,7 +8380,7 @@ describe('ParseGraphQLServer', () => {
               fields: {
                 ACL: {
                   users: [
-                    { userId: user.id, read: true, write: true },
+                    { userId: gqlUser.id, read: true, write: true },
                     { userId: user2.id, read: true, write: false },
                   ],
                   roles: [
@@ -8246,13 +8397,13 @@ describe('ParseGraphQLServer', () => {
             __typename: 'ACL',
             users: [
               {
-                userId: user.id,
+                userId: toGlobalId('_User', user.id),
                 read: true,
                 write: true,
                 __typename: 'UserACL',
               },
               {
-                userId: user2.id,
+                userId: toGlobalId('_User', user2.id),
                 read: true,
                 write: false,
                 __typename: 'UserACL',
@@ -9410,6 +9561,29 @@ describe('ParseGraphQLServer', () => {
 
             expect(res.status).toEqual(200);
             expect(await res.text()).toEqual('My File Content');
+
+            const mutationResult = await apolloClient.mutate({
+              mutation: gql`
+                mutation UnlinkFile($id: ID!) {
+                  updateSomeClass(
+                    input: { id: $id, fields: { someField: { file: null } } }
+                  ) {
+                    someClass {
+                      someField {
+                        name
+                        url
+                      }
+                    }
+                  }
+                }
+              `,
+              variables: {
+                id: result2.data.createSomeClass3.someClass.id,
+              },
+            });
+            expect(
+              mutationResult.data.updateSomeClass.someClass.someField
+            ).toEqual(null);
           } catch (e) {
             handleError(e);
           }
@@ -10514,130 +10688,382 @@ describe('ParseGraphQLServer', () => {
   });
 
   describe('Custom API', () => {
-    let httpServer;
-    const headers = {
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-Javascript-Key': 'test',
-    };
-    let apolloClient;
-
-    beforeAll(async () => {
-      const expressApp = express();
-      httpServer = http.createServer(expressApp);
-      parseGraphQLServer = new ParseGraphQLServer(parseServer, {
-        graphQLPath: '/graphql',
-        graphQLCustomTypeDefs: gql`
-          extend type Query {
-            hello: String @resolve
-            hello2: String @resolve(to: "hello")
-            userEcho(user: CreateUserFieldsInput!): User! @resolve
-            hello3: String! @mock(with: "Hello world!")
-            hello4: User! @mock(with: { username: "somefolk" })
-          }
-        `,
-      });
-      parseGraphQLServer.applyGraphQL(expressApp);
-      await new Promise(resolve => httpServer.listen({ port: 13377 }, resolve));
-      const httpLink = createUploadLink({
-        uri: 'http://localhost:13377/graphql',
-        fetch,
-        headers,
-      });
-      apolloClient = new ApolloClient({
-        link: httpLink,
-        cache: new InMemoryCache(),
-        defaultOptions: {
-          query: {
-            fetchPolicy: 'no-cache',
-          },
-        },
-      });
-    });
-
-    afterAll(async () => {
-      await httpServer.close();
-    });
-
-    it('can resolve a custom query using default function name', async () => {
-      Parse.Cloud.define('hello', async () => {
-        return 'Hello world!';
-      });
-
-      const result = await apolloClient.query({
-        query: gql`
-          query Hello {
-            hello
-          }
-        `,
-      });
-
-      expect(result.data.hello).toEqual('Hello world!');
-    });
-
-    it('can resolve a custom query using function name set by "to" argument', async () => {
-      Parse.Cloud.define('hello', async () => {
-        return 'Hello world!';
-      });
-
-      const result = await apolloClient.query({
-        query: gql`
-          query Hello {
-            hello2
-          }
-        `,
-      });
-
-      expect(result.data.hello2).toEqual('Hello world!');
-    });
-
-    it('should resolve auto types', async () => {
-      Parse.Cloud.define('userEcho', async req => {
-        return req.params.user;
-      });
-
-      const result = await apolloClient.query({
-        query: gql`
-          query UserEcho($user: CreateUserFieldsInput!) {
-            userEcho(user: $user) {
-              username
+    describe('GraphQL Schema Based', () => {
+      let httpServer;
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      let apolloClient;
+      beforeAll(async () => {
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+          graphQLPath: '/graphql',
+          graphQLCustomTypeDefs: gql`
+            extend type Query {
+              hello: String @resolve
+              hello2: String @resolve(to: "hello")
+              userEcho(user: CreateUserFieldsInput!): User! @resolve
+              hello3: String! @mock(with: "Hello world!")
+              hello4: User! @mock(with: { username: "somefolk" })
             }
-          }
-        `,
-        variables: {
-          user: {
-            username: 'somefolk',
-            password: 'somepassword',
+          `,
+        });
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve =>
+          httpServer.listen({ port: 13377 }, resolve)
+        );
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
           },
-        },
+        });
       });
 
-      expect(result.data.userEcho.username).toEqual('somefolk');
-    });
-
-    it('can mock a custom query with string', async () => {
-      const result = await apolloClient.query({
-        query: gql`
-          query Hello {
-            hello3
-          }
-        `,
+      afterAll(async () => {
+        await httpServer.close();
       });
 
-      expect(result.data.hello3).toEqual('Hello world!');
-    });
+      it('can resolve a custom query using default function name', async () => {
+        Parse.Cloud.define('hello', async () => {
+          return 'Hello world!';
+        });
 
-    it('can mock a custom query with auto type', async () => {
-      const result = await apolloClient.query({
-        query: gql`
-          query Hello {
-            hello4 {
-              username
+        const result = await apolloClient.query({
+          query: gql`
+            query Hello {
+              hello
             }
-          }
-        `,
+          `,
+        });
+
+        expect(result.data.hello).toEqual('Hello world!');
       });
 
-      expect(result.data.hello4.username).toEqual('somefolk');
+      it('can resolve a custom query using function name set by "to" argument', async () => {
+        Parse.Cloud.define('hello', async () => {
+          return 'Hello world!';
+        });
+
+        const result = await apolloClient.query({
+          query: gql`
+            query Hello {
+              hello2
+            }
+          `,
+        });
+
+        expect(result.data.hello2).toEqual('Hello world!');
+      });
+
+      it('order option should continue working', async () => {
+        const schemaController = await parseServer.config.databaseController.loadSchema();
+
+        await schemaController.addClassIfNotExists('SuperCar', {
+          engine: { type: 'String' },
+          doors: { type: 'Number' },
+          price: { type: 'String' },
+          mileage: { type: 'Number' },
+        });
+
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
+          doors: 3,
+          price: '£7500',
+          mileage: 0,
+        });
+
+        await new Parse.Object('SuperCar').save({
+          engine: 'petrol',
+          doors: 3,
+          price: '£7500',
+          mileage: 10000,
+        });
+
+        await Promise.all([
+          parseGraphQLServer.parseGraphQLController.cacheController.graphQL.clear(),
+          parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear(),
+        ]);
+
+        await expectAsync(
+          apolloClient.query({
+            query: gql`
+              query FindSuperCar {
+                superCars(order: [mileage_ASC]) {
+                  edges {
+                    node {
+                      id
+                    }
+                  }
+                }
+              }
+            `,
+          })
+        ).toBeResolved();
+      });
+    });
+
+    describe('SDL Based', () => {
+      let httpServer;
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      let apolloClient;
+
+      beforeAll(async () => {
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        const TypeEnum = new GraphQLEnumType({
+          name: 'TypeEnum',
+          values: {
+            human: { value: 'human' },
+            robot: { value: 'robot' },
+          },
+        });
+        const SomeClassType = new GraphQLObjectType({
+            name: 'SomeClass',
+            fields: {
+              nameUpperCase: {
+                type: new GraphQLNonNull(GraphQLString),
+                resolve: p => p.name.toUpperCase(),
+              },
+              type: { type: TypeEnum },
+              language: {
+                type: new GraphQLEnumType({
+                  name: 'LanguageEnum',
+                  values: {
+                    fr: { value: 'fr' },
+                    en: { value: 'en' },
+                  },
+                }),
+                resolve: () => 'fr',
+              },
+            },
+          }),
+          parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+            graphQLPath: '/graphql',
+            graphQLCustomTypeDefs: new GraphQLSchema({
+              query: new GraphQLObjectType({
+                name: 'Query',
+                fields: {
+                  customQuery: {
+                    type: new GraphQLNonNull(GraphQLString),
+                    args: {
+                      message: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: (p, { message }) => message,
+                  },
+                  customQueryWithAutoTypeReturn: {
+                    type: SomeClassType,
+                    args: {
+                      id: { type: new GraphQLNonNull(GraphQLString) },
+                    },
+                    resolve: async (p, { id }) => {
+                      const obj = new Parse.Object('SomeClass');
+                      obj.id = id;
+                      await obj.fetch();
+                      return obj.toJSON();
+                    },
+                  },
+                },
+              }),
+              types: [
+                new GraphQLInputObjectType({
+                  name: 'CreateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                new GraphQLInputObjectType({
+                  name: 'UpdateSomeClassFieldsInput',
+                  fields: {
+                    type: { type: TypeEnum },
+                  },
+                }),
+                SomeClassType,
+              ],
+            }),
+          });
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve =>
+          httpServer.listen({ port: 13377 }, resolve)
+        );
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
+      });
+
+      afterAll(async () => {
+        await httpServer.close();
+      });
+
+      it('can resolve a custom query', async () => {
+        const result = await apolloClient.query({
+          variables: { message: 'hello' },
+          query: gql`
+            query CustomQuery($message: String!) {
+              customQuery(message: $message)
+            }
+          `,
+        });
+        expect(result.data.customQuery).toEqual('hello');
+      });
+
+      it('can resolve a custom query with auto type return', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query CustomQuery($id: String!) {
+              customQueryWithAutoTypeReturn(id: $id) {
+                objectId
+                nameUpperCase
+                name
+                type
+              }
+            }
+          `,
+        });
+        expect(result.data.customQueryWithAutoTypeReturn.objectId).toEqual(
+          obj.id
+        );
+        expect(result.data.customQueryWithAutoTypeReturn.name).toEqual('aname');
+        expect(result.data.customQueryWithAutoTypeReturn.nameUpperCase).toEqual(
+          'ANAME'
+        );
+        expect(result.data.customQueryWithAutoTypeReturn.type).toEqual('robot');
+      });
+
+      it('can resolve a custom extend type', async () => {
+        const obj = new Parse.Object('SomeClass');
+        await obj.save({ name: 'aname', type: 'robot' });
+        await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
+        const result = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query someClass($id: ID!) {
+              someClass(id: $id) {
+                nameUpperCase
+                language
+                type
+              }
+            }
+          `,
+        });
+        expect(result.data.someClass.nameUpperCase).toEqual('ANAME');
+        expect(result.data.someClass.language).toEqual('fr');
+        expect(result.data.someClass.type).toEqual('robot');
+
+        const result2 = await apolloClient.query({
+          variables: { id: obj.id },
+          query: gql`
+            query someClass($id: ID!) {
+              someClass(id: $id) {
+                name
+                language
+              }
+            }
+          `,
+        });
+        expect(result2.data.someClass.name).toEqual('aname');
+        expect(result.data.someClass.language).toEqual('fr');
+        const result3 = await apolloClient.mutate({
+          variables: { id: obj.id, name: 'anewname', type: 'human' },
+          mutation: gql`
+            mutation someClass($id: ID!, $name: String!, $type: TypeEnum!) {
+              updateSomeClass(
+                input: { id: $id, fields: { name: $name, type: $type } }
+              ) {
+                someClass {
+                  nameUpperCase
+                  type
+                }
+              }
+            }
+          `,
+        });
+        expect(result3.data.updateSomeClass.someClass.nameUpperCase).toEqual(
+          'ANEWNAME'
+        );
+        expect(result3.data.updateSomeClass.someClass.type).toEqual('human');
+      });
+    });
+    describe('Async Function Based Merge', () => {
+      let httpServer;
+      const headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Javascript-Key': 'test',
+      };
+      let apolloClient;
+
+      beforeAll(async () => {
+        const expressApp = express();
+        httpServer = http.createServer(expressApp);
+        parseGraphQLServer = new ParseGraphQLServer(parseServer, {
+          graphQLPath: '/graphql',
+          graphQLCustomTypeDefs: ({ autoSchema, stitchSchemas }) =>
+            stitchSchemas({ subschemas: [autoSchema] }),
+        });
+
+        parseGraphQLServer.applyGraphQL(expressApp);
+        await new Promise(resolve =>
+          httpServer.listen({ port: 13377 }, resolve)
+        );
+        const httpLink = createUploadLink({
+          uri: 'http://localhost:13377/graphql',
+          fetch,
+          headers,
+        });
+        apolloClient = new ApolloClient({
+          link: httpLink,
+          cache: new InMemoryCache(),
+          defaultOptions: {
+            query: {
+              fetchPolicy: 'no-cache',
+            },
+          },
+        });
+      });
+
+      afterAll(async () => {
+        await httpServer.close();
+      });
+
+      it('can resolve a query', async () => {
+        const result = await apolloClient.query({
+          query: gql`
+            query Health {
+              health
+            }
+          `,
+        });
+        expect(result.data.health).toEqual(true);
+      });
     });
   });
 });

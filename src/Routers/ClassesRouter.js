@@ -2,10 +2,12 @@ import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
   'include',
+  'excludeKeys',
   'readPreference',
   'includeReadPreference',
   'subqueryReadPreference',
@@ -39,7 +41,8 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         return { response: response };
@@ -68,6 +71,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.include) {
       options.include = String(body.include);
+    }
+    if (typeof body.excludeKeys == 'string') {
+      options.excludeKeys = body.excludeKeys;
     }
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
@@ -116,7 +122,8 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
@@ -128,7 +135,8 @@ export class ClassesRouter extends PromiseRouter {
       this.className(req),
       where,
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
@@ -139,7 +147,7 @@ export class ClassesRouter extends PromiseRouter {
         req.auth,
         this.className(req),
         req.params.objectId,
-        req.info.clientSDK
+        req.info.context
       )
       .then(() => {
         return { response: {} };
@@ -240,10 +248,10 @@ export class ClassesRouter extends PromiseRouter {
     this.route('GET', '/classes/:className/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/classes/:className', req => {
+    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', req => {
+    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/classes/:className/:objectId', req => {

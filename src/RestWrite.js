@@ -32,6 +32,7 @@ function RestWrite(
   data,
   originalData,
   clientSDK,
+  context,
   action
 ) {
   if (auth.isReadOnly) {
@@ -46,7 +47,7 @@ function RestWrite(
   this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
-  this.context = {};
+  this.context = context || {};
 
   if (action) {
     this.runOptions.action = action;
@@ -328,6 +329,10 @@ RestWrite.prototype.runBeforeLoginTrigger = async function(userData) {
 
   // Cloud code gets a bit of extra data for its objects
   const extraData = { className: this.className };
+
+  // Expand file objects
+  this.config.filesController.expandFilesInObject(this.config, userData);
+
   const user = triggers.inflate(extraData, userData);
 
   // no need to return a response
@@ -704,13 +709,21 @@ RestWrite.prototype._validateUserName = function() {
     }
     return Promise.resolve();
   }
-  // We need to a find to check for duplicate username in case they are missing the unique index on usernames
-  // TODO: Check if there is a unique index, and if so, skip this query.
+  /*
+    Usernames should be unique when compared case insensitively
+
+    Users should be able to make case sensitive usernames and
+    login using the case they entered.  I.e. 'Snoopy' should preclude
+    'snoopy' as a valid username.
+  */
   return this.config.database
     .find(
       this.className,
-      { username: this.data.username, objectId: { $ne: this.objectId() } },
-      { limit: 1 },
+      {
+        username: this.data.username,
+        objectId: { $ne: this.objectId() },
+      },
+      { limit: 1, caseInsensitive: true },
       {},
       this.validSchemaController
     )
@@ -725,6 +738,18 @@ RestWrite.prototype._validateUserName = function() {
     });
 };
 
+/*
+  As with usernames, Parse should not allow case insensitive collisions of email.
+  unlike with usernames (which can have case insensitive collisions in the case of
+  auth adapters), emails should never have a case insensitive collision.
+
+  This behavior can be enforced through a properly configured index see:
+  https://docs.mongodb.com/manual/core/index-case-insensitive/#create-a-case-insensitive-index
+  which could be implemented instead of this code based validation.
+
+  Given that this lookup should be a relatively low use case and that the case sensitive
+  unique index will be used by the db for the query, this is an adequate solution.
+*/
 RestWrite.prototype._validateEmail = function() {
   if (!this.data.email || this.data.email.__op === 'Delete') {
     return Promise.resolve();
@@ -738,12 +763,15 @@ RestWrite.prototype._validateEmail = function() {
       )
     );
   }
-  // Same problem for email as above for username
+  // Case insensitive match, see note above function.
   return this.config.database
     .find(
       this.className,
-      { email: this.data.email, objectId: { $ne: this.objectId() } },
-      { limit: 1 },
+      {
+        email: this.data.email,
+        objectId: { $ne: this.objectId() },
+      },
+      { limit: 1, caseInsensitive: true },
       {},
       this.validSchemaController
     )

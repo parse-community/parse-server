@@ -8,6 +8,7 @@ const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter')
   .GridStoreAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
+const databaseURI = 'mongodb://localhost:27017/parse';
 
 const mockAdapter = {
   createFile: () => {
@@ -29,7 +30,7 @@ describe('FilesController', () => {
       'mongodb://localhost:27017/parse'
     );
     const filesController = new FilesController(gridStoreAdapter);
-    const result = filesController.expandFilesInObject(config, function() {});
+    const result = filesController.expandFilesInObject(config, function () {});
 
     expect(result).toBeUndefined();
 
@@ -65,13 +66,11 @@ describe('FilesController', () => {
         // and 2 the message that will be sent back to the client.
 
         const log1 = logs.find(
-          x => x.message === 'Error creating a file: it failed with xyz'
+          x => x.message === 'Error creating a file:  it failed with xyz'
         );
         expect(log1.level).toBe('error');
 
-        const log2 = logs.find(
-          x => x.message === 'Could not store file: yolo.txt.'
-        );
+        const log2 = logs.find(x => x.message === 'it failed with xyz');
         expect(log2.level).toBe('error');
         expect(log2.code).toBe(130);
 
@@ -135,6 +134,15 @@ describe('FilesController', () => {
     );
 
     done();
+  });
+
+  it('should handle adapter without getMetadata', async () => {
+    const gridStoreAdapter = new GridFSBucketAdapter(databaseURI);
+    gridStoreAdapter.getMetadata = null;
+    const filesController = new FilesController(gridStoreAdapter);
+
+    const result = await filesController.getMetadata();
+    expect(result).toEqual({});
   });
 
   it('should reject slashes in file names', done => {

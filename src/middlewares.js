@@ -4,11 +4,13 @@ import auth from './Auth';
 import Config from './Config';
 import ClientSDK from './ClientSDK';
 import defaultLogger from './logger';
+import rest from './rest';
+import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
 export const DEFAULT_ALLOWED_HEADERS =
-  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type, Pragma, Cache-Control';
+  'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, X-Parse-Request-Id, Content-Type, Pragma, Cache-Control';
 
-const getMountForRequest = function(req) {
+const getMountForRequest = function (req) {
   const mountPathLength = req.originalUrl.length - req.url.length;
   const mountPath = req.originalUrl.slice(0, mountPathLength);
   return req.protocol + '://' + req.get('host') + mountPath;
@@ -33,6 +35,7 @@ export function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key'),
     clientVersion: req.get('X-Parse-Client-Version'),
+    context: {},
   };
 
   var basicAuth = httpAuth(req);
@@ -59,7 +62,14 @@ export function handleParseHeaders(req, res, next) {
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
       // upload that actually is a JSON body. So try to parse it.
-      req.body = JSON.parse(req.body);
+      // https://github.com/parse-community/parse-server/issues/6589
+      // It is also possible that the client is trying to upload a file but forgot
+      // to provide x-parse-app-id in header and parse a binary file will fail
+      try {
+        req.body = JSON.parse(req.body);
+      } catch (e) {
+        return invalidRequest(req, res);
+      }
       fileViaJSON = true;
     }
 
@@ -96,6 +106,10 @@ export function handleParseHeaders(req, res, next) {
         info.masterKey = req.body._MasterKey;
         delete req.body._MasterKey;
       }
+      if (req.body._context && req.body._context instanceof Object) {
+        info.context = req.body._context;
+        delete req.body._context;
+      }
       if (req.body._ContentType) {
         req.headers['content-type'] = req.body._ContentType;
         delete req.body._ContentType;
@@ -105,11 +119,16 @@ export function handleParseHeaders(req, res, next) {
     }
   }
 
+  if (info.sessionToken && typeof info.sessionToken !== 'string') {
+    info.sessionToken = info.sessionToken.toString();
+  }
+
   if (info.clientVersion) {
     info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
   if (fileViaJSON) {
+    req.fileData = req.body.fileData;
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
     req.body = Buffer.from(base64, 'base64');
@@ -163,10 +182,10 @@ export function handleParseHeaders(req, res, next) {
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   const keys = ['clientKey', 'javascriptKey', 'dotNetKey', 'restAPIKey'];
-  const oneKeyConfigured = keys.some(function(key) {
+  const oneKeyConfigured = keys.some(function (key) {
     return req.config[key] !== undefined;
   });
-  const oneKeyMatches = keys.some(function(key) {
+  const oneKeyMatches = keys.some(function (key) {
     return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
@@ -176,6 +195,17 @@ export function handleParseHeaders(req, res, next) {
 
   if (req.url == '/login') {
     delete info.sessionToken;
+  }
+
+  if (req.userFromJWT) {
+    req.auth = new auth.Auth({
+      config: req.config,
+      installationId: info.installationId,
+      isMaster: false,
+      user: req.userFromJWT,
+    });
+    next();
+    return;
   }
 
   if (!info.sessionToken) {
@@ -209,13 +239,13 @@ export function handleParseHeaders(req, res, next) {
         });
       }
     })
-    .then(auth => {
+    .then((auth) => {
       if (auth) {
         req.auth = auth;
         next();
       }
     })
-    .catch(error => {
+    .catch((error) => {
       if (error instanceof Parse.Error) {
         next(error);
         return;
@@ -293,7 +323,8 @@ export function allowCrossDomain(appId) {
     if (config && config.allowHeaders) {
       allowHeaders += `, ${config.allowHeaders.join(', ')}`;
     }
-    res.header('Access-Control-Allow-Origin', '*');
+    const allowOrigin = (config && config.allowOrigin) || '*';
+    res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
     res.header(
@@ -321,6 +352,9 @@ export function allowMethodOverride(req, res, next) {
 export function handleParseErrors(err, req, res, next) {
   const log = (req.config && req.config.loggerController) || defaultLogger;
   if (err instanceof Parse.Error) {
+    if (req.config && req.config.enableExpressErrorHandler) {
+      return next(err);
+    }
     let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
@@ -333,13 +367,9 @@ export function handleParseErrors(err, req, res, next) {
       default:
         httpStatus = 400;
     }
-
     res.status(httpStatus);
     res.json({ code: err.code, error: err.message });
     log.error('Parse error: ', err);
-    if (req.config && req.config.enableExpressErrorHandler) {
-      next(err);
-    }
   } else if (err.status && err.message) {
     res.status(err.status);
     res.json({ error: err.message });
@@ -376,6 +406,52 @@ export function promiseEnforceMasterKeyAccess(request) {
     throw error;
   }
   return Promise.resolve();
+}
+
+/**
+ * Deduplicates a request to ensure idempotency. Duplicates are determined by the request ID
+ * in the request header. If a request has no request ID, it is executed anyway.
+ * @param {*} req The request to evaluate.
+ * @returns Promise<{}>
+ */
+export function promiseEnsureIdempotency(req) {
+  // Enable feature only for MongoDB
+  if (!(req.config.database.adapter instanceof MongoStorageAdapter)) { return Promise.resolve(); }
+  // Get parameters
+  const config = req.config;
+  const requestId = ((req || {}).headers || {})["x-parse-request-id"];
+  const { paths, ttl } = config.idempotencyOptions;
+  if (!requestId || !config.idempotencyOptions) { return Promise.resolve(); }
+  // Request path may contain trailing slashes, depending on the original request, so remove
+  // leading and trailing slashes to make it easier to specify paths in the configuration
+  const reqPath = req.path.replace(/^\/|\/$/, '');
+  // Determine whether idempotency is enabled for current request path
+  let match = false;
+  for (const path of paths) {
+    // Assume one wants a path to always match from the beginning to prevent any mistakes
+    const regex = new RegExp(path.charAt(0) === '^' ? path : '^' + path);
+    if (reqPath.match(regex)) {
+      match = true;
+      break;
+    }
+  }
+  if (!match) { return Promise.resolve(); }
+  // Try to store request
+  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
+  return rest.create(
+    config,
+    auth.master(config),
+    '_Idempotency',
+    { reqId: requestId, expire: Parse._encode(expiryDate) }
+  ).catch (e => {
+    if (e.code == Parse.Error.DUPLICATE_VALUE) {
+      throw new Parse.Error(
+        Parse.Error.DUPLICATE_REQUEST,
+        'Duplicate request'
+      );
+    }
+    throw e;
+  });
 }
 
 function invalidRequest(req, res) {

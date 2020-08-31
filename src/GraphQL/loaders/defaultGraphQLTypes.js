@@ -14,6 +14,7 @@ import {
   GraphQLBoolean,
   GraphQLUnionType,
 } from 'graphql';
+import { toGlobalId } from 'graphql-relay';
 import { GraphQLUpload } from 'graphql-upload';
 
 class TypeValidationError extends Error {
@@ -22,7 +23,7 @@ class TypeValidationError extends Error {
   }
 }
 
-const parseStringValue = value => {
+const parseStringValue = (value) => {
   if (typeof value === 'string') {
     return value;
   }
@@ -30,7 +31,7 @@ const parseStringValue = value => {
   throw new TypeValidationError(value, 'String');
 };
 
-const parseIntValue = value => {
+const parseIntValue = (value) => {
   if (typeof value === 'string') {
     const int = Number(value);
     if (Number.isInteger(int)) {
@@ -41,7 +42,7 @@ const parseIntValue = value => {
   throw new TypeValidationError(value, 'Int');
 };
 
-const parseFloatValue = value => {
+const parseFloatValue = (value) => {
   if (typeof value === 'string') {
     const float = Number(value);
     if (!isNaN(float)) {
@@ -52,7 +53,7 @@ const parseFloatValue = value => {
   throw new TypeValidationError(value, 'Float');
 };
 
-const parseBooleanValue = value => {
+const parseBooleanValue = (value) => {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -60,7 +61,7 @@ const parseBooleanValue = value => {
   throw new TypeValidationError(value, 'Boolean');
 };
 
-const parseValue = value => {
+const parseValue = (value) => {
   switch (value.kind) {
     case Kind.STRING:
       return parseStringValue(value.value);
@@ -85,15 +86,15 @@ const parseValue = value => {
   }
 };
 
-const parseListValues = values => {
+const parseListValues = (values) => {
   if (Array.isArray(values)) {
-    return values.map(value => parseValue(value));
+    return values.map((value) => parseValue(value));
   }
 
   throw new TypeValidationError(values, 'List');
 };
 
-const parseObjectFields = fields => {
+const parseObjectFields = (fields) => {
   if (Array.isArray(fields)) {
     return fields.reduce(
       (object, field) => ({
@@ -111,9 +112,9 @@ const ANY = new GraphQLScalarType({
   name: 'Any',
   description:
     'The Any scalar type is used in operations and types that involve any type of value.',
-  parseValue: value => value,
-  serialize: value => value,
-  parseLiteral: ast => parseValue(ast),
+  parseValue: (value) => value,
+  serialize: (value) => value,
+  parseLiteral: (ast) => parseValue(ast),
 });
 
 const OBJECT = new GraphQLScalarType({
@@ -143,7 +144,7 @@ const OBJECT = new GraphQLScalarType({
   },
 });
 
-const parseDateIsoValue = value => {
+const parseDateIsoValue = (value) => {
   if (typeof value === 'string') {
     const date = new Date(value);
     if (!isNaN(date)) {
@@ -156,7 +157,7 @@ const parseDateIsoValue = value => {
   throw new TypeValidationError(value, 'Date');
 };
 
-const serializeDateIso = value => {
+const serializeDateIso = (value) => {
   if (typeof value === 'string') {
     return value;
   }
@@ -167,7 +168,7 @@ const serializeDateIso = value => {
   throw new TypeValidationError(value, 'Date');
 };
 
-const parseDateIsoLiteral = ast => {
+const parseDateIsoLiteral = (ast) => {
   if (ast.kind === Kind.STRING) {
     return parseDateIsoValue(ast.value);
   }
@@ -218,8 +219,8 @@ const DATE = new GraphQLScalarType({
         iso: parseDateIsoLiteral(ast),
       };
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find(field => field.name.value === '__type');
-      const iso = ast.fields.find(field => field.name.value === 'iso');
+      const __type = ast.fields.find((field) => field.name.value === '__type');
+      const iso = ast.fields.find((field) => field.name.value === 'iso');
       if (__type && __type.value && __type.value.value === 'Date' && iso) {
         return {
           __type: __type.value.value,
@@ -272,8 +273,8 @@ const BYTES = new GraphQLScalarType({
         base64: ast.value,
       };
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find(field => field.name.value === '__type');
-      const base64 = ast.fields.find(field => field.name.value === 'base64');
+      const __type = ast.fields.find((field) => field.name.value === '__type');
+      const base64 = ast.fields.find((field) => field.name.value === 'base64');
       if (
         __type &&
         __type.value &&
@@ -293,7 +294,7 @@ const BYTES = new GraphQLScalarType({
   },
 });
 
-const parseFileValue = value => {
+const parseFileValue = (value) => {
   if (typeof value === 'string') {
     return {
       __type: 'File',
@@ -316,7 +317,7 @@ const FILE = new GraphQLScalarType({
   description:
     'The File scalar type is used in operations and types that involve files.',
   parseValue: parseFileValue,
-  serialize: value => {
+  serialize: (value) => {
     if (typeof value === 'string') {
       return value;
     } else if (
@@ -334,9 +335,9 @@ const FILE = new GraphQLScalarType({
     if (ast.kind === Kind.STRING) {
       return parseFileValue(ast.value);
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find(field => field.name.value === '__type');
-      const name = ast.fields.find(field => field.name.value === 'name');
-      const url = ast.fields.find(field => field.name.value === 'url');
+      const __type = ast.fields.find((field) => field.name.value === '__type');
+      const name = ast.fields.find((field) => field.name.value === 'name');
+      const url = ast.fields.find((field) => field.name.value === 'url');
       if (__type && __type.value && name && name.value) {
         return parseFileValue({
           __type: __type.value.value,
@@ -370,12 +371,18 @@ const FILE_INPUT = new GraphQLInputObjectType({
   name: 'FileInput',
   fields: {
     file: {
-      description: 'A File Scalar can be an url or a FileInfo object.',
+      description:
+        'A File Scalar can be an url or a FileInfo object. If this field is set to null the file will be unlinked.',
       type: FILE,
     },
     upload: {
       description: 'Use this field if you want to create a new file.',
       type: GraphQLUpload,
+    },
+    unlink: {
+      description:
+        'Use this field if you want to unlink the file (the file will not be deleted on cloud storage)',
+      type: GraphQLBoolean,
     },
   },
 });
@@ -550,10 +557,10 @@ const ACL = new GraphQLObjectType({
       type: new GraphQLList(new GraphQLNonNull(USER_ACL)),
       resolve(p) {
         const users = [];
-        Object.keys(p).forEach(rule => {
+        Object.keys(p).forEach((rule) => {
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
-              userId: rule,
+              userId: toGlobalId('_User', rule),
               read: p[rule].read ? true : false,
               write: p[rule].write ? true : false,
             });
@@ -567,7 +574,7 @@ const ACL = new GraphQLObjectType({
       type: new GraphQLList(new GraphQLNonNull(ROLE_ACL)),
       resolve(p) {
         const roles = [];
-        Object.keys(p).forEach(rule => {
+        Object.keys(p).forEach((rule) => {
           if (rule.indexOf('role:') === 0) {
             roles.push({
               roleName: rule.replace('role:', ''),
@@ -838,49 +845,49 @@ const GEO_INTERSECTS_INPUT = new GraphQLInputObjectType({
   },
 });
 
-const equalTo = type => ({
+const equalTo = (type) => ({
   description:
     'This is the equalTo operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
   type,
 });
 
-const notEqualTo = type => ({
+const notEqualTo = (type) => ({
   description:
     'This is the notEqualTo operator to specify a constraint to select the objects where the value of a field do not equal to a specified value.',
   type,
 });
 
-const lessThan = type => ({
+const lessThan = (type) => ({
   description:
     'This is the lessThan operator to specify a constraint to select the objects where the value of a field is less than a specified value.',
   type,
 });
 
-const lessThanOrEqualTo = type => ({
+const lessThanOrEqualTo = (type) => ({
   description:
     'This is the lessThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is less than or equal to a specified value.',
   type,
 });
 
-const greaterThan = type => ({
+const greaterThan = (type) => ({
   description:
     'This is the greaterThan operator to specify a constraint to select the objects where the value of a field is greater than a specified value.',
   type,
 });
 
-const greaterThanOrEqualTo = type => ({
+const greaterThanOrEqualTo = (type) => ({
   description:
     'This is the greaterThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is greater than or equal to a specified value.',
   type,
 });
 
-const inOp = type => ({
+const inOp = (type) => ({
   description:
     'This is the in operator to specify a constraint to select the objects where the value of a field equals any value in the specified array.',
   type: new GraphQLList(type),
 });
 
-const notIn = type => ({
+const notIn = (type) => ({
   description:
     'This is the notIn operator to specify a constraint to select the objects where the value of a field do not equal any value in the specified array.',
   type: new GraphQLList(type),
@@ -1218,14 +1225,14 @@ let ARRAY_RESULT;
 
 const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   const classTypes = parseClasses
-    .filter(parseClass =>
+    .filter((parseClass) =>
       parseGraphQLSchema.parseClassTypes[parseClass.className]
         .classGraphQLOutputType
         ? true
         : false
     )
     .map(
-      parseClass =>
+      (parseClass) =>
         parseGraphQLSchema.parseClassTypes[parseClass.className]
           .classGraphQLOutputType
     );
@@ -1234,7 +1241,7 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
     description:
       'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
     types: () => [ELEMENT, ...classTypes],
-    resolveType: value => {
+    resolveType: (value) => {
       if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
           return parseGraphQLSchema.parseClassTypes[value.className]
@@ -1250,7 +1257,7 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
-const load = parseGraphQLSchema => {
+const load = (parseGraphQLSchema) => {
   parseGraphQLSchema.addGraphQLType(GraphQLUpload, true);
   parseGraphQLSchema.addGraphQLType(ANY, true);
   parseGraphQLSchema.addGraphQLType(OBJECT, true);

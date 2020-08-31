@@ -1,11 +1,12 @@
 const {
   ParseWebSocketServer,
 } = require('../lib/LiveQuery/ParseWebSocketServer');
+const EventEmitter = require('events');
 
 describe('ParseWebSocketServer', function() {
   beforeEach(function(done) {
     // Mock ws server
-    const EventEmitter = require('events');
+
     const mockServer = function() {
       return new EventEmitter();
     };
@@ -22,11 +23,11 @@ describe('ParseWebSocketServer', function() {
       onConnectCallback,
       { websocketTimeout: 5 }
     ).server;
-    const ws = {
-      readyState: 0,
-      OPEN: 0,
-      ping: jasmine.createSpy('ping'),
-    };
+    const ws = new EventEmitter();
+    ws.readyState = 0;
+    ws.OPEN = 0;
+    ws.ping = jasmine.createSpy('ping');
+
     parseWebSocketServer.onConnection(ws);
 
     // Make sure callback is called
