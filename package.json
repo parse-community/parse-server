@@ -21,7 +21,7 @@
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.26",
     "@graphql-tools/stitch": "6.0.17",
-    "@graphql-tools/utils": "6.0.16",
+    "@graphql-tools/utils": "6.0.17",
     "@parse/fs-files-adapter": "1.0.1",
     "@parse/push-adapter": "3.2.0",
     "@parse/s3-files-adapter": "1.4.0",
@@ -31,9 +31,9 @@
     "body-parser": "1.19.0",
     "commander": "5.1.0",
     "cors": "2.8.5",
-    "deepcopy": "2.0.0",
+    "deepcopy": "2.1.0",
     "express": "4.17.1",
-    "follow-redirects": "1.12.1",
+    "follow-redirects": "1.13.0",
     "graphql": "15.3.0",
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.6.0",
@@ -115,7 +115,7 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "0.3.0"
+    "@node-rs/bcrypt": "0.4.1"
   },
   "collective": {
     "type": "opencollective",
