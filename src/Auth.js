@@ -258,8 +258,14 @@ Auth.prototype._generateRoleGraphPipeline = function () {
             },
           },
           {
+            $group: {
+              _id: { name: '$name' },
+            },
+          },
+          {
             $project: {
-              name: 1,
+              _id: 0,
+              name: '$_id.name',
             },
           },
         ],
@@ -285,8 +291,14 @@ Auth.prototype._generateRoleGraphPipeline = function () {
             },
           },
           {
+            $group: {
+              _id: { name: '$name' },
+            },
+          },
+          {
             $project: {
-              name: 1,
+              _id: 0,
+              name: '$_id.name',
             },
           },
         ],
