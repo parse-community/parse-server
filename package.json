@@ -1,6 +1,6 @@
 {
   "name": "@hustle/parse-server",
-  "version": "4.3.0-fast-roles2",
+  "version": "4.3.0-fast-roles-dedupe",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
