@@ -860,7 +860,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           stage.$project
         );
       }
-      if (stage.$geoNear) {
+      if (stage.$geoNear && stage.$geoNear.query) {
         stage.$geoNear.query = this._parseAggregateArgs(
           schema,
           stage.$geoNear.query
