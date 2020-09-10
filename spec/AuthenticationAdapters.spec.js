@@ -41,6 +41,7 @@ describe('AuthenticationProviders', function () {
     'weibo',
     'phantauth',
     'microsoft',
+    'keycloak',
   ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
@@ -65,7 +66,7 @@ describe('AuthenticationProviders', function () {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      const noResponse = ['twitter', 'apple', 'gcenter', 'google'];
+      const noResponse = ['twitter', 'apple', 'gcenter', "google", 'keycloak'];
       if (noResponse.includes(providerName)) {
         return;
       }
@@ -700,6 +701,255 @@ describe('google play games service auth', () => {
         'Google Play Games Services - authData is invalid for this user.'
       );
     }
+  });
+});
+
+describe('keycloak auth adapter', () => {
+  const keycloak = require('../lib/Adapters/Auth/keycloak');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should fail without access token', async () => {
+    const authData = {
+      id: 'fakeid',
+    };
+    try {
+      await keycloak.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing access token and/or User id');
+    }
+  });
+
+  it('validateAuthData should fail without user id', async () => {
+    const authData = {
+      access_token: 'sometoken',
+    };
+    try {
+      await keycloak.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing access token and/or User id');
+    }
+  });
+
+  it('validateAuthData should fail without config', async () => {
+    const options = {
+      keycloak: {
+        config: null,
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing keycloak configuration');
+    }
+  });
+
+  it('validateAuthData should fail connect error', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.reject({
+        text: JSON.stringify({ error: 'hosting_error' }),
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Could not connect to the authentication server');
+    }
+  });
+
+  it('validateAuthData should fail with error description', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.reject({
+        text: JSON.stringify({ error_description: 'custom error message' }),
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('custom error message');
+    }
+  });
+
+  it('validateAuthData should fail with invalid auth', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({});
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should fail with invalid groups', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: ['role1'],
+          groups: ['unknown'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should fail with invalid roles', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: 'unknown',
+          groups: ['group1'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should handle authentication', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: ['role1'],
+          groups: ['group1'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(httpsRequest.get).toHaveBeenCalledWith({
+      host: 'http://example.com',
+      path: '/realms/new/protocol/openid-connect/userinfo',
+      headers: {
+        Authorization: 'Bearer sometoken',
+      },
+    });
   });
 });
 
