@@ -21,6 +21,7 @@ import SchemaCache from './SchemaCache';
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
 import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
 import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
+import { FrozenCacheAdapter } from '../Adapters/Cache/FrozenCacheAdapter';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
@@ -39,6 +40,7 @@ export function getControllers(options: ParseServerOptions) {
     pushWorker,
   } = getPushController(options);
   const cacheController = getCacheController(options);
+  const schemaCacheController = getSchemaCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
   const databaseController = getDatabaseController(options, cacheController);
@@ -59,6 +61,7 @@ export function getControllers(options: ParseServerOptions) {
     pushControllerQueue,
     analyticsController,
     cacheController,
+    schemaCacheController,
     parseGraphQLController,
     liveQueryController,
     databaseController,
@@ -124,6 +127,12 @@ export function getUserController(options: ParseServerOptions): UserController {
   return new UserController(emailControllerAdapter, appId, {
     verifyUserEmails,
   });
+}
+
+export function getSchemaCacheController(options: ParseServerOptions) {
+  const { appId } = options;
+  const cacheAdapter = new FrozenCacheAdapter();
+  return new CacheController(cacheAdapter, appId);
 }
 
 export function getCacheController(
