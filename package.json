@@ -20,10 +20,10 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.26",
-    "@graphql-tools/stitch": "6.2.0",
+    "@graphql-tools/stitch": "6.2.1",
     "@graphql-tools/utils": "6.2.0",
     "@parse/fs-files-adapter": "1.0.1",
-    "@parse/push-adapter": "3.3.0",
+    "@parse/push-adapter": "3.2.0",
     "@parse/s3-files-adapter": "1.4.0",
     "@parse/simple-mailgun-adapter": "1.1.0",
     "apollo-server-express": "2.17.0",
