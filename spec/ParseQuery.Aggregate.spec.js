@@ -1430,7 +1430,7 @@ describe('Parse.Query Aggregate testing', () => {
     }
   );
 
-  it_only_db('mongo')('geoNear with location query', async () => {
+  it_only_db('mongo')('aggregate geoNear with location query', async () => {
     // Create geo index which is required for `geoNear` query
     const database = Config.get(Parse.applicationId).database;
     const schema = await new Parse.Schema('GeoObject').save();
@@ -1438,7 +1438,7 @@ describe('Parse.Query Aggregate testing', () => {
       'GeoObject',
       schema,
       ['location'],
-      'geoIndex',
+      undefined,
       false,
       { indexType: '2dsphere' }
     );
@@ -1486,4 +1486,104 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results[0].value).toEqual(2);
     expect(results[1].value).toEqual(3);
   });
+
+  it_only_db('mongo')('aggregate geoNear with near GeoJSON point', async () => {
+    // Create geo index which is required for `geoNear` query
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('GeoObject').save();
+    await database.adapter.ensureIndex(
+      'GeoObject',
+      schema,
+      ['location'],
+      undefined,
+      false,
+      '2dsphere'
+    );
+    // Create objects
+    const GeoObject = Parse.Object.extend('GeoObject');
+    const obj1 = new GeoObject({
+      value: 1,
+      location: new Parse.GeoPoint(1, 1),
+      date: new Date(1),
+    });
+    const obj2 = new GeoObject({
+      value: 2,
+      location: new Parse.GeoPoint(2, 1),
+      date: new Date(2),
+    });
+    const obj3 = new GeoObject({
+      value: 3,
+      location: new Parse.GeoPoint(3, 1),
+      date: new Date(3),
+    });
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+    // Create query
+    const pipeline = [
+      {
+        geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [1, 1],
+          },
+          key: 'location',
+          spherical: true,
+          distanceField: 'dist',
+        },
+      },
+    ];
+    const query = new Parse.Query(GeoObject);
+    const results = await query.aggregate(pipeline);
+    // Check results
+    expect(results.length).toEqual(3);
+  });
+
+  it_only_db('mongo')(
+    'aggregate geoNear with near legacy coordinate pair',
+    async () => {
+      // Create geo index which is required for `geoNear` query
+      const database = Config.get(Parse.applicationId).database;
+      const schema = await new Parse.Schema('GeoObject').save();
+      await database.adapter.ensureIndex(
+        'GeoObject',
+        schema,
+        ['location'],
+        undefined,
+        false,
+        '2dsphere'
+      );
+      // Create objects
+      const GeoObject = Parse.Object.extend('GeoObject');
+      const obj1 = new GeoObject({
+        value: 1,
+        location: new Parse.GeoPoint(1, 1),
+        date: new Date(1),
+      });
+      const obj2 = new GeoObject({
+        value: 2,
+        location: new Parse.GeoPoint(2, 1),
+        date: new Date(2),
+      });
+      const obj3 = new GeoObject({
+        value: 3,
+        location: new Parse.GeoPoint(3, 1),
+        date: new Date(3),
+      });
+      await Parse.Object.saveAll([obj1, obj2, obj3]);
+      // Create query
+      const pipeline = [
+        {
+          geoNear: {
+            near: [1, 1],
+            key: 'location',
+            spherical: true,
+            distanceField: 'dist',
+          },
+        },
+      ];
+      const query = new Parse.Query(GeoObject);
+      const results = await query.aggregate(pipeline);
+      // Check results
+      expect(results.length).toEqual(3);
+    }
+  );
 });

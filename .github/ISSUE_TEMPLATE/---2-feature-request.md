@@ -1,6 +1,9 @@
 ---
-name: "\U0001F4A1 Feature request"
-about: Suggest an idea for this project
+name: "\U0001F4A1 Request a feature"
+about: Suggest new functionality or an enhancement of existing functionality.
+title: ''
+labels: ''
+assignees: ''
 
 ---
 

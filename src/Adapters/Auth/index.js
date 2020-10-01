@@ -4,7 +4,6 @@ const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
 const facebook = require('./facebook');
-const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
@@ -23,6 +22,7 @@ const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
+const keycloak = require('./keycloak');
 const ldap = require('./ldap');
 
 const anonymous = {
@@ -39,7 +39,6 @@ const providers = {
   gcenter,
   gpgames,
   facebook,
-  facebookaccountkit,
   instagram,
   linkedin,
   meetup,
@@ -58,14 +57,15 @@ const providers = {
   weibo,
   phantauth,
   microsoft,
+  keycloak,
   ldap,
 };
 
-function authDataValidator(adapter, appIds, options, req) {
+function authDataValidator(adapter, appIds, options) {
   return function (authData) {
-    return adapter.validateAuthData(authData, options, req).then(() => {
+    return adapter.validateAuthData(authData, options).then(() => {
       if (appIds) {
-        return adapter.validateAppId(appIds, authData, options, req);
+        return adapter.validateAppId(appIds, authData, options);
       }
       return Promise.resolve();
     });
@@ -98,7 +98,7 @@ function loadAuthAdapter(provider, authOptions) {
       providerOptions
     );
     if (optionalAdapter) {
-      ['validateAuthData', 'validateAppId'].forEach((key) => {
+      ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
@@ -123,7 +123,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function (provider, req) {
+  const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
@@ -133,7 +133,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       authOptions
     );
 
-    return authDataValidator(adapter, appIds, providerOptions, req);
+    return authDataValidator(adapter, appIds, providerOptions);
   };
 
   return Object.freeze({

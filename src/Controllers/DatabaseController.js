@@ -1567,23 +1567,42 @@ class DatabaseController {
         objectId: userId,
       };
 
-      const ors = permFields.flatMap(key => {
-        // constraint for single pointer setup
-        const q = {
-          [key]: userPointer,
-        };
-        // constraint for users-array setup
-        const qa = {
-          [key]: { $all: [userPointer] },
-        };
+      const queries = permFields.map(key => {
+        const fieldDescriptor = schema.getExpectedType(className, key);
+        const fieldType =
+          fieldDescriptor &&
+          typeof fieldDescriptor === 'object' &&
+          Object.prototype.hasOwnProperty.call(fieldDescriptor, 'type')
+            ? fieldDescriptor.type
+            : null;
+
+        let queryClause;
+
+        if (fieldType === 'Pointer') {
+          // constraint for single pointer setup
+          queryClause = { [key]: userPointer };
+        } else if (fieldType === 'Array') {
+          // constraint for users-array setup
+          queryClause = { [key]: { $all: [userPointer] } };
+        } else if (fieldType === 'Object') {
+          // constraint for object setup
+          queryClause = { [key]: userPointer };
+        } else {
+          // This means that there is a CLP field of an unexpected type. This condition should not happen, which is
+          // why is being treated as an error.
+          throw Error(
+            `An unexpected condition occurred when resolving pointer permissions: ${className} ${key}`
+          );
+        }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return [{ $and: [q, query] }, { $and: [qa, query] }];
+          return { $and: [queryClause, query] };
         }
         // otherwise just add the constaint
-        return [Object.assign({}, query, q), Object.assign({}, query, qa)];
+        return Object.assign({}, query, queryClause);
       });
-      return { $or: ors };
+
+      return queries.length === 1 ? queries[0] : { $or: queries };
     } else {
       return query;
     }

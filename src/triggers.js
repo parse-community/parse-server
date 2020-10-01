@@ -16,9 +16,12 @@ export const Types = {
   afterSaveFile: 'afterSaveFile',
   beforeDeleteFile: 'beforeDeleteFile',
   afterDeleteFile: 'afterDeleteFile',
+  beforeConnect: 'beforeConnect',
+  beforeSubscribe: 'beforeSubscribe',
 };
 
 const FileClassName = '@File';
+const ConnectClassName = '@Connect';
 
 const baseStore = function () {
   const Validators = {};
@@ -130,6 +133,10 @@ export function addTrigger(type, className, handler, applicationId) {
 
 export function addFileTrigger(type, handler, applicationId) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
+}
+
+export function addConnectTrigger(type, handler, applicationId) {
+  add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -759,4 +766,56 @@ export async function maybeRunFileTrigger(
     }
   }
   return fileObject;
+}
+
+export async function maybeRunConnectTrigger(triggerType, request) {
+  const trigger = getTrigger(
+    ConnectClassName,
+    triggerType,
+    Parse.applicationId
+  );
+  if (!trigger) {
+    return;
+  }
+  request.user = await userForSessionToken(request.sessionToken);
+  return trigger(request);
+}
+
+export async function maybeRunSubscribeTrigger(
+  triggerType,
+  className,
+  request
+) {
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  const parseQuery = new Parse.Query(className);
+  parseQuery.withJSON(request.query);
+  request.query = parseQuery;
+  request.user = await userForSessionToken(request.sessionToken);
+  await trigger(request);
+  const query = request.query.toJSON();
+  if (query.keys) {
+    query.fields = query.keys.split(',');
+  }
+  request.query = query;
+}
+
+async function userForSessionToken(sessionToken) {
+  if (!sessionToken) {
+    return;
+  }
+  const q = new Parse.Query('_Session');
+  q.equalTo('sessionToken', sessionToken);
+  const session = await q.first({ useMasterKey: true });
+  if (!session) {
+    return;
+  }
+  const user = session.get('user');
+  if (!user) {
+    return;
+  }
+  await user.fetch({ useMasterKey: true });
+  return user;
 }

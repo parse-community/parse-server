@@ -3,6 +3,7 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 const TestUtils = require('../lib/TestUtils');
+const semver = require('semver');
 
 let RESTController;
 
@@ -101,7 +102,7 @@ describe('ParseServerRESTController', () => {
   });
 
   if (
-    (process.env.MONGODB_VERSION === '4.0.4' &&
+    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
@@ -109,7 +110,7 @@ describe('ParseServerRESTController', () => {
     describe('transactions', () => {
       beforeAll(async () => {
         if (
-          process.env.MONGODB_VERSION === '4.0.4' &&
+          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
@@ -161,9 +162,9 @@ describe('ParseServerRESTController', () => {
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
                 );
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
+                expect(
+                  results.map(result => result.get('key')).sort()
+                ).toEqual(['value1', 'value2']);
                 done();
               });
             });
@@ -517,6 +518,22 @@ describe('ParseServerRESTController', () => {
       });
   });
 
+  it('should handle a POST request with context', async () => {
+    Parse.Cloud.beforeSave('MyObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    Parse.Cloud.afterSave('MyObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+
+    await RESTController.request(
+      'POST',
+      '/classes/MyObject',
+      { key: 'value' },
+      { context: { a: 'a' } }
+    );
+  });
+
   it('ensures sessionTokens are properly handled', done => {
     let userId;
     Parse.User.signUp('user', 'pass')
@@ -644,5 +661,36 @@ describe('ParseServerRESTController', () => {
           done();
         }
       );
+  });
+
+  it('ensures logIn is saved with installationId', async () => {
+    const installationId = 'installation123';
+    const user = await RESTController.request(
+      'POST',
+      '/classes/_User',
+      { username: 'hello', password: 'world' },
+      { installationId }
+    );
+    expect(user.sessionToken).not.toBeUndefined();
+    const query = new Parse.Query('_Session');
+    let sessions = await query.find({ useMasterKey: true });
+
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].get('installationId')).toBe(installationId);
+    expect(sessions[0].get('sessionToken')).toBe(user.sessionToken);
+
+    const loggedUser = await RESTController.request(
+      'POST',
+      '/login',
+      { username: 'hello', password: 'world' },
+      { installationId }
+    );
+    expect(loggedUser.sessionToken).not.toBeUndefined();
+    sessions = await query.find({ useMasterKey: true });
+
+    // Should clean up old sessions with this installationId
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].get('installationId')).toBe(installationId);
+    expect(sessions[0].get('sessionToken')).toBe(loggedUser.sessionToken);
   });
 });

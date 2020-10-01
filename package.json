@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "4.8.5",
+  "version": "4.9.0",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -19,45 +19,45 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
-    "@apollographql/graphql-playground-html": "^1.6.26",
-    "@graphql-tools/links": "^6.0.14",
-    "@graphql-tools/stitch": "6.0.10",
-    "@graphql-tools/utils": "^6.0.10",
+    "@apollographql/graphql-playground-html": "1.6.26",
+    "@graphql-tools/links": "^6.2.4",
+    "@graphql-tools/stitch": "6.2.0",
+    "@graphql-tools/utils": "6.2.1",
     "@parse/fs-files-adapter": "1.0.1",
-    "@parse/push-adapter": "3.2.0",
+    "@parse/push-adapter": "3.3.0",
     "@parse/s3-files-adapter": "1.4.0",
     "@parse/simple-mailgun-adapter": "1.1.0",
-    "apollo-server-express": "2.15.0",
+    "apollo-server-express": "2.17.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
     "commander": "5.1.0",
     "cors": "2.8.5",
-    "deepcopy": "2.0.0",
+    "deepcopy": "2.1.0",
     "express": "4.17.1",
-    "follow-redirects": "1.12.1",
-    "graphql": "15.0.0",
+    "follow-redirects": "1.13.0",
+    "graphql": "15.3.0",
     "graphql-list-fields": "2.0.2",
     "graphql-relay": "0.6.0",
     "graphql-upload": "11.0.0",
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
-    "jwks-rsa": "1.8.1",
-    "ldapjs": "2.0.0",
-    "lodash": "^4.17.19",
+    "jwks-rsa": "1.9.0",
+    "ldapjs": "2.1.1",
+    "lodash": "4.17.20",
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
-    "mongodb": "3.5.9",
-    "parse": "2.14.0",
-    "pg-promise": "10.5.7",
+    "mongodb": "3.6.1",
+    "parse": "2.15.0",
+    "pg-promise": "10.6.1",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.2",
-    "subscriptions-transport-ws": "0.9.16",
+    "subscriptions-transport-ws": "0.9.18",
     "tv4": "1.3.0",
-    "uuid": "8.2.0",
-    "winston": "3.2.1",
+    "uuid": "8.3.0",
+    "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.0",
-    "ws": "7.3.0"
+    "ws": "7.3.1"
   },
   "devDependencies": {
     "@babel/cli": "7.10.0",
@@ -88,7 +88,7 @@
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
     "mongodb-runner": "4.8.0",
-    "node-fetch": "2.6.0",
+    "node-fetch": "2.6.1",
     "nyc": "15.1.0",
     "prettier": "2.0.5"
   },
@@ -105,6 +105,7 @@
     "posttest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} mongodb-runner stop",
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",
+    "prettier": "prettier --write {src,spec}/**/*.js",
     "prepare": "npm run build",
     "postinstall": "node -p 'require(\"./postinstall.js\")()'"
   },
@@ -115,15 +116,12 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "0.3.0"
+    "@node-rs/bcrypt": "0.4.1"
   },
   "collective": {
     "type": "opencollective",
     "url": "https://opencollective.com/parse-server",
     "logo": "https://opencollective.com/parse-server/logo.txt?reverse=true&variant=binary"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
   },
   "funding": {
     "type": "opencollective",

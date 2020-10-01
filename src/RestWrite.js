@@ -329,6 +329,10 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
 
   // Cloud code gets a bit of extra data for its objects
   const extraData = { className: this.className };
+
+  // Expand file objects
+  this.config.filesController.expandFilesInObject(this.config, userData);
+
   const user = triggers.inflate(extraData, userData);
 
   // no need to return a response

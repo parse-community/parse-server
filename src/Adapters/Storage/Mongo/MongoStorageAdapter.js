@@ -279,7 +279,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
+          if (
+            !Object.prototype.hasOwnProperty.call(
+              fields,
+              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
+            )
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
@@ -433,6 +438,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       collectionUpdate['$unset'][name] = null;
     });
 
+    const collectionFilter = { $or: [] };
+    mongoFormatNames.forEach(name => {
+      collectionFilter['$or'].push({ [name]: { $exists: true } });
+    });
+
     const schemaUpdate = { $unset: {} };
     fieldNames.forEach(name => {
       schemaUpdate['$unset'][name] = null;
@@ -440,7 +450,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
 
     return this._adaptiveCollection(className)
-      .then(collection => collection.updateMany({}, collectionUpdate))
+      .then(collection =>
+        collection.updateMany(collectionFilter, collectionUpdate)
+      )
       .then(() => this._schemaCollection())
       .then(schemaCollection =>
         schemaCollection.updateSchema(className, schemaUpdate)
@@ -855,7 +867,7 @@ export class MongoStorageAdapter implements StorageAdapter {
           stage.$project
         );
       }
-      if (stage.$geoNear) {
+      if (stage.$geoNear && stage.$geoNear.query) {
         stage.$geoNear.query = this._parseAggregateArgs(
           schema,
           stage.$geoNear.query

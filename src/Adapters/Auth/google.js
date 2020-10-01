@@ -6,7 +6,8 @@ var Parse = require('parse/node').Parse;
 const https = require('https');
 const jwt = require('jsonwebtoken');
 
-const TOKEN_ISSUER = 'https://accounts.google.com';
+const TOKEN_ISSUER = 'accounts.google.com';
+const HTTPS_TOKEN_ISSUER = 'https://accounts.google.com';
 
 let cache = {};
 
@@ -87,10 +88,10 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `${message}`);
   }
 
-  if (jwtClaims.iss !== TOKEN_ISSUER) {
+  if (jwtClaims.iss !== TOKEN_ISSUER && jwtClaims.iss !== HTTPS_TOKEN_ISSUER) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      `id token not issued by correct provider - expected: ${TOKEN_ISSUER} | from: ${jwtClaims.iss}`
+      `id token not issued by correct provider - expected: ${TOKEN_ISSUER} or ${HTTPS_TOKEN_ISSUER} | from: ${jwtClaims.iss}`
     );
   }
 
