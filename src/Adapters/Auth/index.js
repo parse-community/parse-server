@@ -61,11 +61,11 @@ const providers = {
   ldap,
 };
 
-function authDataValidator(adapter, appIds, options) {
+function authDataValidator(adapter, appIds, options, req) {
   return function (authData) {
-    return adapter.validateAuthData(authData, options).then(() => {
+    return adapter.validateAuthData(authData, options, req).then(() => {
       if (appIds) {
-        return adapter.validateAppId(appIds, authData, options);
+        return adapter.validateAppId(appIds, authData, options, req);
       }
       return Promise.resolve();
     });
@@ -123,7 +123,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function (provider) {
+  const getValidatorForProvider = function (provider, req) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
@@ -133,7 +133,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       authOptions
     );
 
-    return authDataValidator(adapter, appIds, providerOptions);
+    return authDataValidator(adapter, appIds, providerOptions, req);
   };
 
   return Object.freeze({

@@ -359,13 +359,16 @@ describe('AuthenticationProviders', function () {
 
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
+      'customAuthentication',
+      { requestObject: true }
     );
     validateValidator(validator);
 
     validator(validAuthData).then(
       () => {
-        expect(authDataSpy).toHaveBeenCalled();
+        expect(authDataSpy).toHaveBeenCalledWith(validAuthData, adapter, {
+          requestObject: true,
+        });
         // AppIds are not provided in the adapter, should not be called
         expect(appIdSpy).not.toHaveBeenCalled();
         done();
