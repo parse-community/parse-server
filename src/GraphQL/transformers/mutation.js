@@ -73,6 +73,9 @@ const transformTypes = async (
 
 const transformers = {
   file: async ({ file, upload }, { config }) => {
+    if (file === null && !upload) {
+      return null;
+    }
     if (upload) {
       const { fileInfo } = await handleUpload(upload, config);
       return { ...fileInfo, __type: 'File' };

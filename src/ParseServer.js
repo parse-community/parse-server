@@ -126,6 +126,10 @@ class ParseServer {
     if (fileAdapter && typeof fileAdapter.handleShutdown === 'function') {
       promises.push(fileAdapter.handleShutdown());
     }
+    const { adapter: cacheAdapter } = this.config.cacheController;
+    if (cacheAdapter && typeof cacheAdapter.handleShutdown === 'function') {
+      promises.push(cacheAdapter.handleShutdown());
+    }
     return (promises.length > 0
       ? Promise.all(promises)
       : Promise.resolve()
@@ -154,7 +158,7 @@ class ParseServer {
       })
     );
 
-    api.use('/health', function(req, res) {
+    api.use('/health', function (req, res) {
       res.json({
         status: 'ok',
       });
@@ -192,7 +196,7 @@ class ParseServer {
       });
       // verify the server url after a 'mount' event is received
       /* istanbul ignore next */
-      api.on('mount', function() {
+      api.on('mount', function () {
         ParseServer.verifyServerUrl();
       });
     }
@@ -266,7 +270,10 @@ class ParseServer {
         graphQLCustomTypeDefs = parse(
           fs.readFileSync(options.graphQLSchema, 'utf8')
         );
-      } else if (typeof options.graphQLSchema === 'object') {
+      } else if (
+        typeof options.graphQLSchema === 'object' ||
+        typeof options.graphQLSchema === 'function'
+      ) {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
@@ -461,7 +468,7 @@ function configureListeners(parseServer) {
     });
   });
 
-  const destroyAliveConnections = function() {
+  const destroyAliveConnections = function () {
     for (const socketId in sockets) {
       try {
         sockets[socketId].destroy();
@@ -471,7 +478,7 @@ function configureListeners(parseServer) {
     }
   };
 
-  const handleShutdown = function() {
+  const handleShutdown = function () {
     process.stdout.write('Termination signal received. Shutting down.');
     destroyAliveConnections();
     server.close();

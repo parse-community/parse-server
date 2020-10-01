@@ -371,12 +371,18 @@ const FILE_INPUT = new GraphQLInputObjectType({
   name: 'FileInput',
   fields: {
     file: {
-      description: 'A File Scalar can be an url or a FileInfo object.',
+      description:
+        'A File Scalar can be an url or a FileInfo object. If this field is set to null the file will be unlinked.',
       type: FILE,
     },
     upload: {
       description: 'Use this field if you want to create a new file.',
       type: GraphQLUpload,
+    },
+    unlink: {
+      description:
+        'Use this field if you want to unlink the file (the file will not be deleted on cloud storage)',
+      type: GraphQLBoolean,
     },
   },
 });

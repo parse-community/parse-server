@@ -200,7 +200,7 @@ beforeEach(done => {
     .catch(done.fail);
 });
 
-afterEach(function(done) {
+afterEach(function (done) {
   const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
       fail(
@@ -230,6 +230,7 @@ afterEach(function(done) {
                   '_Session',
                   '_Product',
                   '_Audience',
+                  '_Idempotency',
                 ].indexOf(className) >= 0
               );
             }
@@ -326,13 +327,13 @@ function range(n) {
 
 function mockCustomAuthenticator(id, password) {
   const custom = {};
-  custom.validateAuthData = function(authData) {
+  custom.validateAuthData = function (authData) {
     if (authData.id === id && authData.password.startsWith(password)) {
       return Promise.resolve();
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'not validated');
   };
-  custom.validateAppId = function() {
+  custom.validateAppId = function () {
     return Promise.resolve();
   };
   return custom;
@@ -344,14 +345,14 @@ function mockCustom() {
 
 function mockFacebookAuthenticator(id, token) {
   const facebook = {};
-  facebook.validateAuthData = function(authData) {
+  facebook.validateAuthData = function (authData) {
     if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
       throw undefined;
     }
   };
-  facebook.validateAppId = function(appId, authData) {
+  facebook.validateAppId = function (appId, authData) {
     if (authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
@@ -368,17 +369,17 @@ function mockFacebook() {
 function mockShortLivedAuth() {
   const auth = {};
   let accessToken;
-  auth.setValidAccessToken = function(validAccessToken) {
+  auth.setValidAccessToken = function (validAccessToken) {
     accessToken = validAccessToken;
   };
-  auth.validateAuthData = function(authData) {
+  auth.validateAuthData = function (authData) {
     if (authData.access_token == accessToken) {
       return Promise.resolve();
     } else {
       return Promise.reject('Invalid access token');
     }
   };
-  auth.validateAppId = function() {
+  auth.validateAppId = function () {
     return Promise.resolve();
   };
   return auth;
@@ -403,7 +404,7 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
-global.jfail = function(err) {
+global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
 
@@ -453,7 +454,7 @@ global.describe_only = validator => {
 };
 
 const libraryCache = {};
-jasmine.mockLibrary = function(library, name, mock) {
+jasmine.mockLibrary = function (library, name, mock) {
   const original = require(library)[name];
   if (!libraryCache[library]) {
     libraryCache[library] = {};
@@ -462,7 +463,7 @@ jasmine.mockLibrary = function(library, name, mock) {
   libraryCache[library][name] = original;
 };
 
-jasmine.restoreLibrary = function(library, name) {
+jasmine.restoreLibrary = function (library, name) {
   if (!libraryCache[library] || !libraryCache[library][name]) {
     throw 'Can not find library ' + library + ' ' + name;
   }

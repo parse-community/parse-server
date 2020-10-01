@@ -4,7 +4,6 @@ const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
 const facebook = require('./facebook');
-const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
@@ -23,6 +22,7 @@ const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
+const keycloak = require('./keycloak');
 const ldap = require('./ldap');
 
 const anonymous = {
@@ -39,7 +39,6 @@ const providers = {
   gcenter,
   gpgames,
   facebook,
-  facebookaccountkit,
   instagram,
   linkedin,
   meetup,
@@ -58,6 +57,7 @@ const providers = {
   weibo,
   phantauth,
   microsoft,
+  keycloak,
   ldap,
 };
 
@@ -98,7 +98,7 @@ function loadAuthAdapter(provider, authOptions) {
       providerOptions
     );
     if (optionalAdapter) {
-      ['validateAuthData', 'validateAppId'].forEach((key) => {
+      ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }

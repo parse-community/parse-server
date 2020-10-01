@@ -1,5 +1,5 @@
 import gql from 'graphql-tag';
-import { SchemaDirectiveVisitor } from 'graphql-tools';
+import { SchemaDirectiveVisitor } from '@graphql-tools/utils';
 import { FunctionsRouter } from '../../Routers/FunctionsRouter';
 
 export const definitions = gql`
@@ -21,15 +21,17 @@ const load = parseGraphQLSchema => {
             functionName = this.args.to;
           }
 
-          return (await FunctionsRouter.handleCloudFunction({
-            params: {
-              functionName,
-            },
-            config,
-            auth,
-            info,
-            body: args,
-          })).response.result;
+          return (
+            await FunctionsRouter.handleCloudFunction({
+              params: {
+                functionName,
+              },
+              config,
+              auth,
+              info,
+              body: args,
+            })
+          ).response.result;
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }

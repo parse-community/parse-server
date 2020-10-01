@@ -28,6 +28,10 @@ module.exports.ParseServerOptions = {
     help: 'Add headers to Access-Control-Allow-Headers',
     action: parsers.arrayParser,
   },
+  allowOrigin: {
+    env: 'PARSE_SERVER_ALLOW_ORIGIN',
+    help: 'Sets the origin to Access-Control-Allow-Origin',
+  },
   analyticsAdapter: {
     env: 'PARSE_SERVER_ANALYTICS_ADAPTER',
     help: 'Adapter module for the analytics',
@@ -131,7 +135,7 @@ module.exports.ParseServerOptions = {
   },
   enableAnonymousUsers: {
     env: 'PARSE_SERVER_ENABLE_ANON_USERS',
-    help: 'Enable (or disable) anon users, defaults to true',
+    help: 'Enable (or disable) anonymous users, defaults to true',
     action: parsers.booleanParser,
     default: true,
   },
@@ -177,6 +181,13 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_HOST',
     help: 'The host to serve ParseServer on, defaults to 0.0.0.0',
     default: '0.0.0.0',
+  },
+  idempotencyOptions: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS',
+    help:
+      'Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.objectParser,
+    default: {},
   },
   javascriptKey: {
     env: 'PARSE_SERVER_JAVASCRIPT_KEY',
@@ -521,5 +532,21 @@ module.exports.LiveQueryServerOptions = {
     env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',
     action: parsers.moduleOrObjectParser,
+  },
+};
+module.exports.IdempotencyOptions = {
+  paths: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS',
+    help:
+      'An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.',
+    action: parsers.arrayParser,
+    default: [],
+  },
+  ttl: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL',
+    help:
+      'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
+    action: parsers.numberParser('ttl'),
+    default: 300,
   },
 };

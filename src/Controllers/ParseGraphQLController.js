@@ -332,7 +332,7 @@ class ParseGraphQLController {
   }
 }
 
-const isValidStringArray = function(array): boolean {
+const isValidStringArray = function (array): boolean {
   return Array.isArray(array)
     ? !array.some(s => typeof s !== 'string' || s.trim().length < 1)
     : false;
@@ -342,7 +342,7 @@ const isValidStringArray = function(array): boolean {
  * object, i.e. not an array, null, date
  * etc.
  */
-const isValidSimpleObject = function(obj): boolean {
+const isValidSimpleObject = function (obj): boolean {
   return (
     typeof obj === 'object' &&
     !Array.isArray(obj) &&

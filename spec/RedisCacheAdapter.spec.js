@@ -9,12 +9,12 @@ and make sure a redis server is available on the default port
  */
 describe_only(() => {
   return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('RedisCacheAdapter', function() {
+})('RedisCacheAdapter', function () {
   const KEY = 'hello';
   const VALUE = 'world';
 
   function wait(sleep) {
-    return new Promise(function(resolve) {
+    return new Promise(function (resolve) {
       setTimeout(resolve, sleep);
     });
   }
@@ -101,11 +101,20 @@ describe_only(() => {
       .then(value => expect(value).not.toEqual(null))
       .then(done);
   });
+
+  it('handleShutdown, close connection', async () => {
+    const cache = new RedisCacheAdapter(null, 5);
+
+    await cache.handleShutdown();
+    setTimeout(() => {
+      expect(cache.client.connected).toBe(false);
+    }, 0);
+  });
 });
 
 describe_only(() => {
   return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('RedisCacheAdapter/KeyPromiseQueue', function() {
+})('RedisCacheAdapter/KeyPromiseQueue', function () {
   const KEY1 = 'key1';
   const KEY2 = 'key2';
   const VALUE = 'hello';
@@ -168,7 +177,7 @@ describe_only(() => {
 
 describe_only(() => {
   return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
-})('Redis Performance', function() {
+})('Redis Performance', function () {
   let cacheAdapter;
   let getSpy;
   let putSpy;

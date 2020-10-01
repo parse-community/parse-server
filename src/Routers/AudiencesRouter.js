@@ -21,7 +21,8 @@ export class AudiencesRouter extends ClassesRouter {
         '_Audience',
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         response.results.forEach(item => {

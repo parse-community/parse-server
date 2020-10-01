@@ -88,7 +88,8 @@ export class CloudCodeRouter extends PromiseRouter {
       req.auth,
       '_JobSchedule',
       formatJobSchedule(job_schedule),
-      req.client
+      req.client,
+      req.info.context
     );
   }
 
@@ -102,7 +103,9 @@ export class CloudCodeRouter extends PromiseRouter {
         req.auth,
         '_JobSchedule',
         { objectId },
-        formatJobSchedule(job_schedule)
+        formatJobSchedule(job_schedule),
+        undefined,
+        req.info.context
       )
       .then(response => {
         return {
@@ -114,7 +117,7 @@ export class CloudCodeRouter extends PromiseRouter {
   static deleteJob(req) {
     const { objectId } = req.params;
     return rest
-      .del(req.config, req.auth, '_JobSchedule', objectId)
+      .del(req.config, req.auth, '_JobSchedule', objectId, req.info.context)
       .then(response => {
         return {
           response,

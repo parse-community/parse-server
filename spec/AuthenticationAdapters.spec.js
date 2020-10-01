@@ -19,13 +19,12 @@ const responses = {
   microsoft: { id: 'userId', mail: 'userMail' },
 };
 
-describe('AuthenticationProviders', function() {
+describe('AuthenticationProviders', function () {
   [
     'apple',
     'gcenter',
     'gpgames',
     'facebook',
-    'facebookaccountkit',
     'github',
     'instagram',
     'google',
@@ -42,7 +41,8 @@ describe('AuthenticationProviders', function() {
     'weibo',
     'phantauth',
     'microsoft',
-  ].map(function(providerName) {
+    'keycloak',
+  ].map(function (providerName) {
     it('Should validate structure of ' + providerName, done => {
       const provider = require('../lib/Adapters/Auth/' + providerName);
       jequal(typeof provider.validateAuthData, 'function');
@@ -66,7 +66,7 @@ describe('AuthenticationProviders', function() {
     });
 
     it(`should provide the right responses for adapter ${providerName}`, async () => {
-      const noResponse = ['twitter', 'apple', 'gcenter'];
+      const noResponse = ['twitter', 'apple', 'gcenter', 'google', 'keycloak'];
       if (noResponse.includes(providerName)) {
         return;
       }
@@ -101,7 +101,7 @@ describe('AuthenticationProviders', function() {
     });
   });
 
-  const getMockMyOauthProvider = function() {
+  const getMockMyOauthProvider = function () {
     return {
       authData: {
         id: '12345',
@@ -114,7 +114,7 @@ describe('AuthenticationProviders', function() {
       synchronizedAuthToken: null,
       synchronizedExpiration: null,
 
-      authenticate: function(options) {
+      authenticate: function (options) {
         if (this.shouldError) {
           options.error(this, 'An error occurred');
         } else if (this.shouldCancel) {
@@ -123,7 +123,7 @@ describe('AuthenticationProviders', function() {
           options.success(this, this.authData);
         }
       },
-      restoreAuthentication: function(authData) {
+      restoreAuthentication: function (authData) {
         if (!authData) {
           this.synchronizedUserId = null;
           this.synchronizedAuthToken = null;
@@ -135,10 +135,10 @@ describe('AuthenticationProviders', function() {
         this.synchronizedExpiration = authData.expiration_date;
         return true;
       },
-      getAuthType: function() {
+      getAuthType: function () {
         return 'myoauth';
       },
-      deauthenticate: function() {
+      deauthenticate: function () {
         this.loggedOut = true;
         this.restoreAuthentication(null);
       },
@@ -146,16 +146,16 @@ describe('AuthenticationProviders', function() {
   };
 
   Parse.User.extend({
-    extended: function() {
+    extended: function () {
       return true;
     },
   });
 
-  const createOAuthUser = function(callback) {
+  const createOAuthUser = function (callback) {
     return createOAuthUserWithSessionToken(undefined, callback);
   };
 
-  const createOAuthUserWithSessionToken = function(token, callback) {
+  const createOAuthUserWithSessionToken = function (token, callback) {
     const jsonBody = {
       authData: {
         myoauth: getMockMyOauthProvider().authData,
@@ -336,10 +336,10 @@ describe('AuthenticationProviders', function() {
       token: 'world',
     };
     const adapter = {
-      validateAppId: function() {
+      validateAppId: function () {
         return Promise.resolve();
       },
-      validateAuthData: function(authData) {
+      validateAuthData: function (authData) {
         if (
           authData.id == validAuthData.id &&
           authData.token == validAuthData.token
@@ -359,13 +359,16 @@ describe('AuthenticationProviders', function() {
 
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider(
-      'customAuthentication'
+      'customAuthentication',
+      { requestObject: true }
     );
     validateValidator(validator);
 
     validator(validAuthData).then(
       () => {
-        expect(authDataSpy).toHaveBeenCalled();
+        expect(authDataSpy).toHaveBeenCalledWith(validAuthData, adapter, {
+          requestObject: true,
+        });
         // AppIds are not provided in the adapter, should not be called
         expect(appIdSpy).not.toHaveBeenCalled();
         done();
@@ -512,82 +515,6 @@ describe('AuthenticationProviders', function() {
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
   });
-
-  it('properly loads Facebook accountkit adapter with options', () => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-        appSecret: 'secret',
-      },
-    };
-    const {
-      adapter,
-      appIds,
-      providerOptions,
-    } = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
-    validateAuthenticationAdapter(adapter);
-    expect(appIds).toEqual(['a', 'b']);
-    expect(providerOptions.appSecret).toEqual('secret');
-  });
-
-  it('should fail if Facebook appIds is not configured properly', done => {
-    const options = {
-      facebookaccountkit: {
-        appIds: [],
-      },
-    };
-    const { adapter, appIds } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter.validateAppId(appIds).then(done.fail, err => {
-      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
-      done();
-    });
-  });
-
-  it('should fail to validate Facebook accountkit auth with bad token', done => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-      },
-    };
-    const authData = {
-      id: 'fakeid',
-      access_token: 'badtoken',
-    };
-    const { adapter } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter.validateAuthData(authData).then(done.fail, err => {
-      expect(err.code).toBe(190);
-      expect(err.type).toBe('OAuthException');
-      done();
-    });
-  });
-
-  it('should fail to validate Facebook accountkit auth with bad token regardless of app secret proof', done => {
-    const options = {
-      facebookaccountkit: {
-        appIds: ['a', 'b'],
-        appSecret: 'badsecret',
-      },
-    };
-    const authData = {
-      id: 'fakeid',
-      access_token: 'badtoken',
-    };
-    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
-      'facebookaccountkit',
-      options
-    );
-    adapter.validateAuthData(authData, providerOptions).then(done.fail, err => {
-      expect(err.code).toBe(190);
-      expect(err.type).toBe('OAuthException');
-      done();
-    });
-  });
 });
 
 describe('instagram auth adapter', () => {
@@ -627,66 +554,124 @@ describe('instagram auth adapter', () => {
 
 describe('google auth adapter', () => {
   const google = require('../lib/Adapters/Auth/google');
-  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+  const jwt = require('jsonwebtoken');
 
-  it('should use id_token for validation is passed', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
-  });
-
-  it('should use id_token for validation is passed and responds with user_id', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
-  });
-
-  it('should use access_token for validation is passed and responds with user_id', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ user_id: 'userId' });
-    });
-    await google.validateAuthData(
-      { id: 'userId', access_token: 'the_token' },
-      {}
-    );
-  });
-
-  it('should use access_token for validation is passed with sub', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'userId' });
-    });
-    await google.validateAuthData({ id: 'userId', id_token: 'the_token' }, {});
-  });
-
-  it('should fail when the id_token is invalid', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
-    });
+  it('should throw error with missing id_token', async () => {
     try {
-      await google.validateAuthData(
-        { id: 'userId', id_token: 'the_token' },
-        {}
-      );
+      await google.validateAuthData({}, {});
       fail();
     } catch (e) {
-      expect(e.message).toBe('Google auth is invalid for this user.');
+      expect(e.message).toBe('id token is invalid for this user.');
     }
   });
 
-  it('should fail when the access_token is invalid', async () => {
-    spyOn(httpsRequest, 'get').and.callFake(() => {
-      return Promise.resolve({ sub: 'badId' });
-    });
+  it('should not decode invalid id_token', async () => {
     try {
       await google.validateAuthData(
-        { id: 'userId', access_token: 'the_token' },
+        { id: 'the_user_id', id_token: 'the_token' },
         {}
       );
       fail();
     } catch (e) {
-      expect(e.message).toBe('Google auth is invalid for this user.');
+      expect(e.message).toBe('provided token does not decode as JWT');
+    }
+  });
+
+  // it('should throw error if public key used to encode token is not available', async () => {
+  //   const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+  //   try {
+  //     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+
+  //     await google.validateAuthData({ id: 'the_user_id', id_token: 'the_token' }, {});
+  //     fail();
+  //   } catch (e) {
+  //     expect(e.message).toBe(
+  //       `Unable to find matching key for Key ID: ${fakeDecodedToken.header.kid}`
+  //     );
+  //   }
+  // });
+
+  it('(using client id as string) should verify id_token', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    const result = await google.validateAuthData(
+      { id: 'the_user_id', id_token: 'the_token' },
+      { clientId: 'secret' }
+    );
+    expect(result).toEqual(fakeClaim);
+  });
+
+  it('(using client id as string) should throw error with with invalid jwt issuer', async () => {
+    const fakeClaim = {
+      iss: 'https://not.google.com',
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await google.validateAuthData(
+        { id: 'the_user_id', id_token: 'the_token' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe(
+        'id token not issued by correct provider - expected: accounts.google.com or https://accounts.google.com | from: https://not.google.com'
+      );
+    }
+  });
+
+  xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await google.validateAuthData(
+        { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'secret' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('jwt audience invalid. expected: secret');
+    }
+  });
+
+  xit('should throw error with invalid user id', async () => {
+    const fakeClaim = {
+      iss: 'https://accounts.google.com',
+      aud: 'secret',
+      exp: Date.now(),
+      sub: 'the_user_id',
+    };
+    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+    spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+
+    try {
+      await google.validateAuthData(
+        { id: 'invalid user', token: 'INSERT APPLE TOKEN HERE' },
+        { clientId: 'INSERT CLIENT ID HERE' }
+      );
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('auth data is invalid for this user.');
     }
   });
 });
@@ -719,6 +704,255 @@ describe('google play games service auth', () => {
         'Google Play Games Services - authData is invalid for this user.'
       );
     }
+  });
+});
+
+describe('keycloak auth adapter', () => {
+  const keycloak = require('../lib/Adapters/Auth/keycloak');
+  const httpsRequest = require('../lib/Adapters/Auth/httpsRequest');
+
+  it('validateAuthData should fail without access token', async () => {
+    const authData = {
+      id: 'fakeid',
+    };
+    try {
+      await keycloak.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing access token and/or User id');
+    }
+  });
+
+  it('validateAuthData should fail without user id', async () => {
+    const authData = {
+      access_token: 'sometoken',
+    };
+    try {
+      await keycloak.validateAuthData(authData);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing access token and/or User id');
+    }
+  });
+
+  it('validateAuthData should fail without config', async () => {
+    const options = {
+      keycloak: {
+        config: null,
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Missing keycloak configuration');
+    }
+  });
+
+  it('validateAuthData should fail connect error', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.reject({
+        text: JSON.stringify({ error: 'hosting_error' }),
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Could not connect to the authentication server');
+    }
+  });
+
+  it('validateAuthData should fail with error description', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.reject({
+        text: JSON.stringify({ error_description: 'custom error message' }),
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('custom error message');
+    }
+  });
+
+  it('validateAuthData should fail with invalid auth', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({});
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should fail with invalid groups', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: ['role1'],
+          groups: ['unknown'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should fail with invalid roles', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: 'unknown',
+          groups: ['group1'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    try {
+      await adapter.validateAuthData(authData, providerOptions);
+      fail();
+    } catch (e) {
+      expect(e.message).toBe('Invalid authentication');
+    }
+  });
+
+  it('validateAuthData should handle authentication', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({
+        data: {
+          sub: 'fakeid',
+          roles: ['role1'],
+          groups: ['group1'],
+        },
+      });
+    });
+    const options = {
+      keycloak: {
+        config: {
+          'auth-server-url': 'http://example.com',
+          realm: 'new',
+        },
+      },
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'sometoken',
+      roles: ['role1'],
+      groups: ['group1'],
+    };
+    const { adapter, providerOptions } = authenticationLoader.loadAuthAdapter(
+      'keycloak',
+      options
+    );
+    await adapter.validateAuthData(authData, providerOptions);
+    expect(httpsRequest.get).toHaveBeenCalledWith({
+      host: 'http://example.com',
+      path: '/realms/new/protocol/openid-connect/userinfo',
+      headers: {
+        Authorization: 'Bearer sometoken',
+      },
+    });
   });
 });
 
@@ -1184,7 +1418,7 @@ describe('apple signin auth adapter', () => {
 
   it('(using client id as array) should throw error with missing id_token', async () => {
     try {
-      await apple.validateAuthData({}, { client_id: ['secret'] });
+      await apple.validateAuthData({}, { clientId: ['secret'] });
       fail();
     } catch (e) {
       expect(e.message).toBe('id token is invalid for this user.');
@@ -1268,7 +1502,7 @@ describe('apple signin auth adapter', () => {
     try {
       await apple.validateAuthData(
         { id: 'the_user_id', token: 'the_token' },
-        { client_id: ['secret'] }
+        { clientId: ['secret'] }
       );
       fail();
     } catch (e) {
@@ -1430,7 +1664,7 @@ describe('apple signin auth adapter', () => {
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
-  xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
+  xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
     try {
       await apple.validateAuthData(
         { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
@@ -1444,7 +1678,7 @@ describe('apple signin auth adapter', () => {
 
   // TODO: figure out a way to generate our own apple signed tokens, perhaps with a parse apple account
   // and a private key
-  xit('(using client id as array) should throw error with invalid jwt client_id', async () => {
+  xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
     try {
       await apple.validateAuthData(
         { id: 'INSERT ID HERE', token: 'INSERT APPLE TOKEN HERE' },
