@@ -1,7 +1,7 @@
 // Helper functions for accessing the instagram API.
 var Parse = require('parse/node').Parse;
 const httpsRequest = require('./httpsRequest');
-const defaultURL = 'https://graph.instagram.com/'; //me?fields=id&access_token=IGQVJ...';
+const defaultURL = 'https://graph.instagram.com/';
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
