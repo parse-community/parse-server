@@ -85,7 +85,7 @@ class ParseServer {
           serverStartComplete();
         }
       })
-      .catch((error) => {
+      .catch(error => {
         if (serverStartComplete) {
           serverStartComplete(error);
         } else {
@@ -183,7 +183,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
       /* istanbul ignore next */
-      process.on('uncaughtException', (err) => {
+      process.on('uncaughtException', err => {
         if (err.code === 'EADDRINUSE') {
           // user-friendly message for this common error
           process.stderr.write(
@@ -270,7 +270,10 @@ class ParseServer {
         graphQLCustomTypeDefs = parse(
           fs.readFileSync(options.graphQLSchema, 'utf8')
         );
-      } else if (typeof options.graphQLSchema === 'object') {
+      } else if (
+        typeof options.graphQLSchema === 'object' ||
+        typeof options.graphQLSchema === 'function'
+      ) {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
@@ -338,8 +341,8 @@ class ParseServer {
     if (Parse.serverURL) {
       const request = require('./request');
       request({ url: Parse.serverURL.replace(/\/$/, '') + '/health' })
-        .catch((response) => response)
-        .then((response) => {
+        .catch(response => response)
+        .then(response => {
           const json = response.data || null;
           if (
             response.status !== 200 ||
@@ -372,7 +375,7 @@ function addParseCloud() {
 }
 
 function injectDefaults(options: ParseServerOptions) {
-  Object.keys(defaults).forEach((key) => {
+  Object.keys(defaults).forEach(key => {
     if (!Object.prototype.hasOwnProperty.call(options, key)) {
       options[key] = defaults[key];
     }
@@ -428,12 +431,12 @@ function injectDefaults(options: ParseServerOptions) {
   }
 
   // Merge protectedFields options with defaults.
-  Object.keys(defaults.protectedFields).forEach((c) => {
+  Object.keys(defaults.protectedFields).forEach(c => {
     const cur = options.protectedFields[c];
     if (!cur) {
       options.protectedFields[c] = defaults.protectedFields[c];
     } else {
-      Object.keys(defaults.protectedFields[c]).forEach((r) => {
+      Object.keys(defaults.protectedFields[c]).forEach(r => {
         const unq = new Set([
           ...(options.protectedFields[c][r] || []),
           ...defaults.protectedFields[c][r],
@@ -457,7 +460,7 @@ function configureListeners(parseServer) {
   const sockets = {};
   /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
     This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-  server.on('connection', (socket) => {
+  server.on('connection', socket => {
     const socketId = socket.remoteAddress + ':' + socket.remotePort;
     sockets[socketId] = socket;
     socket.on('close', () => {

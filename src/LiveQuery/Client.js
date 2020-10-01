@@ -62,15 +62,17 @@ class Client {
     parseWebSocket: any,
     code: number,
     error: string,
-    reconnect: boolean = true
+    reconnect: boolean = true,
+    requestId: number | void = null
   ): void {
     Client.pushResponse(
       parseWebSocket,
       JSON.stringify({
         op: 'error',
-        error: error,
-        code: code,
-        reconnect: reconnect,
+        error,
+        code,
+        reconnect,
+        requestId,
       })
     );
   }
@@ -88,7 +90,7 @@ class Client {
   }
 
   _pushEvent(type: string): Function {
-    return function(
+    return function (
       subscriptionId: number,
       parseObjectJSON: any,
       parseOriginalObjectJSON: any

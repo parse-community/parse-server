@@ -23,7 +23,8 @@ export class SessionsRouter extends ClassesRouter {
         '_Session',
         { sessionToken: req.info.sessionToken },
         undefined,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {

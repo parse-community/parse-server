@@ -25,7 +25,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   const apiPrefixLength = originalUrl.length - batchPath.length;
   let apiPrefix = originalUrl.slice(0, apiPrefixLength);
 
-  const makeRoutablePath = function(requestPath) {
+  const makeRoutablePath = function (requestPath) {
     // The routablePath is the path minus the api prefix
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
       throw new Parse.Error(
@@ -41,7 +41,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     const publicPath = publicServerURL.path;
     // Override the api prefix
     apiPrefix = localPath;
-    return function(requestPath) {
+    return function (requestPath) {
       // Build the new path by removing the public path
       // and joining with the local path
       const newPath = path.posix.join(
@@ -91,8 +91,8 @@ function handleBatch(router, req) {
   return initialPromise.then(() => {
     const promises = req.body.requests.map(restRequest => {
       const routablePath = makeRoutablePath(restRequest.path);
-      // Construct a request that we can send to a handler
 
+      // Construct a request that we can send to a handler
       const request = {
         body: restRequest.body,
         config: req.config,

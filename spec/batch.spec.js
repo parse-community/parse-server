@@ -1,6 +1,7 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const semver = require('semver');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -153,7 +154,7 @@ describe('batch', () => {
   });
 
   if (
-    (process.env.MONGODB_VERSION === '4.0.4' &&
+    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
@@ -161,7 +162,7 @@ describe('batch', () => {
     describe('transactions', () => {
       beforeAll(async () => {
         if (
-          process.env.MONGODB_VERSION === '4.0.4' &&
+          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
@@ -218,9 +219,9 @@ describe('batch', () => {
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
                 );
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
+                expect(
+                  results.map(result => result.get('key')).sort()
+                ).toEqual(['value1', 'value2']);
                 done();
               });
             });
