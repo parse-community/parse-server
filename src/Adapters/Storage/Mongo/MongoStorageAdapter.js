@@ -279,7 +279,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         delete existingIndexes[name];
       } else {
         Object.keys(field).forEach(key => {
-          if (!Object.prototype.hasOwnProperty.call(fields, key)) {
+          if (
+            !Object.prototype.hasOwnProperty.call(
+              fields,
+              key.indexOf('_p_') === 0 ? key.replace('_p_', '') : key
+            )
+          ) {
             throw new Parse.Error(
               Parse.Error.INVALID_QUERY,
               `Field ${key} does not exist, cannot add index.`
