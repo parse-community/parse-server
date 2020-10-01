@@ -2540,7 +2540,7 @@ describe('schemas', () => {
 
   it('unset field in beforeSave should not stop object creation', done => {
     const hook = {
-      method: function(req) {
+      method: function (req) {
         if (req.object.get('undesiredField')) {
           req.object.unset('undesiredField');
         }
@@ -3109,6 +3109,77 @@ describe('schemas', () => {
         });
       });
     });
+
+    it_only_db('mongo')(
+      'lets you add index with with pointer like structure',
+      done => {
+        request({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          method: 'POST',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {},
+        }).then(() => {
+          request({
+            url: 'http://localhost:8378/1/schemas/NewClass',
+            method: 'PUT',
+            headers: masterKeyHeaders,
+            json: true,
+            body: {
+              fields: {
+                aPointer: { type: 'Pointer', targetClass: 'NewClass' },
+              },
+              indexes: {
+                pointer: { _p_aPointer: 1 },
+              },
+            },
+          }).then(response => {
+            expect(
+              dd(response.data, {
+                className: 'NewClass',
+                fields: {
+                  ACL: { type: 'ACL' },
+                  createdAt: { type: 'Date' },
+                  updatedAt: { type: 'Date' },
+                  objectId: { type: 'String' },
+                  aPointer: { type: 'Pointer', targetClass: 'NewClass' },
+                },
+                classLevelPermissions: defaultClassLevelPermissions,
+                indexes: {
+                  _id_: { _id: 1 },
+                  pointer: { _p_aPointer: 1 },
+                },
+              })
+            ).toEqual(undefined);
+            request({
+              url: 'http://localhost:8378/1/schemas/NewClass',
+              headers: masterKeyHeaders,
+              json: true,
+            }).then(response => {
+              expect(response.data).toEqual({
+                className: 'NewClass',
+                fields: {
+                  ACL: { type: 'ACL' },
+                  createdAt: { type: 'Date' },
+                  updatedAt: { type: 'Date' },
+                  objectId: { type: 'String' },
+                  aPointer: { type: 'Pointer', targetClass: 'NewClass' },
+                },
+                classLevelPermissions: defaultClassLevelPermissions,
+                indexes: {
+                  _id_: { _id: 1 },
+                  pointer: { _p_aPointer: 1 },
+                },
+              });
+              config.database.adapter.getIndexes('NewClass').then(indexes => {
+                expect(indexes.length).toEqual(2);
+                done();
+              });
+            });
+          });
+        });
+      }
+    );
 
     it('lets you add multiple indexes', done => {
       request({
