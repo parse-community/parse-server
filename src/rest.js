@@ -31,7 +31,15 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(config, auth, className, restWhere, restOptions, clientSDK, context) {
+function find(
+  config,
+  auth,
+  className,
+  restWhere,
+  restOptions,
+  clientSDK,
+  context
+) {
   enforceRoleSecurity('find', className, auth);
   return triggers
     .maybeRunQueryTrigger(
@@ -59,7 +67,15 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
 }
 
 // get is just like find but only queries an objectId.
-const get = (config, auth, className, objectId, restOptions, clientSDK, context) => {
+const get = (
+  config,
+  auth,
+  className,
+  objectId,
+  restOptions,
+  clientSDK,
+  context
+) => {
   var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
   return triggers
@@ -218,7 +234,15 @@ function create(config, auth, className, restObject, clientSDK, context) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK, context) {
+function update(
+  config,
+  auth,
+  className,
+  restWhere,
+  restObject,
+  clientSDK,
+  context
+) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve()

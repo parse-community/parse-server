@@ -20,6 +20,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@apollographql/graphql-playground-html": "1.6.26",
+    "@graphql-tools/links": "^6.2.4",
     "@graphql-tools/stitch": "6.2.0",
     "@graphql-tools/utils": "6.2.1",
     "@parse/fs-files-adapter": "1.0.1",

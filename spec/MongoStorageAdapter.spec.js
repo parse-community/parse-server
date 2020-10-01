@@ -354,14 +354,12 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('should delete field without index', async () => {
     const database = Config.get(Parse.applicationId).database;
     const obj = new Parse.Object('MyObject');
-    obj.set("test", 1);
+    obj.set('test', 1);
     await obj.save();
     const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
-    await database.adapter.deleteFields(
-      "MyObject",
-      schemaBeforeDeletion,
-      ["test"]
-    );
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, [
+      'test',
+    ]);
     const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
     expect(schemaBeforeDeletion.fields.test).toBeDefined();
     expect(schemaAfterDeletion.fields.test).toBeUndefined();
@@ -370,19 +368,15 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('should delete field with index', async () => {
     const database = Config.get(Parse.applicationId).database;
     const obj = new Parse.Object('MyObject');
-    obj.set("test", 1);
+    obj.set('test', 1);
     await obj.save();
     const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
-    await database.adapter.ensureIndex(
-      'MyObject',
-      schemaBeforeDeletion,
-      ['test']
-    );
-    await database.adapter.deleteFields(
-      "MyObject",
-      schemaBeforeDeletion,
-      ["test"]
-    );
+    await database.adapter.ensureIndex('MyObject', schemaBeforeDeletion, [
+      'test',
+    ]);
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, [
+      'test',
+    ]);
     const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
     expect(schemaBeforeDeletion.fields.test).toBeDefined();
     expect(schemaAfterDeletion.fields.test).toBeUndefined();

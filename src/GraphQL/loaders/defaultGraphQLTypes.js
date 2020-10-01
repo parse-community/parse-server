@@ -15,7 +15,7 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { toGlobalId } from 'graphql-relay';
-import { GraphQLUpload } from 'graphql-upload';
+import { GraphQLUpload } from '@graphql-tools/links';
 
 class TypeValidationError extends Error {
   constructor(value, type) {
@@ -162,7 +162,7 @@ const serializeDateIso = (value) => {
     return value;
   }
   if (value instanceof Date) {
-    return value.toUTCString();
+    return value.toISOString();
   }
 
   throw new TypeValidationError(value, 'Date');

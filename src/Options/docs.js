@@ -118,4 +118,3 @@
  * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
  * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
  */
-

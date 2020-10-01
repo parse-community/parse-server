@@ -7,7 +7,7 @@ import { transformQueryInputToParse } from '../transformers/query';
 /* eslint-disable*/
 const needToGetAllKeys = (fields, keys, parseClasses) =>
   keys
-    ? keys.split(',').some((keyName) => {
+    ? keys.split(',').some(keyName => {
         const key = keyName.split('.');
         if (fields[key[0]]) {
           if (fields[key[0]].type === 'Pointer') {
@@ -19,7 +19,11 @@ const needToGetAllKeys = (fields, keys, parseClasses) =>
               // Current sub key is not custom
               return false;
             }
-          } else if (!key[1]) {
+          } else if (
+            !key[1] ||
+            fields[key[0]].type === 'Array' ||
+            fields[key[0]].type === 'Object'
+          ) {
             // current key is not custom
             return false;
           }
@@ -156,7 +160,7 @@ const findObjects = async (
 
   if (
     selectedFields.find(
-      (field) => field.startsWith('edges.') || field.startsWith('pageInfo.')
+      field => field.startsWith('edges.') || field.startsWith('pageInfo.')
     )
   ) {
     if (limit || limit === 0) {

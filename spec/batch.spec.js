@@ -219,9 +219,9 @@ describe('batch', () => {
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
                 );
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
+                expect(
+                  results.map(result => result.get('key')).sort()
+                ).toEqual(['value1', 'value2']);
                 done();
               });
             });
