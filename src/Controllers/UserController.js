@@ -68,13 +68,12 @@ export class UserController extends AdaptableController {
       this.config,
       Auth.master(this.config),
       '_User',
-      { username: username}
+      { username: username }
     );
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
       }
-      
       query.objectId = result.results[0].objectId;
       return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
