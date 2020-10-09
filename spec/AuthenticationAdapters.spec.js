@@ -530,7 +530,7 @@ describe('instagram auth adapter', () => {
       {}
     );
     expect(httpsRequest.get).toHaveBeenCalledWith(
-      'https://api.instagram.com/v1/users/self/?access_token=the_token'
+      'https://graph.instagram.com/me?fields=id&access_token=the_token'
     );
   });
 
@@ -547,7 +547,7 @@ describe('instagram auth adapter', () => {
       {}
     );
     expect(httpsRequest.get).toHaveBeenCalledWith(
-      'https://new-api.instagram.com/v1/users/self/?access_token=the_token'
+      'https://new-api.instagram.com/v1/me?fields=id&access_token=the_token'
     );
   });
 });
