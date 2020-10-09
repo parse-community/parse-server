@@ -7235,7 +7235,9 @@ describe('ParseGraphQLServer', () => {
           const clientMutationId = uuidv4();
           const userSchema = new Parse.Schema('_User');
           userSchema.addString('someField');
+          userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
+
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
             mutation: gql`
@@ -7246,6 +7248,10 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      aPointer {
+                        id
+                        username
+                      }
                     }
                   }
                 }
@@ -7257,6 +7263,13 @@ describe('ParseGraphQLServer', () => {
                 fields: {
                   username: 'user1',
                   password: 'user1',
+                  aPointer: {
+                    createAndLink: {
+                      username: 'user2',
+                      password: 'user2',
+                      someField: 'someValue2',
+                    },
+                  },
                   someField: 'someValue',
                 },
               },
@@ -7266,6 +7279,10 @@ describe('ParseGraphQLServer', () => {
           expect(result.data.signUp.clientMutationId).toEqual(clientMutationId);
           expect(result.data.signUp.viewer.sessionToken).toBeDefined();
           expect(result.data.signUp.viewer.user.someField).toEqual('someValue');
+          expect(result.data.signUp.viewer.user.aPointer.id).toBeDefined();
+          expect(result.data.signUp.viewer.user.aPointer.username).toEqual(
+            'user2'
+          );
           expect(typeof result.data.signUp.viewer.sessionToken).toBe('string');
         });
 
@@ -7282,6 +7299,7 @@ describe('ParseGraphQLServer', () => {
           });
 
           userSchema.addString('someField');
+          userSchema.addPointer('aPointer', '_User');
           await userSchema.update();
           await parseGraphQLServer.parseGraphQLSchema.databaseController.schemaCache.clear();
           const result = await apolloClient.mutate({
@@ -7293,6 +7311,10 @@ describe('ParseGraphQLServer', () => {
                     sessionToken
                     user {
                       someField
+                      aPointer {
+                        id
+                        username
+                      }
                     }
                   }
                 }
@@ -7309,6 +7331,13 @@ describe('ParseGraphQLServer', () => {
                 },
                 fields: {
                   someField: 'someValue',
+                  aPointer: {
+                    createAndLink: {
+                      username: 'user2',
+                      password: 'user2',
+                      someField: 'someValue2',
+                    },
+                  },
                 },
               },
             },
@@ -7323,6 +7352,10 @@ describe('ParseGraphQLServer', () => {
           );
           expect(typeof result.data.logInWith.viewer.sessionToken).toBe(
             'string'
+          );
+          expect(result.data.logInWith.viewer.user.aPointer.id).toBeDefined();
+          expect(result.data.logInWith.viewer.user.aPointer.username).toEqual(
+            'user2'
           );
         });
 
