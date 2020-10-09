@@ -73,8 +73,10 @@ export class UserController extends AdaptableController {
     return findUserForEmailVerification.execute().then(result => {
       if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
+      } else if(result.results.length){
+        query.objectId = result.results[0].objectId;
       }
-      query.objectId = result.results[0].objectId;
+      
       return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
   }
