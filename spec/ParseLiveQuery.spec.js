@@ -1,5 +1,7 @@
 'use strict';
-
+const UserController = require('../lib/Controllers/UserController')
+  .UserController;
+const Config = require('../lib/Config');
 describe('ParseLiveQuery', function () {
   it('can subscribe to query', async done => {
     await reconfigureServer({
@@ -115,6 +117,95 @@ describe('ParseLiveQuery', function () {
     });
   });
 
+  it('can handle mutate beforeSubscribe query', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.beforeSubscribe(TestObject, request => {
+      const query = request.query;
+      query.equalTo('yolo', 'abc');
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+
+    subscription.on('update', () => {
+      fail();
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+    setTimeout(async () => {
+      done();
+    }, 1000);
+  });
+
+  it('can return a new beforeSubscribe query', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.beforeSubscribe(TestObject, request => {
+      const query = new Parse.Query(TestObject);
+      query.equalTo('foo', 'yolo');
+      request.query = query;
+    });
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('foo', 'bar');
+    const subscription = await query.subscribe();
+
+    subscription.on('create', object => {
+      expect(object.get('foo')).toBe('yolo');
+      done();
+    });
+    const object = new TestObject();
+    object.set({ foo: 'yolo' });
+    await object.save();
+  });
+
+  it('can handle select beforeSubscribe query', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.beforeSubscribe(TestObject, request => {
+      const query = request.query;
+      query.select('yolo');
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+
+    subscription.on('update', object => {
+      expect(object.get('foo')).toBeUndefined();
+      expect(object.get('yolo')).toBe('abc');
+      done();
+    });
+    object.set({ foo: 'bar', yolo: 'abc' });
+    await object.save();
+  });
+
   it('handle invalid websocket payload length', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -150,6 +241,62 @@ describe('ParseLiveQuery', function () {
       object.set({ foo: 'bar' });
       await object.save();
     }, 1000);
+  });
+
+  it('should execute live query update on email validation', async done => {
+    const emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['_User'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      websocketTimeout: 100,
+      appName: 'liveQueryEmailValidation',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 20, // 0.5 second
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      const user = new Parse.User();
+      user.set('password', 'asdf');
+      user.set('email', 'asdf@example.com');
+      user.set('username', 'zxcv');
+      user
+        .signUp()
+        .then(() => {
+          const config = Config.get('test');
+          return config.database.find('_User', {
+            username: 'zxcv',
+          });
+        })
+        .then(async results => {
+          const foundUser = results[0];
+          const query = new Parse.Query('_User');
+          query.equalTo('objectId', foundUser.objectId);
+          const subscription = await query.subscribe();
+
+          subscription.on('update', async object => {
+            expect(object).toBeDefined();
+            expect(object.get('emailVerified')).toBe(true);
+            done();
+          });
+
+          const userController = new UserController(emailAdapter, 'test', {
+            verifyUserEmails: true,
+          });
+          userController.verifyEmail(
+            foundUser.username,
+            foundUser._email_verify_token
+          );
+        });
+    });
   });
 
   afterEach(async function (done) {

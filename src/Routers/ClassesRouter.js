@@ -251,9 +251,14 @@ export class ClassesRouter extends PromiseRouter {
     this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
-      return this.handleUpdate(req);
-    });
+    this.route(
+      'PUT',
+      '/classes/:className/:objectId',
+      promiseEnsureIdempotency,
+      req => {
+        return this.handleUpdate(req);
+      }
+    );
     this.route('DELETE', '/classes/:className/:objectId', req => {
       return this.handleDelete(req);
     });

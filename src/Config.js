@@ -114,7 +114,9 @@ export class Config {
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
-    if (!idempotencyOptions) { return; }
+    if (!idempotencyOptions) {
+      return;
+    }
     if (idempotencyOptions.ttl === undefined) {
       idempotencyOptions.ttl = IdempotencyOptions.ttl.default;
     } else if (!isNaN(idempotencyOptions.ttl) && idempotencyOptions.ttl <= 0) {

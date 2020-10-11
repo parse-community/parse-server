@@ -9,6 +9,7 @@ import UsersRouter from '../../Routers/UsersRouter';
 import * as objectsMutations from '../helpers/objectsMutations';
 import { OBJECT } from './defaultGraphQLTypes';
 import { getUserFromSessionToken } from './usersQueries';
+import { transformTypes } from '../transformers/mutation';
 
 const usersRouter = new UsersRouter();
 
@@ -41,9 +42,15 @@ const load = parseGraphQLSchema => {
         const { fields } = args;
         const { config, auth, info } = context;
 
+        const parseFields = await transformTypes('create', fields, {
+          className: '_User',
+          parseGraphQLSchema,
+          req: { config, auth, info },
+        });
+
         const { sessionToken, objectId } = await objectsMutations.createObject(
           '_User',
-          fields,
+          parseFields,
           config,
           auth,
           info
@@ -119,9 +126,15 @@ const load = parseGraphQLSchema => {
         const { fields, authData } = args;
         const { config, auth, info } = context;
 
+        const parseFields = await transformTypes('create', fields, {
+          className: '_User',
+          parseGraphQLSchema,
+          req: { config, auth, info },
+        });
+
         const { sessionToken, objectId } = await objectsMutations.createObject(
           '_User',
-          { ...fields, authData },
+          { ...parseFields, authData },
           config,
           auth,
           info

@@ -46,7 +46,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
       this._connectionPromise = MongoClient.connect(
         this._databaseURI,
         this._mongoOptions
-      ).then((client) => {
+      ).then(client => {
         this._client = client;
         return client.db(client.s.options.dbName);
       });
@@ -55,7 +55,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   _getBucket() {
-    return this._connect().then((database) => new GridFSBucket(database));
+    return this._connect().then(database => new GridFSBucket(database));
   }
 
   // For a given config object, filename, and data, store a file
@@ -92,7 +92,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
       throw new Error('FileNotFound');
     }
     return Promise.all(
-      documents.map((doc) => {
+      documents.map(doc => {
         return bucket.delete(doc._id);
       })
     );
@@ -104,7 +104,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     stream.read();
     return new Promise((resolve, reject) => {
       const chunks = [];
-      stream.on('data', (data) => {
+      stream.on('data', data => {
         chunks.push(data);
       });
       stream.on('end', () => {
@@ -127,7 +127,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         }
         resolve(data);
       });
-      stream.on('error', (err) => {
+      stream.on('error', err => {
         reject(err);
       });
     });
@@ -177,7 +177,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     });
     const stream = bucket.openDownloadStreamByName(filename);
     stream.start(start);
-    stream.on('data', (chunk) => {
+    stream.on('data', chunk => {
       res.write(chunk);
     });
     stream.on('error', () => {

@@ -4,7 +4,10 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
+import {
+  promiseEnforceMasterKeyAccess,
+  promiseEnsureIdempotency,
+} from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';

@@ -41,8 +41,8 @@ export class UsersRouter extends ClassesRouter {
       // Use query parameters instead if provided in url
       let payload = req.body;
       if (
-        (!payload.username && req.query.username) ||
-        (!payload.email && req.query.email)
+        (!payload.username && req.query && req.query.username) ||
+        (!payload.email && req.query && req.query.email)
       ) {
         payload = req.query;
       }

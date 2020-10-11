@@ -147,7 +147,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   _Idempotency: {
     reqId: { type: 'String' },
     expire: { type: 'Date' },
-  }
+  },
 });
 
 const requiredColumns = Object.freeze({
@@ -165,7 +165,7 @@ const systemClasses = Object.freeze([
   '_JobStatus',
   '_JobSchedule',
   '_Audience',
-  '_Idempotency'
+  '_Idempotency',
 ]);
 
 const volatileClasses = Object.freeze([
@@ -176,7 +176,7 @@ const volatileClasses = Object.freeze([
   '_GraphQLConfig',
   '_JobSchedule',
   '_Audience',
-  '_Idempotency'
+  '_Idempotency',
 ]);
 
 // Anything that start with role
@@ -681,7 +681,7 @@ const VolatileClassesSchemas = [
   _GlobalConfigSchema,
   _GraphQLConfigSchema,
   _AudienceSchema,
-  _IdempotencySchema
+  _IdempotencySchema,
 ];
 
 const dbTypeMatchesObjectType = (
