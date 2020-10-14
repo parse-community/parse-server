@@ -536,7 +536,7 @@ describe('server', () => {
     const jwt = require('jsonwebtoken');
 
     reconfigureServer({
-      auth: {}
+      auth: { google: {} }
     })
       .then(() => {
         const fakeClaim = {
@@ -548,9 +548,9 @@ describe('server', () => {
         const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
         spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
         spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
-        const user = new Parse.User()
+        const user = new Parse.User();
         user.linkWith('google', { authData: { id: 'the_user_id', id_token: 'the_token' }})
-          .then(done)
+          .then(done);
       })
       .catch(done.fail);
   });
