@@ -182,15 +182,10 @@ class ParseLiveQueryServer {
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
-            .then(newObj => {
+            .then(() => {
               if (res.object && typeof res.object.toJSON === 'function') {
                 deletedParseObject = res.object.toJSON();
                 deletedParseObject.className = className;
-              }
-
-              if (newObj && typeof newObj.toJSON === 'function') {
-                deletedParseObject = newObj.toJSON();
-                deletedParseObject.className = newObj.className;
               }
               client.pushDelete(requestId, deletedParseObject);
             })
@@ -324,22 +319,18 @@ class ParseLiveQueryServer {
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(
-              newObj => {
+              () => {
                 if (res.object && typeof res.object.toJSON === 'function') {
                   currentParseObject = res.object.toJSON();
-                  currentParseObject.className = className;
+                  currentParseObject.className =
+                    res.object.className || className;
                 }
 
                 if (res.original && typeof res.original.toJSON === 'function') {
                   originalParseObject = res.original.toJSON();
-                  originalParseObject.className = className;
+                  originalParseObject.className =
+                    res.original.className || className;
                 }
-
-                if (newObj && typeof newObj.toJSON === 'function') {
-                  currentParseObject = newObj.toJSON();
-                  currentParseObject.className = newObj.className;
-                }
-
                 const functionName = 'push' + message.event;
                 if (client[functionName]) {
                   client[functionName](

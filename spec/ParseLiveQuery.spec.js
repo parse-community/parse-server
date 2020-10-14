@@ -214,9 +214,9 @@ describe('ParseLiveQuery', function () {
     const object = new TestObject();
     await object.save();
 
-    Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
+    Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
       const object = new Parse.Object('Yolo');
-      return object;
+      req.object = object;
     });
 
     const query = new Parse.Query(TestObject);
@@ -228,38 +228,6 @@ describe('ParseLiveQuery', function () {
     });
     object.set({ foo: 'bar' });
     await object.save();
-  });
-
-  it('can handle async afterEvent modification', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-    const parent = new TestObject();
-    const child = new TestObject();
-    child.set('bar', 'foo');
-    await Parse.Object.saveAll([parent, child]);
-
-    Parse.Cloud.afterLiveQueryEvent('TestObject', async req => {
-      const current = req.object;
-      const pointer = current.get('child');
-      await pointer.fetch();
-    });
-
-    const query = new Parse.Query(TestObject);
-    query.equalTo('objectId', parent.id);
-    const subscription = await query.subscribe();
-    subscription.on('update', object => {
-      expect(object.get('child')).toBeDefined();
-      expect(object.get('child').get('bar')).toBe('foo');
-      done();
-    });
-    parent.set('child', child);
-    await parent.save();
   });
 
   it('can handle afterEvent throw', async done => {
@@ -479,34 +447,6 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('can return different object in afterEvent', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-    const object = new TestObject();
-    await object.save();
-
-    Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
-      const object = new Parse.Object('Yolo');
-      return object;
-    });
-
-    const query = new Parse.Query(TestObject);
-    query.equalTo('objectId', object.id);
-    const subscription = await query.subscribe();
-    subscription.on('update', object => {
-      expect(object.className).toBe('Yolo');
-      done();
-    });
-    object.set({ foo: 'bar' });
-    await object.save();
-  });
-
   it('can handle async afterEvent modification', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -537,45 +477,6 @@ describe('ParseLiveQuery', function () {
     });
     parent.set('child', child);
     await parent.save();
-  });
-
-  it('can handle afterEvent throw', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-
-    const object = new TestObject();
-    await object.save();
-
-    Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      const current = req.object;
-      const original = req.original;
-
-      setTimeout(() => {
-        done();
-      }, 2000);
-
-      if (current.get('foo') != original.get('foo')) {
-        throw "Don't pass an update trigger, or message";
-      }
-    });
-
-    const query = new Parse.Query(TestObject);
-    query.equalTo('objectId', object.id);
-    const subscription = await query.subscribe();
-    subscription.on('update', () => {
-      fail('update should not have been called.');
-    });
-    subscription.on('error', () => {
-      fail('error should not have been called.');
-    });
-    object.set({ foo: 'bar' });
-    await object.save();
   });
 
   it('can handle beforeConnect / beforeSubscribe hooks', async done => {
