@@ -11,7 +11,10 @@ function validateAuthData(authData, params) {
     if (response && response.access_token) {
       return request(
         'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=5.124'
+        'method/users.get?access_token=' +
+          authData.access_token +
+          '&v=' +
+          params.apiVersion
       ).then(function (response) {
         if (
           response &&
@@ -48,6 +51,9 @@ function vkOAuth2Request(params) {
         'Vk auth is not configured. Missing appIds or appSecret.'
       );
     }
+    if (!params.apiVersion) {
+      params.apiVersion = '5.124';
+    }
     resolve();
   }).then(function () {
     return request(
@@ -56,7 +62,9 @@ function vkOAuth2Request(params) {
         params.appIds +
         '&client_secret=' +
         params.appSecret +
-        '&v=5.124&grant_type=client_credentials'
+        '&v=' +
+        params.apiVersion +
+        '&grant_type=client_credentials'
     );
   });
 }

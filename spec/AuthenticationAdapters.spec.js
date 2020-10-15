@@ -74,7 +74,9 @@ describe('AuthenticationProviders', function () {
         options => {
           if (
             options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
+              'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.123&grant_type=client_credentials' ||
+            options ===
+              'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
           ) {
             return {
               access_token: 'access_token',
@@ -96,6 +98,8 @@ describe('AuthenticationProviders', function () {
           appIds: 'appId',
           appSecret: 'appSecret',
         };
+        await provider.validateAuthData({ id: 'userId' }, params);
+        params.appVersion = '5.123';
       }
       await provider.validateAuthData({ id: 'userId' }, params);
     });
