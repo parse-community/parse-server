@@ -113,7 +113,7 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
 }
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData, options) {
+function validateAuthData(authData, options = {}) {
   return verifyIdToken(authData, options);
 }
 
