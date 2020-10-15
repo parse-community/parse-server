@@ -7,12 +7,12 @@ var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, params) {
-  return vkOAuth2Request(params).then(function(response) {
+  return vkOAuth2Request(params).then(function (response) {
     if (response && response.access_token) {
       return request(
         'api.vk.com',
-        'method/users.get?access_token=' + authData.access_token + '&v=5.8'
-      ).then(function(response) {
+        'method/users.get?access_token=' + authData.access_token + '&v=5.124'
+      ).then(function (response) {
         if (
           response &&
           response.response &&
@@ -35,7 +35,7 @@ function validateAuthData(authData, params) {
 }
 
 function vkOAuth2Request(params) {
-  return new Promise(function(resolve) {
+  return new Promise(function (resolve) {
     if (
       !params ||
       !params.appIds ||
@@ -49,14 +49,14 @@ function vkOAuth2Request(params) {
       );
     }
     resolve();
-  }).then(function() {
+  }).then(function () {
     return request(
       'oauth.vk.com',
       'access_token?client_id=' +
         params.appIds +
         '&client_secret=' +
         params.appSecret +
-        '&v=5.59&grant_type=client_credentials'
+        '&v=5.124&grant_type=client_credentials'
     );
   });
 }

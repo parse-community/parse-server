@@ -74,7 +74,7 @@ describe('AuthenticationProviders', function () {
         options => {
           if (
             options ===
-            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.59&grant_type=client_credentials'
+            'https://oauth.vk.com/access_token?client_id=appId&client_secret=appSecret&v=5.124&grant_type=client_credentials'
           ) {
             return {
               access_token: 'access_token',
