@@ -511,6 +511,22 @@ ParseCloud.onLiveQueryEvent = function (handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
 
+/**
+ * Registers an after live query server event function.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * ```
+ * Parse.Cloud.afterLiveQueryEvent('MyCustomClass', (request) => {
+ *   // code here
+ * })
+ *```
+ *
+ * @method afterLiveQueryEvent
+ * @name Parse.Cloud.afterLiveQueryEvent
+ * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after live query event function for. This can instead be a String that is the className of the subclass.
+ * @param {Function} func The function to run after a live query event. This function can be async and should take one parameter, a {@link Parse.Cloud.LiveQueryEventTrigger}.
+ */
 ParseCloud.afterLiveQueryEvent = function (parseClass, handler) {
   const className = getClassName(parseClass);
   triggers.addTrigger(
@@ -571,6 +587,19 @@ module.exports = ParseCloud;
  * @property {Integer} clients The number of clients connected.
  * @property {Integer} subscriptions The number of subscriptions connected.
  * @property {String} sessionToken If set, the session of the user that made the request.
+ */
+
+/**
+ * @interface Parse.Cloud.LiveQueryEventTrigger
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} useMasterKey If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {String} sessionToken If set, the session of the user that made the request.
+ * @property {String} event The live query event that triggered the request.
+ * @property {Parse.Object} object The object triggering the hook.
+ * @property {Parse.Object} original If set, the object, as currently stored.
+ * @property {Integer} clients The number of clients connected.
+ * @property {Integer} subscriptions The number of subscriptions connected.
  */
 
 /**
