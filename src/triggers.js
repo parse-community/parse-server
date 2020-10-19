@@ -18,6 +18,7 @@ export const Types = {
   afterDeleteFile: 'afterDeleteFile',
   beforeConnect: 'beforeConnect',
   beforeSubscribe: 'beforeSubscribe',
+  afterEvent: 'afterEvent',
 };
 
 const FileClassName = '@File';
@@ -800,6 +801,25 @@ export async function maybeRunSubscribeTrigger(
     query.fields = query.keys.split(',');
   }
   request.query = query;
+}
+
+export async function maybeRunAfterEventTrigger(
+  triggerType,
+  className,
+  request
+) {
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  if (request.object) {
+    request.object = Parse.Object.fromJSON(request.object);
+  }
+  if (request.original) {
+    request.original = Parse.Object.fromJSON(request.original);
+  }
+  request.user = await userForSessionToken(request.sessionToken);
+  return trigger(request);
 }
 
 async function userForSessionToken(sessionToken) {
