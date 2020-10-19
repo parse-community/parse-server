@@ -179,6 +179,10 @@ class ParseLiveQueryServer {
                 event: 'Delete',
                 sessionToken: client.sessionToken,
                 object: deletedParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
@@ -315,6 +319,10 @@ class ParseLiveQueryServer {
                 sessionToken: client.sessionToken,
                 object: currentParseObject,
                 original: originalParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
