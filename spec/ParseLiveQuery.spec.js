@@ -232,7 +232,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
-  it('can handle afterEvent throw', async done => {
+  it('can handle afterEvent sendEvent to false', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -246,16 +246,10 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      const current = req.object;
-      const original = req.original;
-
       setTimeout(() => {
         done();
       }, 2000);
-
-      if (current.get('foo') != original.get('foo')) {
-        throw "Don't pass an update trigger, or message";
-      }
+      req.sendEvent = false;
     });
 
     const query = new Parse.Query(TestObject);

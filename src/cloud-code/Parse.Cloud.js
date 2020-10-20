@@ -600,6 +600,7 @@ module.exports = ParseCloud;
  * @property {Parse.Object} original If set, the object, as currently stored.
  * @property {Integer} clients The number of clients connected.
  * @property {Integer} subscriptions The number of subscriptions connected.
+ * @property {Boolean} sendEvent If the LiveQuery event should be sent to the client. Set to false to prevent LiveQuery from pushing to the client.
  */
 
 /**

@@ -160,6 +160,7 @@ class ParseLiveQueryServer {
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
           let res = {};
+          let aclError = true;
           this._matchesCLP(
             classLevelPermissions,
             message.currentParseObject,
@@ -175,6 +176,7 @@ class ParseLiveQueryServer {
               if (!isMatched) {
                 return null;
               }
+              aclError = false;
               res = {
                 event: 'Delete',
                 sessionToken: client.sessionToken,
@@ -182,11 +184,15 @@ class ParseLiveQueryServer {
                 clients: this.clients.size,
                 subscriptions: this.subscriptions.size,
                 useMasterKey: client.hasMasterKey,
-                installationId: client.installationId
+                installationId: client.installationId,
+                sendEvent: false,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(() => {
+              if (!res.sendEvent) {
+                return;
+              }
               if (res.object && typeof res.object.toJSON === 'function') {
                 deletedParseObject = res.object.toJSON();
                 deletedParseObject.className = className;
@@ -194,7 +200,14 @@ class ParseLiveQueryServer {
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              logger.error('Matching ACL error : ', error);
+              if (aclError) {
+                logger.error('Matching ACL error : ', error);
+              } else {
+                logger.error(
+                  `Failed running afterLiveQueryEvent for event ${res.event} session ${res.sessionToken} with:\n Error: ` +
+                    JSON.stringify(error)
+                );
+              }
             });
         }
       }
@@ -262,6 +275,7 @@ class ParseLiveQueryServer {
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
           let res = {};
+          let aclError = true;
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
@@ -297,7 +311,7 @@ class ParseLiveQueryServer {
                 isCurrentMatched,
                 subscription.hash
               );
-
+              aclError = false;
               // Decide event type
               let type;
               if (isOriginalMatched && isCurrentMatched) {
@@ -322,12 +336,16 @@ class ParseLiveQueryServer {
                 clients: this.clients.size,
                 subscriptions: this.subscriptions.size,
                 useMasterKey: client.hasMasterKey,
-                installationId: client.installationId
+                installationId: client.installationId,
+                sendEvent: true,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(
               () => {
+                if (!res.sendEvent) {
+                  return;
+                }
                 if (res.object && typeof res.object.toJSON === 'function') {
                   currentParseObject = res.object.toJSON();
                   currentParseObject.className =
@@ -349,7 +367,14 @@ class ParseLiveQueryServer {
                 }
               },
               error => {
-                logger.error('Matching ACL error : ', error);
+                if (aclError) {
+                  logger.error('Matching ACL error : ', error);
+                } else {
+                  logger.error(
+                    `Failed running afterLiveQueryEvent for event ${res.event} session ${res.sessionToken} with:\n Error: ` +
+                      JSON.stringify(error)
+                  );
+                }
               }
             );
         }
