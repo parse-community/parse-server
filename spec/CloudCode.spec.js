@@ -1652,6 +1652,16 @@ describe('Cloud Code', () => {
       );
     });
 
+    it('should set the failure message on the job error', async () => {
+      Parse.Cloud.job('myJobError', () => {
+        throw new Parse.Error(101, 'Something went wrong');
+      });
+      const job = await Parse.Cloud.startJob('myJobError');
+      const jobStatus = await Parse.Cloud.getJobStatus(job);
+      expect(jobStatus.get('message')).toEqual('Something went wrong');
+      expect(jobStatus.get('status')).toEqual('failed');
+    });
+
     function getJobStatus(jobId) {
       const q = new Parse.Query('_JobStatus');
       return q.get(jobId, { useMasterKey: true });
