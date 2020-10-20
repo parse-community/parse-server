@@ -231,6 +231,38 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
+  it('can handle afterEvent throw', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
+      setTimeout(() => {
+        done();
+      }, 2000);
+      throw 'Error.';
+    });
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('update', () => {
+      fail('update should not have been called.');
+    });
+    subscription.on('error', () => {
+      fail('error should not have been called.');
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
 
   it('can handle afterEvent sendEvent to false', async done => {
     await reconfigureServer({
@@ -246,10 +278,16 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
+      const current = req.object;
+      const original = req.original;
+
       setTimeout(() => {
         done();
       }, 2000);
-      req.sendEvent = false;
+
+      if (current.get('foo') != original.get('foo')) {
+        req.sendEvent = false;
+      }
     });
 
     const query = new Parse.Query(TestObject);
