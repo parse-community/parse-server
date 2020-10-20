@@ -204,7 +204,7 @@ class ParseLiveQueryServer {
                 logger.error('Matching ACL error : ', error);
               } else {
                 logger.error(
-                  `Failed running afterLiveQueryEvent for event ${res.event} session ${res.sessionToken} with:\n Error: ` +
+                  `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                     JSON.stringify(error)
                 );
               }
@@ -370,8 +370,8 @@ class ParseLiveQueryServer {
                 if (aclError) {
                   logger.error('Matching ACL error : ', error);
                 } else {
-                  logger.error(
-                    `Failed running afterLiveQueryEvent for event ${res.event} session ${res.sessionToken} with:\n Error: ` +
+                  logger.log(
+                    `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                       JSON.stringify(error)
                   );
                 }
