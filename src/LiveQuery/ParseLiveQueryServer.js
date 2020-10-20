@@ -370,7 +370,7 @@ class ParseLiveQueryServer {
                 if (aclError) {
                   logger.error('Matching ACL error : ', error);
                 } else {
-                  logger.log(
+                  logger.error(
                     `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                       JSON.stringify(error)
                   );
