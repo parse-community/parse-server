@@ -185,7 +185,7 @@ class ParseLiveQueryServer {
                 subscriptions: this.subscriptions.size,
                 useMasterKey: client.hasMasterKey,
                 installationId: client.installationId,
-                sendEvent: false,
+                sendEvent: true,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
