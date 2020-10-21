@@ -198,24 +198,17 @@ class ParseLiveQueryServer {
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              if (
-                error.code == Parse.Error.OBJECT_NOT_FOUND ||
-                error.code == Parse.Error.OPERATION_FORBIDDEN
-              ) {
-                logger.error('Matching ACL error : ', error);
-              } else {
-                Client.pushError(
-                  client.parseWebSocket,
-                  error.code || 141,
-                  error.message || error,
-                  false,
-                  requestId
-                );
-                logger.error(
-                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                    JSON.stringify(error)
-                );
-              }
+              Client.pushError(
+                client.parseWebSocket,
+                error.code || 141,
+                error.message || error,
+                false,
+                requestId
+              );
+              logger.error(
+                `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                  JSON.stringify(error)
+              );
             });
         }
       }
@@ -373,24 +366,17 @@ class ParseLiveQueryServer {
                 }
               },
               error => {
-                if (
-                  error.code == Parse.Error.OBJECT_NOT_FOUND ||
-                  error.code == Parse.Error.OPERATION_FORBIDDEN
-                ) {
-                  logger.error('Matching ACL error : ', error);
-                } else {
-                  Client.pushError(
-                    client.parseWebSocket,
-                    error.code || 141,
-                    error.message || error,
-                    false,
-                    requestId
-                  );
-                  logger.error(
-                    `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
-                      JSON.stringify(error)
-                  );
-                }
+                Client.pushError(
+                  client.parseWebSocket,
+                  error.code || 141,
+                  error.message || error,
+                  false,
+                  requestId
+                );
+                logger.error(
+                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                    JSON.stringify(error)
+                );
               }
             );
         }
