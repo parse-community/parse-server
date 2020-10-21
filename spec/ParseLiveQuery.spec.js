@@ -784,6 +784,48 @@ describe('ParseLiveQuery', function () {
     });
   });
 
+  it('should not broadcast event to client with invalid session token - avisory GHSA-2xm2-xj2q-qgpj', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      liveQueryServerOptions: {
+        cacheTimeout: 100,
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+      cacheTTL: 100,
+    });
+    const user = new Parse.User();
+    user.setUsername('username');
+    user.setPassword('password');
+    await user.signUp();
+    const obj1 = new Parse.Object('TestObject');
+    const obj1ACL = new Parse.ACL();
+    obj1ACL.setPublicReadAccess(false);
+    obj1ACL.setReadAccess(user, true);
+    obj1.setACL(obj1ACL);
+    const obj2 = new Parse.Object('TestObject');
+    const obj2ACL = new Parse.ACL();
+    obj2ACL.setPublicReadAccess(false);
+    obj2ACL.setReadAccess(user, true);
+    obj2.setACL(obj2ACL);
+    const query = new Parse.Query('TestObject');
+    const subscription = await query.subscribe();
+    subscription.on('create', obj => {
+      if (obj.id !== obj1.id) {
+        done.fail('should not fire');
+      }
+    });
+    await obj1.save();
+    await Parse.User.logOut();
+    await new Promise(resolve => setTimeout(resolve, 200));
+    await obj2.save();
+    await new Promise(resolve => setTimeout(resolve, 200));
+    done();
+  });
+
   afterEach(async function (done) {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();

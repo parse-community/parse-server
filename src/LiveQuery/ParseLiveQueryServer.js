@@ -30,10 +30,11 @@ class ParseLiveQueryServer {
   // The subscriber we use to get object update from publisher
   subscriber: Object;
 
-  constructor(server: any, config: any = {}) {
+  constructor(server: any, config: any = {}, parseServerConfig: any = {}) {
     this.server = server;
     this.clients = new Map();
     this.subscriptions = new Map();
+    this.config = config;
 
     config.appId = config.appId || Parse.applicationId;
     config.masterKey = config.masterKey || Parse.masterKey;
@@ -54,13 +55,15 @@ class ParseLiveQueryServer {
 
     // The cache controller is a proper cache controller
     // with access to User and Roles
-    this.cacheController = getCacheController(config);
+    this.cacheController = getCacheController(parseServerConfig);
+
+    config.cacheTimeout = config.cacheTimeout || 5 * 1000; // 5s
 
     // This auth cache stores the promises for each auth resolution.
     // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
-      maxAge: 60 * 60 * 1000, // 1h
+      maxAge: config.cacheTimeout,
     });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
@@ -510,12 +513,11 @@ class ParseLiveQueryServer {
         // There was an error with the session token
         const result = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
-          // Store a resolved promise with the error for 10 minutes
           result.error = error;
           this.authCache.set(
             sessionToken,
             Promise.resolve(result),
-            60 * 10 * 1000
+            this.config.cacheTimeout
           );
         } else {
           this.authCache.del(sessionToken);

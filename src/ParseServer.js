@@ -298,7 +298,8 @@ class ParseServer {
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       this.liveQueryServer = ParseServer.createLiveQueryServer(
         server,
-        options.liveQueryServerOptions
+        options.liveQueryServerOptions,
+        options
       );
     }
     /* istanbul ignore next */
@@ -324,16 +325,21 @@ class ParseServer {
    * Helper method to create a liveQuery server
    * @static
    * @param {Server} httpServer an optional http server to pass
-   * @param {LiveQueryServerOptions} config options fot he liveQueryServer
+   * @param {LiveQueryServerOptions} config options for the liveQueryServer
+   * @param {ParseServerOptions} options options for the ParseServer
    * @returns {ParseLiveQueryServer} the live query server instance
    */
-  static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
+  static createLiveQueryServer(
+    httpServer,
+    config: LiveQueryServerOptions,
+    options: ParseServerOptions
+  ) {
     if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
     }
-    return new ParseLiveQueryServer(httpServer, config);
+    return new ParseLiveQueryServer(httpServer, config, options);
   }
 
   static verifyServerUrl(callback) {
