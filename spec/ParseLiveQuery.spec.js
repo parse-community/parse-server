@@ -245,10 +245,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
-      setTimeout(() => {
-        done();
-      }, 2000);
-      throw 'Error.';
+      throw 'Throw error from LQ afterEvent.';
     });
 
     const query = new Parse.Query(TestObject);
@@ -257,8 +254,9 @@ describe('ParseLiveQuery', function () {
     subscription.on('update', () => {
       fail('update should not have been called.');
     });
-    subscription.on('error', () => {
-      fail('error should not have been called.');
+    subscription.on('error', e => {
+      expect(e).toBe('Throw error from LQ afterEvent.');
+      done();
     });
     object.set({ foo: 'bar' });
     await object.save();

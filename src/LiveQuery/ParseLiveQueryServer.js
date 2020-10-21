@@ -203,6 +203,13 @@ class ParseLiveQueryServer {
               if (aclError) {
                 logger.error('Matching ACL error : ', error);
               } else {
+                Client.pushError(
+                  client.parseWebSocket,
+                  error.code || 101,
+                  error.message || error,
+                  false,
+                  requestId
+                );
                 logger.error(
                   `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                     JSON.stringify(error)
@@ -370,6 +377,13 @@ class ParseLiveQueryServer {
                 if (aclError) {
                   logger.error('Matching ACL error : ', error);
                 } else {
+                  Client.pushError(
+                    client.parseWebSocket,
+                    error.code || 101,
+                    error.message || error,
+                    false,
+                    requestId
+                  );
                   logger.error(
                     `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                       JSON.stringify(error)
