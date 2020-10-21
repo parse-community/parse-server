@@ -160,7 +160,6 @@ class ParseLiveQueryServer {
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
           let res = {};
-          let aclError = true;
           this._matchesCLP(
             classLevelPermissions,
             message.currentParseObject,
@@ -176,7 +175,6 @@ class ParseLiveQueryServer {
               if (!isMatched) {
                 return null;
               }
-              aclError = false;
               res = {
                 event: 'Delete',
                 sessionToken: client.sessionToken,
@@ -200,12 +198,15 @@ class ParseLiveQueryServer {
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              if (aclError) {
+              if (
+                error.code == Parse.Error.OBJECT_NOT_FOUND ||
+                error.code == Parse.Error.OPERATION_FORBIDDEN
+              ) {
                 logger.error('Matching ACL error : ', error);
               } else {
                 Client.pushError(
                   client.parseWebSocket,
-                  error.code || 101,
+                  error.code || 141,
                   error.message || error,
                   false,
                   requestId
@@ -282,7 +283,6 @@ class ParseLiveQueryServer {
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
           let res = {};
-          let aclError = true;
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
@@ -318,7 +318,6 @@ class ParseLiveQueryServer {
                 isCurrentMatched,
                 subscription.hash
               );
-              aclError = false;
               // Decide event type
               let type;
               if (isOriginalMatched && isCurrentMatched) {
@@ -374,12 +373,15 @@ class ParseLiveQueryServer {
                 }
               },
               error => {
-                if (aclError) {
+                if (
+                  error.code == Parse.Error.OBJECT_NOT_FOUND ||
+                  error.code == Parse.Error.OPERATION_FORBIDDEN
+                ) {
                   logger.error('Matching ACL error : ', error);
                 } else {
                   Client.pushError(
                     client.parseWebSocket,
-                    error.code || 101,
+                    error.code || 141,
                     error.message || error,
                     false,
                     requestId
@@ -697,7 +699,7 @@ class ParseLiveQueryServer {
     } catch (error) {
       Client.pushError(
         parseWebsocket,
-        error.code || 101,
+        error.code || 141,
         error.message || error,
         false
       );
@@ -815,7 +817,7 @@ class ParseLiveQueryServer {
     } catch (e) {
       Client.pushError(
         parseWebsocket,
-        e.code || 101,
+        e.code || 141,
         e.message || e,
         false,
         request.requestId
