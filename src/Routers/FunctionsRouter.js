@@ -119,10 +119,14 @@ export class FunctionsRouter extends PromiseRouter {
         if (typeof message === 'string') {
           return reject(new Parse.Error(code, message));
         }
+        const error = new Parse.Error(
+          code,
+          (message && message.message) || message
+        );
         if (message instanceof Error) {
-          message = message.message;
+          error.stack = message.stack;
         }
-        reject(new Parse.Error(code, message));
+        reject(error);
       },
       message: message,
     };
