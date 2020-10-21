@@ -231,8 +231,38 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
-
   it('can handle afterEvent throw', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    Parse.Cloud.afterLiveQueryEvent('TestObject', () => {
+      throw 'Throw error from LQ afterEvent.';
+    });
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('update', () => {
+      fail('update should not have been called.');
+    });
+    subscription.on('error', e => {
+      expect(e).toBe('Throw error from LQ afterEvent.');
+      done();
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
+
+  it('can handle afterEvent sendEvent to false', async done => {
     await reconfigureServer({
       liveQuery: {
         classNames: ['TestObject'],
@@ -254,7 +284,7 @@ describe('ParseLiveQuery', function () {
       }, 2000);
 
       if (current.get('foo') != original.get('foo')) {
-        throw "Don't pass an update trigger, or message";
+        req.sendEvent = false;
       }
     });
 

@@ -182,11 +182,15 @@ class ParseLiveQueryServer {
                 clients: this.clients.size,
                 subscriptions: this.subscriptions.size,
                 useMasterKey: client.hasMasterKey,
-                installationId: client.installationId
+                installationId: client.installationId,
+                sendEvent: true,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(() => {
+              if (!res.sendEvent) {
+                return;
+              }
               if (res.object && typeof res.object.toJSON === 'function') {
                 deletedParseObject = res.object.toJSON();
                 deletedParseObject.className = className;
@@ -194,7 +198,17 @@ class ParseLiveQueryServer {
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              logger.error('Matching ACL error : ', error);
+              Client.pushError(
+                client.parseWebSocket,
+                error.code || 141,
+                error.message || error,
+                false,
+                requestId
+              );
+              logger.error(
+                `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                  JSON.stringify(error)
+              );
             });
         }
       }
@@ -297,7 +311,6 @@ class ParseLiveQueryServer {
                 isCurrentMatched,
                 subscription.hash
               );
-
               // Decide event type
               let type;
               if (isOriginalMatched && isCurrentMatched) {
@@ -322,12 +335,16 @@ class ParseLiveQueryServer {
                 clients: this.clients.size,
                 subscriptions: this.subscriptions.size,
                 useMasterKey: client.hasMasterKey,
-                installationId: client.installationId
+                installationId: client.installationId,
+                sendEvent: true,
               };
               return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(
               () => {
+                if (!res.sendEvent) {
+                  return;
+                }
                 if (res.object && typeof res.object.toJSON === 'function') {
                   currentParseObject = res.object.toJSON();
                   currentParseObject.className =
@@ -349,7 +366,17 @@ class ParseLiveQueryServer {
                 }
               },
               error => {
-                logger.error('Matching ACL error : ', error);
+                Client.pushError(
+                  client.parseWebSocket,
+                  error.code || 141,
+                  error.message || error,
+                  false,
+                  requestId
+                );
+                logger.error(
+                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                    JSON.stringify(error)
+                );
               }
             );
         }
@@ -658,7 +685,7 @@ class ParseLiveQueryServer {
     } catch (error) {
       Client.pushError(
         parseWebsocket,
-        error.code || 101,
+        error.code || 141,
         error.message || error,
         false
       );
@@ -776,7 +803,7 @@ class ParseLiveQueryServer {
     } catch (e) {
       Client.pushError(
         parseWebsocket,
-        e.code || 101,
+        e.code || 141,
         e.message || e,
         false,
         request.requestId
