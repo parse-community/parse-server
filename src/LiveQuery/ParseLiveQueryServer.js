@@ -211,7 +211,7 @@ class ParseLiveQueryServer {
                   requestId
                 );
                 logger.error(
-                  `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                     JSON.stringify(error)
                 );
               }
@@ -385,7 +385,7 @@ class ParseLiveQueryServer {
                     requestId
                   );
                   logger.error(
-                    `Failed running afterLiveQueryEvent for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                    `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
                       JSON.stringify(error)
                   );
                 }
