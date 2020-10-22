@@ -98,6 +98,27 @@ function getStore(category, name, applicationId) {
 function add(category, name, handler, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (store[lastComponent]) {
+    const type = name.split('.')[0];
+    let warningMsg =
+      type == lastComponent ? `${lastComponent}` : `trigger ${type}`;
+    const classSpecific = [
+      'beforeSave',
+      'afterSave',
+      'beforeDelete',
+      'afterDelete',
+      'beforeFind',
+      'afterFind',
+      'beforeSubscribe',
+      'afterEvent',
+    ];
+    if (classSpecific.includes(type)) {
+      warningMsg += ` on class ${lastComponent}`;
+    }
+    console.log(
+      `Warning: Duplicate cloud functions exist for ${warningMsg}. The first will be ignored.`
+    );
+  }
   store[lastComponent] = handler;
 }
 
