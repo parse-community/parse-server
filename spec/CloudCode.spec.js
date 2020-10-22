@@ -56,6 +56,18 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('show warning on duplicate cloud functions', done => {
+    spyOn(console, 'log').and.callFake(() => {});
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    expect(console.log).toHaveBeenCalled();
+    done();
+  });
+
   it('is cleared cleared after the previous test', done => {
     Parse.Cloud.run('hello', {}).catch(error => {
       expect(error.code).toEqual(141);
