@@ -425,7 +425,6 @@ export function maybeRunAfterFindTrigger(
       return resolve();
     }
     const request = getRequestObject(triggerType, auth, null, null, config);
-    // pass query to afterFind
     if (query) {
       request.query = query;
     }
