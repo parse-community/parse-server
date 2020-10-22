@@ -57,14 +57,15 @@ describe('Cloud Code', () => {
   });
 
   it('show warning on duplicate cloud functions', done => {
-    spyOn(console, 'log').and.callFake(() => {});
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
     });
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
     });
-    expect(console.log).toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
     done();
   });
 
