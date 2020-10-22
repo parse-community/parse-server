@@ -416,7 +416,8 @@ export function maybeRunAfterFindTrigger(
   auth,
   className,
   objects,
-  config
+  config,
+  query
 ) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
@@ -424,6 +425,10 @@ export function maybeRunAfterFindTrigger(
       return resolve();
     }
     const request = getRequestObject(triggerType, auth, null, null, config);
+    // pass query to afterFind
+    if (query) {
+      request.query = query;
+    }
     const { success, error } = getResponseObject(
       request,
       object => {

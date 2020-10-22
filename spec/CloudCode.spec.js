@@ -2018,6 +2018,37 @@ describe('beforeFind hooks', () => {
 });
 
 describe('afterFind hooks', () => {
+  it('should add afterFind trigger', done => {
+    Parse.Cloud.afterFind('MyObject', req => {
+      const q = req.query;
+      expect(q instanceof Parse.Query).toBe(true);
+      const jsonQuery = q.toJSON();
+      expect(jsonQuery.where.key).toEqual('value');
+      expect(jsonQuery.where.some).toEqual({ $gt: 10 });
+      expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.excludeKeys).toBe('exclude');
+      expect(jsonQuery.limit).toEqual(100);
+      expect(jsonQuery.skip).toBe(undefined);
+      expect(jsonQuery.order).toBe('key');
+      expect(jsonQuery.keys).toBe('select');
+      expect(jsonQuery.readPreference).toBe('PRIMARY');
+      expect(jsonQuery.includeReadPreference).toBe('SECONDARY');
+      expect(jsonQuery.subqueryReadPreference).toBe('SECONDARY_PREFERRED');
+    });
+
+    const query = new Parse.Query('MyObject');
+    query.equalTo('key', 'value');
+    query.greaterThan('some', 10);
+    query.include('otherKey');
+    query.include('otherValue');
+    query.ascending('key');
+    query.select('select');
+    query.exclude('exclude');
+    query.readPreference('PRIMARY', 'SECONDARY', 'SECONDARY_PREFERRED');
+    query.find().then(() => {
+      done();
+    });
+  });
   it('should add afterFind trigger using get', done => {
     Parse.Cloud.afterFind('MyObject', req => {
       for (let i = 0; i < req.objects.length; i++) {
