@@ -45,6 +45,46 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('can load array of code files', async done => {
+    await reconfigureServer({
+      cloud: [
+        `${__dirname}/cloud/cloudCodeArray.js`,
+        `${__dirname}/cloud/cloudCodeArray2.js`,
+      ],
+    });
+    const promises = [
+      Parse.Cloud.run('cloudCodeArray', {}),
+      Parse.Cloud.run('cloudCodeArray2', {}),
+    ];
+    const result = await Promise.all(promises);
+    expect(result[0]).toEqual(
+      'It is possible to define cloud code as an array of files.'
+    );
+    expect(result[1]).toEqual(
+      'It is possible to define cloud code as an array of files two.'
+    );
+    done();
+  });
+
+  it('can load folder of code files', async done => {
+    await reconfigureServer({
+      cloud: `${__dirname}/cloud/functions`,
+    });
+
+    const promises = [
+      Parse.Cloud.run('cloudCodeSubfolder', {}),
+      Parse.Cloud.run('cloudCodeSubfolder2', {}),
+    ];
+    const result = await Promise.all(promises);
+    expect(result[0]).toEqual(
+      'It is possible to define cloud code as a folder of files.'
+    );
+    expect(result[1]).toEqual(
+      'It is possible to define cloud code as a folder of files two.'
+    );
+    done();
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';

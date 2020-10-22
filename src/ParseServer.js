@@ -98,10 +98,37 @@ class ParseServer {
       addParseCloud();
       if (typeof cloud === 'function') {
         cloud(Parse);
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
+        return;
+      }
+      let cloudFiles = [];
+      if (typeof cloud === 'string') {
+        cloudFiles.push(cloud);
+      } else if (cloud instanceof Array) {
+        cloudFiles = cloud;
       } else {
-        throw "argument 'cloud' must either be a string or a function";
+        throw "argument 'cloud' must either be a string, array, or function";
+      }
+      for (const cloudFileName of cloudFiles) {
+        const cloudDir = fs.lstatSync(cloudFileName);
+        const filePath = path.resolve(process.cwd(), cloudFileName);
+        const requireFiles = files => {
+          const ext = path.extname(files) || '';
+          if (ext != '.js') {
+            console.log(
+              `Could not import cloud file ${files}. Error: Invalid format.`
+            );
+          } else {
+            require(files);
+          }
+        };
+        if (cloudDir.isDirectory()) {
+          const files = fs.readdirSync(filePath);
+          for (const file of files) {
+            requireFiles(path.join(filePath, file));
+          }
+        } else {
+          requireFiles(filePath);
+        }
       }
     }
   }
