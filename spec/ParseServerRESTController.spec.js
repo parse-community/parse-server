@@ -127,6 +127,7 @@ describe('ParseServerRESTController', () => {
       expect(obj.existed()).toBe(false);
       await obj.save();
       expect(obj.existed()).toBe(false);
+
       const query = new Parse.Query('TestObject');
       const result = await query.get(obj.id);
       expect(result.existed()).toBe(true);
