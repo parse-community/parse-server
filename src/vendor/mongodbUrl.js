@@ -40,7 +40,6 @@ const portPattern = /:[0-9]*$/;
 // Special case for a simple path URL
 const simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/;
 
-const hostnameMaxLen = 255;
 // protocols that can allow "unsafe" and "unwise" chars.
 const unsafeProtocol = {
   javascript: true,
@@ -293,12 +292,8 @@ Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
       if (result !== undefined) rest = result;
     }
 
-    if (this.hostname.length > hostnameMaxLen) {
-      this.hostname = '';
-    } else {
-      // hostnames are always lower case.
-      this.hostname = this.hostname.toLowerCase();
-    }
+    // hostnames are always lower case.
+    this.hostname = this.hostname.toLowerCase();
 
     if (!ipv6Hostname) {
       // IDNA Support: Returns a punycoded representation of "domain".
