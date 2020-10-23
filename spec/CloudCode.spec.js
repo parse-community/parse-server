@@ -65,7 +65,9 @@ describe('Cloud Code', () => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
     });
-    expect(logger.warn).toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Warning: Duplicate cloud functions exist for hello. Only the last one will be used and the others will be ignored.'
+    );
     done();
   });
 
