@@ -56,6 +56,21 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('show warning on duplicate cloud functions', done => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    Parse.Cloud.define('hello', () => {
+      return 'Hello world!';
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Warning: Duplicate cloud functions exist for hello. Only the last one will be used and the others will be ignored.'
+    );
+    done();
+  });
+
   it('is cleared cleared after the previous test', done => {
     Parse.Cloud.run('hello', {}).catch(error => {
       expect(error.code).toEqual(141);

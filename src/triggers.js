@@ -98,6 +98,11 @@ function getStore(category, name, applicationId) {
 function add(category, name, handler, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (store[lastComponent]) {
+    logger.warn(
+      `Warning: Duplicate cloud functions exist for ${lastComponent}. Only the last one will be used and the others will be ignored.`
+    );
+  }
   store[lastComponent] = handler;
 }
 
