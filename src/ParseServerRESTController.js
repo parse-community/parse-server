@@ -117,8 +117,13 @@ function ParseServerRESTController(applicationId, router) {
             return router.tryRouteRequest(method, path, request);
           })
           .then(
-            response => {
-              resolve(response.response, response.status, response);
+            resp => {
+              const { response, status } = resp;
+              if (options.returnStatus) {
+                resolve({ ...response, _status: status });
+              } else {
+                resolve(response);
+              }
             },
             err => {
               if (
