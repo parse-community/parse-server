@@ -1869,7 +1869,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: ['a'],
+        fields: ['a'],
       }
     );
     Parse.Cloud.run('hello', {})
@@ -1892,7 +1892,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: ['a'],
+        fields: ['a'],
       }
     );
     Parse.Cloud.run('hello', {})
@@ -1916,7 +1916,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: ['a'],
+        fields: ['a'],
       }
     );
     Parse.Cloud.run('hello', { a: 'yolo' })
@@ -1935,7 +1935,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: {
+        fields: {
           data: {
             type: String,
           },
@@ -1963,7 +1963,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: {
+        fields: {
           data: {
             type: String,
             default: 'yolo',
@@ -1988,7 +1988,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: {
+        fields: {
           data: {
             type: String,
             required: true,
@@ -2017,7 +2017,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: {
+        fields: {
           data: {
             type: String,
             required: true,
@@ -2047,7 +2047,7 @@ describe('cloud functions', () => {
         return 'Hello world!';
       },
       {
-        params: {
+        fields: {
           data: {
             type: String,
             required: true,
@@ -2069,6 +2069,39 @@ describe('cloud functions', () => {
       });
   });
 
+  it('set params options function', done => {
+    Parse.Cloud.define(
+      'hello',
+      req => {
+        expect(req.params.data).toBe('yolo');
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: Number,
+            required: true,
+            options: val => {
+              return val > 1 && val < 5;
+            },
+            error: 'Validation failed. Expected data to be 1 and 5.',
+          },
+        },
+      }
+    );
+    Parse.Cloud.run('hello', { data: 7 })
+      .then(() => {
+        fail('function should have failed.');
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+        expect(error.message).toEqual(
+          'Validation failed. Expected data to be 1 and 5.'
+        );
+        done();
+      });
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define(
       'hello',
@@ -2078,7 +2111,7 @@ describe('cloud functions', () => {
       {
         requireUser: false,
         requireMaster: false,
-        params: {
+        fields: {
           data: {
             type: String,
           },
@@ -2139,7 +2172,14 @@ describe('cloud functions', () => {
 
   it('basic beforeSave requireKeys', function (done) {
     Parse.Cloud.beforeSave('beforeSaveRequire', () => {}, {
-      requireKeys: ['foo', 'bar'],
+      fields: {
+        foo: {
+          required: true,
+        },
+        bar: {
+          required: true,
+        },
+      },
     });
     const obj = new Parse.Object('beforeSaveRequire');
     obj.set('foo', 'bar');
@@ -2158,12 +2198,17 @@ describe('cloud functions', () => {
   });
   it('basic beforeSave constantKeys', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      constantKeys: ['foo'],
+      fields: {
+        foo: {
+          constant: true,
+          default: 'bar',
+        },
+      },
     });
-
     const obj = new Parse.Object('BeforeSave');
-    obj.set('foo', 'bar');
+    obj.set('foo', 'far');
     await obj.save();
+    expect(obj.get('foo')).toBe('bar');
     obj.set('foo', 'yolo');
     await obj.save();
     expect(obj.get('foo')).toBe('bar');

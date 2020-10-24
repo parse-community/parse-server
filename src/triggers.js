@@ -698,8 +698,12 @@ function inbuiltTriggerValidator(options, request) {
   if (options.requireMaster && !request.master) {
     throw 'Validation failed. Master key is required to complete this request.';
   }
+  let params = request.params || {};
+  if (request.object) {
+    params = request.object.toJSON();
+  }
   const requiredParam = key => {
-    const value = request.params[key];
+    const value = params[key];
     if (value == null) {
       throw `Validation failed. Please specify data for ${key}.`;
     }
@@ -708,62 +712,65 @@ function inbuiltTriggerValidator(options, request) {
     const match = fn && fn.toString().match(/^\s*function (\w+)/);
     return (match ? match[1] : '').toLowerCase();
   };
-  if (Array.isArray(options.params)) {
-    for (const key of options.params) {
+  if (Array.isArray(options.fields)) {
+    for (const key of options.fields) {
       requiredParam(key);
     }
   } else {
-    for (const key in options.params) {
-      const opt = options.params[key];
-      let val = request.params[key];
+    for (const key in options.fields) {
+      const opt = options.fields[key];
+      let val = params[key];
       if (typeof opt === 'string') {
         requiredParam(opt);
       }
       if (typeof opt === 'object') {
         if (opt.default != null && val == null) {
           val = opt.default;
-          request.params[key] = val;
+          params[key] = val;
+          if (request.object) {
+            request.object.set(key, val);
+          }
+        }
+        if (opt.constant && request.object) {
+          if (request.original) {
+            request.object.set(key, request.original.get(key));
+          } else if (opt.default) {
+            request.object.set(key, opt.default);
+          }
         }
         if (opt.required) {
           requiredParam(key);
         }
-        const type = getType(opt.type);
-        if (type == 'Array' && Array.isArray(val)) {
-          throw `Validation failed. Invalid type for ${key}. Expected Array.`;
-        } else if (typeof val !== type) {
-          throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+        if (opt.type) {
+          const type = getType(opt.type);
+          if (type == 'Array' && Array.isArray(val)) {
+            throw `Validation failed. Invalid type for ${key}. Expected Array.`;
+          } else if (typeof val !== type) {
+            throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+          }
         }
         let options = opt.options;
         if (options) {
+          if (typeof options === 'function') {
+            const result = options(val);
+            if (!result) {
+              throw opt.error || `Validation failed. Invalid value for ${key}.`;
+            }
+          }
           if (typeof opt.options == 'string') {
             options = [opt.options];
           }
           if (!options.includes(val)) {
-            throw `Validation failed. Invalid option for ${key}. Expected: ${options.join(
-              ', '
-            )}`;
+            throw (
+              opt.error ||
+              `Validation failed. Invalid option for ${key}. Expected: ${options.join(
+                ', '
+              )}`
+            );
           }
         }
       }
     }
-  }
-  for (const key of options.requireKeys || []) {
-    if (!request.object) {
-      break;
-    }
-    if (request.object.get(key) == null) {
-      throw `Validation failed. Please specify data for ${key}.`;
-    }
-  }
-  for (const key of options.constantKeys || []) {
-    if (
-      !request.object ||
-      !request.original ||
-      request.original.get(key) === null
-    ) {
-      break;
-    }
-    request.object.set(key, request.original.get(key));
   }
   for (const key of options.requireUserKeys || []) {
     if (!request.user) {
