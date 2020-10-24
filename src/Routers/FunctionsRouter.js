@@ -4,7 +4,10 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
+import {
+  promiseEnforceMasterKeyAccess,
+  promiseEnsureIdempotency,
+} from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
@@ -116,10 +119,14 @@ export class FunctionsRouter extends PromiseRouter {
         if (typeof message === 'string') {
           return reject(new Parse.Error(code, message));
         }
+        const error = new Parse.Error(
+          code,
+          (message && message.message) || message
+        );
         if (message instanceof Error) {
-          message = message.message;
+          error.stack = message.stack;
         }
-        reject(new Parse.Error(code, message));
+        reject(error);
       },
       message: message,
     };

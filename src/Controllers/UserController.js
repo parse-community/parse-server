@@ -64,15 +64,17 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = { __op: 'Delete' };
     }
     const masterAuth = Auth.master(this.config);
-    var checkIfAlreadyVerified = new RestQuery(
+    var findUserForEmailVerification = new RestQuery(
       this.config,
       Auth.master(this.config),
       '_User',
-      { username: username, emailVerified: true }
+      { username: username }
     );
-    return checkIfAlreadyVerified.execute().then(result => {
-      if (result.results.length) {
+    return findUserForEmailVerification.execute().then(result => {
+      if (result.results.length && result.results[0].emailVerified) {
         return Promise.resolve(result.results.length[0]);
+      } else if (result.results.length) {
+        query.objectId = result.results[0].objectId;
       }
       return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });

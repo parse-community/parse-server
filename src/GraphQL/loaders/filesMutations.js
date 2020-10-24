@@ -1,6 +1,6 @@
 import { GraphQLNonNull } from 'graphql';
 import { mutationWithClientMutationId } from 'graphql-relay';
-import { GraphQLUpload } from 'graphql-upload';
+import { GraphQLUpload } from '@graphql-tools/links';
 import Parse from 'parse/node';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import logger from '../../logger';
@@ -14,7 +14,7 @@ const handleUpload = async (upload, config) => {
       const chunks = [];
       stream
         .on('error', reject)
-        .on('data', chunk => chunks.push(chunk))
+        .on('data', (chunk) => chunks.push(chunk))
         .on('end', () => resolve(Buffer.concat(chunks)));
     });
   }
@@ -52,7 +52,7 @@ const handleUpload = async (upload, config) => {
   }
 };
 
-const load = parseGraphQLSchema => {
+const load = (parseGraphQLSchema) => {
   const createMutation = mutationWithClientMutationId({
     name: 'CreateFile',
     description:

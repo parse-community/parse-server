@@ -14,6 +14,7 @@ import {
   runLiveQueryEventHandlers,
   maybeRunConnectTrigger,
   maybeRunSubscribeTrigger,
+  maybeRunAfterEventTrigger,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -29,10 +30,11 @@ class ParseLiveQueryServer {
   // The subscriber we use to get object update from publisher
   subscriber: Object;
 
-  constructor(server: any, config: any = {}) {
+  constructor(server: any, config: any = {}, parseServerConfig: any = {}) {
     this.server = server;
     this.clients = new Map();
     this.subscriptions = new Map();
+    this.config = config;
 
     config.appId = config.appId || Parse.applicationId;
     config.masterKey = config.masterKey || Parse.masterKey;
@@ -53,13 +55,15 @@ class ParseLiveQueryServer {
 
     // The cache controller is a proper cache controller
     // with access to User and Roles
-    this.cacheController = getCacheController(config);
+    this.cacheController = getCacheController(parseServerConfig);
+
+    config.cacheTimeout = config.cacheTimeout || 5 * 1000; // 5s
 
     // This auth cache stores the promises for each auth resolution.
     // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
-      maxAge: 60 * 60 * 1000, // 1h
+      maxAge: config.cacheTimeout,
     });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
@@ -124,7 +128,7 @@ class ParseLiveQueryServer {
   _onAfterDelete(message: any): void {
     logger.verbose(Parse.applicationId + 'afterDelete is triggered');
 
-    const deletedParseObject = message.currentParseObject.toJSON();
+    let deletedParseObject = message.currentParseObject.toJSON();
     const classLevelPermissions = message.classLevelPermissions;
     const className = deletedParseObject.className;
     logger.verbose(
@@ -158,6 +162,7 @@ class ParseLiveQueryServer {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
+          let res = {};
           this._matchesCLP(
             classLevelPermissions,
             message.currentParseObject,
@@ -173,10 +178,40 @@ class ParseLiveQueryServer {
               if (!isMatched) {
                 return null;
               }
+              res = {
+                event: 'Delete',
+                sessionToken: client.sessionToken,
+                object: deletedParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId,
+                sendEvent: true,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
+            })
+            .then(() => {
+              if (!res.sendEvent) {
+                return;
+              }
+              if (res.object && typeof res.object.toJSON === 'function') {
+                deletedParseObject = res.object.toJSON();
+                deletedParseObject.className = className;
+              }
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              logger.error('Matching ACL error : ', error);
+              Client.pushError(
+                client.parseWebSocket,
+                error.code || 141,
+                error.message || error,
+                false,
+                requestId
+              );
+              logger.error(
+                `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                  JSON.stringify(error)
+              );
             });
         }
       }
@@ -193,7 +228,7 @@ class ParseLiveQueryServer {
       originalParseObject = message.originalParseObject.toJSON();
     }
     const classLevelPermissions = message.classLevelPermissions;
-    const currentParseObject = message.currentParseObject.toJSON();
+    let currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
     logger.verbose(
       'ClassName: %s | ObjectId: %s',
@@ -243,6 +278,7 @@ class ParseLiveQueryServer {
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
+          let res = {};
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
@@ -267,43 +303,83 @@ class ParseLiveQueryServer {
                 currentACLCheckingPromise,
               ]);
             })
-            .then(
-              ([isOriginalMatched, isCurrentMatched]) => {
-                logger.verbose(
-                  'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
-                  originalParseObject,
-                  currentParseObject,
-                  isOriginalSubscriptionMatched,
-                  isCurrentSubscriptionMatched,
-                  isOriginalMatched,
-                  isCurrentMatched,
-                  subscription.hash
-                );
-
-                // Decide event type
-                let type;
-                if (isOriginalMatched && isCurrentMatched) {
-                  type = 'Update';
-                } else if (isOriginalMatched && !isCurrentMatched) {
-                  type = 'Leave';
-                } else if (!isOriginalMatched && isCurrentMatched) {
-                  if (originalParseObject) {
-                    type = 'Enter';
-                  } else {
-                    type = 'Create';
-                  }
+            .then(([isOriginalMatched, isCurrentMatched]) => {
+              logger.verbose(
+                'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
+                originalParseObject,
+                currentParseObject,
+                isOriginalSubscriptionMatched,
+                isCurrentSubscriptionMatched,
+                isOriginalMatched,
+                isCurrentMatched,
+                subscription.hash
+              );
+              // Decide event type
+              let type;
+              if (isOriginalMatched && isCurrentMatched) {
+                type = 'Update';
+              } else if (isOriginalMatched && !isCurrentMatched) {
+                type = 'Leave';
+              } else if (!isOriginalMatched && isCurrentMatched) {
+                if (originalParseObject) {
+                  type = 'Enter';
                 } else {
-                  return null;
+                  type = 'Create';
                 }
-                const functionName = 'push' + type;
-                client[functionName](
-                  requestId,
-                  currentParseObject,
-                  originalParseObject
-                );
+              } else {
+                return null;
+              }
+              message.event = type;
+              res = {
+                event: type,
+                sessionToken: client.sessionToken,
+                object: currentParseObject,
+                original: originalParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId,
+                sendEvent: true,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
+            })
+            .then(
+              () => {
+                if (!res.sendEvent) {
+                  return;
+                }
+                if (res.object && typeof res.object.toJSON === 'function') {
+                  currentParseObject = res.object.toJSON();
+                  currentParseObject.className =
+                    res.object.className || className;
+                }
+
+                if (res.original && typeof res.original.toJSON === 'function') {
+                  originalParseObject = res.original.toJSON();
+                  originalParseObject.className =
+                    res.original.className || className;
+                }
+                const functionName = 'push' + message.event;
+                if (client[functionName]) {
+                  client[functionName](
+                    requestId,
+                    currentParseObject,
+                    originalParseObject
+                  );
+                }
               },
               error => {
-                logger.error('Matching ACL error : ', error);
+                Client.pushError(
+                  client.parseWebSocket,
+                  error.code || 141,
+                  error.message || error,
+                  false,
+                  requestId
+                );
+                logger.error(
+                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                    JSON.stringify(error)
+                );
               }
             );
         }
@@ -437,12 +513,11 @@ class ParseLiveQueryServer {
         // There was an error with the session token
         const result = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
-          // Store a resolved promise with the error for 10 minutes
           result.error = error;
           this.authCache.set(
             sessionToken,
             Promise.resolve(result),
-            60 * 10 * 1000
+            this.config.cacheTimeout
           );
         } else {
           this.authCache.del(sessionToken);
@@ -612,7 +687,7 @@ class ParseLiveQueryServer {
     } catch (error) {
       Client.pushError(
         parseWebsocket,
-        error.code || 101,
+        error.code || 141,
         error.message || error,
         false
       );
@@ -730,7 +805,7 @@ class ParseLiveQueryServer {
     } catch (e) {
       Client.pushError(
         parseWebsocket,
-        e.code || 101,
+        e.code || 141,
         e.message || e,
         false,
         request.requestId

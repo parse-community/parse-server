@@ -40,9 +40,14 @@ export class InstallationsRouter extends ClassesRouter {
     this.route('POST', '/installations', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/installations/:objectId', promiseEnsureIdempotency, req => {
-      return this.handleUpdate(req);
-    });
+    this.route(
+      'PUT',
+      '/installations/:objectId',
+      promiseEnsureIdempotency,
+      req => {
+        return this.handleUpdate(req);
+      }
+    );
     this.route('DELETE', '/installations/:objectId', req => {
       return this.handleDelete(req);
     });

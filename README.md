@@ -14,7 +14,7 @@
     <a href="https://codecov.io/github/parse-community/parse-server?branch=master"><img alt="Coverage status" src="https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg"></a>
     <a href="https://www.npmjs.com/package/parse-server"><img alt="npm version" src="https://img.shields.io/npm/v/parse-server.svg?style=flat"></a>
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
-    <a href="https://greenkeeper.io/"><img alt="Greenkeeper badge" src="https://badges.greenkeeper.io/parse-community/parse-server.svg"></a>
+    <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
 </p>
 
 <p align="center">
@@ -765,18 +765,6 @@ In short, parse SDK v2.0 removes the backbone style callbacks as well as the Par
 All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.
 
 We have written up a [migration guide](3.0.0.md), hoping this will help you transition to the next major release.
-
-# Support
-
-Please take a look at our [support document](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
-
-If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
-
-- [ ] You've met the [prerequisites](http://docs.parseplatform.org/parse-server/guide/#prerequisites).
-
-- [ ] You're running the [latest version](https://github.com/parse-community/parse-server/releases) of Parse Server.
-
-- [ ] You've searched through [existing issues](https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
 
 # Want to ride the bleeding edge?
 

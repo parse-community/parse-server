@@ -662,4 +662,35 @@ describe('ParseServerRESTController', () => {
         }
       );
   });
+
+  it('ensures logIn is saved with installationId', async () => {
+    const installationId = 'installation123';
+    const user = await RESTController.request(
+      'POST',
+      '/classes/_User',
+      { username: 'hello', password: 'world' },
+      { installationId }
+    );
+    expect(user.sessionToken).not.toBeUndefined();
+    const query = new Parse.Query('_Session');
+    let sessions = await query.find({ useMasterKey: true });
+
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].get('installationId')).toBe(installationId);
+    expect(sessions[0].get('sessionToken')).toBe(user.sessionToken);
+
+    const loggedUser = await RESTController.request(
+      'POST',
+      '/login',
+      { username: 'hello', password: 'world' },
+      { installationId }
+    );
+    expect(loggedUser.sessionToken).not.toBeUndefined();
+    sessions = await query.find({ useMasterKey: true });
+
+    // Should clean up old sessions with this installationId
+    expect(sessions.length).toBe(1);
+    expect(sessions[0].get('installationId')).toBe(installationId);
+    expect(sessions[0].get('sessionToken')).toBe(loggedUser.sessionToken);
+  });
 });

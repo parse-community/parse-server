@@ -107,6 +107,7 @@ function ParseServerRESTController(applicationId, router) {
           info: {
             applicationId: applicationId,
             sessionToken: options.sessionToken,
+            installationId: options.installationId,
             context: options.context || {}, // Add context
           },
           query,

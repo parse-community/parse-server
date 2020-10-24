@@ -6,7 +6,7 @@ import Auth from './Auth';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
-const incrementOp = function(object = {}, key, amount = 1) {
+const incrementOp = function (object = {}, key, amount = 1) {
   if (!object[key]) {
     object[key] = { __op: 'Increment', amount: amount };
   } else {
@@ -91,7 +91,7 @@ export function jobStatusHandler(config) {
   const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
-  const setRunning = function(jobName, params) {
+  const setRunning = function (jobName, params) {
     const now = new Date();
     jobStatus = {
       objectId,
@@ -107,26 +107,29 @@ export function jobStatusHandler(config) {
     return handler.create(jobStatus);
   };
 
-  const setMessage = function(message) {
+  const setMessage = function (message) {
     if (!message || typeof message !== 'string') {
       return Promise.resolve();
     }
     return handler.update({ objectId }, { message });
   };
 
-  const setSucceeded = function(message) {
+  const setSucceeded = function (message) {
     return setFinalStatus('succeeded', message);
   };
 
-  const setFailed = function(message) {
+  const setFailed = function (message) {
     return setFinalStatus('failed', message);
   };
 
-  const setFinalStatus = function(status, message = undefined) {
+  const setFinalStatus = function (status, message = undefined) {
     const finishedAt = new Date();
     const update = { status, finishedAt };
     if (message && typeof message === 'string') {
       update.message = message;
+    }
+    if (message instanceof Error && typeof message.message === 'string') {
+      update.message = message.message;
     }
     return handler.update({ objectId }, update);
   };
@@ -144,7 +147,7 @@ export function pushStatusHandler(config, existingObjectId) {
   const database = config.database;
   const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
   let objectId = existingObjectId;
-  const setInitial = function(body = {}, where, options = { source: 'rest' }) {
+  const setInitial = function (body = {}, where, options = { source: 'rest' }) {
     const now = new Date();
     let pushTime = now.toISOString();
     let status = 'pending';
@@ -193,7 +196,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   };
 
-  const setRunning = function(batches) {
+  const setRunning = function (batches) {
     logger.verbose(
       `_PushStatus ${objectId}: sending push to installations with %d batches`,
       batches
@@ -210,7 +213,7 @@ export function pushStatusHandler(config, existingObjectId) {
     );
   };
 
-  const trackSent = function(
+  const trackSent = function (
     results,
     UTCOffset,
     cleanupInstallations = process.env
@@ -310,7 +313,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   };
 
-  const complete = function() {
+  const complete = function () {
     return handler.update(
       { objectId },
       {
@@ -320,7 +323,7 @@ export function pushStatusHandler(config, existingObjectId) {
     );
   };
 
-  const fail = function(err) {
+  const fail = function (err) {
     if (typeof err === 'string') {
       err = { message: err };
     }
