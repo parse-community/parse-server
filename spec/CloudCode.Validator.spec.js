@@ -8,25 +8,6 @@ const validatorSuccess = () => {
 };
 
 describe('cloud validator', () => {
-  it('existing validator functionality', async done => {
-    Parse.Cloud.define(
-      'myFunction',
-      () => {
-        return 'myFunc';
-      },
-      () => {
-        return false;
-      }
-    );
-    try {
-      await Parse.Cloud.run('myFunction', {});
-      fail('should have thrown error');
-    } catch (e) {
-      expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
-      done();
-    }
-  });
-
   it('complete validator', async done => {
     Parse.Cloud.define(
       'myFunction',

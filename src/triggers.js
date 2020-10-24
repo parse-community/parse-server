@@ -668,10 +668,7 @@ export function maybeRunValidator(request, functionName) {
           ? inbuiltTriggerValidator(theValidator, request)
           : theValidator(request);
       })
-      .then(result => {
-        if (result != null && !result) {
-          throw 'Validation failed.';
-        }
+      .then(() => {
         resolve();
       })
       .catch(e => {

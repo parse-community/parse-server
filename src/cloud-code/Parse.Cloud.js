@@ -710,7 +710,7 @@ Parse.Cloud.beforeSave('ClassName', request => {
  * @property {String} field.type expected type of data for field.
  * @property {Boolean} field.constant whether the field can be modified on the object.
  * @property {Any} field.default default value if field is `null`, or initial value `constant` is `true`.
- * @property {Array|function} field.options array of options that the field can be, or function to validate field. Return false if value is invalid.
+ * @property {Array|function} field.options array of options that the field can be, or function to validate field. Throw an error if value is invalid.
  * @property {String} field.error custom error message if field is invalid.
  *
  */
