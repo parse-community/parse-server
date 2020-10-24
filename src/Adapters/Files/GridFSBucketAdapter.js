@@ -21,16 +21,16 @@ export class GridFSBucketAdapter extends FilesAdapter {
   constructor(
     mongoDatabaseURI = defaults.DefaultMongoURI,
     mongoOptions = {},
-    fileKey = undefined
+    encryptionKey = undefined
   ) {
     super();
     this._databaseURI = mongoDatabaseURI;
     this._algorithm = 'aes-256-gcm';
-    this._fileKey =
-      fileKey !== undefined
+    this._encryptionKey =
+      encryptionKey !== undefined
         ? crypto
           .createHash('sha256')
-          .update(String(fileKey))
+          .update(String(encryptionKey))
           .digest('base64')
           .substr(0, 32)
         : null;
@@ -65,12 +65,12 @@ export class GridFSBucketAdapter extends FilesAdapter {
     const stream = await bucket.openUploadStream(filename, {
       metadata: options.metadata,
     });
-    if (this._fileKey !== null) {
+    if (this._encryptionKey !== null) {
       try {
         const iv = crypto.randomBytes(16);
         const cipher = crypto.createCipheriv(
           this._algorithm,
-          this._fileKey,
+          this._encryptionKey,
           iv
         );
         const encryptedResult = Buffer.concat([
@@ -119,7 +119,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
       });
       stream.on('end', () => {
         const data = Buffer.concat(chunks);
-        if (this._fileKey !== null) {
+        if (this._encryptionKey !== null) {
           try {
             const authTagLocation = data.length - 16;
             const ivLocation = data.length - 32;
@@ -128,7 +128,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
             const encrypted = data.slice(0, ivLocation);
             const decipher = crypto.createDecipheriv(
               this._algorithm,
-              this._fileKey,
+              this._encryptionKey,
               iv
             );
             decipher.setAuthTag(authTag);
@@ -149,7 +149,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     });
   }
 
-  async rotateFileKey(options = {}) {
+  async rotateEncryptionKey(options = {}) {
     var fileNames = [];
     var oldKeyFileAdapter = {};
     const bucket = await this._getBucket();
@@ -169,19 +169,19 @@ export class GridFSBucketAdapter extends FilesAdapter {
       fileNames = options.fileNames;
     } else {
       const fileNamesIterator = await bucket.find().toArray();
-      fileNamesIterator.forEach((file) => {
+      fileNamesIterator.forEach(file => {
         fileNames.push(file.filename);
       });
     }
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       var fileNamesNotRotated = fileNames;
       var fileNamesRotated = [];
       var fileNameTotal = fileNames.length;
       var fileNameIndex = 0;
-      fileNames.forEach((fileName) => {
+      fileNames.forEach(fileName => {
         oldKeyFileAdapter
           .getFileData(fileName)
-          .then((plainTextData) => {
+          .then(plainTextData => {
             //Overwrite file with data encrypted with new key
             this.createFile(fileName, plainTextData)
               .then(() => {

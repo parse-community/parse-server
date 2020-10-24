@@ -35,7 +35,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     expect(gfsResult.toString('utf8')).toBe(originalString);
   });
 
-  it('should save an encrypted file that can only be decrypted by a GridFS adapter with the fileKey', async () => {
+  it('should save an encrypted file that can only be decrypted by a GridFS adapter with the encryptionKey', async () => {
     const unencryptedAdapter = new GridFSBucketAdapter(databaseURI);
     const encryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
@@ -72,7 +72,10 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const unencryptedResult2 = await unencryptedAdapter.getFileData(fileName2);
     expect(unencryptedResult2.toString('utf8')).toBe(data2);
     //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateFileKey();
+    const {
+      rotated,
+      notRotated,
+    } = await encryptedAdapter.rotateEncryptionKey();
     expect(rotated.length).toEqual(2);
     expect(
       rotated.filter(function (value) {
@@ -98,11 +101,11 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('should rotate key of all old encrypted GridFS files to encrypted files', async () => {
-    const oldFileKey = 'oldKeyThatILoved';
+    const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
       {},
-      oldFileKey
+      oldEncryptionKey
     );
     const encryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
@@ -125,8 +128,8 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     );
     expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
     //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateFileKey({
-      oldKey: oldFileKey,
+    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+      oldKey: oldEncryptionKey,
     });
     expect(rotated.length).toEqual(2);
     expect(
@@ -167,11 +170,11 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('should rotate key of all old encrypted GridFS files to unencrypted files', async () => {
-    const oldFileKey = 'oldKeyThatILoved';
+    const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
       {},
-      oldFileKey
+      oldEncryptionKey
     );
     const unEncryptedAdapter = new GridFSBucketAdapter(databaseURI);
     const fileName1 = 'file1.txt';
@@ -190,8 +193,11 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     );
     expect(oldEncryptedResult2.toString('utf8')).toBe(data2);
     //Check if unEncrypted adapter can read data and make sure it's not the same as oldEncrypted adapter
-    const { rotated, notRotated } = await unEncryptedAdapter.rotateFileKey({
-      oldKey: oldFileKey,
+    const {
+      rotated,
+      notRotated,
+    } = await unEncryptedAdapter.rotateEncryptionKey({
+      oldKey: oldEncryptionKey,
     });
     expect(rotated.length).toEqual(2);
     expect(
@@ -232,11 +238,11 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it('should only encrypt specified fileNames', async () => {
-    const oldFileKey = 'oldKeyThatILoved';
+    const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
       {},
-      oldFileKey
+      oldEncryptionKey
     );
     const encryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
@@ -264,8 +270,8 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const data3 = 'hello past world';
     await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
     //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateFileKey({
-      oldKey: oldFileKey,
+    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+      oldKey: oldEncryptionKey,
       fileNames: [fileName1, fileName2],
     });
     expect(rotated.length).toEqual(2);
@@ -312,11 +318,11 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
   });
 
   it("should return fileNames of those it can't encrypt with the new key", async () => {
-    const oldFileKey = 'oldKeyThatILoved';
+    const oldEncryptionKey = 'oldKeyThatILoved';
     const oldEncryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
       {},
-      oldFileKey
+      oldEncryptionKey
     );
     const encryptedAdapter = new GridFSBucketAdapter(
       databaseURI,
@@ -344,8 +350,8 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     const data3 = 'hello past world';
     await unEncryptedAdapter.createFile(fileName3, data3, 'text/utf8');
     //Check if encrypted adapter can read data and make sure it's not the same as unEncrypted adapter
-    const { rotated, notRotated } = await encryptedAdapter.rotateFileKey({
-      oldKey: oldFileKey,
+    const { rotated, notRotated } = await encryptedAdapter.rotateEncryptionKey({
+      oldKey: oldEncryptionKey,
     });
     expect(rotated.length).toEqual(2);
     expect(

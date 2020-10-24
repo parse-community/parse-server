@@ -152,6 +152,10 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  encryptionKey: {
+    env: 'PARSE_SERVER_ENCRYPTION_KEY',
+    help: 'Key for encrypting your files',
+  },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
     help:
