@@ -1324,7 +1324,7 @@ describe('Cloud Code', () => {
       object.set('before', 'save');
     });
 
-    Parse.Cloud.define('removeme', (req, res) => {
+    Parse.Cloud.define('removeme', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1335,11 +1335,10 @@ describe('Cloud Code', () => {
         .then(object => {
           object.unset('remove');
           return object.save();
-        })
-        .catch(res.error);
+        });
     });
 
-    Parse.Cloud.define('removeme2', (req, res) => {
+    Parse.Cloud.define('removeme2', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1350,8 +1349,7 @@ describe('Cloud Code', () => {
         .then(object => {
           object.unset('remove');
           return object.save();
-        })
-        .catch(res.error);
+        });
     });
 
     Parse.Cloud.run('removeme')

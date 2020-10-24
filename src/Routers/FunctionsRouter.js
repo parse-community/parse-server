@@ -99,7 +99,7 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject, message) {
+  static createResponseObject(resolve, reject) {
     return {
       success: function (result) {
         resolve({
@@ -128,7 +128,6 @@ export class FunctionsRouter extends PromiseRouter {
         }
         reject(error);
       },
-      message: message,
     };
   }
 
@@ -174,7 +173,7 @@ export class FunctionsRouter extends PromiseRouter {
       const userString =
         req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
-      const { success, error, message } = FunctionsRouter.createResponseObject(
+      const { success, error } = FunctionsRouter.createResponseObject(
         result => {
           try {
             const cleanResult = logger.truncateLogMessage(
@@ -213,7 +212,7 @@ export class FunctionsRouter extends PromiseRouter {
       );
       return Promise.resolve()
         .then(() => {
-          return theFunction(request, { message });
+          return theFunction(request);
         })
         .then(success, error);
     });
