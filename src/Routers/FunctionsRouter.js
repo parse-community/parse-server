@@ -110,36 +110,17 @@ export class FunctionsRouter extends PromiseRouter {
       },
       error: function (message) {
         // parse error, process away
-        if (message instanceof Parse.Error) {
-          return reject(message);
-        }
-
-        const code = Parse.Error.SCRIPT_FAILED;
-        // If it's an error, mark it as a script failed
-        if (typeof message === 'string') {
-          return reject(new Parse.Error(code, message));
-        }
-        const error = new Parse.Error(
-          code,
-          (message && message.message) || message
-        );
-        if (message instanceof Error) {
-          error.stack = message.stack;
-        }
+        const error = triggers.resolveError(message);
         reject(error);
       },
       message: message,
     };
   }
-
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
     const theFunction = triggers.getFunction(functionName, applicationId);
-    const theValidator = triggers.getValidator(
-      req.params.functionName,
-      applicationId
-    );
+
     if (!theFunction) {
       throw new Parse.Error(
         Parse.Error.SCRIPT_FAILED,
@@ -159,16 +140,6 @@ export class FunctionsRouter extends PromiseRouter {
       functionName,
       context: req.info.context,
     };
-
-    if (theValidator && typeof theValidator === 'function') {
-      var result = theValidator(request);
-      if (!result) {
-        throw new Parse.Error(
-          Parse.Error.VALIDATION_ERROR,
-          'Validation failed.'
-        );
-      }
-    }
 
     return new Promise(function (resolve, reject) {
       const userString =
@@ -212,6 +183,9 @@ export class FunctionsRouter extends PromiseRouter {
         }
       );
       return Promise.resolve()
+        .then(() => {
+          return triggers.maybeRunValidator(request, functionName);
+        })
         .then(() => {
           return theFunction(request, { message });
         })

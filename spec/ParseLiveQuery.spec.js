@@ -550,6 +550,81 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
+  const validatorFail = () => {
+    throw 'you are not authorised';
+  };
+  it('can handle beforeConnect validation function', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+
+    const object = new TestObject();
+    await object.save();
+
+    Parse.Cloud.beforeConnect(() => {}, validatorFail);
+    let complete = false;
+    Parse.LiveQuery.on('error', error => {
+      if (complete) {
+        return;
+      }
+      complete = true;
+      expect(error).toBe('you are not authorised');
+      done();
+    });
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    await query.subscribe();
+  });
+
+  it('can handle beforeSubscribe validation function', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    Parse.Cloud.beforeSubscribe(TestObject, () => {}, validatorFail);
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('error', error => {
+      expect(error).toBe('you are not authorised');
+      done();
+    });
+  });
+
+  it('can handle afterEvent validation function', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    Parse.Cloud.afterLiveQueryEvent('TestObject', () => {}, validatorFail);
+
+    const query = new Parse.Query(TestObject);
+    const subscription = await query.subscribe();
+    subscription.on('error', error => {
+      expect(error).toBe('you are not authorised');
+      done();
+    });
+
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    await object.save();
+  });
 
   it('can handle beforeConnect error', async done => {
     await reconfigureServer({

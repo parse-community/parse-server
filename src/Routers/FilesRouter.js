@@ -33,15 +33,6 @@ const addFileDataIfNeeded = async file => {
   return file;
 };
 
-const errorMessageFromError = e => {
-  if (typeof e === 'string') {
-    return e;
-  } else if (e && e.message) {
-    return e.message;
-  }
-  return undefined;
-};
-
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
@@ -192,10 +183,11 @@ export class FilesRouter {
       res.json(saveResult);
     } catch (e) {
       logger.error('Error creating a file: ', e);
-      const errorMessage =
-        errorMessageFromError(e) ||
-        `Could not store file: ${fileObject.file._name}.`;
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, errorMessage));
+      const error = triggers.resolveError(e, {
+        code: Parse.Error.FILE_SAVE_ERROR,
+        message: `Could not store file: ${fileObject.file._name}.`,
+      });
+      next(error);
     }
   }
 
@@ -227,8 +219,11 @@ export class FilesRouter {
       res.end();
     } catch (e) {
       logger.error('Error deleting a file: ', e);
-      const errorMessage = errorMessageFromError(e) || `Could not delete file.`;
-      next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR, errorMessage));
+      const error = triggers.resolveError(e, {
+        code: Parse.Error.FILE_DELETE_ERROR,
+        message: 'Could not delete file.',
+      });
+      next(error);
     }
   }
 

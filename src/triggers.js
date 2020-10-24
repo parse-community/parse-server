@@ -25,7 +25,10 @@ const FileClassName = '@File';
 const ConnectClassName = '@Connect';
 
 const baseStore = function () {
-  const Validators = {};
+  const Validators = Object.keys(Types).reduce(function (base, key) {
+    base[key] = {};
+    return base;
+  }, {});
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
@@ -125,24 +128,66 @@ export function addFunction(
   applicationId
 ) {
   add(Category.Functions, functionName, handler, applicationId);
-  add(Category.Validators, functionName, validationHandler, applicationId);
+  if (validationHandler) {
+    add(Category.Validators, functionName, validationHandler, applicationId);
+  }
 }
 
 export function addJob(jobName, handler, applicationId) {
   add(Category.Jobs, jobName, handler, applicationId);
 }
 
-export function addTrigger(type, className, handler, applicationId) {
+export function addTrigger(
+  type,
+  className,
+  handler,
+  applicationId,
+  validationHandler
+) {
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
+  if (validationHandler) {
+    add(
+      Category.Validators,
+      `${type}.${className}`,
+      validationHandler,
+      applicationId
+    );
+  }
 }
 
-export function addFileTrigger(type, handler, applicationId) {
+export function addFileTrigger(
+  type,
+  handler,
+  applicationId,
+  validationHandler
+) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
+  if (validationHandler) {
+    add(
+      Category.Validators,
+      `${type}.${FileClassName}`,
+      validationHandler,
+      applicationId
+    );
+  }
 }
 
-export function addConnectTrigger(type, handler, applicationId) {
+export function addConnectTrigger(
+  type,
+  handler,
+  applicationId,
+  validationHandler
+) {
   add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
+  if (validationHandler) {
+    add(
+      Category.Validators,
+      `${type}.${ConnectClassName}`,
+      validationHandler,
+      applicationId
+    );
+  }
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -456,6 +501,9 @@ export function maybeRunAfterFindTrigger(
     });
     return Promise.resolve()
       .then(() => {
+        return maybeRunValidator(request, `${triggerType}.${className}`);
+      })
+      .then(() => {
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
@@ -514,6 +562,9 @@ export function maybeRunQueryTrigger(
     isGet
   );
   return Promise.resolve()
+    .then(() => {
+      return maybeRunValidator(requestObject, `${triggerType}.${className}`);
+    })
     .then(() => {
       return trigger(requestObject);
     })
@@ -588,6 +639,142 @@ export function maybeRunQueryTrigger(
     );
 }
 
+export function resolveError(message, defaultOpts) {
+  if (!defaultOpts) {
+    defaultOpts = {};
+  }
+  if (message instanceof Parse.Error) {
+    if (!message.message && defaultOpts.message) {
+      message.message = defaultOpts.message;
+    }
+    return message;
+  }
+
+  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  // If it's an error, mark it as a script failed
+  if (typeof message === 'string') {
+    return new Parse.Error(code, message);
+  }
+  const error = new Parse.Error(code, (message && message.message) || message);
+  if (message instanceof Error) {
+    error.stack = message.stack;
+  }
+  return error;
+}
+export function maybeRunValidator(request, functionName) {
+  const theValidator = getValidator(functionName, Parse.applicationId);
+  if (!theValidator) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    return Promise.resolve()
+      .then(() => {
+        return typeof theValidator === 'object'
+          ? inbuiltTriggerValidator(theValidator, request)
+          : theValidator(request);
+      })
+      .then(result => {
+        if (result != null && !result) {
+          throw 'Validation failed.';
+        }
+        resolve();
+      })
+      .catch(e => {
+        const error = resolveError(e, {
+          code: Parse.Error.VALIDATION_ERROR,
+          message: 'Validation failed.',
+        });
+        reject(error);
+      });
+  });
+}
+function inbuiltTriggerValidator(options, request) {
+  if (!options) {
+    return;
+  }
+  if (options.requireUser && !request.user) {
+    throw 'Validation failed. Please login to continue.';
+  }
+  if (options.requireMaster && !request.master) {
+    throw 'Validation failed. Master key is required to complete this request.';
+  }
+  const requiredParam = key => {
+    const value = request.params[key];
+    if (value == null) {
+      throw `Validation failed. Please specify data for ${key}.`;
+    }
+  };
+  const getType = fn => {
+    const match = fn && fn.toString().match(/^\s*function (\w+)/);
+    return (match ? match[1] : '').toLowerCase();
+  };
+  if (Array.isArray(options.params)) {
+    for (const key of options.params) {
+      requiredParam(key);
+    }
+  } else {
+    for (const key in options.params) {
+      const opt = options.params[key];
+      let val = request.params[key];
+      if (typeof opt === 'string') {
+        requiredParam(opt);
+      }
+      if (typeof opt === 'object') {
+        if (opt.default != null && val == null) {
+          val = opt.default;
+          request.params[key] = val;
+        }
+        if (opt.required) {
+          requiredParam(key);
+        }
+        const type = getType(opt.type);
+        if (type == 'Array' && Array.isArray(val)) {
+          throw `Validation failed. Invalid type for ${key}. Expected Array.`;
+        } else if (typeof val !== type) {
+          throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+        }
+        let options = opt.options;
+        if (options) {
+          if (typeof opt.options == 'string') {
+            options = [opt.options];
+          }
+          if (!options.includes(val)) {
+            throw `Validation failed. Invalid option for ${key}. Expected: ${options.join(
+              ', '
+            )}`;
+          }
+        }
+      }
+    }
+  }
+  for (const key of options.requireKeys || []) {
+    if (!request.object) {
+      break;
+    }
+    if (request.object.get(key) == null) {
+      throw `Validation failed. Please specify data for ${key}.`;
+    }
+  }
+  for (const key of options.constantKeys || []) {
+    if (
+      !request.object ||
+      !request.original ||
+      request.original.get(key) === null
+    ) {
+      break;
+    }
+    request.object.set(key, request.original.get(key));
+  }
+  for (const key of options.requireUserKeys || []) {
+    if (!request.user) {
+      break;
+    }
+    if (request.user.get(key) == null) {
+      throw `Validation failed. Please set data for ${key} on your account.`;
+    }
+  }
+}
+
 // To be used as part of the promise chain when saving/deleting an object
 // Will resolve successfully if no trigger is configured
 // Resolves to an object, empty or containing an object key. A beforeSave
@@ -657,6 +844,12 @@ export function maybeRunTrigger(
     // If triggers do not return a promise, they can run async code parallel
     // to the RestWrite.execute() call.
     return Promise.resolve()
+      .then(() => {
+        return maybeRunValidator(
+          request,
+          `${triggerType}.${parseObject.className}`
+        );
+      })
       .then(() => {
         const promise = trigger(request);
         if (
@@ -755,6 +948,7 @@ export async function maybeRunFileTrigger(
         fileObject,
         config
       );
+      await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
       const result = await fileTrigger(request);
       logTriggerSuccessBeforeHook(
         triggerType,
@@ -788,6 +982,7 @@ export async function maybeRunConnectTrigger(triggerType, request) {
     return;
   }
   request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
   return trigger(request);
 }
 
@@ -804,6 +999,7 @@ export async function maybeRunSubscribeTrigger(
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${className}`);
   await trigger(request);
   const query = request.query.toJSON();
   if (query.keys) {
@@ -828,6 +1024,7 @@ export async function maybeRunAfterEventTrigger(
     request.original = Parse.Object.fromJSON(request.original);
   }
   request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${className}`);
   return trigger(request);
 }
 
