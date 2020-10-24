@@ -631,28 +631,30 @@ export function maybeRunQueryTrigger(
     );
 }
 
-export function resolveError(error, defaultOpts) {
+export function resolveError(message, defaultOpts) {
   if (!defaultOpts) {
     defaultOpts = {};
   }
-  if (!error) {
+  if (!message) {
     return new Parse.Error(
       defaultOpts.code || Parse.Error.SCRIPT_FAILED,
       defaultOpts.message || 'Script failed.'
     );
   }
-  let errorStr = null;
-  if (typeof error === 'string') {
-    errorStr = error;
+  if (message instanceof Parse.Error) {
+    return message;
   }
-  const code = error.code || defaultOpts.code || Parse.Error.SCRIPT_FAILED;
-  const message =
-    error.message || errorStr || defaultOpts.message || 'Script failed.';
-  const resolvedError = new Parse.Error(code, message);
-  if (error.stack) {
-    resolvedError.stack = error.stack;
+
+  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  // If it's an error, mark it as a script failed
+  if (typeof message === 'string') {
+    return new Parse.Error(code, message);
   }
-  return resolvedError;
+  const error = new Parse.Error(code, message.message || message);
+  if (message instanceof Error) {
+    error.stack = message.stack;
+  }
+  return error;
 }
 export function maybeRunValidator(request, functionName) {
   const theValidator = getValidator(functionName, Parse.applicationId);

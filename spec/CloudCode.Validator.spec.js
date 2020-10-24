@@ -96,7 +96,7 @@ describe('cloud validator', () => {
       fail('should have validation error');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toBe('Validation failed.');
+      expect(e.message).toBeUndefined();
       done();
     }
   });
@@ -732,20 +732,6 @@ describe('cloud validator', () => {
       fail('cloud function should have failed.');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.VALIDATION_ERROR);
-      done();
-    }
-  });
-
-  it('throw custom error from beforeSaveFile', async done => {
-    Parse.Cloud.beforeSaveFile(() => {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'It should fail');
-    });
-    try {
-      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
-      await file.save({ useMasterKey: true });
-      fail('error should have thrown');
-    } catch (e) {
-      expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
       done();
     }
   });
