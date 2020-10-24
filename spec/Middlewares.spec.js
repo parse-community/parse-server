@@ -412,4 +412,27 @@ describe('middlewares', () => {
     middlewares.handleParseHeaders(fakeReq, fakeRes);
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
+
+  it('should success without x-parse-application-id in header when there is only one app', (done) => {
+    AppCache.del('test');
+    delete fakeReq.body._ApplicationId;
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+  it('should success with x-parse-application-id match an app when there are multiple apps', (done) => {
+    fakeReq.headers['x-parse-application-id'] = fakeReq.body._ApplicationId;
+    delete fakeReq.body._ApplicationId;
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+  it('should faile with x-parse-application-id not match any app when there are multiple apps', () => {
+    fakeReq.headers['x-parse-application-id'] = 'do-not-match-an-app';
+    delete fakeReq.body._ApplicationId;
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
 });
