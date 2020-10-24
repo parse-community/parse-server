@@ -128,9 +128,7 @@ export function addFunction(
   applicationId
 ) {
   add(Category.Functions, functionName, handler, applicationId);
-  if (validationHandler) {
-    add(Category.Validators, functionName, validationHandler, applicationId);
-  }
+  add(Category.Validators, functionName, validationHandler, applicationId);
 }
 
 export function addJob(jobName, handler, applicationId) {
@@ -146,14 +144,12 @@ export function addTrigger(
 ) {
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
-  if (validationHandler) {
-    add(
-      Category.Validators,
-      `${type}.${className}`,
-      validationHandler,
-      applicationId
-    );
-  }
+  add(
+    Category.Validators,
+    `${type}.${className}`,
+    validationHandler,
+    applicationId
+  );
 }
 
 export function addFileTrigger(
@@ -163,14 +159,12 @@ export function addFileTrigger(
   validationHandler
 ) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
-  if (validationHandler) {
-    add(
-      Category.Validators,
-      `${type}.${FileClassName}`,
-      validationHandler,
-      applicationId
-    );
-  }
+  add(
+    Category.Validators,
+    `${type}.${FileClassName}`,
+    validationHandler,
+    applicationId
+  );
 }
 
 export function addConnectTrigger(
@@ -180,14 +174,12 @@ export function addConnectTrigger(
   validationHandler
 ) {
   add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
-  if (validationHandler) {
-    add(
-      Category.Validators,
-      `${type}.${ConnectClassName}`,
-      validationHandler,
-      applicationId
-    );
-  }
+  add(
+    Category.Validators,
+    `${type}.${ConnectClassName}`,
+    validationHandler,
+    applicationId
+  );
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -639,27 +631,28 @@ export function maybeRunQueryTrigger(
     );
 }
 
-export function resolveError(message, defaultOpts) {
+export function resolveError(error, defaultOpts) {
   if (!defaultOpts) {
     defaultOpts = {};
   }
-  if (message instanceof Parse.Error) {
-    if (!message.message && defaultOpts.message) {
-      message.message = defaultOpts.message;
-    }
-    return message;
+  if (!error) {
+    return new Parse.Error(
+      defaultOpts.code || Parse.Error.SCRIPT_FAILED,
+      defaultOpts.message || 'Script failed.'
+    );
   }
-
-  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
-  // If it's an error, mark it as a script failed
-  if (typeof message === 'string') {
-    return new Parse.Error(code, message);
+  let errorStr = null;
+  if (typeof error === 'string') {
+    errorStr = error;
   }
-  const error = new Parse.Error(code, (message && message.message) || message);
-  if (message instanceof Error) {
-    error.stack = message.stack;
+  const code = error.code || defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  const message =
+    error.message || errorStr || defaultOpts.message || 'Script failed.';
+  const resolvedError = new Parse.Error(code, message);
+  if (error.stack) {
+    resolvedError.stack = error.stack;
   }
-  return error;
+  return resolvedError;
 }
 export function maybeRunValidator(request, functionName) {
   const theValidator = getValidator(functionName, Parse.applicationId);
@@ -689,9 +682,6 @@ export function maybeRunValidator(request, functionName) {
   });
 }
 function inbuiltTriggerValidator(options, request) {
-  if (!options) {
-    return;
-  }
   if (options.requireUser && !request.user) {
     throw 'Validation failed. Please login to continue.';
   }

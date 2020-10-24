@@ -109,7 +109,6 @@ export class FunctionsRouter extends PromiseRouter {
         });
       },
       error: function (message) {
-        // parse error, process away
         const error = triggers.resolveError(message);
         reject(error);
       },

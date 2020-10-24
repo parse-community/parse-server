@@ -2,6 +2,9 @@
 const UserController = require('../lib/Controllers/UserController')
   .UserController;
 const Config = require('../lib/Config');
+const validatorFail = () => {
+  throw 'you are not authorized';
+};
 describe('ParseLiveQuery', function () {
   it('can subscribe to query', async done => {
     await reconfigureServer({
@@ -550,9 +553,6 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
-  const validatorFail = () => {
-    throw 'you are not authorised';
-  };
   it('can handle beforeConnect validation function', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -573,7 +573,7 @@ describe('ParseLiveQuery', function () {
         return;
       }
       complete = true;
-      expect(error).toBe('you are not authorised');
+      expect(error).toBe('you are not authorized');
       done();
     });
     const query = new Parse.Query(TestObject);
@@ -598,7 +598,7 @@ describe('ParseLiveQuery', function () {
     query.equalTo('objectId', object.id);
     const subscription = await query.subscribe();
     subscription.on('error', error => {
-      expect(error).toBe('you are not authorised');
+      expect(error).toBe('you are not authorized');
       done();
     });
   });
@@ -617,7 +617,7 @@ describe('ParseLiveQuery', function () {
     const query = new Parse.Query(TestObject);
     const subscription = await query.subscribe();
     subscription.on('error', error => {
-      expect(error).toBe('you are not authorised');
+      expect(error).toBe('you are not authorized');
       done();
     });
 
