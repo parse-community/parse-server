@@ -112,7 +112,20 @@ describe('Cloud Code', () => {
       }
     );
   });
+  it('returns an empty error', done => {
+    Parse.Cloud.define('cloudCodeWithError', () => {
+      throw null;
+    });
 
+    Parse.Cloud.run('cloudCodeWithError').then(
+      () => done.fail('should not succeed'),
+      e => {
+        expect(e.code).toEqual(141);
+        expect(e.message).toEqual('Script failed.');
+        done();
+      }
+    );
+  });
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');
@@ -2685,6 +2698,20 @@ describe('beforeLogin hook', () => {
       fail('error should have thrown');
     } catch (e) {
       expect(e.code).toBe(Parse.Error.SCRIPT_FAILED);
+      done();
+    }
+  });
+
+  it('throw empty error from beforeSaveFile', async done => {
+    Parse.Cloud.beforeSaveFile(() => {
+      throw null;
+    });
+    try {
+      const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+      await file.save({ useMasterKey: true });
+      fail('error should have thrown');
+    } catch (e) {
+      expect(e.code).toBe(130);
       done();
     }
   });
