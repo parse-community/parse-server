@@ -741,8 +741,8 @@ function inbuiltTriggerValidator(options, request) {
         }
         if (opt.type) {
           const type = getType(opt.type);
-          if (type == 'Array' && Array.isArray(val)) {
-            throw `Validation failed. Invalid type for ${key}. Expected Array.`;
+          if (type == 'array' && !Array.isArray(val)) {
+            throw `Validation failed. Invalid type for ${key}. Expected: array.`;
           } else if (typeof val !== type) {
             throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
           }
