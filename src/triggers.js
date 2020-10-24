@@ -684,7 +684,16 @@ export function maybeRunValidator(request, functionName) {
   });
 }
 function inbuiltTriggerValidator(options, request) {
-  if (options.requireUser && !request.user) {
+  let reqUser = request.user;
+  if (
+    !reqUser &&
+    request.object &&
+    request.object.className === '_User' &&
+    !request.object.existed()
+  ) {
+    reqUser = request.object;
+  }
+  if (options.requireUser && !reqUser) {
     throw 'Validation failed. Please login to continue.';
   }
   if (options.requireMaster && !request.master) {
@@ -744,9 +753,20 @@ function inbuiltTriggerValidator(options, request) {
         let options = opt.options;
         if (options) {
           if (typeof options === 'function') {
-            const result = options(val);
-            if (!result) {
-              throw opt.error || `Validation failed. Invalid value for ${key}.`;
+            try {
+              const result = options(val);
+              if (!result) {
+                throw (
+                  opt.error || `Validation failed. Invalid value for ${key}.`
+                );
+              }
+            } catch (e) {
+              if (!e) {
+                throw (
+                  opt.error || `Validation failed. Invalid value for ${key}.`
+                );
+              }
+              throw opt.error || e.message || e;
             }
           }
           if (typeof opt.options == 'string') {
@@ -765,10 +785,10 @@ function inbuiltTriggerValidator(options, request) {
     }
   }
   for (const key of options.requireUserKeys || []) {
-    if (!request.user) {
-      break;
+    if (!reqUser) {
+      throw 'Please login to make this request.';
     }
-    if (request.user.get(key) == null) {
+    if (reqUser.get(key) == null) {
       throw `Validation failed. Please set data for ${key} on your account.`;
     }
   }

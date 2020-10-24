@@ -85,7 +85,7 @@ ParseCloud.job = function (functionName, handler) {
  * @name Parse.Cloud.beforeSave
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a save. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
- * @param {Function} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}. Returning false from this function will return a "validation fail" error.
+ * @param {(Object|Function)} validator An optional function or object to help validating cloud code. This object should be a {@link Parse.Cloud.ValidatorObject}, and this function can be an async function and should take one parameter a {@link Parse.Cloud.ValidatorFunction}. Returning false from this function will return a "validation fail" error.
  */
 ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -665,6 +665,54 @@ module.exports = ParseCloud;
  * @property {Boolean} master If true, means the master key was used.
  * @property {Parse.User} user If set, the user that made the request.
  * @property {Object} params The params passed to the cloud function.
+ */
+
+/**
+ * @interface Parse.Cloud.ValidatorFunction
+ * @property {String} installationId If set, the installationId triggering the request.
+ * @property {Boolean} master If true, means the master key was used.
+ * @property {Parse.User} user If set, the user that made the request.
+ * @property {Object} params The params passed to the cloud function.
+ */
+
+/**
+ * @interface Parse.Cloud.ValidatorObject
+ * @property {Boolean} requireUser whether the cloud trigger requires a user.
+ * @property {Boolean} requireMaster whether the cloud trigger requires a master key.
+ * @property {Object|Array<String>} fields if an array of strings, validator will look for keys in request.params, and throw if not provided. If Object, {@link Parse.Cloud.ValidatorFields} to validate. If the trigger is a cloud function, `request.params` will be validated, otherwise `request.object`.
+ * @property {Array<String>} requireUserKeys If set, keys required on request.user to make the request.
+ */
+
+/**
+ *
+```
+Parse.Cloud.beforeSave('ClassName', request => {
+  // request.object.get('name') is defined and longer than 5
+},{
+  fields: {
+    name: {
+      type: String,
+      default: 'default',
+      options: val => {
+        return val.length > 5;
+      },
+      error: 'name must be longer than 5 characters'
+    },
+    admin: {
+      default: false,
+      constant: true
+    }
+  }
+})
+ ```
+ * @interface Parse.Cloud.ValidatorFields
+ * @property {String} field name of field to validate.
+ * @property {String} field.type expected type of data for field.
+ * @property {Boolean} field.constant whether the field can be modified on the object.
+ * @property {Any} field.default default value if field is `null`, or initial value `constant` is `true`.
+ * @property {Array|function} field.options array of options that the field can be, or function to validate field. Return false if value is invalid.
+ * @property {String} field.error custom error message if field is invalid.
+ *
  */
 
 /**
