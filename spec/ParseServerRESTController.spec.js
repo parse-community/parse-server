@@ -101,7 +101,7 @@ describe('ParseServerRESTController', () => {
     );
   });
 
-  it('should handle response', async () => {
+  it('should handle response status', async () => {
     const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
     spyOn(router, 'tryRouteRequest').and.callThrough();
     RESTController = ParseServerRESTController(Parse.applicationId, router);
@@ -117,6 +117,37 @@ describe('ParseServerRESTController', () => {
     expect(location).toBe(
       `http://localhost:8378/1/classes/MyObject/${resp.objectId}`
     );
+  });
+
+  it('should handle response status in batch', async () => {
+    const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
+    spyOn(router, 'tryRouteRequest').and.callThrough();
+    RESTController = ParseServerRESTController(Parse.applicationId, router);
+    const resp = await RESTController.request(
+      'POST',
+      'batch',
+      {
+        requests: [
+          {
+            method: 'POST',
+            path: '/classes/MyObject',
+          },
+          {
+            method: 'POST',
+            path: '/classes/MyObject',
+          },
+        ],
+      },
+      {
+        returnStatus: true,
+      }
+    );
+    expect(resp.length).toBe(2);
+    expect(resp[0]._status).toBe(201);
+    expect(resp[1]._status).toBe(201);
+    expect(resp[0].success).toBeDefined();
+    expect(resp[1].success).toBeDefined();
+    expect(router.tryRouteRequest.calls.all().length).toBe(2);
   });
 
   it('properly handle existed', async done => {

@@ -64,6 +64,11 @@ function ParseServerRESTController(applicationId, router) {
             config
           ).then(
             response => {
+              if (options.returnStatus) {
+                const status = response._status;
+                delete response._status;
+                return { success: response, _status: status };
+              }
               return { success: response };
             },
             error => {
