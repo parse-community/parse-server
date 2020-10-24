@@ -92,7 +92,10 @@ export class UserController extends AdaptableController {
       )
       .then(results => {
         if (results.length != 1) {
-          throw 'Failed to reset password: username / email / token is invalid';
+          throw new Parse.Error(
+            Parse.Error.RESET_PASSWORD_ERROR,
+            'Failed to reset password: username / email / token is invalid'
+          );
         }
 
         if (
@@ -104,7 +107,10 @@ export class UserController extends AdaptableController {
             expiresDate = new Date(expiresDate.iso);
           }
           if (expiresDate < new Date())
-            throw 'The password reset link has expired';
+            throw new Parse.Error(
+              Parse.Error.RESET_LINK_EXPIRED,
+              'The password reset link has expired'
+            );
         }
 
         return results[0];
@@ -248,10 +254,7 @@ export class UserController extends AdaptableController {
     return this.checkResetTokenValidity(username, token)
       .then(user => updateUserPassword(user.objectId, password, this.config))
       .catch(error => {
-        if (error && error.message) {
-          // in case of Parse.Error, fail with the error message only
-          return Promise.reject(error.message);
-        } else {
+        if (error) {
           return Promise.reject(error);
         }
       });

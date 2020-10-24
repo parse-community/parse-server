@@ -203,7 +203,7 @@ export class PublicAPIRouter extends PromiseRouter {
           username: username,
           token: token,
           id: config.applicationId,
-          error: result.err,
+          error: result.err ? result.err.message : result.err,
           app: config.appName,
         });
 
@@ -215,7 +215,7 @@ export class PublicAPIRouter extends PromiseRouter {
             });
           }
           if (result.err) {
-            throw new Parse.Error(Parse.Error.OTHER_CAUSE, `${result.err}`);
+            throw result.err;
           }
         }
 

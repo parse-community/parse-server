@@ -225,6 +225,7 @@ describe('Password Policy: ', () => {
           done();
         })
         .catch(error => {
+          // ToDO: 142 error is too generic, a more specific error code should be thrown like Parse.Error.PASSWORD_POLICY_USERNAME
           expect(error.code).toEqual(142);
           done();
         });
@@ -946,8 +947,9 @@ describe('Password Policy: ', () => {
           });
         } catch (error) {
           expect(error.status).not.toBe(302);
+          // ToDO: 142 error is too generic, a more specific error code should be thrown like Parse.Error.PASSWORD_POLICY_USERNAME
           expect(error.text).toEqual(
-            '{"code":-1,"error":"Password cannot contain your username."}'
+            '{"code":142,"error":"Password cannot contain your username."}'
           );
         }
         await Parse.User.logIn('user1', 'r@nd0m');
