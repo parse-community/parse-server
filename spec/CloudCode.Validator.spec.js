@@ -24,6 +24,7 @@ describe('cloud validator', () => {
       fail('should not have thrown error');
     }
   });
+
   it('Throw from validator', async done => {
     Parse.Cloud.define(
       'myFunction',
@@ -42,6 +43,7 @@ describe('cloud validator', () => {
       done();
     }
   });
+
   it('validator can throw parse error', async done => {
     Parse.Cloud.define(
       'myFunction',
@@ -839,6 +841,7 @@ describe('cloud validator', () => {
         done();
       });
   });
+
   it('basic beforeSave constantKeys', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
       fields: {
@@ -887,6 +890,7 @@ describe('cloud validator', () => {
       fail('before save should not have failed.');
     }
   });
+
   it('validate beforeSave fail', async done => {
     Parse.Cloud.beforeSave('MyObject', () => {}, validatorFail);
 
@@ -918,6 +922,7 @@ describe('cloud validator', () => {
       fail('before save should not have failed.');
     }
   });
+
   it('validate afterSave fail', async done => {
     Parse.Cloud.afterSave(
       'MyObject',
@@ -948,6 +953,7 @@ describe('cloud validator', () => {
       fail('before delete should not have failed.');
     }
   });
+
   it('validate beforeDelete fail', async done => {
     Parse.Cloud.beforeDelete(
       'MyObject',
@@ -987,6 +993,7 @@ describe('cloud validator', () => {
       fail('after delete should not have failed.');
     }
   });
+
   it('validate afterDelete fail', async done => {
     Parse.Cloud.afterDelete(
       'MyObject',
@@ -1046,6 +1053,7 @@ describe('cloud validator', () => {
       fail('beforeFind should not have failed.');
     }
   });
+
   it('validate afterFind fail', async done => {
     Parse.Cloud.afterFind('MyObject', () => {}, validatorFail);
 

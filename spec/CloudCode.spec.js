@@ -112,6 +112,7 @@ describe('Cloud Code', () => {
       }
     );
   });
+
   it('returns an empty error', done => {
     Parse.Cloud.define('cloudCodeWithError', () => {
       throw null;
@@ -126,6 +127,7 @@ describe('Cloud Code', () => {
       }
     );
   });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');

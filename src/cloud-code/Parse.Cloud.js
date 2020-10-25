@@ -32,7 +32,19 @@ var ParseCloud = {};
  * Defines a Cloud Function.
  *
  * **Available in Cloud Code only.**
-
+ *
+ * ```
+ * Parse.Cloud.define('functionName', (request) => {
+ *   // code here
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.define('functionName', (request) => {
+ *   // code here
+ * }, { ...validationObject });
+ * ```
+ *
  * @static
  * @memberof Parse.Cloud
  * @param {String} name The name of the Cloud Function
@@ -74,18 +86,20 @@ ParseCloud.job = function (functionName, handler) {
  * ```
  * Parse.Cloud.beforeSave('MyCustomClass', (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.beforeSave(Parse.User, (request) => {
  *   // code here
- * })
+ * }, { ...validationObject })
  * ```
  *
  * @method beforeSave
  * @name Parse.Cloud.beforeSave
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a save. This function can be async and should take one parameter a {@link Parse.Cloud.TriggerRequest};
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -107,18 +121,20 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeDelete('MyCustomClass', (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.beforeDelete(Parse.User, (request) => {
  *   // code here
- * })
+ * }, { ...validationObject })
  *```
  *
  * @method beforeDelete
  * @name Parse.Cloud.beforeDelete
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before delete function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a delete. This function can be async and should take one parameter, a {@link Parse.Cloud.TriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -182,8 +198,7 @@ ParseCloud.beforeLogin = function (handler) {
  * ```
  * Parse.Cloud.afterLogin((request) => {
  *   // code here
- * })
- *
+ * });
  * ```
  *
  * @method afterLogin
@@ -217,8 +232,7 @@ ParseCloud.afterLogin = function (handler) {
  * ```
  * Parse.Cloud.afterLogout((request) => {
  *   // code here
- * })
- *
+ * });
  * ```
  *
  * @method afterLogout
@@ -251,18 +265,20 @@ ParseCloud.afterLogout = function (handler) {
  * ```
  * Parse.Cloud.afterSave('MyCustomClass', async function(request) {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.afterSave(Parse.User, async function(request) {
  *   // code here
- * })
+ * }, { ...validationObject });
  * ```
  *
  * @method afterSave
  * @name Parse.Cloud.afterSave
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run after a save. This function can be an async function and should take just one parameter, {@link Parse.Cloud.TriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -284,18 +300,20 @@ ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
  * ```
  * Parse.Cloud.afterDelete('MyCustomClass', async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.afterDelete(Parse.User, async (request) => {
  *   // code here
- * })
+ * }, { ...validationObject });
  *```
  *
  * @method afterDelete
  * @name Parse.Cloud.afterDelete
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after delete function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run after a delete. This function can be async and should take just one parameter, {@link Parse.Cloud.TriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -317,18 +335,20 @@ ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeFind('MyCustomClass', async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.beforeFind(Parse.User, async (request) => {
  *   // code here
- * })
+ * }, { ...validationObject });
  *```
  *
  * @method beforeFind
  * @name Parse.Cloud.beforeFind
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before find function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a find. This function can be async and should take just one parameter, {@link Parse.Cloud.BeforeFindRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.BeforeFindRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -350,18 +370,20 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
  * ```
  * Parse.Cloud.afterFind('MyCustomClass', async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.afterFind(Parse.User, async (request) => {
  *   // code here
- * })
+ * }, { ...validationObject });
  *```
  *
  * @method afterFind
  * @name Parse.Cloud.afterFind
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after find function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a find. This function can be async and should take just one parameter, {@link Parse.Cloud.AfterFindRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.AfterFindRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
   const className = getClassName(parseClass);
@@ -382,13 +404,19 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeSaveFile(async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.beforeSaveFile(async (request) => {
+ *   // code here
+ * }, { ...validationObject });
  *```
  *
  * @method beforeSaveFile
  * @name Parse.Cloud.beforeSaveFile
  * @param {Function} func The function to run before saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSaveFile = function (handler, validationHandler) {
   triggers.addFileTrigger(
@@ -407,13 +435,19 @@ ParseCloud.beforeSaveFile = function (handler, validationHandler) {
  * ```
  * Parse.Cloud.afterSaveFile(async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.afterSaveFile(async (request) => {
+ *  // code here
+ * }, { ...validationObject });
  *```
  *
  * @method afterSaveFile
  * @name Parse.Cloud.afterSaveFile
  * @param {Function} func The function to run after saving a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterSaveFile = function (handler, validationHandler) {
   triggers.addFileTrigger(
@@ -432,13 +466,19 @@ ParseCloud.afterSaveFile = function (handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeDeleteFile(async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.beforeDeleteFile(async (request) => {
+ *   // code here
+ * }, { ...validationObject });
  *```
  *
  * @method beforeDeleteFile
  * @name Parse.Cloud.beforeDeleteFile
  * @param {Function} func The function to run before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
   triggers.addFileTrigger(
@@ -457,13 +497,19 @@ ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
  * ```
  * Parse.Cloud.afterDeleteFile(async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.afterDeleteFile(async (request) => {
+ *   // code here
+ * }, { ...validationObject });
  *```
  *
  * @method afterDeleteFile
  * @name Parse.Cloud.afterDeleteFile
  * @param {Function} func The function to after before deleting a file. This function can be async and should take just one parameter, {@link Parse.Cloud.FileTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterDeleteFile = function (handler, validationHandler) {
   triggers.addFileTrigger(
@@ -482,13 +528,19 @@ ParseCloud.afterDeleteFile = function (handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeConnect(async (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.beforeConnect(async (request) => {
+ *   // code here
+ * }, { ...validationObject });
  *```
  *
  * @method beforeConnect
  * @name Parse.Cloud.beforeConnect
  * @param {Function} func The function to before connection is made. This function can be async and should take just one parameter, {@link Parse.Cloud.ConnectTriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.ConnectTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeConnect = function (handler, validationHandler) {
   triggers.addConnectTrigger(
@@ -508,18 +560,20 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
  * ```
  * Parse.Cloud.beforeSubscribe('MyCustomClass', (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
  *
  * Parse.Cloud.beforeSubscribe(Parse.User, (request) => {
  *   // code here
- * })
+ * }, { ...validationObject });
  *```
  *
  * @method beforeSubscribe
  * @name Parse.Cloud.beforeSubscribe
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the before subscription function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run before a subscription. This function can be async and should take one parameter, a {@link Parse.Cloud.TriggerRequest}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
@@ -544,14 +598,20 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  * ```
  * Parse.Cloud.afterLiveQueryEvent('MyCustomClass', (request) => {
  *   // code here
- * })
+ * }, (request) => {
+ *   // validation code here
+ * });
+ *
+ * Parse.Cloud.afterLiveQueryEvent('MyCustomClass', (request) => {
+ *   // code here
+ * }, { ...validationObject });
  *```
  *
  * @method afterLiveQueryEvent
  * @name Parse.Cloud.afterLiveQueryEvent
  * @param {(String|Parse.Object)} arg1 The Parse.Object subclass to register the after live query event function for. This can instead be a String that is the className of the subclass.
  * @param {Function} func The function to run after a live query event. This function can be async and should take one parameter, a {@link Parse.Cloud.LiveQueryEventTrigger}.
- * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
+ * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.LiveQueryEventTrigger}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterLiveQueryEvent = function (
   parseClass,
@@ -669,29 +729,12 @@ module.exports = ParseCloud;
  */
 
 /**
- ```
-Parse.Cloud.beforeSave('ClassName', request => {
-  // request.object.get('admin') cannot be changed and will default to 'false'
-  // request.object.get('name') is defined and longer than 5, and user making the object will have set firstName, lastName, and email.
-},{
-  requireUser: true,
-  requireUserKeys:['firstName','lastName','email'],
-  fields: {
-    name: {
-      type: String,
-      default: 'default',
-      options: val => {
-        return val.length > 5;
-      },
-      error: 'name must be longer than 5 characters'
-    },
-    admin: {
-      default: false,
-      constant: true
-    }
-  }
-})
- ```
+ * @interface Parse.Cloud.JobRequest
+ * @property {Object} params The params passed to the background job.
+ * @property {function} message If message is called with a string argument, will update the current message to be stored in the job status.
+ */
+
+/**
  * @interface Parse.Cloud.ValidatorObject
  * @property {Boolean} requireUser whether the cloud trigger requires a user.
  * @property {Boolean} requireMaster whether the cloud trigger requires a master key.
@@ -709,10 +752,4 @@ Parse.Cloud.beforeSave('ClassName', request => {
  * @property {Any} fields.field.default default value if field is `null`, or initial value `constant` is `true`.
  * @property {Array|function|Any} fields.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
  * @property {String} fields.field.error custom error message if field is invalid.
- */
-
-/**
- * @interface Parse.Cloud.JobRequest
- * @property {Object} params The params passed to the background job.
- * @property {function} message If message is called with a string argument, will update the current message to be stored in the job status.
  */
