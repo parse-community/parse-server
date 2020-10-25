@@ -304,19 +304,19 @@ describe('Parse.File testing', () => {
     let firstName;
     let secondName;
 
-    const firstSave = file.save().then(function () {
+    const firstSave = file.save().then(function() {
       firstName = file.name();
     });
-    const secondSave = file.save().then(function () {
+    const secondSave = file.save().then(function() {
       secondName = file.name();
     });
 
     Promise.all([firstSave, secondSave]).then(
-      function () {
+      function() {
         equal(firstName, secondName);
         done();
       },
-      function (error) {
+      function(error) {
         ok(false, error);
         done();
       }
