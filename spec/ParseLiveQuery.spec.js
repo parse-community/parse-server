@@ -1,6 +1,5 @@
 'use strict';
-const UserController = require('../lib/Controllers/UserController')
-  .UserController;
+const UserController = require('../lib/Controllers/UserController').UserController;
 const Config = require('../lib/Config');
 const validatorFail = () => {
   throw 'you are not authorized';
@@ -855,10 +854,7 @@ describe('ParseLiveQuery', function () {
           const userController = new UserController(emailAdapter, 'test', {
             verifyUserEmails: true,
           });
-          userController.verifyEmail(
-            foundUser.username,
-            foundUser._email_verify_token
-          );
+          userController.verifyEmail(foundUser.username, foundUser._email_verify_token);
         });
     });
   });

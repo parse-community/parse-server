@@ -149,9 +149,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please login to continue.'
-        );
+        expect(error.message).toEqual('Validation failed. Please login to continue.');
         done();
       });
   });
@@ -195,9 +193,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please specify data for a.'
-        );
+        expect(error.message).toEqual('Validation failed. Please specify data for a.');
         done();
       });
   });
@@ -218,9 +214,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please specify data for a.'
-        );
+        expect(error.message).toEqual('Validation failed. Please specify data for a.');
         done();
       });
   });
@@ -265,9 +259,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Invalid type for data. Expected: array'
-        );
+        expect(error.message).toEqual('Validation failed. Invalid type for data. Expected: array');
         done();
       });
   });
@@ -292,9 +284,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Invalid type for data. Expected: string'
-        );
+        expect(error.message).toEqual('Validation failed. Invalid type for data. Expected: string');
         done();
       });
   });
@@ -346,9 +336,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please specify data for data.'
-        );
+        expect(error.message).toEqual('Validation failed. Please specify data for data.');
         done();
       });
   });
@@ -376,9 +364,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Invalid option for data. Expected: a'
-        );
+        expect(error.message).toEqual('Validation failed. Invalid option for data. Expected: a');
         done();
       });
   });
@@ -406,9 +392,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Invalid option for data. Expected: a, b'
-        );
+        expect(error.message).toEqual('Validation failed. Invalid option for data. Expected: a, b');
         done();
       });
   });
@@ -439,9 +423,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Expected data to be between 1 and 5.'
-        );
+        expect(error.message).toEqual('Validation failed. Expected data to be between 1 and 5.');
         done();
       });
   });
@@ -470,9 +452,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. String should be at least 5 characters'
-        );
+        expect(error.message).toEqual('Validation failed. String should be at least 5 characters');
         done();
       });
   });
@@ -528,9 +508,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Invalid value for data.'
-        );
+        expect(error.message).toEqual('Validation failed. Invalid value for data.');
         done();
       });
   });
@@ -602,9 +580,7 @@ describe('cloud validator', () => {
       fail('should not have been able to save without userkey');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-      expect(error.message).toEqual(
-        'Validation failed. Please set data for name on your account.'
-      );
+      expect(error.message).toEqual('Validation failed. Please set data for name on your account.');
       done();
     }
   });
@@ -754,9 +730,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please login to continue.'
-        );
+        expect(error.message).toEqual('Validation failed. Please login to continue.');
         done();
       });
   });
@@ -808,9 +782,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please login to continue.'
-        );
+        expect(error.message).toEqual('Validation failed. Please login to continue.');
         done();
       });
   });
@@ -835,9 +807,7 @@ describe('cloud validator', () => {
       })
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual(
-          'Validation failed. Please specify data for bar.'
-        );
+        expect(error.message).toEqual('Validation failed. Please specify data for bar.');
         done();
       });
   });

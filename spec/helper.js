@@ -1,7 +1,6 @@
 'use strict';
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL =
-  process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -29,15 +28,11 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
   .default;
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
-const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
-  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 
-const mongoURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const postgresURI =
-  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 // need to bind for mocking mocha
 
@@ -129,22 +124,17 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       let parseServer = undefined;
-      const newConfiguration = Object.assign(
-        {},
-        defaultConfiguration,
-        changedConfiguration,
-        {
-          serverStartComplete: error => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(parseServer);
-            }
-          },
-          mountPath: '/1',
-          port,
-        }
-      );
+      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        serverStartComplete: error => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(parseServer);
+          }
+        },
+        mountPath: '/1',
+        port,
+      });
       cache.clear();
       parseServer = ParseServer.start(newConfiguration);
       parseServer.app.use(require('./testing-routes').router);
@@ -181,10 +171,7 @@ beforeEach(done => {
   TestUtils.destroyAllDataPermanently(true)
     .catch(error => {
       // For tests that connect to their own mongo, there won't be any data to delete.
-      if (
-        error.message === 'ns not found' ||
-        error.message.startsWith('connect ECONNREFUSED')
-      ) {
+      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
         return;
       } else {
         fail(error);
@@ -203,9 +190,7 @@ beforeEach(done => {
 afterEach(function (done) {
   const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
-      fail(
-        'There were open connections to the server left after the test finished'
-      );
+      fail('There were open connections to the server left after the test finished');
     }
     TestUtils.destroyAllDataPermanently(true).then(done, done);
   };

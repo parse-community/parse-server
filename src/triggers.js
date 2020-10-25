@@ -53,10 +53,7 @@ function validateClassNameForTriggers(className, type) {
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
   }
-  if (
-    (type === Types.beforeLogin || type === Types.afterLogin) &&
-    className !== '_User'
-  ) {
+  if ((type === Types.beforeLogin || type === Types.afterLogin) && className !== '_User') {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the _User class is allowed for the beforeLogin and afterLogin triggers';
@@ -121,12 +118,7 @@ function get(category, name, applicationId) {
   return store[lastComponent];
 }
 
-export function addFunction(
-  functionName,
-  handler,
-  validationHandler,
-  applicationId
-) {
+export function addFunction(functionName, handler, validationHandler, applicationId) {
   add(Category.Functions, functionName, handler, applicationId);
   add(Category.Validators, functionName, validationHandler, applicationId);
 }
@@ -135,51 +127,20 @@ export function addJob(jobName, handler, applicationId) {
   add(Category.Jobs, jobName, handler, applicationId);
 }
 
-export function addTrigger(
-  type,
-  className,
-  handler,
-  applicationId,
-  validationHandler
-) {
+export function addTrigger(type, className, handler, applicationId, validationHandler) {
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
-  add(
-    Category.Validators,
-    `${type}.${className}`,
-    validationHandler,
-    applicationId
-  );
+  add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
 }
 
-export function addFileTrigger(
-  type,
-  handler,
-  applicationId,
-  validationHandler
-) {
+export function addFileTrigger(type, handler, applicationId, validationHandler) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
-  add(
-    Category.Validators,
-    `${type}.${FileClassName}`,
-    validationHandler,
-    applicationId
-  );
+  add(Category.Validators, `${type}.${FileClassName}`, validationHandler, applicationId);
 }
 
-export function addConnectTrigger(
-  type,
-  handler,
-  applicationId,
-  validationHandler
-) {
+export function addConnectTrigger(type, handler, applicationId, validationHandler) {
   add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
-  add(
-    Category.Validators,
-    `${type}.${ConnectClassName}`,
-    validationHandler,
-    applicationId
-  );
+  add(Category.Validators, `${type}.${ConnectClassName}`, validationHandler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -211,11 +172,7 @@ export function getFileTrigger(type, applicationId) {
   return getTrigger(FileClassName, type, applicationId);
 }
 
-export function triggerExists(
-  className: string,
-  type: string,
-  applicationId: string
-): boolean {
+export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return getTrigger(className, type, applicationId) != undefined;
 }
 
@@ -225,9 +182,7 @@ export function getFunction(functionName, applicationId) {
 
 export function getFunctionNames(applicationId) {
   const store =
-    (_triggerStore[applicationId] &&
-      _triggerStore[applicationId][Category.Functions]) ||
-    {};
+    (_triggerStore[applicationId] && _triggerStore[applicationId][Category.Functions]) || {};
   const functionNames = [];
   const extractFunctionNames = (namespace, store) => {
     Object.keys(store).forEach(name => {
@@ -308,15 +263,7 @@ export function getRequestObject(
   return request;
 }
 
-export function getRequestQueryObject(
-  triggerType,
-  auth,
-  query,
-  count,
-  config,
-  context,
-  isGet
-) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, context, isGet) {
   isGet = !!isGet;
 
   var request = {
@@ -371,11 +318,7 @@ export function getResponseObject(request, resolve, reject) {
       ) {
         return resolve(response);
       }
-      if (
-        response &&
-        typeof response === 'object' &&
-        request.triggerName === Types.afterSave
-      ) {
+      if (response && typeof response === 'object' && request.triggerName === Types.afterSave) {
         return resolve(response);
       }
       if (request.triggerName === Types.afterSave) {
@@ -417,13 +360,7 @@ function logTriggerAfterHook(triggerType, className, input, auth) {
   );
 }
 
-function logTriggerSuccessBeforeHook(
-  triggerType,
-  className,
-  input,
-  result,
-  auth
-) {
+function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
   logger.info(
@@ -453,14 +390,7 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   );
 }
 
-export function maybeRunAfterFindTrigger(
-  triggerType,
-  auth,
-  className,
-  objects,
-  config,
-  query
-) {
+export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config, query) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
@@ -479,13 +409,7 @@ export function maybeRunAfterFindTrigger(
         reject(error);
       }
     );
-    logTriggerSuccessBeforeHook(
-      triggerType,
-      className,
-      'AfterFind',
-      JSON.stringify(objects),
-      auth
-    );
+    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
       object.className = className;
@@ -608,13 +532,11 @@ export function maybeRunQueryTrigger(
         }
         if (requestObject.includeReadPreference) {
           restOptions = restOptions || {};
-          restOptions.includeReadPreference =
-            requestObject.includeReadPreference;
+          restOptions.includeReadPreference = requestObject.includeReadPreference;
         }
         if (requestObject.subqueryReadPreference) {
           restOptions = restOptions || {};
-          restOptions.subqueryReadPreference =
-            requestObject.subqueryReadPreference;
+          restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
         }
         return {
           restWhere,
@@ -733,10 +655,7 @@ function builtInTriggerValidator(options, request) {
 
     if (!opts.includes(val)) {
       throw (
-        opt.error ||
-        `Validation failed. Invalid option for ${key}. Expected: ${opts.join(
-          ', '
-        )}`
+        opt.error || `Validation failed. Invalid option for ${key}. Expected: ${opts.join(', ')}`
       );
     }
   };
@@ -826,11 +745,7 @@ export function maybeRunTrigger(
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
-    var trigger = getTrigger(
-      parseObject.className,
-      triggerType,
-      config.applicationId
-    );
+    var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(
       triggerType,
@@ -879,10 +794,7 @@ export function maybeRunTrigger(
     // to the RestWrite.execute() call.
     return Promise.resolve()
       .then(() => {
-        return maybeRunValidator(
-          request,
-          `${triggerType}.${parseObject.className}`
-        );
+        return maybeRunValidator(request, `${triggerType}.${parseObject.className}`);
       })
       .then(() => {
         const promise = trigger(request);
@@ -891,12 +803,7 @@ export function maybeRunTrigger(
           triggerType === Types.afterDelete ||
           triggerType === Types.afterLogin
         ) {
-          logTriggerAfterHook(
-            triggerType,
-            parseObject.className,
-            parseObject.toJSON(),
-            auth
-          );
+          logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
         }
         // beforeSave is expected to return null (nothing)
         if (triggerType === Types.beforeSave) {
@@ -928,15 +835,8 @@ export function inflate(data, restObject) {
   return Parse.Object.fromJSON(copy);
 }
 
-export function runLiveQueryEventHandlers(
-  data,
-  applicationId = Parse.applicationId
-) {
-  if (
-    !_triggerStore ||
-    !_triggerStore[applicationId] ||
-    !_triggerStore[applicationId].LiveQuery
-  ) {
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
     return;
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
@@ -967,21 +867,11 @@ export function getRequestFileObject(triggerType, auth, fileObject, config) {
   return request;
 }
 
-export async function maybeRunFileTrigger(
-  triggerType,
-  fileObject,
-  config,
-  auth
-) {
+export async function maybeRunFileTrigger(triggerType, fileObject, config, auth) {
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
-      const request = getRequestFileObject(
-        triggerType,
-        auth,
-        fileObject,
-        config
-      );
+      const request = getRequestFileObject(triggerType, auth, fileObject, config);
       await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
       const result = await fileTrigger(request);
       logTriggerSuccessBeforeHook(
@@ -1007,11 +897,7 @@ export async function maybeRunFileTrigger(
 }
 
 export async function maybeRunConnectTrigger(triggerType, request) {
-  const trigger = getTrigger(
-    ConnectClassName,
-    triggerType,
-    Parse.applicationId
-  );
+  const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
   if (!trigger) {
     return;
   }
@@ -1020,11 +906,7 @@ export async function maybeRunConnectTrigger(triggerType, request) {
   return trigger(request);
 }
 
-export async function maybeRunSubscribeTrigger(
-  triggerType,
-  className,
-  request
-) {
+export async function maybeRunSubscribeTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
   if (!trigger) {
     return;
@@ -1042,11 +924,7 @@ export async function maybeRunSubscribeTrigger(
   request.query = query;
 }
 
-export async function maybeRunAfterEventTrigger(
-  triggerType,
-  className,
-  request
-) {
+export async function maybeRunAfterEventTrigger(triggerType, className, request) {
   const trigger = getTrigger(className, triggerType, Parse.applicationId);
   if (!trigger) {
     return;

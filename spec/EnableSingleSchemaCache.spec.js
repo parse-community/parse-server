@@ -53,6 +53,6 @@ describe('Enable single schema cache', () => {
   });
 });
 
-const fakeRequestForConfig = function() {
+const fakeRequestForConfig = function () {
   return Config.get('test');
 };

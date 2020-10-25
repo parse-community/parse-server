@@ -16,10 +16,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
     Parse.Object.saveAll([obj0, obj1])
       .then(() => {
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'cursor'
-        ).and.callThrough();
+        spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
         const query = new Parse.Query('MyObject');
         query.equalTo('boolKey', false);
@@ -28,16 +25,12 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results.length).toBe(1);
           expect(results[0].get('boolKey')).toBe(false);
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference = true;
-                expect(call.args[0].options.readPreference.mode).toBe(
-                  ReadPreference.PRIMARY
-                );
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = true;
+              expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.PRIMARY);
+            }
+          });
 
           expect(myObjectReadPreference).toBe(true);
 
@@ -48,9 +41,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should preserve the read preference set (#4831)', async () => {
-    const {
-      MongoStorageAdapter,
-    } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
     const adapterOptions = {
       uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
       mongoOptions: {
@@ -82,9 +73,7 @@ describe_only_db('mongo')('Read preference option', () => {
     databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
       if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
         myObjectReadPreference = true;
-        expect(call.args[0].options.readPreference.mode).toBe(
-          ReadPreference.NEAREST
-        );
+        expect(call.args[0].options.readPreference.mode).toBe(ReadPreference.NEAREST);
       }
     });
 
@@ -116,14 +105,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -158,14 +144,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -201,14 +184,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(true);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -247,14 +227,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(true);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -293,14 +270,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(true);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -335,18 +309,13 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
-          expect(myObjectReadPreference).toEqual(
-            ReadPreference.PRIMARY_PREFERRED
-          );
+          expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY_PREFERRED);
 
           done();
         })
@@ -379,18 +348,13 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
-          expect(myObjectReadPreference).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -423,14 +387,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(results[0].get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.NEAREST);
 
@@ -463,14 +424,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(result.get('boolKey')).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -509,14 +467,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(body.boolKey).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -539,10 +494,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        url:
-          'http://localhost:8378/1/classes/MyObject/' +
-          obj0.id +
-          '?readPreference=SECONDARY',
+        url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -553,14 +505,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(response.data.boolKey).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -587,10 +536,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        url:
-          'http://localhost:8378/1/classes/MyObject/' +
-          obj0.id +
-          '?readPreference=SECONDARY',
+        url: 'http://localhost:8378/1/classes/MyObject/' + obj0.id + '?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -601,18 +547,13 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(response.data.boolKey).toBe(false);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
-          expect(myObjectReadPreference).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -648,14 +589,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -678,8 +616,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        url:
-          'http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY',
+        url: 'http://localhost:8378/1/classes/MyObject?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -690,14 +627,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -724,8 +658,7 @@ describe_only_db('mongo')('Read preference option', () => {
 
       request({
         method: 'GET',
-        url:
-          'http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY',
+        url: 'http://localhost:8378/1/classes/MyObject/?readPreference=SECONDARY',
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
@@ -736,18 +669,13 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(response.data.results.length).toEqual(2);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
-          expect(myObjectReadPreference).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -779,14 +707,11 @@ describe_only_db('mongo')('Read preference option', () => {
           expect(result).toBe(1);
 
           let myObjectReadPreference = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-                myObjectReadPreference =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
+              myObjectReadPreference = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
@@ -796,7 +721,7 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should change read preference for `aggregate` using `beforeFind`', async() => {
+  it('should change read preference for `aggregate` using `beforeFind`', async () => {
     // Save objects
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -812,7 +737,7 @@ describe_only_db('mongo')('Read preference option', () => {
     spyOn(databaseAdapter.database.serverConfig, 'startSession').and.callThrough();
     // Query
     const query = new Parse.Query('MyObject');
-    const results = await query.aggregate([{match:{boolKey: false}}]);
+    const results = await query.aggregate([{ match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;
@@ -824,7 +749,7 @@ describe_only_db('mongo')('Read preference option', () => {
     expect(readPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for `find` using query option', async() => {
+  it('should change read preference for `find` using query option', async () => {
     // Save objects
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -844,14 +769,13 @@ describe_only_db('mongo')('Read preference option', () => {
     let myObjectReadPreference = null;
     databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
       if (call.args[0].ns.collection.indexOf('MyObject') >= 0) {
-        myObjectReadPreference =
-          call.args[0].options.readPreference.mode;
+        myObjectReadPreference = call.args[0].options.readPreference.mode;
       }
     });
     expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
   });
 
-  it('should change read preference for `aggregate` using query option', async() => {
+  it('should change read preference for `aggregate` using query option', async () => {
     // Save objects
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -864,7 +788,7 @@ describe_only_db('mongo')('Read preference option', () => {
     // Query
     const query = new Parse.Query('MyObject');
     query.readPreference('SECONDARY');
-    const results = await query.aggregate([{match:{boolKey: false}}]);
+    const results = await query.aggregate([{ match: { boolKey: false } }]);
     // Validate
     expect(results.length).toBe(1);
     let readPreference = null;
@@ -907,32 +831,22 @@ describe_only_db('mongo')('Read preference option', () => {
           const firstResult = results[0];
           expect(firstResult.get('boolKey')).toBe(false);
           expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-          expect(
-            firstResult
-              .get('myObject1')
-              .get('myObject0')
-              .get('boolKey')
-          ).toBe(false);
+          expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
 
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
@@ -976,38 +890,26 @@ describe_only_db('mongo')('Read preference option', () => {
           const firstResult = results[0];
           expect(firstResult.get('boolKey')).toBe(false);
           expect(firstResult.get('myObject1').get('boolKey')).toBe(true);
-          expect(
-            firstResult
-              .get('myObject1')
-              .get('myObject0')
-              .get('boolKey')
-          ).toBe(false);
+          expect(firstResult.get('myObject1').get('myObject0').get('boolKey')).toBe(false);
 
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1053,28 +955,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1121,28 +1016,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1187,22 +1075,17 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
@@ -1252,28 +1135,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1319,28 +1195,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1387,28 +1256,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })
@@ -1469,28 +1331,21 @@ describe_only_db('mongo')('Read preference option', () => {
           let myObjectReadPreference0 = null;
           let myObjectReadPreference1 = null;
           let myObjectReadPreference2 = null;
-          databaseAdapter.database.serverConfig.cursor.calls
-            .all()
-            .forEach(call => {
-              if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
-                myObjectReadPreference0 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
-                myObjectReadPreference1 =
-                  call.args[0].options.readPreference.mode;
-              }
-              if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
-                myObjectReadPreference2 =
-                  call.args[0].options.readPreference.mode;
-              }
-            });
+          databaseAdapter.database.serverConfig.cursor.calls.all().forEach(call => {
+            if (call.args[0].ns.collection.indexOf('MyObject0') >= 0) {
+              myObjectReadPreference0 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject1') >= 0) {
+              myObjectReadPreference1 = call.args[0].options.readPreference.mode;
+            }
+            if (call.args[0].ns.collection.indexOf('MyObject2') >= 0) {
+              myObjectReadPreference2 = call.args[0].options.readPreference.mode;
+            }
+          });
 
           expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
           expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
-          expect(myObjectReadPreference2).toEqual(
-            ReadPreference.SECONDARY_PREFERRED
-          );
+          expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
           done();
         })

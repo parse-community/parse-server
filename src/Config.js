@@ -33,18 +33,13 @@ export class Config {
           cacheInfo.schemaCacheTTL,
           cacheInfo.enableSingleSchemaCache
         );
-        config.database = new DatabaseController(
-          cacheInfo.databaseController.adapter,
-          schemaCache
-        );
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
       } else {
         config[key] = cacheInfo[key];
       }
     });
     config.mount = removeTrailingSlash(mount);
-    config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(
-      config
-    );
+    config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
     config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(
       config
     );
@@ -99,10 +94,7 @@ export class Config {
     }
 
     if (publicServerURL) {
-      if (
-        !publicServerURL.startsWith('http://') &&
-        !publicServerURL.startsWith('https://')
-      ) {
+      if (!publicServerURL.startsWith('http://') && !publicServerURL.startsWith('https://')) {
         throw 'publicServerURL should be a valid HTTPS URL starting with https://';
       }
     }
@@ -155,8 +147,7 @@ export class Config {
     if (passwordPolicy) {
       if (
         passwordPolicy.maxPasswordAge !== undefined &&
-        (typeof passwordPolicy.maxPasswordAge !== 'number' ||
-          passwordPolicy.maxPasswordAge < 0)
+        (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)
       ) {
         throw 'passwordPolicy.maxPasswordAge must be a positive number';
       }
@@ -171,9 +162,7 @@ export class Config {
 
       if (passwordPolicy.validatorPattern) {
         if (typeof passwordPolicy.validatorPattern === 'string') {
-          passwordPolicy.validatorPattern = new RegExp(
-            passwordPolicy.validatorPattern
-          );
+          passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
         } else if (!(passwordPolicy.validatorPattern instanceof RegExp)) {
           throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
         }
@@ -294,22 +283,15 @@ export class Config {
       return undefined;
     }
     var now = new Date();
-    return new Date(
-      now.getTime() + this.emailVerifyTokenValidityDuration * 1000
-    );
+    return new Date(now.getTime() + this.emailVerifyTokenValidityDuration * 1000);
   }
 
   generatePasswordResetTokenExpiresAt() {
-    if (
-      !this.passwordPolicy ||
-      !this.passwordPolicy.resetTokenValidityDuration
-    ) {
+    if (!this.passwordPolicy || !this.passwordPolicy.resetTokenValidityDuration) {
       return undefined;
     }
     const now = new Date();
-    return new Date(
-      now.getTime() + this.passwordPolicy.resetTokenValidityDuration * 1000
-    );
+    return new Date(now.getTime() + this.passwordPolicy.resetTokenValidityDuration * 1000);
   }
 
   generateSessionExpiresAt() {
@@ -321,10 +303,7 @@ export class Config {
   }
 
   get invalidLinkURL() {
-    return (
-      this.customPages.invalidLink ||
-      `${this.publicServerURL}/apps/invalid_link.html`
-    );
+    return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
   }
 
   get invalidVerificationLinkURL() {
@@ -336,16 +315,12 @@ export class Config {
 
   get linkSendSuccessURL() {
     return (
-      this.customPages.linkSendSuccess ||
-      `${this.publicServerURL}/apps/link_send_success.html`
+      this.customPages.linkSendSuccess || `${this.publicServerURL}/apps/link_send_success.html`
     );
   }
 
   get linkSendFailURL() {
-    return (
-      this.customPages.linkSendFail ||
-      `${this.publicServerURL}/apps/link_send_fail.html`
-    );
+    return this.customPages.linkSendFail || `${this.publicServerURL}/apps/link_send_fail.html`;
   }
 
   get verifyEmailSuccessURL() {
@@ -356,10 +331,7 @@ export class Config {
   }
 
   get choosePasswordURL() {
-    return (
-      this.customPages.choosePassword ||
-      `${this.publicServerURL}/apps/choose_password`
-    );
+    return this.customPages.choosePassword || `${this.publicServerURL}/apps/choose_password`;
   }
 
   get requestResetPasswordURL() {

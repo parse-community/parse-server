@@ -65,8 +65,7 @@ module.exports.ParseServerOptions = {
   },
   cacheTTL: {
     env: 'PARSE_SERVER_CACHE_TTL',
-    help:
-      'Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)',
+    help: 'Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)',
     action: parsers.numberParser('cacheTTL'),
     default: 5000,
   },
@@ -80,8 +79,7 @@ module.exports.ParseServerOptions = {
   },
   cluster: {
     env: 'PARSE_SERVER_CLUSTER',
-    help:
-      'Run with cluster, optionally set the number of processes default to os.cpus().length',
+    help: 'Run with cluster, optionally set the number of processes default to os.cpus().length',
     action: parsers.numberOrBooleanParser,
   },
   collectionPrefix: {
@@ -107,8 +105,7 @@ module.exports.ParseServerOptions = {
   },
   databaseURI: {
     env: 'PARSE_SERVER_DATABASE_URI',
-    help:
-      'The full URI to your database. Supported databases are mongodb or postgres.',
+    help: 'The full URI to your database. Supported databases are mongodb or postgres.',
     required: true,
     default: 'mongodb://localhost:27017/parse',
   },
@@ -154,8 +151,7 @@ module.exports.ParseServerOptions = {
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
-    help:
-      'Sets wether we should expire the inactive sessions, defaults to true',
+    help: 'Sets wether we should expire the inactive sessions, defaults to true',
     action: parsers.booleanParser,
     default: true,
   },
@@ -205,8 +201,7 @@ module.exports.ParseServerOptions = {
   },
   liveQueryServerOptions: {
     env: 'PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS',
-    help:
-      'Live query server configuration options (will start the liveQuery server)',
+    help: 'Live query server configuration options (will start the liveQuery server)',
     action: parsers.objectParser,
   },
   loggerAdapter: {
@@ -220,8 +215,7 @@ module.exports.ParseServerOptions = {
   },
   logsFolder: {
     env: 'PARSE_SERVER_LOGS_FOLDER',
-    help:
-      "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
+    help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
     default: './logs',
   },
   masterKey: {
@@ -231,8 +225,7 @@ module.exports.ParseServerOptions = {
   },
   masterKeyIps: {
     env: 'PARSE_SERVER_MASTER_KEY_IPS',
-    help:
-      'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
+    help: 'Restrict masterKey to be used by only these ips, defaults to [] (allow all ips)',
     action: parsers.arrayParser,
     default: [],
   },
@@ -310,8 +303,7 @@ module.exports.ParseServerOptions = {
   },
   protectedFields: {
     env: 'PARSE_SERVER_PROTECTED_FIELDS',
-    help:
-      'Protected fields that should be treated with extra security when fetching details.',
+    help: 'Protected fields that should be treated with extra security when fetching details.',
     action: parsers.objectParser,
     default: {
       _User: {
@@ -331,8 +323,7 @@ module.exports.ParseServerOptions = {
   },
   readOnlyMasterKey: {
     env: 'PARSE_SERVER_READ_ONLY_MASTER_KEY',
-    help:
-      'Read-only key, which has the same capabilities as MasterKey without writes',
+    help: 'Read-only key, which has the same capabilities as MasterKey without writes',
   },
   restAPIKey: {
     env: 'PARSE_SERVER_REST_API_KEY',

@@ -1,5 +1,4 @@
-const AggregateRouter = require('../lib/Routers/AggregateRouter')
-  .AggregateRouter;
+const AggregateRouter = require('../lib/Routers/AggregateRouter').AggregateRouter;
 
 describe('AggregateRouter', () => {
   it('get pipeline from Array', () => {
@@ -56,9 +55,7 @@ describe('AggregateRouter', () => {
     try {
       AggregateRouter.getPipeline(body);
     } catch (e) {
-      expect(e.message).toBe(
-        'Pipeline stages should only have one key found group, match'
-      );
+      expect(e.message).toBe('Pipeline stages should only have one key found group, match');
     }
   });
 
@@ -74,9 +71,7 @@ describe('AggregateRouter', () => {
     try {
       AggregateRouter.getPipeline(body);
     } catch (e) {
-      expect(e.message).toBe(
-        'Pipeline stages should only have one key found group, match'
-      );
+      expect(e.message).toBe('Pipeline stages should only have one key found group, match');
     }
   });
 });

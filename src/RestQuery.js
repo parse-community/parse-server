@@ -40,10 +40,7 @@ function RestQuery(
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_SESSION_TOKEN,
-          'Invalid session token'
-        );
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
       this.restWhere = {
         $and: [
@@ -175,10 +172,7 @@ function RestQuery(
       case 'subqueryReadPreference':
         break;
       default:
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad option: ' + option
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad option: ' + option);
     }
   }
 }
@@ -228,14 +222,7 @@ RestQuery.prototype.each = function (callback) {
       return !finished;
     },
     async () => {
-      const query = new RestQuery(
-        config,
-        auth,
-        className,
-        restWhere,
-        restOptions,
-        clientSDK
-      );
+      const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
       const { results } = await query.execute();
       results.forEach(callback);
       finished = results.length < restOptions.limit;
@@ -286,9 +273,7 @@ RestQuery.prototype.getUserAndRoleACL = function () {
 
   if (this.auth.user) {
     return this.auth.getUserRoles().then(roles => {
-      this.findOptions.acl = this.findOptions.acl.concat(roles, [
-        this.auth.user.id,
-      ]);
+      this.findOptions.acl = this.findOptions.acl.concat(roles, [this.auth.user.id]);
       return;
     });
   } else {
@@ -326,9 +311,7 @@ RestQuery.prototype.validateClientClassCreation = function () {
         if (hasClass !== true) {
           throw new Parse.Error(
             Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' +
-              'non-existent class: ' +
-              this.className
+            'This user is not allowed to access ' + 'non-existent class: ' + this.className
           );
         }
       });
@@ -367,10 +350,7 @@ RestQuery.prototype.replaceInQuery = function () {
   // The inQuery value must have precisely two keys - where and className
   var inQueryValue = inQueryObject['$inQuery'];
   if (!inQueryValue.where || !inQueryValue.className) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $inQuery'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $inQuery');
   }
 
   const additionalOptions = {
@@ -428,10 +408,7 @@ RestQuery.prototype.replaceNotInQuery = function () {
   // The notInQuery value must have precisely two keys - where and className
   var notInQueryValue = notInQueryObject['$notInQuery'];
   if (!notInQueryValue.where || !notInQueryValue.className) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $notInQuery'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $notInQuery');
   }
 
   const additionalOptions = {
@@ -501,10 +478,7 @@ RestQuery.prototype.replaceSelect = function () {
     !selectValue.query.className ||
     Object.keys(selectValue).length !== 2
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $select'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $select');
   }
 
   const additionalOptions = {
@@ -565,10 +539,7 @@ RestQuery.prototype.replaceDontSelect = function () {
     !dontSelectValue.query.className ||
     Object.keys(dontSelectValue).length !== 2
   ) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_QUERY,
-      'improper usage of $dontSelect'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'improper usage of $dontSelect');
   }
   const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
@@ -589,11 +560,7 @@ RestQuery.prototype.replaceDontSelect = function () {
     additionalOptions
   );
   return subquery.execute().then(response => {
-    transformDontSelect(
-      dontSelectObject,
-      dontSelectValue.key,
-      response.results
-    );
+    transformDontSelect(dontSelectObject, dontSelectValue.key, response.results);
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
   });
@@ -692,11 +659,9 @@ RestQuery.prototype.runCount = function () {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database
-    .find(this.className, this.restWhere, this.findOptions)
-    .then(c => {
-      this.response.count = c;
-    });
+  return this.config.database.find(this.className, this.restWhere, this.findOptions).then(c => {
+    this.response.count = c;
+  });
 };
 
 // Augments this.response with all pointers on an object
@@ -711,10 +676,7 @@ RestQuery.prototype.handleIncludeAll = function () {
       const includeFields = [];
       const keyFields = [];
       for (const field in schema.fields) {
-        if (
-          schema.fields[field].type &&
-          schema.fields[field].type === 'Pointer'
-        ) {
+        if (schema.fields[field].type && schema.fields[field].type === 'Pointer') {
           includeFields.push([field]);
           keyFields.push(field);
         }
@@ -868,8 +830,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
 
   if (restOptions.includeReadPreference) {
     includeRestOptions.readPreference = restOptions.includeReadPreference;
-    includeRestOptions.includeReadPreference =
-      restOptions.includeReadPreference;
+    includeRestOptions.includeReadPreference = restOptions.includeReadPreference;
   } else if (restOptions.readPreference) {
     includeRestOptions.readPreference = restOptions.readPreference;
   }
@@ -882,13 +843,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
     } else {
       where = { objectId: { $in: objectIds } };
     }
-    var query = new RestQuery(
-      config,
-      auth,
-      className,
-      where,
-      includeRestOptions
-    );
+    var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute({ op: 'get' }).then(results => {
       results.className = className;
       return Promise.resolve(results);

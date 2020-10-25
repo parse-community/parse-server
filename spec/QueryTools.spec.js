@@ -7,8 +7,8 @@ const matchesQuery = QueryTools.matchesQuery;
 
 const Item = Parse.Object.extend('Item');
 
-describe('queryHash', function() {
-  it('should always hash a query to the same string', function() {
+describe('queryHash', function () {
+  it('should always hash a query to the same string', function () {
     const q = new Parse.Query(Item);
     q.equalTo('field', 'value');
     q.exists('name');
@@ -19,7 +19,7 @@ describe('queryHash', function() {
     expect(firstHash).toBe(secondHash);
   });
 
-  it('should return equivalent hashes for equivalent queries', function() {
+  it('should return equivalent hashes for equivalent queries', function () {
     let q1 = new Parse.Query(Item);
     q1.equalTo('field', 'value');
     q1.exists('name');
@@ -68,7 +68,7 @@ describe('queryHash', function() {
     expect(firstHash).toBe(secondHash);
   });
 
-  it('should not let fields of different types appear similar', function() {
+  it('should not let fields of different types appear similar', function () {
     let q1 = new Parse.Query(Item);
     q1.lessThan('age', 30);
 
@@ -86,8 +86,8 @@ describe('queryHash', function() {
   });
 });
 
-describe('matchesQuery', function() {
-  it('matches blanket queries', function() {
+describe('matchesQuery', function () {
+  it('matches blanket queries', function () {
     const obj = {
       id: new Id('Klass', 'O1'),
       value: 12,
@@ -99,7 +99,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
-  it('matches existence queries', function() {
+  it('matches existence queries', function () {
     const obj = {
       id: new Id('Item', 'O1'),
       count: 15,
@@ -111,7 +111,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
-  it('matches queries with doesNotExist constraint', function() {
+  it('matches queries with doesNotExist constraint', function () {
     const obj = {
       id: new Id('Item', 'O1'),
       count: 15,
@@ -125,7 +125,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
-  it('matches on equality queries', function() {
+  it('matches on equality queries', function () {
     const day = new Date();
     const location = new Parse.GeoPoint({
       latitude: 37.484815,
@@ -255,7 +255,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(img, q)).toBe(false);
   });
 
-  it('matches on inequalities', function() {
+  it('matches on inequalities', function () {
     const player = {
       id: new Id('Person', 'O1'),
       score: 12,
@@ -297,7 +297,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(player, q)).toBe(true);
   });
 
-  it('matches an $or query', function() {
+  it('matches an $or query', function () {
     const player = {
       id: new Id('Player', 'P1'),
       name: 'Player 1',
@@ -313,7 +313,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(player, orQuery)).toBe(true);
   });
 
-  it('matches $regex queries', function() {
+  it('matches $regex queries', function () {
     const player = {
       id: new Id('Player', 'P1'),
       name: 'Player 1',
@@ -362,7 +362,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(player, q)).toBe(false);
   });
 
-  it('matches $nearSphere queries', function() {
+  it('matches $nearSphere queries', function () {
     let q = new Parse.Query('Checkin');
     q.near('location', new Parse.GeoPoint(20, 20));
     // With no max distance, any GeoPoint is 'near'
@@ -390,7 +390,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(pt, q)).toBe(false);
   });
 
-  it('matches $within queries', function() {
+  it('matches $within queries', function () {
     const caltrainStation = {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(37.776346, -122.394218),
@@ -444,7 +444,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(santaClara, q)).toBe(false);
   });
 
-  it('matches on subobjects with dot notation', function() {
+  it('matches on subobjects with dot notation', function () {
     const message = {
       id: new Id('Message', 'O1'),
       text: 'content',

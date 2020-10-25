@@ -1,14 +1,14 @@
 const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
 
-describe('RedisPubSub', function() {
-  beforeEach(function(done) {
+describe('RedisPubSub', function () {
+  beforeEach(function (done) {
     // Mock redis
     const createClient = jasmine.createSpy('createClient');
     jasmine.mockLibrary('redis', 'createClient', createClient);
     done();
   });
 
-  it('can create publisher', function() {
+  it('can create publisher', function () {
     RedisPubSub.createPublisher({
       redisURL: 'redisAddress',
       redisOptions: { socket_keepalive: true },
@@ -21,7 +21,7 @@ describe('RedisPubSub', function() {
     });
   });
 
-  it('can create subscriber', function() {
+  it('can create subscriber', function () {
     RedisPubSub.createSubscriber({
       redisURL: 'redisAddress',
       redisOptions: { socket_keepalive: true },
@@ -34,7 +34,7 @@ describe('RedisPubSub', function() {
     });
   });
 
-  afterEach(function() {
+  afterEach(function () {
     jasmine.restoreLibrary('redis', 'createClient');
   });
 });

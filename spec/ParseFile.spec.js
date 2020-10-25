@@ -27,9 +27,7 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.txt$/);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
-        );
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
         request({ url: b.url }).then(response => {
           const body = response.text;
           expect(body).toEqual('argle bargle');
@@ -51,9 +49,7 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.html/);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/
-        );
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
         request({ url: b.url }).then(response => {
           const body = response.text;
           try {
@@ -80,9 +76,7 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.txt$/);
-        expect(b.url).toMatch(
-          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
-        );
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
         request({ url: b.url }).then(response => {
           expect(response.text).toEqual('argle bargle');
           done();
@@ -105,9 +99,7 @@ describe('Parse.File testing', () => {
     }).then(response => {
       const b = response.data;
       expect(b.name).toMatch(/_testfile.txt$/);
-      expect(b.url).toMatch(
-        /^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/
-      );
+      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/);
       request({ url: b.url }).then(response => {
         const body = response.text;
         expect(body).toEqual('check one two');
@@ -149,9 +141,7 @@ describe('Parse.File testing', () => {
       body: 'the file body',
     }).then(response => {
       const b = response.data;
-      expect(b.url).toMatch(
-        /^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/
-      );
+      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/);
       // missing X-Parse-Master-Key header
       request({
         method: 'DELETE',
@@ -304,19 +294,19 @@ describe('Parse.File testing', () => {
     let firstName;
     let secondName;
 
-    const firstSave = file.save().then(function() {
+    const firstSave = file.save().then(function () {
       firstName = file.name();
     });
-    const secondSave = file.save().then(function() {
+    const secondSave = file.save().then(function () {
       secondName = file.name();
     });
 
     Promise.all([firstSave, secondSave]).then(
-      function() {
+      function () {
         equal(firstName, secondName);
         done();
       },
-      function(error) {
+      function (error) {
         ok(false, error);
         done();
       }
@@ -484,9 +474,7 @@ describe('Parse.File testing', () => {
       })
       .then(result => {
         const fileAgain = result.get('oldfile');
-        expect(fileAgain.url()).toEqual(
-          'http://files.parsetfss.com/test/tfss-123.txt'
-        );
+        expect(fileAgain.url()).toEqual('http://files.parsetfss.com/test/tfss-123.txt');
         done();
       })
       .catch(e => {
