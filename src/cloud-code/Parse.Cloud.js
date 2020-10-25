@@ -695,6 +695,7 @@ Parse.Cloud.beforeSave('ClassName', request => {
  * @interface Parse.Cloud.ValidatorObject
  * @property {Boolean} requireUser whether the cloud trigger requires a user.
  * @property {Boolean} requireMaster whether the cloud trigger requires a master key.
+ * @property {Boolean} validateMasterKey whether the validator should run if masterKey is provided. Defaults to false.
  *
  * @property {Array<String>|Object} requireUserKeys If set, keys required on request.user to make the request.
  * @property {String} requireUserKeys.field If requireUserKeys is an object, name of field to validate on request user

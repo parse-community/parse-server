@@ -681,6 +681,9 @@ export function maybeRunValidator(request, functionName) {
   });
 }
 function builtInTriggerValidator(options, request) {
+  if (request.master && !options.validateMasterKey) {
+    return;
+  }
   let reqUser = request.user;
   if (
     !reqUser &&

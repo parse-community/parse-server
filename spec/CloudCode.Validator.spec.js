@@ -780,6 +780,39 @@ describe('cloud validator', () => {
       });
   });
 
+  it('basic beforeSave master', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
+      requireUser: true,
+    });
+
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
+    await obj.save(null, { useMasterKey: true });
+    done();
+  });
+
+  it('basic beforeSave validateMasterKey', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
+      requireUser: true,
+      validateMasterKey: true,
+    });
+
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
+    obj
+      .save(null, { useMasterKey: true })
+      .then(() => {
+        fail('function should have failed.');
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+        expect(error.message).toEqual(
+          'Validation failed. Please login to continue.'
+        );
+        done();
+      });
+  });
+
   it('basic beforeSave requireKeys', function (done) {
     Parse.Cloud.beforeSave('beforeSaveRequire', () => {}, {
       fields: {
