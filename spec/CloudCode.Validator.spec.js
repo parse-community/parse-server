@@ -623,6 +623,121 @@ describe('cloud validator', () => {
     }
   });
 
+  it('basic beforeSave requireUserKey as admin', async function (done) {
+    Parse.Cloud.beforeSave(Parse.User, () => {}, {
+      fields: {
+        admin: {
+          default: false,
+          constant: true,
+        },
+      },
+    });
+    Parse.Cloud.define(
+      'secureFunction',
+      () => {
+        return "Here's all the secure data!";
+      },
+      {
+        requireUserKeys: {
+          admin: {
+            options: true,
+            error: 'Unauthorized.',
+          },
+        },
+      }
+    );
+    const user = new Parse.User();
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('admin', true);
+    await user.signUp();
+    expect(user.get('admin')).toBe(false);
+    try {
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Unauthorized.');
+    }
+    done();
+  });
+
+  it('basic beforeSave requireUserKey as custom function', async function (done) {
+    Parse.Cloud.beforeSave(Parse.User, () => {}, {
+      fields: {
+        accType: {
+          default: 'normal',
+          constant: true,
+        },
+      },
+    });
+    Parse.Cloud.define(
+      'secureFunction',
+      () => {
+        return "Here's all the secure data!";
+      },
+      {
+        requireUserKeys: {
+          accType: {
+            options: val => {
+              return ['admin', 'admin2'].includes(val);
+            },
+            error: 'Unauthorized.',
+          },
+        },
+      }
+    );
+    const user = new Parse.User();
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('accType', 'admin');
+    await user.signUp();
+    expect(user.get('accType')).toBe('normal');
+    try {
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Unauthorized.');
+    }
+    done();
+  });
+
+  it('basic beforeSave allow requireUserKey as custom function', async function (done) {
+    Parse.Cloud.beforeSave(Parse.User, () => {}, {
+      fields: {
+        accType: {
+          default: 'admin',
+          constant: true,
+        },
+      },
+    });
+    Parse.Cloud.define(
+      'secureFunction',
+      () => {
+        return "Here's all the secure data!";
+      },
+      {
+        requireUserKeys: {
+          accType: {
+            options: val => {
+              return ['admin', 'admin2'].includes(val);
+            },
+            error: 'Unauthorized.',
+          },
+        },
+      }
+    );
+    const user = new Parse.User();
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    await user.signUp();
+    expect(user.get('accType')).toBe('admin');
+    const result = await Parse.Cloud.run('secureFunction');
+    expect(result).toBe("Here's all the secure data!");
+    done();
+  });
+
   it('basic beforeSave requireUser', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireUser: true,

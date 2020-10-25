@@ -695,13 +695,18 @@ Parse.Cloud.beforeSave('ClassName', request => {
  * @interface Parse.Cloud.ValidatorObject
  * @property {Boolean} requireUser whether the cloud trigger requires a user.
  * @property {Boolean} requireMaster whether the cloud trigger requires a master key.
- * @property {Array<String>} requireUserKeys If set, keys required on request.user to make the request.
+ *
+ * @property {Array<String>|Object} requireUserKeys If set, keys required on request.user to make the request.
+ * @property {String} requireUserKeys.field If requireUserKeys is an object, name of field to validate on request user
+ * @property {Array|function|Any} requireUserKeys.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
+ * @property {String} requireUserKeys.field.error custom error message if field is invalid.
+ *
  * @property {Object|Array<String>} fields if an array of strings, validator will look for keys in request.params, and throw if not provided. If Object, fields to validate. If the trigger is a cloud function, `request.params` will be validated, otherwise `request.object`.
  * @property {String} fields.field name of field to validate.
  * @property {String} fields.field.type expected type of data for field.
  * @property {Boolean} fields.field.constant whether the field can be modified on the object.
  * @property {Any} fields.field.default default value if field is `null`, or initial value `constant` is `true`.
- * @property {Array|function} fields.field.options array of options that the field can be, or function to validate field. Throw an error if value is invalid.
+ * @property {Array|function|Any} fields.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
  * @property {String} fields.field.error custom error message if field is invalid.
  */
 

@@ -706,6 +706,38 @@ function builtInTriggerValidator(options, request) {
       throw `Validation failed. Please specify data for ${key}.`;
     }
   };
+
+  const validateOptions = (opt, key, val) => {
+    let opts = opt.options;
+    if (typeof opts === 'function') {
+      try {
+        const result = opts(val);
+        if (!result && result != null) {
+          throw opt.error || `Validation failed. Invalid value for ${key}.`;
+        }
+      } catch (e) {
+        if (!e) {
+          throw opt.error || `Validation failed. Invalid value for ${key}.`;
+        }
+
+        throw opt.error || e.message || e;
+      }
+      return;
+    }
+    if (!Array.isArray(opts)) {
+      opts = [opt.options];
+    }
+
+    if (!opts.includes(val)) {
+      throw (
+        opt.error ||
+        `Validation failed. Invalid option for ${key}. Expected: ${opts.join(
+          ', '
+        )}`
+      );
+    }
+  };
+
   const getType = fn => {
     const match = fn && fn.toString().match(/^\s*function (\w+)/);
     return (match ? match[1] : '').toLowerCase();
@@ -732,7 +764,7 @@ function builtInTriggerValidator(options, request) {
         if (opt.constant && request.object) {
           if (request.original) {
             request.object.set(key, request.original.get(key));
-          } else if (opt.default) {
+          } else if (opt.default != null) {
             request.object.set(key, opt.default);
           }
         }
@@ -747,46 +779,29 @@ function builtInTriggerValidator(options, request) {
             throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
           }
         }
-        let options = opt.options;
-        if (options) {
-          if (typeof options === 'function') {
-            try {
-              const result = options(val);
-              if (!result) {
-                throw (
-                  opt.error || `Validation failed. Invalid value for ${key}.`
-                );
-              }
-            } catch (e) {
-              if (!e) {
-                throw (
-                  opt.error || `Validation failed. Invalid value for ${key}.`
-                );
-              }
-              throw opt.error || e.message || e;
-            }
-          }
-          if (typeof opt.options == 'string') {
-            options = [opt.options];
-          }
-          if (!options.includes(val)) {
-            throw (
-              opt.error ||
-              `Validation failed. Invalid option for ${key}. Expected: ${options.join(
-                ', '
-              )}`
-            );
-          }
+        if (opt.options) {
+          validateOptions(opt, key, val);
         }
       }
     }
   }
-  for (const key of options.requireUserKeys || []) {
-    if (!reqUser) {
-      throw 'Please login to make this request.';
+  const userKeys = options.requireUserKeys || [];
+  if (Array.isArray(userKeys)) {
+    for (const key of userKeys) {
+      if (!reqUser) {
+        throw 'Please login to make this request.';
+      }
+
+      if (reqUser.get(key) == null) {
+        throw `Validation failed. Please set data for ${key} on your account.`;
+      }
     }
-    if (reqUser.get(key) == null) {
-      throw `Validation failed. Please set data for ${key} on your account.`;
+  } else if (typeof userKeys === 'object') {
+    for (const key in options.requireUserKeys) {
+      const opt = options.requireUserKeys[key];
+      if (opt.options) {
+        validateOptions(opt, key, reqUser.get(key));
+      }
     }
   }
 }
