@@ -101,6 +101,73 @@ describe('ParseServerRESTController', () => {
     );
   });
 
+  it('should handle response status', async () => {
+    const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
+    spyOn(router, 'tryRouteRequest').and.callThrough();
+    RESTController = ParseServerRESTController(Parse.applicationId, router);
+    const resp = await RESTController.request('POST', '/classes/MyObject');
+    const {
+      status,
+      response,
+      location,
+    } = await router.tryRouteRequest.calls.all()[0].returnValue;
+
+    expect(status).toBe(201);
+    expect(response).toEqual(resp);
+    expect(location).toBe(
+      `http://localhost:8378/1/classes/MyObject/${resp.objectId}`
+    );
+  });
+
+  it('should handle response status in batch', async () => {
+    const router = ParseServer.promiseRouter({ appId: Parse.applicationId });
+    spyOn(router, 'tryRouteRequest').and.callThrough();
+    RESTController = ParseServerRESTController(Parse.applicationId, router);
+    const resp = await RESTController.request(
+      'POST',
+      'batch',
+      {
+        requests: [
+          {
+            method: 'POST',
+            path: '/classes/MyObject',
+          },
+          {
+            method: 'POST',
+            path: '/classes/MyObject',
+          },
+        ],
+      },
+      {
+        returnStatus: true,
+      }
+    );
+    expect(resp.length).toBe(2);
+    expect(resp[0]._status).toBe(201);
+    expect(resp[1]._status).toBe(201);
+    expect(resp[0].success).toBeDefined();
+    expect(resp[1].success).toBeDefined();
+    expect(router.tryRouteRequest.calls.all().length).toBe(2);
+  });
+
+  it('properly handle existed', async done => {
+    const restController = Parse.CoreManager.getRESTController();
+    Parse.CoreManager.setRESTController(RESTController);
+    Parse.Cloud.define('handleStatus', async () => {
+      const obj = new Parse.Object('TestObject');
+      expect(obj.existed()).toBe(false);
+      await obj.save();
+      expect(obj.existed()).toBe(false);
+
+      const query = new Parse.Query('TestObject');
+      const result = await query.get(obj.id);
+      expect(result.existed()).toBe(true);
+      Parse.CoreManager.setRESTController(restController);
+      done();
+    });
+    await Parse.Cloud.run('handleStatus');
+  });
+
   if (
     (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
