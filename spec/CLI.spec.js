@@ -1,8 +1,7 @@
 'use strict';
 const commander = require('../lib/cli/utils/commander').default;
 const definitions = require('../lib/cli/definitions/parse-server').default;
-const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server')
-  .default;
+const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -14,7 +13,7 @@ const testDefinitions = {
   },
   arg2: {
     env: 'PROGRAM_ARG_2',
-    action: function(value) {
+    action: function (value) {
       const intValue = parseInt(value);
       if (!Number.isInteger(intValue)) {
         throw 'arg2 is invalid';
@@ -77,15 +76,12 @@ describe('commander additions', () => {
 
   it('should load properly use args over env', done => {
     commander.loadDefinitions(testDefinitions);
-    commander.parse(
-      ['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''],
-      {
-        PROGRAM_ARG_0: 'arg0ENVValue',
-        PROGRAM_ARG_1: 'arg1ENVValue',
-        PROGRAM_ARG_2: '4',
-        PROGRAM_ARG_4: 'arg4ENVValue',
-      }
-    );
+    commander.parse(['node', './CLI.spec.js', '--arg0', 'arg0Value', '--arg4', ''], {
+      PROGRAM_ARG_0: 'arg0ENVValue',
+      PROGRAM_ARG_1: 'arg1ENVValue',
+      PROGRAM_ARG_2: '4',
+      PROGRAM_ARG_4: 'arg4ENVValue',
+    });
     expect(commander.arg0).toEqual('arg0Value');
     expect(commander.arg1).toEqual('arg1ENVValue');
     expect(commander.arg2).toEqual(4);
@@ -109,13 +105,7 @@ describe('commander additions', () => {
     spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
     commander.parse(
-      [
-        'node',
-        './CLI.spec.js',
-        '--arg0',
-        'arg0Value',
-        './spec/configs/CLIConfig.json',
-      ],
+      ['node', './CLI.spec.js', '--arg0', 'arg0Value', './spec/configs/CLIConfig.json'],
       {
         PROGRAM_ARG_0: 'arg0ENVValue',
         PROGRAM_ARG_1: 'arg1ENVValue',
@@ -132,13 +122,7 @@ describe('commander additions', () => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
       commander.parse(
-        [
-          'node',
-          './CLI.spec.js',
-          '--arg0',
-          'arg0Value',
-          './spec/configs/CLIConfigFail.json',
-        ],
+        ['node', './CLI.spec.js', '--arg0', 'arg0Value', './spec/configs/CLIConfigFail.json'],
         {
           PROGRAM_ARG_0: 'arg0ENVValue',
           PROGRAM_ARG_1: 'arg1ENVValue',
@@ -151,11 +135,7 @@ describe('commander additions', () => {
   it('should fail when too many apps are set', done => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
-      commander.parse([
-        'node',
-        './CLI.spec.js',
-        './spec/configs/CLIConfigFailTooManyApps.json',
-      ]);
+      commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigFailTooManyApps.json']);
     }).toThrow('Multiple apps are not supported');
     done();
   });
@@ -163,11 +143,7 @@ describe('commander additions', () => {
   it('should load config from apps', done => {
     spyOn(console, 'log').and.callFake(() => {});
     commander.loadDefinitions(testDefinitions);
-    commander.parse([
-      'node',
-      './CLI.spec.js',
-      './spec/configs/CLIConfigApps.json',
-    ]);
+    commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigApps.json']);
     const options = commander.getOptions();
     expect(options.arg1).toBe('my_app');
     expect(options.arg2).toBe(8888);
@@ -179,11 +155,7 @@ describe('commander additions', () => {
   it('should fail when passing an invalid arguement', done => {
     commander.loadDefinitions(testDefinitions);
     expect(() => {
-      commander.parse([
-        'node',
-        './CLI.spec.js',
-        './spec/configs/CLIConfigUnknownArg.json',
-      ]);
+      commander.parse(['node', './CLI.spec.js', './spec/configs/CLIConfigUnknownArg.json']);
     }).toThrow('error: unknown option myArg');
     done();
   });
@@ -222,10 +194,7 @@ describe('LiveQuery definitions', () => {
       if (typeof definition.env !== 'undefined') {
         expect(typeof definition.env).toBe('string');
       }
-      expect(typeof definition.help).toBe(
-        'string',
-        `help for ${key} should be a string`
-      );
+      expect(typeof definition.help).toBe('string', `help for ${key} should be a string`);
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }

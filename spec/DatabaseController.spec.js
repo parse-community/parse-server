@@ -76,9 +76,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(true);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
 
       const output = databaseController.addPointerPermissions(
         schemaController,
@@ -100,9 +98,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -127,9 +123,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
@@ -157,9 +151,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Object' });
@@ -187,9 +179,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -216,9 +206,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Pointer' });
@@ -255,9 +243,7 @@ describe('DatabaseController', function () {
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
-      schemaController.getClassLevelPermissions
-        .withArgs(CLASS_NAME)
-        .and.returnValue(clp);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'user')
         .and.returnValue({ type: 'Number' });
@@ -282,15 +268,7 @@ describe('DatabaseController', function () {
 });
 
 function buildCLP(pointerNames) {
-  const OPERATIONS = [
-    'count',
-    'find',
-    'get',
-    'create',
-    'update',
-    'delete',
-    'addField',
-  ];
+  const OPERATIONS = ['count', 'find', 'get', 'create', 'update', 'delete', 'addField'];
 
   const clp = OPERATIONS.reduce((acc, op) => {
     acc[op] = {};

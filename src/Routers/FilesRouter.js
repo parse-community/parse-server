@@ -40,9 +40,7 @@ export class FilesRouter {
     router.get('/files/:appId/metadata/:filename', this.metadataHandler);
 
     router.post('/files', function (req, res, next) {
-      next(
-        new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.')
-      );
+      next(new Parse.Error(Parse.Error.INVALID_FILE_NAME, 'Filename not provided.'));
     });
 
     router.post(
@@ -72,13 +70,11 @@ export class FilesRouter {
     const filename = req.params.filename;
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
-      filesController
-        .handleFileStream(config, filename, req, res, contentType)
-        .catch(() => {
-          res.status(404);
-          res.set('Content-Type', 'text/plain');
-          res.end('File not found.');
-        });
+      filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
     } else {
       filesController
         .getFileData(config, filename)
@@ -103,9 +99,7 @@ export class FilesRouter {
     const contentType = req.get('Content-type');
 
     if (!req.body || !req.body.length) {
-      next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.')
-      );
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Invalid file upload.'));
       return;
     }
 
@@ -243,8 +237,5 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController) {
-  return (
-    req.get('Range') &&
-    typeof filesController.adapter.handleFileStream === 'function'
-  );
+  return req.get('Range') && typeof filesController.adapter.handleFileStream === 'function';
 }

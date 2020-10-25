@@ -27,9 +27,7 @@ describe('randomString', () => {
   });
 
   it('returns unique results', () => {
-    expect(givesUniqueResults(() => cryptoUtils.randomString(10), 100)).toBe(
-      true
-    );
+    expect(givesUniqueResults(() => cryptoUtils.randomString(10), 100)).toBe(true);
   });
 });
 
@@ -52,9 +50,7 @@ describe('randomHexString', () => {
   });
 
   it('returns unique results', () => {
-    expect(givesUniqueResults(() => cryptoUtils.randomHexString(20), 100)).toBe(
-      true
-    );
+    expect(givesUniqueResults(() => cryptoUtils.randomHexString(20), 100)).toBe(true);
   });
 });
 

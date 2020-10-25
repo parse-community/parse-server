@@ -83,8 +83,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
       databaseOptions: databaseOptions2,
     });
 
-    createParseServer({ databaseAdapter: adapter }).then(done.fail, () =>
-      done()
-    );
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
   });
 });

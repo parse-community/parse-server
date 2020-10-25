@@ -298,9 +298,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
     expect(Object.keys(headers).length).toBe(4);
     expect(headers['Access-Control-Expose-Headers']).toBe(
@@ -318,21 +316,15 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
 
     AppCache.put(fakeReq.body._ApplicationId, {
       allowHeaders: [],
     });
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
   it('should append custom headers to Access-Control-Allow-Headers if allowHeaders provided', () => {
@@ -345,16 +337,10 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      'Header-1, Header-2'
-    );
-    expect(headers['Access-Control-Allow-Headers']).toContain(
-      middlewares.DEFAULT_ALLOWED_HEADERS
-    );
+    expect(headers['Access-Control-Allow-Headers']).toContain('Header-1, Header-2');
+    expect(headers['Access-Control-Allow-Headers']).toContain(middlewares.DEFAULT_ALLOWED_HEADERS);
   });
 
   it('should set default Access-Control-Allow-Origin if allowOrigin is empty', () => {
@@ -367,9 +353,7 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
     expect(headers['Access-Control-Allow-Origin']).toEqual('*');
   });
@@ -384,13 +368,9 @@ describe('middlewares', () => {
         headers[key] = value;
       },
     };
-    const allowCrossDomain = middlewares.allowCrossDomain(
-      fakeReq.body._ApplicationId
-    );
+    const allowCrossDomain = middlewares.allowCrossDomain(fakeReq.body._ApplicationId);
     allowCrossDomain(fakeReq, res, () => {});
-    expect(headers['Access-Control-Allow-Origin']).toEqual(
-      'https://parseplatform.org/'
-    );
+    expect(headers['Access-Control-Allow-Origin']).toEqual('https://parseplatform.org/');
   });
 
   it('should use user provided on field userFromJWT', done => {

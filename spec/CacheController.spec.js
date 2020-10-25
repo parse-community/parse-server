@@ -1,7 +1,6 @@
-const CacheController = require('../lib/Controllers/CacheController.js')
-  .default;
+const CacheController = require('../lib/Controllers/CacheController.js').default;
 
-describe('CacheController', function() {
+describe('CacheController', function () {
   let FakeCacheAdapter;
   const FakeAppID = 'foo';
   const KEY = 'hello';

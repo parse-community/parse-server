@@ -38,12 +38,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       })
       .then(() => {
         const config = Config.get(appId);
-        return config.database.adapter.find(
-          'TestObject',
-          { fields: {} },
-          {},
-          {}
-        );
+        return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
       })
       .then(results => {
         expect(results.length).toEqual(1);
@@ -270,11 +265,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     config.database.adapter
       .addFieldIfNotExists('_User', 'randomField', { type: 'String' })
-      .then(() =>
-        config.database.adapter.ensureUniqueness('_User', userSchema, [
-          'randomField',
-        ])
-      )
+      .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
       .then(() => {
         const user = new Parse.User();
         user.setPassword('asdf');
@@ -1115,8 +1106,7 @@ describe('miscellaneous', function () {
       request({
         method: 'DELETE',
         headers: headers,
-        url:
-          'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
+        url: 'http://localhost:8378/1/classes/GameScore/' + response.data.objectId,
       }).then(() => {
         expect(triggerTime).toEqual(2);
         done();
@@ -1278,9 +1268,7 @@ describe('miscellaneous', function () {
       },
       e => {
         expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
-        expect(e.message).toEqual(
-          'Invalid function: "somethingThatDoesDefinitelyNotExist"'
-        );
+        expect(e.message).toEqual('Invalid function: "somethingThatDoesDefinitelyNotExist"');
         done();
       }
     );
@@ -1611,9 +1599,7 @@ describe('miscellaneous', function () {
         fail('Should not succeed');
       })
       .catch(response => {
-        expect(response.data.error).toEqual(
-          'unauthorized: master key is required'
-        );
+        expect(response.data.error).toEqual('unauthorized: master key is required');
         done();
       });
   });
@@ -1756,9 +1742,7 @@ describe_only_db('mongo')('legacy _acl', () => {
       .then(() => {
         const config = Config.get('test');
         const adapter = config.database.adapter;
-        return adapter
-          ._adaptiveCollection('Report')
-          .then(collection => collection.find({}));
+        return adapter._adaptiveCollection('Report').then(collection => collection.find({}));
       })
       .then(results => {
         expect(results.length).toBe(1);

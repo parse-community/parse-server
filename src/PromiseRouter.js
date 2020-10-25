@@ -66,7 +66,7 @@ export default class PromiseRouter {
     let handler = handlers[0];
 
     if (handlers.length > 1) {
-      handler = function(req) {
+      handler = function (req) {
         return handlers.reduce((promise, handler) => {
           return promise.then(() => {
             return handler(req);
@@ -121,10 +121,7 @@ export default class PromiseRouter {
   tryRouteRequest(method, path, request) {
     var match = this.match(method, path);
     if (!match) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'cannot route ' + method + ' ' + path
-      );
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route ' + method + ' ' + path);
     }
     request.params = match.params;
     return new Promise((resolve, reject) => {
@@ -138,7 +135,7 @@ export default class PromiseRouter {
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
 function makeExpressHandler(appId, promiseHandler) {
-  return function(req, res, next) {
+  return function (req, res, next) {
     try {
       const url = maskSensitiveUrl(req);
       const body = Object.assign({}, req.body);
@@ -155,9 +152,7 @@ function makeExpressHandler(appId, promiseHandler) {
           result => {
             clearSchemaCache(req);
             if (!result.response && !result.location && !result.text) {
-              log.error(
-                'the handler did not include a "response" or a "location" field'
-              );
+              log.error('the handler did not include a "response" or a "location" field');
               throw 'control should not get here';
             }
 

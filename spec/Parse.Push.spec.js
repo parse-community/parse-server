@@ -9,11 +9,11 @@ const delayPromise = delay => {
 };
 
 describe('Parse.Push', () => {
-  const setup = function() {
+  const setup = function () {
     const sendToInstallationSpy = jasmine.createSpy();
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const badge = body.data.badge;
         const promises = installations.map(installation => {
           sendToInstallationSpy(installation);
@@ -32,7 +32,7 @@ describe('Parse.Push', () => {
         });
         return Promise.all(promises);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios', 'android'];
       },
     };
@@ -49,14 +49,8 @@ describe('Parse.Push', () => {
         const installations = [];
         while (installations.length != 10) {
           const installation = new Parse.Object('_Installation');
-          installation.set(
-            'installationId',
-            'installation_' + installations.length
-          );
-          installation.set(
-            'deviceToken',
-            'device_token_' + installations.length
-          );
+          installation.set('installationId', 'installation_' + installations.length);
+          installation.set('deviceToken', 'device_token_' + installations.length);
           installation.set('badge', installations.length);
           installation.set('originalBadge', installations.length);
           installation.set('deviceType', 'ios');
@@ -200,9 +194,7 @@ describe('Parse.Push', () => {
           try {
             expect(body.results.length).toEqual(1);
             expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-            expect(body.results[0].payload).toEqual(
-              '{"badge":"increment","alert":"Hello world!"}'
-            );
+            expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
           } catch (e) {
             jfail(e);
           }
@@ -246,7 +238,7 @@ describe('Parse.Push', () => {
       });
   });
 
-  const successfulAny = function(body, installations) {
+  const successfulAny = function (body, installations) {
     const promises = installations.map(device => {
       return Promise.resolve({
         transmitted: true,
@@ -257,7 +249,7 @@ describe('Parse.Push', () => {
     return Promise.all(promises);
   };
 
-  const provideInstallations = function(num) {
+  const provideInstallations = function (num) {
     if (!num) {
       num = 2;
     }
@@ -266,10 +258,7 @@ describe('Parse.Push', () => {
     while (installations.length !== num) {
       // add Android installations
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('deviceType', 'android');
       installations.push(installation);
@@ -279,14 +268,14 @@ describe('Parse.Push', () => {
   };
 
   const losingAdapter = {
-    send: function(body, installations) {
+    send: function (body, installations) {
       // simulate having lost an installation before this was called
       // thus invalidating our 'count' in _PushStatus
       installations.pop();
 
       return successfulAny(body, installations);
     },
-    getValidPushTypes: function() {
+    getValidPushTypes: function () {
       return ['android'];
     },
   };
@@ -346,10 +335,7 @@ describe('Parse.Push', () => {
 
     // add 1 iOS installation which we will omit & add later on
     const iOSInstallation = new Parse.Object('_Installation');
-    iOSInstallation.set(
-      'installationId',
-      'installation_' + installations.length
-    );
+    iOSInstallation.set('installationId', 'installation_' + installations.length);
     iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
     iOSInstallation.set('deviceType', 'ios');
     installations.push(iOSInstallation);
@@ -357,14 +343,14 @@ describe('Parse.Push', () => {
     reconfigureServer({
       push: {
         adapter: {
-          send: function(body, installations) {
+          send: function (body, installations) {
             // simulate having added an installation before this was called
             // thus invalidating our 'count' in _PushStatus
             installations.push(iOSInstallation);
 
             return successfulAny(body, installations);
           },
-          getValidPushTypes: function() {
+          getValidPushTypes: function () {
             return ['android'];
           },
         },
@@ -469,14 +455,8 @@ describe('Parse.Push', () => {
 
     while (iOSInstallations.length !== devices / 100) {
       const iOSInstallation = new Parse.Object('_Installation');
-      iOSInstallation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
-      iOSInstallation.set(
-        'deviceToken',
-        'device_token_' + installations.length
-      );
+      iOSInstallation.set('installationId', 'installation_' + installations.length);
+      iOSInstallation.set('deviceToken', 'device_token_' + installations.length);
       iOSInstallation.set('deviceType', 'ios');
       installations.push(iOSInstallation);
       iOSInstallations.push(iOSInstallation);
@@ -485,14 +465,14 @@ describe('Parse.Push', () => {
     reconfigureServer({
       push: {
         adapter: {
-          send: function(body, installations) {
+          send: function (body, installations) {
             // simulate having added an installation before this was called
             // thus invalidating our 'count' in _PushStatus
             installations.push(iOSInstallations.pop());
 
             return successfulAny(body, installations);
           },
-          getValidPushTypes: function() {
+          getValidPushTypes: function () {
             return ['android'];
           },
         },

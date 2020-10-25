@@ -54,14 +54,9 @@ export class GlobalConfigRouter extends PromiseRouter {
     this.route('GET', '/config', req => {
       return this.getGlobalConfig(req);
     });
-    this.route(
-      'PUT',
-      '/config',
-      middleware.promiseEnforceMasterKeyAccess,
-      req => {
-        return this.updateGlobalConfig(req);
-      }
-    );
+    this.route('PUT', '/config', middleware.promiseEnforceMasterKeyAccess, req => {
+      return this.updateGlobalConfig(req);
+    });
   }
 }
 

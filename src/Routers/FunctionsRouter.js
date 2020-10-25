@@ -4,10 +4,7 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import {
-  promiseEnforceMasterKeyAccess,
-  promiseEnsureIdempotency,
-} from '../middlewares';
+import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
@@ -121,10 +118,7 @@ export class FunctionsRouter extends PromiseRouter {
     const theFunction = triggers.getFunction(functionName, applicationId);
 
     if (!theFunction) {
-      throw new Parse.Error(
-        Parse.Error.SCRIPT_FAILED,
-        `Invalid function: "${functionName}"`
-      );
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params);
@@ -141,15 +135,12 @@ export class FunctionsRouter extends PromiseRouter {
     };
 
     return new Promise(function (resolve, reject) {
-      const userString =
-        req.auth && req.auth.user ? req.auth.user.id : undefined;
+      const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
       const { success, error, message } = FunctionsRouter.createResponseObject(
         result => {
           try {
-            const cleanResult = logger.truncateLogMessage(
-              JSON.stringify(result.response.result)
-            );
+            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
             logger.info(
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
               {

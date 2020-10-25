@@ -35,10 +35,7 @@ module.exports = {
    * @param {string} [password='password'] - optional, defaults to "password" if not set;
    */
   logIn: async (userObject, password) => {
-    return await Parse.User.logIn(
-      userObject.getUsername(),
-      password || 'password'
-    );
+    return await Parse.User.logIn(userObject.getUsername(), password || 'password');
   },
 
   /**

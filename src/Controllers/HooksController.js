@@ -36,9 +36,7 @@ export class HooksController {
   }
 
   getFunction(functionName) {
-    return this._getHooks({ functionName: functionName }).then(
-      results => results[0]
-    );
+    return this._getHooks({ functionName: functionName }).then(results => results[0]);
   }
 
   getFunctions() {
@@ -73,14 +71,12 @@ export class HooksController {
   }
 
   _getHooks(query = {}) {
-    return this.database
-      .find(DefaultHooksCollectionName, query)
-      .then(results => {
-        return results.map(result => {
-          delete result.objectId;
-          return result;
-        });
+    return this.database.find(DefaultHooksCollectionName, query).then(results => {
+      return results.map(result => {
+        delete result.objectId;
+        return result;
       });
+    });
   }
 
   _removeHooks(query) {
@@ -109,19 +105,9 @@ export class HooksController {
     var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
-      triggers.addTrigger(
-        hook.triggerName,
-        hook.className,
-        wrappedFunction,
-        this._applicationId
-      );
+      triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId);
     } else {
-      triggers.addFunction(
-        hook.functionName,
-        wrappedFunction,
-        null,
-        this._applicationId
-      );
+      triggers.addFunction(hook.functionName, wrappedFunction, null, this._applicationId);
     }
   }
 
@@ -158,26 +144,21 @@ export class HooksController {
     if (aHook.functionName) {
       return this.getFunction(aHook.functionName).then(result => {
         if (result) {
-          throw new Parse.Error(
-            143,
-            `function name: ${aHook.functionName} already exits`
-          );
+          throw new Parse.Error(143, `function name: ${aHook.functionName} already exits`);
         } else {
           return this.createOrUpdateHook(aHook);
         }
       });
     } else if (aHook.className && aHook.triggerName) {
-      return this.getTrigger(aHook.className, aHook.triggerName).then(
-        result => {
-          if (result) {
-            throw new Parse.Error(
-              143,
-              `class ${aHook.className} already has trigger ${aHook.triggerName}`
-            );
-          }
-          return this.createOrUpdateHook(aHook);
+      return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
+        if (result) {
+          throw new Parse.Error(
+            143,
+            `class ${aHook.className} already has trigger ${aHook.triggerName}`
+          );
         }
-      );
+        return this.createOrUpdateHook(aHook);
+      });
     }
 
     throw new Parse.Error(143, 'invalid hook declaration');
@@ -189,20 +170,15 @@ export class HooksController {
         if (result) {
           return this.createOrUpdateHook(aHook);
         }
-        throw new Parse.Error(
-          143,
-          `no function named: ${aHook.functionName} is defined`
-        );
+        throw new Parse.Error(143, `no function named: ${aHook.functionName} is defined`);
       });
     } else if (aHook.className && aHook.triggerName) {
-      return this.getTrigger(aHook.className, aHook.triggerName).then(
-        result => {
-          if (result) {
-            return this.createOrUpdateHook(aHook);
-          }
-          throw new Parse.Error(143, `class ${aHook.className} does not exist`);
+      return this.getTrigger(aHook.className, aHook.triggerName).then(result => {
+        if (result) {
+          return this.createOrUpdateHook(aHook);
         }
-      );
+        throw new Parse.Error(143, `class ${aHook.className} does not exist`);
+      });
     }
     throw new Parse.Error(143, 'invalid hook declaration');
   }
@@ -231,17 +207,13 @@ function wrapToHTTPRequest(hook, key) {
       method: 'POST',
     };
 
-    const agent = hook.url.startsWith('https')
-      ? HTTPAgents['https']
-      : HTTPAgents['http'];
+    const agent = hook.url.startsWith('https') ? HTTPAgents['https'] : HTTPAgents['http'];
     jsonRequest.agent = agent;
 
     if (key) {
       jsonRequest.headers['X-Parse-Webhook-Key'] = key;
     } else {
-      logger.warn(
-        'Making outgoing webhook request without webhookKey being set!'
-      );
+      logger.warn('Making outgoing webhook request without webhookKey being set!');
     }
     return request(jsonRequest).then(response => {
       let err;
