@@ -24,7 +24,7 @@ const headers = {
 };
 
 describe_only_db('mongo')('miscellaneous', () => {
-  it('test rest_create_app', function(done) {
+  it('test rest_create_app', function (done) {
     let appId;
     Parse._request('POST', 'rest_create_app')
       .then(res => {
@@ -57,19 +57,19 @@ describe_only_db('mongo')('miscellaneous', () => {
   });
 });
 
-describe('miscellaneous', function() {
-  it('create a GameScore object', function(done) {
+describe('miscellaneous', function () {
+  it('create a GameScore object', function (done) {
     const obj = new Parse.Object('GameScore');
     obj.set('score', 1337);
-    obj.save().then(function(obj) {
+    obj.save().then(function (obj) {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
     }, done.fail);
   });
 
-  it('get a TestObject', function(done) {
-    create({ bloop: 'blarg' }, async function(obj) {
+  it('get a TestObject', function (done) {
+    create({ bloop: 'blarg' }, async function (obj) {
       const t2 = new TestObject({ objectId: obj.id });
       const obj2 = await t2.fetch();
       expect(obj2.get('bloop')).toEqual('blarg');
@@ -79,8 +79,8 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('create a valid parse user', function(done) {
-    createTestUser().then(function(data) {
+  it('create a valid parse user', function (done) {
+    createTestUser().then(function (data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
@@ -297,8 +297,8 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('succeed in logging in', function(done) {
-    createTestUser().then(async function(u) {
+  it('succeed in logging in', function (done) {
+    createTestUser().then(async function (u) {
       expect(typeof u.id).toEqual('string');
 
       const user = await Parse.User.logIn('test', 'moon-y');
@@ -310,7 +310,7 @@ describe('miscellaneous', function() {
     }, fail);
   });
 
-  it('increment with a user object', function(done) {
+  it('increment with a user object', function (done) {
     createTestUser()
       .then(user => {
         user.increment('foo');
@@ -338,7 +338,7 @@ describe('miscellaneous', function() {
       );
   });
 
-  it('save various data types', function(done) {
+  it('save various data types', function (done) {
     const obj = new TestObject();
     obj.set('date', new Date());
     obj.set('array', [1, 2, 3]);
@@ -358,7 +358,7 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('query with limit', function(done) {
+  it('query with limit', function (done) {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
     baz
@@ -383,7 +383,7 @@ describe('miscellaneous', function() {
       );
   });
 
-  it('query without limit get default 100 records', function(done) {
+  it('query without limit get default 100 records', function (done) {
     const objects = [];
     for (let i = 0; i < 150; i++) {
       objects.push(new TestObject({ name: 'name' + i }));
@@ -404,7 +404,7 @@ describe('miscellaneous', function() {
       );
   });
 
-  it('basic saveAll', function(done) {
+  it('basic saveAll', function (done) {
     const alpha = new TestObject({ letter: 'alpha' });
     const beta = new TestObject({ letter: 'beta' });
     Parse.Object.saveAll([alpha, beta])
@@ -425,26 +425,26 @@ describe('miscellaneous', function() {
       );
   });
 
-  it('test beforeSave set object acl success', function(done) {
+  it('test beforeSave set object acl success', function (done) {
     const acl = new Parse.ACL({
       '*': { read: true, write: false },
     });
-    Parse.Cloud.beforeSave('BeforeSaveAddACL', function(req) {
+    Parse.Cloud.beforeSave('BeforeSaveAddACL', function (req) {
       req.object.setACL(acl);
     });
 
     const obj = new Parse.Object('BeforeSaveAddACL');
     obj.set('lol', true);
     obj.save().then(
-      function() {
+      function () {
         const query = new Parse.Query('BeforeSaveAddACL');
         query.get(obj.id).then(
-          function(objAgain) {
+          function (objAgain) {
             expect(objAgain.get('lol')).toBeTruthy();
             expect(objAgain.getACL().equals(acl));
             done();
           },
-          function(error) {
+          function (error) {
             fail(error);
             done();
           }
@@ -667,10 +667,10 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('test afterSave get full object on create and update', function(done) {
+  it('test afterSave get full object on create and update', function (done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.id).not.toBeUndefined();
@@ -694,29 +694,29 @@ describe('miscellaneous', function() {
     obj.set('fooAgain', 'barAgain');
     obj
       .save()
-      .then(function() {
+      .then(function () {
         // We only update foo
         obj.set('foo', 'baz');
         return obj.save();
       })
       .then(
-        function() {
+        function () {
           // Make sure the checking has been triggered
           expect(triggerTime).toBe(2);
           done();
         },
-        function(error) {
+        function (error) {
           fail(error);
           done();
         }
       );
   });
 
-  it('test afterSave get original object on update', function(done) {
+  it('test afterSave get original object on update', function (done) {
     let triggerTime = 0;
     // Register a mock beforeSave hook
 
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
@@ -750,18 +750,18 @@ describe('miscellaneous', function() {
     obj.set('fooAgain', 'barAgain');
     obj
       .save()
-      .then(function() {
+      .then(function () {
         // We only update foo
         obj.set('foo', 'baz');
         return obj.save();
       })
       .then(
-        function() {
+        function () {
           // Make sure the checking has been triggered
           expect(triggerTime).toBe(2);
           done();
         },
-        function(error) {
+        function (error) {
           jfail(error);
           done();
         }
@@ -771,7 +771,7 @@ describe('miscellaneous', function() {
   it('test afterSave get full original object even req auth can not query it', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       const originalObject = req.original;
       if (triggerTime == 0) {
@@ -802,18 +802,18 @@ describe('miscellaneous', function() {
     obj.setACL(acl);
     obj
       .save()
-      .then(function() {
+      .then(function () {
         // We only update foo
         obj.set('foo', 'baz');
         return obj.save();
       })
       .then(
-        function() {
+        function () {
           // Make sure the checking has been triggered
           expect(triggerTime).toBe(2);
           done();
         },
-        function(error) {
+        function (error) {
           jfail(error);
           done();
         }
@@ -823,7 +823,7 @@ describe('miscellaneous', function() {
   it('afterSave flattens custom operations', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       const originalObject = req.original;
@@ -865,7 +865,7 @@ describe('miscellaneous', function() {
   it('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.beforeSave('GameScore', function(req) {
+    Parse.Cloud.beforeSave('GameScore', function (req) {
       const object = req.object;
       if (triggerTime == 0) {
         const acl = object.getACL();
@@ -909,7 +909,7 @@ describe('miscellaneous', function() {
   it('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       const object = req.object;
       if (triggerTime == 0) {
         const acl = object.getACL();
@@ -1057,14 +1057,14 @@ describe('miscellaneous', function() {
     );
   });
 
-  it('test beforeSave/afterSave get installationId', function(done) {
+  it('test beforeSave/afterSave get installationId', function (done) {
     let triggerTime = 0;
-    Parse.Cloud.beforeSave('GameScore', function(req) {
+    Parse.Cloud.beforeSave('GameScore', function (req) {
       triggerTime++;
       expect(triggerTime).toEqual(1);
       expect(req.installationId).toEqual('yolo');
     });
-    Parse.Cloud.afterSave('GameScore', function(req) {
+    Parse.Cloud.afterSave('GameScore', function (req) {
       triggerTime++;
       expect(triggerTime).toEqual(2);
       expect(req.installationId).toEqual('yolo');
@@ -1087,14 +1087,14 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('test beforeDelete/afterDelete get installationId', function(done) {
+  it('test beforeDelete/afterDelete get installationId', function (done) {
     let triggerTime = 0;
-    Parse.Cloud.beforeDelete('GameScore', function(req) {
+    Parse.Cloud.beforeDelete('GameScore', function (req) {
       triggerTime++;
       expect(triggerTime).toEqual(1);
       expect(req.installationId).toEqual('yolo');
     });
-    Parse.Cloud.afterDelete('GameScore', function(req) {
+    Parse.Cloud.afterDelete('GameScore', function (req) {
       triggerTime++;
       expect(triggerTime).toEqual(2);
       expect(req.installationId).toEqual('yolo');
@@ -1168,33 +1168,6 @@ describe('miscellaneous', function() {
       expect(res.foo).toEqual('bar');
       done();
     });
-  });
-
-  it('test cloud function parameter validation', done => {
-    // Register a function with validation
-    Parse.Cloud.define(
-      'functionWithParameterValidationFailure',
-      () => {
-        return 'noway';
-      },
-      request => {
-        return request.params.success === 100;
-      }
-    );
-
-    Parse.Cloud.run('functionWithParameterValidationFailure', {
-      success: 500,
-    }).then(
-      () => {
-        fail('Validation should not have succeeded');
-        done();
-      },
-      e => {
-        expect(e.code).toEqual(142);
-        expect(e.message).toEqual('Validation failed.');
-        done();
-      }
-    );
   });
 
   it('can handle null params in cloud functions (regression test for #1742)', done => {
@@ -1715,10 +1688,7 @@ describe('miscellaneous', function() {
 
   it('purge empty class', done => {
     const testSchema = new Parse.Schema('UnknownClass');
-    testSchema
-      .purge()
-      .then(done)
-      .catch(done.fail);
+    testSchema.purge().then(done).catch(done.fail);
   });
 
   it('should not update schema beforeSave #2672', done => {
