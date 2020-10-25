@@ -13,10 +13,7 @@ it('Should fail with missing options', done => {
 });
 
 it('Should return a resolved promise when validating the app id', done => {
-  ldap
-    .validateAppId()
-    .then(done)
-    .catch(done.fail);
+  ldap.validateAppId().then(done).catch(done.fail);
 });
 
 it('Should succeed with right credentials', done => {
@@ -59,8 +56,7 @@ it('Should succeed if user is in given group', done => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
 
     ldap
@@ -78,8 +74,7 @@ it('Should fail if user is not in given group', done => {
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'groupTheUserIsNotIn',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
 
     ldap
@@ -100,8 +95,7 @@ it('Should fail if the LDAP server does not allow searching inside the provided 
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
 
     ldap
@@ -122,8 +116,7 @@ it('Should fail if the LDAP server encounters an error while searching', done =>
       url: `ldap://localhost:${port}`,
       dn: 'uid={{id}}, o=example',
       groupCn: 'powerusers',
-      groupFilter:
-        '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
+      groupFilter: '(&(uniqueMember=uid={{id}}, o=example)(objectClass=groupOfUniqueNames))',
     };
 
     ldap

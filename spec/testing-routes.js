@@ -14,8 +14,7 @@ function createApp(req, res) {
   const appId = cryptoUtils.randomHexString(32);
 
   ParseServer({
-    databaseURI:
-      'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+    databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
     appId: appId,
     masterKey: 'master',
     serverURL: Parse.serverURL,
@@ -61,28 +60,12 @@ function notImplementedYet(req, res) {
 
 router.post('/rest_clear_app', middlewares.handleParseHeaders, clearApp);
 router.post('/rest_block', middlewares.handleParseHeaders, notImplementedYet);
-router.post(
-  '/rest_mock_v8_client',
-  middlewares.handleParseHeaders,
-  notImplementedYet
-);
-router.post(
-  '/rest_unmock_v8_client',
-  middlewares.handleParseHeaders,
-  notImplementedYet
-);
-router.post(
-  '/rest_verify_analytics',
-  middlewares.handleParseHeaders,
-  notImplementedYet
-);
+router.post('/rest_mock_v8_client', middlewares.handleParseHeaders, notImplementedYet);
+router.post('/rest_unmock_v8_client', middlewares.handleParseHeaders, notImplementedYet);
+router.post('/rest_verify_analytics', middlewares.handleParseHeaders, notImplementedYet);
 router.post('/rest_create_app', createApp);
 router.post('/rest_drop_app', middlewares.handleParseHeaders, dropApp);
-router.post(
-  '/rest_configure_app',
-  middlewares.handleParseHeaders,
-  notImplementedYet
-);
+router.post('/rest_configure_app', middlewares.handleParseHeaders, notImplementedYet);
 
 module.exports = {
   router: router,

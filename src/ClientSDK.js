@@ -1,7 +1,7 @@
 var semver = require('semver');
 
 function compatible(compatibleSDK) {
-  return function(clientSDK) {
+  return function (clientSDK) {
     if (typeof clientSDK === 'string') {
       clientSDK = fromString(clientSDK);
     }

@@ -74,7 +74,7 @@ describe('Parse Role testing', () => {
       );
   });
 
-  const createRole = function(name, sibling, user) {
+  const createRole = function (name, sibling, user) {
     const role = new Parse.Role(name, new Parse.ACL());
     if (user) {
       const users = role.relation('users');
@@ -92,9 +92,9 @@ describe('Parse Role testing', () => {
     const allRoles = [rootRole].concat(roleNames);
 
     const roleObjs = {};
-    const createAllRoles = function(user) {
-      const promises = allRoles.map(function(roleName) {
-        return createRole(roleName, null, user).then(function(roleObj) {
+    const createAllRoles = function (user) {
+      const promises = allRoles.map(function (roleName) {
+        return createRole(roleName, null, user).then(function (roleObj) {
           roleObjs[roleName] = roleObj;
           return roleObj;
         });
@@ -112,7 +112,7 @@ describe('Parse Role testing', () => {
       })
       .then(roles => {
         const rootRoleObj = roleObjs[rootRole];
-        roles.forEach(function(role, i) {
+        roles.forEach(function (role, i) {
           // Add all roles to the RootRole
           if (role.id !== rootRoleObj.id) {
             role.relation('roles').add(rootRoleObj);
@@ -131,17 +131,14 @@ describe('Parse Role testing', () => {
           isMaster: true,
           user: user,
         });
-        getAllRolesSpy = spyOn(
-          auth,
-          '_getAllRolesNamesForRoleIds'
-        ).and.callThrough();
+        getAllRolesSpy = spyOn(auth, '_getAllRolesNamesForRoleIds').and.callThrough();
 
         return auth._loadRoles();
       })
       .then(roles => {
         expect(roles.length).toEqual(4);
 
-        allRoles.forEach(function(name) {
+        allRoles.forEach(function (name) {
           expect(roles.indexOf('role:' + name)).not.toBe(-1);
         });
 
@@ -193,7 +190,7 @@ describe('Parse Role testing', () => {
           });
           done();
         },
-        function() {
+        function () {
           fail('should succeed');
           done();
         }
@@ -259,26 +256,16 @@ describe('Parse Role testing', () => {
     const moderator = new Parse.Role('Moderator', new Parse.ACL());
     const superModerator = new Parse.Role('SuperModerator', new Parse.ACL());
     const contentManager = new Parse.Role('ContentManager', new Parse.ACL());
-    const superContentManager = new Parse.Role(
-      'SuperContentManager',
-      new Parse.ACL()
-    );
-    Parse.Object.saveAll(
-      [admin, moderator, contentManager, superModerator, superContentManager],
-      { useMasterKey: true }
-    )
+    const superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {
+      useMasterKey: true,
+    })
       .then(() => {
         contentManager.getRoles().add([moderator, superContentManager]);
         moderator.getRoles().add([admin, superModerator]);
         superContentManager.getRoles().add(superModerator);
         return Parse.Object.saveAll(
-          [
-            admin,
-            moderator,
-            contentManager,
-            superModerator,
-            superContentManager,
-          ],
+          [admin, moderator, contentManager, superModerator, superContentManager],
           { useMasterKey: true }
         );
       })
@@ -286,17 +273,15 @@ describe('Parse Role testing', () => {
         const auth = new Auth({ config: Config.get('test'), isMaster: true });
         // For each role, fetch their sibling, what they inherit
         // return with result and roleId for later comparison
-        const promises = [admin, moderator, contentManager, superModerator].map(
-          role => {
-            return auth._getAllRolesNamesForRoleIds([role.id]).then(result => {
-              return Promise.resolve({
-                id: role.id,
-                name: role.get('name'),
-                roleNames: result,
-              });
+        const promises = [admin, moderator, contentManager, superModerator].map(role => {
+          return auth._getAllRolesNamesForRoleIds([role.id]).then(result => {
+            return Promise.resolve({
+              id: role.id,
+              name: role.get('name'),
+              roleNames: result,
             });
-          }
-        );
+          });
+        });
 
         return Promise.all(promises);
       })
@@ -563,7 +548,7 @@ describe('Parse Role testing', () => {
         const query = new Parse.Query(Parse.Role);
         query.equalTo('name', 'admin');
         query.equalTo('users', user);
-        query.find().then(function(roles) {
+        query.find().then(function (roles) {
           expect(roles.length).toEqual(1);
           done();
         });
@@ -582,17 +567,15 @@ describe('Parse Role testing', () => {
       users.add(user);
       role.save({}, { useMasterKey: true }).then(() => {
         const otherUser = new Parse.User();
-        otherUser
-          .save({ username: 'otherUser', password: 'otherUser' })
-          .then(otherUser => {
-            const query = new Parse.Query(Parse.Role);
-            query.equalTo('name', 'admin');
-            query.equalTo('users', otherUser);
-            query.find().then(function(roles) {
-              expect(roles.length).toEqual(0);
-              done();
-            });
+        otherUser.save({ username: 'otherUser', password: 'otherUser' }).then(otherUser => {
+          const query = new Parse.Query(Parse.Role);
+          query.equalTo('name', 'admin');
+          query.equalTo('users', otherUser);
+          query.find().then(function (roles) {
+            expect(roles.length).toEqual(0);
+            done();
           });
+        });
       });
     });
   });
@@ -610,7 +593,7 @@ describe('Parse Role testing', () => {
         const query = new Parse.Query(Parse.Role);
         query.equalTo('name', 'admin');
         query.equalTo('users', null);
-        query.find().then(function(roles) {
+        query.find().then(function (roles) {
           expect(roles.length).toEqual(0);
           done();
         });

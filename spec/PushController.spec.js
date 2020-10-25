@@ -1,11 +1,10 @@
 'use strict';
-const PushController = require('../lib/Controllers/PushController')
-  .PushController;
+const PushController = require('../lib/Controllers/PushController').PushController;
 const StatusHandler = require('../lib/StatusHandler');
 const Config = require('../lib/Config');
 const validatePushType = require('../lib/Push/utils').validatePushType;
 
-const successfulTransmissions = function(body, installations) {
+const successfulTransmissions = function (body, installations) {
   const promises = installations.map(device => {
     return Promise.resolve({
       transmitted: true,
@@ -16,7 +15,7 @@ const successfulTransmissions = function(body, installations) {
   return Promise.all(promises);
 };
 
-const successfulIOS = function(body, installations) {
+const successfulIOS = function (body, installations) {
   const promises = installations.map(device => {
     return Promise.resolve({
       transmitted: device.deviceType == 'ios',
@@ -33,7 +32,7 @@ describe('PushController', () => {
     const where = {};
     const validPushTypes = ['ios', 'android'];
 
-    expect(function() {
+    expect(function () {
       validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
@@ -46,7 +45,7 @@ describe('PushController', () => {
     };
     const validPushTypes = ['ios', 'android'];
 
-    expect(function() {
+    expect(function () {
       validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
@@ -61,7 +60,7 @@ describe('PushController', () => {
     };
     const validPushTypes = ['ios', 'android'];
 
-    expect(function() {
+    expect(function () {
       validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
@@ -74,7 +73,7 @@ describe('PushController', () => {
     };
     const validPushTypes = ['ios', 'android'];
 
-    expect(function() {
+    expect(function () {
       validatePushType(where, validPushTypes);
     }).toThrow();
     done();
@@ -87,7 +86,7 @@ describe('PushController', () => {
     };
     const validPushTypes = ['ios', 'android'];
 
-    expect(function() {
+    expect(function () {
       validatePushType(where, validPushTypes);
     }).toThrow();
     done();
@@ -123,7 +122,7 @@ describe('PushController', () => {
       expiration_time: 'abcd',
     };
 
-    expect(function() {
+    expect(function () {
       PushController.getExpirationTime(body);
     }).toThrow();
     done();
@@ -159,7 +158,7 @@ describe('PushController', () => {
       push_time: 'abcd',
     };
 
-    expect(function() {
+    expect(function () {
       PushController.getPushTime(body);
     }).toThrow();
     done();
@@ -167,7 +166,7 @@ describe('PushController', () => {
 
   it('properly increment badges', done => {
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const badge = body.data.badge;
         installations.forEach(installation => {
           expect(installation.badge).toEqual(badge);
@@ -175,7 +174,7 @@ describe('PushController', () => {
         });
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios', 'android'];
       },
     };
@@ -188,10 +187,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -201,10 +197,7 @@ describe('PushController', () => {
 
     while (installations.length != 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -253,9 +246,7 @@ describe('PushController', () => {
         expect(results.length).toBe(15);
         for (let i = 0; i < 15; i++) {
           const installation = results[i];
-          expect(installation.get('badge')).toBe(
-            parseInt(installation.get('originalBadge')) + 1
-          );
+          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
         }
         done();
       })
@@ -267,7 +258,7 @@ describe('PushController', () => {
 
   it('properly increment badges by more than 1', done => {
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const badge = body.data.badge;
         installations.forEach(installation => {
           expect(installation.badge).toEqual(badge);
@@ -275,7 +266,7 @@ describe('PushController', () => {
         });
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios', 'android'];
       },
     };
@@ -288,10 +279,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -301,10 +289,7 @@ describe('PushController', () => {
 
     while (installations.length != 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -353,9 +338,7 @@ describe('PushController', () => {
         expect(results.length).toBe(15);
         for (let i = 0; i < 15; i++) {
           const installation = results[i];
-          expect(installation.get('badge')).toBe(
-            parseInt(installation.get('originalBadge')) + 3
-          );
+          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 3);
         }
         done();
       })
@@ -367,7 +350,7 @@ describe('PushController', () => {
 
   it('properly set badges to 1', done => {
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const badge = body.data.badge;
         installations.forEach(installation => {
           expect(installation.badge).toEqual(badge);
@@ -375,7 +358,7 @@ describe('PushController', () => {
         });
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -389,10 +372,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -462,10 +442,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -474,7 +451,7 @@ describe('PushController', () => {
     }
     let matchedInstallationsCount = 0;
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         matchedInstallationsCount += installations.length;
         const badge = body.data.badge;
         installations.forEach(installation => {
@@ -483,7 +460,7 @@ describe('PushController', () => {
         });
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -533,17 +510,14 @@ describe('PushController', () => {
 
   it('properly creates _PushStatus', done => {
     const pushStatusAfterSave = {
-      handler: function() {},
+      handler: function () {},
     };
     const spy = spyOn(pushStatusAfterSave, 'handler').and.callThrough();
     Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -553,10 +527,7 @@ describe('PushController', () => {
 
     while (installations.length != 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('deviceType', 'android');
       installations.push(installation);
@@ -569,10 +540,10 @@ describe('PushController', () => {
     };
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulIOS(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -663,7 +634,7 @@ describe('PushController', () => {
 
   it('properly creates _PushStatus without serverURL', done => {
     const pushStatusAfterSave = {
-      handler: function() {},
+      handler: function () {},
     };
     Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     const installation = new Parse.Object('_Installation');
@@ -681,10 +652,10 @@ describe('PushController', () => {
     };
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulIOS(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -727,14 +698,14 @@ describe('PushController', () => {
 
   it('should properly report failures in _PushStatus', done => {
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return installations.map(installation => {
           return Promise.resolve({
             deviceType: installation.deviceType,
           });
         });
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -784,10 +755,10 @@ describe('PushController', () => {
     };
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -810,14 +781,8 @@ describe('PushController', () => {
         const installations = [];
         while (installations.length != 5) {
           const installation = new Parse.Object('_Installation');
-          installation.set(
-            'installationId',
-            'installation_' + installations.length
-          );
-          installation.set(
-            'deviceToken',
-            'device_token_' + installations.length
-          );
+          installation.set('installationId', 'installation_' + installations.length);
+          installation.set('deviceToken', 'device_token_' + installations.length);
           installation.set('badge', installations.length);
           installation.set('originalBadge', installations.length);
           installation.set('deviceType', 'ios');
@@ -862,10 +827,10 @@ describe('PushController', () => {
     };
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -887,14 +852,8 @@ describe('PushController', () => {
         const installations = [];
         while (installations.length != 5) {
           const installation = new Parse.Object('_Installation');
-          installation.set(
-            'installationId',
-            'installation_' + installations.length
-          );
-          installation.set(
-            'deviceToken',
-            'device_token_' + installations.length
-          );
+          installation.set('installationId', 'installation_' + installations.length);
+          installation.set('deviceToken', 'device_token_' + installations.length);
           installation.set('badge', installations.length);
           installation.set('originalBadge', installations.length);
           installation.set('deviceType', 'ios');
@@ -990,10 +949,10 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1009,10 +968,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -1051,7 +1007,7 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const promises = installations.map(device => {
           if (!device.deviceToken) {
             // Simulate error when device token is not set
@@ -1065,7 +1021,7 @@ describe('PushController', () => {
 
         return Promise.all(promises);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1081,10 +1037,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -1121,7 +1074,7 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const promises = installations.map(device => {
           if (!device.deviceToken) {
             // Simulate error when device token is not set
@@ -1135,7 +1088,7 @@ describe('PushController', () => {
 
         return Promise.all(promises);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1151,10 +1104,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('deviceToken', 'device_token_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
@@ -1164,10 +1114,7 @@ describe('PushController', () => {
 
     while (installations.length != 15) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -1207,7 +1154,7 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         const promises = installations.map(device => {
           if (!device.deviceToken) {
             // Simulate error when device token is not set
@@ -1221,7 +1168,7 @@ describe('PushController', () => {
 
         return Promise.all(promises);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1237,10 +1184,7 @@ describe('PushController', () => {
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
-      installation.set(
-        'installationId',
-        'installation_' + installations.length
-      );
+      installation.set('installationId', 'installation_' + installations.length);
       installation.set('badge', installations.length);
       installation.set('originalBadge', installations.length);
       installation.set('deviceType', 'ios');
@@ -1285,10 +1229,10 @@ describe('PushController', () => {
     };
 
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1310,14 +1254,8 @@ describe('PushController', () => {
         const installations = [];
         while (installations.length != 5) {
           const installation = new Parse.Object('_Installation');
-          installation.set(
-            'installationId',
-            'installation_' + installations.length
-          );
-          installation.set(
-            'deviceToken',
-            'device_token_' + installations.length
-          );
+          installation.set('installationId', 'installation_' + installations.length);
+          installation.set('deviceToken', 'device_token_' + installations.length);
           installation.set('badge', installations.length);
           installation.set('originalBadge', installations.length);
           installation.set('deviceType', 'ios');
@@ -1360,10 +1298,10 @@ describe('PushController', () => {
 
   it('should update audiences', done => {
     const pushAdapter = {
-      send: function(body, installations) {
+      send: function (body, installations) {
         return successfulTransmissions(body, installations);
       },
-      getValidPushTypes: function() {
+      getValidPushTypes: function () {
         return ['ios'];
       },
     };
@@ -1389,14 +1327,8 @@ describe('PushController', () => {
         const installations = [];
         while (installations.length != 5) {
           const installation = new Parse.Object('_Installation');
-          installation.set(
-            'installationId',
-            'installation_' + installations.length
-          );
-          installation.set(
-            'deviceToken',
-            'device_token_' + installations.length
-          );
+          installation.set('installationId', 'installation_' + installations.length);
+          installation.set('deviceToken', 'device_token_' + installations.length);
           installation.set('badge', installations.length);
           installation.set('originalBadge', installations.length);
           installation.set('deviceType', 'ios');
@@ -1468,25 +1400,24 @@ describe('PushController', () => {
 
   describe('pushTimeHasTimezoneComponent', () => {
     it('should be accurate', () => {
-      expect(
-        PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z')
-      ).toBe(true, 'UTC time');
-      expect(
-        PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00')
-      ).toBe(true, 'Timezone offset');
-      expect(
-        PushController.pushTimeHasTimezoneComponent(
-          '2007-04-05T12:30:00.000Z-02:00'
-        )
-      ).toBe(true, 'Seconds + Milliseconds + Timezone offset');
-
-      expect(
-        PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048')
-      ).toBe(false, 'No timezone');
-      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06')).toBe(
-        false,
-        'YY-MM-DD'
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z')).toBe(
+        true,
+        'UTC time'
       );
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00')).toBe(
+        true,
+        'Timezone offset'
+      );
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30:00.000Z-02:00')).toBe(
+        true,
+        'Seconds + Milliseconds + Timezone offset'
+      );
+
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048')).toBe(
+        false,
+        'No timezone'
+      );
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06')).toBe(false, 'YY-MM-DD');
     });
   });
 
@@ -1517,10 +1448,7 @@ describe('PushController', () => {
           date: noTimezone,
           isLocalTime: true,
         })
-      ).toBe(
-        `2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`,
-        'No timezone'
-      );
+      ).toBe(`2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`, 'No timezone');
       expect(
         PushController.formatPushTime({
           date: new Date('2017-09-06'),
@@ -1582,9 +1510,7 @@ describe('PushController', () => {
         .then(pushStatus => {
           expect(pushStatus.get('status')).toBe('scheduled');
           expect(pushStatus.get('pushTime')).toBe(
-            `2017-09-${day}T${expectedHour
-              .toString()
-              .padStart(2, '0')}:14:01.048`
+            `2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`
           );
         })
         .then(done, done.fail);

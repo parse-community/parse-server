@@ -314,291 +314,277 @@ describe('Parse.Query Full Text Search testing', () => {
   });
 });
 
-describe_only_db('mongo')(
-  '[mongodb] Parse.Query Full Text Search testing',
-  () => {
-    it('fullTextSearch: does not create text index if compound index exist', done => {
-      fullTextHelper()
-        .then(() => {
-          return databaseAdapter.dropAllIndexes('TestObject');
-        })
-        .then(() => {
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(1);
-          return databaseAdapter.createIndex('TestObject', {
-            subject: 'text',
-            comment: 'text',
-          });
-        })
-        .then(() => {
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(2);
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'coffee',
-                },
+describe_only_db('mongo')('[mongodb] Parse.Query Full Text Search testing', () => {
+  it('fullTextSearch: does not create text index if compound index exist', done => {
+    fullTextHelper()
+      .then(() => {
+        return databaseAdapter.dropAllIndexes('TestObject');
+      })
+      .then(() => {
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(1);
+        return databaseAdapter.createIndex('TestObject', {
+          subject: 'text',
+          comment: 'text',
+        });
+      })
+      .then(() => {
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(2);
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'coffee',
               },
             },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toEqual(3);
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(2);
-          request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          }).then(response => {
-            const body = response.data;
-            expect(body.indexes._id_).toBeDefined();
-            expect(body.indexes._id_._id).toEqual(1);
-            expect(body.indexes.subject_text_comment_text).toBeDefined();
-            expect(body.indexes.subject_text_comment_text.subject).toEqual(
-              'text'
-            );
-            expect(body.indexes.subject_text_comment_text.comment).toEqual(
-              'text'
-            );
-            done();
-          });
-        })
-        .catch(done.fail);
-    });
-
-    it('fullTextSearch: does not create text index if schema compound index exist', done => {
-      fullTextHelper()
-        .then(() => {
-          return databaseAdapter.dropAllIndexes('TestObject');
-        })
-        .then(() => {
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(1);
-          return request({
-            method: 'PUT',
-            url: 'http://localhost:8378/1/schemas/TestObject',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'X-Parse-Master-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-            body: {
-              indexes: {
-                text_test: { subject: 'text', comment: 'text' },
-              },
-            },
-          });
-        })
-        .then(() => {
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(2);
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'coffee',
-                },
-              },
-            },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toEqual(3);
-          return databaseAdapter.getIndexes('TestObject');
-        })
-        .then(indexes => {
-          expect(indexes.length).toEqual(2);
-          request({
-            url: 'http://localhost:8378/1/schemas/TestObject',
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          }).then(response => {
-            const body = response.data;
-            expect(body.indexes._id_).toBeDefined();
-            expect(body.indexes._id_._id).toEqual(1);
-            expect(body.indexes.text_test).toBeDefined();
-            expect(body.indexes.text_test.subject).toEqual('text');
-            expect(body.indexes.text_test.comment).toEqual('text');
-            done();
-          });
-        })
-        .catch(done.fail);
-    });
-
-    it('fullTextSearch: $diacriticSensitive - false', done => {
-      fullTextHelper()
-        .then(() => {
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'CAFÉ',
-                  $diacriticSensitive: false,
-                },
-              },
-            },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toBe(2);
-          done();
-        }, done.fail);
-    });
-
-    it('fullTextSearch: $caseSensitive', done => {
-      fullTextHelper()
-        .then(() => {
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'Coffee',
-                  $caseSensitive: true,
-                },
-              },
-            },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          expect(resp.data.results.length).toBe(1);
-          done();
-        }, done.fail);
-    });
-  }
-);
-
-describe_only_db('postgres')(
-  '[postgres] Parse.Query Full Text Search testing',
-  () => {
-    it('fullTextSearch: $diacriticSensitive - false', done => {
-      fullTextHelper()
-        .then(() => {
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'CAFÉ',
-                  $diacriticSensitive: false,
-                },
-              },
-            },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          fail(
-            `$diacriticSensitive - false should not supported: ${JSON.stringify(
-              resp
-            )}`
-          );
-          done();
-        })
-        .catch(err => {
-          expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toEqual(3);
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(2);
+        request({
+          url: 'http://localhost:8378/1/schemas/TestObject',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        }).then(response => {
+          const body = response.data;
+          expect(body.indexes._id_).toBeDefined();
+          expect(body.indexes._id_._id).toEqual(1);
+          expect(body.indexes.subject_text_comment_text).toBeDefined();
+          expect(body.indexes.subject_text_comment_text.subject).toEqual('text');
+          expect(body.indexes.subject_text_comment_text.comment).toEqual('text');
           done();
         });
-    });
+      })
+      .catch(done.fail);
+  });
 
-    it('fullTextSearch: $caseSensitive', done => {
-      fullTextHelper()
-        .then(() => {
-          const where = {
-            subject: {
-              $text: {
-                $search: {
-                  $term: 'Coffee',
-                  $caseSensitive: true,
-                },
+  it('fullTextSearch: does not create text index if schema compound index exist', done => {
+    fullTextHelper()
+      .then(() => {
+        return databaseAdapter.dropAllIndexes('TestObject');
+      })
+      .then(() => {
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(1);
+        return request({
+          method: 'PUT',
+          url: 'http://localhost:8378/1/schemas/TestObject',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'X-Parse-Master-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+          body: {
+            indexes: {
+              text_test: { subject: 'text', comment: 'text' },
+            },
+          },
+        });
+      })
+      .then(() => {
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(2);
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'coffee',
               },
             },
-          };
-          return request({
-            method: 'POST',
-            url: 'http://localhost:8378/1/classes/TestObject',
-            body: { where, _method: 'GET' },
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'test',
-              'Content-Type': 'application/json',
-            },
-          });
-        })
-        .then(resp => {
-          fail(`$caseSensitive should not supported: ${JSON.stringify(resp)}`);
-          done();
-        })
-        .catch(err => {
-          expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toEqual(3);
+        return databaseAdapter.getIndexes('TestObject');
+      })
+      .then(indexes => {
+        expect(indexes.length).toEqual(2);
+        request({
+          url: 'http://localhost:8378/1/schemas/TestObject',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        }).then(response => {
+          const body = response.data;
+          expect(body.indexes._id_).toBeDefined();
+          expect(body.indexes._id_._id).toEqual(1);
+          expect(body.indexes.text_test).toBeDefined();
+          expect(body.indexes.text_test.subject).toEqual('text');
+          expect(body.indexes.text_test.comment).toEqual('text');
           done();
         });
-    });
-  }
-);
+      })
+      .catch(done.fail);
+  });
+
+  it('fullTextSearch: $diacriticSensitive - false', done => {
+    fullTextHelper()
+      .then(() => {
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'CAFÉ',
+                $diacriticSensitive: false,
+              },
+            },
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toBe(2);
+        done();
+      }, done.fail);
+  });
+
+  it('fullTextSearch: $caseSensitive', done => {
+    fullTextHelper()
+      .then(() => {
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'Coffee',
+                $caseSensitive: true,
+              },
+            },
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        expect(resp.data.results.length).toBe(1);
+        done();
+      }, done.fail);
+  });
+});
+
+describe_only_db('postgres')('[postgres] Parse.Query Full Text Search testing', () => {
+  it('fullTextSearch: $diacriticSensitive - false', done => {
+    fullTextHelper()
+      .then(() => {
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'CAFÉ',
+                $diacriticSensitive: false,
+              },
+            },
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        fail(`$diacriticSensitive - false should not supported: ${JSON.stringify(resp)}`);
+        done();
+      })
+      .catch(err => {
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+
+  it('fullTextSearch: $caseSensitive', done => {
+    fullTextHelper()
+      .then(() => {
+        const where = {
+          subject: {
+            $text: {
+              $search: {
+                $term: 'Coffee',
+                $caseSensitive: true,
+              },
+            },
+          },
+        };
+        return request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/classes/TestObject',
+          body: { where, _method: 'GET' },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'test',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(resp => {
+        fail(`$caseSensitive should not supported: ${JSON.stringify(resp)}`);
+        done();
+      })
+      .catch(err => {
+        expect(err.data.code).toEqual(Parse.Error.INVALID_JSON);
+        done();
+      });
+  });
+});

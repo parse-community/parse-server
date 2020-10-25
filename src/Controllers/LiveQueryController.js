@@ -25,11 +25,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(
-      currentObject,
-      originalObject,
-      classLevelPermissions
-    );
+    const req = this._makePublisherRequest(currentObject, originalObject, classLevelPermissions);
     this.liveQueryPublisher.onCloudCodeAfterSave(req);
   }
 
@@ -42,11 +38,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(
-      currentObject,
-      originalObject,
-      classLevelPermissions
-    );
+    const req = this._makePublisherRequest(currentObject, originalObject, classLevelPermissions);
     this.liveQueryPublisher.onCloudCodeAfterDelete(req);
   }
 
@@ -54,11 +46,7 @@ export class LiveQueryController {
     return this.classNames.has(className);
   }
 
-  _makePublisherRequest(
-    currentObject: any,
-    originalObject: any,
-    classLevelPermissions: ?any
-  ): any {
+  _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {
     const req = {
       object: currentObject,
     };

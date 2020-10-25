@@ -57,12 +57,10 @@ function restStatusHandler(className, config) {
   const auth = Auth.master(config);
   function create(object) {
     lastPromise = lastPromise.then(() => {
-      return rest
-        .create(config, auth, className, object)
-        .then(({ response }) => {
-          // merge the objects
-          return Promise.resolve(Object.assign({}, object, response));
-        });
+      return rest.create(config, auth, className, object).then(({ response }) => {
+        // merge the objects
+        return Promise.resolve(Object.assign({}, object, response));
+      });
     });
     return lastPromise;
   }
@@ -156,9 +154,7 @@ export function pushStatusHandler(config, existingObjectId) {
         pushTime = body.push_time;
         status = 'scheduled';
       } else {
-        logger.warn(
-          'Trying to schedule a push while server is not configured.'
-        );
+        logger.warn('Trying to schedule a push while server is not configured.');
         logger.warn('Push will be sent immediately');
       }
     }
@@ -216,8 +212,7 @@ export function pushStatusHandler(config, existingObjectId) {
   const trackSent = function (
     results,
     UTCOffset,
-    cleanupInstallations = process.env
-      .PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
+    cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS
   ) {
     const update = {
       numSent: 0,
@@ -289,9 +284,7 @@ export function pushStatusHandler(config, existingObjectId) {
     });
 
     if (devicesToRemove.length > 0 && cleanupInstallations) {
-      logger.info(
-        `Removing device tokens on ${devicesToRemove.length} _Installations`
-      );
+      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
       database.update(
         '_Installation',
         { deviceToken: { $in: devicesToRemove } },

@@ -81,8 +81,7 @@ export function handleParseHeaders(req, res, next) {
       req.body &&
       req.body._ApplicationId &&
       AppCache.get(req.body._ApplicationId) &&
-      (!info.masterKey ||
-        AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
+      (!info.masterKey || AppCache.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -251,10 +250,7 @@ export function handleParseHeaders(req, res, next) {
         return;
       } else {
         // TODO: Determine the correct error scenario.
-        req.config.loggerController.error(
-          'error getting auth for sessionToken',
-          error
-        );
+        req.config.loggerController.error('error getting auth for sessionToken', error);
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
@@ -327,10 +323,7 @@ export function allowCrossDomain(appId) {
     res.header('Access-Control-Allow-Origin', allowOrigin);
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', allowHeaders);
-    res.header(
-      'Access-Control-Expose-Headers',
-      'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id'
-    );
+    res.header('Access-Control-Expose-Headers', 'X-Parse-Job-Status-Id, X-Parse-Push-Status-Id');
     // intercept OPTIONS method
     if ('OPTIONS' == req.method) {
       res.sendStatus(200);
@@ -443,9 +436,7 @@ export function promiseEnsureIdempotency(req) {
     return Promise.resolve();
   }
   // Try to store request
-  const expiryDate = new Date(
-    new Date().setSeconds(new Date().getSeconds() + ttl)
-  );
+  const expiryDate = new Date(new Date().setSeconds(new Date().getSeconds() + ttl));
   return rest
     .create(config, auth.master(config), '_Idempotency', {
       reqId: requestId,
@@ -453,10 +444,7 @@ export function promiseEnsureIdempotency(req) {
     })
     .catch(e => {
       if (e.code == Parse.Error.DUPLICATE_VALUE) {
-        throw new Parse.Error(
-          Parse.Error.DUPLICATE_REQUEST,
-          'Duplicate request'
-        );
+        throw new Parse.Error(Parse.Error.DUPLICATE_REQUEST, 'Duplicate request');
       }
       throw e;
     });

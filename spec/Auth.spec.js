@@ -83,8 +83,8 @@ describe('Auth', () => {
     it('should properly handle bcrypt upgrade', done => {
       const bcryptOriginal = require('bcrypt-nodejs');
       const bcryptNew = require('bcryptjs');
-      bcryptOriginal.hash('my1Long:password', null, null, function(err, res) {
-        bcryptNew.compare('my1Long:password', res, function(err, res) {
+      bcryptOriginal.hash('my1Long:password', null, null, function (err, res) {
+        bcryptNew.compare('my1Long:password', res, function (err, res) {
           expect(res).toBeTruthy();
           done();
         });

@@ -324,9 +324,7 @@ describe('Email Verification Token Expiration: ', () => {
               expect(typeof user).toBe('object');
               expect(user.emailVerified).toEqual(true);
               expect(typeof user._email_verify_token).toBe('undefined');
-              expect(typeof user._email_verify_token_expires_at).toBe(
-                'undefined'
-              );
+              expect(typeof user._email_verify_token_expires_at).toBe('undefined');
               done();
             })
             .catch(error => {
@@ -791,9 +789,7 @@ describe('Email Verification Token Expiration: ', () => {
           .then(response => {
             expect(response.status).toBe(400);
             expect(response.data.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
-            expect(response.data.error).toBe(
-              'you must provide a valid email string'
-            );
+            expect(response.data.error).toBe('you must provide a valid email string');
             expect(sendVerificationEmailCallCount).toBe(0);
             expect(sendEmailOptions).not.toBeDefined();
             done();
@@ -833,9 +829,7 @@ describe('Email Verification Token Expiration: ', () => {
           .fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(false);
-            expect(typeof user.get('_email_verify_token_expires_at')).toBe(
-              'undefined'
-            );
+            expect(typeof user.get('_email_verify_token_expires_at')).toBe('undefined');
             expect(sendEmailOptions).toBeDefined();
             done();
           })

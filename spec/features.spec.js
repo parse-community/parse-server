@@ -29,9 +29,7 @@ describe('features', () => {
           'X-Parse-REST-API-Key': 'rest',
         },
       });
-      done.fail(
-        'The serverInfo request should be rejected without the master key'
-      );
+      done.fail('The serverInfo request should be rejected without the master key');
     } catch (error) {
       expect(error.status).toEqual(403);
       expect(error.data.error).toEqual('unauthorized: master key is required');

@@ -1,5 +1,4 @@
-const UserController = require('../lib/Controllers/UserController')
-  .UserController;
+const UserController = require('../lib/Controllers/UserController').UserController;
 const emailAdapter = require('./MockEmailAdapter');
 const AppCache = require('../lib/cache').AppCache;
 
