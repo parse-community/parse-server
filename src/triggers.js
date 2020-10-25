@@ -665,7 +665,7 @@ export function maybeRunValidator(request, functionName) {
     return Promise.resolve()
       .then(() => {
         return typeof theValidator === 'object'
-          ? inbuiltTriggerValidator(theValidator, request)
+          ? builtInTriggerValidator(theValidator, request)
           : theValidator(request);
       })
       .then(() => {
@@ -680,7 +680,7 @@ export function maybeRunValidator(request, functionName) {
       });
   });
 }
-function inbuiltTriggerValidator(options, request) {
+function builtInTriggerValidator(options, request) {
   let reqUser = request.user;
   if (
     !reqUser &&
