@@ -554,14 +554,14 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeSave resolveMaster', async function (done) {
+  it('basic beforeSave resolveMasterKey', async function (done) {
     Parse.Cloud.beforeSave(
       'BeforeSave',
       () => {
         throw 'before save should have resolved using masterKey.';
       },
       {
-        resolveMaster: true,
+        resolveMasterKey: true,
       }
     );
     const obj = new Parse.Object('BeforeSave');
@@ -571,14 +571,14 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeFind resolveMaster', async function (done) {
+  it('basic beforeFind resolveMasterKey', async function (done) {
     Parse.Cloud.beforeFind(
       'beforeFind',
       () => {
         throw 'before find should have resolved using masterKey.';
       },
       {
-        resolveMaster: true,
+        resolveMasterKey: true,
       }
     );
     const obj = new Parse.Object('beforeFind');
@@ -599,14 +599,14 @@ describe('cloud validator', () => {
     }
   });
 
-  it('basic beforeDelete resolveMaster', async function (done) {
+  it('basic beforeDelete resolveMasterKey', async function (done) {
     Parse.Cloud.beforeDelete(
       'beforeFind',
       () => {
         throw 'before find should have resolved using masterKey.';
       },
       {
-        resolveMaster: true,
+        resolveMasterKey: true,
       }
     );
     const obj = new Parse.Object('beforeFind');
@@ -617,19 +617,66 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeSaveFile resolveMaster', async done => {
+  it('basic beforeSaveFile resolveMasterKey', async done => {
     Parse.Cloud.beforeSaveFile(
       () => {
         throw 'beforeSaveFile should have resolved using master key.';
       },
       {
-        resolveMaster: true,
+        resolveMasterKey: true,
       }
     );
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
     const result = await file.save({ useMasterKey: true });
     expect(result).toBe(file);
     done();
+  });
+
+  it('beforeSave validateMasterKey and resolveMasterKey fail', async function (done) {
+    Parse.Cloud.beforeSave(
+      'BeforeSave',
+      () => {
+        throw 'beforeSaveFile should have resolved using master key.';
+      },
+      {
+        fields: ['foo'],
+        validateMasterKey: true,
+        resolveMasterKey: true,
+      }
+    );
+
+    const obj = new Parse.Object('BeforeSave');
+    try {
+      await obj.save(null, { useMasterKey: true });
+      fail('function should have failed.');
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Validation failed. Please specify data for foo.');
+      done();
+    }
+  });
+
+  it('beforeSave validateMasterKey and resolveMasterKey success', async function (done) {
+    Parse.Cloud.beforeSave(
+      'BeforeSave',
+      () => {
+        throw 'beforeSaveFile should have resolved using master key.';
+      },
+      {
+        fields: ['foo'],
+        validateMasterKey: true,
+        resolveMasterKey: true,
+      }
+    );
+
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    try {
+      await obj.save(null, { useMasterKey: true });
+      done();
+    } catch (error) {
+      fail('error should not have been called.');
+    }
   });
 
   it('basic beforeSave requireUserKey on User Class', async function (done) {
