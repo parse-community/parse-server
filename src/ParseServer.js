@@ -181,7 +181,7 @@ class ParseServer {
       const keys = ['find', 'count', 'get', 'create', 'update', 'delete', 'addField'];
       for (const key of keys) {
         const option = clp[key];
-        if (className === 'User' && key === 'create') {
+        if (className === '_User' && key === 'create') {
           continue;
         }
         if (!option || option['*']) {
