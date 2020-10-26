@@ -554,6 +554,84 @@ describe('cloud validator', () => {
     done();
   });
 
+  it('basic beforeSave resolveMaster', async function (done) {
+    Parse.Cloud.beforeSave(
+      'BeforeSave',
+      () => {
+        throw 'before save should have resolved using masterKey.';
+      },
+      {
+        resolveMaster: true,
+      }
+    );
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save(null, { useMasterKey: true });
+    expect(obj.get('foo')).toBe('bar');
+    done();
+  });
+
+  it('basic beforeFind resolveMaster', async function (done) {
+    Parse.Cloud.beforeFind(
+      'beforeFind',
+      () => {
+        throw 'before find should have resolved using masterKey.';
+      },
+      {
+        resolveMaster: true,
+      }
+    );
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.get('foo')).toBe('bar');
+
+    const query = new Parse.Query('beforeFind');
+    try {
+      const first = await query.first({ useMasterKey: true });
+      expect(first).toBeDefined();
+      expect(first.id).toBe(obj.id);
+      done();
+    } catch (e) {
+      console.log(e);
+      console.log(e.code);
+      throw e;
+    }
+  });
+
+  it('basic beforeDelete resolveMaster', async function (done) {
+    Parse.Cloud.beforeDelete(
+      'beforeFind',
+      () => {
+        throw 'before find should have resolved using masterKey.';
+      },
+      {
+        resolveMaster: true,
+      }
+    );
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.get('foo')).toBe('bar');
+    await obj.destroy({ useMasterKey: true });
+    done();
+  });
+
+  it('basic beforeSaveFile resolveMaster', async done => {
+    Parse.Cloud.beforeSaveFile(
+      () => {
+        throw 'beforeSaveFile should have resolved using master key.';
+      },
+      {
+        resolveMaster: true,
+      }
+    );
+    const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
+    const result = await file.save({ useMasterKey: true });
+    expect(result).toBe(file);
+    done();
+  });
+
   it('basic beforeSave requireUserKey on User Class', async function (done) {
     Parse.Cloud.beforeSave(Parse.User, () => {}, {
       requireUser: true,
