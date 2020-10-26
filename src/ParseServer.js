@@ -40,6 +40,8 @@ import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+import { getTrigger } from './triggers.js';
+import url from 'url';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -80,6 +82,7 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete();
         }
+        this.verifySecurityChecks(options);
       })
       .catch(error => {
         if (serverStartComplete) {
@@ -107,6 +110,168 @@ class ParseServer {
       this._app = ParseServer.app(this.config);
     }
     return this._app;
+  }
+
+  async verifySecurityChecks() {
+    const options = this.config;
+    if (options.disableSecurityChecks) {
+      return;
+    }
+    const warnings = await this.getSecurityChecks(options);
+    const logger = logging.getLogger();
+    const security = warnings.Security || [];
+    const clp = warnings.CLP || [];
+    const total = warnings.Total;
+    if (total == 0) {
+      return;
+    }
+    let errorString = `We found ${total} potential security issues with your Parse Server:\n\n`;
+    for (const issue of security) {
+      errorString += `Issue: ${issue.title}\n`;
+      errorString += `   ${issue.message}\n\n`;
+    }
+    for (const issue in clp) {
+      errorString += `\nCLP Issue in Class: ${issue}\n`;
+      const classData = clp[issue];
+      for (const clpIssue of classData) {
+        errorString += `   ${clpIssue.title}\n`;
+      }
+    }
+    logger.warn(errorString);
+  }
+  async getSecurityChecks() {
+    const clpWarnings = {};
+    const securityWarnings = [];
+    let totalWarnings = 0;
+    const options = this.config;
+    if (options.allowClientClassCreation) {
+      securityWarnings.push({
+        title: 'Allow Client Class Creation is not recommended.',
+        message:
+          'Allow client class creation is potentially insecure as it allows any user - authorized or not - to create a new class.',
+        link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
+      });
+    }
+    if (!options.maxUploadSize) {
+      securityWarnings.push({
+        title: 'No file upload limit.',
+        message:
+          'Allow client class creation is potentially insecure as it allows any user - authorized or not - to create a new class.',
+        link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
+      });
+    }
+    const config = Config.get(options.appId);
+    const schema = await config.database.loadSchema();
+    const all = await schema.getAllClasses();
+    for (const field of all) {
+      const className = field.className;
+      const clp = field.classLevelPermissions;
+      const thisClassWarnings = clpWarnings[className] || [];
+      if (!clp) {
+        totalWarnings++;
+        thisClassWarnings.push({
+          title: `No Class Level Permissions on ${className}`,
+          message:
+            'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
+          link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+        });
+        clpWarnings[className] = thisClassWarnings;
+        continue;
+      }
+      const keys = ['find', 'count', 'get', 'create', 'update', 'delete', 'addField'];
+      for (const key of keys) {
+        const option = clp[key];
+        if (className === 'User' && key === 'create') {
+          continue;
+        }
+        if (!option || option['*']) {
+          totalWarnings++;
+          thisClassWarnings.push({
+            title: `Unrestricted access to ${key}.`,
+            message: `We recommend restricting ${key} on all classes`,
+            link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+          });
+        } else if (Object.keys(option).length != 0 && key === 'addField') {
+          totalWarnings++;
+          thisClassWarnings.push({
+            title: `Certain users can add fields.`,
+            message:
+              'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
+            link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+          });
+        }
+      }
+      clpWarnings[className] = thisClassWarnings;
+    }
+    const fileTrigger = getTrigger('@File', 'beforeSaveFile', options.appId);
+    if (!fileTrigger) {
+      totalWarnings++;
+      securityWarnings.push({
+        title: `No beforeFileSave Trigger`,
+        message:
+          "Even if you don't store files, we strongly recommend using a beforeFileSave trigger to prevent unauthorized uploads.",
+        link: 'https://docs.parseplatform.org/cloudcode/guide/#beforesavefile',
+      });
+    } else {
+      try {
+        const file = new Parse.File('testpopeye.txt', [1, 2, 3], 'text/plain');
+        await file.save();
+        totalWarnings++;
+        securityWarnings.push({
+          title: `Unrestricted access to file uploads`,
+          message:
+            'Even though you have a beforeFileSave trigger, it allows unregistered users to upload.',
+          link: 'https://docs.parseplatform.org/cloudcode/guide/#beforesavefile',
+        });
+        await this.config.filesController.deleteFile(file._name);
+      } catch (e) {
+        /* */
+      }
+    }
+    let databaseURI = options.databaseURI;
+    let protocol;
+    try {
+      const parsedURI = url.parse(databaseURI);
+      protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
+    } catch (e) {
+      /* */
+    }
+    if (protocol !== 'postgres:') {
+      if (databaseURI.includes('@')) {
+        databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
+      }
+      let databaseAdmin = '' + databaseURI;
+      try {
+        const parsedURI = url.parse(databaseAdmin);
+        parsedURI.port = '27017';
+        databaseAdmin = parsedURI.toString();
+      } catch (e) {
+        /* */
+      }
+      const mongodb = require('mongodb');
+      const MongoClient = mongodb.MongoClient;
+      try {
+        await MongoClient.connect(databaseURI, { useNewUrlParser: true });
+        securityWarnings.push({
+          title: `Unrestricted access to port 27017`,
+          message:
+            'It is possible to connect to the admin port of your mongoDb without authentication.',
+          link: 'https://docs.mongodb.com/manual/security/',
+        });
+        totalWarnings++;
+        await MongoClient.connect(databaseURI, { useNewUrlParser: true });
+        securityWarnings.push({
+          title: `Unrestricted access to your database`,
+          message:
+            'It is possible to connect to your mongoDb without username and password on your connection string.',
+          link: 'https://docs.mongodb.com/manual/security/',
+        });
+        totalWarnings++;
+      } catch (e) {
+        /* */
+      }
+    }
+    return { Security: securityWarnings, CLP: clpWarnings, Total: totalWarnings };
   }
 
   handleShutdown() {
