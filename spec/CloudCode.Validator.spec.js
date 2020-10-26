@@ -554,14 +554,14 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeSave resolveMasterKey', async function (done) {
+  it('basic beforeSave skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeSave(
       'BeforeSave',
       () => {
         throw 'before save should have resolved using masterKey.';
       },
       {
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
     const obj = new Parse.Object('BeforeSave');
@@ -571,14 +571,14 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeFind resolveMasterKey', async function (done) {
+  it('basic beforeFind skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeFind(
       'beforeFind',
       () => {
         throw 'before find should have resolved using masterKey.';
       },
       {
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
     const obj = new Parse.Object('beforeFind');
@@ -599,14 +599,14 @@ describe('cloud validator', () => {
     }
   });
 
-  it('basic beforeDelete resolveMasterKey', async function (done) {
+  it('basic beforeDelete skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeDelete(
       'beforeFind',
       () => {
         throw 'before find should have resolved using masterKey.';
       },
       {
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
     const obj = new Parse.Object('beforeFind');
@@ -617,13 +617,13 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic beforeSaveFile resolveMasterKey', async done => {
+  it('basic beforeSaveFile skipWithMasterKey', async done => {
     Parse.Cloud.beforeSaveFile(
       () => {
         throw 'beforeSaveFile should have resolved using master key.';
       },
       {
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
     const file = new Parse.File('popeye.txt', [1, 2, 3], 'text/plain');
@@ -632,7 +632,7 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('beforeSave validateMasterKey and resolveMasterKey fail', async function (done) {
+  it('beforeSave validateMasterKey and skipWithMasterKey fail', async function (done) {
     Parse.Cloud.beforeSave(
       'BeforeSave',
       () => {
@@ -641,7 +641,7 @@ describe('cloud validator', () => {
       {
         fields: ['foo'],
         validateMasterKey: true,
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
 
@@ -656,7 +656,7 @@ describe('cloud validator', () => {
     }
   });
 
-  it('beforeSave validateMasterKey and resolveMasterKey success', async function (done) {
+  it('beforeSave validateMasterKey and skipWithMasterKey success', async function (done) {
     Parse.Cloud.beforeSave(
       'BeforeSave',
       () => {
@@ -665,7 +665,7 @@ describe('cloud validator', () => {
       {
         fields: ['foo'],
         validateMasterKey: true,
-        resolveMasterKey: true,
+        skipWithMasterKey: true,
       }
     );
 

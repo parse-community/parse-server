@@ -418,7 +418,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
         return maybeRunValidator(request, `${triggerType}.${className}`);
       })
       .then(() => {
-        if (request.resolveMasterKey) {
+        if (request.skipWithMasterKey) {
           return request.objects;
         }
         const response = trigger(request);
@@ -483,7 +483,7 @@ export function maybeRunQueryTrigger(
       return maybeRunValidator(requestObject, `${triggerType}.${className}`);
     })
     .then(() => {
-      if (requestObject.resolveMasterKey) {
+      if (requestObject.skipWithMasterKey) {
         return requestObject.query;
       }
       return trigger(requestObject);
@@ -587,8 +587,8 @@ export function maybeRunValidator(request, functionName) {
   if (!theValidator) {
     return;
   }
-  if (typeof theValidator === 'object' && theValidator.resolveMasterKey && request.master) {
-    request.resolveMasterKey = true;
+  if (typeof theValidator === 'object' && theValidator.skipWithMasterKey && request.master) {
+    request.skipWithMasterKey = true;
   }
   return new Promise((resolve, reject) => {
     return Promise.resolve()
@@ -804,7 +804,7 @@ export function maybeRunTrigger(
         return maybeRunValidator(request, `${triggerType}.${parseObject.className}`);
       })
       .then(() => {
-        if (request.resolveMasterKey) {
+        if (request.skipWithMasterKey) {
           return Promise.resolve();
         }
         const promise = trigger(request);
@@ -883,7 +883,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
     try {
       const request = getRequestFileObject(triggerType, auth, fileObject, config);
       await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
-      if (request.resolveMasterKey) {
+      if (request.skipWithMasterKey) {
         return fileObject;
       }
       const result = await fileTrigger(request);
@@ -916,7 +916,7 @@ export async function maybeRunConnectTrigger(triggerType, request) {
   }
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
-  if (request.resolveMasterKey) {
+  if (request.skipWithMasterKey) {
     return;
   }
   return trigger(request);
@@ -932,7 +932,7 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${className}`);
-  if (request.resolveMasterKey) {
+  if (request.skipWithMasterKey) {
     return;
   }
   await trigger(request);
@@ -956,7 +956,7 @@ export async function maybeRunAfterEventTrigger(triggerType, className, request)
   }
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${className}`);
-  if (request.resolveMasterKey) {
+  if (request.skipWithMasterKey) {
     return;
   }
   return trigger(request);
