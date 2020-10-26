@@ -122,6 +122,24 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('beforeFind can throw string', async function (done) {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      throw 'throw beforeFind';
+    });
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.get('foo')).toBe('bar');
+    try {
+      const query = new Parse.Query('beforeFind');
+      await query.first();
+    } catch (e) {
+      expect(e.code).toBe(141);
+      expect(e.message).toBe('throw beforeFind');
+      done();
+    }
+  });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');
@@ -1894,7 +1912,7 @@ describe('beforeFind hooks', () => {
         done();
       },
       err => {
-        expect(err.code).toBe(1);
+        expect(err.code).toBe(141);
         expect(err.message).toEqual('Do not run that query');
         done();
       }

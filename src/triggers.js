@@ -331,13 +331,11 @@ export function getResponseObject(request, resolve, reject) {
       return resolve(response);
     },
     error: function (error) {
-      if (error instanceof Parse.Error) {
-        reject(error);
-      } else if (error instanceof Error) {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error.message));
-      } else {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
-      }
+      const e = resolveError(error, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      reject(e);
     },
   };
 }
@@ -420,6 +418,9 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
         return maybeRunValidator(request, `${triggerType}.${className}`);
       })
       .then(() => {
+        if (request.skipWithMasterKey) {
+          return request.objects;
+        }
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
@@ -482,6 +483,9 @@ export function maybeRunQueryTrigger(
       return maybeRunValidator(requestObject, `${triggerType}.${className}`);
     })
     .then(() => {
+      if (requestObject.skipWithMasterKey) {
+        return requestObject.query;
+      }
       return trigger(requestObject);
     })
     .then(
@@ -544,11 +548,11 @@ export function maybeRunQueryTrigger(
         };
       },
       err => {
-        if (typeof err === 'string') {
-          throw new Parse.Error(1, err);
-        } else {
-          throw err;
-        }
+        const error = resolveError(err, {
+          code: Parse.Error.SCRIPT_FAILED,
+          message: 'Script failed. Unknown error.',
+        });
+        throw error;
       }
     );
 }
@@ -582,6 +586,9 @@ export function maybeRunValidator(request, functionName) {
   const theValidator = getValidator(functionName, Parse.applicationId);
   if (!theValidator) {
     return;
+  }
+  if (typeof theValidator === 'object' && theValidator.skipWithMasterKey && request.master) {
+    request.skipWithMasterKey = true;
   }
   return new Promise((resolve, reject) => {
     return Promise.resolve()
@@ -797,6 +804,9 @@ export function maybeRunTrigger(
         return maybeRunValidator(request, `${triggerType}.${parseObject.className}`);
       })
       .then(() => {
+        if (request.skipWithMasterKey) {
+          return Promise.resolve();
+        }
         const promise = trigger(request);
         if (
           triggerType === Types.afterSave ||
@@ -873,6 +883,9 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
     try {
       const request = getRequestFileObject(triggerType, auth, fileObject, config);
       await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
+      if (request.skipWithMasterKey) {
+        return fileObject;
+      }
       const result = await fileTrigger(request);
       logTriggerSuccessBeforeHook(
         triggerType,
@@ -903,6 +916,9 @@ export async function maybeRunConnectTrigger(triggerType, request) {
   }
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
   return trigger(request);
 }
 
@@ -916,6 +932,9 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${className}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
   await trigger(request);
   const query = request.query.toJSON();
   if (query.keys) {
@@ -937,6 +956,9 @@ export async function maybeRunAfterEventTrigger(triggerType, className, request)
   }
   request.user = await userForSessionToken(request.sessionToken);
   await maybeRunValidator(request, `${triggerType}.${className}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
   return trigger(request);
 }
 
