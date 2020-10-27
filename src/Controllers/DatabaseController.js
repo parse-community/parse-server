@@ -60,6 +60,7 @@ const specialQuerykeys = [
   '_email_verify_token_expires_at',
   '_account_lockout_expires_at',
   '_failed_login_count',
+  '_mfa',
 ];
 
 const isSpecialQueryKey = key => {
@@ -222,6 +223,7 @@ const filterSensitiveData = (
   delete object._account_lockout_expires_at;
   delete object._password_changed_at;
   delete object._password_history;
+  delete object._mfa;
 
   if (aclGroup.indexOf(object.objectId) > -1) {
     return object;
@@ -251,6 +253,7 @@ const specialKeysForUpdate = [
   '_perishable_token_expires_at',
   '_password_changed_at',
   '_password_history',
+  '_mfa',
 ];
 
 const isSpecialUpdateKey = key => {

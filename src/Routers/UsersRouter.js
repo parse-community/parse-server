@@ -9,6 +9,8 @@ import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
+import * as otplib from 'otplib';
+const crypto = require('crypto');
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -46,7 +48,7 @@ export class UsersRouter extends ClassesRouter {
       ) {
         payload = req.query;
       }
-      const { username, email, password } = payload;
+      const { username, email, password, token } = payload;
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
@@ -130,7 +132,20 @@ export class UsersRouter extends ClassesRouter {
               delete user.authData;
             }
           }
-
+          const mfaenabled = req.config.twoFactor || {};
+          if (mfaenabled.enabled && user._mfa) {
+            if (!token) {
+              throw new Parse.Error(211, 'Please provide your 2FA token.');
+            }
+            return this.decryptMFAKey(user._mfa, req.config.twoFactor.encryptionKey);
+          }
+          return Promise.resolve();
+        })
+        .then(mfaToken => {
+          if (req.config.twoFactor && !otplib.authenticator.verify({ token, secret: mfaToken })) {
+            throw new Parse.Error(212, 'Invalid 2FA token');
+          }
+          delete user._mfa;
           return resolve(user);
         })
         .catch(error => {
@@ -289,6 +304,126 @@ export class UsersRouter extends ClassesRouter {
     }
     return Promise.resolve(success);
   }
+  encryptMFAKey(mfa, encryptionKey) {
+    try {
+      if (!encryptionKey) {
+        return mfa;
+      }
+      const algorithm = 'aes-256-gcm';
+      const encryption = crypto
+        .createHash('sha256')
+        .update(String(encryptionKey))
+        .digest('base64')
+        .substr(0, 32);
+      const iv = crypto.randomBytes(16);
+
+      const cipher = crypto.createCipheriv(algorithm, encryption, iv);
+
+      const encryptedResult = Buffer.concat([
+        cipher.update(mfa),
+        cipher.final(),
+        iv,
+        cipher.getAuthTag(),
+      ]);
+      return encryptedResult.toString('base64');
+    } catch (e) {
+      throw new Parse.Error(212, 'Invalid 2FA token');
+    }
+  }
+  async decryptMFAKey(mfa, encryptionKey) {
+    try {
+      if (encryptionKey == null) {
+        return mfa;
+      }
+      const algorithm = 'aes-256-gcm';
+      const encryption = crypto
+        .createHash('sha256')
+        .update(String(encryptionKey))
+        .digest('base64')
+        .substr(0, 32);
+      const data = Buffer.from(mfa, 'base64');
+      const authTagLocation = data.length - 16;
+      const ivLocation = data.length - 32;
+      const authTag = data.slice(authTagLocation);
+      const iv = data.slice(ivLocation, authTagLocation);
+      const encrypted = data.slice(0, ivLocation);
+      const decipher = crypto.createDecipheriv(algorithm, encryption, iv);
+      decipher.setAuthTag(authTag);
+      return await new Promise((resolve, reject) => {
+        let decrypted = '';
+        decipher.on('readable', chunk => {
+          while (null !== (chunk = decipher.read())) {
+            decrypted += chunk.toString('utf8');
+          }
+        });
+        decipher.on('end', () => {
+          resolve(decrypted);
+        });
+        decipher.on('error', e => {
+          reject(e);
+        });
+        decipher.write(encrypted);
+        decipher.end();
+      });
+    } catch (err) {
+      throw new Parse.Error(212, 'Invalid 2FA token');
+    }
+  }
+  async enable2FA(req) {
+    const mfaenabled = req.config.twoFactor || {};
+    if (!mfaenabled.enabled) {
+      throw new Parse.Error(-1, 'MFA is not enabled.');
+    }
+    const { user } = req.auth;
+    if (!user) {
+      throw new Parse.Error(101, 'Unauthorized');
+    }
+    const secret = otplib.authenticator.generateSecret();
+    const otpauth = otplib.authenticator.keyuri(user.get('username'), req.config.appName, secret);
+    const storeKey = this.encryptMFAKey(`pending:${secret}`, req.config.twoFactor.encryptionKey);
+    await req.config.database.update('_User', { objectId: user.id }, { _mfa: storeKey });
+    return { response: { qrcodeURL: otpauth, secret } };
+  }
+
+  async verify2FA(req) {
+    const mfaenabled = req.config.twoFactor || {};
+    if (!mfaenabled.enabled) {
+      throw new Parse.Error(210, 'MFA is not enabled.');
+    }
+    if (!req.auth.user) {
+      throw new Parse.Error(101, 'Unauthorized');
+    }
+    const { token } = req.body;
+    if (!token) {
+      throw new Parse.Error(211, 'Please provide a token.');
+    }
+    // Fetch the user directly from the DB as we need the _mfa
+    const [user] = await req.config.database.find('_User', {
+      objectId: req.auth.user.id,
+    });
+    if (!user._mfa) {
+      throw new Parse.Error(
+        213,
+        'MFA is not enabled on this account. Please enable MFA before calling this function.'
+      );
+    }
+    const mfa = await this.decryptMFAKey(user._mfa, req.config.twoFactor.encryptionKey);
+    if (mfa.indexOf('pending:') !== 0) {
+      throw new Parse.Error(214, 'MFA is already active');
+    }
+    const secret = mfa.slice('pending:'.length);
+    const result = otplib.authenticator.verify({ token, secret });
+    if (!result) {
+      throw new Parse.Error(212, 'Invalid token');
+    }
+    const storeKey = this.encryptMFAKey(`${secret}`, req.config.twoFactor.encryptionKey);
+    await req.config.database.update(
+      '_User',
+      { username: user.username },
+      { _mfa: storeKey, MFAEnabled: true }
+    );
+    return { response: {} };
+  }
 
   _runAfterLogoutTrigger(req, session) {
     // After logout trigger
@@ -419,6 +554,8 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
     });
+    this.route('GET', '/users/me/enable2FA', req => this.enable2FA(req));
+    this.route('POST', '/users/me/verify2FA', req => this.verify2FA(req));
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });

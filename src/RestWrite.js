@@ -578,6 +578,11 @@ RestWrite.prototype.transformUser = function () {
     const error = `Clients aren't allowed to manually update email verification.`;
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
+  if (!this.auth.isMaster) {
+    delete this.data.MFAEnabled;
+    delete this.data.mfa;
+    delete this.data._mfa;
+  }
 
   // Do not cleanup session if objectId is not set
   if (this.query && this.objectId()) {
