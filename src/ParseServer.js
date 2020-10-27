@@ -255,6 +255,20 @@ class ParseServer {
     if (protocol !== 'postgres:') {
       if (databaseURI.includes('@')) {
         databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
+        const pwd = databaseURI.split('@')[0].split(':')[1] || '';
+        if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
+          // DB string must contain at least 1 lowercase alphabetical character
+          // DB string must contain at least 1 uppercase alphabetical character
+          // DB string must contain at least 1 numeric character
+          // DB string must contain at least one special character
+          // DB string must be 14 characters or longer
+          securityWarnings.push({
+            title: `Weak Database Password`,
+            message: 'The password used to connect to your database could be stronger.',
+            link: 'https://docs.mongodb.com/manual/security/',
+          });
+          totalWarnings++;
+        }
       }
       let databaseAdmin = '' + databaseURI;
       try {
@@ -267,7 +281,7 @@ class ParseServer {
       const mongodb = require('mongodb');
       const MongoClient = mongodb.MongoClient;
       try {
-        await MongoClient.connect(databaseURI, { useNewUrlParser: true });
+        await MongoClient.connect(databaseAdmin, { useNewUrlParser: true });
         securityWarnings.push({
           title: `Unrestricted access to port 27017`,
           message:
@@ -275,6 +289,10 @@ class ParseServer {
           link: 'https://docs.mongodb.com/manual/security/',
         });
         totalWarnings++;
+      } catch (e) {
+        /* */
+      }
+      try {
         await MongoClient.connect(databaseURI, { useNewUrlParser: true });
         securityWarnings.push({
           title: `Unrestricted access to your database`,
