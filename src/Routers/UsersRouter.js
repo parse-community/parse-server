@@ -9,7 +9,7 @@ import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
-import * as otplib from 'otplib';
+import { authenticator } from 'otplib';
 const crypto = require('crypto');
 
 export class UsersRouter extends ClassesRouter {
@@ -141,10 +141,7 @@ export class UsersRouter extends ClassesRouter {
               user._mfa,
               req.config.multiFactorAuth.encryptionKey
             );
-            if (
-              req.config.multiFactorAuth &&
-              !otplib.authenticator.verify({ token, secret: mfaToken })
-            ) {
+            if (req.config.multiFactorAuth && !authenticator.verify({ token, secret: mfaToken })) {
               throw new Parse.Error(212, 'Invalid MFA token');
             }
           }
@@ -381,8 +378,8 @@ export class UsersRouter extends ClassesRouter {
     if (!user) {
       throw new Parse.Error(101, 'Unauthorized');
     }
-    const secret = otplib.authenticator.generateSecret();
-    const otpauth = otplib.authenticator.keyuri(user.get('username'), req.config.appName, secret);
+    const secret = authenticator.generateSecret();
+    const otpauth = authenticator.keyuri(user.get('username'), req.config.appName, secret);
     const storeKey = this.encryptMFAKey(
       `pending:${secret}`,
       req.config.multiFactorAuth.encryptionKey
@@ -418,7 +415,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(214, 'MFA is already active');
     }
     const secret = mfa.slice('pending:'.length);
-    const result = otplib.authenticator.verify({ token, secret });
+    const result = authenticator.verify({ token, secret });
     if (!result) {
       throw new Parse.Error(212, 'Invalid token');
     }
