@@ -3,11 +3,11 @@
 const request = require('../lib/request');
 const otplib = require('otplib');
 
-describe('2FA', () => {
-  function enable2FA(user) {
+describe('MFA', () => {
+  function enableMFA(user) {
     return request({
       method: 'GET',
-      url: 'http://localhost:8378/1/users/me/enable2FA',
+      url: 'http://localhost:8378/1/users/me/enableMFA',
       json: true,
       headers: {
         'X-Parse-Session-Token': user.getSessionToken(),
@@ -17,10 +17,10 @@ describe('2FA', () => {
     });
   }
 
-  function validate2FA(user, token) {
+  function validateMFA(user, token) {
     return request({
       method: 'POST',
-      url: 'http://localhost:8378/1/users/me/verify2FA',
+      url: 'http://localhost:8378/1/users/me/verifyMFA',
       body: {
         token,
       },
@@ -33,7 +33,7 @@ describe('2FA', () => {
     });
   }
 
-  function loginWith2Fa(username, password, token) {
+  function loginWithMFA(username, password, token) {
     let req = `http://localhost:8378/1/login?username=${username}&password=${password}`;
     if (token) {
       req += `&token=${token}`;
@@ -49,9 +49,9 @@ describe('2FA', () => {
     });
   }
 
-  it('should enable 2FA tokens', async () => {
+  it('should enable MFA tokens', async () => {
     await reconfigureServer({
-      twoFactor: {
+      multiFactorAuth: {
         enabled: true,
       },
       appName: 'testApp',
@@ -59,7 +59,7 @@ describe('2FA', () => {
     const user = await Parse.User.signUp('username', 'password');
     const {
       data: { secret, qrcodeURL },
-    } = await enable2FA(user);
+    } = await enableMFA(user); // this function would be user.enable2FA() one SDK is updated
     expect(qrcodeURL).toBeDefined();
     expect(qrcodeURL).toContain('otpauth://totp/testApp');
     expect(qrcodeURL).toContain('secret');
@@ -67,13 +67,13 @@ describe('2FA', () => {
     expect(qrcodeURL).toContain('period');
     expect(qrcodeURL).toContain('digits');
     expect(qrcodeURL).toContain('algorithm');
-    const token = otplib.authenticator.generate(secret);
-    await validate2FA(user, token);
+    const token = otplib.authenticator.generate(secret); // this token would be generated from authenticator
+    await validateMFA(user, token); // this function would be user.validateMFA()
     await Parse.User.logOut();
     let verifytoken = '';
     const mfaLogin = async () => {
       try {
-        const result = await loginWith2Fa('username', 'password', verifytoken);
+        const result = await loginWithMFA('username', 'password', verifytoken); // Parse.User.login('username','password',verifytoken);
         if (!verifytoken) {
           throw 'Should not have been able to login.';
         }
@@ -83,9 +83,10 @@ describe('2FA', () => {
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser.MFAEnabled).toBe(true);
       } catch (err) {
-        expect(err.text).toMatch('{"code":211,"error":"Please provide your 2FA token."}');
+        expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
         if (err.text.includes('211')) {
+          // this user is 2FA enroled, get code
           await mfaLogin();
         }
       }
@@ -93,30 +94,30 @@ describe('2FA', () => {
     await mfaLogin();
   });
 
-  it('can reject 2FA', async () => {
+  it('can reject MFA', async () => {
     await reconfigureServer({
-      twoFactor: {
+      multiFactorAuth: {
         enabled: true,
       },
     });
     const user = await Parse.User.signUp('username', 'password');
     const {
       data: { secret },
-    } = await enable2FA(user);
+    } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validate2FA(user, token);
+    await validateMFA(user, token);
     await Parse.User.logOut();
     try {
-      await loginWith2Fa('username', 'password', '123102');
+      await loginWithMFA('username', 'password', '123102');
       throw 'should not be able to login.';
     } catch (e) {
-      expect(e.text).toBe('{"code":212,"error":"Invalid 2FA token"}');
+      expect(e.text).toBe('{"code":212,"error":"Invalid MFA token"}');
     }
   });
 
-  it('can encrypt 2FA tokens', async () => {
+  it('can encrypt MFA tokens', async () => {
     await reconfigureServer({
-      twoFactor: {
+      multiFactorAuth: {
         enabled: true,
         encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
       },
@@ -124,14 +125,14 @@ describe('2FA', () => {
     const user = await Parse.User.signUp('username', 'password');
     const {
       data: { secret },
-    } = await enable2FA(user);
+    } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validate2FA(user, token);
+    await validateMFA(user, token);
     await Parse.User.logOut();
     let verifytoken = '';
     const mfaLogin = async () => {
       try {
-        const result = await loginWith2Fa('username', 'password', verifytoken);
+        const result = await loginWithMFA('username', 'password', verifytoken);
         if (!verifytoken) {
           throw 'Should not have been able to login.';
         }
@@ -141,7 +142,7 @@ describe('2FA', () => {
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
       } catch (err) {
-        expect(err.text).toMatch('{"code":211,"error":"Please provide your 2FA token."}');
+        expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
         if (err.text.includes('211')) {
           await mfaLogin();
@@ -152,7 +153,7 @@ describe('2FA', () => {
   });
   it('cannot set _mfa or mfa', async () => {
     await reconfigureServer({
-      twoFactor: {
+      multiFactorAuth: {
         enabled: true,
         encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
       },
@@ -160,9 +161,9 @@ describe('2FA', () => {
     const user = await Parse.User.signUp('username', 'password');
     const {
       data: { secret },
-    } = await enable2FA(user);
+    } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validate2FA(user, token);
+    await validateMFA(user, token);
     user.set('_mfa', 'foo');
     user.set('mfa', 'foo');
     await user.save(null, { sessionToken: user.getSessionToken() });
@@ -170,7 +171,7 @@ describe('2FA', () => {
     let verifytoken = '';
     const mfaLogin = async () => {
       try {
-        const result = await loginWith2Fa('username', 'password', verifytoken);
+        const result = await loginWithMFA('username', 'password', verifytoken);
         if (!verifytoken) {
           throw 'Should not have been able to login.';
         }
@@ -180,7 +181,7 @@ describe('2FA', () => {
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
       } catch (err) {
-        expect(err.text).toMatch('{"code":211,"error":"Please provide your 2FA token."}');
+        expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
         if (err.text.includes('211')) {
           await mfaLogin();
@@ -189,7 +190,7 @@ describe('2FA', () => {
     };
     await mfaLogin();
   });
-  it('prevent setting on mfw / 2fa tokens', async () => {
+  it('prevent setting on mfw / MFA tokens', async () => {
     const user = await Parse.User.signUp('username', 'password');
     user.set('MFAEnabled', true);
     user.set('mfa', true);
@@ -200,7 +201,7 @@ describe('2FA', () => {
     expect(user.get('mfa')).toBeUndefined();
     expect(user.get('_mfa')).toBeUndefined();
     await reconfigureServer({
-      twoFactor: {
+      multiFactorAuth: {
         enabled: false,
       },
     });

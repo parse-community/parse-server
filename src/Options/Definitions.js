@@ -382,7 +382,7 @@ module.exports.ParseServerOptions = {
     help: 'Starts the liveQuery server',
     action: parsers.booleanParser,
   },
-  twoFactor: {
+  multiFactorAuth: {
     env: 'PARSE_SERVER_TWO_FACTOR',
     help: 'Enables two factor authentication.',
     default: {},

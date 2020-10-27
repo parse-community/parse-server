@@ -132,17 +132,20 @@ export class UsersRouter extends ClassesRouter {
               delete user.authData;
             }
           }
-          const mfaenabled = req.config.twoFactor || {};
+          const mfaenabled = req.config.multiFactorAuth || {};
           if (mfaenabled.enabled && user._mfa) {
             if (!token) {
-              throw new Parse.Error(211, 'Please provide your 2FA token.');
+              throw new Parse.Error(211, 'Please provide your MFA token.');
             }
             const mfaToken = await this.decryptMFAKey(
               user._mfa,
-              req.config.twoFactor.encryptionKey
+              req.config.multiFactorAuth.encryptionKey
             );
-            if (req.config.twoFactor && !otplib.authenticator.verify({ token, secret: mfaToken })) {
-              throw new Parse.Error(212, 'Invalid 2FA token');
+            if (
+              req.config.multiFactorAuth &&
+              !otplib.authenticator.verify({ token, secret: mfaToken })
+            ) {
+              throw new Parse.Error(212, 'Invalid MFA token');
             }
           }
           delete user._mfa;
@@ -327,7 +330,7 @@ export class UsersRouter extends ClassesRouter {
       ]);
       return encryptedResult.toString('base64');
     } catch (e) {
-      throw new Parse.Error(212, 'Invalid 2FA token');
+      throw new Parse.Error(212, 'Invalid MFA token');
     }
   }
   async decryptMFAKey(mfa, encryptionKey) {
@@ -366,11 +369,11 @@ export class UsersRouter extends ClassesRouter {
         decipher.end();
       });
     } catch (err) {
-      throw new Parse.Error(212, 'Invalid 2FA token');
+      throw new Parse.Error(212, 'Invalid MFA token');
     }
   }
-  async enable2FA(req) {
-    const mfaenabled = req.config.twoFactor || {};
+  async enableMFA(req) {
+    const mfaenabled = req.config.multiFactorAuth || {};
     if (!mfaenabled.enabled) {
       throw new Parse.Error(-1, 'MFA is not enabled.');
     }
@@ -380,13 +383,16 @@ export class UsersRouter extends ClassesRouter {
     }
     const secret = otplib.authenticator.generateSecret();
     const otpauth = otplib.authenticator.keyuri(user.get('username'), req.config.appName, secret);
-    const storeKey = this.encryptMFAKey(`pending:${secret}`, req.config.twoFactor.encryptionKey);
+    const storeKey = this.encryptMFAKey(
+      `pending:${secret}`,
+      req.config.multiFactorAuth.encryptionKey
+    );
     await req.config.database.update('_User', { objectId: user.id }, { _mfa: storeKey });
     return { response: { qrcodeURL: otpauth, secret } };
   }
 
-  async verify2FA(req) {
-    const mfaenabled = req.config.twoFactor || {};
+  async verifyMFA(req) {
+    const mfaenabled = req.config.multiFactorAuth || {};
     if (!mfaenabled.enabled) {
       throw new Parse.Error(210, 'MFA is not enabled.');
     }
@@ -407,7 +413,7 @@ export class UsersRouter extends ClassesRouter {
         'MFA is not enabled on this account. Please enable MFA before calling this function.'
       );
     }
-    const mfa = await this.decryptMFAKey(user._mfa, req.config.twoFactor.encryptionKey);
+    const mfa = await this.decryptMFAKey(user._mfa, req.config.multiFactorAuth.encryptionKey);
     if (mfa.indexOf('pending:') !== 0) {
       throw new Parse.Error(214, 'MFA is already active');
     }
@@ -416,7 +422,7 @@ export class UsersRouter extends ClassesRouter {
     if (!result) {
       throw new Parse.Error(212, 'Invalid token');
     }
-    const storeKey = this.encryptMFAKey(`${secret}`, req.config.twoFactor.encryptionKey);
+    const storeKey = this.encryptMFAKey(`${secret}`, req.config.multiFactorAuth.encryptionKey);
     await req.config.database.update(
       '_User',
       { username: user.username },
@@ -554,8 +560,8 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/logout', req => {
       return this.handleLogOut(req);
     });
-    this.route('GET', '/users/me/enable2FA', req => this.enable2FA(req));
-    this.route('POST', '/users/me/verify2FA', req => this.verify2FA(req));
+    this.route('GET', '/users/me/enableMFA', req => this.enableMFA(req));
+    this.route('POST', '/users/me/verifyMFA', req => this.verifyMFA(req));
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });
