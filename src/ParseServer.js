@@ -77,6 +77,15 @@ class ParseServer {
     const hooksLoadPromise = hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
+    const securityCheck = options.securityCheck || {};
+    if (
+      !securityCheck.logOutput &&
+      !securityCheck.disableWarning /*&& disable warning so this isn't annoying and can be turned off*/
+    ) {
+      loggerController.info(
+        "We can now automatically detect and recommend improvements to your server. If you'd like to use this feature, add the following option to your Parse Server config:\n\n   securityCheck: {\n      enabled: true,\n      logOutput: true\n}"
+      );
+    }
     Promise.all([dbInitPromise, hooksLoadPromise])
       .then(() => {
         if (serverStartComplete) {
@@ -114,7 +123,8 @@ class ParseServer {
 
   async verifySecurityChecks() {
     const options = this.config;
-    if (options.disableSecurityChecks) {
+    const securityCheck = options.securityCheck || {};
+    if (!securityCheck.logOutput) {
       return;
     }
     const warnings = await this.getSecurityChecks(options);
@@ -125,13 +135,15 @@ class ParseServer {
     if (total == 0) {
       return;
     }
-    let errorString = `We found ${total} potential security issues with your Parse Server:\n\n`;
+    let errorString = `We found ${total} improvement${
+      total == 1 ? '' : 's'
+    } for you to make on your Parse Server:\n\n`;
     for (const issue of security) {
-      errorString += `Issue: ${issue.title}\n`;
+      errorString += ` -${issue.title}\n`;
       errorString += `   ${issue.message}\n\n`;
     }
     for (const issue in clp) {
-      errorString += `\nCLP Issue in Class: ${issue}\n`;
+      errorString += `\n Add CLP for Class: ${issue}\n`;
       const classData = clp[issue];
       for (const clpIssue of classData) {
         errorString += `   ${clpIssue.title}\n`;
@@ -140,15 +152,19 @@ class ParseServer {
     logger.warn(errorString);
   }
   async getSecurityChecks() {
+    const options = this.config;
+    const securityCheck = options.securityCheck || {};
+    if (!securityCheck.enabled) {
+      return {};
+    }
     const clpWarnings = {};
     const securityWarnings = [];
     let totalWarnings = 0;
-    const options = this.config;
     if (options.allowClientClassCreation) {
       securityWarnings.push({
         title: 'Allow Client Class Creation is not recommended.',
         message:
-          'Allow client class creation is potentially insecure as it allows any user - authorized or not - to create a new class.',
+          'Allow client class creation is not recommended for production servers it allows any user - authorized or not - to create a new class.',
         link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
       });
     }
@@ -156,7 +172,7 @@ class ParseServer {
       securityWarnings.push({
         title: 'No file upload limit.',
         message:
-          'Allow client class creation is potentially insecure as it allows any user - authorized or not - to create a new class.',
+          'Allow client class creation is not recommended for production servers as it allows any user - authorized or not - to create a new class.',
         link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
       });
     }
