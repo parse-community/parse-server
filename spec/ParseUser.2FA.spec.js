@@ -199,5 +199,10 @@ describe('2FA', () => {
     expect(user.get('MFAEnabled')).toBeUndefined();
     expect(user.get('mfa')).toBeUndefined();
     expect(user.get('_mfa')).toBeUndefined();
+    await reconfigureServer({
+      twoFactor: {
+        enabled: false,
+      },
+    });
   });
 });

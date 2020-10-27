@@ -99,7 +99,7 @@ export class UsersRouter extends ClassesRouter {
           const accountLockoutPolicy = new AccountLockout(user, req.config);
           return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
         })
-        .then(() => {
+        .then(async () => {
           if (!isValidPassword) {
             throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
           }
@@ -137,13 +137,13 @@ export class UsersRouter extends ClassesRouter {
             if (!token) {
               throw new Parse.Error(211, 'Please provide your 2FA token.');
             }
-            return this.decryptMFAKey(user._mfa, req.config.twoFactor.encryptionKey);
-          }
-          return Promise.resolve();
-        })
-        .then(mfaToken => {
-          if (req.config.twoFactor && !otplib.authenticator.verify({ token, secret: mfaToken })) {
-            throw new Parse.Error(212, 'Invalid 2FA token');
+            const mfaToken = await this.decryptMFAKey(
+              user._mfa,
+              req.config.twoFactor.encryptionKey
+            );
+            if (req.config.twoFactor && !otplib.authenticator.verify({ token, secret: mfaToken })) {
+              throw new Parse.Error(212, 'Invalid 2FA token');
+            }
           }
           delete user._mfa;
           return resolve(user);
