@@ -200,10 +200,62 @@ describe('MFA', () => {
     expect(user.get('MFAEnabled')).toBeUndefined();
     expect(user.get('mfa')).toBeUndefined();
     expect(user.get('_mfa')).toBeUndefined();
+  });
+  it('verify throws correct error', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    try {
+      await enableMFA(user);
+      await validateMFA(user);
+    } catch (e) {
+      expect(e.text).toBe('{"code":211,"error":"Please provide a token."}');
+    }
+    try {
+      await validateMFA(user, 'tokenhere');
+    } catch (e) {
+      expect(e.text).toBe('{"code":212,"error":"Invalid token"}');
+    }
+  });
+  it('can prevent re-enabling MFA', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret },
+    } = await enableMFA(user);
+    const token = otplib.authenticator.generate(secret);
+    await validateMFA(user, token);
+    try {
+      await enableMFA(user);
+    } catch (e) {
+      expect(e.text).toBe('{"code":214,"error":"MFA is already enabled on this account."}');
+    }
+  });
+  it('disabled MFA throws correct error', async () => {
     await reconfigureServer({
       multiFactorAuth: {
         enabled: false,
       },
     });
+    const user = await Parse.User.signUp('username', 'password');
+    try {
+      await enableMFA(user);
+    } catch (e) {
+      expect(e.text).toBe('{"code":210,"error":"MFA is not enabled."}');
+    }
+    try {
+      await validateMFA(user, 'tokenhere');
+    } catch (e) {
+      expect(e.text).toBe('{"code":210,"error":"MFA is not enabled."}');
+    }
   });
 });

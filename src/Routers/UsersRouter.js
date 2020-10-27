@@ -372,19 +372,27 @@ export class UsersRouter extends ClassesRouter {
   async enableMFA(req) {
     const mfaenabled = req.config.multiFactorAuth || {};
     if (!mfaenabled.enabled) {
-      throw new Parse.Error(-1, 'MFA is not enabled.');
+      throw new Parse.Error(210, 'MFA is not enabled.');
     }
-    const { user } = req.auth;
+    if (!req.auth) {
+      throw new Parse.Error(101, 'Unauthorized');
+    }
+    const [user] = await req.config.database.find('_User', {
+      objectId: req.auth.user.id,
+    });
     if (!user) {
       throw new Parse.Error(101, 'Unauthorized');
     }
+    if (user._mfa) {
+      throw new Parse.Error(214, 'MFA is already enabled on this account.');
+    }
     const secret = authenticator.generateSecret();
-    const otpauth = authenticator.keyuri(user.get('username'), req.config.appName, secret);
+    const otpauth = authenticator.keyuri(user.username, req.config.appName, secret);
     const storeKey = this.encryptMFAKey(
       `pending:${secret}`,
       req.config.multiFactorAuth.encryptionKey
     );
-    await req.config.database.update('_User', { objectId: user.id }, { _mfa: storeKey });
+    await req.config.database.update('_User', { objectId: user.objectId }, { _mfa: storeKey });
     return { response: { qrcodeURL: otpauth, secret } };
   }
 
