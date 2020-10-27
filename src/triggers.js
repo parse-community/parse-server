@@ -594,7 +594,7 @@ export function maybeRunValidator(request, functionName) {
     return Promise.resolve()
       .then(() => {
         return typeof theValidator === 'object'
-          ? builtInTriggerValidator(theValidator, request)
+          ? builtInTriggerValidator(theValidator, request, functionName)
           : theValidator(request);
       })
       .then(() => {
@@ -609,7 +609,7 @@ export function maybeRunValidator(request, functionName) {
       });
   });
 }
-function builtInTriggerValidator(options, request) {
+function builtInTriggerValidator(options, request, functionName) {
   if (request.master && !options.validateMasterKey) {
     return;
   }
@@ -731,6 +731,118 @@ function builtInTriggerValidator(options, request) {
       if (opt.options) {
         validateOptions(opt, key, reqUser.get(key));
       }
+    }
+  }
+  const aclOptions = options.ACL;
+  if (aclOptions && request.object && functionName === 'beforeSave.BeforeSave') {
+    const getRoleName = roleStr => {
+      return aclOptions.split(`${roleStr}:`)[1];
+    };
+    if (typeof aclOptions === 'string') {
+      const acl = new Parse.ACL();
+      if (aclOptions === 'request.user') {
+        acl.setPublicReadAccess(false);
+        acl.setPublicWriteAccess(false);
+        if (reqUser) {
+          acl.setReadAccess(reqUser, true);
+          acl.setWriteAccess(reqUser, true);
+        }
+      } else if (aclOptions === 'publicRead') {
+        acl.setPublicReadAccess(true);
+        acl.setPublicWriteAccess(false);
+      } else if (aclOptions === 'publicWrite') {
+        acl.setPublicReadAccess(false);
+        acl.setPublicWriteAccess(true);
+      } else if (aclOptions === 'publicReadWrite') {
+        acl.setPublicReadAccess(true);
+        acl.setPublicWriteAccess(true);
+      } else if (aclOptions.includes('roleRead:')) {
+        const roleName = getRoleName('roleRead');
+        if (roleName) {
+          acl.setPublicReadAccess(false);
+          acl.setPublicWriteAccess(false);
+          acl.setRoleReadAccess(roleName, true);
+          acl.setRoleWriteAccess(roleName, false);
+        }
+      } else if (aclOptions.includes('roleWrite:')) {
+        const roleName = getRoleName('roleWrite');
+        if (roleName) {
+          acl.setPublicReadAccess(false);
+          acl.setPublicWriteAccess(false);
+          acl.setRoleReadAccess(roleName, false);
+          acl.setRoleWriteAccess(roleName, true);
+        }
+      } else if (aclOptions.includes('roleReadWrite:')) {
+        const roleName = getRoleName('roleReadWrite');
+        if (roleName) {
+          acl.setPublicReadAccess(false);
+          acl.setPublicWriteAccess(false);
+          acl.setRoleReadAccess(roleName, true);
+          acl.setRoleWriteAccess(roleName, true);
+        }
+      }
+      request.object.setACL(acl);
+    } else {
+      const acl =
+        aclOptions.override || !request.object.getACL() ? new Parse.ACL() : request.object.getACL();
+      delete aclOptions.override;
+      if (aclOptions.public) {
+        if (aclOptions.public === 'readWrite') {
+          acl.setPublicReadAccess(true);
+          acl.setPublicWriteAccess(true);
+        } else if (aclOptions.public === 'read') {
+          acl.setPublicReadAccess(true);
+          acl.setPublicWriteAccess(false);
+        } else if (aclOptions.public === 'write') {
+          acl.setPublicReadAccess(false);
+          acl.setPublicWriteAccess(true);
+        }
+      } else {
+        acl.setPublicReadAccess(false);
+        acl.setPublicWriteAccess(false);
+      }
+      if (aclOptions['request.user'] && reqUser) {
+        if (aclOptions['request.user'] === 'readWrite') {
+          acl.setReadAccess(reqUser, true);
+          acl.setWriteAccess(reqUser, true);
+        } else if (aclOptions['request.user'] === 'read') {
+          acl.setReadAccess(reqUser, true);
+          acl.setWriteAccess(reqUser, false);
+        } else if (aclOptions['request.user'] === 'write') {
+          acl.setReadAccess(reqUser, false);
+          acl.setWriteAccess(reqUser, true);
+        }
+      }
+      delete aclOptions['request.user'];
+      delete aclOptions['public'];
+      for (const user in aclOptions) {
+        const aclValue = aclOptions[user];
+        if (aclValue.includes('role:')) {
+          const roleName = getRoleName('role');
+          if (aclValue === 'readWrite') {
+            acl.setRoleReadAccess(roleName, true);
+            acl.setRoleWriteAccess(roleName, true);
+          } else if (aclValue === 'read') {
+            acl.setRoleReadAccess(roleName, true);
+            acl.setRoleWriteAccess(roleName, false);
+          } else if (aclValue === 'write') {
+            acl.setRoleReadAccess(roleName, false);
+            acl.setRoleWriteAccess(roleName, true);
+          }
+        } else {
+          if (aclValue === 'readWrite') {
+            acl.setReadAccess(user, true);
+            acl.setWriteAccess(user, true);
+          } else if (aclValue === 'read') {
+            acl.setReadAccess(user, true);
+            acl.setWriteAccess(user, false);
+          } else if (aclValue === 'write') {
+            acl.setReadAccess(user, false);
+            acl.setWriteAccess(user, true);
+          }
+        }
+      }
+      request.object.setACL(acl);
     }
   }
 }

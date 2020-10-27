@@ -554,6 +554,211 @@ describe('cloud validator', () => {
     done();
   });
 
+  it('basic beforeSave request.user ACL', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'request.user',
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
+    done();
+  });
+
+  it('basic beforeSave ACL publicRead', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'publicRead',
+    });
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBeUndefined();
+    done();
+  });
+
+  it('basic beforeSave ACL publicWrite', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'publicWrite',
+    });
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].write).toBe(true);
+    expect(acl['*'].read).toBeUndefined();
+    done();
+  });
+
+  it('basic beforeSave ACL roleRead', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'roleRead:Administrator',
+    });
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBeUndefined();
+    done();
+  });
+
+  it('basic beforeSave ACL roleWrite', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'roleWrite:Administrator',
+    });
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBeUndefined();
+    expect(acl['role:Administrator'].write).toBe(true);
+    done();
+  });
+
+  it('basic beforeSave ACL roleReadWrite', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: 'roleReadWrite:Administrator',
+    });
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBe(true);
+    done();
+  });
+
+  it('basic beforeSave ACL object readWrite', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: {
+        public: 'readWrite',
+        'request.user': 'readWrite',
+        'role:Administrator': 'readWrite',
+        customId: 'readWrite',
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    const beforeAcl = new Parse.ACL();
+    beforeAcl.setWriteAccess('test', true);
+    beforeAcl.setReadAccess('test', true);
+    obj.setACL(beforeAcl);
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBe(true);
+    expect(acl[user.id].read).toBe(true);
+    expect(acl[user.id].write).toBe(true);
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBe(true);
+    expect(acl['customId'].read).toBe(true);
+    expect(acl['customId'].write).toBe(true);
+    expect(acl['test'].read).toBe(true);
+    expect(acl['test'].write).toBe(true);
+    done();
+  });
+
+  it('basic beforeSave ACL object readWrite override', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: {
+        override: true,
+        public: 'readWrite',
+        'request.user': 'readWrite',
+        'role:Administrator': 'readWrite',
+        customId: 'readWrite',
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    const beforeAcl = new Parse.ACL();
+    beforeAcl.setWriteAccess('test', true);
+    beforeAcl.setReadAccess('test', true);
+    obj.setACL(beforeAcl);
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBe(true);
+    expect(acl[user.id].read).toBe(true);
+    expect(acl[user.id].write).toBe(true);
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBe(true);
+    expect(acl['customId'].read).toBe(true);
+    expect(acl['customId'].write).toBe(true);
+    expect(acl['test']).toBeUndefined();
+    done();
+  });
+
+  it('basic beforeSave ACL object read', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: {
+        public: 'read',
+        'request.user': 'read',
+        'role:Administrator': 'read',
+        customId: 'read',
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBeUndefined();
+    expect(acl[user.id].read).toBe(true);
+    expect(acl[user.id].write).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBeUndefined();
+    expect(acl['customId'].read).toBe(true);
+    expect(acl['customId'].write).toBeUndefined();
+    done();
+  });
+
+  it('basic beforeSave ACL object write', async function (done) {
+    Parse.Cloud.beforeSave('BeforeSave', () => {}, {
+      ACL: {
+        public: 'write',
+        'request.user': 'write',
+        'role:Administrator': 'write',
+        customId: 'write',
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('BeforeSave');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].write).toBe(true);
+    expect(acl['*'].read).toBeUndefined();
+    expect(acl[user.id].write).toBe(true);
+    expect(acl[user.id].read).toBeUndefined();
+    expect(acl['role:Administrator'].write).toBe(true);
+    expect(acl['role:Administrator'].read).toBeUndefined();
+    expect(acl['customId'].write).toBe(true);
+    expect(acl['customId'].read).toBeUndefined();
+    done();
+  });
+
   it('basic beforeSave skipWithMasterKey', async function (done) {
     Parse.Cloud.beforeSave(
       'BeforeSave',
@@ -587,16 +792,10 @@ describe('cloud validator', () => {
     expect(obj.get('foo')).toBe('bar');
 
     const query = new Parse.Query('beforeFind');
-    try {
-      const first = await query.first({ useMasterKey: true });
-      expect(first).toBeDefined();
-      expect(first.id).toBe(obj.id);
-      done();
-    } catch (e) {
-      console.log(e);
-      console.log(e.code);
-      throw e;
-    }
+    const first = await query.first({ useMasterKey: true });
+    expect(first).toBeDefined();
+    expect(first.id).toBe(obj.id);
+    done();
   });
 
   it('basic beforeDelete skipWithMasterKey', async function (done) {
