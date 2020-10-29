@@ -733,7 +733,7 @@ function builtInTriggerValidator(options, request, functionName) {
       }
     }
   }
-  const aclOptions = options.ACL;
+  const aclOptions = options.setACL;
   if (aclOptions && request.object && functionName === 'beforeSave.BeforeSave') {
     const getRoleName = roleStr => {
       return aclOptions.split(`${roleStr}:`)[1];

@@ -556,7 +556,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave request.user ACL', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'request.user',
+      setACL: 'request.user',
     });
     const user = await Parse.User.signUp('testuser', 'p@ssword');
     const obj = new Parse.Object('BeforeSave');
@@ -572,7 +572,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL publicRead', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'publicRead',
+      setACL: 'publicRead',
     });
     const obj = new Parse.Object('BeforeSave');
     obj.set('foo', 'bar');
@@ -586,7 +586,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL publicWrite', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'publicWrite',
+      setACL: 'publicWrite',
     });
     const obj = new Parse.Object('BeforeSave');
     obj.set('foo', 'bar');
@@ -600,7 +600,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL roleRead', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'roleRead:Administrator',
+      setACL: 'roleRead:Administrator',
     });
     const obj = new Parse.Object('BeforeSave');
     obj.set('foo', 'bar');
@@ -615,7 +615,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL roleWrite', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'roleWrite:Administrator',
+      setACL: 'roleWrite:Administrator',
     });
     const obj = new Parse.Object('BeforeSave');
     obj.set('foo', 'bar');
@@ -630,7 +630,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL roleReadWrite', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: 'roleReadWrite:Administrator',
+      setACL: 'roleReadWrite:Administrator',
     });
     const obj = new Parse.Object('BeforeSave');
     obj.set('foo', 'bar');
@@ -645,7 +645,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL object readWrite', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: {
+      setACL: {
         public: 'readWrite',
         'request.user': 'readWrite',
         'role:Administrator': 'readWrite',
@@ -677,7 +677,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL object readWrite override', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: {
+      setACL: {
         override: true,
         public: 'readWrite',
         'request.user': 'readWrite',
@@ -709,7 +709,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL object read', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: {
+      setACL: {
         public: 'read',
         'request.user': 'read',
         'role:Administrator': 'read',
@@ -735,7 +735,7 @@ describe('cloud validator', () => {
 
   it('basic beforeSave ACL object write', async function (done) {
     Parse.Cloud.beforeSave('BeforeSave', () => {}, {
-      ACL: {
+      setACL: {
         public: 'write',
         'request.user': 'write',
         'role:Administrator': 'write',
