@@ -2463,20 +2463,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     return Promise.all(promises)
       .then(() => {
-        return this._client.tx('perform-initialization', t => {
-          return t.batch([
-            t.none(sql.misc.jsonObjectSetKeys),
-            t.none(sql.array.add),
-            t.none(sql.array.addUnique),
-            t.none(sql.array.remove),
-            t.none(sql.array.containsAll),
-            t.none(sql.array.containsAllRegex),
-            t.none(sql.array.contains),
-          ]);
+        return this._client.tx('perform-initialization', async t => {
+          await t.none(sql.misc.jsonObjectSetKeys);
+          await t.none(sql.array.add);
+          await t.none(sql.array.addUnique);
+          await t.none(sql.array.remove);
+          await t.none(sql.array.containsAll);
+          await t.none(sql.array.containsAllRegex);
+          await t.none(sql.array.contains);
+          return t.ctx;
         });
       })
-      .then(data => {
-        debug(`initializationDone in ${data.duration}`);
+      .then(ctx => {
+        debug(`initializationDone in ${ctx.duration}`);
       })
       .catch(error => {
         /* eslint-disable no-console */
