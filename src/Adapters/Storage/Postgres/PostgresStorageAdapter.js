@@ -2464,14 +2464,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return Promise.all(promises)
       .then(() => {
         return this._client.tx('perform-initialization', async t => {
-            await t.none(sql.misc.jsonObjectSetKeys);
-            await t.none(sql.array.add);
-            await t.none(sql.array.addUnique);
-            await t.none(sql.array.remove);
-            await t.none(sql.array.containsAll);
-            await t.none(sql.array.containsAllRegex);
-            await t.none(sql.array.contains);
-            return t.ctx;
+          await t.none(sql.misc.jsonObjectSetKeys);
+          await t.none(sql.array.add);
+          await t.none(sql.array.addUnique);
+          await t.none(sql.array.remove);
+          await t.none(sql.array.containsAll);
+          await t.none(sql.array.containsAllRegex);
+          await t.none(sql.array.contains);
+          return t.ctx;
         });
       })
       .then(ctx => {
