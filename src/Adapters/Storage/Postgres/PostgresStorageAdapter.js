@@ -1479,6 +1479,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         update['_mfa'] = update['mfa'];
         delete update.mfa;
       }
+      if (fieldName === 'mfa_recovery') {
+        update['_mfa_recovery'] = update['mfa_recovery'];
+        delete update.mfa_recovery;
+      }
     }
 
     for (const fieldName in update) {
