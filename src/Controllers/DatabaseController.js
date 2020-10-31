@@ -61,6 +61,7 @@ const specialQuerykeys = [
   '_account_lockout_expires_at',
   '_failed_login_count',
   '_mfa',
+  '_mfa_recovery',
 ];
 
 const isSpecialQueryKey = key => {
@@ -224,6 +225,7 @@ const filterSensitiveData = (
   delete object._password_changed_at;
   delete object._password_history;
   delete object._mfa;
+  delete object._mfa_recovery;
 
   if (aclGroup.indexOf(object.objectId) > -1) {
     return object;
@@ -254,6 +256,7 @@ const specialKeysForUpdate = [
   '_password_changed_at',
   '_password_history',
   '_mfa',
+  '_mfa_recovery',
 ];
 
 const isSpecialUpdateKey = key => {

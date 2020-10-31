@@ -11,6 +11,7 @@ import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
 import { authenticator } from 'otplib';
 const crypto = require('crypto');
+import { randomString } from '../cryptoUtils';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -48,7 +49,7 @@ export class UsersRouter extends ClassesRouter {
       ) {
         payload = req.query;
       }
-      const { username, email, password, token } = payload;
+      const { username, email, password, token, recoveryTokens } = payload;
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
@@ -133,7 +134,35 @@ export class UsersRouter extends ClassesRouter {
             }
           }
           const mfaenabled = req.config.multiFactorAuth || {};
-          if (mfaenabled.enabled && user._mfa) {
+          if (mfaenabled.enabled && recoveryTokens && user._mfa) {
+            const mfaRecTokens = user._mfa_recovery;
+            let firstAllowed = false;
+            let secondAllowed = false;
+            for (const recToken of mfaRecTokens) {
+              const setAllowedFromMatch = async (recoveryToken, first) => {
+                const doesMatch = await passwordCrypto.compare(recoveryToken, recToken);
+                if (!doesMatch) {
+                  return;
+                }
+                if (first) {
+                  firstAllowed = true;
+                } else {
+                  secondAllowed = true;
+                }
+              };
+              await setAllowedFromMatch(recoveryTokens.substring(0, 20), true);
+              await setAllowedFromMatch(recoveryTokens.substring(21, 41));
+            }
+            if (!firstAllowed || !secondAllowed) {
+              throw new Parse.Error(212, 'Invalid MFA recovery tokens');
+            }
+            await req.config.database.update(
+              '_User',
+              { username: user.username },
+              { _mfa: null, MFAEnabled: false, _mfa_recovery: null }
+            );
+            user.MFAEnabled = false;
+          } else if (mfaenabled.enabled && user._mfa) {
             if (!token) {
               throw new Parse.Error(211, 'Please provide your MFA token.');
             }
@@ -141,7 +170,7 @@ export class UsersRouter extends ClassesRouter {
               user._mfa,
               req.config.multiFactorAuth.encryptionKey
             );
-            if (req.config.multiFactorAuth && !authenticator.verify({ token, secret: mfaToken })) {
+            if (!authenticator.verify({ token, secret: mfaToken })) {
               throw new Parse.Error(212, 'Invalid MFA token');
             }
           }
@@ -428,12 +457,18 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(212, 'Invalid token');
     }
     const storeKey = this.encryptMFAKey(`${secret}`, req.config.multiFactorAuth.encryptionKey);
+    const recoveryKeyOne = randomString(20);
+    const recoveryKeyTwo = randomString(20);
+    const recoveryKeys = await Promise.all([
+      passwordCrypto.hash(recoveryKeyOne),
+      passwordCrypto.hash(recoveryKeyTwo),
+    ]);
     await req.config.database.update(
       '_User',
       { username: user.username },
-      { _mfa: storeKey, MFAEnabled: true }
+      { _mfa: storeKey, MFAEnabled: true, _mfa_recovery: recoveryKeys }
     );
-    return { response: {} };
+    return { response: { recoveryKeys: [recoveryKeyOne, recoveryKeyTwo] } };
   }
 
   _runAfterLogoutTrigger(req, session) {
@@ -567,6 +602,7 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('GET', '/users/me/enableMFA', req => this.enableMFA(req));
     this.route('POST', '/users/me/verifyMFA', req => this.verifyMFA(req));
+    this.route('GET', '/users/me/recoverMFA', req => this.handleLogIn(req));
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });

@@ -972,6 +972,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       fields._password_changed_at = { type: 'Date' };
       fields._password_history = { type: 'Array' };
       fields._mfa = { type: 'String' };
+      fields._mfa_recovery = { type: 'Array' };
     }
     let index = 2;
     const relations = [];

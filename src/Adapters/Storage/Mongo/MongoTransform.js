@@ -1259,6 +1259,9 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
           case '_mfa':
             restObject._mfa = mongoObject[key];
             break;
+          case '_mfa_recovery':
+            restObject._mfa_recovery = mongoObject[key];
+            break;
           case '_email_verify_token':
           case '_perishable_token':
           case '_perishable_token_expires_at':

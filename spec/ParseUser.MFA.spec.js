@@ -33,10 +33,13 @@ describe('MFA', () => {
     });
   }
 
-  function loginWithMFA(username, password, token) {
+  function loginWithMFA(username, password, token, recoveryTokens) {
     let req = `http://localhost:8378/1/login?username=${username}&password=${password}`;
     if (token) {
       req += `&token=${token}`;
+    }
+    if (recoveryTokens) {
+      req += `&recoveryTokens=${recoveryTokens}`;
     }
     return request({
       method: 'POST',
@@ -141,6 +144,7 @@ describe('MFA', () => {
         expect(newUser.username).toBe('username');
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
+        expect(newUser.MFAEnabled).toBe(true);
       } catch (err) {
         expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
@@ -151,6 +155,35 @@ describe('MFA', () => {
     };
     await mfaLogin();
   });
+
+  it('can get and recover MFA', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret },
+    } = await enableMFA(user);
+    const token = otplib.authenticator.generate(secret);
+    const {
+      data: { recoveryKeys },
+    } = await validateMFA(user, token);
+    expect(recoveryKeys.length).toBe(2);
+    expect(recoveryKeys[0].length).toBe(20);
+    expect(recoveryKeys[1].length).toBe(20);
+    await Parse.User.logOut();
+    const result = await loginWithMFA('username', 'password', null, recoveryKeys);
+    const newUser = result.data;
+    expect(newUser.objectId).toBe(user.id);
+    expect(newUser.username).toBe('username');
+    expect(newUser.createdAt).toBe(user.createdAt.toISOString());
+    expect(newUser._mfa).toBeUndefined();
+    expect(newUser.MFAEnabled).toBe(false);
+  });
+
   it('cannot set _mfa or mfa', async () => {
     await reconfigureServer({
       multiFactorAuth: {
@@ -180,6 +213,7 @@ describe('MFA', () => {
         expect(newUser.username).toBe('username');
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
+        expect(newUser.MFAEnabled).toBe(true);
       } catch (err) {
         expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);

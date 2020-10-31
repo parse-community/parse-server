@@ -582,6 +582,8 @@ RestWrite.prototype.transformUser = function () {
     delete this.data.MFAEnabled;
     delete this.data.mfa;
     delete this.data._mfa;
+    delete this.data.mfa_recovery;
+    delete this.data._mfa_recovery;
   }
 
   // Do not cleanup session if objectId is not set
