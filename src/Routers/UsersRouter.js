@@ -141,7 +141,7 @@ export class UsersRouter extends ClassesRouter {
               user._mfa,
               req.config.multiFactorAuth.encryptionKey
             );
-            if (req.config.multiFactorAuth && !authenticator.verify({ token, secret: mfaToken })) {
+            if (!authenticator.verify({ token, secret: mfaToken })) {
               throw new Parse.Error(212, 'Invalid MFA token');
             }
           }
