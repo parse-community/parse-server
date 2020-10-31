@@ -45,6 +45,7 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     emailVerified: { type: 'Boolean' },
     MFAEnabled: { type: 'Boolean' },
     authData: { type: 'Object' },
+    _mfa_recovery: { type: 'Array' },
   },
   // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {

@@ -106,6 +106,7 @@ const userSchema = {
     emailVerified: { type: 'Boolean' },
     authData: { type: 'Object' },
     MFAEnabled: { type: 'Boolean' },
+    _mfa_recovery: { type: 'Array' },
   },
   classLevelPermissions: defaultClassLevelPermissions,
 };
@@ -1290,6 +1291,7 @@ describe('schemas', () => {
               newField: { type: 'String' },
               MFAEnabled: { type: 'Boolean' },
               ACL: { type: 'ACL' },
+              _mfa_recovery: { type: 'Array' },
             },
             classLevelPermissions: {
               ...defaultClassLevelPermissions,
@@ -1319,6 +1321,7 @@ describe('schemas', () => {
                 MFAEnabled: { type: 'Boolean' },
                 newField: { type: 'String' },
                 ACL: { type: 'ACL' },
+                _mfa_recovery: { type: 'Array' },
               },
               classLevelPermissions: defaultClassLevelPermissions,
             })
