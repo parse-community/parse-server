@@ -38,6 +38,62 @@ describe('Cloud Code', () => {
       });
     });
   });
+  const masterKeyHeaders = {
+    'X-Parse-Application-Id': 'test',
+    'X-Parse-Rest-API-Key': 'rest',
+    'X-Parse-Master-Key': 'test',
+    'Content-Type': 'application/json',
+  };
+  const masterKeyOptions = {
+    headers: masterKeyHeaders,
+    json: true,
+  };
+  it('can load cloud code file from dashboard', async done => {
+    const cloudDir = './spec/cloud/cloudCodeAbsoluteFile.js';
+    await reconfigureServer({ cloud: cloudDir });
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/releases/latest',
+    });
+    request(options)
+      .then(res => {
+        expect(Array.isArray(res.data)).toBe(true);
+        const first = res.data[0];
+        expect(first.userFiles).toBeDefined();
+        expect(first.checksums).toBeDefined();
+        expect(first.userFiles).toContain(cloudDir);
+        expect(first.checksums).toContain(cloudDir);
+        options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeAbsoluteFile.js';
+        return request(options);
+      })
+      .then(res => {
+        const response = res.data;
+        expect(response).toContain('It is possible to define cloud code in a file.');
+        done();
+      });
+  });
+
+  it('can load multiple cloud code files from dashboard', async done => {
+    const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
+    await reconfigureServer({ cloud: cloudDir });
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/releases/latest',
+    });
+    request(options).then(res => {
+      expect(Array.isArray(res.data)).toBe(true);
+      const first = res.data[0];
+      expect(first.userFiles).toBeDefined();
+      expect(first.checksums).toBeDefined();
+      expect(first.userFiles).toContain(cloudDir);
+      expect(first.checksums).toContain(cloudDir);
+      expect(first.userFiles).toContain('spec/cloud/cloudCodeAbsoluteFile.js');
+      expect(first.checksums).toContain('spec/cloud/cloudCodeAbsoluteFile.js');
+      expect(first.userFiles).toContain('spec/cloud/cloudCodeRelativeFile.js');
+      expect(first.checksums).toContain('spec/cloud/cloudCodeRelativeFile.js');
+      done();
+    });
+  });
 
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {

@@ -3,6 +3,8 @@ import Parse from 'parse/node';
 import rest from '../rest';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');
+const fs = require('fs');
+const path = require('path');
 
 function formatJobSchedule(job_schedule) {
   if (typeof job_schedule.startAfter === 'undefined') {
@@ -52,6 +54,18 @@ export class CloudCodeRouter extends PromiseRouter {
       '/cloud_code/jobs/:objectId',
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.deleteJob
+    );
+    this.route(
+      'GET',
+      '/releases/latest',
+      middleware.promiseEnforceMasterKeyAccess,
+      CloudCodeRouter.getCloudCode
+    );
+    this.route(
+      'GET',
+      '/scripts/*',
+      middleware.promiseEnforceMasterKeyAccess,
+      CloudCodeRouter.getCloudFile
     );
   }
 
@@ -119,5 +133,57 @@ export class CloudCodeRouter extends PromiseRouter {
           response,
         };
       });
+  }
+  static getCloudFile(req) {
+    const file = req.url.replace('/scripts', '');
+    const dirName = __dirname.split('lib')[0];
+    const filePath = path.join(dirName, file);
+    if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isFile()) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid file url.');
+    }
+    return {
+      response: fs.readFileSync(filePath, 'utf8'),
+    };
+  }
+  static getCloudCode(req) {
+    const config = req.config;
+    const dirName = __dirname.split('node_modules')[0];
+    const cloudLocation = ('' + config.cloud).replace(dirName, '');
+    const cloudFiles = [];
+    const getRequiredFromFile = (file, directory) => {
+      try {
+        const fileData = fs.readFileSync(file, 'utf8');
+        const requireStatements = fileData.split('require(');
+        for (let reqStatement of requireStatements) {
+          reqStatement = reqStatement.split(')')[0].slice(1, -1);
+          const filePath = path.join(directory, reqStatement);
+          if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isFile()) {
+            continue;
+          }
+          const requireData = fs.readFileSync(filePath, 'utf8');
+          const newFilePath = filePath.replace(dirName, '');
+          cloudFiles.push(newFilePath);
+          if (requireData.includes('require(')) {
+            getRequiredFromFile(newFilePath, path.dirname(filePath));
+          }
+        }
+      } catch (e) {
+        /* */
+      }
+    };
+    cloudFiles.push(cloudLocation);
+    getRequiredFromFile(cloudLocation, path.dirname(config.cloud));
+    const response = {};
+    for (const file of cloudFiles) {
+      response[file] = new Date();
+    }
+    return {
+      response: [
+        {
+          checksums: JSON.stringify({ cloud: response }),
+          userFiles: JSON.stringify({ cloud: response }),
+        },
+      ],
+    };
   }
 }
