@@ -136,7 +136,7 @@ export class CloudCodeRouter extends PromiseRouter {
   }
   static getCloudFile(req) {
     const file = req.url.replace('/scripts', '');
-    const dirName = __dirname.split('lib')[0];
+    const dirName = __dirname.split('lib')[0].split('node_modules')[0];
     const filePath = path.join(dirName, file);
     if (!fs.existsSync(filePath) || !fs.lstatSync(filePath).isFile()) {
       throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Invalid file url.');
