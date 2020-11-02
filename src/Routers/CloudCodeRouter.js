@@ -67,6 +67,12 @@ export class CloudCodeRouter extends PromiseRouter {
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.getCloudFile
     );
+    this.route(
+      'POST',
+      '/scripts/*',
+      middleware.promiseEnforceMasterKeyAccess,
+      CloudCodeRouter.saveCloudFile
+    );
   }
 
   static getJobs(req) {
@@ -133,6 +139,19 @@ export class CloudCodeRouter extends PromiseRouter {
           response,
         };
       });
+  }
+  static saveCloudFile(req) {
+    const file = req.url.replace('/scripts', '');
+    const dirName = __dirname.split('lib')[0].split('node_modules')[0];
+    const filePath = path.join(dirName, file);
+    const data = req.body.data;
+    if (!data) {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'No data to save.');
+    }
+    fs.writeFileSync(filePath, data);
+    return {
+      response: 'This file has been saved.',
+    };
   }
   static getCloudFile(req) {
     const file = req.url.replace('/scripts', '');

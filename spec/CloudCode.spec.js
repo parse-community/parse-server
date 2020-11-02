@@ -95,6 +95,51 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can edit cloud code file from dashboard', async done => {
+    const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
+    await reconfigureServer({ cloud: cloudDir });
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/releases/latest',
+    });
+    let originalFile = '';
+    request(options)
+      .then(res => {
+        expect(Array.isArray(res.data)).toBe(true);
+        const first = res.data[0];
+        expect(first.userFiles).toBeDefined();
+        expect(first.checksums).toBeDefined();
+        expect(first.userFiles).toContain(cloudDir);
+        expect(first.checksums).toContain(cloudDir);
+        options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+        return request(options);
+      })
+      .then(res => {
+        originalFile = res.data;
+        let response = res.data;
+        expect(response).toContain(`require('./cloudCodeAbsoluteFile.js`);
+        response = response + '\nconst additionalData;\n';
+        options.method = 'POST';
+        options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+        options.body = {
+          data: response,
+        };
+        return request(options);
+      })
+      .then(res => {
+        expect(res.data).toBe('This file has been saved.');
+        options.method = 'POST';
+        options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+        options.body = {
+          data: originalFile,
+        };
+        return request(options);
+      })
+      .then(() => {
+        done();
+      });
+  });
+
   it('can create functions', done => {
     Parse.Cloud.define('hello', () => {
       return 'Hello world!';
