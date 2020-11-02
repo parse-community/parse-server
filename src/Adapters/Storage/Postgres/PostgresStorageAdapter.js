@@ -986,23 +986,18 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     return conn
       .tx('create-class', async t => {
-        const q1 = this.createTable(className, schema, t);
-        const q2 = t.none(
+        await this.createTable(className, schema, t);
+        await t.none(
           'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)',
           { className, schema }
         );
-        const q3 = this.setIndexesWithSchemaFormat(
+        await this.setIndexesWithSchemaFormat(
           className,
           schema.indexes,
           {},
           schema.fields,
           t
         );
-        // TODO: The test should not verify the returned value, and then
-        //  the method can be simplified, to avoid returning useless stuff.
-        return t.batch([q1, q2, q3]);
-      })
-      .then(() => {
         return toParseSchema(schema);
       })
       .catch(err => {
