@@ -1,8 +1,42 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...master)
+
+### 4.4.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...4.4.0)
+- IMPROVE: Update PostgresStorageAdapter.js. [#6981](https://github.com/parse-community/parse-server/pull/6981). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+- NEW: skipWithMasterKey on Built-In Validator. [#6972](https://github.com/parse-community/parse-server/issues/6972). Thanks to [dblythy](https://github.com/dblythy).
+- NEW: Add fileKey rotation to GridFSBucketAdapter. [#6768](https://github.com/parse-community/parse-server/pull/6768). Thanks to [Corey Baker](https://github.com/cbaker6).
+- IMPROVE: Remove unused parameter in Cloud Function. [#6969](https://github.com/parse-community/parse-server/issues/6969). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- IMPROVE: Validation Handler Update. [#6968](https://github.com/parse-community/parse-server/issues/6968). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: (directAccess): Properly handle response status. [#6966](https://github.com/parse-community/parse-server/issues/6966). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- FIX: Remove hostnameMaxLen for Mongo URL. [#6693](https://github.com/parse-community/parse-server/issues/6693). Thanks to [markhoward02](https://github.com/markhoward02).
+- IMPROVE: Show a message if cloud functions are duplicated. [#6963](https://github.com/parse-community/parse-server/issues/6963). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: Pass request.query to afterFind. [#6960](https://github.com/parse-community/parse-server/issues/6960). Thanks to [dblythy](https://github.com/dblythy).
+- SECURITY FIX: Patch session vulnerability over Live Query. See [GHSA-2xm2-xj2q-qgpj](https://github.com/parse-community/parse-server/security/advisories/GHSA-2xm2-xj2q-qgpj) for more details about the vulnerability and [78b59fb](https://github.com/parse-community/parse-server/commit/78b59fb26b1c36e3cdbd42ba9fec025003267f58) for the fix. Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- IMPROVE: LiveQueryEvent Error Logging Improvements. [#6951](https://github.com/parse-community/parse-server/issues/6951). Thanks to [dblythy](https://github.com/dblythy).
+- IMPROVE: Include stack in Cloud Code. [#6958](https://github.com/parse-community/parse-server/issues/6958). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: (jobs): Add Error Message to JobStatus Failure. [#6954](https://github.com/parse-community/parse-server/issues/6954). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- NEW: Create Cloud function afterLiveQueryEvent. [#6859](https://github.com/parse-community/parse-server/issues/6859). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: Update vkontakte API to the latest version. [#6944](https://github.com/parse-community/parse-server/issues/6944). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- FIX: Use an empty object as default value of options for Google Sign in. [#6844](https://github.com/parse-community/parse-server/issues/6844). Thanks to [Kevin Kuang](https://github.com/kvnkuang).
+- FIX: Postgres: prepend className to unique indexes. [#6741](https://github.com/parse-community/parse-server/pull/6741). Thanks to [Corey Baker](https://github.com/cbaker6).
+- FIX: GraphQL: Transform input types also on user mutations. [#6934](https://github.com/parse-community/parse-server/pull/6934). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Set objectId into query for Email Validation. [#6930](https://github.com/parse-community/parse-server/pull/6930). Thanks to [Danaru](https://github.com/Danaru87).
+- FIX: GraphQL: Optimize queries, fixes some null returns (on object), fix stitched GraphQLUpload. [#6709](https://github.com/parse-community/parse-server/pull/6709). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Do not throw error if user provide a pointer like index onMongo. [#6923](https://github.com/parse-community/parse-server/pull/6923). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- FIX: Hotfix instagram api. [#6922](https://github.com/parse-community/parse-server/issues/6922). Thanks to [Tim](https://github.com/timination).
+- FIX: (directAccess/cloud-code): Pass installationId with LogIn. [#6903](https://github.com/parse-community/parse-server/issues/6903). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- FIX: Fix bcrypt binary incompatibility. [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- NEW: Keycloak auth adapter. [#6376](https://github.com/parse-community/parse-server/issues/6376). Thanks to [Rhuan](https://github.com/rhuanbarreto).
+- IMPROVE: Changed incorrect key name in apple auth adapter tests. [#6861](https://github.com/parse-community/parse-server/issues/6861). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- FIX: Fix mutating beforeSubscribe Query. [#6868](https://github.com/parse-community/parse-server/issues/6868). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: Fix beforeLogin for users logging in with AuthData. [#6872](https://github.com/parse-community/parse-server/issues/6872). Thanks to [Kevin Kuang](https://github.com/kvnkuang).
+- FIX: Remove Facebook AccountKit auth. [#6870](https://github.com/parse-community/parse-server/issues/6870). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- FIX: Updated TOKEN_ISSUER to 'accounts.google.com'. [#6836](https://github.com/parse-community/parse-server/issues/6836). Thanks to [Arjun Vedak](https://github.com/arjun3396).
 - IMPROVE: Optimized deletion of class field from schema by using an index if available to do an index scan instead of a collection scan. [#6815](https://github.com/parse-community/parse-server/issues/6815). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- IMPROVE: Enable MongoDB transaction test for MongoDB >= 4.0.4 [#6827](https://github.com/parse-community/parse-server/pull/6827). Thanks to [Manuel](https://github.com/mtrezza).
 
 ### 4.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...4.3.0)
