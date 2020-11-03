@@ -12,7 +12,6 @@ const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
 const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
-const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
 
 const debug = function (...args: any) {
