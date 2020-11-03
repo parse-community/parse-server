@@ -12,7 +12,6 @@ const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
 const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
-const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
 
 const debug = function (...args: any) {
@@ -986,29 +985,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     return conn
       .tx('create-class', async t => {
-        const q1 = this.createTable(className, schema, t);
-        const q2 = t.none(
+        await this.createTable(className, schema, t);
+        await t.none(
           'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)',
           { className, schema }
         );
-        const q3 = this.setIndexesWithSchemaFormat(
+        await this.setIndexesWithSchemaFormat(
           className,
           schema.indexes,
           {},
           schema.fields,
           t
         );
-        // TODO: The test should not verify the returned value, and then
-        //  the method can be simplified, to avoid returning useless stuff.
-        return t.batch([q1, q2, q3]);
-      })
-      .then(() => {
         return toParseSchema(schema);
       })
       .catch(err => {
-        if (err.data[0].result.code === PostgresTransactionAbortedError) {
-          err = err.data[1].result;
-        }
         if (
           err.code === PostgresUniqueIndexViolationError &&
           err.detail.includes(className)
