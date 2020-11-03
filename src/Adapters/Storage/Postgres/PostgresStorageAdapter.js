@@ -1001,9 +1001,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return toParseSchema(schema);
       })
       .catch(err => {
-        if (err.data[0].result.code === PostgresTransactionAbortedError) {
-          err = err.data[1].result;
-        }
         if (
           err.code === PostgresUniqueIndexViolationError &&
           err.detail.includes(className)
