@@ -92,13 +92,21 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 
 ### Inside a Docker container
+
 ```bash
 $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --cloud /parse-server/cloud/main.js
 ```
+
+#### Running the Parse Server Image
+
+```bash
+$ docker run --name my-parse-server -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+```
+
+***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/) feature, please add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to command above. Make sure the `main.js` file is available in the `cloud-code-vol` directory before run this command. Otherwise, an error will occur.*
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
@@ -472,8 +480,15 @@ $ git clone https://github.com/parse-community/parse-server
 $ cd parse-server
 $ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
-$ docker run --name my-parse-server --link my-mongo:mongo -v cloud-code-vol:/parse-server/cloud -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground --cloud /parse-server/cloud/main.js
 ```
+
+#### Running the Parse Server Image
+
+```bash
+$ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
+```
+
+***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/) feature, please add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to command above. Make sure the `main.js` file is available in the `cloud-code-vol` directory before run this command. Otherwise, an error will occur.*
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
