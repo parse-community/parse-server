@@ -90,6 +90,7 @@ const defaultConfiguration = {
   logLevel,
   fileUpload: {
     enabled: true,
+    enabledForPublic: true,
   },
   push: {
     android: {
