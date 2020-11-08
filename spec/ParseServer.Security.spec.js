@@ -13,11 +13,17 @@ const masterKeyOptions = {
   json: true,
 };
 
-describe('advisory', () => {
-  it('can get security advice', done => {
+describe('SecurityChecks', () => {
+  it('can get security advice', async done => {
+    await reconfigureServer({
+      securityChecks: {
+        enabled: true,
+        logOutput: true,
+      },
+    });
     const options = Object.assign({}, masterKeyOptions, {
       method: 'GET',
-      url: Parse.serverURL + '/advisoryChecks',
+      url: Parse.serverURL + '/securityChecks',
     });
     request(options).then(res => {
       expect(res.data.Security).not.toBeUndefined();
@@ -29,7 +35,10 @@ describe('advisory', () => {
 
   it('can get security on start', async done => {
     await reconfigureServer({
-      advisoryChecks: true,
+      securityChecks: {
+        enabled: true,
+        logOutput: true,
+      },
     });
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'warn').and.callFake(() => {});

@@ -11,10 +11,10 @@ module.exports.ParseServerOptions = {
     help: 'account lockout policy for failed login attempts',
     action: parsers.objectParser,
   },
-  advisoryChecks: {
-    env: 'PARSE_SERVER_ADVISORY_CHECKS',
+  securityChecks: {
+    env: 'PARSE_SERVER_SECURITY_CHECKS',
     help: 'view recommendations for server improvements',
-    default: false,
+    default: {},
   },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',

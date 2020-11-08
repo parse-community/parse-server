@@ -1,9 +1,12 @@
 import { getTrigger } from './triggers.js';
 import url from 'url';
 import Parse from 'parse/node';
-export async function advisoryChecks(req) {
+export async function securityChecks(req) {
   try {
     const options = req.config || req;
+    if (!options.securityChecks.enabled && options.securityChecks.enabled != null) {
+      return { error: { code: 1, error: 'Security checks are not enabled.' } };
+    }
     const clpWarnings = {};
     const securityWarnings = [];
     let totalWarnings = 0;

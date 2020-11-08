@@ -40,7 +40,7 @@ import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
-import { advisoryChecks } from './Advisory.js';
+import { securityChecks } from './SecurityChecks.js';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -81,8 +81,8 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete();
         }
-        if (options.advisoryChecks) {
-          this.getAdvisoryChecks();
+        if (options.securityChecks.logOutput) {
+          this.getSecurityChecks();
         }
       })
       .catch(error => {
@@ -113,9 +113,9 @@ class ParseServer {
     return this._app;
   }
 
-  async getAdvisoryChecks() {
+  async getSecurityChecks() {
     const config = Config.get(this.config.appId);
-    const response = await advisoryChecks(config);
+    const response = await securityChecks(config);
     const logger = logging.getLogger();
     const warnings = response.response;
     const security = warnings.Security || [];
