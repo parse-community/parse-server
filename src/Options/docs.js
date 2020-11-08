@@ -30,6 +30,7 @@
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
+ * @property {FileUploadOptions} fileUpload Options for file uploads
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
@@ -117,4 +118,11 @@
  * @interface IdempotencyOptions
  * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
  * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+ */
+
+/**
+ * @interface FileUploadOptions
+ * @property {Boolean} enabled Files can be uploaded with Parse Server.
+ * @property {Boolean} enabledForAnonymousUser File upload is enabled for Anonymous Users.
+ * @property {Boolean} enabledForPublic File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.
  */

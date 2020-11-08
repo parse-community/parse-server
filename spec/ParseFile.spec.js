@@ -861,7 +861,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  describe('reject no file uploads', () => {
+  describe('file upload restrictions', () => {
     it('can reject file upload with unspecified', async () => {
       await reconfigureServer({
         fileUpload: {},

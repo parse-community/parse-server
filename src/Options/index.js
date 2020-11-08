@@ -192,6 +192,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* Options for file uploads
+  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
+  :DEFAULT: false */
+  fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -284,4 +288,15 @@ export interface IdempotencyOptions {
   /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
   :DEFAULT: 300 */
   ttl: ?number;
+}
+export interface FileUploadOptions {
+  /* Files can be uploaded with Parse Server.
+  :DEFAULT: true */
+  enabled: ?boolean;
+  /* File upload is enabled for Anonymous Users.
+  :DEFAULT: false */
+  enabledForAnonymousUser: ?boolean;
+  /* File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.
+  :DEFAULT: false */
+  enabledForPublic: ?boolean;
 }
