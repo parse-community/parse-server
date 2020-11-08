@@ -168,6 +168,11 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for the files sub-system',
     action: parsers.moduleOrObjectParser,
   },
+  fileUpload: {
+    env: 'PARSE_SERVER_FILE_UPLOAD',
+    help: 'Configuration for file uploads',
+    default: {},
+  },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',

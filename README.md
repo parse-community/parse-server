@@ -208,16 +208,20 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 You can also create an instance of Parse Server, and mount it on a new or existing Express website:
 
 ```js
-var express = require('express');
-var ParseServer = require('parse-server').ParseServer;
-var app = express();
+const express = require('express');
+const ParseServer = require('parse-server').ParseServer;
+const app = express();
 
-var api = new ParseServer({
+const api = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
   cloud: './cloud/main.js', // Path to your Cloud Code
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
+  fileUpload: {
+    enabled:true,
+    enabledForPublic: false
+  },
   serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
 });
 
@@ -395,6 +399,8 @@ Parse Server allows developers to choose from several options when hosting files
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
+
+Make sure you enable file upload in your server configuration if you'd like to save files.
 
 ### Idempodency Enforcement
  
