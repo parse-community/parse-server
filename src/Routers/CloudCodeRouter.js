@@ -1,6 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 import Parse from 'parse/node';
 import rest from '../rest';
+import { advisoryChecks } from '../Advisory.js';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');
 
@@ -53,6 +54,7 @@ export class CloudCodeRouter extends PromiseRouter {
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.deleteJob
     );
+    this.route('GET', '/advisoryChecks', middleware.promiseEnforceMasterKeyAccess, advisoryChecks);
   }
 
   static getJobs(req) {
