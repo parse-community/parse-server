@@ -872,7 +872,7 @@ describe('Parse.File testing', () => {
         fail('should not have been able to save file.');
       } catch (e) {
         expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload is not enabled.');
+        expect(e.message).toBe('Public file upload is not enabled.');
       }
     });
     it('disable file upload', async () => {
