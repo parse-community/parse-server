@@ -192,6 +192,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* Options for multi-factor authentication (2FA)
+  :ENV: PARSE_SERVER_MFA
+  :DEFAULT: false */
+  multiFactorAuth: ?MFAOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -284,4 +288,12 @@ export interface IdempotencyOptions {
   /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
   :DEFAULT: 300 */
   ttl: ?number;
+}
+
+export interface MFAOptions {
+  /* Whether MFA is enabled
+  :DEFAULT: false */
+  enabled: boolean;
+  /* A long, secure key used to encrypt MFA secrets.*/
+  encryptionKey: ?string;
 }

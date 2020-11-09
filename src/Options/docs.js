@@ -50,6 +50,7 @@
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
+ * @property {MFAOptions} multiFactorAuth Options for multi-factor authentication (2FA)
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {Any} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
@@ -117,4 +118,10 @@
  * @interface IdempotencyOptions
  * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
  * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+ */
+
+/**
+ * @interface MFAOptions
+ * @property {Boolean} enabled Whether MFA is enabled
+ * @property {String} encryptionKey A long, secure key used to encrypt MFA secrets.
  */

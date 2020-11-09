@@ -149,10 +149,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  encryptionKey: {
-    env: 'PARSE_SERVER_ENCRYPTION_KEY',
-    help: 'Key for encrypting your files',
-  },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
     help: 'Sets wether we should expire the inactive sessions, defaults to true',
@@ -270,6 +266,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  multiFactorAuth: {
+    env: 'PARSE_SERVER_MFA',
+    help: 'Options for multi-factor authentication (2FA)',
+    action: parsers.objectParser,
+    default: {},
+  },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
     help: "Sets the number of characters in generated object id's, default 10",
@@ -381,11 +383,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
     action: parsers.booleanParser,
-  },
-  multiFactorAuth: {
-    env: 'PARSE_SERVER_TWO_FACTOR',
-    help: 'Enables two factor authentication.',
-    default: {},
   },
   userSensitiveFields: {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',
@@ -548,5 +545,18 @@ module.exports.IdempotencyOptions = {
       'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
     action: parsers.numberParser('ttl'),
     default: 300,
+  },
+};
+module.exports.MFAOptions = {
+  enabled: {
+    env: 'PARSE_SERVER_MFA_ENABLED',
+    help: 'Whether MFA is enabled',
+    required: true,
+    action: parsers.booleanParser,
+    default: false,
+  },
+  encryptionKey: {
+    env: 'PARSE_SERVER_MFA_ENCRYPTION_KEY',
+    help: 'A long, secure key used to encrypt MFA secrets.',
   },
 };
