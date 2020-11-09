@@ -878,7 +878,9 @@ describe('Parse.File testing', () => {
     it('disable file upload', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: false,
+          enabledForPublic: false,
+          enabledForAnonymousUser: false,
+          enabledForAuthenticatedUser: false,
         },
       });
       try {
@@ -887,13 +889,12 @@ describe('Parse.File testing', () => {
         fail('should not have been able to save file.');
       } catch (e) {
         expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload is not enabled.');
+        expect(e.message).toBe('Public file upload is not enabled.');
       }
     });
     it('disable for public', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: true,
           enabledForPublic: false,
         },
       });
@@ -910,7 +911,6 @@ describe('Parse.File testing', () => {
     it('disable for public allow user', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: true,
           enabledForPublic: false,
         },
       });
@@ -926,8 +926,6 @@ describe('Parse.File testing', () => {
     it('disable for anonymous', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: true,
-          enabledForPublic: false,
           enabledForAnonymousUser: false,
         },
       });
@@ -945,7 +943,6 @@ describe('Parse.File testing', () => {
     it('enable for anonymous', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: true,
           enabledForPublic: false,
           enabledForAnonymousUser: true,
         },
@@ -962,7 +959,6 @@ describe('Parse.File testing', () => {
     it('enable for anonymous but not authenticated', async () => {
       await reconfigureServer({
         fileUpload: {
-          enabled: true,
           enabledForPublic: false,
           enabledForAnonymousUser: true,
           enabledForAuthenticatedUser: false,

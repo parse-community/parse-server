@@ -548,12 +548,6 @@ module.exports.IdempotencyOptions = {
   },
 };
 module.exports.FileUploadOptions = {
-  enabled: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED',
-    help: 'Files can be uploaded with Parse Server.',
-    action: parsers.booleanParser,
-    default: true,
-  },
   enabledForAnonymousUser: {
     env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_ANONYMOUS_USER',
     help: 'File upload is enabled for Anonymous Users.',

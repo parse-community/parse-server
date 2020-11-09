@@ -94,10 +94,6 @@ export class FilesRouter {
 
   async createHandler(req, res, next) {
     const config = req.config;
-    if (!req.config.fileUpload.enabled && req.config.fileUpload.enabled != null) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload is not enabled.'));
-      return;
-    }
     if (
       !req.config.fileUpload.enabledForAnonymousUser &&
       req.auth.user &&

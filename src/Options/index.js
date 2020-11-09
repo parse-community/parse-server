@@ -290,9 +290,6 @@ export interface IdempotencyOptions {
   ttl: ?number;
 }
 export interface FileUploadOptions {
-  /* Files can be uploaded with Parse Server.
-  :DEFAULT: true */
-  enabled: ?boolean;
   /* File upload is enabled for Anonymous Users.
   :DEFAULT: false */
   enabledForAnonymousUser: ?boolean;
