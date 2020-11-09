@@ -106,6 +106,17 @@ export class FilesRouter {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Anonymous file upload is not enabled.'));
       return;
     }
+    if (
+      !req.config.fileUpload.enabledForAuthenticatedUser &&
+      req.config.fileUpload.enabledForAuthenticatedUser != null &&
+      req.auth.user &&
+      !Parse.AnonymousUtils.isLinked(req.auth.user)
+    ) {
+      next(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Authenticated file upload is not enabled.')
+      );
+      return;
+    }
     if (!req.config.fileUpload.enabledForPublic && !req.auth.user) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Public file upload is not enabled.'));
       return;

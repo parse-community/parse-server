@@ -125,5 +125,6 @@
  * @interface FileUploadOptions
  * @property {Boolean} enabled Files can be uploaded with Parse Server.
  * @property {Boolean} enabledForAnonymousUser File upload is enabled for Anonymous Users.
+ * @property {Boolean} enabledForAuthenticatedUser File upload is enabled for authenticated users.
  * @property {Boolean} enabledForPublic File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.
  */

@@ -564,6 +564,12 @@ module.exports.FileUploadOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  enabledForAuthenticatedUser: {
+    env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_AUTHENTICATED_USER',
+    help: 'File upload is enabled for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
   enabledForPublic: {
     env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_PUBLIC',
     help:

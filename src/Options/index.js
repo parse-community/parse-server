@@ -302,4 +302,7 @@ export interface FileUploadOptions {
   /* File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.
   :DEFAULT: false */
   enabledForPublic: ?boolean;
+  /* File upload is enabled for authenticated users.
+  :DEFAULT: true */
+  enabledForAuthenticatedUser: ?boolean;
 }

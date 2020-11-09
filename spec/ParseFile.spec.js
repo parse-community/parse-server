@@ -958,5 +958,32 @@ describe('Parse.File testing', () => {
         fail('should have allowed file to save.');
       }
     });
+
+    it('enable for anonymous but not authenticated', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabled: true,
+          enabledForPublic: false,
+          enabledForAnonymousUser: true,
+          enabledForAuthenticatedUser: false,
+        },
+      });
+      try {
+        const user = await Parse.AnonymousUtils.logIn();
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+      } catch (e) {
+        fail('should have allowed file to save.');
+      }
+      try {
+        const user = await Parse.User.signUp('myUser', 'password');
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+        fail('should have not allowed file to save.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Authenticated file upload is not enabled.');
+      }
+    });
   });
 });
