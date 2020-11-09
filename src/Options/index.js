@@ -192,6 +192,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* View recommendations for server improvements
+  :ENV: PARSE_SERVER_EXPERIMENTAL_SECURITY_CHECKS_OPTIONS
+  :DEFAULT: false */
+  securityChecks: ?SecurityChecksOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -284,4 +288,13 @@ export interface IdempotencyOptions {
   /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
   :DEFAULT: 300 */
   ttl: ?number;
+}
+
+export interface SecurityChecksOptions {
+  /* Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
+  :DEFAULT: true */
+  enabled: ?boolean;
+  /* If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
+  :DEFAULT: false */
+  logOutput: ?boolean;
 }

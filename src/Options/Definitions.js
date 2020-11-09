@@ -11,11 +11,6 @@ module.exports.ParseServerOptions = {
     help: 'account lockout policy for failed login attempts',
     action: parsers.objectParser,
   },
-  securityChecks: {
-    env: 'PARSE_SERVER_SECURITY_CHECKS',
-    help: 'view recommendations for server improvements',
-    default: {},
-  },
   allowClientClassCreation: {
     env: 'PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION',
     help: 'Enable (or disable) client class creation, defaults to true',
@@ -354,6 +349,12 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('schemaCacheTTL'),
     default: 5000,
   },
+  securityChecks: {
+    env: 'PARSE_SERVER_EXPERIMENTAL_SECURITY_CHECKS_OPTIONS',
+    help: 'View recommendations for server improvements',
+    action: parsers.objectParser,
+    default: {},
+  },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
     help: 'Callback when server has closed',
@@ -544,5 +545,21 @@ module.exports.IdempotencyOptions = {
       'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
     action: parsers.numberParser('ttl'),
     default: 300,
+  },
+};
+module.exports.SecurityChecksOptions = {
+  enabled: {
+    env: 'PARSE_SERVER_SECURITY_CHECKS_ENABLED',
+    help:
+      'Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  logOutput: {
+    env: 'PARSE_SERVER_SECURITY_CHECKS_LOG_OUTPUT',
+    help:
+      'If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs',
+    action: parsers.booleanParser,
+    default: false,
   },
 };

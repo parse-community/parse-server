@@ -18,6 +18,14 @@ export async function securityChecks(req) {
         link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
       });
     }
+    if (!options.masterKey.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
+      securityWarnings.push({
+        title: 'Weak masterKey.',
+        message:
+          'masterKey is a key that overrides all permissions. You should use a secure string for your masterKey',
+        link: 'https://docs.parseplatform.org/parse-server/guide/#keys',
+      });
+    }
     const schema = await options.database.loadSchema();
     const all = await schema.getAllClasses();
     for (const field of all) {

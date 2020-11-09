@@ -2,11 +2,20 @@
 const Parse = require('parse/node');
 const request = require('../lib/request');
 
+const defaultHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Rest-API-Key': 'rest',
+  'Content-Type': 'application/json',
+};
 const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest',
   'X-Parse-Master-Key': 'test',
   'Content-Type': 'application/json',
+};
+const defaultOptions = {
+  headers: defaultHeaders,
+  json: true,
 };
 const masterKeyOptions = {
   headers: masterKeyHeaders,
@@ -14,6 +23,11 @@ const masterKeyOptions = {
 };
 
 describe('SecurityChecks', () => {
+  it('should reject access when not using masterKey (/securityChecks)', done => {
+    request(
+      Object.assign({ url: Parse.serverURL + '/securityChecks' }, defaultOptions)
+    ).then(done.fail, () => done());
+  });
   it('can get security advice', async done => {
     await reconfigureServer({
       securityChecks: {
