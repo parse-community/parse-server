@@ -4,7 +4,7 @@ import Parse from 'parse/node';
 export async function securityChecks(req) {
   try {
     const options = req.config || req;
-    if (!options.securityChecks.enabled && options.securityChecks.enabled != null) {
+    if (!options.securityChecks.enabled) {
       return { error: { code: 1, error: 'Security checks are not enabled.' } };
     }
     const clpWarnings = {};

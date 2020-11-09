@@ -553,7 +553,7 @@ module.exports.SecurityChecksOptions = {
     help:
       'Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
   logOutput: {
     env: 'PARSE_SERVER_SECURITY_CHECKS_LOG_OUTPUT',

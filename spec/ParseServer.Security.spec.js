@@ -28,6 +28,11 @@ describe('SecurityChecks', () => {
       Object.assign({ url: Parse.serverURL + '/securityChecks' }, defaultOptions)
     ).then(done.fail, () => done());
   });
+  it('should reject access by default to  /securityChecks, even with masterKey', done => {
+    request(
+      Object.assign({ url: Parse.serverURL + '/securityChecks' }, masterKeyOptions)
+    ).then(done.fail, () => done());
+  });
   it('can get security advice', async done => {
     await reconfigureServer({
       securityChecks: {

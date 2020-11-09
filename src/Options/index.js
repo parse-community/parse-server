@@ -292,7 +292,7 @@ export interface IdempotencyOptions {
 
 export interface SecurityChecksOptions {
   /* Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
-  :DEFAULT: true */
+  :DEFAULT: false */
   enabled: ?boolean;
   /* If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
   :DEFAULT: false */
