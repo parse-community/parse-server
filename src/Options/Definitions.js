@@ -149,10 +149,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  encryptionKey: {
-    env: 'PARSE_SERVER_ENCRYPTION_KEY',
-    help: 'Key for encrypting your files',
-  },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
     help: 'Sets wether we should expire the inactive sessions, defaults to true',
@@ -553,25 +549,25 @@ module.exports.IdempotencyOptions = {
 };
 module.exports.FileUploadOptions = {
   enabled: {
-    env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED',
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED',
     help: 'Files can be uploaded with Parse Server.',
     action: parsers.booleanParser,
     default: true,
   },
   enabledForAnonymousUser: {
-    env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_ANONYMOUS_USER',
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_ANONYMOUS_USER',
     help: 'File upload is enabled for Anonymous Users.',
     action: parsers.booleanParser,
     default: false,
   },
   enabledForAuthenticatedUser: {
-    env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_AUTHENTICATED_USER',
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_AUTHENTICATED_USER',
     help: 'File upload is enabled for authenticated users.',
     action: parsers.booleanParser,
     default: true,
   },
   enabledForPublic: {
-    env: 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_PUBLIC',
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_PUBLIC',
     help:
       'File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.',
     action: parsers.booleanParser,

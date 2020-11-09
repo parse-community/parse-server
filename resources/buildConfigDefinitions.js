@@ -56,7 +56,7 @@ function getENVPrefix(iface) {
     return 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_';
   }
   if (iface.id.name === 'FileUploadOptions') {
-    return 'PARSE_SERVER_PARSE_SERVER_FILE_UPLOAD_';
+    return 'PARSE_SERVER_FILE_UPLOAD_';
   }
 }
 
