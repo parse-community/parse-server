@@ -42,7 +42,7 @@ const errorMessageFromError = e => {
   }
   return undefined;
 };
-const createFileData = async (req, fileObject) => {
+const createFileData = async fileObject => {
   const fileData = new Parse.Object('_File');
   fileData.set('references', 0);
   fileData.set('file', fileObject.file);
@@ -213,15 +213,18 @@ export class FilesRouter {
           name: createFileResult.name,
         };
       }
-      // run afterSaveFile trigger
+      fileObject._ACL = acl;
+      try {
+        await createFileData(fileObject);
+      } catch (e) {
+        /* */
+      }
       await triggers.maybeRunFileTrigger(
         triggers.Types.afterSaveFile,
         fileObject,
         config,
         req.auth
       );
-      fileObject._ACL = acl;
-      await createFileData(req, fileObject);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -235,7 +238,7 @@ export class FilesRouter {
   }
   async deleteHandler(req, res, next) {
     try {
-      const { filesController } = req.config;
+      const { filesController, database } = req.config;
       const { filename } = req.params;
       // run beforeDeleteFile trigger
       const file = new Parse.File(filename);
@@ -249,6 +252,13 @@ export class FilesRouter {
       );
       // delete file
       await filesController.deleteFile(req.config, filename);
+      try {
+        await database.destroy('_File', {
+          file: file.toJSON(),
+        });
+      } catch (e) {
+        /**/
+      }
       // run afterDeleteFile trigger
       await triggers.maybeRunFileTrigger(
         triggers.Types.afterDeleteFile,

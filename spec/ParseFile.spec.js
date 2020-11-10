@@ -957,8 +957,15 @@ describe('Parse.File testing', () => {
     file.setTags({ acl: acl.toJSON() });
     await file.save({ sessionToken: user.getSessionToken() });
     const query = new Parse.Query('_File');
-    const fileData = await query.first();
-    expect(fileData).toBeUndefined();
-    done();
+    try {
+      await query.first();
+      fail('Should not have been able to query _Files');
+    } catch (e) {
+      expect(e.code).toBe(119);
+      expect(e.message).toBe(
+        "Clients aren't allowed to perform the find operation on the _File collection."
+      );
+      done();
+    }
   });
 });
