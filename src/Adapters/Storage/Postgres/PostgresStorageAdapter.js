@@ -1210,6 +1210,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             '_GraphQLConfig',
             '_Audience',
             '_Idempotency',
+            '_File',
             ...results.map(result => result.className),
             ...joins,
           ];
@@ -2492,11 +2493,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return (conn || this._client).tx(t =>
       t.batch(
         indexes.map(i => {
-          return t.none('CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)', [
-            i.name,
-            className,
-            i.key,
-          ]);
+          return t.none(
+            'CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)',
+            [i.name, className, i.key]
+          );
         })
       )
     );

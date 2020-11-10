@@ -4,6 +4,7 @@ import AdaptableController from './AdaptableController';
 import { validateFilename, FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path from 'path';
 import mime from 'mime';
+import { authenticator } from 'otplib';
 const Parse = require('parse').Parse;
 
 const legacyFilesRegex = new RegExp(
@@ -51,15 +52,65 @@ export class FilesController extends AdaptableController {
     }
     return Promise.resolve({});
   }
+  async getAuthForFile(config, file, auth) {
+    const [fileObject] = await config.database.find('_File', {
+      file,
+    });
+    const user = auth.user;
+    if (fileObject && fileObject.authACL) {
+      const acl = new Parse.ACL(fileObject.authACL);
+      if (!acl || acl.getPublicReadAccess() || !user) {
+        return;
+      }
+      const isAllowed = () => {
+        if (acl.getReadAccess(user.id)) {
+          return true;
+        }
 
+        // Check if the user has any roles that match the ACL
+        return Promise.resolve()
+          .then(async () => {
+            // Resolve false right away if the acl doesn't have any roles
+            const acl_has_roles = Object.keys(acl.permissionsById).some(key =>
+              key.startsWith('role:')
+            );
+            if (!acl_has_roles) {
+              return false;
+            }
+
+            const roleNames = await auth.getUserRoles();
+            // Finally, see if any of the user's roles allow them read access
+            for (const role of roleNames) {
+              // We use getReadAccess as `role` is in the form `role:roleName`
+              if (acl.getReadAccess(role)) {
+                return true;
+              }
+            }
+            return false;
+          })
+          .catch(() => {
+            return false;
+          });
+      };
+      const allowed = await isAllowed();
+      if (allowed) {
+        const token = authenticator.generate(fileObject.authSecret);
+        file.url = file.url + '?token=' + token;
+      }
+    }
+  }
   /**
    * Find file references in REST-format object and adds the url key
    * with the current mount point and app id.
    * Object may be a single object or list of REST-format objects.
    */
-  expandFilesInObject(config, object) {
+  async expandFilesInObject(config, object, auth) {
     if (object instanceof Array) {
-      object.map(obj => this.expandFilesInObject(config, obj));
+      await Promise.all(
+        object.map(
+          async obj => await this.expandFilesInObject(config, obj, auth)
+        )
+      );
       return;
     }
     if (typeof object !== 'object') {
@@ -69,6 +120,7 @@ export class FilesController extends AdaptableController {
       const fileObject = object[key];
       if (fileObject && fileObject['__type'] === 'File') {
         if (fileObject['url']) {
+          await this.getAuthForFile(config, fileObject, auth);
           continue;
         }
         const filename = fileObject['name'];
@@ -94,6 +146,7 @@ export class FilesController extends AdaptableController {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
           }
         }
+        await this.getAuthForFile(config, fileObject, auth);
       }
     }
   }

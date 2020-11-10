@@ -228,6 +228,7 @@ afterEach(function (done) {
                   '_Installation',
                   '_Role',
                   '_Session',
+                  '_File',
                   '_Product',
                   '_Audience',
                   '_Idempotency',

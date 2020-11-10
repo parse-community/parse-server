@@ -663,17 +663,24 @@ RestQuery.prototype.runFind = function (options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
+  let results = [];
   return this.config.database
     .find(this.className, this.restWhere, findOptions, this.auth)
-    .then(results => {
+    .then(response => {
+      results = response;
       if (this.className === '_User' && findOptions.explain !== true) {
         for (var result of results) {
           cleanResultAuthData(result);
         }
       }
 
-      this.config.filesController.expandFilesInObject(this.config, results);
-
+      return this.config.filesController.expandFilesInObject(
+        this.config,
+        results,
+        this.auth
+      );
+    })
+    .then(() => {
       if (this.redirectClassName) {
         for (var r of results) {
           r.className = this.redirectClassName;

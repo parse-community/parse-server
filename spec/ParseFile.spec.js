@@ -304,19 +304,19 @@ describe('Parse.File testing', () => {
     let firstName;
     let secondName;
 
-    const firstSave = file.save().then(function() {
+    const firstSave = file.save().then(function () {
       firstName = file.name();
     });
-    const secondSave = file.save().then(function() {
+    const secondSave = file.save().then(function () {
       secondName = file.name();
     });
 
     Promise.all([firstSave, secondSave]).then(
-      function() {
+      function () {
         equal(firstName, secondName);
         done();
       },
-      function(error) {
+      function (error) {
         ok(false, error);
         done();
       }
@@ -871,5 +871,94 @@ describe('Parse.File testing', () => {
         });
       });
     });
+  });
+  it('can save file and get', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    file.setTags({ acl: acl.toJSON() });
+    const result = await file.save({ sessionToken: user.getSessionToken() });
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), 'hello.txt');
+    const object = new Parse.Object('TestObject');
+    await object.save({ file: file }, { sessionToken: user.getSessionToken() });
+
+    const query = await new Parse.Query('TestObject').get(object.id, {
+      sessionToken: user.getSessionToken(),
+    });
+    const aclFile = query.get('file');
+    expect(aclFile instanceof Parse.File);
+    expect(aclFile.url()).toBeDefined();
+    expect(aclFile.url()).toContain('token');
+    try {
+      const response = await request({
+        url: aclFile.url(),
+      });
+      expect(response.text).toEqual('Hello World!');
+      done();
+    } catch (e) {
+      fail('should have been able to get file.');
+    }
+  });
+  it('can save file and not get public', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    file.setTags({ acl: acl.toJSON() });
+    const result = await file.save({ sessionToken: user.getSessionToken() });
+    strictEqual(result, file);
+    ok(file.name());
+    ok(file.url());
+    notEqual(file.name(), 'hello.txt');
+    const object = new Parse.Object('TestObject');
+    await object.save({ file: file }, { sessionToken: user.getSessionToken() });
+
+    await Parse.User.logOut();
+    const query = await new Parse.Query('TestObject').get(object.id);
+    const aclFile = query.get('file');
+    expect(aclFile instanceof Parse.File);
+    expect(aclFile.url()).toBeDefined();
+    expect(aclFile.url()).not.toContain('token');
+    try {
+      await request({
+        url: aclFile.url(),
+      });
+      fail('should not have been able to get file.');
+    } catch (e) {
+      expect(e.text).toBe('File not found.');
+      expect(e.status).toBe(404);
+      done();
+    }
+  });
+  it('can query file data', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    const acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setReadAccess(user, true);
+    file.setTags({ acl: acl.toJSON() });
+    await file.save({ sessionToken: user.getSessionToken() });
+    const query = new Parse.Query('_File');
+    const fileData = await query.first();
+    expect(fileData).toBeUndefined();
+    done();
   });
 });

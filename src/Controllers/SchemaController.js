@@ -76,6 +76,12 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
     expiresAt: { type: 'Date' },
     createdWith: { type: 'Object' },
   },
+  _File: {
+    file: { type: 'File' },
+    references: { type: 'Number' },
+    authSecret: { type: 'String' },
+    authACL: { type: 'Object' },
+  },
   _Product: {
     productIdentifier: { type: 'String' },
     download: { type: 'File' },
@@ -160,6 +166,7 @@ const systemClasses = Object.freeze([
   '_Installation',
   '_Role',
   '_Session',
+  '_File',
   '_Product',
   '_PushStatus',
   '_JobStatus',
@@ -177,6 +184,7 @@ const volatileClasses = Object.freeze([
   '_JobSchedule',
   '_Audience',
   '_Idempotency',
+  '_File',
 ]);
 
 // Anything that start with role
@@ -673,6 +681,13 @@ const _IdempotencySchema = convertSchemaToAdapterSchema(
     classLevelPermissions: {},
   })
 );
+const _FileSchema = convertSchemaToAdapterSchema(
+  injectDefaultSchema({
+    className: '_File',
+    fields: defaultColumns._File,
+    classLevelPermissions: {},
+  })
+);
 const VolatileClassesSchemas = [
   _HooksSchema,
   _JobStatusSchema,
@@ -682,6 +697,7 @@ const VolatileClassesSchemas = [
   _GraphQLConfigSchema,
   _AudienceSchema,
   _IdempotencySchema,
+  _FileSchema,
 ];
 
 const dbTypeMatchesObjectType = (

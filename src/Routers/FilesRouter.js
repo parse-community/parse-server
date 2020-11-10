@@ -5,6 +5,7 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
+import { authenticator } from 'otplib';
 const triggers = require('../triggers');
 const http = require('http');
 
@@ -41,6 +42,15 @@ const errorMessageFromError = e => {
   }
   return undefined;
 };
+const createFileData = async (req, fileObject) => {
+  const fileData = new Parse.Object('_File');
+  fileData.set('references', 0);
+  fileData.set('file', fileObject.file);
+  fileData.set('authACL', fileObject._ACL);
+  authenticator.options = { step: 600, digits: 10 };
+  fileData.set('authSecret', authenticator.generateSecret());
+  await fileData.save(null, { useMasterKey: true });
+};
 
 export class FilesRouter {
   expressRouter({ maxUploadSize = '20Mb' } = {}) {
@@ -75,10 +85,31 @@ export class FilesRouter {
     return router;
   }
 
-  getHandler(req, res) {
+  async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
+    const file = new Parse.File(filename);
+    file._url = filesController.adapter.getFileLocation(config, filename);
+    const [fileObject] = await config.database.find('_File', {
+      file: file.toJSON(),
+    });
+    if (fileObject && fileObject.authACL) {
+      const acl = new Parse.ACL(fileObject.authACL);
+      if (
+        !acl.getPublicReadAccess() &&
+        !authenticator.verify({
+          token: req.query.token,
+          secret: fileObject.authSecret,
+        })
+      ) {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+        return;
+      }
+    }
+
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController
@@ -127,6 +158,8 @@ export class FilesRouter {
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};
+    const acl = tags.acl;
+    delete tags.acl;
     file.setTags(tags);
     file.setMetadata(metadata);
     const fileSize = Buffer.byteLength(req.body);
@@ -187,6 +220,8 @@ export class FilesRouter {
         config,
         req.auth
       );
+      fileObject._ACL = acl;
+      await createFileData(req, fileObject);
       res.status(201);
       res.set('Location', saveResult.url);
       res.json(saveResult);
@@ -198,7 +233,6 @@ export class FilesRouter {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, errorMessage));
     }
   }
-
   async deleteHandler(req, res, next) {
     try {
       const { filesController } = req.config;
