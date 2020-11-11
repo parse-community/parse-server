@@ -4008,29 +4008,86 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it('includeAll pointer and pointer array', function (done) {
-    const child = new Parse.Object('FirstObject');
-    const child2 = new Parse.Object('SecondObject');
-    const parent = new Parse.Object('ParentObject');
+  it('include pointer and pointer array', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
     child.set('foo', 'bar');
     child2.set('hello', 'world');
-    parent.set('child', child);
-    parent.set('child2', [child2]);
-    parent.save().then(function () {
-      const query = new Parse.Query('ParentObject');
-      //query.includeAll();
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        const parentAgain = results[0];
-        const childAgain = parentAgain.get('child');
-        ok(childAgain);
-        equal(childAgain.get('objectId'), 'bar');
-        const child2Again = parentAgain.get('child2');
-        equal(child2Again.length, 1);
-        console.log(childAgain);
-        ok(child2Again);
-        equal(child2Again[0].get('__type'), 'world');
-        done();
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.include(['child', 'child2']);
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
+      });
+    });
+  });
+
+  it('include pointer and pointer array (keys switched)', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
+    child.set('foo', 'bar');
+    child2.set('hello', 'world');
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.include(['child2', 'child']);
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
+      });
+    });
+  });
+
+  it('includeAll pointer and pointer array', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
+    child.set('foo', 'bar');
+    child2.set('hello', 'world');
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.includeAll();
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
       });
     });
   });
