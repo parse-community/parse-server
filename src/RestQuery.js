@@ -676,7 +676,10 @@ RestQuery.prototype.handleIncludeAll = function () {
       const includeFields = [];
       const keyFields = [];
       for (const field in schema.fields) {
-        if (schema.fields[field].type && schema.fields[field].type === 'Pointer') {
+        if (
+          (schema.fields[field].type && schema.fields[field].type === 'Pointer') ||
+          (schema.fields[field].type && schema.fields[field].type === 'Array')
+        ) {
           includeFields.push([field]);
           keyFields.push(field);
         }
