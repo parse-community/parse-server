@@ -1483,9 +1483,6 @@ describe('Cloud Code', () => {
     let count = 0;
     Parse.Cloud.beforeSave('CloudIncrementNested', () => {
       count += 1;
-      if (count === 2) {
-        done();
-      }
     });
 
     const obj = new Parse.Object('CloudIncrementNested');
@@ -1494,6 +1491,7 @@ describe('Cloud Code', () => {
 
     obj.increment('objectField.number', 10);
     await obj.save();
+    count === 2 ? done() : fail();
   });
 
   /**
