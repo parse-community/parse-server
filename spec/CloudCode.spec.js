@@ -1480,21 +1480,40 @@ describe('Cloud Code', () => {
   });
 
   it('beforeSave should not sanitize database', async done => {
+    const { adapter } = Config.get(Parse.applicationId).database;
+    spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+
     let count = 0;
     Parse.Cloud.beforeSave('CloudIncrementNested', req => {
       count += 1;
+      req.object.set('foo', 'baz');
       expect(typeof req.object.get('objectField').number).toBe('number');
     });
+
     Parse.Cloud.afterSave('CloudIncrementNested', req => {
       expect(typeof req.object.get('objectField').number).toBe('number');
     });
 
     const obj = new Parse.Object('CloudIncrementNested');
     obj.set('objectField', { number: 5 });
+    obj.set('foo', 'bar');
     await obj.save();
 
     obj.increment('objectField.number', 10);
     await obj.save();
+
+    const [
+      ,
+      ,
+      ,
+      /* className */ /* schema */ /* query */ update,
+    ] = adapter.findOneAndUpdate.calls.first().args;
+    expect(update).toEqual({
+      'objectField.number': { __op: 'Increment', amount: 10 },
+      foo: 'baz',
+      updatedAt: obj.updatedAt.toISOString(),
+    });
+
     count === 2 ? done() : fail();
   });
 
