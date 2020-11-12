@@ -1481,7 +1481,8 @@ describe('Cloud Code', () => {
 
   it('beforeSave should not sanitize database', async done => {
     const { adapter } = Config.get(Parse.applicationId).database;
-    spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+    const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+    spy.calls.saveArgumentsByValue();
 
     let count = 0;
     Parse.Cloud.beforeSave('CloudIncrementNested', req => {
