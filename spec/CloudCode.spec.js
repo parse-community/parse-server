@@ -1485,6 +1485,9 @@ describe('Cloud Code', () => {
       count += 1;
       expect(typeof req.object.get('objectField').number).toBe('number');
     });
+    Parse.Cloud.afterSave('CloudIncrementNested', req => {
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
 
     const obj = new Parse.Object('CloudIncrementNested');
     obj.set('objectField', { number: 5 });
