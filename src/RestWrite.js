@@ -235,7 +235,7 @@ RestWrite.prototype.runBeforeSaveTrigger = function () {
           this.query,
           this.data,
           this.runOptions,
-          false,
+          true,
           true
         );
       } else {

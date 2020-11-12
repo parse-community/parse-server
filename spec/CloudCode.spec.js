@@ -1479,6 +1479,21 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('beforeSave should not sanitize database', async done => {
+    let count = 0;
+    Parse.Cloud.beforeSave('CloudIncrementNested', () => {
+      count += 1;
+    });
+
+    const obj = new Parse.Object('CloudIncrementNested');
+    obj.set('objectField', { number: 5 });
+    await obj.save();
+
+    obj.increment('objectField.number', 10);
+    await obj.save();
+    count === 2 ? done() : fail();
+  });
+
   /**
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
