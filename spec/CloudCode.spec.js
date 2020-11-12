@@ -1481,8 +1481,9 @@ describe('Cloud Code', () => {
 
   it('beforeSave should not sanitize database', async done => {
     let count = 0;
-    Parse.Cloud.beforeSave('CloudIncrementNested', () => {
+    Parse.Cloud.beforeSave('CloudIncrementNested', req => {
       count += 1;
+      expect(typeof req.object.get('objectField').number).toBe('number');
     });
 
     const obj = new Parse.Object('CloudIncrementNested');
