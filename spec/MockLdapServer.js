@@ -3,14 +3,14 @@ const ldapjs = require('ldapjs');
 function newServer(port, dn, provokeSearchError = false) {
   const server = ldapjs.createServer();
 
-  server.bind('o=example', function(req, res, next) {
+  server.bind('o=example', function (req, res, next) {
     if (req.dn.toString() !== dn || req.credentials !== 'secret')
       return next(new ldapjs.InvalidCredentialsError());
     res.end();
     return next();
   });
 
-  server.search('o=example', function(req, res, next) {
+  server.search('o=example', function (req, res, next) {
     if (provokeSearchError) {
       res.end(ldapjs.LDAP_SIZE_LIMIT_EXCEEDED);
       return next();

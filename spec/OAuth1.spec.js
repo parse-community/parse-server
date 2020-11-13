@@ -1,6 +1,6 @@
 const OAuth = require('../lib/Adapters/Auth/OAuth1Client');
 
-describe('OAuth', function() {
+describe('OAuth', function () {
   it('Nonce should have right length', done => {
     jequal(OAuth.nonce().length, 30);
     done();
@@ -39,12 +39,7 @@ describe('OAuth', function() {
 
     const consumer_secret = 'world';
     const auth_token_secret = 'secret';
-    request = OAuth.signRequest(
-      request,
-      oauth_params,
-      consumer_secret,
-      auth_token_secret
-    );
+    request = OAuth.signRequest(request, oauth_params, consumer_secret, auth_token_secret);
     jequal(
       request.headers['Authorization'],
       'OAuth oauth_consumer_key="hello", oauth_nonce="AAAAAAAAAAAAAAAAA", oauth_signature="8K95bpQcDi9Nd2GkhumTVcw4%2BXw%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="123450000", oauth_token="token", oauth_version="1.0"'
@@ -101,7 +96,7 @@ describe('OAuth', function() {
     const path = '/1.1/help/configuration.json';
     const params = { lang: 'en' };
     const oauthClient = new OAuth(options);
-    oauthClient.get(path, params).then(function(data) {
+    oauthClient.get(path, params).then(function (data) {
       validateCannotAuthenticateError(data, done);
     });
   });
@@ -118,7 +113,7 @@ describe('OAuth', function() {
     const path = '/1.1/account/settings.json';
 
     const oauthClient = new OAuth(options);
-    oauthClient.post(path, null, body).then(function(data) {
+    oauthClient.post(path, null, body).then(function (data) {
       validateCannotAuthenticateError(data, done);
     });
   });
@@ -137,11 +132,11 @@ describe('OAuth', function() {
     const oauthClient = new OAuth(options);
     oauthClient
       .post(path, null, body)
-      .then(function() {
+      .then(function () {
         jequal(false, true);
         done();
       })
-      .catch(function() {
+      .catch(function () {
         jequal(true, true);
         done();
       });

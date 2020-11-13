@@ -1,10 +1,8 @@
-const AdaptableController = require('../lib/Controllers/AdaptableController')
-  .AdaptableController;
+const AdaptableController = require('../lib/Controllers/AdaptableController').AdaptableController;
 const FilesAdapter = require('../lib/Adapters/Files/FilesAdapter').default;
-const FilesController = require('../lib/Controllers/FilesController')
-  .FilesController;
+const FilesController = require('../lib/Controllers/FilesController').FilesController;
 
-const MockController = function(options) {
+const MockController = function (options) {
   AdaptableController.call(this, options);
 };
 MockController.prototype = Object.create(AdaptableController.prototype);
@@ -60,11 +58,11 @@ describe('AdaptableController', () => {
 
   it('should accept an object adapter', done => {
     const adapter = {
-      createFile: function() {},
-      deleteFile: function() {},
-      getFileData: function() {},
-      getFileLocation: function() {},
-      validateFilename: function() {},
+      createFile: function () {},
+      deleteFile: function () {},
+      getFileData: function () {},
+      getFileLocation: function () {},
+      validateFilename: function () {},
     };
     expect(() => {
       new FilesController(adapter);
@@ -74,11 +72,11 @@ describe('AdaptableController', () => {
 
   it('should accept an prototype based object adapter', done => {
     function AGoodAdapter() {}
-    AGoodAdapter.prototype.createFile = function() {};
-    AGoodAdapter.prototype.deleteFile = function() {};
-    AGoodAdapter.prototype.getFileData = function() {};
-    AGoodAdapter.prototype.getFileLocation = function() {};
-    AGoodAdapter.prototype.validateFilename = function() {};
+    AGoodAdapter.prototype.createFile = function () {};
+    AGoodAdapter.prototype.deleteFile = function () {};
+    AGoodAdapter.prototype.getFileData = function () {};
+    AGoodAdapter.prototype.getFileLocation = function () {};
+    AGoodAdapter.prototype.validateFilename = function () {};
 
     const adapter = new AGoodAdapter();
     expect(() => {

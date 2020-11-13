@@ -1,8 +1,7 @@
 const MongoClient = require('mongodb').MongoClient;
 const GridStore = require('mongodb').GridStore;
 
-const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter')
-  .GridStoreAdapter;
+const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const Config = require('../lib/Config');
 const FilesController = require('../lib/Controllers/FilesController').default;
 
@@ -14,11 +13,7 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
     const gridStoreAdapter = new GridStoreAdapter(databaseURI);
     const db = await gridStoreAdapter._connect();
     await db.dropDatabase();
-    const filesController = new FilesController(
-      gridStoreAdapter,
-      Parse.applicationId,
-      {}
-    );
+    const filesController = new FilesController(gridStoreAdapter, Parse.applicationId, {});
 
     // save original unlink before redefinition
     const originalUnlink = GridStore.prototype.unlink;
@@ -26,7 +21,7 @@ describe_only_db('mongo')('GridStoreAdapter', () => {
     let gridStoreMode;
 
     // new unlink method that will capture the mode in which GridStore was opened
-    GridStore.prototype.unlink = function() {
+    GridStore.prototype.unlink = function () {
       // restore original unlink during first call
       GridStore.prototype.unlink = originalUnlink;
 

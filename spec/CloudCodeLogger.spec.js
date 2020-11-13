@@ -1,5 +1,4 @@
-const LoggerController = require('../lib/Controllers/LoggerController')
-  .LoggerController;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
 const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter')
   .WinstonLoggerAdapter;
 const fs = require('fs');
@@ -23,10 +22,7 @@ describe('Cloud Code Logger', () => {
           .then(() => Parse.User.logIn(user.get('username'), 'abc'));
       })
       .then(() => {
-        spy = spyOn(
-          Config.get('test').loggerController.adapter,
-          'log'
-        ).and.callThrough();
+        spy = spyOn(Config.get('test').loggerController.adapter, 'log').and.callThrough();
       });
   });
 
@@ -34,10 +30,7 @@ describe('Cloud Code Logger', () => {
   // see helpers.js:afterEach
 
   it('should expose log to functions', () => {
-    const spy = spyOn(
-      Config.get('test').loggerController,
-      'log'
-    ).and.callThrough();
+    const spy = spyOn(Config.get('test').loggerController, 'log').and.callThrough();
     Parse.Cloud.define('loggerTest', req => {
       req.log.info('logTest', 'info log', { info: 'some log' });
       req.log.error('logTest', 'error log', { error: 'there was an error' });
@@ -54,9 +47,7 @@ describe('Cloud Code Logger', () => {
       expect(cloudFunctionMessage.args[1][0]).toMatch(
         /Ran cloud function loggerTest for user [^ ]* with:\n {2}Input: {}\n {2}Result: {}/
       );
-      expect(cloudFunctionMessage.args[1][1].functionName).toEqual(
-        'loggerTest'
-      );
+      expect(cloudFunctionMessage.args[1][1].functionName).toEqual('loggerTest');
       expect(errorMessage.args[0]).toBe('error');
       expect(errorMessage.args[1][2].error).toBe('there was an error');
       expect(errorMessage.args[1][0]).toBe('logTest');
@@ -106,14 +97,10 @@ describe('Cloud Code Logger', () => {
       expect(cloudTriggerMessage[2].user).toBe(user.id);
       expect(errorMessage[0]).toBe('error');
       expect(errorMessage[3].error).toBe('there was an error');
-      expect(errorMessage[1] + ' ' + errorMessage[2]).toBe(
-        'beforeSave MyObject error log'
-      );
+      expect(errorMessage[1] + ' ' + errorMessage[2]).toBe('beforeSave MyObject error log');
       expect(infoMessage[0]).toBe('info');
       expect(infoMessage[3].info).toBe('some log');
-      expect(infoMessage[1] + ' ' + infoMessage[2]).toBe(
-        'beforeSave MyObject info log'
-      );
+      expect(infoMessage[1] + ' ' + infoMessage[2]).toBe('beforeSave MyObject info log');
       done();
     });
   });

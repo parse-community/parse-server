@@ -13,7 +13,7 @@ import { ParseServerOptions } from './Options';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 
 // Factory function
-const _ParseServer = function(options: ParseServerOptions) {
+const _ParseServer = function (options: ParseServerOptions) {
   const server = new ParseServer(options);
   return server.app;
 };

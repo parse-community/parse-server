@@ -66,9 +66,7 @@ export function getControllers(options: ParseServerOptions) {
   };
 }
 
-export function getLoggerController(
-  options: ParseServerOptions
-): LoggerController {
+export function getLoggerController(options: ParseServerOptions): LoggerController {
   const {
     appId,
     jsonLogs,
@@ -87,25 +85,12 @@ export function getLoggerController(
     silent,
     maxLogFiles,
   };
-  const loggerControllerAdapter = loadAdapter(
-    loggerAdapter,
-    WinstonLoggerAdapter,
-    loggerOptions
-  );
+  const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);
   return new LoggerController(loggerControllerAdapter, appId, loggerOptions);
 }
 
-export function getFilesController(
-  options: ParseServerOptions
-): FilesController {
-  const {
-    appId,
-    databaseURI,
-    filesAdapter,
-    databaseAdapter,
-    preserveFileName,
-    fileKey,
-  } = options;
+export function getFilesController(options: ParseServerOptions): FilesController {
+  const { appId, databaseURI, filesAdapter, databaseAdapter, preserveFileName, fileKey } = options;
   if (!filesAdapter && databaseAdapter) {
     throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
   }
@@ -125,15 +110,13 @@ export function getUserController(options: ParseServerOptions): UserController {
   });
 }
 
-export function getCacheController(
-  options: ParseServerOptions
-): CacheController {
+export function getCacheController(options: ParseServerOptions): CacheController {
   const { appId, cacheAdapter, cacheTTL, cacheMaxSize } = options;
-  const cacheControllerAdapter = loadAdapter(
-    cacheAdapter,
-    InMemoryCacheAdapter,
-    { appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize }
-  );
+  const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {
+    appId: appId,
+    ttl: cacheTTL,
+    maxSize: cacheMaxSize,
+  });
   return new CacheController(cacheControllerAdapter, appId);
 }
 
@@ -147,31 +130,18 @@ export function getParseGraphQLController(
   });
 }
 
-export function getAnalyticsController(
-  options: ParseServerOptions
-): AnalyticsController {
+export function getAnalyticsController(options: ParseServerOptions): AnalyticsController {
   const { analyticsAdapter } = options;
-  const analyticsControllerAdapter = loadAdapter(
-    analyticsAdapter,
-    AnalyticsAdapter
-  );
+  const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
   return new AnalyticsController(analyticsControllerAdapter);
 }
 
-export function getLiveQueryController(
-  options: ParseServerOptions
-): LiveQueryController {
+export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(
-  options: ParseServerOptions
-): DatabaseController {
-  const {
-    databaseURI,
-    databaseOptions,
-    collectionPrefix
-  } = options;
+export function getDatabaseController(options: ParseServerOptions): DatabaseController {
+  const { databaseURI, databaseOptions, collectionPrefix } = options;
   let { databaseAdapter } = options;
   if (
     (databaseOptions ||
@@ -181,17 +151,11 @@ export function getDatabaseController(
   ) {
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
-    databaseAdapter = getDatabaseAdapter(
-      databaseURI,
-      collectionPrefix,
-      databaseOptions
-    );
+    databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
   }
-  return new DatabaseController(
-    databaseAdapter
-  );
+  return new DatabaseController(databaseAdapter);
 }
 
 export function getHooksController(
@@ -209,9 +173,7 @@ interface PushControlling {
   pushWorker: PushWorker;
 }
 
-export function getPushController(
-  options: ParseServerOptions
-): PushControlling {
+export function getPushController(options: ParseServerOptions): PushControlling {
   const { scheduledPush, push } = options;
 
   const pushOptions = Object.assign({}, push);
@@ -253,11 +215,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers);
 }
 
-export function getDatabaseAdapter(
-  databaseURI,
-  collectionPrefix,
-  databaseOptions
-) {
+export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);

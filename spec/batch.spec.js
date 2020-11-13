@@ -1,6 +1,7 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
 const TestUtils = require('../lib/TestUtils');
+const semver = require('semver');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -18,9 +19,7 @@ const headers = {
 
 describe('batch', () => {
   it('should return the proper url', () => {
-    const internalURL = batch.makeBatchRoutingPathFunction(originalURL)(
-      '/parse/classes/Object'
-    );
+    const internalURL = batch.makeBatchRoutingPathFunction(originalURL)('/parse/classes/Object');
 
     expect(internalURL).toEqual('/classes/Object');
   });
@@ -101,10 +100,7 @@ describe('batch', () => {
         expect(databaseAdapter.createObject.calls.count()).toBe(2);
         expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
         expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
         done();
       });
     });
@@ -143,17 +139,14 @@ describe('batch', () => {
         expect(databaseAdapter.createObject.calls.count()).toBe(2);
         expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toEqual(null);
         expect(databaseAdapter.createObject.calls.argsFor(1)[3]).toEqual(null);
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
         done();
       });
     });
   });
 
   if (
-    (process.env.MONGODB_VERSION === '4.0.4' &&
+    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
@@ -161,7 +154,7 @@ describe('batch', () => {
     describe('transactions', () => {
       beforeAll(async () => {
         if (
-          process.env.MONGODB_VERSION === '4.0.4' &&
+          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
@@ -218,9 +211,10 @@ describe('batch', () => {
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
                 );
-                expect(results.map(result => result.get('key')).sort()).toEqual(
-                  ['value1', 'value2']
-                );
+                expect(results.map(result => result.get('key')).sort()).toEqual([
+                  'value1',
+                  'value2',
+                ]);
                 done();
               });
             });
@@ -517,10 +511,7 @@ describe('batch', () => {
 
         const query = new Parse.Query('MyObject');
         const results = await query.find();
-        expect(results.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         const query2 = new Parse.Query('MyObject2');
         const results2 = await query2.find();
@@ -528,10 +519,7 @@ describe('batch', () => {
 
         const query3 = new Parse.Query('MyObject3');
         const results3 = await query3.find();
-        expect(results3.map(result => result.get('key')).sort()).toEqual([
-          'value1',
-          'value2',
-        ]);
+        expect(results3.map(result => result.get('key')).sort()).toEqual(['value1', 'value2']);
 
         expect(databaseAdapter.createObject.calls.count()).toBe(13);
         let transactionalSession;

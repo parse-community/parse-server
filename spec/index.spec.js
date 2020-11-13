@@ -6,8 +6,7 @@ const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
 
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -39,8 +38,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -54,9 +52,7 @@ describe('server', () => {
       request({
         url: 'http://localhost:8378/1/classes/TestObject',
         headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from('test:javascript-key=' + 'test').toString('base64'),
+          Authorization: 'Basic ' + Buffer.from('test:javascript-key=' + 'test').toString('base64'),
         },
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -145,9 +141,7 @@ describe('server', () => {
       emailAdapter: '@parse/simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1',
     }).catch(error => {
-      expect(error).toEqual(
-        'SimpleMailgunAdapter requires an API Key, domain, and fromAddress.'
-      );
+      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
       done();
     });
   });
@@ -164,9 +158,7 @@ describe('server', () => {
       },
       publicServerURL: 'http://localhost:8378/1',
     }).catch(error => {
-      expect(error).toEqual(
-        'SimpleMailgunAdapter requires an API Key, domain, and fromAddress.'
-      );
+      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
       done();
     });
   });
@@ -377,13 +369,9 @@ describe('server', () => {
 
   it('has createLiveQueryServer', done => {
     // original implementation through the factory
-    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
     // For import calls
-    expect(typeof ParseServer.default.createLiveQueryServer).toEqual(
-      'function'
-    );
+    expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
     done();
   });
 
@@ -399,13 +387,11 @@ describe('server', () => {
   });
 
   it('properly gives publicServerURL when set', done => {
-    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(
-      () => {
-        const config = Config.get('test', 'http://localhost:8378/1');
-        expect(config.mount).toEqual('https://myserver.com/1');
-        done();
-      }
-    );
+    reconfigureServer({ publicServerURL: 'https://myserver.com/1' }).then(() => {
+      const config = Config.get('test', 'http://localhost:8378/1');
+      expect(config.mount).toEqual('https://myserver.com/1');
+      done();
+    });
   });
 
   it('properly removes trailing slash in mount', done => {
@@ -418,9 +404,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' }).catch(error => {
-      expect(error).toEqual(
-        'publicServerURL should be a valid HTTPS URL starting with https://'
-      );
+      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
       done();
     });
   });
@@ -473,12 +457,10 @@ describe('server', () => {
   });
 
   it('fails if you provides invalid ip in masterKeyIps', done => {
-    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(
-      error => {
-        expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
-        done();
-      }
-    );
+    reconfigureServer({ masterKeyIps: ['invalidIp', '1.2.3.4'] }).catch(error => {
+      expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+      done();
+    });
   });
 
   it('should succeed if you provide valid ip in masterKeyIps', done => {
@@ -489,7 +471,7 @@ describe('server', () => {
 
   it('should load a middleware', done => {
     const obj = {
-      middleware: function(req, res, next) {
+      middleware: function (req, res, next) {
         next();
       },
     };
@@ -528,6 +510,32 @@ describe('server', () => {
           expect(res.headers['x-yolo']).toBe('1');
           done();
         });
+      })
+      .catch(done.fail);
+  });
+
+  it('should not fail when Google signin is introduced without the optional clientId', done => {
+    const jwt = require('jsonwebtoken');
+
+    reconfigureServer({
+      auth: { google: {} },
+    })
+      .then(() => {
+        const fakeClaim = {
+          iss: 'https://accounts.google.com',
+          aud: 'secret',
+          exp: Date.now(),
+          sub: 'the_user_id',
+        };
+        const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+        spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
+        spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
+        const user = new Parse.User();
+        user
+          .linkWith('google', {
+            authData: { id: 'the_user_id', id_token: 'the_token' },
+          })
+          .then(done);
       })
       .catch(done.fail);
   });

@@ -31,9 +31,7 @@ describe('AdapterLoader', () => {
   });
 
   it('should instantiate an adapter from string that is module', done => {
-    const adapterPath = require('path').resolve(
-      './lib/Adapters/Files/FilesAdapter'
-    );
+    const adapterPath = require('path').resolve('./lib/Adapters/Files/FilesAdapter');
     const adapter = loadAdapter({
       adapter: adapterPath,
     });
@@ -88,14 +86,14 @@ describe('AdapterLoader', () => {
   });
 
   it('should fail loading an improperly configured adapter', done => {
-    const Adapter = function(options) {
+    const Adapter = function (options) {
       if (!options.foo) {
         throw 'foo is required for that adapter';
       }
     };
     const adapterOptions = {
       param: 'key',
-      doSomething: function() {},
+      doSomething: function () {},
     };
 
     expect(() => {

@@ -1,6 +1,6 @@
 const analyticsAdapter = {
-  appOpened: function() {},
-  trackEvent: function() {},
+  appOpened: function () {},
+  trackEvent: function () {},
 };
 
 describe('AnalyticsController', () => {

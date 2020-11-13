@@ -35,14 +35,9 @@ function createObjectField(name, value) {
 describe('defaultGraphQLTypes', () => {
   describe('TypeValidationError', () => {
     it('should be an error with specific message', () => {
-      const typeValidationError = new TypeValidationError(
-        'somevalue',
-        'sometype'
-      );
+      const typeValidationError = new TypeValidationError('somevalue', 'sometype');
       expect(typeValidationError).toEqual(jasmine.any(Error));
-      expect(typeValidationError.message).toEqual(
-        'somevalue is not a valid sometype'
-      );
+      expect(typeValidationError.message).toEqual('somevalue is not a valid sometype');
     });
   });
 
@@ -53,18 +48,10 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not a string', () => {
-      expect(() => parseStringValue()).toThrow(
-        jasmine.stringMatching('is not a valid String')
-      );
-      expect(() => parseStringValue({})).toThrow(
-        jasmine.stringMatching('is not a valid String')
-      );
-      expect(() => parseStringValue([])).toThrow(
-        jasmine.stringMatching('is not a valid String')
-      );
-      expect(() => parseStringValue(123)).toThrow(
-        jasmine.stringMatching('is not a valid String')
-      );
+      expect(() => parseStringValue()).toThrow(jasmine.stringMatching('is not a valid String'));
+      expect(() => parseStringValue({})).toThrow(jasmine.stringMatching('is not a valid String'));
+      expect(() => parseStringValue([])).toThrow(jasmine.stringMatching('is not a valid String'));
+      expect(() => parseStringValue(123)).toThrow(jasmine.stringMatching('is not a valid String'));
     });
   });
 
@@ -75,27 +62,15 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not a string', () => {
-      expect(() => parseIntValue()).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
-      expect(() => parseIntValue({})).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
-      expect(() => parseIntValue([])).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
-      expect(() => parseIntValue(123)).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
+      expect(() => parseIntValue()).toThrow(jasmine.stringMatching('is not a valid Int'));
+      expect(() => parseIntValue({})).toThrow(jasmine.stringMatching('is not a valid Int'));
+      expect(() => parseIntValue([])).toThrow(jasmine.stringMatching('is not a valid Int'));
+      expect(() => parseIntValue(123)).toThrow(jasmine.stringMatching('is not a valid Int'));
     });
 
     it('should fail if not an integer string', () => {
-      expect(() => parseIntValue('a123')).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
-      expect(() => parseIntValue('123.4')).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
+      expect(() => parseIntValue('a123')).toThrow(jasmine.stringMatching('is not a valid Int'));
+      expect(() => parseIntValue('123.4')).toThrow(jasmine.stringMatching('is not a valid Int'));
     });
   });
 
@@ -106,21 +81,13 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not a string', () => {
-      expect(() => parseFloatValue()).toThrow(
-        jasmine.stringMatching('is not a valid Float')
-      );
-      expect(() => parseFloatValue({})).toThrow(
-        jasmine.stringMatching('is not a valid Float')
-      );
-      expect(() => parseFloatValue([])).toThrow(
-        jasmine.stringMatching('is not a valid Float')
-      );
+      expect(() => parseFloatValue()).toThrow(jasmine.stringMatching('is not a valid Float'));
+      expect(() => parseFloatValue({})).toThrow(jasmine.stringMatching('is not a valid Float'));
+      expect(() => parseFloatValue([])).toThrow(jasmine.stringMatching('is not a valid Float'));
     });
 
     it('should fail if not a float string', () => {
-      expect(() => parseIntValue('a123')).toThrow(
-        jasmine.stringMatching('is not a valid Int')
-      );
+      expect(() => parseIntValue('a123')).toThrow(jasmine.stringMatching('is not a valid Int'));
     });
   });
 
@@ -133,15 +100,9 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not a boolean', () => {
-      expect(() => parseBooleanValue()).toThrow(
-        jasmine.stringMatching('is not a valid Boolean')
-      );
-      expect(() => parseBooleanValue({})).toThrow(
-        jasmine.stringMatching('is not a valid Boolean')
-      );
-      expect(() => parseBooleanValue([])).toThrow(
-        jasmine.stringMatching('is not a valid Boolean')
-      );
+      expect(() => parseBooleanValue()).toThrow(jasmine.stringMatching('is not a valid Boolean'));
+      expect(() => parseBooleanValue({})).toThrow(jasmine.stringMatching('is not a valid Boolean'));
+      expect(() => parseBooleanValue([])).toThrow(jasmine.stringMatching('is not a valid Boolean'));
       expect(() => parseBooleanValue(123)).toThrow(
         jasmine.stringMatching('is not a valid Boolean')
       );
@@ -159,18 +120,10 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not a string', () => {
-      expect(() => parseDateIsoValue()).toThrow(
-        jasmine.stringMatching('is not a valid Date')
-      );
-      expect(() => parseDateIsoValue({})).toThrow(
-        jasmine.stringMatching('is not a valid Date')
-      );
-      expect(() => parseDateIsoValue([])).toThrow(
-        jasmine.stringMatching('is not a valid Date')
-      );
-      expect(() => parseDateIsoValue(123)).toThrow(
-        jasmine.stringMatching('is not a valid Date')
-      );
+      expect(() => parseDateIsoValue()).toThrow(jasmine.stringMatching('is not a valid Date'));
+      expect(() => parseDateIsoValue({})).toThrow(jasmine.stringMatching('is not a valid Date'));
+      expect(() => parseDateIsoValue([])).toThrow(jasmine.stringMatching('is not a valid Date'));
+      expect(() => parseDateIsoValue(123)).toThrow(jasmine.stringMatching('is not a valid Date'));
     });
 
     it('should fail if not a date string', () => {
@@ -321,18 +274,12 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not an array', () => {
-      expect(() => parseListValues()).toThrow(
-        jasmine.stringMatching('is not a valid List')
-      );
-      expect(() => parseListValues({})).toThrow(
-        jasmine.stringMatching('is not a valid List')
-      );
+      expect(() => parseListValues()).toThrow(jasmine.stringMatching('is not a valid List'));
+      expect(() => parseListValues({})).toThrow(jasmine.stringMatching('is not a valid List'));
       expect(() => parseListValues('some string')).toThrow(
         jasmine.stringMatching('is not a valid List')
       );
-      expect(() => parseListValues(123)).toThrow(
-        jasmine.stringMatching('is not a valid List')
-      );
+      expect(() => parseListValues(123)).toThrow(jasmine.stringMatching('is not a valid List'));
     });
   });
 
@@ -356,18 +303,12 @@ describe('defaultGraphQLTypes', () => {
     });
 
     it('should fail if not an array', () => {
-      expect(() => parseObjectFields()).toThrow(
-        jasmine.stringMatching('is not a valid Object')
-      );
-      expect(() => parseObjectFields({})).toThrow(
-        jasmine.stringMatching('is not a valid Object')
-      );
+      expect(() => parseObjectFields()).toThrow(jasmine.stringMatching('is not a valid Object'));
+      expect(() => parseObjectFields({})).toThrow(jasmine.stringMatching('is not a valid Object'));
       expect(() => parseObjectFields('some string')).toThrow(
         jasmine.stringMatching('is not a valid Object')
       );
-      expect(() => parseObjectFields(123)).toThrow(
-        jasmine.stringMatching('is not a valid Object')
-      );
+      expect(() => parseObjectFields(123)).toThrow(jasmine.stringMatching('is not a valid Object'));
     });
   });
 
@@ -399,9 +340,7 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => parseLiteral({})).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => parseLiteral({})).toThrow(jasmine.stringMatching('is not a valid Date'));
         expect(() =>
           parseLiteral(
             createValue(Kind.OBJECT, undefined, undefined, [
@@ -410,12 +349,8 @@ describe('defaultGraphQLTypes', () => {
             ])
           )
         ).toThrow(jasmine.stringMatching('is not a valid Date'));
-        expect(() => parseLiteral([])).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
-        expect(() => parseLiteral(123)).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => parseLiteral([])).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => parseLiteral(123)).toThrow(jasmine.stringMatching('is not a valid Date'));
       });
     });
 
@@ -439,9 +374,7 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => parseValue({})).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => parseValue({})).toThrow(jasmine.stringMatching('is not a valid Date'));
         expect(() =>
           parseValue({
             __type: 'Foo',
@@ -454,12 +387,8 @@ describe('defaultGraphQLTypes', () => {
             iso: 'foo',
           })
         ).toThrow(jasmine.stringMatching('is not a valid Date'));
-        expect(() => parseValue([])).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
-        expect(() => parseValue(123)).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => parseValue([])).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => parseValue(123)).toThrow(jasmine.stringMatching('is not a valid Date'));
       });
     });
 
@@ -473,7 +402,7 @@ describe('defaultGraphQLTypes', () => {
 
       it('should serialize date', () => {
         const date = new Date();
-        expect(serialize(date)).toBe(date.toUTCString());
+        expect(serialize(date)).toBe(date.toISOString());
       });
 
       it('should return iso value if object', () => {
@@ -486,21 +415,15 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => serialize({})).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => serialize({})).toThrow(jasmine.stringMatching('is not a valid Date'));
         expect(() =>
           serialize({
             __type: 'Foo',
             iso: '2019-05-09T23:12:00.000Z',
           })
         ).toThrow(jasmine.stringMatching('is not a valid Date'));
-        expect(() => serialize([])).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
-        expect(() => serialize(123)).toThrow(
-          jasmine.stringMatching('is not a valid Date')
-        );
+        expect(() => serialize([])).toThrow(jasmine.stringMatching('is not a valid Date'));
+        expect(() => serialize(123)).toThrow(jasmine.stringMatching('is not a valid Date'));
       });
     });
   });
@@ -531,9 +454,7 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => parseLiteral({})).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => parseLiteral({})).toThrow(jasmine.stringMatching('is not a valid Bytes'));
         expect(() =>
           parseLiteral(
             createValue(Kind.OBJECT, undefined, undefined, [
@@ -542,12 +463,8 @@ describe('defaultGraphQLTypes', () => {
             ])
           )
         ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
-        expect(() => parseLiteral([])).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
-        expect(() => parseLiteral(123)).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => parseLiteral([])).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => parseLiteral(123)).toThrow(jasmine.stringMatching('is not a valid Bytes'));
       });
     });
 
@@ -570,21 +487,15 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => parseValue({})).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => parseValue({})).toThrow(jasmine.stringMatching('is not a valid Bytes'));
         expect(() =>
           parseValue({
             __type: 'Foo',
             base64: 'bytesContent',
           })
         ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
-        expect(() => parseValue([])).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
-        expect(() => parseValue(123)).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => parseValue([])).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => parseValue(123)).toThrow(jasmine.stringMatching('is not a valid Bytes'));
       });
     });
 
@@ -606,21 +517,15 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => serialize({})).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => serialize({})).toThrow(jasmine.stringMatching('is not a valid Bytes'));
         expect(() =>
           serialize({
             __type: 'Foo',
             base64: 'bytesContent',
           })
         ).toThrow(jasmine.stringMatching('is not a valid Bytes'));
-        expect(() => serialize([])).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
-        expect(() => serialize(123)).toThrow(
-          jasmine.stringMatching('is not a valid Bytes')
-        );
+        expect(() => serialize([])).toThrow(jasmine.stringMatching('is not a valid Bytes'));
+        expect(() => serialize(123)).toThrow(jasmine.stringMatching('is not a valid Bytes'));
       });
     });
   });
@@ -653,9 +558,7 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => parseLiteral({})).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
+        expect(() => parseLiteral({})).toThrow(jasmine.stringMatching('is not a valid File'));
         expect(() =>
           parseLiteral(
             createValue(Kind.OBJECT, undefined, undefined, [
@@ -665,12 +568,8 @@ describe('defaultGraphQLTypes', () => {
             ])
           )
         ).toThrow(jasmine.stringMatching('is not a valid File'));
-        expect(() => parseLiteral([])).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
-        expect(() => parseLiteral(123)).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
+        expect(() => parseLiteral([])).toThrow(jasmine.stringMatching('is not a valid File'));
+        expect(() => parseLiteral(123)).toThrow(jasmine.stringMatching('is not a valid File'));
       });
     });
 
@@ -693,9 +592,7 @@ describe('defaultGraphQLTypes', () => {
       });
 
       it('should fail if not an valid object or string', () => {
-        expect(() => serialize({})).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
+        expect(() => serialize({})).toThrow(jasmine.stringMatching('is not a valid File'));
         expect(() =>
           serialize({
             __type: 'Foo',
@@ -703,12 +600,8 @@ describe('defaultGraphQLTypes', () => {
             url: 'myurl',
           })
         ).toThrow(jasmine.stringMatching('is not a valid File'));
-        expect(() => serialize([])).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
-        expect(() => serialize(123)).toThrow(
-          jasmine.stringMatching('is not a valid File')
-        );
+        expect(() => serialize([])).toThrow(jasmine.stringMatching('is not a valid File'));
+        expect(() => serialize(123)).toThrow(jasmine.stringMatching('is not a valid File'));
       });
     });
   });

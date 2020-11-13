@@ -1,7 +1,6 @@
 'use strict';
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL =
-  process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -29,15 +28,11 @@ const GridFSBucketAdapter = require('../lib/Adapters/Files/GridFSBucketAdapter')
 const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter')
   .default;
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
-const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
-  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 
-const mongoURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const postgresURI =
-  'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
 // need to bind for mocking mocha
 
@@ -129,22 +124,17 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       let parseServer = undefined;
-      const newConfiguration = Object.assign(
-        {},
-        defaultConfiguration,
-        changedConfiguration,
-        {
-          serverStartComplete: error => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(parseServer);
-            }
-          },
-          mountPath: '/1',
-          port,
-        }
-      );
+      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        serverStartComplete: error => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(parseServer);
+          }
+        },
+        mountPath: '/1',
+        port,
+      });
       cache.clear();
       parseServer = ParseServer.start(newConfiguration);
       parseServer.app.use(require('./testing-routes').router);
@@ -181,10 +171,7 @@ beforeEach(done => {
   TestUtils.destroyAllDataPermanently(true)
     .catch(error => {
       // For tests that connect to their own mongo, there won't be any data to delete.
-      if (
-        error.message === 'ns not found' ||
-        error.message.startsWith('connect ECONNREFUSED')
-      ) {
+      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
         return;
       } else {
         fail(error);
@@ -200,12 +187,10 @@ beforeEach(done => {
     .catch(done.fail);
 });
 
-afterEach(function(done) {
+afterEach(function (done) {
   const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
-      fail(
-        'There were open connections to the server left after the test finished'
-      );
+      fail('There were open connections to the server left after the test finished');
     }
     TestUtils.destroyAllDataPermanently(true).then(done, done);
   };
@@ -230,7 +215,7 @@ afterEach(function(done) {
                   '_Session',
                   '_Product',
                   '_Audience',
-                  '_Idempotency'
+                  '_Idempotency',
                 ].indexOf(className) >= 0
               );
             }
@@ -327,13 +312,13 @@ function range(n) {
 
 function mockCustomAuthenticator(id, password) {
   const custom = {};
-  custom.validateAuthData = function(authData) {
+  custom.validateAuthData = function (authData) {
     if (authData.id === id && authData.password.startsWith(password)) {
       return Promise.resolve();
     }
     throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'not validated');
   };
-  custom.validateAppId = function() {
+  custom.validateAppId = function () {
     return Promise.resolve();
   };
   return custom;
@@ -345,14 +330,14 @@ function mockCustom() {
 
 function mockFacebookAuthenticator(id, token) {
   const facebook = {};
-  facebook.validateAuthData = function(authData) {
+  facebook.validateAuthData = function (authData) {
     if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
       throw undefined;
     }
   };
-  facebook.validateAppId = function(appId, authData) {
+  facebook.validateAppId = function (appId, authData) {
     if (authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
@@ -369,17 +354,17 @@ function mockFacebook() {
 function mockShortLivedAuth() {
   const auth = {};
   let accessToken;
-  auth.setValidAccessToken = function(validAccessToken) {
+  auth.setValidAccessToken = function (validAccessToken) {
     accessToken = validAccessToken;
   };
-  auth.validateAuthData = function(authData) {
+  auth.validateAuthData = function (authData) {
     if (authData.access_token == accessToken) {
       return Promise.resolve();
     } else {
       return Promise.reject('Invalid access token');
     }
   };
-  auth.validateAppId = function() {
+  auth.validateAppId = function () {
     return Promise.resolve();
   };
   return auth;
@@ -404,7 +389,7 @@ global.defaultConfiguration = defaultConfiguration;
 global.mockCustomAuthenticator = mockCustomAuthenticator;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 global.databaseAdapter = databaseAdapter;
-global.jfail = function(err) {
+global.jfail = function (err) {
   fail(JSON.stringify(err));
 };
 
@@ -454,7 +439,7 @@ global.describe_only = validator => {
 };
 
 const libraryCache = {};
-jasmine.mockLibrary = function(library, name, mock) {
+jasmine.mockLibrary = function (library, name, mock) {
   const original = require(library)[name];
   if (!libraryCache[library]) {
     libraryCache[library] = {};
@@ -463,7 +448,7 @@ jasmine.mockLibrary = function(library, name, mock) {
   libraryCache[library][name] = original;
 };
 
-jasmine.restoreLibrary = function(library, name) {
+jasmine.restoreLibrary = function (library, name) {
   if (!libraryCache[library] || !libraryCache[library][name]) {
     throw 'Can not find library ' + library + ' ' + name;
   }

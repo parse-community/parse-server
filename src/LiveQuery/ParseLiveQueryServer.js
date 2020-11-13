@@ -14,6 +14,7 @@ import {
   runLiveQueryEventHandlers,
   maybeRunConnectTrigger,
   maybeRunSubscribeTrigger,
+  maybeRunAfterEventTrigger,
 } from '../triggers';
 import { getAuthForSessionToken, Auth } from '../Auth';
 import { getCacheController } from '../Controllers';
@@ -29,10 +30,11 @@ class ParseLiveQueryServer {
   // The subscriber we use to get object update from publisher
   subscriber: Object;
 
-  constructor(server: any, config: any = {}) {
+  constructor(server: any, config: any = {}, parseServerConfig: any = {}) {
     this.server = server;
     this.clients = new Map();
     this.subscriptions = new Map();
+    this.config = config;
 
     config.appId = config.appId || Parse.applicationId;
     config.masterKey = config.masterKey || Parse.masterKey;
@@ -53,13 +55,15 @@ class ParseLiveQueryServer {
 
     // The cache controller is a proper cache controller
     // with access to User and Roles
-    this.cacheController = getCacheController(config);
+    this.cacheController = getCacheController(parseServerConfig);
+
+    config.cacheTimeout = config.cacheTimeout || 5 * 1000; // 5s
 
     // This auth cache stores the promises for each auth resolution.
     // The main benefit is to be able to reuse the same user / session token resolution.
     this.authCache = new LRU({
       max: 500, // 500 concurrent
-      maxAge: 60 * 60 * 1000, // 1h
+      maxAge: config.cacheTimeout,
     });
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
@@ -89,11 +93,7 @@ class ParseLiveQueryServer {
       } else if (channel === Parse.applicationId + 'afterDelete') {
         this._onAfterDelete(message);
       } else {
-        logger.error(
-          'Get message %s from unknown channel %j',
-          message,
-          channel
-        );
+        logger.error('Get message %s from unknown channel %j', message, channel);
       }
     });
   }
@@ -124,14 +124,10 @@ class ParseLiveQueryServer {
   _onAfterDelete(message: any): void {
     logger.verbose(Parse.applicationId + 'afterDelete is triggered');
 
-    const deletedParseObject = message.currentParseObject.toJSON();
+    let deletedParseObject = message.currentParseObject.toJSON();
     const classLevelPermissions = message.classLevelPermissions;
     const className = deletedParseObject.className;
-    logger.verbose(
-      'ClassName: %j | ObjectId: %s',
-      className,
-      deletedParseObject.id
-    );
+    logger.verbose('ClassName: %j | ObjectId: %s', className, deletedParseObject.id);
     logger.verbose('Current client number : %d', this.clients.size);
 
     const classSubscriptions = this.subscriptions.get(className);
@@ -140,16 +136,11 @@ class ParseLiveQueryServer {
       return;
     }
     for (const subscription of classSubscriptions.values()) {
-      const isSubscriptionMatched = this._matchesSubscription(
-        deletedParseObject,
-        subscription
-      );
+      const isSubscriptionMatched = this._matchesSubscription(deletedParseObject, subscription);
       if (!isSubscriptionMatched) {
         continue;
       }
-      for (const [clientId, requestIds] of _.entries(
-        subscription.clientRequestIds
-      )) {
+      for (const [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         const client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -158,13 +149,8 @@ class ParseLiveQueryServer {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
-          this._matchesCLP(
-            classLevelPermissions,
-            message.currentParseObject,
-            client,
-            requestId,
-            op
-          )
+          let res = {};
+          this._matchesCLP(classLevelPermissions, message.currentParseObject, client, requestId, op)
             .then(() => {
               // Check ACL
               return this._matchesACL(acl, client, requestId);
@@ -173,10 +159,40 @@ class ParseLiveQueryServer {
               if (!isMatched) {
                 return null;
               }
+              res = {
+                event: 'Delete',
+                sessionToken: client.sessionToken,
+                object: deletedParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId,
+                sendEvent: true,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
+            })
+            .then(() => {
+              if (!res.sendEvent) {
+                return;
+              }
+              if (res.object && typeof res.object.toJSON === 'function') {
+                deletedParseObject = res.object.toJSON();
+                deletedParseObject.className = className;
+              }
               client.pushDelete(requestId, deletedParseObject);
             })
             .catch(error => {
-              logger.error('Matching ACL error : ', error);
+              Client.pushError(
+                client.parseWebSocket,
+                error.code || 141,
+                error.message || error,
+                false,
+                requestId
+              );
+              logger.error(
+                `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                  JSON.stringify(error)
+              );
             });
         }
       }
@@ -193,13 +209,9 @@ class ParseLiveQueryServer {
       originalParseObject = message.originalParseObject.toJSON();
     }
     const classLevelPermissions = message.classLevelPermissions;
-    const currentParseObject = message.currentParseObject.toJSON();
+    let currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
-    logger.verbose(
-      'ClassName: %s | ObjectId: %s',
-      className,
-      currentParseObject.id
-    );
+    logger.verbose('ClassName: %s | ObjectId: %s', className, currentParseObject.id);
     logger.verbose('Current client number : %d', this.clients.size);
 
     const classSubscriptions = this.subscriptions.get(className);
@@ -216,9 +228,7 @@ class ParseLiveQueryServer {
         currentParseObject,
         subscription
       );
-      for (const [clientId, requestIds] of _.entries(
-        subscription.clientRequestIds
-      )) {
+      for (const [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         const client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -234,76 +244,94 @@ class ParseLiveQueryServer {
             if (message.originalParseObject) {
               originalACL = message.originalParseObject.getACL();
             }
-            originalACLCheckingPromise = this._matchesACL(
-              originalACL,
-              client,
-              requestId
-            );
+            originalACLCheckingPromise = this._matchesACL(originalACL, client, requestId);
           }
           // Set current ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let currentACLCheckingPromise;
+          let res = {};
           if (!isCurrentSubscriptionMatched) {
             currentACLCheckingPromise = Promise.resolve(false);
           } else {
             const currentACL = message.currentParseObject.getACL();
-            currentACLCheckingPromise = this._matchesACL(
-              currentACL,
-              client,
-              requestId
-            );
+            currentACLCheckingPromise = this._matchesACL(currentACL, client, requestId);
           }
           const op = this._getCLPOperation(subscription.query);
-          this._matchesCLP(
-            classLevelPermissions,
-            message.currentParseObject,
-            client,
-            requestId,
-            op
-          )
+          this._matchesCLP(classLevelPermissions, message.currentParseObject, client, requestId, op)
             .then(() => {
-              return Promise.all([
-                originalACLCheckingPromise,
-                currentACLCheckingPromise,
-              ]);
+              return Promise.all([originalACLCheckingPromise, currentACLCheckingPromise]);
+            })
+            .then(([isOriginalMatched, isCurrentMatched]) => {
+              logger.verbose(
+                'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
+                originalParseObject,
+                currentParseObject,
+                isOriginalSubscriptionMatched,
+                isCurrentSubscriptionMatched,
+                isOriginalMatched,
+                isCurrentMatched,
+                subscription.hash
+              );
+              // Decide event type
+              let type;
+              if (isOriginalMatched && isCurrentMatched) {
+                type = 'Update';
+              } else if (isOriginalMatched && !isCurrentMatched) {
+                type = 'Leave';
+              } else if (!isOriginalMatched && isCurrentMatched) {
+                if (originalParseObject) {
+                  type = 'Enter';
+                } else {
+                  type = 'Create';
+                }
+              } else {
+                return null;
+              }
+              message.event = type;
+              res = {
+                event: type,
+                sessionToken: client.sessionToken,
+                object: currentParseObject,
+                original: originalParseObject,
+                clients: this.clients.size,
+                subscriptions: this.subscriptions.size,
+                useMasterKey: client.hasMasterKey,
+                installationId: client.installationId,
+                sendEvent: true,
+              };
+              return maybeRunAfterEventTrigger('afterEvent', className, res);
             })
             .then(
-              ([isOriginalMatched, isCurrentMatched]) => {
-                logger.verbose(
-                  'Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
-                  originalParseObject,
-                  currentParseObject,
-                  isOriginalSubscriptionMatched,
-                  isCurrentSubscriptionMatched,
-                  isOriginalMatched,
-                  isCurrentMatched,
-                  subscription.hash
-                );
-
-                // Decide event type
-                let type;
-                if (isOriginalMatched && isCurrentMatched) {
-                  type = 'Update';
-                } else if (isOriginalMatched && !isCurrentMatched) {
-                  type = 'Leave';
-                } else if (!isOriginalMatched && isCurrentMatched) {
-                  if (originalParseObject) {
-                    type = 'Enter';
-                  } else {
-                    type = 'Create';
-                  }
-                } else {
-                  return null;
+              () => {
+                if (!res.sendEvent) {
+                  return;
                 }
-                const functionName = 'push' + type;
-                client[functionName](
-                  requestId,
-                  currentParseObject,
-                  originalParseObject
-                );
+                if (res.object && typeof res.object.toJSON === 'function') {
+                  currentParseObject = res.object.toJSON();
+                  currentParseObject.className = res.object.className || className;
+                }
+
+                if (res.original && typeof res.original.toJSON === 'function') {
+                  originalParseObject = res.original.toJSON();
+                  originalParseObject.className = res.original.className || className;
+                }
+                const functionName = 'push' + message.event;
+                if (client[functionName]) {
+                  client[functionName](requestId, currentParseObject, originalParseObject);
+                }
               },
               error => {
-                logger.error('Matching ACL error : ', error);
+                Client.pushError(
+                  client.parseWebSocket,
+                  error.code || 141,
+                  error.message || error,
+                  false,
+                  requestId
+                );
+                logger.error(
+                  `Failed running afterLiveQueryEvent on class ${className} for event ${res.event} with session ${res.sessionToken} with:\n Error: ` +
+                    JSON.stringify(error)
+                );
               }
             );
         }
@@ -371,16 +399,12 @@ class ParseLiveQueryServer {
       this.clients.delete(clientId);
 
       // Delete client from subscriptions
-      for (const [requestId, subscriptionInfo] of _.entries(
-        client.subscriptionInfos
-      )) {
+      for (const [requestId, subscriptionInfo] of _.entries(client.subscriptionInfos)) {
         const subscription = subscriptionInfo.subscription;
         subscription.deleteClientSubscription(clientId, requestId);
 
         // If there is no client which is subscribing this subscription, remove it from subscriptions
-        const classSubscriptions = this.subscriptions.get(
-          subscription.className
-        );
+        const classSubscriptions = this.subscriptions.get(subscription.className);
         if (!subscription.hasSubscribingClient()) {
           classSubscriptions.delete(subscription.hash);
         }
@@ -416,9 +440,7 @@ class ParseLiveQueryServer {
     return matchesQuery(parseObject, subscription.query);
   }
 
-  getAuthForSessionToken(
-    sessionToken: ?string
-  ): Promise<{ auth: ?Auth, userId: ?string }> {
+  getAuthForSessionToken(sessionToken: ?string): Promise<{ auth: ?Auth, userId: ?string }> {
     if (!sessionToken) {
       return Promise.resolve({});
     }
@@ -437,13 +459,8 @@ class ParseLiveQueryServer {
         // There was an error with the session token
         const result = {};
         if (error && error.code === Parse.Error.INVALID_SESSION_TOKEN) {
-          // Store a resolved promise with the error for 10 minutes
           result.error = error;
-          this.authCache.set(
-            sessionToken,
-            Promise.resolve(result),
-            60 * 10 * 1000
-          );
+          this.authCache.set(sessionToken, Promise.resolve(result), this.config.cacheTimeout);
         } else {
           this.authCache.del(sessionToken);
         }
@@ -465,9 +482,7 @@ class ParseLiveQueryServer {
     const aclGroup = ['*'];
     let userId;
     if (typeof subscriptionInfo !== 'undefined') {
-      const { userId } = await this.getAuthForSessionToken(
-        subscriptionInfo.sessionToken
-      );
+      const { userId } = await this.getAuthForSessionToken(subscriptionInfo.sessionToken);
       if (userId) {
         aclGroup.push(userId);
       }
@@ -527,9 +542,7 @@ class ParseLiveQueryServer {
     return Promise.resolve()
       .then(async () => {
         // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some(key =>
-          key.startsWith('role:')
-        );
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith('role:'));
         if (!acl_has_roles) {
           return false;
         }
@@ -549,11 +562,7 @@ class ParseLiveQueryServer {
       });
   }
 
-  async _matchesACL(
-    acl: any,
-    client: any,
-    requestId: number
-  ): Promise<boolean> {
+  async _matchesACL(acl: any, client: any, requestId: number): Promise<boolean> {
     // Return true directly if ACL isn't present, ACL is public read, or client has master key
     if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
       return true;
@@ -610,12 +619,7 @@ class ParseLiveQueryServer {
       client.pushConnect();
       runLiveQueryEventHandlers(req);
     } catch (error) {
-      Client.pushError(
-        parseWebsocket,
-        error.code || 101,
-        error.message || error,
-        false
-      );
+      Client.pushError(parseWebsocket, error.code || 141, error.message || error, false);
       logger.error(
         `Failed running beforeConnect for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(error)
@@ -624,17 +628,10 @@ class ParseLiveQueryServer {
   }
 
   _hasMasterKey(request: any, validKeyPairs: any): boolean {
-    if (
-      !validKeyPairs ||
-      validKeyPairs.size == 0 ||
-      !validKeyPairs.has('masterKey')
-    ) {
+    if (!validKeyPairs || validKeyPairs.size == 0 || !validKeyPairs.has('masterKey')) {
       return false;
     }
-    if (
-      !request ||
-      !Object.prototype.hasOwnProperty.call(request, 'masterKey')
-    ) {
+    if (!request || !Object.prototype.hasOwnProperty.call(request, 'masterKey')) {
       return false;
     }
     return request.masterKey === validKeyPairs.get('masterKey');
@@ -663,9 +660,7 @@ class ParseLiveQueryServer {
         2,
         'Can not find this client, make sure you connect to server before subscribing'
       );
-      logger.error(
-        'Can not find this client, make sure you connect to server before subscribing'
-      );
+      logger.error('Can not find this client, make sure you connect to server before subscribing');
       return;
     }
     const client = this.clients.get(parseWebsocket.clientId);
@@ -685,11 +680,7 @@ class ParseLiveQueryServer {
       if (classSubscriptions.has(subscriptionHash)) {
         subscription = classSubscriptions.get(subscriptionHash);
       } else {
-        subscription = new Subscription(
-          className,
-          request.query.where,
-          subscriptionHash
-        );
+        subscription = new Subscription(className, request.query.where, subscriptionHash);
         classSubscriptions.set(subscriptionHash, subscription);
       }
 
@@ -707,10 +698,7 @@ class ParseLiveQueryServer {
       client.addSubscriptionInfo(request.requestId, subscriptionInfo);
 
       // Add clientId to subscription
-      subscription.addClientSubscription(
-        parseWebsocket.clientId,
-        request.requestId
-      );
+      subscription.addClientSubscription(parseWebsocket.clientId, request.requestId);
 
       client.pushSubscribe(request.requestId);
 
@@ -728,13 +716,7 @@ class ParseLiveQueryServer {
         installationId: client.installationId,
       });
     } catch (e) {
-      Client.pushError(
-        parseWebsocket,
-        e.code || 101,
-        e.message || e,
-        false,
-        request.requestId
-      );
+      Client.pushError(parseWebsocket, e.code || 141, e.message || e, false, request.requestId);
       logger.error(
         `Failed running beforeSubscribe on ${className} for session ${request.sessionToken} with:\n Error: ` +
           JSON.stringify(e)
@@ -747,11 +729,7 @@ class ParseLiveQueryServer {
     this._handleSubscribe(parseWebsocket, request);
   }
 
-  _handleUnsubscribe(
-    parseWebsocket: any,
-    request: any,
-    notifyClient: boolean = true
-  ): any {
+  _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient: boolean = true): any {
     // If we can not find this client, return error to client
     if (!Object.prototype.hasOwnProperty.call(parseWebsocket, 'clientId')) {
       Client.pushError(
