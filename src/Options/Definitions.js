@@ -142,13 +142,6 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-  enableSingleSchemaCache: {
-    env: 'PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE',
-    help:
-      'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
-    action: parsers.booleanParser,
-    default: false,
-  },
   encryptionKey: {
     env: 'PARSE_SERVER_ENCRYPTION_KEY',
     help: 'Key for encrypting your files',
