@@ -90,6 +90,28 @@ it('Should fail when LDAPS is used and the presented certificate is not the expe
   });
 });
 
+it('Should fail when LDAPS is used certifcate matches but credentials are wrong', done => {
+  mockLdapServer(sslport, 'uid=testuser, o=example', false, true).then(server => {
+    const options = {
+      suffix: 'o=example',
+      url: `ldaps://localhost:${sslport}`,
+      dn: 'uid={{id}}, o=example',
+      tlsOptions: {
+        ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+        rejectUnauthorized: true
+      }
+    };
+    ldap
+      .validateAuthData({ id: 'testuser', password: 'wrong!' }, options)
+      .then(done.fail)
+      .catch(err => {
+        jequal(err.message, 'LDAP: Wrong username or password');
+        done();
+      })
+      .finally(() => server.close());
+  });
+});
+
 
 it('Should fail with wrong credentials', done => {
   mockLdapServer(port, 'uid=testuser, o=example').then(server => {
