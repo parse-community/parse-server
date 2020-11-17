@@ -12,23 +12,34 @@ function validateAuthData(authData, options) {
       );
     });
   }
+  const clientOptions = (options.url.startsWith("ldaps://")) ?
+    { url: options.url, tlsOptions: options.tlsOptions } : { url: options.url };
 
-  const client = ldapjs.createClient({ url: options.url });
+  const client = ldapjs.createClient(clientOptions);
   const userCn =
     typeof options.dn === 'string'
       ? options.dn.replace('{{id}}', authData.id)
       : `uid=${authData.id},${options.suffix}`;
 
   return new Promise((resolve, reject) => {
-    client.bind(userCn, authData.password, err => {
-      if (err) {
-        client.destroy(err);
-        return reject(
-          new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'LDAP: Wrong username or password'
-          )
-        );
+    let error;
+    client.bind(userCn, authData.password, ldapError => {
+      if (ldapError) {
+        switch (ldapError.code) {
+          case 49:
+            error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password');
+            break;
+          case "DEPTH_ZERO_SELF_SIGNED_CERT":
+            error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAPS: Certificate mismatch');
+            break;
+          case undefined:
+            //prevents client destruction from overwriting error
+            break;
+          default:
+            error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Somthing went wrong (' + ldapError.code + ')');
+        }
+        client.destroy(ldapError);
+        return reject(error);
       }
 
       if (
@@ -50,7 +61,8 @@ function optionsAreValid(options) {
     typeof options === 'object' &&
     typeof options.suffix === 'string' &&
     typeof options.url === 'string' &&
-    options.url.startsWith('ldap://')
+    (options.url.startsWith('ldap://') ||
+     options.url.startsWith('ldaps://') && typeof options.tlsOptions === 'object')
   );
 }
 
