@@ -81,30 +81,27 @@ export class UserController extends AdaptableController {
   }
 
   checkResetTokenValidity(username, token) {
-    return this.config.database
-      .find(
-        '_User',
-        {
-          username: username,
-          _perishable_token: token,
-        },
-        { limit: 1 }
-      )
-      .then(results => {
-        if (results.length != 1) {
-          throw 'Failed to reset password: username / email / token is invalid';
-        }
+    let query = {
+      username: username,
+      _perishable_token: token,
+    };
+    if (!token) {
+      query = { $or: [{ email: username }, { username, email: { $exists: false } }] };
+    }
+    return this.config.database.find('_User', query, { limit: 1 }).then(results => {
+      if (results.length != 1) {
+        throw 'Failed to reset password: username / email / token is invalid';
+      }
 
-        if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
-          let expiresDate = results[0]._perishable_token_expires_at;
-          if (expiresDate && expiresDate.__type == 'Date') {
-            expiresDate = new Date(expiresDate.iso);
-          }
-          if (expiresDate < new Date()) throw 'The password reset link has expired';
+      if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
         }
-
-        return results[0];
-      });
+        if (expiresDate < new Date()) throw 'The password reset link has expired';
+      }
+      return results[0];
+    });
   }
 
   getUserIfNeeded(user) {
@@ -158,6 +155,15 @@ export class UserController extends AdaptableController {
    * @returns {*}
    */
   regenerateEmailVerifyToken(user) {
+    const { _email_verify_token, _email_verify_token_expires_at } = user;
+    if (
+      this.config.emailVerifyTokenReuseIfValid &&
+      this.config.emailVerifyTokenValidityDuration &&
+      _email_verify_token &&
+      new Date() < new Date(_email_verify_token_expires_at)
+    ) {
+      return Promise.resolve();
+    }
     this.setEmailVerifyToken(user);
     return this.config.database.update('_User', { username: user.username }, user);
   }
@@ -191,36 +197,42 @@ export class UserController extends AdaptableController {
     );
   }
 
-  sendPasswordResetEmail(email) {
+  async sendPasswordResetEmail(email) {
     if (!this.adapter) {
       throw 'Trying to send a reset password but no adapter is set';
       //  TODO: No adapter?
     }
-
-    return this.setPasswordResetToken(email).then(user => {
-      const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);
-
-      const link = buildEmailLink(
-        this.config.requestResetPasswordURL,
-        username,
-        token,
-        this.config
-      );
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
-
-      if (this.adapter.sendPasswordResetEmail) {
-        this.adapter.sendPasswordResetEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+    let user;
+    if (
+      this.config.passwordPolicy.resetTokenReuseIfValid &&
+      this.config.resetTokenValidityDuration
+    ) {
+      try {
+        user = await this.checkResetTokenValidity(email);
+      } catch (e) {
+        /* */
       }
+    }
+    if (!user || !user._perishable_token) {
+      user = await this.setPasswordResetToken(email);
+    }
+    const token = encodeURIComponent(user._perishable_token);
+    const username = encodeURIComponent(user.username);
 
-      return Promise.resolve(user);
-    });
+    const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+    const options = {
+      appName: this.config.appName,
+      link: link,
+      user: inflate('_User', user),
+    };
+
+    if (this.adapter.sendPasswordResetEmail) {
+      this.adapter.sendPasswordResetEmail(options);
+    } else {
+      this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+    }
+
+    return Promise.resolve(user);
   }
 
   updatePassword(username, token, password) {

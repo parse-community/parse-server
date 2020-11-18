@@ -122,6 +122,103 @@ describe('Password Policy: ', () => {
       });
   });
 
+  it('should not keep reset token', done => {
+    const user = new Parse.User();
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        resetTokenValidityDuration: 5 * 60, // 5 minutes
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    })
+      .then(() => {
+        user.setUsername('testResetTokenValidity');
+        user.setPassword('original');
+        user.set('email', 'user@parse.com');
+        return user.signUp();
+      })
+      .then(() => {
+        return Parse.User.requestPasswordReset('user@parse.com').catch(err => {
+          jfail(err);
+          fail('Reset password request should not fail');
+          done();
+        });
+      })
+      .then(() => {
+        return Parse.User.requestPasswordReset('user@parse.com').catch(err => {
+          jfail(err);
+          fail('Reset password request should not fail');
+          done();
+        });
+      })
+      .then(() => {
+        expect(sendEmailOptions[0].link).not.toBe(sendEmailOptions[1].link);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
+  it('should keep reset token with resetTokenReuseIfValid', done => {
+    const user = new Parse.User();
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        resetTokenValidityDuration: 5 * 60, // 5 minutes
+        resetTokenReuseIfValid: true,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    })
+      .then(() => {
+        user.setUsername('testResetTokenValidity');
+        user.setPassword('original');
+        user.set('email', 'user@parse.com');
+        return user.signUp();
+      })
+      .then(() => {
+        return Parse.User.requestPasswordReset('user@parse.com').catch(err => {
+          jfail(err);
+          fail('Reset password request should not fail');
+          done();
+        });
+      })
+      .then(() => {
+        return Parse.User.requestPasswordReset('user@parse.com').catch(err => {
+          jfail(err);
+          fail('Reset password request should not fail');
+          done();
+        });
+      })
+      .then(() => {
+        expect(sendEmailOptions[0].link).toBe(sendEmailOptions[1].link);
+        done();
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
+
   it('should fail if passwordPolicy.resetTokenValidityDuration is not a number', done => {
     reconfigureServer({
       appName: 'passwordPolicy',

@@ -510,7 +510,7 @@ describe('Email Verification Token Expiration: ', () => {
           userAfterEmailReset._email_verify_token
         );
         expect(userBeforeEmailReset._email_verify_token_expires_at).not.toEqual(
-          userAfterEmailReset.__email_verify_token_expires_at
+          userAfterEmailReset._email_verify_token_expires_at
         );
         expect(sendEmailOptions).toBeDefined();
         done();
@@ -594,7 +594,88 @@ describe('Email Verification Token Expiration: ', () => {
           userAfterRequest._email_verify_token
         );
         expect(userBeforeRequest._email_verify_token_expires_at).not.toEqual(
-          userAfterRequest.__email_verify_token_expires_at
+          userAfterRequest._email_verify_token_expires_at
+        );
+        done();
+      })
+      .catch(error => {
+        jfail(error);
+        done();
+      });
+  });
+
+  it('should match codes with emailVerifyTokenReuseIfValid', done => {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    let userBeforeRequest;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
+      publicServerURL: 'http://localhost:8378/1',
+      emailVerifyTokenReuseIfValid: true,
+    })
+      .then(() => {
+        user.setUsername('resends_verification_token');
+        user.setPassword('expiringToken');
+        user.set('email', 'user@parse.com');
+        return user.signUp();
+      })
+      .then(() => {
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'resends_verification_token' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(newUser => {
+        // store this user before we make our email request
+        userBeforeRequest = newUser;
+        expect(sendVerificationEmailCallCount).toBe(1);
+
+        return request({
+          url: 'http://localhost:8378/1/verificationEmailRequest',
+          method: 'POST',
+          body: {
+            email: 'user@parse.com',
+          },
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+            'Content-Type': 'application/json',
+          },
+        });
+      })
+      .then(response => {
+        expect(response.status).toBe(200);
+        expect(sendVerificationEmailCallCount).toBe(2);
+        expect(sendEmailOptions).toBeDefined();
+
+        // query for this user again
+        const config = Config.get('test');
+        return config.database
+          .find('_User', { username: 'resends_verification_token' })
+          .then(results => {
+            return results[0];
+          });
+      })
+      .then(userAfterRequest => {
+        // verify that our token & expiration has been changed for this new request
+        expect(typeof userAfterRequest).toBe('object');
+        expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
+        expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
+          userAfterRequest._email_verify_token_expires_at
         );
         done();
       })
