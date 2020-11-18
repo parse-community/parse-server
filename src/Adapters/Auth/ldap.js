@@ -22,9 +22,9 @@ function validateAuthData(authData, options) {
       : `uid=${authData.id},${options.suffix}`;
 
   return new Promise((resolve, reject) => {
-    let error;
     client.bind(userCn, authData.password, ldapError => {
       if (ldapError) {
+        let error;
         switch (ldapError.code) {
           case 49:
             error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Wrong username or password');
@@ -32,14 +32,12 @@ function validateAuthData(authData, options) {
           case "DEPTH_ZERO_SELF_SIGNED_CERT":
             error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAPS: Certificate mismatch');
             break;
-          case undefined:
-            //prevents client destruction from overwriting error
-            break;
           default:
             error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAP: Somthing went wrong (' + ldapError.code + ')');
         }
+        reject(error);
         client.destroy(ldapError);
-        return reject(error);
+        return;
       }
 
       if (
