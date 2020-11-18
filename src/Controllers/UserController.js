@@ -204,8 +204,9 @@ export class UserController extends AdaptableController {
     }
     let user;
     if (
+      this.config.passwordPolicy &&
       this.config.passwordPolicy.resetTokenReuseIfValid &&
-      this.config.resetTokenValidityDuration
+      this.config.passwordPolicy.resetTokenValidityDuration
     ) {
       try {
         user = await this.checkResetTokenValidity(email);
