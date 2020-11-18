@@ -81,27 +81,30 @@ export class UserController extends AdaptableController {
   }
 
   checkResetTokenValidity(username, token) {
-    let query = {
-      username: username,
-      _perishable_token: token,
-    };
-    if (!token) {
-      query = { $or: [{ email: username }, { username, email: { $exists: false } }] };
-    }
-    return this.config.database.find('_User', query, { limit: 1 }).then(results => {
-      if (results.length != 1) {
-        throw 'Failed to reset password: username / email / token is invalid';
-      }
-
-      if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
-        let expiresDate = results[0]._perishable_token_expires_at;
-        if (expiresDate && expiresDate.__type == 'Date') {
-          expiresDate = new Date(expiresDate.iso);
+    return this.config.database
+      .find(
+        '_User',
+        {
+          username: username,
+          _perishable_token: token,
+        },
+        { limit: 1 }
+      )
+      .then(results => {
+        if (results.length != 1) {
+          throw 'Failed to reset password: username / email / token is invalid';
         }
-        if (expiresDate < new Date()) throw 'The password reset link has expired';
-      }
-      return results[0];
-    });
+
+        if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+          let expiresDate = results[0]._perishable_token_expires_at;
+          if (expiresDate && expiresDate.__type == 'Date') {
+            expiresDate = new Date(expiresDate.iso);
+          }
+          if (expiresDate < new Date()) throw 'The password reset link has expired';
+        }
+
+        return results[0];
+      });
   }
 
   getUserIfNeeded(user) {
@@ -208,10 +211,24 @@ export class UserController extends AdaptableController {
       this.config.passwordPolicy.resetTokenReuseIfValid &&
       this.config.passwordPolicy.resetTokenValidityDuration
     ) {
-      try {
-        user = await this.checkResetTokenValidity(email);
-      } catch (e) {
-        /* */
+      const results = await this.config.database.find(
+        '_User',
+        {
+          $or: [
+            { email, _perishable_token: { $exists: true } },
+            { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
+          ],
+        },
+        { limit: 1 }
+      );
+      if (results.length == 1) {
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
+        }
+        if (expiresDate > new Date()) {
+          user = results[0];
+        }
       }
     }
     if (!user || !user._perishable_token) {
