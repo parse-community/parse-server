@@ -1,6 +1,8 @@
 const ldap = require('../lib/Adapters/Auth/ldap');
 const mockLdapServer = require('./MockLdapServer');
+const fs = require('fs');
 const port = 12345;
+const sslport = 12346;
 
 it('Should fail with missing options', done => {
   ldap
@@ -30,6 +32,86 @@ it('Should succeed with right credentials', done => {
       .finally(() => server.close());
   });
 });
+
+it('Should succeed with right credentials when LDAPS is used and certifcate is not checked', done => {
+  mockLdapServer(sslport, 'uid=testuser, o=example', false, true).then(server => {
+    const options = {
+      suffix: 'o=example',
+      url: `ldaps://localhost:${sslport}`,
+      dn: 'uid={{id}}, o=example',
+      tlsOptions: { rejectUnauthorized: false }
+    };
+    ldap
+      .validateAuthData({ id: 'testuser', password: 'secret' }, options)
+      .then(done)
+      .catch(done.fail)
+      .finally(() => server.close());
+  });
+});
+
+it('Should succeed when LDAPS is used and the presented certificate is the expected certificate', done => {
+  mockLdapServer(sslport, 'uid=testuser, o=example', false, true).then(server => {
+    const options = {
+      suffix: 'o=example',
+      url: `ldaps://localhost:${sslport}`,
+      dn: 'uid={{id}}, o=example',
+      tlsOptions: {
+        ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+        rejectUnauthorized: true
+      }
+    };
+    ldap
+      .validateAuthData({ id: 'testuser', password: 'secret' }, options)
+      .then(done)
+      .catch(done.fail)
+      .finally(() => server.close());
+  });
+});
+
+it('Should fail when LDAPS is used and the presented certificate is not the expected certificate', done => {
+  mockLdapServer(sslport, 'uid=testuser, o=example', false, true).then(server => {
+    const options = {
+      suffix: 'o=example',
+      url: `ldaps://localhost:${sslport}`,
+      dn: 'uid={{id}}, o=example',
+      tlsOptions: {
+        ca: fs.readFileSync(__dirname + '/support/cert/anothercert.pem'),
+        rejectUnauthorized: true
+      }
+    };
+    ldap
+      .validateAuthData({ id: 'testuser', password: 'secret' }, options)
+      .then(done.fail)
+      .catch(err => {
+        jequal(err.message, 'LDAPS: Certificate mismatch');
+        done();
+      })
+      .finally(() => server.close());
+  });
+});
+
+it('Should fail when LDAPS is used certifcate matches but credentials are wrong', done => {
+  mockLdapServer(sslport, 'uid=testuser, o=example', false, true).then(server => {
+    const options = {
+      suffix: 'o=example',
+      url: `ldaps://localhost:${sslport}`,
+      dn: 'uid={{id}}, o=example',
+      tlsOptions: {
+        ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+        rejectUnauthorized: true
+      }
+    };
+    ldap
+      .validateAuthData({ id: 'testuser', password: 'wrong!' }, options)
+      .then(done.fail)
+      .catch(err => {
+        jequal(err.message, 'LDAP: Wrong username or password');
+        done();
+      })
+      .finally(() => server.close());
+  });
+});
+
 
 it('Should fail with wrong credentials', done => {
   mockLdapServer(port, 'uid=testuser, o=example').then(server => {
