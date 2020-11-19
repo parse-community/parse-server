@@ -70,6 +70,7 @@ export class Config {
     readOnlyMasterKey,
     allowHeaders,
     idempotencyOptions,
+    emailVerifyTokenReuseIfValid,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -82,6 +83,7 @@ export class Config {
         appName,
         publicServerURL,
         emailVerifyTokenValidityDuration,
+        emailVerifyTokenReuseIfValid,
       });
     }
 
@@ -190,6 +192,16 @@ export class Config {
       ) {
         throw 'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20';
       }
+
+      if (
+        passwordPolicy.resetTokenReuseIfValid &&
+        typeof passwordPolicy.resetTokenReuseIfValid !== 'boolean'
+      ) {
+        throw 'resetTokenReuseIfValid must be a boolean value';
+      }
+      if (passwordPolicy.resetTokenReuseIfValid && !passwordPolicy.resetTokenValidityDuration) {
+        throw 'You cannot use resetTokenReuseIfValid without resetTokenValidityDuration';
+      }
     }
   }
 
@@ -207,6 +219,7 @@ export class Config {
     appName,
     publicServerURL,
     emailVerifyTokenValidityDuration,
+    emailVerifyTokenReuseIfValid,
   }) {
     if (!emailAdapter) {
       throw 'An emailAdapter is required for e-mail verification and password resets.';
@@ -223,6 +236,12 @@ export class Config {
       } else if (emailVerifyTokenValidityDuration <= 0) {
         throw 'Email verify token validity duration must be a value greater than 0.';
       }
+    }
+    if (emailVerifyTokenReuseIfValid && typeof emailVerifyTokenReuseIfValid !== 'boolean') {
+      throw 'emailVerifyTokenReuseIfValid must be a boolean value';
+    }
+    if (emailVerifyTokenReuseIfValid && !emailVerifyTokenValidityDuration) {
+      throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
     }
   }
 

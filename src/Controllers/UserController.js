@@ -158,7 +158,11 @@ export class UserController extends AdaptableController {
    * @returns {*}
    */
   regenerateEmailVerifyToken(user) {
-    const { _email_verify_token, _email_verify_token_expires_at } = user;
+    const { _email_verify_token } = user;
+    let { _email_verify_token_expires_at } = user;
+    if (_email_verify_token_expires_at && _email_verify_token_expires_at.__type === 'Date') {
+      _email_verify_token_expires_at = _email_verify_token_expires_at.iso;
+    }
     if (
       this.config.emailVerifyTokenReuseIfValid &&
       this.config.emailVerifyTokenValidityDuration &&

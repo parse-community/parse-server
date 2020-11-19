@@ -604,11 +604,9 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
-  it('should match codes with emailVerifyTokenReuseIfValid', done => {
-    const user = new Parse.User();
+  it('should match codes with emailVerifyTokenReuseIfValid', async done => {
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
-    let userBeforeRequest;
     const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
@@ -617,72 +615,58 @@ describe('Email Verification Token Expiration: ', () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {},
     };
-    reconfigureServer({
+    await reconfigureServer({
       appName: 'emailVerifyToken',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
       publicServerURL: 'http://localhost:8378/1',
       emailVerifyTokenReuseIfValid: true,
-    })
-      .then(() => {
-        user.setUsername('resends_verification_token');
-        user.setPassword('expiringToken');
-        user.set('email', 'user@parse.com');
-        return user.signUp();
-      })
-      .then(() => {
-        const config = Config.get('test');
-        return config.database
-          .find('_User', { username: 'resends_verification_token' })
-          .then(results => {
-            return results[0];
-          });
-      })
-      .then(newUser => {
-        // store this user before we make our email request
-        userBeforeRequest = newUser;
-        expect(sendVerificationEmailCallCount).toBe(1);
+    });
+    const user = new Parse.User();
+    user.setUsername('resends_verification_token');
+    user.setPassword('expiringToken');
+    user.set('email', 'user@example.com');
+    await user.signUp();
 
-        return request({
-          url: 'http://localhost:8378/1/verificationEmailRequest',
-          method: 'POST',
-          body: {
-            email: 'user@parse.com',
-          },
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-REST-API-Key': 'rest',
-            'Content-Type': 'application/json',
-          },
-        });
-      })
-      .then(response => {
-        expect(response.status).toBe(200);
-        expect(sendVerificationEmailCallCount).toBe(2);
-        expect(sendEmailOptions).toBeDefined();
+    const config = Config.get('test');
+    const [userBeforeRequest] = await config.database.find('_User', {
+      username: 'resends_verification_token',
+    });
+    // store this user before we make our email request
+    expect(sendVerificationEmailCallCount).toBe(1);
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/verificationEmailRequest',
+      method: 'POST',
+      body: {
+        email: 'user@example.com',
+      },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(sendVerificationEmailCallCount).toBe(2);
+    expect(sendEmailOptions).toBeDefined();
 
-        // query for this user again
-        const config = Config.get('test');
-        return config.database
-          .find('_User', { username: 'resends_verification_token' })
-          .then(results => {
-            return results[0];
-          });
-      })
-      .then(userAfterRequest => {
-        // verify that our token & expiration has been changed for this new request
-        expect(typeof userAfterRequest).toBe('object');
-        expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
-        expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
-          userAfterRequest._email_verify_token_expires_at
-        );
-        done();
-      })
-      .catch(error => {
-        jfail(error);
-        done();
-      });
+    const [userAfterRequest] = await config.database.find('_User', {
+      username: 'resends_verification_token',
+    });
+
+    // verify that our token & expiration has been changed for this new request
+    expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
+      userAfterRequest._email_verify_token_expires_at
+    );
+    done();
   });
 
   it('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
