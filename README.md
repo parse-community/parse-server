@@ -90,6 +90,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 ```
 ***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
 
+***Note:*** `mongodb-runner` [may need node <= 12](https://github.com/mongodb-js/runner/issues/177)
 
 ### Inside a Docker container
 
