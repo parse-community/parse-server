@@ -38,7 +38,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Create');
+      expect(req.event).toBe('create');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
     });
@@ -68,7 +68,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Update');
+      expect(req.event).toBe('update');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
@@ -92,7 +92,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Enter');
+      expect(req.event).toBe('enter');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
@@ -123,7 +123,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Leave');
+      expect(req.event).toBe('leave');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBeUndefined();
       expect(req.original.get('foo')).toBe('bar');
@@ -155,7 +155,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Delete');
+      expect(req.event).toBe('delete');
       expect(req.user).toBeUndefined();
       req.object.set('foo', 'bar');
     });
@@ -315,7 +315,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Create');
+      expect(req.event).toBe('create');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
     });
@@ -345,7 +345,7 @@ describe('ParseLiveQuery', function () {
     await object.save();
 
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Update');
+      expect(req.event).toBe('update');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
@@ -369,7 +369,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Enter');
+      expect(req.event).toBe('enter');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBe('bar');
       expect(req.original.get('foo')).toBeUndefined();
@@ -400,7 +400,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Leave');
+      expect(req.event).toBe('leave');
       expect(req.user).toBeUndefined();
       expect(req.object.get('foo')).toBeUndefined();
       expect(req.original.get('foo')).toBe('bar');
@@ -432,7 +432,7 @@ describe('ParseLiveQuery', function () {
       silent: true,
     });
     Parse.Cloud.afterLiveQueryEvent('TestObject', req => {
-      expect(req.event).toBe('Delete');
+      expect(req.event).toBe('delete');
       expect(req.user).toBeUndefined();
       req.object.set('foo', 'bar');
     });
