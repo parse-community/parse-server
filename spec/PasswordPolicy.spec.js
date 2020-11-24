@@ -179,6 +179,45 @@ describe('Password Policy: ', () => {
     done();
   });
 
+  it('should throw with invalid resetTokenReuseIfValid', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        emailAdapter: emailAdapter,
+        passwordPolicy: {
+          resetTokenValidityDuration: 5 * 60, // 5 minutes
+          resetTokenReuseIfValid: [],
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('resetTokenReuseIfValid must be a boolean value');
+    }
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        emailAdapter: emailAdapter,
+        passwordPolicy: {
+          resetTokenReuseIfValid: true,
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('You cannot use resetTokenReuseIfValid without resetTokenValidityDuration');
+    }
+    done();
+  });
+
   it('should fail if passwordPolicy.resetTokenValidityDuration is not a number', done => {
     reconfigureServer({
       appName: 'passwordPolicy',

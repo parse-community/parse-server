@@ -604,6 +604,45 @@ describe('Email Verification Token Expiration: ', () => {
       });
   });
 
+  it('should throw with invalid emailVerifyTokenReuseIfValid', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
+        emailVerifyTokenReuseIfValid: [],
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('emailVerifyTokenReuseIfValid must be a boolean value');
+    }
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenReuseIfValid: true,
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe(
+        'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration'
+      );
+    }
+    done();
+  });
+
   it('should match codes with emailVerifyTokenReuseIfValid', async done => {
     let sendEmailOptions;
     let sendVerificationEmailCallCount = 0;
