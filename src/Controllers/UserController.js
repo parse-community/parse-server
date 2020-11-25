@@ -102,7 +102,6 @@ export class UserController extends AdaptableController {
           }
           if (expiresDate < new Date()) throw 'The password reset link has expired';
         }
-
         return results[0];
       });
   }
