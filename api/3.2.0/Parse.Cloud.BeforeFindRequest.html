@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>BeforeFindRequest - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="GridFSBucketAdapter.html">GridFSBucketAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="GridStoreAdapter.html">GridStoreAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="ParseServer.html">ParseServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.app">app</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.createLiveQueryServer">createLiveQueryServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.start">start</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#start">start</a></span></li><li class="nav-heading">Modules</li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-AdapterLoader.html">AdapterLoader</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-AdapterLoader.html#.loadAdapter">loadAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-Adapters.html">Adapters</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">PushAdapter</a></span></li><li class="nav-heading">Namespaces</li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.html">Parse</a></span></li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.Cloud.html">Parse.Cloud</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterDelete">afterDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterFind">afterFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterSave">afterSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeDelete">beforeDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeFind">beforeFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeSave">beforeSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.httpRequest">httpRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.job">job</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.AfterFindRequest.html">AfterFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.BeforeFindRequest.html">BeforeFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.FunctionRequest.html">FunctionRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.JobRequest.html">JobRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.TriggerRequest.html">TriggerRequest</a></span></li><li class="nav-heading">Interfaces</li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="CustomPagesOptions.html">CustomPagesOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryOptions.html">LiveQueryOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryServerOptions.html">LiveQueryServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">Adapters~AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#appOpened">appOpened</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#trackEvent">trackEvent</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">Adapters~CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#clear">clear</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#del">del</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#get">get</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#put">put</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">Adapters~FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#createFile">createFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#deleteFile">deleteFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileData">getFileData</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileLocation">getFileLocation</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">Adapters~LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html#log">log</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">Adapters~MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html#sendMail">sendMail</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">Adapters~PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createPublisher">createPublisher</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createSubscriber">createSubscriber</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">Adapters~PushAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#getValidPushTypes">getValidPushTypes</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#send">send</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="ParseServerOptions.html">ParseServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="PubSubAdapter.Publisher.html">PubSubAdapter.Publisher</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">BeforeFindRequest</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="Parse.html">Parse</a><a href="Parse.Cloud.html">.Cloud</a>.</span>
+        
+        BeforeFindRequest
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>installationId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>If set, the installationId triggering the request.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>master</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Boolean</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>If true, means the master key was used.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>user</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Parse.User</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>If set, the user that made the request.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>query</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Parse.Query</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The query triggering the hook.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>ip</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The IP address of the client making the request.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>headers</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The original HTTP headers for the request.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>triggerName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The name of the trigger (<code>beforeSave</code>, <code>afterSave</code>, ...)</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>log</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The current logger inside Parse Server.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>isGet</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Boolean</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>wether the query a <code>get</code> or a <code>find</code></p></td>
+        </tr>
+
+        
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on 2019-03-30T00:48:31.005Z.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

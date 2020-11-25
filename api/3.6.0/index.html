@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Home - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="GridFSBucketAdapter.html">GridFSBucketAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="GridStoreAdapter.html">GridStoreAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="ParseServer.html">ParseServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.app">app</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.createLiveQueryServer">createLiveQueryServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.start">start</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#start">start</a></span></li><li class="nav-heading">Modules</li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-AdapterLoader.html">AdapterLoader</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-AdapterLoader.html#.loadAdapter">loadAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-Adapters.html">Adapters</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">PushAdapter</a></span></li><li class="nav-heading">Namespaces</li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.html">Parse</a></span></li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.Cloud.html">Parse.Cloud</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterDelete">afterDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterFind">afterFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterSave">afterSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeDelete">beforeDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeFind">beforeFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeLogin">beforeLogin</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeSave">beforeSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.httpRequest">httpRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.job">job</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.AfterFindRequest.html">AfterFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.BeforeFindRequest.html">BeforeFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.FunctionRequest.html">FunctionRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.JobRequest.html">JobRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.TriggerRequest.html">TriggerRequest</a></span></li><li class="nav-heading">Interfaces</li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="CustomPagesOptions.html">CustomPagesOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryOptions.html">LiveQueryOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryServerOptions.html">LiveQueryServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">Adapters~AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#appOpened">appOpened</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#trackEvent">trackEvent</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">Adapters~CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#clear">clear</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#del">del</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#get">get</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#put">put</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">Adapters~FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#createFile">createFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#deleteFile">deleteFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileData">getFileData</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileLocation">getFileLocation</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">Adapters~LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html#log">log</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">Adapters~MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html#sendMail">sendMail</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">Adapters~PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createPublisher">createPublisher</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createSubscriber">createSubscriber</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">Adapters~PushAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#getValidPushTypes">getValidPushTypes</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#send">send</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="ParseServerOptions.html">ParseServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="PubSubAdapter.Publisher.html">PubSubAdapter.Publisher</a></span></li>
+</nav>
+
+<div id="main">
+    
+
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+
+    <section class="readme">
+        <article><p><img src="https://github.com/parse-community/parse-server/raw/master/.github/parse-server-logo.png" alt="Parse Server logo"></p>
+<p><a href="#backers"><img src="https://opencollective.com/parse-server/backers/badge.svg" alt="Backers on Open Collective"></a> <a href="#sponsors"><img src="https://opencollective.com/parse-server/sponsors/badge.svg" alt="Sponsors on Open Collective"></a>
+<a href="https://travis-ci.org/parse-community/parse-server"><img src="https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat" alt="Build Status"></a>
+<a href="https://codecov.io/github/parse-community/parse-server?branch=master"><img src="https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg" alt="Coverage Status"></a>
+<a href="https://www.npmjs.com/package/parse-server"><img src="https://img.shields.io/npm/v/parse-server.svg?style=flat" alt="npm version"></a>
+<a href="https://community.parseplatform.org/c/parse-server"><img src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg" alt="Join The Conversation"></a>
+<a href="https://greenkeeper.io/"><img src="https://badges.greenkeeper.io/parse-community/parse-server.svg" alt="Greenkeeper badge"></a>
+<a href="https://twitter.com/intent/follow?screen_name=ParsePlatform"><img src="https://img.shields.io/twitter/follow/ParsePlatform.svg?label=Follow%20us%20on%20Twitter&amp;style=social" alt="Twitter Follow"></a></p>
+<p><a href=""><img src="https://img.shields.io/badge/mongodb-3.2-green.svg?logo=mongodb&amp;style=flat" alt=""></a>
+<a href=""><img src="https://img.shields.io/badge/mongodb-3.4-green.svg?logo=mongodb&amp;style=flat" alt=""></a>
+<a href=""><img src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&amp;style=flat" alt=""></a>
+<a href=""><img src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&amp;style=flat" alt=""></a></p>
+<p>Parse Server is an <a href="http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/">open source version of the Parse backend</a> that can be deployed to any infrastructure that can run Node.js.</p>
+<p>Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.</p>
+<p>The full documentation for Parse Server is available in the <a href="https://github.com/parse-community/parse-server/wiki">wiki</a>. The <a href="http://docs.parseplatform.org/parse-server/guide/">Parse Server guide</a> is a good place to get started. An <a href="http://parseplatform.org/parse-server/api/">API reference</a> is also available. If you're interested in developing for Parse Server, the <a href="http://docs.parseplatform.org/parse-server/guide/#development-guide">Development guide</a> will help you get set up.</p>
+<ul>
+<li><a href="#getting-started">Getting Started</a>
+<ul>
+<li><a href="#running-parse-server">Running Parse Server</a>
+<ul>
+<li><a href="#locally">Locally</a></li>
+<li><a href="#inside-a-docker-container">Docker</a></li>
+<li><a href="#saving-your-first-object">Saving an Object</a></li>
+<li><a href="#connect-your-app-to-parse-server">Connect an SDK</a></li>
+</ul>
+</li>
+<li><a href="#running-parse-server-elsewhere">Running elsewhere</a>
+<ul>
+<li><a href="#parse-server-sample-application">Sample Application</a></li>
+<li><a href="#parse-server--express">Parse Server + Express</a></li>
+</ul>
+</li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#basic-options">Basic Options</a></li>
+<li><a href="#client-key-options">Client Key Options</a></li>
+<li><a href="#email-verification-and-password-reset">Email Verification &amp; Password Reset</a></li>
+<li><a href="#using-environment-variables-to-configure-parse-server">Using Environment Variables</a></li>
+<li><a href="#available-adapters">Available Adapters</a></li>
+<li><a href="#configuring-file-adapters">Configuring File Adapters</a></li>
+<li><a href="#logging">Logging</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#live-queries">Live Queries</a></li>
+<li><a href="#graphql">GraphQL</a></li>
+<li><a href="#upgrading-to-300">Upgrading to 3.0.0</a></li>
+<li><a href="#support">Support</a></li>
+<li><a href="#want-to-ride-the-bleeding-edge">Ride the Bleeding Edge</a></li>
+<li><a href="#contributing">Contributing</a></li>
+<li><a href="#backers">Backers</a></li>
+<li><a href="#sponsors">Sponsors</a></li>
+</ul>
+<h1>Getting Started</h1>
+<p>The fastest and easiest way to get started is to run MongoDB and Parse Server locally.</p>
+<h2>Running Parse Server</h2>
+<h3>Locally</h3>
+<pre class="prettyprint source"><code>$ npm install -g parse-server mongodb-runner
+$ mongodb-runner start
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
+</code></pre>
+<p><em><strong>Note:</strong></em> <em>If installation with</em> <code>-g</code> <em>fails due to permission problems</em> (<code>npm ERR! code 'EACCES'</code>), <em>please refer to <a href="https://docs.npmjs.com/getting-started/fixing-npm-permissions">this link</a>.</em></p>
+<h3>Inside a Docker container</h3>
+<pre class="prettyprint source"><code>$ git clone https://github.com/parse-community/parse-server
+$ cd parse-server
+$ docker build --tag parse-server .
+$ docker run --name my-mongo -d mongo
+$ docker run --name my-parse-server --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
+</code></pre>
+<p>You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.</p>
+<p>That's it! You are now running a standalone version of Parse Server on your machine.</p>
+<p><strong>Using a remote MongoDB?</strong> Pass the  <code>--databaseURI DATABASE_URI</code> parameter when starting <code>parse-server</code>. Learn more about configuring Parse Server <a href="#configuration">here</a>. For a full list of available options, run <code>parse-server --help</code>.</p>
+<h3>Saving your first object</h3>
+<p>Now that you're running Parse Server, it is time to save your first object. We'll use the <a href="http://docs.parseplatform.org/rest/guide">REST API</a>, but you can easily do the same using any of the <a href="http://parseplatform.org/#sdks">Parse SDKs</a>. Run the following:</p>
+<pre class="prettyprint source lang-bash"><code>curl -X POST \
+-H &quot;X-Parse-Application-Id: APPLICATION_ID&quot; \
+-H &quot;Content-Type: application/json&quot; \
+-d '{&quot;score&quot;:1337,&quot;playerName&quot;:&quot;Sean Plott&quot;,&quot;cheatMode&quot;:false}' \
+http://localhost:1337/parse/classes/GameScore
+</code></pre>
+<p>You should get a response similar to this:</p>
+<pre class="prettyprint source lang-js"><code>{
+  &quot;objectId&quot;: &quot;2ntvSpRGIK&quot;,
+  &quot;createdAt&quot;: &quot;2016-03-11T23:51:48.050Z&quot;
+}
+</code></pre>
+<p>You can now retrieve this object directly (make sure to replace <code>2ntvSpRGIK</code> with the actual <code>objectId</code> you received when the object was created):</p>
+<pre class="prettyprint source lang-bash"><code>$ curl -X GET \
+  -H &quot;X-Parse-Application-Id: APPLICATION_ID&quot; \
+  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
+</code></pre>
+<pre class="prettyprint source lang-json"><code>// Response
+{
+  &quot;objectId&quot;: &quot;2ntvSpRGIK&quot;,
+  &quot;score&quot;: 1337,
+  &quot;playerName&quot;: &quot;Sean Plott&quot;,
+  &quot;cheatMode&quot;: false,
+  &quot;updatedAt&quot;: &quot;2016-03-11T23:51:48.050Z&quot;,
+  &quot;createdAt&quot;: &quot;2016-03-11T23:51:48.050Z&quot;
+}
+</code></pre>
+<p>Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:</p>
+<pre class="prettyprint source"><code>$ curl -X GET \
+  -H &quot;X-Parse-Application-Id: APPLICATION_ID&quot; \
+  http://localhost:1337/parse/classes/GameScore
+</code></pre>
+<pre class="prettyprint source lang-json"><code>// The response will provide all the matching objects within the `results` array:
+{
+  &quot;results&quot;: [
+    {
+      &quot;objectId&quot;: &quot;2ntvSpRGIK&quot;,
+      &quot;score&quot;: 1337,
+      &quot;playerName&quot;: &quot;Sean Plott&quot;,
+      &quot;cheatMode&quot;: false,
+      &quot;updatedAt&quot;: &quot;2016-03-11T23:51:48.050Z&quot;,
+      &quot;createdAt&quot;: &quot;2016-03-11T23:51:48.050Z&quot;
+    }
+  ]
+}
+
+</code></pre>
+<p>To learn more about using saving and querying objects on Parse Server, check out the <a href="http://docs.parseplatform.org">Parse documentation</a>.</p>
+<h3>Connect your app to Parse Server</h3>
+<p>Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to <a href="https://docs.parseplatform.org/parse-server/guide/#using-parse-sdks-with-parse-server">learn how to connect your app to Parse Server</a>.</p>
+<h2>Running Parse Server elsewhere</h2>
+<p>Once you have a better understanding of how the project works, please refer to the <a href="https://github.com/parse-community/parse-server/wiki">Parse Server wiki</a> for in-depth guides to deploy Parse Server to major infrastructure providers. Read on to learn more about additional ways of running Parse Server.</p>
+<h3>Parse Server Sample Application</h3>
+<p>We have provided a basic <a href="https://github.com/parse-community/parse-server-example">Node.js application</a> that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:</p>
+<ul>
+<li><a href="https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku">Heroku and mLab</a></li>
+<li><a href="http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk">AWS and Elastic Beanstalk</a></li>
+<li><a href="https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50">Google App Engine</a></li>
+<li><a href="https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/">Microsoft Azure</a></li>
+<li><a href="https://blog.sashido.io/tag/migration/">SashiDo</a></li>
+<li><a href="https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04">Digital Ocean</a></li>
+<li><a href="https://github.com/cf-platform-eng/pws-parse-server">Pivotal Web Services</a></li>
+<li><a href="http://blog.back4app.com/2016/03/01/quick-wizard-migration/">Back4app</a></li>
+<li><a href="https://glitch.com/edit/#!/parse-server">Glitch</a></li>
+<li><a href="https://flynn.io/blog/parse-apps-on-flynn">Flynn</a></li>
+</ul>
+<h3>Parse Server + Express</h3>
+<p>You can also create an instance of Parse Server, and mount it on a new or existing Express website:</p>
+<pre class="prettyprint source lang-js"><code>var express = require('express');
+var ParseServer = require('parse-server').ParseServer;
+var app = express();
+
+var api = new ParseServer({
+  databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
+  cloud: '/home/myApp/cloud/main.js', // Absolute path to your Cloud Code
+  appId: 'myAppId',
+  masterKey: 'myMasterKey', // Keep this key secret!
+  fileKey: 'optionalFileKey',
+  serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
+});
+
+// Serve the Parse API on the /parse URL prefix
+app.use('/parse', api);
+
+app.listen(1337, function() {
+  console.log('parse-server-example running on port 1337.');
+});
+</code></pre>
+<p>For a full list of available options, run <code>parse-server --help</code> or take a look at <a href="http://parseplatform.org/parse-server/api/master/ParseServerOptions.html">Parse Server Configurations</a>.</p>
+<h2>Configuration</h2>
+<p>Parse Server can be configured using the following options. You may pass these as parameters when running a standalone <code>parse-server</code>, or by loading a configuration file in JSON format using <code>parse-server path/to/configuration.json</code>. If you're using Parse Server on Express, you may also pass these to the <code>ParseServer</code> object as options.</p>
+<p>For the full list of available options, run <code>parse-server --help</code> or take a look at <a href="http://parseplatform.org/parse-server/api/master/ParseServerOptions.html">Parse Server Configurations</a>.</p>
+<h3>Basic options</h3>
+<ul>
+<li><code>appId</code> <strong>(required)</strong> - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.</li>
+<li><code>masterKey</code> <strong>(required)</strong> - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.</li>
+<li><code>databaseURI</code> <strong>(required)</strong> - The connection string for your database, i.e. <code>mongodb://user:pass@host.com/dbname</code>. Be sure to <a href="https://app.zencoder.com/docs/guides/getting-started/special-characters-in-usernames-and-passwords">URL encode your password</a> if your password has special characters.</li>
+<li><code>port</code> - The default port is 1337, specify this parameter to use a different port.</li>
+<li><code>serverURL</code> - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.</li>
+<li><code>cloud</code> - The absolute path to your cloud code <code>main.js</code> file.</li>
+<li><code>push</code> - Configuration options for APNS and GCM push. See the <a href="http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start">Push Notifications quick start</a>.</li>
+</ul>
+<h3>Client key options</h3>
+<p>The client keys used with Parse are no longer necessary with Parse Server. If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time. Setting any of these keys will require all requests to provide one of the configured keys.</p>
+<ul>
+<li><code>clientKey</code></li>
+<li><code>javascriptKey</code></li>
+<li><code>restAPIKey</code></li>
+<li><code>dotNetKey</code></li>
+</ul>
+<h3>Email verification and password reset</h3>
+<p>Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the <code>parse-server</code> package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:</p>
+<pre class="prettyprint source lang-js"><code>var server = ParseServer({
+  ...otherOptions,
+  // Enable email verification
+  verifyUserEmails: true,
+
+  // if `verifyUserEmails` is `true` and
+  //     if `emailVerifyTokenValidityDuration` is `undefined` then
+  //        email verify token never expires
+  //     else
+  //        email verify token expires after `emailVerifyTokenValidityDuration`
+  //
+  // `emailVerifyTokenValidityDuration` defaults to `undefined`
+  //
+  // email verify token below expires in 2 hours (= 2 * 60 * 60 == 7200 seconds)
+  emailVerifyTokenValidityDuration: 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
+
+  // set preventLoginWithUnverifiedEmail to false to allow user to login without verifying their email
+  // set preventLoginWithUnverifiedEmail to true to prevent user from login if their email is not verified
+  preventLoginWithUnverifiedEmail: false, // defaults to false
+
+  // The public URL of your app.
+  // This will appear in the link that is used to verify email addresses and reset passwords.
+  // Set the mount path as it is in serverURL
+  publicServerURL: 'https://example.com/parse',
+  // Your apps name. This will appear in the subject and body of the emails that are sent.
+  appName: 'Parse App',
+  // The email adapter
+  emailAdapter: {
+    module: '@parse/simple-mailgun-adapter',
+    options: {
+      // The address that your emails come from
+      fromAddress: 'parse@example.com',
+      // Your domain from mailgun.com
+      domain: 'example.com',
+      // Your API key from mailgun.com
+      apiKey: 'key-mykey',
+    }
+  },
+
+  // account lockout policy setting (OPTIONAL) - defaults to undefined
+  // if the account lockout policy is set and there are more than `threshold` number of failed login attempts then the `login` api call returns error code `Parse.Error.OBJECT_NOT_FOUND` with error message `Your account is locked due to multiple failed login attempts. Please try again after &lt;duration> minute(s)`. After `duration` minutes of no login attempts, the application will allow the user to try login again.
+  accountLockout: {
+    duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
+    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
+  },
+  // optional settings to enforce password policies
+  passwordPolicy: {
+    // Two optional settings to enforce strong passwords. Either one or both can be specified.
+    // If both are specified, both checks must pass to accept the password
+    // 1. a RegExp object or a regex string representing the pattern to enforce
+    validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
+    // 2. a callback function to be invoked to validate the password
+    validatorCallback: (password) => { return validatePassword(password) },
+    validationError: 'Password must contain at least 1 digit.' // optional error message to be sent instead of the default &quot;Password does not meet the Password Policy requirements.&quot; message.
+    doNotAllowUsername: true, // optional setting to disallow username in passwords
+    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset.
+    maxPasswordHistory: 5, // optional setting to prevent reuse of previous n passwords. Maximum value that can be specified is 20. Not specifying it or specifying 0 will not enforce history.
+    //optional setting to set a validity duration for password reset links (in seconds)
+    resetTokenValidityDuration: 24*60*60, // expire after 24 hours
+  }
+});
+</code></pre>
+<p>You can also use other email adapters contributed by the community such as:</p>
+<ul>
+<li><a href="https://www.npmjs.com/package/parse-server-postmark-adapter">parse-server-postmark-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-sendgrid-adapter">parse-server-sendgrid-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-mandrill-adapter">parse-server-mandrill-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-simple-ses-adapter">parse-server-simple-ses-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-mailgun-adapter-template">parse-server-mailgun-adapter-template</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-sendinblue-adapter">parse-server-sendinblue-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-mailjet-adapter">parse-server-mailjet-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/simple-parse-smtp-adapter">simple-parse-smtp-adapter</a></li>
+<li><a href="https://www.npmjs.com/package/parse-server-generic-email-adapter">parse-server-generic-email-adapter</a></li>
+</ul>
+<h3>Using environment variables to configure Parse Server</h3>
+<p>You may configure the Parse Server using environment variables:</p>
+<pre class="prettyprint source lang-bash"><code>PORT
+PARSE_SERVER_APPLICATION_ID
+PARSE_SERVER_MASTER_KEY
+PARSE_SERVER_DATABASE_URI
+PARSE_SERVER_URL
+PARSE_SERVER_CLOUD
+</code></pre>
+<p>The default port is 1337, to use a different port set the PORT environment variable:</p>
+<pre class="prettyprint source lang-bash"><code>$ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+</code></pre>
+<p>For the full list of configurable environment variables, run <code>parse-server --help</code> or take a look at <a href="https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js">Parse Server Configuration</a>.</p>
+<h3>Available Adapters</h3>
+<p>All official adapters are distributed as scoped pacakges on <a href="https://www.npmjs.com/search?q=scope%3Aparse">npm (@parse)</a>.</p>
+<p>Some well maintained adapters are also available on the <a href="https://github.com/parse-server-modules">Parse Server Modules</a> organization.</p>
+<p>You can also find more adapters maintained by the community by searching on <a href="https://www.npmjs.com/search?q=parse-server%20adapter&amp;page=1&amp;ranking=optimal">npm</a>.</p>
+<h3>Configuring File Adapters</h3>
+<p>Parse Server allows developers to choose from several options when hosting files:</p>
+<ul>
+<li><code>GridFSBucketAdapter</code>, which is backed by MongoDB;</li>
+<li><code>S3Adapter</code>, which is backed by <a href="https://aws.amazon.com/s3/">Amazon S3</a>; or</li>
+<li><code>GCSAdapter</code>, which is backed by <a href="https://cloud.google.com/storage/">Google Cloud Storage</a></li>
+</ul>
+<p><code>GridFSBucketAdapter</code> is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the <a href="http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters">Parse Server guide</a>.</p>
+<h3>Logging</h3>
+<p>Parse Server will, by default, log:</p>
+<ul>
+<li>to the console</li>
+<li>daily rotating files as new line delimited JSON</li>
+</ul>
+<p>Logs are also viewable in Parse Dashboard.</p>
+<p><strong>Want to log each request and response?</strong> Set the <code>VERBOSE</code> environment variable when starting <code>parse-server</code>. Usage :-  <code>VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY</code></p>
+<p><strong>Want logs to be in placed in a different folder?</strong> Pass the <code>PARSE_SERVER_LOGS_FOLDER</code> environment variable when starting <code>parse-server</code>. Usage :-  <code>PARSE_SERVER_LOGS_FOLDER='&lt;path-to-logs-folder&gt;' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY</code></p>
+<p><strong>Want to log specific levels?</strong> Pass the <code>logLevel</code> parameter when starting <code>parse-server</code>. Usage :-  <code>parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL</code></p>
+<p><strong>Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc)?</strong> Pass the <code>JSON_LOGS</code> environment variable when starting <code>parse-server</code>. Usage :-  <code>JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY</code></p>
+<h1>Live Queries</h1>
+<p>Live queries are meant to be used in real-time reactive applications, where just using the traditional query paradigm could cause several problems, like increased response time and high network and server usage. Live queries should be used in cases where you need to continuously update a page with fresh data coming from the database, which often happens in (but is not limited to) online games, messaging clients and shared to-do lists.</p>
+<p>Take a look at <a href="https://docs.parseplatform.org/parse-server/guide/#live-queries">Live Query Guide</a>, <a href="https://docs.parseplatform.org/parse-server/guide/#scalability">Live Query Server Setup Guide</a> and <a href="https://github.com/parse-community/parse-server/wiki/Parse-LiveQuery-Protocol-Specification">Live Query Protocol Specification</a>. You can setup a standalone server or multiple instances for scalability (recommended).</p>
+<h1>GraphQL</h1>
+<p><a href="https://graphql.org/">GraphQL</a>, developed by Facebook, is an open-source data query and manipulation language for APIs. In addition to the traditional REST API, Parse Server automatically generates a GraphQL API based on your current application schema.</p>
+<h2>Running</h2>
+<pre class="prettyprint source"><code>$ npm install -g parse-server mongodb-runner
+$ mongodb-runner start
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test --mountGraphQL --mountPlayground
+</code></pre>
+<p>After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.</p>
+<p><em><strong>Note:</strong></em> Do <em><strong>NOT</strong></em> use --mountPlayground option in production.</p>
+<h2>Checking the API health</h2>
+<p>Run the following:</p>
+<pre class="prettyprint source lang-graphql"><code>query Health {
+  health
+}
+</code></pre>
+<p>You should receive the following response:</p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;data&quot;: {
+    &quot;health&quot;: true
+  }
+}
+</code></pre>
+<h2>Creating your first object</h2>
+<p>Since your application does not have a schema yet, you can use the generic <code>create</code> mutation to create your first object. Run the following:</p>
+<pre class="prettyprint source lang-graphql"><code>mutation CreateObject {
+  objects {
+    create(className: &quot;GameScore&quot; fields: { score: 1337 playerName: &quot;Sean Plott&quot; cheatMode: false }) {
+      objectId
+      createdAt
+    }
+  }
+}
+</code></pre>
+<p>You should receive a response similar to this:</p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;data&quot;: {
+    &quot;objects&quot;: {
+      &quot;create&quot;: {
+        &quot;objectId&quot;: &quot;7jfBmbGgyF&quot;,
+        &quot;createdAt&quot;: &quot;2019-06-20T23:50:50.825Z&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<h2>Using automatically generated operations</h2>
+<p>Parse Server learned from the first object that you created and now you have the <code>GameScore</code> class in your schema. You can now start using the automatically generated operations!</p>
+<p>Run the following to create a second object:</p>
+<pre class="prettyprint source lang-graphql"><code>mutation CreateGameScore {
+  objects {
+    createGameScore(fields: { score: 2558 playerName: &quot;Luke Skywalker&quot; cheatMode: false }) {
+      objectId
+      createdAt
+    }
+  }
+}
+</code></pre>
+<p>You should receive a response similar to this:</p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;data&quot;: {
+    &quot;objects&quot;: {
+      &quot;createGameScore&quot;: {
+        &quot;objectId&quot;: &quot;gySYolb2CL&quot;,
+        &quot;createdAt&quot;: &quot;2019-06-20T23:56:37.114Z&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<p>You can also run a query to this new class:</p>
+<pre class="prettyprint source lang-graphql"><code>query FindGameScore {
+  objects {
+    findGameScore {
+      results {
+        playerName
+        score
+      }
+    }
+  }
+}
+</code></pre>
+<p>You should receive a response similar to this:</p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;data&quot;: {
+    &quot;objects&quot;: {
+      &quot;findGameScore&quot;: {
+        &quot;results&quot;: [
+          {
+            &quot;playerName&quot;: &quot;Sean Plott&quot;,
+            &quot;score&quot;: 1337
+          },
+          {
+            &quot;playerName&quot;: &quot;Luke Skywalker&quot;,
+            &quot;score&quot;: 2558
+          }
+        ]
+      }
+    }
+  }
+}
+</code></pre>
+<h2>Learning more</h2>
+<p>Please look at the right side of your GraphQL Playground. You will see the <code>DOCS</code> and <code>SCHEMA</code> menus. They are automatically generated by analysing your application schema. Please refer to them and learn more about everything that you can do with your Parse GraphQL API.</p>
+<p>Additionally, the <a href="https://graphql.org/learn/">GraphQL Learn Section</a> is a very good source to start learning about the power of the GraphQL language.</p>
+<h1>Upgrading to 3.0.0</h1>
+<p>Starting 3.0.0, parse-server uses the JS SDK version 2.0.
+In short, parse SDK v2.0 removes the backbone style callbacks as well as the Parse.Promise object in favor of native promises.
+All the Cloud Code interfaces also have been updated to reflect those changes, and all backbone style response objects are removed and replaced by Promise style resolution.</p>
+<p>We have written up a <a href="3.0.0.md">migration guide</a>, hoping this will help you transition to the next major release.</p>
+<h1>Support</h1>
+<p>For implementation related questions or any other questions please refer to <a href="https://community.parseplatform.org/c/parse-server">Parse Community's Discourse forum</a>.</p>
+<p>If you believe you've found an issue with Parse Server, make sure these boxes are checked before <a href="https://github.com/parse-community/parse-server/issues">reporting an issue</a>:</p>
+<ul>
+<li>
+<p>[ ] You've met the <a href="http://docs.parseplatform.org/parse-server/guide/#prerequisites">prerequisites</a>.</p>
+</li>
+<li>
+<p>[ ] You're running the <a href="https://github.com/parse-community/parse-server/releases">latest version</a> of Parse Server.</p>
+</li>
+<li>
+<p>[ ] You've searched through <a href="https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&amp;q=">existing issues</a>. Chances are that your issue has been reported or resolved before.</p>
+</li>
+</ul>
+<h1>Want to ride the bleeding edge?</h1>
+<p>It is recommend to use builds deployed npm for many reasons, but if you want to use
+the latest not-yet-released version of parse-server, you can do so by depending
+directly on this branch:</p>
+<pre class="prettyprint source"><code>npm install parse-community/parse-server.git#master
+</code></pre>
+<h2>Experimenting</h2>
+<p>You can also use your own forks, and work in progress branches by specifying them:</p>
+<pre class="prettyprint source"><code>npm install github:myUsername/parse-server#my-awesome-feature
+</code></pre>
+<p>And don't forget, if you plan to deploy it remotely, you should run <code>npm install</code> with the <code>--save</code> option.</p>
+<h1>Contributing</h1>
+<p>We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the <a href="CONTRIBUTING.md">Contributing to Parse Server guide</a>.</p>
+<h1>Backers</h1>
+<p>Support us with a monthly donation and help us continue our activities. [<a href="https://opencollective.com/parse-server#backer">Become a backer</a>]</p>
+<p><a href="https://opencollective.com/parse-server/backer/0/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/0/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/1/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/1/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/2/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/2/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/3/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/3/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/4/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/4/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/5/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/5/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/6/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/6/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/7/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/7/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/8/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/8/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/9/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/9/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/10/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/10/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/11/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/11/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/12/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/12/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/13/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/13/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/14/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/14/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/15/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/15/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/16/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/16/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/17/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/17/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/18/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/18/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/19/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/19/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/20/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/20/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/21/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/21/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/22/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/22/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/23/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/23/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/24/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/24/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/25/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/25/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/26/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/26/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/27/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/27/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/28/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/28/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/29/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/29/avatar.svg"></a></p>
+<h1>Sponsors</h1>
+<p>Become a sponsor and get your logo on our README on Github with a link to your site. [<a href="https://opencollective.com/parse-server#sponsor">Become a sponsor</a>]</p>
+<p><a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/1/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/1/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/2/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/2/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/3/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/3/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/4/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/4/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/5/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/5/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/6/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/6/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/7/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/7/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/8/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/8/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/9/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/9/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/10/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/10/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/11/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/11/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/12/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/12/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/13/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/13/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/14/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/14/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/15/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/15/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/16/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/16/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/17/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/17/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/18/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/18/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/19/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/19/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/20/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/20/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/21/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/21/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/22/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/22/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/23/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/23/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/24/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/24/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/25/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/25/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/26/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/26/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/27/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/27/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/28/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/28/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/29/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/29/avatar.svg"></a></p>
+<hr>
+<p>As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.</p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.2</a> on 2019-07-11T13:46:22.485Z.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

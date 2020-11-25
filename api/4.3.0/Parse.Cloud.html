@@ -1,0 +1,3269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Cloud - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="GridStoreAdapter.html">GridStoreAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="module-Adapters-WSSAdapter.html">Adapters~WSSAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-WSSAdapter.html#close">close</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-WSSAdapter.html#start">start</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="ParseServer.html">ParseServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.app">app</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.createLiveQueryServer">createLiveQueryServer</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#.start">start</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ParseServer.html#start">start</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="WSAdapter.html">WSAdapter</a></span></li><li class="nav-heading">Modules</li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-AdapterLoader.html">AdapterLoader</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-AdapterLoader.html#.loadAdapter">loadAdapter</a></span></li><li class="nav-heading"><span class="nav-item-type type-module">M</span><span class="nav-item-name"><a href="module-Adapters.html">Adapters</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">PushAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-WSSAdapter.html">WSSAdapter</a></span></li><li class="nav-heading">Namespaces</li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.html">Parse</a></span></li><li class="nav-heading"><span class="nav-item-type type-namespace">N</span><span class="nav-item-name"><a href="Parse.Cloud.html">Parse.Cloud</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterDelete">afterDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterDeleteFile">afterDeleteFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterFind">afterFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterLogin">afterLogin</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterLogout">afterLogout</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterSave">afterSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.afterSaveFile">afterSaveFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeConnect">beforeConnect</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeDelete">beforeDelete</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeDeleteFile">beforeDeleteFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeFind">beforeFind</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeLogin">beforeLogin</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeSave">beforeSave</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeSaveFile">beforeSaveFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.beforeSubscribe">beforeSubscribe</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.httpRequest">httpRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Parse.Cloud.html#.job">job</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.AfterFindRequest.html">AfterFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.BeforeFindRequest.html">BeforeFindRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.ConnectTriggerRequest.html">ConnectTriggerRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.FileTriggerRequest.html">FileTriggerRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.FunctionRequest.html">FunctionRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.JobRequest.html">JobRequest</a></span></li><li class="nav-item"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="Parse.Cloud.TriggerRequest.html">TriggerRequest</a></span></li><li class="nav-heading">Interfaces</li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="CustomPagesOptions.html">CustomPagesOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="IdempotencyOptions.html">IdempotencyOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryOptions.html">LiveQueryOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="LiveQueryServerOptions.html">LiveQueryServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html">Adapters~AnalyticsAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#appOpened">appOpened</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-AnalyticsAdapter.html#trackEvent">trackEvent</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html">Adapters~CacheAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#clear">clear</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#del">del</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#get">get</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-CacheAdapter.html#put">put</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html">Adapters~FilesAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#createFile">createFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#deleteFile">deleteFile</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileData">getFileData</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-FilesAdapter.html#getFileLocation">getFileLocation</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html">Adapters~LoggerAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-LoggerAdapter.html#log">log</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html">Adapters~MailAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-MailAdapter.html#sendMail">sendMail</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html">Adapters~PubSubAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createPublisher">createPublisher</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PubSubAdapter.html#.createSubscriber">createSubscriber</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html">Adapters~PushAdapter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#getValidPushTypes">getValidPushTypes</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="module-Adapters-PushAdapter.html#send">send</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="ParseServerOptions.html">ParseServerOptions</a></span></li><li class="nav-heading"><span class="nav-item-type type-interface">I</span><span class="nav-item-name"><a href="PubSubAdapter.Publisher.html">PubSubAdapter.Publisher</a></span></li><li class="nav-heading"><a href="global.html">Globals</a></li><li class="nav-item"><span class="nav-item-type type-member">M</span><span class="nav-item-name"><a href="global.html#crypto">crypto</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">Cloud</h1>
+    
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>
+            <span class="ancestors"><a href="Parse.html">Parse</a>.</span>
+        
+        Cloud
+        </h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>The Parse Cloud Code SDK.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterDelete"><span class="type-signature">(static) </span>afterDelete<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers an after delete function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use afterDelete for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterDelete('MyCustomClass', async (request) => {
+  // code here
+})
+
+Parse.Cloud.afterDelete(Parse.User, async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the after delete function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run after a delete. This function can be async and should take just one parameter, <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterDeleteFile"><span class="type-signature">(static) </span>afterDeleteFile<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers an after delete file function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterDeleteFile(async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to after before deleting a file. This function can be async and should take just one parameter, <a href="Parse.Cloud.FileTriggerRequest.html"><code>Parse.Cloud.FileTriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterFind"><span class="type-signature">(static) </span>afterFind<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers an after find function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use afterFind for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterFind('MyCustomClass', async (request) => {
+  // code here
+})
+
+Parse.Cloud.afterFind(Parse.User, async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the after find function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a find. This function can be async and should take just one parameter, <a href="Parse.Cloud.AfterFindRequest.html"><code>Parse.Cloud.AfterFindRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterLogin"><span class="type-signature">(static) </span>afterLogin<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers the after login function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>This function is triggered after a user logs in successfully,
+and after a _Session object has been created.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterLogin((request) => {
+  // code here
+})
+
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run after a login. This function can be async and should take one parameter a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>;</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterLogout"><span class="type-signature">(static) </span>afterLogout<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers the after logout function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>This function is triggered after a user logs out.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterLogout((request) => {
+  // code here
+})
+
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run after a logout. This function can be async and should take one parameter a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>;</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterSave"><span class="type-signature">(static) </span>afterSave<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers an after save function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use afterSave for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterSave('MyCustomClass', async function(request) {
+  // code here
+})
+
+Parse.Cloud.afterSave(Parse.User, async function(request) {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run after a save. This function can be an async function and should take just one parameter, <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".afterSaveFile"><span class="type-signature">(static) </span>afterSaveFile<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers an after save file function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<pre class="prettyprint source"><code>Parse.Cloud.afterSaveFile(async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run after saving a file. This function can be async and should take just one parameter, <a href="Parse.Cloud.FileTriggerRequest.html"><code>Parse.Cloud.FileTriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeConnect"><span class="type-signature">(static) </span>beforeConnect<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before live query server connect function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeConnect(async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to before connection is made. This function can be async and should take just one parameter, <a href="Parse.Cloud.ConnectTriggerRequest.html"><code>Parse.Cloud.ConnectTriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeDelete"><span class="type-signature">(static) </span>beforeDelete<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before delete function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use beforeDelete for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeDelete('MyCustomClass', (request) => {
+  // code here
+})
+
+Parse.Cloud.beforeDelete(Parse.User, (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the before delete function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a delete. This function can be async and should take one parameter, a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeDeleteFile"><span class="type-signature">(static) </span>beforeDeleteFile<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before delete file function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeDeleteFile(async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before deleting a file. This function can be async and should take just one parameter, <a href="Parse.Cloud.FileTriggerRequest.html"><code>Parse.Cloud.FileTriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeFind"><span class="type-signature">(static) </span>beforeFind<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before find function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use beforeFind for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeFind('MyCustomClass', async (request) => {
+  // code here
+})
+
+Parse.Cloud.beforeFind(Parse.User, async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the before find function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a find. This function can be async and should take just one parameter, <a href="Parse.Cloud.BeforeFindRequest.html"><code>Parse.Cloud.BeforeFindRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeLogin"><span class="type-signature">(static) </span>beforeLogin<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers the before login function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>This function provides further control
+in validating a login attempt. Specifically,
+it is triggered after a user enters
+correct credentials (or other valid authData),
+but prior to a session being generated.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeLogin((request) => {
+  // code here
+})
+
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a login. This function can be async and should take one parameter a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>;</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeSave"><span class="type-signature">(static) </span>beforeSave<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before save function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use beforeSave for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeSave('MyCustomClass', (request) => {
+  // code here
+})
+
+Parse.Cloud.beforeSave(Parse.User, (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the after save function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a save. This function can be async and should take one parameter a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>;</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeSaveFile"><span class="type-signature">(static) </span>beforeSaveFile<span class="signature">(func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before save file function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeSaveFile(async (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before saving a file. This function can be async and should take just one parameter, <a href="Parse.Cloud.FileTriggerRequest.html"><code>Parse.Cloud.FileTriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".beforeSubscribe"><span class="type-signature">(static) </span>beforeSubscribe<span class="signature">(arg1, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Registers a before live query subscription function.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>If you want to use beforeSubscribe for a predefined class in the Parse JavaScript SDK (e.g. <code>Parse.User</code>), you should pass the class itself and not the String for arg1.</p>
+<pre class="prettyprint source"><code>Parse.Cloud.beforeSubscribe('MyCustomClass', (request) => {
+  // code here
+})
+
+Parse.Cloud.beforeSubscribe(Parse.User, (request) => {
+  // code here
+})
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>arg1</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Parse.Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Object subclass to register the before subscription function for. This can instead be a String that is the className of the subclass.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The function to run before a subscription. This function can be async and should take one parameter, a <a href="Parse.Cloud.TriggerRequest.html"><code>Parse.Cloud.TriggerRequest</code></a>.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".httpRequest"><span class="type-signature">(static) </span>httpRequest<span class="signature">(options)</span><span class="type-signature"> &rarr; {Promise.&lt;<a href="Parse.Cloud.html#.HTTPResponse">Parse.Cloud.HTTPResponse</a>>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Makes an HTTP Request.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+<p>By default, Parse.Cloud.httpRequest does not follow redirects caused by HTTP 3xx response codes. You can use the followRedirects option in the <a href="Parse.Cloud.html#.HTTPOptions"><code>Parse.Cloud.HTTPOptions</code></a> object to change this behavior.</p>
+<p>Sample request:</p>
+<pre class="prettyprint source"><code>Parse.Cloud.httpRequest({
+  url: 'http://www.parse.com/'
+}).then(function(httpResponse) {
+  // success
+  console.log(httpResponse.text);
+},function(httpResponse) {
+  // error
+  console.error('Request failed with response code ' + httpResponse.status);
+});
+</code></pre>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code><a href="Parse.Cloud.html#.HTTPOptions">Parse.Cloud.HTTPOptions</a></code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Parse.Cloud.HTTPOptions object that makes the request.</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>Promise.&lt;<a href="Parse.Cloud.html#.HTTPResponse">Parse.Cloud.HTTPResponse</a>></code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>A promise that will be resolved with a <a href="Parse.Cloud.html#.HTTPResponse"><code>Parse.Cloud.HTTPResponse</code></a> object when the request completes.</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id=".job"><span class="type-signature">(static) </span>job<span class="signature">(name, func)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Defines a Background Job.</p>
+<p><strong>Available in Cloud Code only.</strong></p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The name of the Background Job</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>func</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>The Background Job to register. This function can be async should take a single parameters a <a href="Parse.Cloud.JobRequest.html"><code>Parse.Cloud.JobRequest</code></a></p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+        
+    
+
+    
+        <h3 class="subsection-title">Type Definitions</h3>
+
+        
+                
+<div class="section-members">
+<h4 class="name" id=".HTTPOptions">HTTPOptions</h4>
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>body</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The body of the request. If it is a JSON object, then the Content-Type set in the headers must be application/x-www-form-urlencoded or application/json. You can also set this to a <code>Buffer</code> object to send raw bytes. If you use a Buffer, you should also set the Content-Type header explicitly to describe what these bytes represent.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The function that is called when the request fails. It will be passed a Parse.Cloud.HTTPResponse object.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>followRedirects</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Boolean</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Whether to follow redirects caused by HTTP 3xx responses. Defaults to false.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>headers</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The headers for the request.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>method</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The method of the request. GET, POST, PUT, DELETE, HEAD, and OPTIONS are supported. Will default to GET if not specified.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>params</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+|
+
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The query portion of the url. You can pass a JSON object of key value pairs like params: {q : 'Sean Plott'} or a raw string like params:q=Sean Plott.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>success</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The function that is called when the request successfully completes. It will be passed a Parse.Cloud.HTTPResponse object.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>url</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>string</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The url to send the request to.</p></td>
+        </tr>
+
+        
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+</div>
+
+            
+                
+<div class="section-members">
+<h4 class="name" id=".HTTPResponse">HTTPResponse</h4>
+
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>buffer</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Buffer</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The raw byte representation of the response body. Use this to receive binary data. See Buffer for more details.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cookies</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The cookies sent by the server. The keys in this object are the names of the cookies. The values are Parse.Cloud.Cookie objects.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>data</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The parsed response body as a JavaScript object. This is only available when the response Content-Type is application/x-www-form-urlencoded or application/json.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>headers</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Object</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The headers sent by the server. The keys in this object are the names of the headers. We do not support multiple response headers with the same name. In the common case of Set-Cookie headers, please use the cookies field instead.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>status</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>Number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The status code.</p></td>
+        </tr>
+
+        
+
+    
+
+        <tr>
+            
+                <td class="name"><code>text</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>String</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The raw text representation of the response body.</p></td>
+        </tr>
+
+        
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+</div>
+
+            
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on 2020-07-22T15:54:21.594Z.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
