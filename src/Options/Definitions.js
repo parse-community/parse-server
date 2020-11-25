@@ -125,6 +125,12 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for email sending',
     action: parsers.moduleOrObjectParser,
   },
+  emailVerifyTokenReuseIfValid: {
+    env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
+    help: 'an existing password reset token should be reused when a password reset is requested',
+    action: parsers.booleanParser,
+    default: false,
+  },
   emailVerifyTokenValidityDuration: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION',
     help: 'Email verification token validity duration, in seconds',

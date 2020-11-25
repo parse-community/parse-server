@@ -102,7 +102,6 @@ export class UserController extends AdaptableController {
           }
           if (expiresDate < new Date()) throw 'The password reset link has expired';
         }
-
         return results[0];
       });
   }
@@ -158,6 +157,19 @@ export class UserController extends AdaptableController {
    * @returns {*}
    */
   regenerateEmailVerifyToken(user) {
+    const { _email_verify_token } = user;
+    let { _email_verify_token_expires_at } = user;
+    if (_email_verify_token_expires_at && _email_verify_token_expires_at.__type === 'Date') {
+      _email_verify_token_expires_at = _email_verify_token_expires_at.iso;
+    }
+    if (
+      this.config.emailVerifyTokenReuseIfValid &&
+      this.config.emailVerifyTokenValidityDuration &&
+      _email_verify_token &&
+      new Date() < new Date(_email_verify_token_expires_at)
+    ) {
+      return Promise.resolve();
+    }
     this.setEmailVerifyToken(user);
     return this.config.database.update('_User', { username: user.username }, user);
   }
@@ -191,36 +203,57 @@ export class UserController extends AdaptableController {
     );
   }
 
-  sendPasswordResetEmail(email) {
+  async sendPasswordResetEmail(email) {
     if (!this.adapter) {
       throw 'Trying to send a reset password but no adapter is set';
       //  TODO: No adapter?
     }
-
-    return this.setPasswordResetToken(email).then(user => {
-      const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);
-
-      const link = buildEmailLink(
-        this.config.requestResetPasswordURL,
-        username,
-        token,
-        this.config
+    let user;
+    if (
+      this.config.passwordPolicy &&
+      this.config.passwordPolicy.resetTokenReuseIfValid &&
+      this.config.passwordPolicy.resetTokenValidityDuration
+    ) {
+      const results = await this.config.database.find(
+        '_User',
+        {
+          $or: [
+            { email, _perishable_token: { $exists: true } },
+            { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
+          ],
+        },
+        { limit: 1 }
       );
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
-
-      if (this.adapter.sendPasswordResetEmail) {
-        this.adapter.sendPasswordResetEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+      if (results.length == 1) {
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
+        }
+        if (expiresDate > new Date()) {
+          user = results[0];
+        }
       }
+    }
+    if (!user || !user._perishable_token) {
+      user = await this.setPasswordResetToken(email);
+    }
+    const token = encodeURIComponent(user._perishable_token);
+    const username = encodeURIComponent(user.username);
 
-      return Promise.resolve(user);
-    });
+    const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+    const options = {
+      appName: this.config.appName,
+      link: link,
+      user: inflate('_User', user),
+    };
+
+    if (this.adapter.sendPasswordResetEmail) {
+      this.adapter.sendPasswordResetEmail(options);
+    } else {
+      this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+    }
+
+    return Promise.resolve(user);
   }
 
   updatePassword(username, token, password) {
