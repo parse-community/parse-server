@@ -964,7 +964,7 @@ describe('ParseGraphQLServer', () => {
             .map(field => field.name)
             .sort();
 
-          expect(payloadFields).toEqual(['clientMutationId', 'viewer']);
+          expect(payloadFields).toEqual(['clientMutationId', 'ok']);
         });
 
         it('should have clientMutationId in createClass mutation input', async () => {
@@ -6943,9 +6943,7 @@ describe('ParseGraphQLServer', () => {
               mutation LogOutUser($input: LogOutInput!) {
                 logOut(input: $input) {
                   clientMutationId
-                  viewer {
-                    sessionToken
-                  }
+                  ok
                 }
               }
             `,
@@ -6961,7 +6959,7 @@ describe('ParseGraphQLServer', () => {
             },
           });
           expect(logOut.data.logOut.clientMutationId).toEqual(clientMutationId);
-          expect(logOut.data.logOut.viewer.sessionToken).toEqual(sessionToken);
+          expect(logOut.data.logOut.ok).toEqual(true);
 
           try {
             await apolloClient.query({
