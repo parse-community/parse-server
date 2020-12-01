@@ -21,7 +21,7 @@ jobs:
           - name: Postgresql
             POSTGRES_MAJOR_VERSION: 11
             PARSE_SERVER_TEST_DB: postgres
-            PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5433/parse_server_postgres_adapter_test_database
+            PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5432/parse_server_postgres_adapter_test_database
             NODE_VERSION: 10
     name: ${{ matrix.name }}
     runs-on: ubuntu-16.04
