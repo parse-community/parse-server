@@ -32,7 +32,7 @@ jobs:
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.NODE_VERSION }}
