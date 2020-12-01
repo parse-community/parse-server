@@ -28,12 +28,15 @@ jobs:
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
-      with:
-        node-version: ${{ matrix.NODE_VERSION }}
-      run: npm install -g greenkeeper-lockfile@1
-      run: node -e 'require("./lib/index.js")'
-      run: greenkeeper-lockfile-update
-      run: npm run lint
-      run: npm run coverage
-      run: greenkeeper-lockfile-upload
-      run: bash <(curl -s https://codecov.io/bash)
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.NODE_VERSION }}
+      - run: npm install -g greenkeeper-lockfile@1
+      - run: node -e 'require("./lib/index.js")'
+      - run: greenkeeper-lockfile-update
+      - run: npm run lint
+      - run: npm run coverage
+      - run: greenkeeper-lockfile-upload
+      - run: bash <(curl -s https://codecov.io/bash)
