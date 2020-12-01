@@ -10,7 +10,7 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.9, ReplicaSet, WiredTiger
+          - name: Mongo 3.6.9
             MONGODB_VERSION: 3.6.9
             NODE_VERSION: 10
           - name: Redis Cache
