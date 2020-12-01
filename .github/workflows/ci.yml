@@ -48,8 +48,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.NODE_VERSION }}
-      - if: ${{ matrix.name == 'Postgresql' }}
-        run: bash scripts/before_install_postgres.sh
       - run: npm install
       - if: ${{ matrix.name == 'Postgresql' }}
         run: bash scripts/before_script_postgres.sh
