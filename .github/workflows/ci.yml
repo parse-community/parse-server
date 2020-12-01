@@ -20,7 +20,9 @@ jobs:
             NODE_VERSION: 12.12.0
     name: ${{ matrix.name }}
     runs-on: ubuntu-16.04
-    services: [redis, docker]
+    services:
+      redis
+      docker
     env:
       COVERAGE_OPTION: ./node_modules/.bin/nyc
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
