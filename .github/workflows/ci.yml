@@ -18,6 +18,11 @@ jobs:
             NODE_VERSION: 10
           - name: Node 12.12.0
             NODE_VERSION: 12.12.0
+          - name: Postgresql
+            POSTGRES_MAJOR_VERSION: 11
+            PARSE_SERVER_TEST_DB: postgres
+            PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5433/parse_server_postgres_adapter_test_database
+            NODE_VERSION: 10
     name: ${{ matrix.name }}
     runs-on: ubuntu-16.04
     services:
@@ -28,15 +33,26 @@ jobs:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
+      POSTGRES_MAJOR_VERSION: ${{ matrix.POSTGRES_MAJOR_VERSION }}
+      PARSE_SERVER_TEST_DB: ${{ matrix.PARSE_SERVER_TEST_DB }}
+      PARSE_SERVER_TEST_DATABASE_URI: ${{ matrix.PARSE_SERVER_TEST_DATABASE_URI }}
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
+      - if: ${{ matrix.name == 'Postgresql' }}
+        uses: harmon758/postgresql-action@v1
+        with:
+          postgresql version: '11'
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.NODE_VERSION }}
+      - if: ${{ matrix.name == 'Postgresql' }}
+        run: bash scripts/before_install_postgres.sh
       - run: npm install
+      - if: ${{ matrix.name == 'Postgresql' }}
+        run: bash scripts/before_script_postgres.sh
       - run: npm run lint
       - run: npm run coverage
       - run: bash <(curl -s https://codecov.io/bash)
