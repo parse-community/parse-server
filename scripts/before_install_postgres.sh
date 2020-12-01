@@ -29,6 +29,6 @@ else
   # Setup postgres 11 or higher
 
   #Copy defauilt hba config file and tell postgres to restart
-  sudo cp /etc/postgresql/{10,${POSTGRES_MAJOR_VERSION}}/main/pg_hba.conf
+  sudo cp /etc/postgresql/${POSTGRES_MAJOR_VERSION}/main/pg_hba.conf
   sudo systemctl restart postgresql@${POSTGRES_MAJOR_VERSION}-main
 fi
