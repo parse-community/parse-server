@@ -1,7 +1,10 @@
 name: ci
 on: [push, pull_request]
+env:
+  COVERAGE_OPTION: ./node_modules/.bin/nyc
+  NODE_VERSION: 10
 jobs:
-  check:
+  check-mongo:
     strategy:
       matrix:
         include:
@@ -18,39 +21,53 @@ jobs:
             NODE_VERSION: 10
           - name: Node 12.12.0
             NODE_VERSION: 12.12.0
-          - name: Postgresql
-            PARSE_SERVER_TEST_DB: postgres
-            POSTGRES_MAJOR_VERSION: 11
-            PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5432/parse_server_postgres_adapter_test_database
-            NODE_VERSION: 10
     name: ${{ matrix.name }}
     runs-on: ubuntu-16.04
     services:
       redis:
         image: redis
-    env:
-      COVERAGE_OPTION: ./node_modules/.bin/nyc
+        ports:
+            - 6379:6379
+    env:      
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
-      PARSE_SERVER_TEST_DB: ${{ matrix.PARSE_SERVER_TEST_DB }}
-      POSTGRES_MAJOR_VERSION: ${{ matrix.POSTGRES_MAJOR_VERSION }}      
-      PARSE_SERVER_TEST_DATABASE_URI: ${{ matrix.PARSE_SERVER_TEST_DATABASE_URI }}
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
     steps:
       - uses: actions/checkout@v2
-      - if: ${{ matrix.name == 'Postgresql' }}
-        uses: harmon758/postgresql-action@v1
-        with:
-          postgresql version: '11'
       - name: Use Node.js ${{ matrix.NODE_VERSION }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - run: npm install
-      - if: ${{ matrix.name == 'Postgresql' }}
-        run: bash scripts/before_script_postgres.sh
-      - run: npm run lint
+      - if: ${{ matrix.name == 'Mongo 3.6.9' }}
+        run: npm run lint
       - run: npm run coverage
-      - run: bash <(curl -s https://codecov.io/bash)
+      - if: ${{ matrix.name == 'Mongo 3.6.9' }}
+        run: bash <(curl -s https://codecov.io/bash)
+  check-postgres:
+      name: Postgresql
+      runs-on: ubuntu-16.04
+      services:
+        redis:
+          image: redis
+          ports:
+            - 6379:6379
+        postgres:
+          image: postgres:11
+          ports:
+            - 5432:5432
+      env:
+        PARSE_SERVER_TEST_DB: postgres
+        POSTGRES_MAJOR_VERSION: 11
+        PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5432/parse_server_postgres_adapter_test_database
+      steps:
+        - uses: actions/checkout@v2
+        - name: Use Node.js 10
+          uses: actions/setup-node@v1
+          with:
+            node-version: 10
+        - run: npm install
+        - run: bash scripts/before_script_postgres.sh
+        - run: npm run coverage
