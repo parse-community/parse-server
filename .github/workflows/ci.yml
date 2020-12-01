@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-16.04
     services:
       redis:
-      docker:
+        image: redis
     env:
       COVERAGE_OPTION: ./node_modules/.bin/nyc
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
