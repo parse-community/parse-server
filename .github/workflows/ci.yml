@@ -37,6 +37,7 @@ jobs:
         with:
           node-version: ${{ matrix.NODE_VERSION }}
       - run: npm install -g greenkeeper-lockfile@1
+      - run: npm install
       - run: node -e 'require("./lib/index.js")'
       - run: greenkeeper-lockfile-update
       - run: npm run lint
