@@ -2,8 +2,6 @@ name: ci
 on: [push, pull_request]
 jobs:
   check:
-    defaults:
-      NODE_VERSION: 10
     strategy:
       matrix:
         include:
@@ -11,10 +9,13 @@ jobs:
             MONGODB_VERSION: 4.0.4
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 10
           - name: Mongo 3.6.9, ReplicaSet, WiredTiger
             MONGODB_VERSION: 3.6.9
+            NODE_VERSION: 10
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
+            NODE_VERSION: 10
           - name: Node 12.12.0
             NODE_VERSION: 12.12.0
     name: ${{ matrix.name }}
