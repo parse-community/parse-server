@@ -19,8 +19,8 @@ jobs:
           - name: Node 12.12.0
             NODE_VERSION: 12.12.0
           - name: Postgresql
-            POSTGRES_MAJOR_VERSION: 11
             PARSE_SERVER_TEST_DB: postgres
+            POSTGRES_MAJOR_VERSION: 11
             PARSE_SERVER_TEST_DATABASE_URI: postgres://localhost:5432/parse_server_postgres_adapter_test_database
             NODE_VERSION: 10
     name: ${{ matrix.name }}
@@ -33,8 +33,8 @@ jobs:
       MONGODB_VERSION: ${{ matrix.MONGODB_VERSION }}
       MONGODB_TOPOLOGY: ${{ matrix.MONGODB_TOPOLOGY }}
       MONGODB_STORAGE_ENGINE: ${{ matrix.MONGODB_STORAGE_ENGINE }}
-      POSTGRES_MAJOR_VERSION: ${{ matrix.POSTGRES_MAJOR_VERSION }}
       PARSE_SERVER_TEST_DB: ${{ matrix.PARSE_SERVER_TEST_DB }}
+      POSTGRES_MAJOR_VERSION: ${{ matrix.POSTGRES_MAJOR_VERSION }}      
       PARSE_SERVER_TEST_DATABASE_URI: ${{ matrix.PARSE_SERVER_TEST_DATABASE_URI }}
       PARSE_SERVER_TEST_CACHE: ${{ matrix.PARSE_SERVER_TEST_CACHE }}
       NODE_VERSION: ${{ matrix.NODE_VERSION }}
