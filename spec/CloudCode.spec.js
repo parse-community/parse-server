@@ -1715,9 +1715,15 @@ describe('Cloud Code', () => {
         throw new Parse.Error(101, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
-      const jobStatus = await Parse.Cloud.getJobStatus(job);
+      let jobStatus, status;
+      while (status !== 'failed') {
+        if (jobStatus) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        jobStatus = await Parse.Cloud.getJobStatus(job);
+        status = jobStatus.get('status');
+      }
       expect(jobStatus.get('message')).toEqual('Something went wrong');
-      expect(jobStatus.get('status')).toEqual('failed');
     });
 
     function getJobStatus(jobId) {
