@@ -1633,9 +1633,8 @@ describe('Cloud Code', () => {
 
     it('should set the message / success on the job', done => {
       Parse.Cloud.job('myJob', req => {
-        req.message('hello');
         const promise = req
-          .message()
+          .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
           })
