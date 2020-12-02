@@ -48,8 +48,7 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
-      - if: ${{ matrix.name == 'Mongo 3.6.9' }}
-        run: bash <(curl -s https://codecov.io/bash)
+      - run: bash <(curl -s https://codecov.io/bash)
   check-postgres:
       name: Postgresql
       runs-on: ubuntu-16.04
@@ -84,3 +83,4 @@ jobs:
         - run: npm run coverage
           env:
             CI: true
+        - run: bash <(curl -s https://codecov.io/bash)
