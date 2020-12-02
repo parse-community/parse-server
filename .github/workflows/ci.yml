@@ -55,10 +55,16 @@ jobs:
           ports:
             - 6379:6379
         postgres:
-          image: postgres:11
+          image: postgres
+          env:
+            POSTGRES_PASSWORD: postgres
           ports:
             - 5432:5432
-          options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
       env:
         PARSE_SERVER_TEST_DB: postgres
         POSTGRES_MAJOR_VERSION: 11
