@@ -23,6 +23,7 @@ function validateAuthData(authData, options) {
 
   return new Promise((resolve, reject) => {
     client.bind(userCn, authData.password, ldapError => {
+      delete(authData.password);
       if (ldapError) {
         let error;
         switch (ldapError.code) {
