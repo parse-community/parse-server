@@ -451,100 +451,100 @@ module.exports.LiveQueryOptions = {
     action: parsers.arrayParser,
   },
   pubSubAdapter: {
-    env: 'PARSE_SERVER_LIVE_QUERY_PUB_SUB_ADAPTER',
+    env: 'PARSE_SERVER_LIVEQUERY_PUB_SUB_ADAPTER',
     help: 'LiveQuery pubsub adapter',
     action: parsers.moduleOrObjectParser,
   },
   redisOptions: {
-    env: 'PARSE_SERVER_LIVE_QUERY_REDIS_OPTIONS',
+    env: 'PARSE_SERVER_LIVEQUERY_REDIS_OPTIONS',
     help: "parse-server's LiveQuery redisOptions",
     action: parsers.objectParser,
   },
   redisURL: {
-    env: 'PARSE_SERVER_LIVE_QUERY_REDIS_URL',
+    env: 'PARSE_SERVER_LIVEQUERY_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
   wssAdapter: {
-    env: 'PARSE_SERVER_LIVE_QUERY_WSS_ADAPTER',
+    env: 'PARSE_SERVER_LIVEQUERY_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',
     action: parsers.moduleOrObjectParser,
   },
 };
 module.exports.LiveQueryServerOptions = {
   appId: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_APP_ID',
+    env: 'PARSE_LIVE_QUERY_SERVER_APP_ID',
     help:
       'This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId.',
   },
   cacheTimeout: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_CACHE_TIMEOUT',
+    env: 'PARSE_LIVE_QUERY_SERVER_CACHE_TIMEOUT',
     help:
       "Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 5 * 1000 ms (5 seconds).",
     action: parsers.numberParser('cacheTimeout'),
   },
   keyPairs: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_KEY_PAIRS',
+    env: 'PARSE_LIVE_QUERY_SERVER_KEY_PAIRS',
     help:
       'A JSON object that serves as a whitelist of keys. It is used for validating clients when they try to connect to the LiveQuery server. Check the following Security section and our protocol specification for details.',
     action: parsers.objectParser,
   },
   logLevel: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_LOG_LEVEL',
+    env: 'PARSE_LIVE_QUERY_SERVER_LOG_LEVEL',
     help:
       'This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE, defaults to INFO.',
   },
   masterKey: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_MASTER_KEY',
+    env: 'PARSE_LIVE_QUERY_SERVER_MASTER_KEY',
     help:
       'This string should match the masterKey in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same masterKey.',
   },
   port: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_PORT',
+    env: 'PARSE_LIVE_QUERY_SERVER_PORT',
     help: 'The port to run the LiveQuery server, defaults to 1337.',
     action: parsers.numberParser('port'),
     default: 1337,
   },
   pubSubAdapter: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_PUB_SUB_ADAPTER',
+    env: 'PARSE_LIVE_QUERY_SERVER_PUB_SUB_ADAPTER',
     help: 'LiveQuery pubsub adapter',
     action: parsers.moduleOrObjectParser,
   },
   redisOptions: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_REDIS_OPTIONS',
+    env: 'PARSE_LIVE_QUERY_SERVER_REDIS_OPTIONS',
     help: "parse-server's LiveQuery redisOptions",
     action: parsers.objectParser,
   },
   redisURL: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_REDIS_URL',
+    env: 'PARSE_LIVE_QUERY_SERVER_REDIS_URL',
     help: "parse-server's LiveQuery redisURL",
   },
   serverURL: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_SERVER_URL',
+    env: 'PARSE_LIVE_QUERY_SERVER_SERVER_URL',
     help:
       'This string should match the serverURL in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same serverURL.',
   },
   websocketTimeout: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_WEBSOCKET_TIMEOUT',
+    env: 'PARSE_LIVE_QUERY_SERVER_WEBSOCKET_TIMEOUT',
     help:
       'Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).',
     action: parsers.numberParser('websocketTimeout'),
   },
   wssAdapter: {
-    env: 'PARSE_SERVER_LIVE_QUERY_SERVER_WSS_ADAPTER',
+    env: 'PARSE_LIVE_QUERY_SERVER_WSS_ADAPTER',
     help: 'Adapter module for the WebSocketServer',
     action: parsers.moduleOrObjectParser,
   },
 };
 module.exports.IdempotencyOptions = {
   paths: {
-    env: 'PARSE_SERVER_IDEMPOTENCY_PATHS',
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS',
     help:
       'An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.',
     action: parsers.arrayParser,
     default: [],
   },
   ttl: {
-    env: 'PARSE_SERVER_IDEMPOTENCY_TTL',
+    env: 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL',
     help:
       'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
     action: parsers.numberParser('ttl'),

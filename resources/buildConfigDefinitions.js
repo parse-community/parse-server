@@ -40,13 +40,18 @@ function getCommentValue(comment) {
 }
 
 function getENVPrefix(iface) {
-  let name = iface.id.name;
-  if (name.indexOf('Options') === -1) {
-    return;
+  const options = {
+    'ParseServerOptions' : 'PARSE_SERVER_',
+    'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
+    'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
+    'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
+    'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
+    'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_'
   }
-  name = name.replace('Options','').replace('ParseServer','');
-  const splitName = name.split(/(?=[A-Z])/).map(name => name.toUpperCase());
-  return `PARSE_SERVER_${splitName.join('_')}_`.replace('__','_');
+  if (options[iface.id.name]) {
+    return options[iface.id.name]
+  }
 }
 
 function processProperty(property, iface) {
