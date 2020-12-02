@@ -55,7 +55,7 @@ jobs:
           ports:
             - 6379:6379
         postgres:
-          image: postgis/postgis:11-3
+          image: postgis/postgis:11-3.0
           env:
             POSTGRES_PASSWORD: postgres
           ports:
