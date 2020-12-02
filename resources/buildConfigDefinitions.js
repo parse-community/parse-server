@@ -40,21 +40,13 @@ function getCommentValue(comment) {
 }
 
 function getENVPrefix(iface) {
-  if (iface.id.name === 'ParseServerOptions') {
-    return 'PARSE_SERVER_';
+  let name = iface.id.name;
+  if (name.indexOf('Options') === -1) {
+    return;
   }
-  if (iface.id.name === 'CustomPagesOptions') {
-    return 'PARSE_SERVER_CUSTOM_PAGES_';
-  }
-  if (iface.id.name === 'LiveQueryServerOptions') {
-    return 'PARSE_LIVE_QUERY_SERVER_';
-  }
-  if (iface.id.name === 'LiveQueryOptions') {
-    return 'PARSE_SERVER_LIVEQUERY_';
-  }
-  if (iface.id.name === 'IdempotencyOptions') {
-    return 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_';
-  }
+  name = name.replace('Options','').replace('ParseServer','');
+  const splitName = name.split(/(?=[A-Z])/).map(name => name.toUpperCase());
+  return `PARSE_SERVER_${splitName.join('_')}_`.replace('__','_');
 }
 
 function processProperty(property, iface) {
