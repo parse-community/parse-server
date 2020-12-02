@@ -124,7 +124,7 @@ export interface ParseServerOptions {
   preventLoginWithUnverifiedEmail: ?boolean;
   /* Email verification token validity duration, in seconds */
   emailVerifyTokenValidityDuration: ?number;
-  /* an existing password reset token should be reused when resend verification is requested
+  /* an existing email verify token should be reused when resend verification email is requested
   :DEFAULT: false */
   emailVerifyTokenReuseIfValid: ?boolean;
   /* account lockout policy for failed login attempts */
