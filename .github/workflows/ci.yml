@@ -43,7 +43,11 @@ jobs:
       - run: npm install
       - if: ${{ matrix.name == 'Mongo 3.6.9' }}
         run: npm run lint
+        env:
+          CI: true
       - run: npm run coverage
+        env:
+          CI: true
       - if: ${{ matrix.name == 'Mongo 3.6.9' }}
         run: bash <(curl -s https://codecov.io/bash)
   check-postgres:
@@ -78,3 +82,5 @@ jobs:
         - run: npm install
         - run: bash scripts/before_script_postgres.sh
         - run: npm run coverage
+          env:
+            CI: true
