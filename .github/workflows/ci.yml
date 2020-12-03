@@ -20,8 +20,8 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.21
-            MONGODB_VERSION: 3.6.21
+          - name: Mongo 3.6.9
+            MONGODB_VERSION: 3.6.9
             NODE_VERSION: 10
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
@@ -32,7 +32,7 @@ jobs:
             NODE_VERSION: 14.15.1
     name: ${{ matrix.name }}
     timeout-minutes: 30
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     services:
       redis:
         image: redis
@@ -59,7 +59,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - if: ${{ matrix.name == 'Mongo 3.6.21' }}
+      - if: ${{ matrix.name == 'Mongo 3.6.9' }}
         run: npm run lint
       - run: npm run pretest
       - run: npm run coverage
@@ -69,7 +69,7 @@ jobs:
   check-postgres:
     name: Postgresql
     timeout-minutes: 30
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     services:
       redis:
         image: redis
