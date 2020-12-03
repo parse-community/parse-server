@@ -845,17 +845,9 @@ export function inflate(data, restObject) {
   return Parse.Object.fromJSON(copy);
 }
 
-export async function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
-  if (
-    !_triggerStore ||
-    !_triggerStore[applicationId] ||
-    !_triggerStore[applicationId].LiveQuery ||
-    _triggerStore[applicationId].LiveQuery.length == 0
-  ) {
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
     return;
-  }
-  if (data.sessionToken && !data.user) {
-    data.user = await userForSessionToken(data.sessionToken);
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
 }
