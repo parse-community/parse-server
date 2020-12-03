@@ -845,9 +845,20 @@ export function inflate(data, restObject) {
   return Parse.Object.fromJSON(copy);
 }
 
-export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
-  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
+export async function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (
+    !_triggerStore ||
+    !_triggerStore[applicationId] ||
+    !_triggerStore[applicationId].LiveQuery ||
+    _triggerStore[applicationId].LiveQuery.length == 0
+  ) {
     return;
+  }
+  if (data.sessionToken && !data.user) {
+    data.user = await userForSessionToken(data.sessionToken);
+    if (!data.user) {
+      data.sessionToken = undefined;
+    }
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
 }
@@ -915,6 +926,9 @@ export async function maybeRunConnectTrigger(triggerType, request) {
     return;
   }
   request.user = await userForSessionToken(request.sessionToken);
+  if (!request.user) {
+    request.sessionToken = undefined;
+  }
   await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
   if (request.skipWithMasterKey) {
     return;
@@ -931,6 +945,9 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
+  if (!request.user) {
+    request.sessionToken = undefined;
+  }
   await maybeRunValidator(request, `${triggerType}.${className}`);
   if (request.skipWithMasterKey) {
     return;
@@ -955,6 +972,9 @@ export async function maybeRunAfterEventTrigger(triggerType, className, request)
     request.original = Parse.Object.fromJSON(request.original);
   }
   request.user = await userForSessionToken(request.sessionToken);
+  if (!request.user) {
+    request.sessionToken = undefined;
+  }
   await maybeRunValidator(request, `${triggerType}.${className}`);
   if (request.skipWithMasterKey) {
     return;
@@ -968,14 +988,10 @@ async function userForSessionToken(sessionToken) {
   }
   const q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
+  q.include('user');
   const session = await q.first({ useMasterKey: true });
   if (!session) {
     return;
   }
-  const user = session.get('user');
-  if (!user) {
-    return;
-  }
-  await user.fetch({ useMasterKey: true });
-  return user;
+  return session.get('user');
 }

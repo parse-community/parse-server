@@ -6,6 +6,35 @@ const validatorFail = () => {
 };
 
 describe('ParseLiveQuery', function () {
+  it('access user on onLiveQueryEvent disconnect', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const requestedUser = new Parse.User();
+    requestedUser.setUsername('username');
+    requestedUser.setPassword('password');
+    Parse.Cloud.onLiveQueryEvent(async req => {
+      const { event, sessionToken, user } = req;
+      if (event === 'ws_disconnect') {
+        expect(user).toBeDefined();
+        expect(user.id).toBe(requestedUser.id);
+        expect(user.get('username')).toBe('username');
+        expect(sessionToken).toBeDefined();
+        expect(sessionToken).toBe(requestedUser.getSessionToken());
+        done();
+      }
+    });
+    await requestedUser.signUp();
+    const query = new Parse.Query(TestObject);
+    await query.subscribe();
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.close();
+  });
   it('can subscribe to query', async done => {
     await reconfigureServer({
       liveQuery: {
