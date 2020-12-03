@@ -1,5 +1,11 @@
 name: ci
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '**'
 env:
   COVERAGE_OPTION: ./node_modules/.bin/nyc
   NODE_VERSION: 10
@@ -9,21 +15,24 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.0.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.4
+          - name: Mongo 4.4.2, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.4.2
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.9
-            MONGODB_VERSION: 3.6.9
+          - name: Mongo 3.6.21
+            MONGODB_VERSION: 3.6.21
             NODE_VERSION: 10
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             NODE_VERSION: 10
           - name: Node 12.12.0
             NODE_VERSION: 12.12.0
+          - name: Node 14.15.1
+            NODE_VERSION: 14.15.1
     name: ${{ matrix.name }}
-    runs-on: ubuntu-16.04
+    timeout-minutes: 30
+    runs-on: ubuntu-20.04
     services:
       redis:
         image: redis
@@ -41,7 +50,16 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.NODE_VERSION }}
-      - run: npm install
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: npm ci
       - if: ${{ matrix.name == 'Mongo 3.6.9' }}
         run: npm run lint
       - run: npm run pretest
@@ -50,37 +68,47 @@ jobs:
           CI: true
       - run: bash <(curl -s https://codecov.io/bash)
   check-postgres:
-      name: Postgresql
-      runs-on: ubuntu-16.04
-      services:
-        redis:
-          image: redis
-          ports:
-            - 6379:6379
-        postgres:
-          image: postgis/postgis:11-3.0
-          env:
-            POSTGRES_PASSWORD: postgres
-          ports:
-            - 5432:5432
-          options: >-
-            --health-cmd pg_isready
-            --health-interval 10s
-            --health-timeout 5s
-            --health-retries 5
-      env:
-        PARSE_SERVER_TEST_DB: postgres
-        POSTGRES_MAJOR_VERSION: 11
-        PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
-      steps:
-        - uses: actions/checkout@v2
-        - name: Use Node.js 10
-          uses: actions/setup-node@v1
-          with:
-            node-version: 10
-        - run: npm install
-        - run: bash scripts/before_script_postgres.sh
-        - run: npm run coverage
-          env:
-            CI: true
-        - run: bash <(curl -s https://codecov.io/bash)
+    name: Postgresql
+    timeout-minutes: 30
+    runs-on: ubuntu-20.04
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgis/postgis:11-3.0
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PARSE_SERVER_TEST_DB: postgres
+      POSTGRES_MAJOR_VERSION: 11
+      PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js 10
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+            ${{ runner.OS }}-
+      - name: Install dependencies
+        run: npm ci
+      - run: bash scripts/before_script_postgres.sh
+      - run: npm run coverage
+        env:
+          CI: true
+      - run: bash <(curl -s https://codecov.io/bash)
