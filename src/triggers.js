@@ -856,9 +856,6 @@ export async function runLiveQueryEventHandlers(data, applicationId = Parse.appl
   }
   if (data.sessionToken && !data.user) {
     data.user = await userForSessionToken(data.sessionToken);
-    if (!data.user) {
-      data.sessionToken = undefined;
-    }
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
 }
@@ -926,9 +923,6 @@ export async function maybeRunConnectTrigger(triggerType, request) {
     return;
   }
   request.user = await userForSessionToken(request.sessionToken);
-  if (!request.user) {
-    request.sessionToken = undefined;
-  }
   await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
   if (request.skipWithMasterKey) {
     return;
@@ -945,9 +939,6 @@ export async function maybeRunSubscribeTrigger(triggerType, className, request) 
   parseQuery.withJSON(request.query);
   request.query = parseQuery;
   request.user = await userForSessionToken(request.sessionToken);
-  if (!request.user) {
-    request.sessionToken = undefined;
-  }
   await maybeRunValidator(request, `${triggerType}.${className}`);
   if (request.skipWithMasterKey) {
     return;
@@ -972,9 +963,6 @@ export async function maybeRunAfterEventTrigger(triggerType, className, request)
     request.original = Parse.Object.fromJSON(request.original);
   }
   request.user = await userForSessionToken(request.sessionToken);
-  if (!request.user) {
-    request.sessionToken = undefined;
-  }
   await maybeRunValidator(request, `${triggerType}.${className}`);
   if (request.skipWithMasterKey) {
     return;

@@ -35,33 +35,7 @@ describe('ParseLiveQuery', function () {
     const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
     client.close();
   });
-  it('remove user on onLiveQueryEvent after session token is deleted', async done => {
-    await reconfigureServer({
-      liveQuery: {
-        classNames: ['TestObject'],
-      },
-      startLiveQueryServer: true,
-      verbose: false,
-      silent: true,
-    });
-    const requestedUser = new Parse.User();
-    requestedUser.setUsername('username');
-    requestedUser.setPassword('password');
-    Parse.Cloud.onLiveQueryEvent(req => {
-      const { event, sessionToken, user } = req;
-      if (event === 'ws_disconnect') {
-        expect(user).toBe(undefined);
-        expect(sessionToken).toBe(undefined);
-        done();
-      }
-    });
-    await requestedUser.signUp();
-    const query = new Parse.Query(TestObject);
-    await query.subscribe();
-    await Parse.User.logOut();
-    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
-    client.close();
-  });
+
   it('can subscribe to query', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -84,6 +58,7 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
+
   it('expect afterEvent create', async done => {
     await reconfigureServer({
       liveQuery: {
