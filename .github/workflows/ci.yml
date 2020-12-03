@@ -32,7 +32,7 @@ jobs:
             NODE_VERSION: 14.15.1
     name: ${{ matrix.name }}
     timeout-minutes: 30
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     services:
       redis:
         image: redis
@@ -70,7 +70,7 @@ jobs:
   check-postgres:
     name: Postgresql
     timeout-minutes: 30
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     services:
       redis:
         image: redis
