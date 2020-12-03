@@ -60,7 +60,7 @@ jobs:
             ${{ runner.OS }}-
       - name: Install dependencies
         run: npm ci
-      - if: ${{ matrix.name == 'Mongo 3.6.9' }}
+      - if: ${{ matrix.name == 'Mongo 3.6.21' }}
         run: npm run lint
       - run: npm run pretest
       - run: npm run coverage
