@@ -15,8 +15,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.4.2, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.4.2
+          - name: Mongo 4.0.21, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.0.21
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
@@ -54,10 +54,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.npm
-          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-node-
-            ${{ runner.OS }}-
+          key: ${{ runner.OS }}-node-${{ matrix.NODE_VERSION }}-package-${{ hashFiles('**/package-lock.json') }}
       - name: Install dependencies
         run: npm ci
       - if: ${{ matrix.name == 'Mongo 3.6.21' }}
@@ -101,10 +98,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.npm
-          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-node-
-            ${{ runner.OS }}-
+          key: ${{ runner.OS }}-node-${{ matrix.NODE_VERSION }}-package-${{ hashFiles('**/package-lock.json') }}
       - name: Install dependencies
         run: npm ci
       - run: bash scripts/before_script_postgres.sh
