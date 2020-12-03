@@ -47,7 +47,7 @@
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
     "mongodb": "3.6.2",
-    "parse": "2.17.0",
+    "parse": "2.18.0",
     "pg-promise": "10.7.3",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
@@ -57,7 +57,7 @@
     "uuid": "8.3.1",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.0",
-    "ws": "7.3.1"
+    "ws": "7.4.0"
   },
   "devDependencies": {
     "@babel/cli": "7.10.0",

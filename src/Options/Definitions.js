@@ -127,7 +127,7 @@ module.exports.ParseServerOptions = {
   },
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
-    help: 'an existing password reset token should be reused when resend verification is requested',
+    help: 'an existing email verify token should be reused when resend verification email is requested',
     action: parsers.booleanParser,
     default: false,
   },
