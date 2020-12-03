@@ -573,7 +573,6 @@ describe('ParseLiveQuery', function () {
       expect(req.useMasterKey).toBe(false);
       expect(req.installationId).toBeDefined();
       expect(req.user).toBeUndefined();
-      expect(req.sessionToken).toBeUndefined();
       expect(req.client).toBeDefined();
     });
     const query = new Parse.Query(TestObject);
