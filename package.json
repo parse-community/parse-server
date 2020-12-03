@@ -47,7 +47,7 @@
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
     "mongodb": "3.6.2",
-    "parse": "2.17.0",
+    "parse": "2.18.0",
     "pg-promise": "10.8.1",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
