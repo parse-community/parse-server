@@ -1,6 +1,6 @@
 /**
  * @interface ParseServerOptions
- * @property {Any} accountLockout account lockout policy for failed login attempts
+ * @property {AccountLockoutOptions} accountLockout account lockout policy for failed login attempts
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
@@ -53,7 +53,7 @@
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
- * @property {Any} passwordPolicy Password policy for enforcing password related rules
+ * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
@@ -119,4 +119,21 @@
  * @interface IdempotencyOptions
  * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
  * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+ */
+
+/**
+ * @interface AccountLockoutOptions
+ * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
+ * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
+ */
+
+/**
+ * @interface PasswordPolicyOptions
+ * @property {Boolean} doNotAllowUsername disallow username in passwords
+ * @property {Number} maxPasswordAge days for password expiry
+ * @property {Number} maxPasswordHistory setting to prevent reuse of previous n passwords
+ * @property {Boolean} resetTokenReuseIfValid resend token if it's still valid
+ * @property {Number} resetTokenValidityDuration time for token to expire
+ * @property {Function} validatorCallback a callback function to be invoked to validate the password
+ * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
  */

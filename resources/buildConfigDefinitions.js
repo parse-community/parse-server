@@ -40,20 +40,17 @@ function getCommentValue(comment) {
 }
 
 function getENVPrefix(iface) {
-  if (iface.id.name === 'ParseServerOptions') {
-    return 'PARSE_SERVER_';
+  const options = {
+    'ParseServerOptions' : 'PARSE_SERVER_',
+    'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
+    'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
+    'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
+    'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
+    'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
+    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_'
   }
-  if (iface.id.name === 'CustomPagesOptions') {
-    return 'PARSE_SERVER_CUSTOM_PAGES_';
-  }
-  if (iface.id.name === 'LiveQueryServerOptions') {
-    return 'PARSE_LIVE_QUERY_SERVER_';
-  }
-  if (iface.id.name === 'LiveQueryOptions') {
-    return 'PARSE_SERVER_LIVEQUERY_';
-  }
-  if (iface.id.name === 'IdempotencyOptions') {
-    return 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_';
+  if (options[iface.id.name]) {
+    return options[iface.id.name]
   }
 }
 
