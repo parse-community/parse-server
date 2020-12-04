@@ -54,54 +54,49 @@ describe('MFA', () => {
   }
 
   it('should enable MFA tokens', async () => {
-    try {
-      await reconfigureServer({
-        multiFactorAuth: {
-          enableMfa: true,
-          encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
-        },
-        appName: 'testApp',
-      });
-      const user = await Parse.User.signUp('username', 'password');
-      const {
-        data: { secret, qrcodeURL },
-      } = await enableMfa(user); // this function would be user.enable2FA() one SDK is updated
-      expect(qrcodeURL).toBeDefined();
-      expect(qrcodeURL).toContain('otpauth://totp/testApp');
-      expect(qrcodeURL).toContain('secret');
-      expect(qrcodeURL).toContain('username');
-      expect(qrcodeURL).toContain('period');
-      expect(qrcodeURL).toContain('digits');
-      expect(qrcodeURL).toContain('algorithm');
-      const token = otplib.authenticator.generate(secret); // this token would be generated from authenticator
-      await verifyMfa(user, token); // this function would be user.verifyMfa()
-      await Parse.User.logOut();
-      let verifytoken = '';
-      const mfaLogin = async () => {
-        try {
-          const result = await loginWithMFA('username', 'password', verifytoken); // Parse.User.login('username','password',verifytoken);
-          if (!verifytoken) {
-            throw 'Should not have been able to login.';
-          }
-          const newUser = result.data;
-          expect(newUser.objectId).toBe(user.id);
-          expect(newUser.username).toBe('username');
-          expect(newUser.createdAt).toBe(user.createdAt.toISOString());
-          expect(newUser.mfaEnabled).toBe(true);
-        } catch (err) {
-          expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
-          verifytoken = otplib.authenticator.generate(secret);
-          if (err.text.includes('211')) {
-            // this user is 2FA enroled, get code
-            await mfaLogin();
-          }
+    await reconfigureServer({
+      multiFactorAuth: {
+        enableMfa: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+      appName: 'testApp',
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret, qrcodeURL },
+    } = await enableMfa(user); // this function would be user.enable2FA() one SDK is updated
+    expect(qrcodeURL).toBeDefined();
+    expect(qrcodeURL).toContain('otpauth://totp/testApp');
+    expect(qrcodeURL).toContain('secret');
+    expect(qrcodeURL).toContain('username');
+    expect(qrcodeURL).toContain('period');
+    expect(qrcodeURL).toContain('digits');
+    expect(qrcodeURL).toContain('algorithm');
+    const token = otplib.authenticator.generate(secret); // this token would be generated from authenticator
+    await verifyMfa(user, token); // this function would be user.verifyMfa()
+    await Parse.User.logOut();
+    let verifytoken = '';
+    const mfaLogin = async () => {
+      try {
+        const result = await loginWithMFA('username', 'password', verifytoken); // Parse.User.login('username','password',verifytoken);
+        if (!verifytoken) {
+          throw 'Should not have been able to login.';
         }
-      };
-      await mfaLogin();
-    } catch (e) {
-      console.log(e);
-      throw e;
-    }
+        const newUser = result.data;
+        expect(newUser.objectId).toBe(user.id);
+        expect(newUser.username).toBe('username');
+        expect(newUser.createdAt).toBe(user.createdAt.toISOString());
+        expect(newUser.mfaEnabled).toBe(true);
+      } catch (err) {
+        expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
+        verifytoken = otplib.authenticator.generate(secret);
+        if (err.text.includes('211')) {
+          // this user is 2FA enroled, get code
+          await mfaLogin();
+        }
+      }
+    };
+    await mfaLogin();
   });
 
   it('can reject MFA', async () => {
