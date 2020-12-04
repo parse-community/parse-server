@@ -6,6 +6,33 @@ const validatorFail = () => {
 };
 
 describe('ParseLiveQuery', function () {
+  it('access user on onLiveQueryEvent disconnect', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['TestObject'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const requestedUser = new Parse.User();
+    requestedUser.setUsername('username');
+    requestedUser.setPassword('password');
+    Parse.Cloud.onLiveQueryEvent(req => {
+      const { event, sessionToken } = req;
+      if (event === 'ws_disconnect') {
+        expect(sessionToken).toBeDefined();
+        expect(sessionToken).toBe(requestedUser.getSessionToken());
+        done();
+      }
+    });
+    await requestedUser.signUp();
+    const query = new Parse.Query(TestObject);
+    await query.subscribe();
+    const client = await Parse.CoreManager.getLiveQueryController().getDefaultLiveQueryClient();
+    client.close();
+  });
+
   it('can subscribe to query', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -28,6 +55,7 @@ describe('ParseLiveQuery', function () {
     object.set({ foo: 'bar' });
     await object.save();
   });
+
   it('expect afterEvent create', async done => {
     await reconfigureServer({
       liveQuery: {
@@ -542,7 +570,6 @@ describe('ParseLiveQuery', function () {
       expect(req.useMasterKey).toBe(false);
       expect(req.installationId).toBeDefined();
       expect(req.user).toBeUndefined();
-      expect(req.sessionToken).toBeUndefined();
       expect(req.client).toBeDefined();
     });
     const query = new Parse.Query(TestObject);

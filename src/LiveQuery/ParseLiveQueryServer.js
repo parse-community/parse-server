@@ -423,6 +423,7 @@ class ParseLiveQueryServer {
         subscriptions: this.subscriptions.size,
         useMasterKey: client.hasMasterKey,
         installationId: client.installationId,
+        sessionToken: client.sessionToken,
       });
     });
 
