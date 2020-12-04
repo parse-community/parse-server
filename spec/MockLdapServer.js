@@ -3,8 +3,8 @@ const fs = require('fs');
 
 const tlsOptions = {
   key: fs.readFileSync(__dirname + '/support/cert/key.pem'),
-  certificate: fs.readFileSync(__dirname + '/support/cert/cert.pem')
-}
+  certificate: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+};
 
 function newServer(port, dn, provokeSearchError = false, ssl = false) {
   const server = ssl ? ldapjs.createServer(tlsOptions) : ldapjs.createServer();
