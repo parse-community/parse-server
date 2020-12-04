@@ -335,9 +335,6 @@ export class UsersRouter extends ClassesRouter {
   }
   encryptMfaKey(mfa, encryptionKey) {
     try {
-      if (!encryptionKey) {
-        return mfa;
-      }
       const algorithm = 'aes-256-gcm';
       const encryption = crypto
         .createHash('sha256')
@@ -359,9 +356,6 @@ export class UsersRouter extends ClassesRouter {
   }
   async decryptMFAKey(mfa, encryptionKey) {
     try {
-      if (encryptionKey == null) {
-        return mfa;
-      }
       const algorithm = 'aes-256-gcm';
       const encryption = crypto
         .createHash('sha256')
