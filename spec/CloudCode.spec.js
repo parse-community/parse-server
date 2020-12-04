@@ -1479,6 +1479,45 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('beforeSave should not sanitize database', async done => {
+    const { adapter } = Config.get(Parse.applicationId).database;
+    const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+    spy.calls.saveArgumentsByValue();
+
+    let count = 0;
+    Parse.Cloud.beforeSave('CloudIncrementNested', req => {
+      count += 1;
+      req.object.set('foo', 'baz');
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    Parse.Cloud.afterSave('CloudIncrementNested', req => {
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    const obj = new Parse.Object('CloudIncrementNested');
+    obj.set('objectField', { number: 5 });
+    obj.set('foo', 'bar');
+    await obj.save();
+
+    obj.increment('objectField.number', 10);
+    await obj.save();
+
+    const [
+      ,
+      ,
+      ,
+      /* className */ /* schema */ /* query */ update,
+    ] = adapter.findOneAndUpdate.calls.first().args;
+    expect(update).toEqual({
+      'objectField.number': { __op: 'Increment', amount: 10 },
+      foo: 'baz',
+      updatedAt: obj.updatedAt.toISOString(),
+    });
+
+    count === 2 ? done() : fail();
+  });
+
   /**
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
@@ -1594,9 +1633,8 @@ describe('Cloud Code', () => {
 
     it('should set the message / success on the job', done => {
       Parse.Cloud.job('myJob', req => {
-        req.message('hello');
         const promise = req
-          .message()
+          .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
           })
@@ -1677,9 +1715,15 @@ describe('Cloud Code', () => {
         throw new Parse.Error(101, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
-      const jobStatus = await Parse.Cloud.getJobStatus(job);
+      let jobStatus, status;
+      while (status !== 'failed') {
+        if (jobStatus) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        jobStatus = await Parse.Cloud.getJobStatus(job);
+        status = jobStatus.get('status');
+      }
       expect(jobStatus.get('message')).toEqual('Something went wrong');
-      expect(jobStatus.get('status')).toEqual('failed');
     });
 
     function getJobStatus(jobId) {

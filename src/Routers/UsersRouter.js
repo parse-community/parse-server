@@ -489,6 +489,7 @@ export class UsersRouter extends ClassesRouter {
         appName: req.config.appName,
         publicServerURL: req.config.publicServerURL,
         emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration,
+        emailVerifyTokenReuseIfValid: req.config.emailVerifyTokenReuseIfValid,
       });
     } catch (e) {
       if (typeof e === 'string') {

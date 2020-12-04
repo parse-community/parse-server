@@ -160,7 +160,7 @@ class ParseLiveQueryServer {
                 return null;
               }
               res = {
-                event: 'Delete',
+                event: 'delete',
                 sessionToken: client.sessionToken,
                 object: deletedParseObject,
                 clients: this.clients.size,
@@ -275,14 +275,14 @@ class ParseLiveQueryServer {
               // Decide event type
               let type;
               if (isOriginalMatched && isCurrentMatched) {
-                type = 'Update';
+                type = 'update';
               } else if (isOriginalMatched && !isCurrentMatched) {
-                type = 'Leave';
+                type = 'leave';
               } else if (!isOriginalMatched && isCurrentMatched) {
                 if (originalParseObject) {
-                  type = 'Enter';
+                  type = 'enter';
                 } else {
-                  type = 'Create';
+                  type = 'create';
                 }
               } else {
                 return null;
@@ -315,7 +315,8 @@ class ParseLiveQueryServer {
                   originalParseObject = res.original.toJSON();
                   originalParseObject.className = res.original.className || className;
                 }
-                const functionName = 'push' + message.event;
+                const functionName =
+                  'push' + message.event.charAt(0).toUpperCase() + message.event.slice(1);
                 if (client[functionName]) {
                   client[functionName](requestId, currentParseObject, originalParseObject);
                 }
@@ -422,6 +423,7 @@ class ParseLiveQueryServer {
         subscriptions: this.subscriptions.size,
         useMasterKey: client.hasMasterKey,
         installationId: client.installationId,
+        sessionToken: client.sessionToken,
       });
     });
 

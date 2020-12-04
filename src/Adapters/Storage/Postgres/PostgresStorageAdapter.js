@@ -12,7 +12,6 @@ const PostgresDuplicateColumnError = '42701';
 const PostgresMissingColumnError = '42703';
 const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
-const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
 
 const debug = function (...args: any) {
@@ -930,25 +929,29 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     return conn
       .tx('create-class', async t => {
-        const q1 = this.createTable(className, schema, t);
-        const q2 = t.none(
+        await this.createTable(className, schema, t);
+        await t.none(
           'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)',
           { className, schema }
         );
-        const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
-        // TODO: The test should not verify the returned value, and then
-        //  the method can be simplified, to avoid returning useless stuff.
-        return t.batch([q1, q2, q3]);
-      })
-      .then(() => {
+        await this.setIndexesWithSchemaFormat(
+          className,
+          schema.indexes,
+          {},
+          schema.fields,
+          t
+        );
         return toParseSchema(schema);
       })
       .catch(err => {
-        if (err.data[0].result.code === PostgresTransactionAbortedError) {
-          err = err.data[1].result;
-        }
-        if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
+        if (
+          err.code === PostgresUniqueIndexViolationError &&
+          err.detail.includes(className)
+        ) {
+          throw new Parse.Error(
+            Parse.Error.DUPLICATE_VALUE,
+            `Class ${className} already exists.`
+          );
         }
         throw err;
       });
@@ -2278,20 +2281,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     return Promise.all(promises)
       .then(() => {
-        return this._client.tx('perform-initialization', t => {
-          return t.batch([
-            t.none(sql.misc.jsonObjectSetKeys),
-            t.none(sql.array.add),
-            t.none(sql.array.addUnique),
-            t.none(sql.array.remove),
-            t.none(sql.array.containsAll),
-            t.none(sql.array.containsAllRegex),
-            t.none(sql.array.contains),
-          ]);
+        return this._client.tx('perform-initialization', async t => {
+          await t.none(sql.misc.jsonObjectSetKeys);
+          await t.none(sql.array.add);
+          await t.none(sql.array.addUnique);
+          await t.none(sql.array.remove);
+          await t.none(sql.array.containsAll);
+          await t.none(sql.array.containsAllRegex);
+          await t.none(sql.array.contains);
+          return t.ctx;
         });
       })
-      .then(data => {
-        debug(`initializationDone in ${data.duration}`);
+      .then(ctx => {
+        debug(`initializationDone in ${ctx.duration}`);
       })
       .catch(error => {
         /* eslint-disable no-console */

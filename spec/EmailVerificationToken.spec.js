@@ -510,7 +510,7 @@ describe('Email Verification Token Expiration: ', () => {
           userAfterEmailReset._email_verify_token
         );
         expect(userBeforeEmailReset._email_verify_token_expires_at).not.toEqual(
-          userAfterEmailReset.__email_verify_token_expires_at
+          userAfterEmailReset._email_verify_token_expires_at
         );
         expect(sendEmailOptions).toBeDefined();
         done();
@@ -594,7 +594,7 @@ describe('Email Verification Token Expiration: ', () => {
           userAfterRequest._email_verify_token
         );
         expect(userBeforeRequest._email_verify_token_expires_at).not.toEqual(
-          userAfterRequest.__email_verify_token_expires_at
+          userAfterRequest._email_verify_token_expires_at
         );
         done();
       })
@@ -602,6 +602,110 @@ describe('Email Verification Token Expiration: ', () => {
         jfail(error);
         done();
       });
+  });
+
+  it('should throw with invalid emailVerifyTokenReuseIfValid', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
+        emailVerifyTokenReuseIfValid: [],
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('emailVerifyTokenReuseIfValid must be a boolean value');
+    }
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        verifyUserEmails: true,
+        emailAdapter: emailAdapter,
+        emailVerifyTokenReuseIfValid: true,
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe(
+        'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration'
+      );
+    }
+    done();
+  });
+
+  it('should match codes with emailVerifyTokenReuseIfValid', async done => {
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5 * 60, // 5 minutes
+      publicServerURL: 'http://localhost:8378/1',
+      emailVerifyTokenReuseIfValid: true,
+    });
+    const user = new Parse.User();
+    user.setUsername('resends_verification_token');
+    user.setPassword('expiringToken');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+
+    const config = Config.get('test');
+    const [userBeforeRequest] = await config.database.find('_User', {
+      username: 'resends_verification_token',
+    });
+    // store this user before we make our email request
+    expect(sendVerificationEmailCallCount).toBe(1);
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
+    const response = await request({
+      url: 'http://localhost:8378/1/verificationEmailRequest',
+      method: 'POST',
+      body: {
+        email: 'user@example.com',
+      },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+        'Content-Type': 'application/json',
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(sendVerificationEmailCallCount).toBe(2);
+    expect(sendEmailOptions).toBeDefined();
+
+    const [userAfterRequest] = await config.database.find('_User', {
+      username: 'resends_verification_token',
+    });
+
+    // verify that our token & expiration has been changed for this new request
+    expect(typeof userAfterRequest).toBe('object');
+    expect(userBeforeRequest._email_verify_token).toEqual(userAfterRequest._email_verify_token);
+    expect(userBeforeRequest._email_verify_token_expires_at).toEqual(
+      userAfterRequest._email_verify_token_expires_at
+    );
+    done();
   });
 
   it('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
