@@ -402,13 +402,13 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(210, 'MFA is not enabled.');
     }
     if (!req.auth || !req.auth.user) {
-      throw new Parse.Error(101, 'Unauthorized');
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
     }
     const [user] = await req.config.database.find('_User', {
       objectId: req.auth.user.id,
     });
     if (!user) {
-      throw new Parse.Error(101, 'Unauthorized');
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
     }
     if (user._mfa) {
       throw new Parse.Error(210, 'MFA is already enabled on this account.');
@@ -429,7 +429,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(210, 'MFA is not enabled.');
     }
     if (!req.auth || !req.auth.user) {
-      throw new Parse.Error(101, 'Unauthorized');
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
     }
     const { token } = req.body;
     if (!token) {
