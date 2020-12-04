@@ -127,7 +127,8 @@ module.exports.ParseServerOptions = {
   },
   emailVerifyTokenReuseIfValid: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
-    help: 'an existing email verify token should be reused when resend verification email is requested',
+    help:
+      'an existing email verify token should be reused when resend verification email is requested',
     action: parsers.booleanParser,
     default: false,
   },
@@ -154,6 +155,10 @@ module.exports.ParseServerOptions = {
       'Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.',
     action: parsers.booleanParser,
     default: false,
+  },
+  encryptionKey: {
+    env: 'PARSE_SERVER_ENCRYPTION_KEY',
+    help: 'Key for encrypting your files',
   },
   expireInactiveSessions: {
     env: 'PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS',
@@ -276,7 +281,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_MFA',
     help: 'Options for multi-factor authentication (2FA)',
     action: parsers.objectParser,
-    default: {},
   },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
@@ -564,7 +568,7 @@ module.exports.MFAOptions = {
   encryptionKey: {
     env: 'PARSE_SERVER_MFA_ENCRYPTION_KEY',
     help: 'A long, secure key used to encrypt MFA secrets.',
-  }
+  },
 };
 module.exports.AccountLockoutOptions = {
   duration: {

@@ -10,14 +10,14 @@ describe('MFA', () => {
       url: 'http://localhost:8378/1/users/me/enableMFA',
       json: true,
       headers: {
-        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-Session-Token': user && user.getSessionToken(),
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
       },
     });
   }
 
-  function validateMFA(user, token) {
+  function verifyMFA(user, token) {
     return request({
       method: 'POST',
       url: 'http://localhost:8378/1/users/me/verifyMFA',
@@ -25,7 +25,7 @@ describe('MFA', () => {
         token,
       },
       headers: {
-        'X-Parse-Session-Token': user.getSessionToken(),
+        'X-Parse-Session-Token': user && user.getSessionToken(),
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
         'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ describe('MFA', () => {
     expect(qrcodeURL).toContain('digits');
     expect(qrcodeURL).toContain('algorithm');
     const token = otplib.authenticator.generate(secret); // this token would be generated from authenticator
-    await validateMFA(user, token); // this function would be user.validateMFA()
+    await verifyMFA(user, token); // this function would be user.verifyMFA()
     await Parse.User.logOut();
     let verifytoken = '';
     const mfaLogin = async () => {
@@ -84,7 +84,7 @@ describe('MFA', () => {
         expect(newUser.objectId).toBe(user.id);
         expect(newUser.username).toBe('username');
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
-        expect(newUser.MFAEnabled).toBe(true);
+        expect(newUser.mfaEnabled).toBe(true);
       } catch (err) {
         expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
@@ -108,13 +108,13 @@ describe('MFA', () => {
       data: { secret },
     } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validateMFA(user, token);
+    await verifyMFA(user, token);
     await Parse.User.logOut();
     try {
       await loginWithMFA('username', 'password', '123102');
       throw 'should not be able to login.';
     } catch (e) {
-      expect(e.text).toBe('{"code":212,"error":"Invalid MFA token"}');
+      expect(e.text).toBe('{"code":210,"error":"Invalid MFA token"}');
     }
   });
 
@@ -130,7 +130,7 @@ describe('MFA', () => {
       data: { secret },
     } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validateMFA(user, token);
+    await verifyMFA(user, token);
     await Parse.User.logOut();
     let verifytoken = '';
     const mfaLogin = async () => {
@@ -144,7 +144,7 @@ describe('MFA', () => {
         expect(newUser.username).toBe('username');
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
-        expect(newUser.MFAEnabled).toBe(true);
+        expect(newUser.mfaEnabled).toBe(true);
       } catch (err) {
         expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
@@ -170,7 +170,7 @@ describe('MFA', () => {
     const token = otplib.authenticator.generate(secret);
     const {
       data: { recoveryKeys },
-    } = await validateMFA(user, token);
+    } = await verifyMFA(user, token);
     expect(recoveryKeys.length).toBe(2);
     expect(recoveryKeys[0].length).toBe(20);
     expect(recoveryKeys[1].length).toBe(20);
@@ -181,7 +181,29 @@ describe('MFA', () => {
     expect(newUser.username).toBe('username');
     expect(newUser.createdAt).toBe(user.createdAt.toISOString());
     expect(newUser._mfa).toBeUndefined();
-    expect(newUser.MFAEnabled).toBe(false);
+    expect(newUser.mfaEnabled).toBe(false);
+  });
+
+  it('returns error on invalid recovery', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret },
+    } = await enableMFA(user);
+    const token = otplib.authenticator.generate(secret);
+    await verifyMFA(user, token);
+    await Parse.User.logOut();
+    try {
+      await loginWithMFA('username', 'password', null, ['12345678910', '12345678910']);
+      fail('should have not been able to login with invalid recovery keys');
+    } catch (err) {
+      expect(err.text).toMatch('{"code":210,"error":"Invalid MFA recovery tokens"}');
+    }
   });
 
   it('cannot set _mfa or mfa', async () => {
@@ -196,7 +218,7 @@ describe('MFA', () => {
       data: { secret },
     } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validateMFA(user, token);
+    await verifyMFA(user, token);
     user.set('_mfa', 'foo');
     user.set('mfa', 'foo');
     await user.save(null, { sessionToken: user.getSessionToken() });
@@ -213,7 +235,7 @@ describe('MFA', () => {
         expect(newUser.username).toBe('username');
         expect(newUser.createdAt).toBe(user.createdAt.toISOString());
         expect(newUser._mfa).toBeUndefined();
-        expect(newUser.MFAEnabled).toBe(true);
+        expect(newUser.mfaEnabled).toBe(true);
       } catch (err) {
         expect(err.text).toMatch('{"code":211,"error":"Please provide your MFA token."}');
         verifytoken = otplib.authenticator.generate(secret);
@@ -224,17 +246,60 @@ describe('MFA', () => {
     };
     await mfaLogin();
   });
+
+  it('cannot call enableMFA without user', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    try {
+      await enableMFA();
+      fail('should not be able to enable MFA without a user.');
+    } catch (err) {
+      expect(err.text).toMatch('{"code":101,"error":"Unauthorized"}');
+    }
+    try {
+      await verifyMFA();
+      fail('should not be able to enable MFA without a user.');
+    } catch (err) {
+      expect(err.text).toMatch('{"code":101,"error":"Unauthorized"}');
+    }
+  });
+
+  it('throws on second time enabling MFA', async () => {
+    await reconfigureServer({
+      multiFactorAuth: {
+        enabled: true,
+        encryptionKey: '89E4AFF1-DFE4-4603-9574-BFA16BB446FD',
+      },
+    });
+    const user = await Parse.User.signUp('username', 'password');
+    const {
+      data: { secret },
+    } = await enableMFA(user);
+    const token = otplib.authenticator.generate(secret);
+    await verifyMFA(user, token);
+    try {
+      await verifyMFA(user, token);
+    } catch (err) {
+      expect(err.text).toMatch('{"code":210,"error":"MFA is already active"}');
+    }
+  });
+
   it('prevent setting on mfw / MFA tokens', async () => {
     const user = await Parse.User.signUp('username', 'password');
-    user.set('MFAEnabled', true);
+    user.set('mfaEnabled', true);
     user.set('mfa', true);
     user.set('_mfa', true);
     await user.save(null, { sessionToken: user.getSessionToken() });
     await user.fetch({ sessionToken: user.getSessionToken() });
-    expect(user.get('MFAEnabled')).toBeUndefined();
+    expect(user.get('mfaEnabled')).toBeUndefined();
     expect(user.get('mfa')).toBeUndefined();
     expect(user.get('_mfa')).toBeUndefined();
   });
+
   it('verify throws correct error', async () => {
     await reconfigureServer({
       multiFactorAuth: {
@@ -245,16 +310,17 @@ describe('MFA', () => {
     const user = await Parse.User.signUp('username', 'password');
     try {
       await enableMFA(user);
-      await validateMFA(user);
+      await verifyMFA(user);
     } catch (e) {
       expect(e.text).toBe('{"code":211,"error":"Please provide a token."}');
     }
     try {
-      await validateMFA(user, 'tokenhere');
+      await verifyMFA(user, 'tokenhere');
     } catch (e) {
-      expect(e.text).toBe('{"code":212,"error":"Invalid token"}');
+      expect(e.text).toBe('{"code":210,"error":"Invalid token"}');
     }
   });
+
   it('can prevent re-enabling MFA', async () => {
     await reconfigureServer({
       multiFactorAuth: {
@@ -267,13 +333,14 @@ describe('MFA', () => {
       data: { secret },
     } = await enableMFA(user);
     const token = otplib.authenticator.generate(secret);
-    await validateMFA(user, token);
+    await verifyMFA(user, token);
     try {
       await enableMFA(user);
     } catch (e) {
-      expect(e.text).toBe('{"code":214,"error":"MFA is already enabled on this account."}');
+      expect(e.text).toBe('{"code":210,"error":"MFA is already enabled on this account."}');
     }
   });
+
   it('disabled MFA throws correct error', async () => {
     await reconfigureServer({
       multiFactorAuth: {
@@ -287,7 +354,7 @@ describe('MFA', () => {
       expect(e.text).toBe('{"code":210,"error":"MFA is not enabled."}');
     }
     try {
-      await validateMFA(user, 'tokenhere');
+      await verifyMFA(user, 'tokenhere');
     } catch (e) {
       expect(e.text).toBe('{"code":210,"error":"MFA is not enabled."}');
     }

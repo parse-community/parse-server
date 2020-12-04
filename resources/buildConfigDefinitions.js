@@ -47,13 +47,11 @@ function getENVPrefix(iface) {
     'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
-    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_'
+    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
+    'MFAOptions' : 'PARSE_SERVER_MFA_'
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
-  }
-  if (iface.id.name === 'MFAOptions') {
-    return 'PARSE_SERVER_MFA_';
   }
 }
 

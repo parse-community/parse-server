@@ -154,14 +154,14 @@ export class UsersRouter extends ClassesRouter {
               await setAllowedFromMatch(recoveryTokens.substring(21, 41));
             }
             if (!firstAllowed || !secondAllowed) {
-              throw new Parse.Error(212, 'Invalid MFA recovery tokens');
+              throw new Parse.Error(210, 'Invalid MFA recovery tokens');
             }
             await req.config.database.update(
               '_User',
               { username: user.username },
-              { _mfa: null, MFAEnabled: false, _mfa_recovery: null }
+              { _mfa: null, mfaEnabled: false, _mfa_recovery: null }
             );
-            user.MFAEnabled = false;
+            user.mfaEnabled = false;
           } else if (mfaenabled.enabled && user._mfa) {
             if (!token) {
               throw new Parse.Error(211, 'Please provide your MFA token.');
@@ -171,7 +171,7 @@ export class UsersRouter extends ClassesRouter {
               req.config.multiFactorAuth.encryptionKey
             );
             if (!authenticator.verify({ token, secret: mfaToken })) {
-              throw new Parse.Error(212, 'Invalid MFA token');
+              throw new Parse.Error(210, 'Invalid MFA token');
             }
           }
           delete user._mfa;
@@ -356,7 +356,7 @@ export class UsersRouter extends ClassesRouter {
       ]);
       return encryptedResult.toString('base64');
     } catch (e) {
-      throw new Parse.Error(212, 'Invalid MFA token');
+      throw new Parse.Error(210, 'Invalid MFA token');
     }
   }
   async decryptMFAKey(mfa, encryptionKey) {
@@ -395,7 +395,7 @@ export class UsersRouter extends ClassesRouter {
         decipher.end();
       });
     } catch (err) {
-      throw new Parse.Error(212, 'Invalid MFA token');
+      throw new Parse.Error(210, 'Invalid MFA token');
     }
   }
   async enableMFA(req) {
@@ -403,7 +403,7 @@ export class UsersRouter extends ClassesRouter {
     if (!mfaenabled.enabled) {
       throw new Parse.Error(210, 'MFA is not enabled.');
     }
-    if (!req.auth) {
+    if (!req.auth || !req.auth.user) {
       throw new Parse.Error(101, 'Unauthorized');
     }
     const [user] = await req.config.database.find('_User', {
@@ -413,7 +413,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(101, 'Unauthorized');
     }
     if (user._mfa) {
-      throw new Parse.Error(214, 'MFA is already enabled on this account.');
+      throw new Parse.Error(210, 'MFA is already enabled on this account.');
     }
     const secret = authenticator.generateSecret();
     const otpauth = authenticator.keyuri(user.username, req.config.appName, secret);
@@ -430,7 +430,7 @@ export class UsersRouter extends ClassesRouter {
     if (!mfaenabled.enabled) {
       throw new Parse.Error(210, 'MFA is not enabled.');
     }
-    if (!req.auth.user) {
+    if (!req.auth || !req.auth.user) {
       throw new Parse.Error(101, 'Unauthorized');
     }
     const { token } = req.body;
@@ -443,18 +443,18 @@ export class UsersRouter extends ClassesRouter {
     });
     if (!user._mfa) {
       throw new Parse.Error(
-        213,
+        210,
         'MFA is not enabled on this account. Please enable MFA before calling this function.'
       );
     }
     const mfa = await this.decryptMFAKey(user._mfa, req.config.multiFactorAuth.encryptionKey);
     if (mfa.indexOf('pending:') !== 0) {
-      throw new Parse.Error(214, 'MFA is already active');
+      throw new Parse.Error(210, 'MFA is already active');
     }
     const secret = mfa.slice('pending:'.length);
     const result = authenticator.verify({ token, secret });
     if (!result) {
-      throw new Parse.Error(212, 'Invalid token');
+      throw new Parse.Error(210, 'Invalid token');
     }
     const storeKey = this.encryptMFAKey(`${secret}`, req.config.multiFactorAuth.encryptionKey);
     const recoveryKeyOne = randomString(20);
@@ -466,7 +466,7 @@ export class UsersRouter extends ClassesRouter {
     await req.config.database.update(
       '_User',
       { username: user.username },
-      { _mfa: storeKey, MFAEnabled: true, _mfa_recovery: recoveryKeys }
+      { _mfa: storeKey, mfaEnabled: true, _mfa_recovery: recoveryKeys }
     );
     return { response: { recoveryKeys: [recoveryKeyOne, recoveryKeyTwo] } };
   }
