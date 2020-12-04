@@ -968,14 +968,10 @@ async function userForSessionToken(sessionToken) {
   }
   const q = new Parse.Query('_Session');
   q.equalTo('sessionToken', sessionToken);
+  q.include('user');
   const session = await q.first({ useMasterKey: true });
   if (!session) {
     return;
   }
-  const user = session.get('user');
-  if (!user) {
-    return;
-  }
-  await user.fetch({ useMasterKey: true });
-  return user;
+  return session.get('user');
 }

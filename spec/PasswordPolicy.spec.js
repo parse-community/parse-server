@@ -122,6 +122,102 @@ describe('Password Policy: ', () => {
       });
   });
 
+  it('should not keep reset token by default', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        resetTokenValidityDuration: 5 * 60, // 5 minutes
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    const user = new Parse.User();
+    user.setUsername('testResetTokenValidity');
+    user.setPassword('original');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('user@example.com');
+    await Parse.User.requestPasswordReset('user@example.com');
+    expect(sendEmailOptions[0].link).not.toBe(sendEmailOptions[1].link);
+    done();
+  });
+
+  it('should keep reset token with resetTokenReuseIfValid', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    await reconfigureServer({
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        resetTokenValidityDuration: 5 * 60, // 5 minutes
+        resetTokenReuseIfValid: true,
+      },
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    const user = new Parse.User();
+    user.setUsername('testResetTokenValidity');
+    user.setPassword('original');
+    user.set('email', 'user@example.com');
+    await user.signUp();
+    await Parse.User.requestPasswordReset('user@example.com');
+    await Parse.User.requestPasswordReset('user@example.com');
+    expect(sendEmailOptions[0].link).toBe(sendEmailOptions[1].link);
+    done();
+  });
+
+  it('should throw with invalid resetTokenReuseIfValid', async done => {
+    const sendEmailOptions = [];
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        sendEmailOptions.push(options);
+      },
+      sendMail: () => {},
+    };
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        emailAdapter: emailAdapter,
+        passwordPolicy: {
+          resetTokenValidityDuration: 5 * 60, // 5 minutes
+          resetTokenReuseIfValid: [],
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('resetTokenReuseIfValid must be a boolean value');
+    }
+    try {
+      await reconfigureServer({
+        appName: 'passwordPolicy',
+        emailAdapter: emailAdapter,
+        passwordPolicy: {
+          resetTokenReuseIfValid: true,
+        },
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      fail('should have thrown.');
+    } catch (e) {
+      expect(e).toBe('You cannot use resetTokenReuseIfValid without resetTokenValidityDuration');
+    }
+    done();
+  });
+
   it('should fail if passwordPolicy.resetTokenValidityDuration is not a number', done => {
     reconfigureServer({
       appName: 'passwordPolicy',

@@ -125,6 +125,12 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for email sending',
     action: parsers.moduleOrObjectParser,
   },
+  emailVerifyTokenReuseIfValid: {
+    env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_REUSE_IF_VALID',
+    help: 'an existing email verify token should be reused when resend verification email is requested',
+    action: parsers.booleanParser,
+    default: false,
+  },
   emailVerifyTokenValidityDuration: {
     env: 'PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION',
     help: 'Email verification token validity duration, in seconds',
@@ -543,5 +549,53 @@ module.exports.IdempotencyOptions = {
       'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
     action: parsers.numberParser('ttl'),
     default: 300,
+  },
+};
+module.exports.AccountLockoutOptions = {
+  duration: {
+    env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_DURATION',
+    help:
+      'number of minutes that a locked-out account remains locked out before automatically becoming unlocked.',
+    action: parsers.numberParser('duration'),
+  },
+  threshold: {
+    env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_THRESHOLD',
+    help: 'number of failed sign-in attempts that will cause a user account to be locked',
+    action: parsers.numberParser('threshold'),
+  },
+};
+module.exports.PasswordPolicyOptions = {
+  doNotAllowUsername: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_DO_NOT_ALLOW_USERNAME',
+    help: 'disallow username in passwords',
+    action: parsers.booleanParser,
+  },
+  maxPasswordAge: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_AGE',
+    help: 'days for password expiry',
+    action: parsers.numberParser('maxPasswordAge'),
+  },
+  maxPasswordHistory: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_MAX_PASSWORD_HISTORY',
+    help: 'setting to prevent reuse of previous n passwords',
+    action: parsers.numberParser('maxPasswordHistory'),
+  },
+  resetTokenReuseIfValid: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
+    help: "resend token if it's still valid",
+    action: parsers.booleanParser,
+  },
+  resetTokenValidityDuration: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION',
+    help: 'time for token to expire',
+    action: parsers.numberParser('resetTokenValidityDuration'),
+  },
+  validatorCallback: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_CALLBACK',
+    help: 'a callback function to be invoked to validate the password',
+  },
+  validatorPattern: {
+    env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
+    help: 'a RegExp object or a regex string representing the pattern to enforce',
   },
 };
