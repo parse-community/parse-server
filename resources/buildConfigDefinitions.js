@@ -48,7 +48,7 @@ function getENVPrefix(iface) {
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
     'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
-    'MFAOptions' : 'PARSE_SERVER_MFA_'
+    'MfaOptions' : 'PARSE_SERVER_MFA_'
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
@@ -171,7 +171,7 @@ function parseDefaultValue(elt, value, t) {
       });
       literalValue = t.objectExpression(props);
     }
-    if (type == 'IdempotencyOptions' || type == 'MFAOptions') {
+    if (type == 'IdempotencyOptions' || type == 'MfaOptions') {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);

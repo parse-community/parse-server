@@ -587,10 +587,16 @@ describe('cloud validator', () => {
     expect(obj.get('foo')).toBe('bar');
 
     const query = new Parse.Query('beforeFind');
-    const first = await query.first({ useMasterKey: true });
-    expect(first).toBeDefined();
-    expect(first.id).toBe(obj.id);
-    done();
+    try {
+      const first = await query.first({ useMasterKey: true });
+      expect(first).toBeDefined();
+      expect(first.id).toBe(obj.id);
+      done();
+    } catch (e) {
+      console.log(e);
+      console.log(e.code);
+      throw e;
+    }
   });
 
   it('basic beforeDelete skipWithMasterKey', async function (done) {

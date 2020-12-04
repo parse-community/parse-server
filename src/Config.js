@@ -71,6 +71,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
+    multiFactorAuth,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -105,6 +106,7 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validateMultiFactorAuth(multiFactorAuth);
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
@@ -122,6 +124,27 @@ export class Config {
       idempotencyOptions.paths = IdempotencyOptions.paths.default;
     } else if (!(idempotencyOptions.paths instanceof Array)) {
       throw 'idempotency paths must be of an array of strings';
+    }
+  }
+
+  static validateMultiFactorAuth(multiFactorAuth) {
+    if (!multiFactorAuth) {
+      return;
+    }
+    if (multiFactorAuth.enableMfa && typeof multiFactorAuth.enableMfa !== 'boolean') {
+      throw 'multiFactorAuth.enableMfa must be a boolean value.';
+    }
+    if (!multiFactorAuth.enableMfa) {
+      return;
+    }
+    if (multiFactorAuth.enableMfa && !multiFactorAuth.encryptionKey) {
+      throw 'to use multiFactorAuth, you must specify an encryption string.';
+    }
+    if (multiFactorAuth.encryptionKey && typeof multiFactorAuth.encryptionKey !== 'string') {
+      throw 'multiFactorAuth.encryptionKey must be a string value.';
+    }
+    if (multiFactorAuth.encryptionKey.length < 10) {
+      throw 'multiFactorAuth.encryptionKey must be longer than 10 characters.';
     }
   }
 
