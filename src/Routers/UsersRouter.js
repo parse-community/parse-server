@@ -134,10 +134,14 @@ export class UsersRouter extends ClassesRouter {
             }
           }
           const mfaEnabled = req.config.multiFactorAuth || {};
-          if (mfaEnabled.enableMfa && recoveryKeys && user._mfa) {
+          if (mfaEnabled.enableMfa && recoveryKeys && user.mfaEnabled) {
             const mfaRecTokens = user._mfa_recovery;
             let firstAllowed = false;
             let secondAllowed = false;
+            const recoveryKeysStr = `${recoveryKeys}`;
+            if (recoveryKeysStr.length < 41) {
+              throw new Parse.Error(210, 'Invalid MFA recovery tokens');
+            }
             for (const recToken of mfaRecTokens) {
               const setAllowedFromMatch = async (recoveryKey, first) => {
                 const doesMatch = await passwordCrypto.compare(recoveryKey, recToken);
@@ -150,8 +154,8 @@ export class UsersRouter extends ClassesRouter {
                   secondAllowed = true;
                 }
               };
-              await setAllowedFromMatch(recoveryKeys.substring(0, 20), true);
-              await setAllowedFromMatch(recoveryKeys.substring(21, 41));
+              await setAllowedFromMatch(recoveryKeysStr.substring(0, 20), true);
+              await setAllowedFromMatch(recoveryKeysStr.substring(21, 41));
             }
             if (!firstAllowed || !secondAllowed) {
               throw new Parse.Error(210, 'Invalid MFA recovery tokens');

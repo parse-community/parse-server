@@ -207,7 +207,16 @@ describe('MFA', () => {
     await verifyMfa(user, token);
     await Parse.User.logOut();
     try {
-      await loginWithMFA('username', 'password', null, ['12345678910', '12345678910']);
+      await loginWithMFA('username', 'password', null, [
+        '01234567890123456789',
+        '01234567890123456789',
+      ]);
+      fail('should have not been able to login with invalid recovery keys');
+    } catch (err) {
+      expect(err.text).toMatch('{"code":210,"error":"Invalid MFA recovery tokens"}');
+    }
+    try {
+      await loginWithMFA('username', 'password', null, ['a', 'b']);
       fail('should have not been able to login with invalid recovery keys');
     } catch (err) {
       expect(err.text).toMatch('{"code":210,"error":"Invalid MFA recovery tokens"}');
