@@ -279,7 +279,7 @@ module.exports.ParseServerOptions = {
   },
   multiFactorAuth: {
     env: 'PARSE_SERVER_MFA',
-    help: 'Options for multi-factor authentication (2FA)',
+    help: 'Options for multi-factor authentication (MFA)',
     action: parsers.objectParser,
   },
   objectIdSize: {

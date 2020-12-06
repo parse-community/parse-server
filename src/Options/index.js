@@ -198,7 +198,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
-  /* Options for multi-factor authentication (2FA)
+  /* Options for multi-factor authentication (MFA)
   :ENV: PARSE_SERVER_MFA */
   multiFactorAuth: ?MfaOptions;
   /* Full path to your GraphQL custom schema.graphql file */

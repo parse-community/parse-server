@@ -52,7 +52,7 @@
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
- * @property {MfaOptions} multiFactorAuth Options for multi-factor authentication (2FA)
+ * @property {MfaOptions} multiFactorAuth Options for multi-factor authentication (MFA)
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
