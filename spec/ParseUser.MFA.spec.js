@@ -34,13 +34,13 @@ describe('MFA', () => {
     });
   }
 
-  function loginWithMFA(username, password, token, recoveryTokens) {
+  function loginWithMFA(username, password, token, recoveryKeys) {
     let req = `http://localhost:8378/1/login?username=${username}&password=${password}`;
     if (token) {
       req += `&token=${token}`;
     }
-    if (recoveryTokens) {
-      req += `&recoveryTokens=${recoveryTokens}`;
+    if (recoveryKeys) {
+      req += `&recoveryKeys=${recoveryKeys}`;
     }
     return request({
       method: 'POST',

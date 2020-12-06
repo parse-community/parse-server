@@ -49,7 +49,7 @@ export class UsersRouter extends ClassesRouter {
       ) {
         payload = req.query;
       }
-      const { username, email, password, token, recoveryTokens } = payload;
+      const { username, email, password, token, recoveryKeys } = payload;
 
       // TODO: use the right error codes / descriptions.
       if (!username && !email) {
@@ -134,13 +134,13 @@ export class UsersRouter extends ClassesRouter {
             }
           }
           const mfaEnabled = req.config.multiFactorAuth || {};
-          if (mfaEnabled.enableMfa && recoveryTokens && user._mfa) {
+          if (mfaEnabled.enableMfa && recoveryKeys && user._mfa) {
             const mfaRecTokens = user._mfa_recovery;
             let firstAllowed = false;
             let secondAllowed = false;
             for (const recToken of mfaRecTokens) {
-              const setAllowedFromMatch = async (recoveryToken, first) => {
-                const doesMatch = await passwordCrypto.compare(recoveryToken, recToken);
+              const setAllowedFromMatch = async (recoveryKey, first) => {
+                const doesMatch = await passwordCrypto.compare(recoveryKey, recToken);
                 if (!doesMatch) {
                   return;
                 }
@@ -150,8 +150,8 @@ export class UsersRouter extends ClassesRouter {
                   secondAllowed = true;
                 }
               };
-              await setAllowedFromMatch(recoveryTokens.substring(0, 20), true);
-              await setAllowedFromMatch(recoveryTokens.substring(21, 41));
+              await setAllowedFromMatch(recoveryKeys.substring(0, 20), true);
+              await setAllowedFromMatch(recoveryKeys.substring(21, 41));
             }
             if (!firstAllowed || !secondAllowed) {
               throw new Parse.Error(210, 'Invalid MFA recovery tokens');
@@ -162,7 +162,7 @@ export class UsersRouter extends ClassesRouter {
               { _mfa: null, mfaEnabled: false, _mfa_recovery: null }
             );
             user.mfaEnabled = false;
-          } else if (mfaEnabled.enableMfa && user._mfa) {
+          } else if (mfaEnabled.enableMfa && user.mfaEnabled) {
             if (!token) {
               throw new Parse.Error(211, 'Please provide your MFA token.');
             }
