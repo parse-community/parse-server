@@ -599,7 +599,6 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('GET', '/users/me/enableMfa', req => this.enableMfa(req));
     this.route('POST', '/users/me/verifyMfa', req => this.verifyMfa(req));
-    this.route('GET', '/users/me/recoverMFA', req => this.handleLogIn(req));
     this.route('POST', '/requestPasswordReset', req => {
       return this.handleResetRequest(req);
     });
