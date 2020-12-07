@@ -39,7 +39,7 @@ it('Should succeed with right credentials when LDAPS is used and certifcate is n
       suffix: 'o=example',
       url: `ldaps://localhost:${sslport}`,
       dn: 'uid={{id}}, o=example',
-      tlsOptions: { rejectUnauthorized: false }
+      tlsOptions: { rejectUnauthorized: false },
     };
     ldap
       .validateAuthData({ id: 'testuser', password: 'secret' }, options)
@@ -57,8 +57,8 @@ it('Should succeed when LDAPS is used and the presented certificate is the expec
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
-        rejectUnauthorized: true
-      }
+        rejectUnauthorized: true,
+      },
     };
     ldap
       .validateAuthData({ id: 'testuser', password: 'secret' }, options)
@@ -76,8 +76,8 @@ it('Should fail when LDAPS is used and the presented certificate is not the expe
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/anothercert.pem'),
-        rejectUnauthorized: true
-      }
+        rejectUnauthorized: true,
+      },
     };
     ldap
       .validateAuthData({ id: 'testuser', password: 'secret' }, options)
@@ -98,8 +98,8 @@ it('Should fail when LDAPS is used certifcate matches but credentials are wrong'
       dn: 'uid={{id}}, o=example',
       tlsOptions: {
         ca: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
-        rejectUnauthorized: true
-      }
+        rejectUnauthorized: true,
+      },
     };
     ldap
       .validateAuthData({ id: 'testuser', password: 'wrong!' }, options)
@@ -111,7 +111,6 @@ it('Should fail when LDAPS is used certifcate matches but credentials are wrong'
       .finally(() => server.close());
   });
 });
-
 
 it('Should fail with wrong credentials', done => {
   mockLdapServer(port, 'uid=testuser, o=example').then(server => {
