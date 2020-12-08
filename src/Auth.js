@@ -332,6 +332,31 @@ const createSession = function (
   };
 };
 
+const findUsersWithAuthData = (config, authData) => {
+  const providers = Object.keys(authData);
+  const query = providers
+    .reduce((memo, provider) => {
+      if (!authData[provider]) {
+        return memo;
+      }
+      const queryKey = `authData.${provider}.id`;
+      const query = {};
+      query[queryKey] = authData[provider].id;
+      memo.push(query);
+      return memo;
+    }, [])
+    .filter(q => {
+      return typeof q !== 'undefined';
+    });
+
+  let findPromise = Promise.resolve([]);
+  if (query.length > 0) {
+    findPromise = config.database.find('_User', { $or: query }, {});
+  }
+
+  return findPromise;
+};
+
 module.exports = {
   Auth,
   master,
@@ -340,4 +365,5 @@ module.exports = {
   getAuthForSessionToken,
   getAuthForLegacySessionToken,
   createSession,
+  findUsersWithAuthData,
 };

@@ -392,6 +392,70 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  async handleChallenge(req) {
+    if (!req.body) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing body');
+    const { username, email, password, authData } = req.body;
+
+    // if username or email provided with password try to find the user with default
+    // system
+    let user;
+    if (username || email) {
+      if (!password)
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          'You provide username or email, you need to also provide password.'
+        );
+      user = await this._authenticateUserFromRequest(req);
+    }
+
+    if (!authData && !user) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge');
+    // If no authData provided but user found just return the user id
+    if (!authData && user)
+      return { response: { objectId: user.objectId, authDataResponse: undefined } };
+
+    // First try to find authData with an id
+    if (typeof authData !== 'object')
+      new Parse.Error(Parse.Error.OTHER_CAUSE, 'authData should be an object');
+
+    const authDataWithIds = Object.keys(authData).filter(key => authData[key].id);
+
+    // We need to prevent security breach by providing multi id authData at same time
+    if (authDataWithIds > 1)
+      new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'You cant provide more than one authData service with an id'
+      );
+    if (authDataWithIds.length && user)
+      new Parse.Error(
+        Parse.Error.OTHER_CAUSE,
+        'You cant provide username/email and an authData service with an id'
+      );
+
+    const authDataResponse = {};
+
+    const authAdapters = req.config.auth;
+
+    // Find the user via authData
+    if (authDataWithIds.length) {
+      const [authDataWithId] = authDataWithIds;
+      const [userFound] = await Auth.findUsersWithAuthData(req.config, authData[authDataWithId]);
+      if (!userFound) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found');
+      user = userFound;
+    }
+
+    await Promise.all(
+      Object.keys(authData).map(async key => {
+        if (typeof authAdapters[key].challenge === 'function') {
+          authDataResponse[key] =
+            (await authAdapters[key].challenge(authData[key], req, authAdapters[key].options)) ||
+            true;
+        }
+      })
+    );
+
+    return { response: { objectId: user.objectId, authDataResponse } };
+  }
+
   mountRoutes() {
     this.route('GET', '/users', req => {
       return this.handleFind(req);
@@ -428,6 +492,12 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('GET', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
+    });
+    this.route('GET', '/loginChallenge', req => {
+      return this.handleChallenge(req);
+    });
+    this.route('POST', '/loginChallenge', req => {
+      return this.handleChallenge(req);
     });
   }
 }
