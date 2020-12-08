@@ -155,6 +155,8 @@ const requiredColumns = Object.freeze({
   _Role: ['name', 'ACL'],
 });
 
+const invalidColumns = ['className', 'length'];
+
 const systemClasses = Object.freeze([
   '_User',
   '_Installation',
@@ -427,8 +429,9 @@ function classNameIsValid(className: string): boolean {
 }
 
 // Valid fields must be alpha-numeric, and not start with an underscore or number
+// must not be a reserved key
 function fieldNameIsValid(fieldName: string): boolean {
-  return classAndFieldRegex.test(fieldName);
+  return classAndFieldRegex.test(fieldName) && !invalidColumns.includes(fieldName);
 }
 
 // Checks that it's not trying to clobber one of the default fields of the class.

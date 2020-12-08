@@ -2045,4 +2045,15 @@ describe('Parse.Object testing', () => {
     const object = new Parse.Object('CloudCodeIsNew');
     await object.save();
   });
+
+  it('cannot save object with invalid field', async () => {
+    const obj = new TestObject();
+    obj.set('className', 'bar');
+    try {
+      await obj.save();
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: className.');
+    }
+  });
 });
