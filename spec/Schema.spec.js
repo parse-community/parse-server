@@ -123,16 +123,6 @@ describe('SchemaController', () => {
       );
   });
 
-  it('validate invalid column names', async () => {
-    const schema = await config.database.loadSchema();
-    try {
-      await schema.validateObject('Stuff', { className: 'Unknown' });
-      expect(false).toBe(true);
-    } catch (e) {
-      expect(e.message).toBe('Invalid field name: className.');
-    }
-  });
-
   it('updates when new fields are added', done => {
     config.database
       .loadSchema()

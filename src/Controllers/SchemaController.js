@@ -155,7 +155,7 @@ const requiredColumns = Object.freeze({
   _Role: ['name', 'ACL'],
 });
 
-const invalidColumns = ['className', 'length'];
+const invalidColumns = ['length'];
 
 const systemClasses = Object.freeze([
   '_User',

@@ -2860,31 +2860,17 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('object with length', function (done) {
+  it('object with length', async () => {
     const TestObject = Parse.Object.extend('TestObject');
     const obj = new TestObject();
     obj.set('length', 5);
     equal(obj.get('length'), 5);
-    obj.save().then(
-      function () {
-        const query = new Parse.Query(TestObject);
-        query.find().then(
-          function (results) {
-            equal(results.length, 1);
-            equal(results[0].get('length'), 5);
-            done();
-          },
-          function (error) {
-            ok(false, error.message);
-            done();
-          }
-        );
-      },
-      function (error) {
-        ok(false, error.message);
-        done();
-      }
-    );
+    try {
+      await obj.save();
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: length.');
+    }
   });
 
   it('include user', function (done) {
