@@ -42,13 +42,13 @@
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
     "jwks-rsa": "1.11.0",
-    "ldapjs": "2.2.0",
+    "ldapjs": "2.2.1",
     "lodash": "4.17.20",
     "lru-cache": "5.1.1",
     "mime": "2.4.6",
     "mongodb": "3.6.3",
     "parse": "2.18.0",
-    "pg-promise": "10.7.3",
+    "pg-promise": "10.8.1",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.2",
@@ -87,7 +87,7 @@
     "jsdoc": "3.6.3",
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
-    "mongodb-runner": "4.8.0",
+    "mongodb-runner": "mongodb-js/runner",
     "node-fetch": "2.6.1",
     "nyc": "15.1.0",
     "prettier": "2.0.5"
@@ -113,7 +113,7 @@
     "node": ">= 8"
   },
   "bin": {
-    "parse-server": "./bin/parse-server"
+    "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
     "@node-rs/bcrypt": "0.4.1"
