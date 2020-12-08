@@ -27,7 +27,7 @@ assignees: ''
 ### Expected Outcome
 <!-- What outcome, for example query result, did you expect? -->
 
-### Failing Test Case / PR
+### Failing Test Case / Pull Request (PR)
 <!--
     Check one of the following boxes [x] if you added a PR and add the link.
     See the contribution guide for how add a test cases:
