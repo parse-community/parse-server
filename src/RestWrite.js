@@ -454,15 +454,13 @@ RestWrite.prototype.handleAuthData = function (authData) {
       this.storage['authProvider'] = Object.keys(authData).join(',');
 
       const userResult = results[0];
-      const mutatedAuthData = {};
-      Object.keys(authData).forEach(provider => {
-        const providerData = authData[provider];
-        const userAuthData = userResult.authData[provider];
-        if (!_.isEqual(providerData, userAuthData)) {
-          mutatedAuthData[provider] = providerData;
-        }
-      });
-      const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
+
+      const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
+        authData,
+        userResult.authData,
+        this.config
+      );
+
       let userId;
       if (this.query && this.query.objectId) {
         userId = this.query.objectId;
@@ -488,6 +486,11 @@ RestWrite.prototype.handleAuthData = function (authData) {
           // to authData on the db; changes to userResult
           // will be ignored.
           await this.runBeforeLoginTrigger(deepcopy(userResult));
+
+          // If we are in login operation via authData
+          // we need to be sure that the user has provided
+          // required authData
+          Auth.checkRequiredProviders(authData, userResult.authData, this.config);
         }
 
         // If we didn't change the auth data, just keep going
@@ -532,6 +535,11 @@ RestWrite.prototype.handleAuthData = function (authData) {
         }
       }
     }
+
+    // If we are in sign up operation via authData
+    // we need to be sure that the user has provided
+    // required authData
+    Auth.checkRequiredProviders(authData, undefined, this.config);
     return this.handleAuthDataValidation(authData).then(() => {
       if (results.length > 1) {
         // More than 1 user with the passed id's

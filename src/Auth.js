@@ -1,6 +1,7 @@
 const cryptoUtils = require('./cryptoUtils');
 const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
+import _ from 'lodash';
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -357,6 +358,23 @@ const findUsersWithAuthData = (config, authData) => {
   return findPromise;
 };
 
+const hasMutatedAuthData = (authData, userAuthData, config) => {
+  const mutatedAuthData = {};
+  Object.keys(authData).forEach(provider => {
+    const providerData = authData[provider];
+    const userProviderAuthData = userAuthData[provider];
+    if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].validateEachTime) {
+      mutatedAuthData[provider] = providerData;
+    }
+  });
+  const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
+  return { hasMutatedAuthData, mutatedAuthData };
+};
+
+const checkRequiredProviders = (authData, userAuthData, config) => {
+  const requiredProviders = Object.keys(config.auth).filter(key => config.auth[key].required);
+};
+
 module.exports = {
   Auth,
   master,
@@ -366,4 +384,5 @@ module.exports = {
   getAuthForLegacySessionToken,
   createSession,
   findUsersWithAuthData,
+  hasMutatedAuthData,
 };
