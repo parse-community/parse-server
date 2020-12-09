@@ -3,6 +3,14 @@ const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
 import _ from 'lodash';
 
+const reducePromise = async (arr, fn, acc, index = 0) => {
+  if (arr[index]) {
+    const newAcc = await Promise.resolve(fn(acc, arr[index]));
+    return reducePromise(arr, fn, newAcc, index + 1);
+  }
+  return acc;
+};
+
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
 // userObject is a Parse.User and can be null if there's no user.
@@ -371,9 +379,88 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
   return { hasMutatedAuthData, mutatedAuthData };
 };
 
-const checkRequiredProviders = (authData, userAuthData, config) => {
-  const requiredProviders = Object.keys(config.auth).filter(key => config.auth[key].required);
+const getMissingRequiredProviders = (base, target) =>
+  Object.keys(base).filter(key => base[key].required && !target[key]);
+
+const checkRequiredProviders = (authData = {}, userAuthData, config) => {
+  if (!config.auth) return;
+  const missingRequiredProviders = getMissingRequiredProviders(config.auth, authData);
+
+  // In case of signup user should provide all required provider
+  if (!userAuthData && missingRequiredProviders.length) {
+    throw new Parse.Error(
+      Parse.Error.OTHER_CAUSE,
+      `Missing required authData ${missingRequiredProviders.join(',')}`
+    );
+  }
+  if (!userAuthData) return;
+
+  const requiredProvidersAlreadyUsed = Object.keys(userAuthData).reduce((acc, key) => {
+    if (config.auth[key].required) {
+      acc[key] = config.auth[key];
+    }
+  }, {});
+
+  // Use already used authData as base object to avoid blocking
+  // old user or let user configure some providers later
+  const missingRequiredProvidersAlreadyConfigured = getMissingRequiredProviders(
+    requiredProvidersAlreadyUsed,
+    authData
+  );
+
+  if (missingRequiredProvidersAlreadyConfigured.length) {
+    throw new Parse.Error(
+      Parse.Error.OTHER_CAUSE,
+      `Missing required authData ${missingRequiredProvidersAlreadyConfigured.join(',')}`
+    );
+  }
+
+  return;
 };
+
+const removeSecretFieldsFromAuthData = (authData, auth, config) => {
+  if (auth.isMaster || !config.auth) return;
+
+  const providersSecretFields = Object.keys(config.auth).reduce((acc, provider) => {
+    const secretFields = config.auth[provider].secretFields;
+    if (secretFields && secretFields.length) acc.push(...secretFields.map(f => `${provider}.${f}`));
+    return acc;
+  }, []);
+
+  if (providersSecretFields.length) {
+    providersSecretFields.forEach(secretField => _.unset(authData, secretField));
+  }
+};
+
+const getRequiredProviders = config => {
+  if (!config.auth) return [];
+  return Object.keys(config.auth).filter(key => config.auth[key].required);
+};
+
+// Validate each authData step by step and return the provider responses
+const handleAuthDataValidation = (authData, config) =>
+  // Perform validation as step by step pipeline
+  // for better error consistency and also to avoid to trigger a provider (like OTP SMS)
+  // if another one fail
+  reducePromise(
+    Object.keys(authData).sort(),
+    // apply sort to run the pipeline each time in the same order
+    async (acc, provider) => {
+      if (authData[provider] === null) {
+        return Promise.resolve();
+      }
+      const validateAuthData = config.authDataManager.getValidatorForProvider(provider);
+      if (!validateAuthData) {
+        throw new Parse.Error(
+          Parse.Error.UNSUPPORTED_SERVICE,
+          'This authentication method is unsupported.'
+        );
+      }
+      acc[provider] = await validateAuthData(authData[provider], this);
+      return acc;
+    },
+    {}
+  );
 
 module.exports = {
   Auth,
@@ -385,4 +472,9 @@ module.exports = {
   createSession,
   findUsersWithAuthData,
   hasMutatedAuthData,
+  checkRequiredProviders,
+  getRequiredProviders,
+  reducePromise,
+  handleAuthDataValidation,
+  removeSecretFieldsFromAuthData,
 };

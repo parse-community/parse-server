@@ -164,7 +164,9 @@ export class UsersRouter extends ClassesRouter {
 
           // Remove hidden properties.
           UsersRouter.removeHiddenProperties(user);
-
+          if (user.authData) {
+            Auth.removeSecretFieldsFromAuthData(user.authData, req.auth, req.config);
+          }
           return { response: user };
         }
       });
@@ -172,6 +174,23 @@ export class UsersRouter extends ClassesRouter {
 
   async handleLogIn(req) {
     const user = await this._authenticateUserFromRequest(req);
+    const authData = req.body && req.body.authData;
+    // Check if user has provided his required auth providers
+    Auth.checkRequiredProviders(authData, user.authData, req.config);
+
+    let authDataResponse;
+    let mutatedAuthData;
+    if (authData) {
+      const { hasMutatedAuthData, mutatedAuthData: mad } = Auth.hasMutatedAuthData(
+        authData,
+        user.authData,
+        this.config
+      );
+      mutatedAuthData = mad;
+      if (hasMutatedAuthData) {
+        authDataResponse = await Auth.handleAuthDataValidation(mutatedAuthData, req.config);
+      }
+    }
 
     // handle password expiry policy
     if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
@@ -239,6 +258,14 @@ export class UsersRouter extends ClassesRouter {
       null,
       req.config
     );
+
+    if (authDataResponse) {
+      user.authDataResponse = authDataResponse;
+    }
+
+    if (user.authData) {
+      Auth.removeSecretFieldsFromAuthData(user.authData, req.auth, req.config);
+    }
 
     return { response: user };
   }
@@ -410,8 +437,7 @@ export class UsersRouter extends ClassesRouter {
 
     if (!authData && !user) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge');
     // If no authData provided but user found just return the user id
-    if (!authData && user)
-      return { response: { objectId: user.objectId, authDataResponse: undefined } };
+    if (!authData && user) return { response: undefined };
 
     // First try to find authData with an id
     if (typeof authData !== 'object')
@@ -431,8 +457,6 @@ export class UsersRouter extends ClassesRouter {
         'You cant provide username/email and an authData service with an id'
       );
 
-    const authDataResponse = {};
-
     const authAdapters = req.config.auth;
 
     // Find the user via authData
@@ -443,17 +467,26 @@ export class UsersRouter extends ClassesRouter {
       user = userFound;
     }
 
-    await Promise.all(
-      Object.keys(authData).map(async key => {
+    // Execute challenge step by step
+    // with consistent order
+    const challenge = await Auth.reducePromise(
+      Object.keys(authData).sort(),
+      async (acc, key) => {
         if (typeof authAdapters[key].challenge === 'function') {
-          authDataResponse[key] =
-            (await authAdapters[key].challenge(authData[key], req, authAdapters[key].options)) ||
-            true;
+          acc[key] =
+            (await authAdapters[key].challenge(
+              authData[key],
+              user,
+              req,
+              authAdapters[key].options
+            )) || true;
+          return acc;
         }
-      })
+      },
+      {}
     );
 
-    return { response: { objectId: user.objectId, authDataResponse } };
+    return { response: Object.keys(challenge).length ? challenge : undefined };
   }
 
   mountRoutes() {

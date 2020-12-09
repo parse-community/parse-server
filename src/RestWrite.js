@@ -101,8 +101,8 @@ RestWrite.prototype.execute = function () {
     .then(() => {
       return this.handleSession();
     })
-    .then(() => {
-      return this.validateAuthData();
+    .then(async () => {
+      this.authDataResponse = await this.validateAuthData();
     })
     .then(() => {
       return this.runBeforeSaveTrigger();
@@ -142,6 +142,14 @@ RestWrite.prototype.execute = function () {
       return this.cleanUserAuthData();
     })
     .then(() => {
+      // Append the authDataResponse if exists
+      if (this.authDataResponse) {
+        if (this.response && this.response.response) {
+          this.response.response.authDataResponse = this.authDataResponse;
+        } else {
+          this.response.response = { authDataResponse: this.authDataResponse };
+        }
+      }
       return this.response;
     });
 };
@@ -383,12 +391,19 @@ RestWrite.prototype.validateAuthData = function () {
     }
   }
 
+  const requiredProviders = Auth.getRequiredProviders(this.config);
   if (
     (this.data.authData && !Object.keys(this.data.authData).length) ||
     !Object.prototype.hasOwnProperty.call(this.data, 'authData')
   ) {
-    // Handle saving authData to {} or if authData doesn't exist
-    return;
+    // If user try to signup via username/password and no requiredProviders
+    // found we can safely return
+    if (this.data.username && this.data.password && !requiredProviders.length) {
+      return;
+    }
+
+    // Will throw if user do not provide required auth data
+    Auth.checkRequiredProviders(this.data.auth, undefined, this.config);
   } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
     // Handle saving authData to null
     throw new Parse.Error(
@@ -415,23 +430,6 @@ RestWrite.prototype.validateAuthData = function () {
   );
 };
 
-RestWrite.prototype.handleAuthDataValidation = function (authData) {
-  const validations = Object.keys(authData).map(provider => {
-    if (authData[provider] === null) {
-      return Promise.resolve();
-    }
-    const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-    if (!validateAuthData) {
-      throw new Parse.Error(
-        Parse.Error.UNSUPPORTED_SERVICE,
-        'This authentication method is unsupported.'
-      );
-    }
-    return validateAuthData(authData[provider]);
-  });
-  return Promise.all(validations);
-};
-
 RestWrite.prototype.filteredObjectsByACL = function (objects) {
   if (this.auth.isMaster) {
     return objects;
@@ -443,6 +441,14 @@ RestWrite.prototype.filteredObjectsByACL = function (objects) {
     // Regular users that have been locked out.
     return object.ACL && Object.keys(object.ACL).length > 0;
   });
+};
+
+RestWrite.prototype.getUserId = function () {
+  if (this.query && this.query.objectId && this.className === '_User') {
+    return this.query.objectId;
+  } else if (this.auth && this.auth.user && this.auth.user.id) {
+    return this.auth.user.id;
+  }
 };
 
 RestWrite.prototype.handleAuthData = function (authData) {
@@ -461,12 +467,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
         this.config
       );
 
-      let userId;
-      if (this.query && this.query.objectId) {
-        userId = this.query.objectId;
-      } else if (this.auth && this.auth.user && this.auth.user.id) {
-        userId = this.auth.user.id;
-      }
+      const userId = this.getUserId();
       if (!userId || userId === userResult.objectId) {
         // no user making the call
         // OR the user making the call is the right one
@@ -501,7 +502,7 @@ RestWrite.prototype.handleAuthData = function (authData) {
         // that can happen when token are refreshed,
         // We should update the token and let the user in
         // We should only check the mutated keys
-        return this.handleAuthDataValidation(mutatedAuthData).then(async () => {
+        return Auth.handleAuthDataValidation(mutatedAuthData, this.config).then(async () => {
           // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
           // we need to set it up there.
           // We are supposed to have a response only on LOGIN with authData, so we skip those
@@ -536,11 +537,11 @@ RestWrite.prototype.handleAuthData = function (authData) {
       }
     }
 
-    // If we are in sign up operation via authData
-    // we need to be sure that the user has provided
-    // required authData
+    // If we are in sign up operation
+    // we need to ensure that the user has provided
+    // all required authData
     Auth.checkRequiredProviders(authData, undefined, this.config);
-    return this.handleAuthDataValidation(authData).then(() => {
+    return Auth.handleAuthDataValidation(authData, this.config).then(() => {
       if (results.length > 1) {
         // More than 1 user with the passed id's
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
@@ -1575,6 +1576,7 @@ RestWrite.prototype.cleanUserAuthData = function () {
       if (Object.keys(user.authData).length == 0) {
         delete user.authData;
       }
+      Auth.removeSecretFieldsFromAuthData(user.authData, this.auth, this.config);
     }
   }
 };

@@ -102,6 +102,7 @@
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} mongodb-runner start",
     "testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} TESTING=1 jasmine",
     "test": "npm run testonly",
+    "test:failfast": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} TESTING=1 jasmine --fail-fast=true",
     "posttest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} mongodb-runner stop",
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=4.0.4} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=mmapv1} TESTING=1 nyc jasmine",
     "start": "node ./bin/parse-server",

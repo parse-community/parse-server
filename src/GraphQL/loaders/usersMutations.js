@@ -144,6 +144,10 @@ const load = parseGraphQLSchema => {
         description: 'This is the password used to log in the user.',
         type: new GraphQLNonNull(GraphQLString),
       },
+      authData: {
+        description: 'Auth data payload, needed if some required auth adapters are configured.',
+        type: OBJECT,
+      },
     },
     outputFields: {
       viewer: {
@@ -298,6 +302,51 @@ const load = parseGraphQLSchema => {
     true,
     true
   );
+
+  const loginChallengeMutation = mutationWithClientMutationId({
+    name: 'LoginChallenge',
+    description:
+      'The loginChallenge mutation can be used to initiate an authentication challenge when an auth adapter need it.',
+    inputFields: {
+      username: {
+        description: 'This is the username used to log in the user.',
+        type: GraphQLString,
+      },
+      password: {
+        description: 'This is the password used to log in the user.',
+        type: GraphQLString,
+      },
+      authData: {
+        description:
+          'Auth data challenge payload, needed if some required auth adapters with challenge method are configured.',
+        type: OBJECT,
+      },
+    },
+    outputFields: {
+      challenge: {
+        description: 'Challenges from configured auth adapters.',
+        type: OBJECT,
+      },
+    },
+    mutateAndGetPayload: async ({ email }, context) => {
+      const { config, auth, info } = context;
+
+      await usersRouter.handleResetRequest({
+        body: {
+          email,
+        },
+        config,
+        auth,
+        info,
+      });
+
+      return { ok: true };
+    },
+  });
+
+  parseGraphQLSchema.addGraphQLType(loginChallengeMutation.args.input.type.ofType, true, true);
+  parseGraphQLSchema.addGraphQLType(loginChallengeMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('loginChallenge', loginChallengeMutation, true, true);
 };
 
 export { load };

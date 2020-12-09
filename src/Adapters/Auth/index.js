@@ -62,10 +62,10 @@ const providers = {
 };
 
 function authDataValidator(adapter, appIds, options) {
-  return function (authData) {
-    return adapter.validateAuthData(authData, options).then(() => {
+  return function (authData, req) {
+    return adapter.validateAuthData(authData, options, req).then(() => {
       if (appIds) {
-        return adapter.validateAppId(appIds, authData, options);
+        return adapter.validateAppId(appIds, authData, options, req);
       }
       return Promise.resolve();
     });
@@ -92,11 +92,7 @@ function loadAuthAdapter(provider, authOptions) {
 
   // Try the configuration methods
   if (providerOptions) {
-    const optionalAdapter = loadAdapter(
-      providerOptions,
-      undefined,
-      providerOptions
-    );
+    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
@@ -128,10 +124,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       return;
     }
 
-    const { adapter, appIds, providerOptions } = loadAuthAdapter(
-      provider,
-      authOptions
-    );
+    const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
 
     return authDataValidator(adapter, appIds, providerOptions);
   };
