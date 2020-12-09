@@ -50,9 +50,9 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
           : startsWithLocal
             ? localPath.length
             : publicPath.length;
-      // Build the new path by removing the public path
-      // and joining with the local path
+
       const newPath = path.posix.join('/', localPath, '/', requestPath.slice(pathLengthToUse));
+
       // Use the method for local routing
       return makeRoutablePath(newPath);
     };
