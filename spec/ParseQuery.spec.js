@@ -2860,33 +2860,6 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('object with length', function (done) {
-    const TestObject = Parse.Object.extend('TestObject');
-    const obj = new TestObject();
-    obj.set('length', 5);
-    equal(obj.get('length'), 5);
-    obj.save().then(
-      function () {
-        const query = new Parse.Query(TestObject);
-        query.find().then(
-          function (results) {
-            equal(results.length, 1);
-            equal(results[0].get('length'), 5);
-            done();
-          },
-          function (error) {
-            ok(false, error.message);
-            done();
-          }
-        );
-      },
-      function (error) {
-        ok(false, error.message);
-        done();
-      }
-    );
-  });
-
   it('include user', function (done) {
     Parse.User.signUp('bob', 'password', { age: 21 }).then(function (user) {
       const TestObject = Parse.Object.extend('TestObject');

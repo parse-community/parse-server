@@ -155,6 +155,8 @@ const requiredColumns = Object.freeze({
   _Role: ['name', 'ACL'],
 });
 
+const invalidColumns = ['length'];
+
 const systemClasses = Object.freeze([
   '_User',
   '_Installation',
@@ -422,18 +424,24 @@ function classNameIsValid(className: string): boolean {
     // Be a join table OR
     joinClassRegex.test(className) ||
     // Include only alpha-numeric and underscores, and not start with an underscore or number
-    fieldNameIsValid(className)
+    fieldNameIsValid(className, className)
   );
 }
 
 // Valid fields must be alpha-numeric, and not start with an underscore or number
-function fieldNameIsValid(fieldName: string): boolean {
-  return classAndFieldRegex.test(fieldName);
+// must not be a reserved key
+function fieldNameIsValid(fieldName: string, className: string): boolean {
+  if (className && className !== '_Hooks') {
+    if (fieldName === 'className') {
+      return false;
+    }
+  }
+  return classAndFieldRegex.test(fieldName) && !invalidColumns.includes(fieldName);
 }
 
 // Checks that it's not trying to clobber one of the default fields of the class.
 function fieldNameIsValidForClass(fieldName: string, className: string): boolean {
-  if (!fieldNameIsValid(fieldName)) {
+  if (!fieldNameIsValid(fieldName, className)) {
     return false;
   }
   if (defaultColumns._Default[fieldName]) {
@@ -976,7 +984,7 @@ export default class SchemaController {
   ) {
     for (const fieldName in fields) {
       if (existingFieldNames.indexOf(fieldName) < 0) {
-        if (!fieldNameIsValid(fieldName)) {
+        if (!fieldNameIsValid(fieldName, className)) {
           return {
             code: Parse.Error.INVALID_KEY_NAME,
             error: 'invalid field name: ' + fieldName,
@@ -1060,7 +1068,7 @@ export default class SchemaController {
       fieldName = fieldName.split('.')[0];
       type = 'Object';
     }
-    if (!fieldNameIsValid(fieldName)) {
+    if (!fieldNameIsValid(fieldName, className)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
     }
 
@@ -1154,7 +1162,7 @@ export default class SchemaController {
     }
 
     fieldNames.forEach(fieldName => {
-      if (!fieldNameIsValid(fieldName)) {
+      if (!fieldNameIsValid(fieldName, className)) {
         throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
       }
       //Don't allow deleting the default fields.
