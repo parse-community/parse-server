@@ -2860,19 +2860,6 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('object with length', async () => {
-    const TestObject = Parse.Object.extend('TestObject');
-    const obj = new TestObject();
-    obj.set('length', 5);
-    equal(obj.get('length'), 5);
-    try {
-      await obj.save();
-      expect(false).toBe(true);
-    } catch (e) {
-      expect(e.message).toBe('Invalid field name: length.');
-    }
-  });
-
   it('include user', function (done) {
     Parse.User.signUp('bob', 'password', { age: 21 }).then(function (user) {
       const TestObject = Parse.Object.extend('TestObject');

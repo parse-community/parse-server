@@ -225,7 +225,7 @@ describe('Cloud Code', () => {
     obj.set('foo', 'bar');
     try {
       await obj.save();
-      expect(false).toBe(true);
+      fail('should not succeed');
     } catch (e) {
       expect(e.message).toBe('Invalid field name: length.');
     }
