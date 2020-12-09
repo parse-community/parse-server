@@ -728,6 +728,17 @@ describe('Parse.Object testing', () => {
     });
   });
 
+  it('cannot save object with className field', async () => {
+    const obj = new TestObject();
+    obj.set('className', 'bar');
+    try {
+      await obj.save();
+      expect(true).toBe(false);
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: className.');
+    }
+  });
+
   it('old attribute unset then unset', function (done) {
     const TestObject = Parse.Object.extend('TestObject');
     const obj = new TestObject();
