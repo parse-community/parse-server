@@ -1,5 +1,4 @@
 const cryptoUtils = require('./cryptoUtils');
-const RestQuery = require('./RestQuery');
 const Parse = require('parse/node');
 import _ from 'lodash';
 
@@ -93,7 +92,8 @@ const getAuthForSessionToken = async function ({
       limit: 1,
       include: 'user',
     };
-
+    // For cyclic dep
+    const RestQuery = require('./RestQuery');
     const query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
     results = (await query.execute()).results;
   } else {
@@ -135,6 +135,8 @@ var getAuthForLegacySessionToken = function ({ config, sessionToken, installatio
   var restOptions = {
     limit: 1,
   };
+  // For cyclic dep
+  const RestQuery = require('./RestQuery');
   var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
   return query.execute().then(response => {
     var results = response.results;
@@ -179,6 +181,8 @@ Auth.prototype.getRolesForUser = async function () {
         objectId: this.user.id,
       },
     };
+    // For cyclic dep
+    const RestQuery = require('./RestQuery');
     await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
       results.push(result)
     );
@@ -263,6 +267,8 @@ Auth.prototype.getRolesByIds = async function (ins) {
       };
     });
     const restWhere = { roles: { $in: roles } };
+    // For cyclic dep
+    const RestQuery = require('./RestQuery');
     await new RestQuery(this.config, master(this.config), '_Role', restWhere, {}).each(result =>
       results.push(result)
     );
@@ -369,6 +375,8 @@ const findUsersWithAuthData = (config, authData) => {
 const hasMutatedAuthData = (authData, userAuthData, config) => {
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
+    // Anonymous provider is not handled this way
+    if (provider === 'anonymous') return;
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
     if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].validateEachTime) {
@@ -396,9 +404,11 @@ const checkRequiredProviders = (authData = {}, userAuthData, config) => {
   if (!userAuthData) return;
 
   const requiredProvidersAlreadyUsed = Object.keys(userAuthData).reduce((acc, key) => {
+    if (key === 'anonymous') return acc;
     if (config.auth[key].required) {
       acc[key] = config.auth[key];
     }
+    return acc;
   }, {});
 
   // Use already used authData as base object to avoid blocking

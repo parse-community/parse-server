@@ -903,8 +903,7 @@ describe('ParseGraphQLServer', () => {
           ).data['__type'].inputFields
             .map(field => field.name)
             .sort();
-
-          expect(inputFields).toEqual(['clientMutationId', 'password', 'username']);
+          expect(inputFields).toEqual(['authData', 'clientMutationId', 'password', 'username']);
         });
 
         it('should have clientMutationId in log in mutation payload', async () => {

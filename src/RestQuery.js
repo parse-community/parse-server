@@ -7,7 +7,6 @@ const triggers = require('./triggers');
 const Auth = require('./Auth');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
-const _ = require('lodash');
 // restOptions can include:
 //   skip
 //   limit
@@ -568,7 +567,7 @@ RestQuery.prototype.replaceDontSelect = function () {
   });
 };
 
-const cleanResultAuthData = function (result, auth, config) {
+RestQuery.prototype.cleanResultAuthData = function (result) {
   delete result.password;
   if (result.authData) {
     Object.keys(result.authData).forEach(provider => {
@@ -581,7 +580,7 @@ const cleanResultAuthData = function (result, auth, config) {
       delete result.authData;
     }
 
-    Auth.removeSecretFieldsFromAuthData(result.authData, auth, config);
+    Auth.removeSecretFieldsFromAuthData(result.authData, this.auth, this.config);
   }
 };
 
@@ -639,7 +638,7 @@ RestQuery.prototype.runFind = function (options = {}) {
     .then(results => {
       if (this.className === '_User' && findOptions.explain !== true) {
         for (var result of results) {
-          cleanResultAuthData(result);
+          this.cleanResultAuthData(result, this.auth, this.config);
         }
       }
 
@@ -699,8 +698,7 @@ RestQuery.prototype.handleIncludeAll = function () {
 
 // Updates property `this.keys` to contain all keys but the ones unselected.
 RestQuery.prototype.handleExcludeKeys = function () {
-  const providersSecretFields = Auth.getProvidersSecretFields(this.auth, this.config);
-  if (!this.excludeKeys && !providersSecretFields.length) {
+  if (!this.excludeKeys) {
     return;
   }
   if (this.keys) {

@@ -382,7 +382,9 @@ RestWrite.prototype.validateAuthData = function () {
     return;
   }
 
-  if (!this.query && !this.data.authData) {
+  const authData = this.data.authData;
+
+  if (!this.query && !authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
     }
@@ -393,7 +395,7 @@ RestWrite.prototype.validateAuthData = function () {
 
   const requiredProviders = Auth.getRequiredProviders(this.config);
   if (
-    (this.data.authData && !Object.keys(this.data.authData).length) ||
+    (authData && !Object.keys(authData).length) ||
     !Object.prototype.hasOwnProperty.call(this.data, 'authData')
   ) {
     // If user try to signup via username/password and no requiredProviders
@@ -403,7 +405,9 @@ RestWrite.prototype.validateAuthData = function () {
     }
 
     // Will throw if user do not provide required auth data
-    Auth.checkRequiredProviders(this.data.auth, undefined, this.config);
+    Auth.checkRequiredProviders({}, undefined, this.config);
+
+    return;
   } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
     // Handle saving authData to null
     throw new Parse.Error(
@@ -412,7 +416,6 @@ RestWrite.prototype.validateAuthData = function () {
     );
   }
 
-  var authData = this.data.authData;
   var providers = Object.keys(authData);
   if (providers.length > 0) {
     const canHandleAuthData = providers.reduce((canHandle, provider) => {
