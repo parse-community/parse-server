@@ -151,6 +151,10 @@ RestWrite.prototype.execute = function () {
         }
       }
       return this.response;
+    })
+    .catch(e => {
+      //  console.log(e);
+      throw e;
     });
 };
 
@@ -454,103 +458,110 @@ RestWrite.prototype.getUserId = function () {
   }
 };
 
-RestWrite.prototype.handleAuthData = function (authData) {
-  let results;
-  return Auth.findUsersWithAuthData(this.config, authData).then(async r => {
-    results = this.filteredObjectsByACL(r);
+RestWrite.prototype.handleAuthData = async function (authData) {
+  const r = await Auth.findUsersWithAuthData(this.config, authData);
+  const results = this.filteredObjectsByACL(r);
 
-    if (results.length == 1) {
-      this.storage['authProvider'] = Object.keys(authData).join(',');
+  if (results.length == 1) {
+    this.storage['authProvider'] = Object.keys(authData).join(',');
 
-      const userResult = results[0];
+    const userResult = results[0];
 
-      const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
-        authData,
-        userResult.authData,
+    const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
+      authData,
+      userResult.authData,
+      this.config
+    );
+
+    const userId = this.getUserId();
+    if (!userId || userId === userResult.objectId) {
+      // no user making the call
+      // OR the user making the call is the right one
+      // Login with auth data
+      delete results[0].password;
+
+      // need to set the objectId first otherwise location has trailing undefined
+      this.data.objectId = userResult.objectId;
+
+      if (!this.query || !this.query.objectId) {
+        // this a login call, no userId passed
+        this.response = {
+          response: userResult,
+          location: this.location(),
+        };
+        // Run beforeLogin hook before storing any updates
+        // to authData on the db; changes to userResult
+        // will be ignored.
+        await this.runBeforeLoginTrigger(deepcopy(userResult));
+
+        // If we are in login operation via authData
+        // we need to be sure that the user has provided
+        // required authData
+        Auth.checkRequiredProviders(authData, userResult.authData, this.config);
+      }
+
+      // If we didn't change the auth data, just keep going
+      if (!hasMutatedAuthData) {
+        return;
+      }
+      // We have authData that is updated on login
+      // that can happen when token are refreshed,
+      // We should update the token and let the user in
+      // We should only check the mutated keys
+      const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
+        mutatedAuthData,
         this.config
       );
 
-      const userId = this.getUserId();
-      if (!userId || userId === userResult.objectId) {
-        // no user making the call
-        // OR the user making the call is the right one
-        // Login with auth data
-        delete results[0].password;
-
-        // need to set the objectId first otherwise location has trailing undefined
-        this.data.objectId = userResult.objectId;
-
-        if (!this.query || !this.query.objectId) {
-          // this a login call, no userId passed
-          this.response = {
-            response: userResult,
-            location: this.location(),
-          };
-          // Run beforeLogin hook before storing any updates
-          // to authData on the db; changes to userResult
-          // will be ignored.
-          await this.runBeforeLoginTrigger(deepcopy(userResult));
-
-          // If we are in login operation via authData
-          // we need to be sure that the user has provided
-          // required authData
-          Auth.checkRequiredProviders(authData, userResult.authData, this.config);
-        }
-
-        // If we didn't change the auth data, just keep going
-        if (!hasMutatedAuthData) {
-          return;
-        }
-        // We have authData that is updated on login
-        // that can happen when token are refreshed,
-        // We should update the token and let the user in
-        // We should only check the mutated keys
-        return Auth.handleAuthDataValidation(mutatedAuthData, this.config).then(async () => {
-          // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
-          // we need to set it up there.
-          // We are supposed to have a response only on LOGIN with authData, so we skip those
-          // If we're not logging in, but just updating the current user, we can safely skip that part
-          if (this.response) {
-            // Assign the new authData in the response
-            Object.keys(mutatedAuthData).forEach(provider => {
-              this.response.response.authData[provider] = mutatedAuthData[provider];
-            });
-
-            // Run the DB update directly, as 'master'
-            // Just update the authData part
-            // Then we're good for the user, early exit of sorts
-            return this.config.database.update(
-              this.className,
-              { objectId: this.data.objectId },
-              { authData: mutatedAuthData },
-              {}
-            );
-          }
+      this.authDataResponse = authDataResponse;
+      // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
+      // we need to set it up there.
+      // We are supposed to have a response only on LOGIN with authData, so we skip those
+      // If we're not logging in, but just updating the current user, we can safely skip that part
+      if (this.response) {
+        // Assign the new authData in the response
+        Object.keys(mutatedAuthData).forEach(provider => {
+          this.response.response.authData[provider] = mutatedAuthData[provider];
         });
-      } else if (userId) {
-        // Trying to update auth data but users
-        // are different
-        if (userResult.objectId !== userId) {
-          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-        }
-        // No auth data was mutated, just keep going
-        if (!hasMutatedAuthData) {
-          return;
-        }
-      }
-    }
 
-    // If we are in sign up operation
-    // we need to ensure that the user has provided
-    // all required authData
-    Auth.checkRequiredProviders(authData, undefined, this.config);
-    return Auth.handleAuthDataValidation(authData, this.config).then(() => {
-      if (results.length > 1) {
-        // More than 1 user with the passed id's
+        // Run the DB update directly, as 'master'
+        // Just update the authData part
+        // Then we're good for the user, early exit of sorts
+        await this.config.database.update(
+          this.className,
+          { objectId: this.data.objectId },
+          { authData: validatedAuthData },
+          {}
+        );
+      }
+    } else if (userId) {
+      // Trying to update auth data but users
+      // are different
+      if (userResult.objectId !== userId) {
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
       }
-    });
-  });
+      // No auth data was mutated, just keep going
+      if (!hasMutatedAuthData) {
+        return;
+      }
+    }
+  }
+
+  // If we are in sign up operation
+  // we need to ensure that the user has provided
+  // all required authData
+  Auth.checkRequiredProviders(authData, undefined, this.config);
+  const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
+    authData,
+    this.config
+  );
+  this.authDataResponse = authDataResponse;
+  // Replace current authData by the new validated one
+  authData = validatedAuthData;
+  if (results.length > 1) {
+    // More than 1 user with the passed id's
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
 };
 
 // The non-third-party parts of User transformation

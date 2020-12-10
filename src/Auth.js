@@ -453,11 +453,13 @@ const handleAuthDataValidation = (authData, config) =>
   // for better error consistency and also to avoid to trigger a provider (like OTP SMS)
   // if another one fail
   reducePromise(
-    Object.keys(authData).sort(),
     // apply sort to run the pipeline each time in the same order
+
+    Object.keys(authData).sort(),
     async (acc, provider) => {
       if (authData[provider] === null) {
-        return Promise.resolve();
+        authData[provider] = null;
+        return acc;
       }
       const validateAuthData = config.authDataManager.getValidatorForProvider(provider);
       if (!validateAuthData) {
@@ -466,10 +468,22 @@ const handleAuthDataValidation = (authData, config) =>
           'This authentication method is unsupported.'
         );
       }
-      acc[provider] = await validateAuthData(authData[provider], this);
+      const validationResult = await validateAuthData(authData[provider], this);
+      if (validationResult) {
+        if (!Object.keys(validationResult).length) acc.authData[provider] = authData[provider];
+
+        if (validationResult.response) acc.authDataResponse[provider] = validationResult.response;
+        // Some auth providers after initialization will avoid
+        // to replace authData already stored
+        if (!validationResult.doNotSave) {
+          acc.authData[provider] = authData[provider];
+        }
+      } else {
+        acc.authData[provider] = authData[provider];
+      }
       return acc;
     },
-    {}
+    { authData: {}, authDataResponse: {} }
   );
 
 module.exports = {

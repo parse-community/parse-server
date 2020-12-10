@@ -179,16 +179,17 @@ export class UsersRouter extends ClassesRouter {
     Auth.checkRequiredProviders(authData, user.authData, req.config);
 
     let authDataResponse;
-    let mutatedAuthData;
+    let validatedAuthData;
     if (authData) {
-      const { hasMutatedAuthData, mutatedAuthData: mad } = Auth.hasMutatedAuthData(
+      const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
         authData,
         user.authData,
         this.config
       );
-      mutatedAuthData = mad;
       if (hasMutatedAuthData) {
-        authDataResponse = await Auth.handleAuthDataValidation(mutatedAuthData, req.config);
+        const res = await Auth.handleAuthDataValidation(mutatedAuthData, req.config);
+        authDataResponse = res.authDataResponse;
+        validatedAuthData = res.authData;
       }
     }
 
@@ -236,6 +237,17 @@ export class UsersRouter extends ClassesRouter {
       null,
       req.config
     );
+
+    // If we have some new validated authData
+    // update directly
+    if (validatedAuthData) {
+      await this.config.database.update(
+        this.className,
+        { objectId: this.data.objectId },
+        { authData: validatedAuthData },
+        {}
+      );
+    }
 
     const { sessionData, createSession } = Auth.createSession(req.config, {
       userId: user.objectId,
