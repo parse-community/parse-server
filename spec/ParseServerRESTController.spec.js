@@ -163,7 +163,7 @@ describe('ParseServerRESTController', () => {
   });
 
   if (
-    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.4.0') &&
+    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
@@ -171,7 +171,7 @@ describe('ParseServerRESTController', () => {
     describe('transactions', () => {
       beforeAll(async () => {
         if (
-          semver.satisfies(process.env.MONGODB_VERSION, '>=4.4.0') &&
+          semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
