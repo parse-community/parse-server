@@ -13,7 +13,7 @@ env:
 jobs:
   check-mongo:
     strategy:
-      fast-fail: false
+      fail-fast: false
       matrix:
         include:
           - name: Mongo 4.4.0, ReplicaSet, WiredTiger
