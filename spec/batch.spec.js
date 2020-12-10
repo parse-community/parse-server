@@ -167,7 +167,7 @@ describe('batch', () => {
   });
 
   if (
-    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
+    (semver.satisfies(process.env.MONGODB_VERSION, '>=4.4.0') &&
       process.env.MONGODB_TOPOLOGY === 'replicaset' &&
       process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger') ||
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
