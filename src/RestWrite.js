@@ -153,7 +153,7 @@ RestWrite.prototype.execute = function () {
       return this.response;
     })
     .catch(e => {
-      //  console.log(e);
+      console.log(e);
       throw e;
     });
 };
@@ -387,7 +387,8 @@ RestWrite.prototype.validateAuthData = function () {
   }
 
   const authData = this.data.authData;
-
+  const hasUsernameAndPassword =
+    typeof this.data.username === 'string' && typeof this.data.password === 'string';
   if (!this.query && !authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
@@ -427,7 +428,7 @@ RestWrite.prototype.validateAuthData = function () {
       var hasToken = providerAuthData && providerAuthData.id;
       return canHandle && (hasToken || providerAuthData == null);
     }, true);
-    if (canHandleAuthData) {
+    if (canHandleAuthData || hasUsernameAndPassword) {
       return this.handleAuthData(authData);
     }
   }
@@ -510,7 +511,8 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       // We should only check the mutated keys
       const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
         mutatedAuthData,
-        this.config
+        this,
+        userResult
       );
 
       this.authDataResponse = authDataResponse;
@@ -553,7 +555,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   Auth.checkRequiredProviders(authData, undefined, this.config);
   const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
     authData,
-    this.config
+    this
   );
   this.authDataResponse = authDataResponse;
   // Replace current authData by the new validated one

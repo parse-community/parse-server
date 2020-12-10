@@ -2,6 +2,7 @@ const request = require('../lib/request');
 const Config = require('../lib/Config');
 const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
 const authenticationLoader = require('../lib/Adapters/Auth');
+const RestWrite = require('../lib/RestWrite');
 const path = require('path');
 const responses = {
   gpgames: { playerId: 'userId' },
@@ -586,15 +587,6 @@ describe('google auth adapter', () => {
       );
     }
   });
-
-  xit('should require authData on username/password signup');
-  xit('should require authData on login with');
-  xit('should not update authData if provider use doNotSave');
-  xit('should force authData validation if provider use validateEachTime');
-  xit('should return authData response');
-  xit('should no return secret authData fields without master key');
-  xit('should return secret authData fields with master key');
-  xit('should return challenge');
 
   xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
     const fakeClaim = {
@@ -1756,4 +1748,72 @@ describe('microsoft graph auth adapter', () => {
       done();
     });
   });
+});
+
+describe('Auth Adapter features', () => {
+  const requiredAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateAuthData: () => Promise.resolve(),
+    required: true,
+  };
+  const eachTimeAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateAuthData: () => Promise.resolve(),
+    options: { anOption: true },
+    validateEachTime: true,
+  };
+  fit('should pass authData, options, req, user', async () => {
+    spyOn(eachTimeAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { eachTime: eachTimeAdapter } });
+
+    const user = new Parse.User();
+
+    const payload = { someData: true };
+
+    await user.save({
+      username: 'test',
+      password: 'test',
+      authData: { eachTime: payload },
+    });
+
+    expect(user.getSessionToken()).toBeDefined();
+
+    expect(eachTimeAdapter.validateAuthData.calls.argsFor(0)[0]).toEqual(payload);
+    expect(eachTimeAdapter.validateAuthData.calls.argsFor(0)[1]).toEqual(eachTimeAdapter);
+    expect(eachTimeAdapter.validateAuthData.calls.argsFor(0)[2] instanceof RestWrite).toBeTruthy();
+    expect(eachTimeAdapter.validateAuthData.calls.argsFor(0)[3]).toBeUndefined();
+
+    await Parse.User.logIn('test', 'password');
+  });
+  it('should require authData on username/password signup', async () => {
+    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { requiredAuth: requiredAdapter } });
+
+    const user = new Parse.User();
+
+    try {
+      await user.save({ username: 'test', password: 'test' });
+      fail('should not save the user');
+    } catch (e) {
+      expect(e.message).toContain('Missing required authData requiredAuth');
+      expect(user.id).toBeUndefined();
+    }
+
+    const payload = { someData: true };
+
+    await user.save({
+      username: 'test',
+      password: 'test',
+      authData: { requiredAuth: payload },
+    });
+
+    expect(requiredAdapter.validateAuthData.calls.argsFor(0)[0]).toEqual(payload);
+  });
+  xit('should require authData on login with');
+  xit('should not update authData if provider use doNotSave');
+  xit('should force authData validation if provider use validateEachTime');
+  xit('should return authData response');
+  xit('should no return secret authData fields without master key');
+  xit('should return secret authData fields with master key');
+  xit('should return challenge');
 });

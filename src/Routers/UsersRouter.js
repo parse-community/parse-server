@@ -187,7 +187,7 @@ export class UsersRouter extends ClassesRouter {
         this.config
       );
       if (hasMutatedAuthData) {
-        const res = await Auth.handleAuthDataValidation(mutatedAuthData, req.config);
+        const res = await Auth.handleAuthDataValidation(mutatedAuthData, req, user);
         authDataResponse = res.authDataResponse;
         validatedAuthData = res.authData;
       }

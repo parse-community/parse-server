@@ -351,7 +351,7 @@ const findUsersWithAuthData = (config, authData) => {
   const providers = Object.keys(authData);
   const query = providers
     .reduce((memo, provider) => {
-      if (!authData[provider]) {
+      if (!authData[provider] || (authData && !authData[provider].id)) {
         return memo;
       }
       const queryKey = `authData.${provider}.id`;
@@ -448,11 +448,13 @@ const getRequiredProviders = config => {
 };
 
 // Validate each authData step by step and return the provider responses
-const handleAuthDataValidation = (authData, config) =>
+const handleAuthDataValidation = (authData, req, foundUser) => {
+  let user;
+  if (foundUser) user = Parse.User.fromJSON(foundUser);
   // Perform validation as step by step pipeline
   // for better error consistency and also to avoid to trigger a provider (like OTP SMS)
   // if another one fail
-  reducePromise(
+  return reducePromise(
     // apply sort to run the pipeline each time in the same order
 
     Object.keys(authData).sort(),
@@ -461,14 +463,14 @@ const handleAuthDataValidation = (authData, config) =>
         authData[provider] = null;
         return acc;
       }
-      const validateAuthData = config.authDataManager.getValidatorForProvider(provider);
+      const validateAuthData = req.config.authDataManager.getValidatorForProvider(provider);
       if (!validateAuthData) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'
         );
       }
-      const validationResult = await validateAuthData(authData[provider], this);
+      const validationResult = await validateAuthData(authData[provider], req, user);
       if (validationResult) {
         if (!Object.keys(validationResult).length) acc.authData[provider] = authData[provider];
 
@@ -485,6 +487,7 @@ const handleAuthDataValidation = (authData, config) =>
     },
     { authData: {}, authDataResponse: {} }
   );
+};
 
 module.exports = {
   Auth,
