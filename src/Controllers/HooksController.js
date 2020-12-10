@@ -242,6 +242,7 @@ function wrapToHTTPRequest(hook, key) {
         if (typeof result === 'object') {
           delete result.createdAt;
           delete result.updatedAt;
+          delete result.className;
         }
         return { object: result };
       } else {
