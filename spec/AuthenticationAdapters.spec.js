@@ -587,6 +587,15 @@ describe('google auth adapter', () => {
     }
   });
 
+  xit('should require authData on username/password signup');
+  xit('should require authData on login with');
+  xit('should not update authData if provider use doNotSave');
+  xit('should force authData validation if provider use validateEachTime');
+  xit('should return authData response');
+  xit('should no return secret authData fields without master key');
+  xit('should return secret authData fields with master key');
+  xit('should return challenge');
+
   xit('(using client id as string) should throw error with invalid jwt client_id', async () => {
     const fakeClaim = {
       iss: 'https://accounts.google.com',
