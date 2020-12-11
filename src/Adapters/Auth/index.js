@@ -62,13 +62,12 @@ const providers = {
 };
 
 function authDataValidator(adapter, appIds, options) {
-  return function (authData, req, user) {
-    return adapter.validateAuthData(authData, options, req, user).then(() => {
-      if (appIds) {
-        return adapter.validateAppId(appIds, authData, options, req, user);
-      }
-      return Promise.resolve();
-    });
+  return async function (authData, req, user) {
+    const result = await adapter.validateAuthData(authData, options, req, user);
+    if (appIds) {
+      await adapter.validateAppId(appIds, authData, options, req, user);
+    }
+    return result;
   };
 }
 

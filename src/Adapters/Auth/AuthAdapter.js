@@ -13,6 +13,14 @@ export class AuthAdapter {
      * even if authData do not change
      */
     this.validateEachTime = false;
+
+    /**
+     * Usage policy
+     * default: can be combined with ONE additional auth provider if additional configured on user
+     * additional: could be only used with a default policy auth provider
+     * solo: Will ignore ALL additional providers if additional configured on user
+     */
+    this.policy = 'default';
   }
   /**
   @param appIds: the specified app ids in the configuration

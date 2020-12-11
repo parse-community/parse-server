@@ -164,9 +164,6 @@ export class UsersRouter extends ClassesRouter {
 
           // Remove hidden properties.
           UsersRouter.removeHiddenProperties(user);
-          if (user.authData) {
-            Auth.removeSecretFieldsFromAuthData(user.authData, req.auth, req.config);
-          }
           return { response: user };
         }
       });
@@ -184,7 +181,7 @@ export class UsersRouter extends ClassesRouter {
       const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
         authData,
         user.authData,
-        this.config
+        req.config
       );
       if (hasMutatedAuthData) {
         const res = await Auth.handleAuthDataValidation(mutatedAuthData, req, user);
@@ -241,9 +238,9 @@ export class UsersRouter extends ClassesRouter {
     // If we have some new validated authData
     // update directly
     if (validatedAuthData) {
-      await this.config.database.update(
-        this.className,
-        { objectId: this.data.objectId },
+      await req.config.database.update(
+        '_User',
+        { objectId: user.objectId },
         { authData: validatedAuthData },
         {}
       );
@@ -273,10 +270,6 @@ export class UsersRouter extends ClassesRouter {
 
     if (authDataResponse) {
       user.authDataResponse = authDataResponse;
-    }
-
-    if (user.authData) {
-      Auth.removeSecretFieldsFromAuthData(user.authData, req.auth, req.config);
     }
 
     return { response: user };

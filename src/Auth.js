@@ -387,59 +387,52 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
   return { hasMutatedAuthData, mutatedAuthData };
 };
 
-const getMissingRequiredProviders = (base, target) =>
-  Object.keys(base).filter(key => base[key].required && !target[key]);
-
 const checkRequiredProviders = (authData = {}, userAuthData, config) => {
   if (!config.auth) return;
-  const missingRequiredProviders = getMissingRequiredProviders(config.auth, authData);
 
-  // In case of signup user should provide all required provider
-  if (!userAuthData && missingRequiredProviders.length) {
+  const missingRequiredProviders = Object.keys(config.auth).filter(
+    provider => config.auth[provider].required && !authData[provider]
+  );
+
+  if (missingRequiredProviders.length) {
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
       `Missing required authData ${missingRequiredProviders.join(',')}`
     );
   }
+
+  // In case of signup we need to only check
+  // required providers
   if (!userAuthData) return;
 
-  const requiredProvidersAlreadyUsed = Object.keys(userAuthData).reduce((acc, key) => {
-    if (key === 'anonymous') return acc;
-    if (config.auth[key].required) {
-      acc[key] = config.auth[key];
-    }
-    return acc;
-  }, {});
+  const savedUserProviders = Object.keys(userAuthData);
 
-  // Use already used authData as base object to avoid blocking
-  // old user or let user configure some providers later
-  const missingRequiredProvidersAlreadyConfigured = getMissingRequiredProviders(
-    requiredProvidersAlreadyUsed,
-    authData
+  const hasProvidedASoloProvider = savedUserProviders.some(
+    provider => config.auth[provider].policy === 'solo'
   );
 
-  if (missingRequiredProvidersAlreadyConfigured.length) {
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      `Missing required authData ${missingRequiredProvidersAlreadyConfigured.join(',')}`
-    );
-  }
+  // Solo providers can be considered as safe
+  // so we do not have to check if the user need
+  // to provide an additional provider to login
+  if (hasProvidedASoloProvider) return;
 
-  return;
-};
+  const additionProvidersNotFound = [];
+  const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
+    if (config.auth[provider].policy === 'additional') {
+      if (authData[provider]) {
+        return true;
+      } else {
+        // Push missing provider for plausible error return
+        additionProvidersNotFound.push(provider);
+      }
+    }
+  });
+  if (hasProvidedAtLeastOneAdditionalProvider || !additionProvidersNotFound.length) return;
 
-const removeSecretFieldsFromAuthData = (authData, auth, config) => {
-  if (auth.isMaster || !config.auth) return;
-
-  const providersSecretFields = Object.keys(config.auth).reduce((acc, provider) => {
-    const secretFields = config.auth[provider].secretFields;
-    if (secretFields && secretFields.length) acc.push(...secretFields.map(f => `${provider}.${f}`));
-    return acc;
-  }, []);
-
-  if (providersSecretFields.length) {
-    providersSecretFields.forEach(secretField => _.unset(authData, secretField));
-  }
+  throw new Parse.Error(
+    Parse.Error.OTHER_CAUSE,
+    `Missing additional authData ${additionProvidersNotFound.join(',')}`
+  );
 };
 
 const getRequiredProviders = config => {
@@ -450,7 +443,7 @@ const getRequiredProviders = config => {
 // Validate each authData step by step and return the provider responses
 const handleAuthDataValidation = (authData, req, foundUser) => {
   let user;
-  if (foundUser) user = Parse.User.fromJSON(foundUser);
+  if (foundUser) user = Parse.User.fromJSON({ className: '_User', ...foundUser });
   // Perform validation as step by step pipeline
   // for better error consistency and also to avoid to trigger a provider (like OTP SMS)
   // if another one fail
@@ -470,7 +463,11 @@ const handleAuthDataValidation = (authData, req, foundUser) => {
           'This authentication method is unsupported.'
         );
       }
-      const validationResult = await validateAuthData(authData[provider], req, user);
+      const validationResult = await validateAuthData(
+        authData[provider],
+        { config: req.config, auth: req.auth },
+        user
+      );
       if (validationResult) {
         if (!Object.keys(validationResult).length) acc.authData[provider] = authData[provider];
 
@@ -503,5 +500,4 @@ module.exports = {
   getRequiredProviders,
   reducePromise,
   handleAuthDataValidation,
-  removeSecretFieldsFromAuthData,
 };

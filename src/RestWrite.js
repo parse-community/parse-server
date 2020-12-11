@@ -101,8 +101,8 @@ RestWrite.prototype.execute = function () {
     .then(() => {
       return this.handleSession();
     })
-    .then(async () => {
-      this.authDataResponse = await this.validateAuthData();
+    .then(() => {
+      return this.validateAuthData();
     })
     .then(() => {
       return this.runBeforeSaveTrigger();
@@ -151,10 +151,6 @@ RestWrite.prototype.execute = function () {
         }
       }
       return this.response;
-    })
-    .catch(e => {
-      console.log(e);
-      throw e;
     });
 };
 
@@ -423,11 +419,11 @@ RestWrite.prototype.validateAuthData = function () {
 
   var providers = Object.keys(authData);
   if (providers.length > 0) {
-    const canHandleAuthData = providers.reduce((canHandle, provider) => {
+    const canHandleAuthData = providers.some(provider => {
       var providerAuthData = authData[provider];
       var hasToken = providerAuthData && providerAuthData.id;
-      return canHandle && (hasToken || providerAuthData == null);
-    }, true);
+      return hasToken || providerAuthData == null;
+    });
     if (canHandleAuthData || hasUsernameAndPassword) {
       return this.handleAuthData(authData);
     }
@@ -535,6 +531,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
           { authData: validatedAuthData },
           {}
         );
+        return;
       }
     } else if (userId) {
       // Trying to update auth data but users
@@ -559,7 +556,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   );
   this.authDataResponse = authDataResponse;
   // Replace current authData by the new validated one
-  authData = validatedAuthData;
+  this.data.authData = validatedAuthData;
   if (results.length > 1) {
     // More than 1 user with the passed id's
     throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
@@ -1592,7 +1589,6 @@ RestWrite.prototype.cleanUserAuthData = function () {
       if (Object.keys(user.authData).length == 0) {
         delete user.authData;
       }
-      Auth.removeSecretFieldsFromAuthData(user.authData, this.auth, this.config);
     }
   }
 };

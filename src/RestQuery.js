@@ -4,7 +4,6 @@
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
-const Auth = require('./Auth');
 const { continueWhile } = require('parse/lib/node/promiseUtils');
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
 // restOptions can include:
@@ -579,8 +578,6 @@ RestQuery.prototype.cleanResultAuthData = function (result) {
     if (Object.keys(result.authData).length == 0) {
       delete result.authData;
     }
-
-    Auth.removeSecretFieldsFromAuthData(result.authData, this.auth, this.config);
   }
 };
 
