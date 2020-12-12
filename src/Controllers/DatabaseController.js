@@ -1365,6 +1365,9 @@ class DatabaseController {
       });
   }
 
+  // This helps to create intermediate objects for simpler comparison of
+  // key value pairs used in query objects. Each key value pair will represented
+  // in a similar way to json
   objectToEntriesStrings(query: any): Array<string> {
     return Object.entries(query).map(a => a.map(s => JSON.stringify(s)).join(':'));
   }
@@ -1374,12 +1377,13 @@ class DatabaseController {
     for (let i = 0; i < queries.length - 1; i++) {
       for (let j = i + 1; j < queries.length; j++) {
         const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
-        const foundEntries = queries[longer].reduce(
-          (acc, entry) => acc + (queries[shorter].includes(entry) ? 1 : 0),
+        const foundEntries = queries[shorter].reduce(
+          (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
           0
         );
         if (foundEntries === queries[shorter].length) {
-          // If the shorter query is completely contained on the longer one, we can skip it.
+          // If the shorter query is completely contained in the longer one, we can strike
+          // out the longer query.
           query.$or.splice(longer, 1);
           queries.splice(longer, 1);
         }
