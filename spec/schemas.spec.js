@@ -2862,7 +2862,7 @@ describe('schemas', () => {
             },
           },
         }).then(response => {
-          expect(response.data.indexes.name1).toEqual({ createdAt: 1 });
+          expect(response.data.indexes.name1).toEqual({ _created_at: 1 });
           done();
         });
       });
