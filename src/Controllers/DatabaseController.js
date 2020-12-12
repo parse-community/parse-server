@@ -1365,6 +1365,32 @@ class DatabaseController {
       });
   }
 
+  objectToEntriesStrings(query: any): Array<string> {
+    return Object.entries(query).map(a => a.map(s => JSON.stringify(s)).join(':'));
+  }
+
+  reduceOrOperation(query: { $or: Array<any> }): any {
+    const queries = query.$or.map(q => this.objectToEntriesStrings(q));
+    for (let i = 0; i < queries.length - 1; i++) {
+      for (let j = i + 1; j < queries.length; j++) {
+        const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+        const foundEntries = queries[longer].reduce(
+          (acc, entry) => acc + (queries[shorter].includes(entry) ? 1 : 0),
+          0
+        );
+        if (foundEntries === queries[shorter].length) {
+          // If the shorter query is completely contained on the longer one, we can skip it.
+          query.$or.splice(longer, 1);
+          queries.splice(longer, 1);
+        }
+      }
+    }
+
+    if (query.$or.length === 1) return query.$or[0];
+
+    return query;
+  }
+
   // Constraints query using CLP's pointer permissions (PP) if any.
   // 1. Etract the user id from caller's ACLgroup;
   // 2. Exctract a list of field names that are PP for target collection and operation;
@@ -1448,13 +1474,23 @@ class DatabaseController {
         }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
+          const queryClauseEntries = this.objectToEntriesStrings(queryClause);
+          const queryEntries = this.objectToEntriesStrings(query);
+          const foundEntries = queryEntries.reduce(
+            (acc, entry) => acc + (queryClauseEntries.includes(entry) ? 1 : 0),
+            0
+          );
+          if (foundEntries === queryClauseEntries.length) {
+            return query;
+          }
+
           return { $and: [queryClause, query] };
         }
         // otherwise just add the constaint
         return Object.assign({}, query, queryClause);
       });
 
-      return queries.length === 1 ? queries[0] : { $or: queries };
+      return queries.length === 1 ? queries[0] : this.reduceOrOperation({ $or: queries });
     } else {
       return query;
     }
