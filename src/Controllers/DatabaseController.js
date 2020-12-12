@@ -1483,7 +1483,6 @@ class DatabaseController {
           if (foundEntries === queryClauseEntries.length) {
             return query;
           }
-
           return { $and: [queryClause, query] };
         }
         // otherwise just add the constaint
