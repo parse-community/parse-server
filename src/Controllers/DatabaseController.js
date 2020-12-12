@@ -1385,9 +1385,9 @@ class DatabaseController {
         }
       }
     }
-
-    if (query.$or.length === 1) return query.$or[0];
-
+    if (query.$or.length === 1) {
+      return query.$or[0];
+    }
     return query;
   }
 
