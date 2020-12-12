@@ -8,7 +8,11 @@ assignees: ''
 ---
 
 ### New Feature / Enhancement Checklist
-<!-- Please check the following boxes [x] before submitting your issue. Click the "Preview" tab for better readability. Thanks for suggesting features and enhancements! -->
+<!--
+    Please check the following boxes [x] before submitting your issue.
+    Click the "Preview" tab for better readability.
+    Thanks for contributing to Parse Server!
+-->
 
 - [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
 - [ ] I am not just asking a [question](https://github.com/parse-community/.github/blob/master/SUPPORT.md).
