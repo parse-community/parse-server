@@ -21,5 +21,5 @@ Related issue: #FILL_THIS_OUT
 
 - [ ] ...
 - [ ] ...
-- [ ] Add changes to docs (required)
-- [ ] Add test cases (required)
+- [ ] Add test cases
+- [ ] Add changes to documentation
