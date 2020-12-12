@@ -11,7 +11,7 @@
 ### Issue Description
 <!-- Add a brief description of the issue this PR solves. -->
 
-Related issue: #FILL_THIS_OUT
+Related issue: FILL_THIS_OUT
 
 ### Approach
 <!-- Add a description of the approach in this PR. -->
@@ -19,7 +19,7 @@ Related issue: #FILL_THIS_OUT
 ### TODOs before merging
 <!-- Add the TODOs that need to be completed before merging this PR. -->
 
-- [ ] ...
-- [ ] ...
 - [ ] Add test cases
-- [ ] Add changes to documentation
+- [ ] Add entry to changelog
+- [ ] Add changes to documentation (guides, repository pages, in-code descriptions)
+- [ ] ...
