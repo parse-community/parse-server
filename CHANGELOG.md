@@ -2,6 +2,7 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...master)
+- IMPROVE: Optimize queries on classes with pointer permissions.
 
 ### 4.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...4.4.0)
