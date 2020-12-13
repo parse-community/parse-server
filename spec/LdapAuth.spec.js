@@ -216,7 +216,7 @@ it('Should delete the password from authData after validation', done => {
     const options = {
       suffix: 'o=example',
       url: `ldap://localhost:${port}`,
-      dn: 'uid={{id}}, o=example'
+      dn: 'uid={{id}}, o=example',
     };
 
     const authData = { id: 'testuser', password: 'secret' };
@@ -237,22 +237,23 @@ it('Should not save the password in the user record after authentication', done 
     const options = {
       suffix: 'o=example',
       url: `ldap://localhost:${port}`,
-      dn: 'uid={{id}}, o=example'
+      dn: 'uid={{id}}, o=example',
     };
     reconfigureServer({ auth: { ldap: options } }).then(() => {
       const authData = { authData: { id: 'testuser', password: 'secret' } };
-      Parse.User.logInWith('ldap', authData).then((returnedUser) => {
-        const query = new Parse.Query("User");
+      Parse.User.logInWith('ldap', authData).then(returnedUser => {
+        const query = new Parse.Query('User');
         query
-          .equalTo('objectId', returnedUser.id).first({ useMasterKey: true })
-          .then((user) => {
-            expect(user.get('authData')).toEqual({ ldap:{ id: 'testuser' }});
+          .equalTo('objectId', returnedUser.id)
+          .first({ useMasterKey: true })
+          .then(user => {
+            expect(user.get('authData')).toEqual({ ldap: { id: 'testuser' } });
             expect(user.get('authData').ldap.password).toBeUndefined();
             done();
           })
           .catch(done.fail)
-          .finally(() => server.close())
-      })
+          .finally(() => server.close());
+      });
     });
   });
 });

@@ -41,9 +41,7 @@ function mongoFieldToParseSchemaField(type) {
 
 const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
 function mongoSchemaFieldsToParseSchemaFields(schema) {
-  var fieldNames = Object.keys(schema).filter(
-    (key) => nonFieldSchemaKeys.indexOf(key) === -1
-  );
+  var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
   var response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName]);
     if (
@@ -110,7 +108,7 @@ function mongoSchemaToParseSchema(mongoSchema) {
 function _mongoSchemaQueryFromNameQuery(name: string, query) {
   const object = { _id: name };
   if (query) {
-    Object.keys(query).forEach((key) => {
+    Object.keys(query).forEach(key => {
       object[key] = query[key];
     });
   }
@@ -156,15 +154,13 @@ class MongoSchemaCollection {
   }
 
   _fetchAllSchemasFrom_SCHEMA() {
-    return this._collection
-      ._rawFind({})
-      .then((schemas) => schemas.map(mongoSchemaToParseSchema));
+    return this._collection._rawFind({}).then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
   _fetchOneSchemaFrom_SCHEMA(name: string) {
     return this._collection
       ._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 })
-      .then((results) => {
+      .then(results => {
         if (results.length === 1) {
           return mongoSchemaToParseSchema(results[0]);
         } else {
@@ -175,22 +171,17 @@ class MongoSchemaCollection {
 
   // Atomically find and delete an object based on query.
   findAndDeleteSchema(name: string) {
-    return this._collection._mongoCollection.findOneAndDelete(
-      _mongoSchemaQueryFromNameQuery(name)
-    );
+    return this._collection._mongoCollection.findOneAndDelete(_mongoSchemaQueryFromNameQuery(name));
   }
 
   insertSchema(schema: any) {
     return this._collection
       .insertOne(schema)
-      .then((result) => mongoSchemaToParseSchema(result.ops[0]))
-      .catch((error) => {
+      .then(result => mongoSchemaToParseSchema(result.ops[0]))
+      .catch(error => {
         if (error.code === 11000) {
           //Mongo's duplicate key error
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'Class already exists.'
-          );
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
         } else {
           throw error;
         }
@@ -198,17 +189,11 @@ class MongoSchemaCollection {
   }
 
   updateSchema(name: string, update) {
-    return this._collection.updateOne(
-      _mongoSchemaQueryFromNameQuery(name),
-      update
-    );
+    return this._collection.updateOne(_mongoSchemaQueryFromNameQuery(name), update);
   }
 
   upsertSchema(name: string, query: string, update) {
-    return this._collection.upsertOne(
-      _mongoSchemaQueryFromNameQuery(name, query),
-      update
-    );
+    return this._collection.upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update);
   }
 
   // Add a field to the schema. If database does not support the field
@@ -225,7 +210,7 @@ class MongoSchemaCollection {
   addFieldIfNotExists(className: string, fieldName: string, fieldType: string) {
     return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(
-        (schema) => {
+        schema => {
           // If a field with this name already exists, it will be handled elsewhere.
           if (schema.fields[fieldName] != undefined) {
             return;
@@ -235,8 +220,7 @@ class MongoSchemaCollection {
             // Make sure there are not other geopoint fields
             if (
               Object.keys(schema.fields).some(
-                (existingField) =>
-                  schema.fields[existingField].type === 'GeoPoint'
+                existingField => schema.fields[existingField].type === 'GeoPoint'
               )
             ) {
               throw new Parse.Error(
@@ -247,7 +231,7 @@ class MongoSchemaCollection {
           }
           return;
         },
-        (error) => {
+        error => {
           // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
           // If some other error, reject with it.
           if (error === undefined) {

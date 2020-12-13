@@ -5,19 +5,17 @@ const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
-  return request(options.janrain_capture_host, authData.access_token).then(
-    data => {
-      //successful response will have a "stat" (status) of 'ok' and a result node that stores the uuid, because that's all we asked for
-      //see: https://docs.janrain.com/api/registration/entity/#entity
-      if (data && data.stat == 'ok' && data.result == authData.id) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Janrain capture auth is invalid for this user.'
-      );
+  return request(options.janrain_capture_host, authData.access_token).then(data => {
+    //successful response will have a "stat" (status) of 'ok' and a result node that stores the uuid, because that's all we asked for
+    //see: https://docs.janrain.com/api/registration/entity/#entity
+    if (data && data.stat == 'ok' && data.result == authData.id) {
+      return;
     }
-  );
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Janrain capture auth is invalid for this user.'
+    );
+  });
 }
 
 // Returns a promise that fulfills iff this app id is valid.
