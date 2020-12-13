@@ -1373,6 +1373,9 @@ class DatabaseController {
   }
 
   reduceOrOperation(query: { $or: Array<any> }): any {
+    if (!query.$or) {
+      return query;
+    }
     const queries = query.$or.map(q => this.objectToEntriesStrings(q));
     for (let i = 0; i < queries.length - 1; i++) {
       for (let j = i + 1; j < queries.length; j++) {
@@ -1391,6 +1394,32 @@ class DatabaseController {
     }
     if (query.$or.length === 1) {
       return query.$or[0];
+    }
+    return query;
+  }
+
+  reduceAndOperation(query: { $and: Array<any> }): any {
+    if (!query.$and) {
+      return query;
+    }
+    const queries = query.$and.map(q => this.objectToEntriesStrings(q));
+    for (let i = 0; i < queries.length - 1; i++) {
+      for (let j = i + 1; j < queries.length; j++) {
+        const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+        const foundEntries = queries[shorter].reduce(
+          (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+          0
+        );
+        if (foundEntries === queries[shorter].length) {
+          // If the shorter query is completely contained in the longer one, we can strike
+          // out the shorter query.
+          query.$and.splice(shorter, 1);
+          queries.splice(shorter, 1);
+        }
+      }
+    }
+    if (query.$and.length === 1) {
+      return query.$and[0];
     }
     return query;
   }
@@ -1478,16 +1507,7 @@ class DatabaseController {
         }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          const queryClauseEntries = this.objectToEntriesStrings(queryClause);
-          const queryEntries = this.objectToEntriesStrings(query);
-          const foundEntries = queryEntries.reduce(
-            (acc, entry) => acc + (queryClauseEntries.includes(entry) ? 1 : 0),
-            0
-          );
-          if (foundEntries === queryClauseEntries.length) {
-            return query;
-          }
-          return { $and: [queryClause, query] };
+          return this.reduceAndOperation({ $and: [queryClause, query] });
         }
         // otherwise just add the constaint
         return Object.assign({}, query, queryClause);

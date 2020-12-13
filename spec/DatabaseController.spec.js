@@ -265,6 +265,49 @@ describe('DatabaseController', function () {
       done();
     });
   });
+
+  describe('reduceOperations', function () {
+    const databaseController = new DatabaseController();
+
+    it('objectToEntriesStrings', done => {
+      const output = databaseController.objectToEntriesStrings({ a: 1, b: 2, c: 3 });
+      expect(output).toEqual(['"a":1', '"b":2', '"c":3']);
+      done();
+    });
+
+    it('reduceOrOperation', done => {
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { b: 2 }] })).toEqual({
+        $or: [{ a: 1 }, { b: 2 }],
+      });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 2 }] })).toEqual({
+        $or: [{ a: 1 }, { a: 2 }],
+      });
+      expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { a: 1 }] })).toEqual({ a: 1 });
+      expect(
+        databaseController.reduceOrOperation({ $or: [{ a: 1, b: 2, c: 3 }, { a: 1 }] })
+      ).toEqual({ a: 1 });
+      expect(
+        databaseController.reduceOrOperation({ $or: [{ b: 2 }, { a: 1, b: 2, c: 3 }] })
+      ).toEqual({ b: 2 });
+      done();
+    });
+
+    it('reduceAndOperation', done => {
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { b: 2 }] })).toEqual({
+        $and: [{ a: 1 }, { b: 2 }],
+      });
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 2 }] })).toEqual({
+        $and: [{ a: 1 }, { a: 2 }],
+      });
+      expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { a: 1 }] })).toEqual({
+        a: 1,
+      });
+      expect(
+        databaseController.reduceAndOperation({ $and: [{ a: 1, b: 2, c: 3 }, { b: 2 }] })
+      ).toEqual({ a: 1, b: 2, c: 3 });
+      done();
+    });
+  });
 });
 
 function buildCLP(pointerNames) {
