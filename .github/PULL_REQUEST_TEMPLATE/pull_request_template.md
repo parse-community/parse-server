@@ -6,7 +6,7 @@
 -->
 
 - [ ] I am not disclosing a [vulnerability](https://github.com/parse-community/parse-server/blob/master/SECURITY.md).
-- [ ] I create this PR in reference to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
+- [ ] I am creating this PR in reference to an [issue](https://github.com/parse-community/parse-server/issues?q=is%3Aissue).
 
 ### Issue Description
 <!-- Add a brief description of the issue this PR solves. -->
@@ -17,9 +17,14 @@ Related issue: FILL_THIS_OUT
 <!-- Add a description of the approach in this PR. -->
 
 ### TODOs before merging
-<!-- Add the TODOs that need to be completed before merging this PR. -->
+<!--
+    Add TODOs that need to be completed before merging this PR.
+    Delete suggested TODOs that do not apply to this PR.
+-->
 
 - [ ] Add test cases
 - [ ] Add entry to changelog
 - [ ] Add changes to documentation (guides, repository pages, in-code descriptions)
+- [ ] Add security check warning <!-- see PR #6973 -->
+- [ ] Add new Parse Error codes to Parse JS SDK <!-- no hard-coded error codes in Parse Server -->
 - [ ] ...
