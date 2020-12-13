@@ -253,12 +253,7 @@ interface WhereClause {
   sorts: Array<any>;
 }
 
-const buildWhereClause = ({
-  schema,
-  query,
-  index,
-  caseInsensitive,
-}): WhereClause => {
+const buildWhereClause = ({ schema, query, index, caseInsensitive }): WhereClause => {
   const patterns = [];
   let values = [];
   const sorts = [];
@@ -266,9 +261,7 @@ const buildWhereClause = ({
   schema = toPostgresSchema(schema);
   for (const fieldName in query) {
     const isArrayField =
-      schema.fields &&
-      schema.fields[fieldName] &&
-      schema.fields[fieldName].type === 'Array';
+      schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Array';
     const initialPatternsLength = patterns.length;
     const fieldValue = query[fieldName];
 
@@ -284,10 +277,7 @@ const buildWhereClause = ({
     if (authDataMatch) {
       // TODO: Handle querying by _auth_data_provider, authData is stored in authData field
       continue;
-    } else if (
-      caseInsensitive &&
-      (fieldName === 'username' || fieldName === 'email')
-    ) {
+    } else if (caseInsensitive && (fieldName === 'username' || fieldName === 'email')) {
       patterns.push(`LOWER($${index}:name) = LOWER($${index + 1})`);
       values.push(fieldName, fieldValue);
       index += 2;
@@ -324,10 +314,7 @@ const buildWhereClause = ({
     } else if (typeof fieldValue === 'boolean') {
       patterns.push(`$${index}:name = $${index + 1}`);
       // Can't cast boolean to double precision
-      if (
-        schema.fields[fieldName] &&
-        schema.fields[fieldName].type === 'Number'
-      ) {
+      if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Number') {
         // Should always return zero results
         const MAX_INT_PLUS_ONE = 9223372036854775808;
         values.push(fieldName, MAX_INT_PLUS_ONE);
@@ -377,9 +364,7 @@ const buildWhereClause = ({
           // if not null, we need to manually exclude null
           if (fieldValue.$ne.__type === 'GeoPoint') {
             patterns.push(
-              `($${index}:name <> POINT($${index + 1}, $${
-                index + 2
-              }) OR $${index}:name IS NULL)`
+              `($${index}:name <> POINT($${index + 1}, $${index + 2}) OR $${index}:name IS NULL)`
             );
           } else {
             if (fieldName.indexOf('.') >= 0) {
@@ -388,9 +373,7 @@ const buildWhereClause = ({
                 `(${constraintFieldName} <> $${index} OR ${constraintFieldName} IS NULL)`
               );
             } else {
-              patterns.push(
-                `($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`
-              );
+              patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
             }
           }
         }
@@ -421,8 +404,7 @@ const buildWhereClause = ({
         }
       }
     }
-    const isInOrNin =
-      Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
+    const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (
       Array.isArray(fieldValue.$in) &&
       isArrayField &&
@@ -441,9 +423,7 @@ const buildWhereClause = ({
         }
       });
       if (allowNull) {
-        patterns.push(
-          `($${index}:name IS NULL OR $${index}:name && ARRAY[${inPatterns.join()}])`
-        );
+        patterns.push(`($${index}:name IS NULL OR $${index}:name && ARRAY[${inPatterns.join()}])`);
       } else {
         patterns.push(`$${index}:name && ARRAY[${inPatterns.join()}]`);
       }
@@ -453,9 +433,7 @@ const buildWhereClause = ({
         const not = notIn ? ' NOT ' : '';
         if (baseArray.length > 0) {
           if (isArrayField) {
-            patterns.push(
-              `${not} array_contains($${index}:name, $${index + 1})`
-            );
+            patterns.push(`${not} array_contains($${index}:name, $${index + 1})`);
             values.push(fieldName, JSON.stringify(baseArray));
             index += 2;
           } else {
@@ -518,13 +496,9 @@ const buildWhereClause = ({
           const value = processRegexPattern(fieldValue.$all[i].$regex);
           fieldValue.$all[i] = value.substring(1) + '%';
         }
-        patterns.push(
-          `array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`
-        );
+        patterns.push(`array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`);
       } else {
-        patterns.push(
-          `array_contains_all($${index}:name, $${index + 1}::jsonb)`
-        );
+        patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
       }
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index += 2;
@@ -549,10 +523,7 @@ const buildWhereClause = ({
     if (fieldValue.$containedBy) {
       const arr = fieldValue.$containedBy;
       if (!(arr instanceof Array)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $containedBy: should be an array`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $containedBy: should be an array`);
       }
 
       patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
@@ -564,22 +535,13 @@ const buildWhereClause = ({
       const search = fieldValue.$text.$search;
       let language = 'english';
       if (typeof search !== 'object') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $text: $search, should be object`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $search, should be object`);
       }
       if (!search.$term || typeof search.$term !== 'string') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $text: $term, should be string`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $term, should be string`);
       }
       if (search.$language && typeof search.$language !== 'string') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $text: $language, should be string`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $text: $language, should be string`);
       } else if (search.$language) {
         language = search.$language;
       }
@@ -594,10 +556,7 @@ const buildWhereClause = ({
           `bad $text: $caseSensitive not supported, please use $regex or create a separate lower case column.`
         );
       }
-      if (
-        search.$diacriticSensitive &&
-        typeof search.$diacriticSensitive !== 'boolean'
-      ) {
+      if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
           `bad $text: $diacriticSensitive, should be boolean`
@@ -609,9 +568,7 @@ const buildWhereClause = ({
         );
       }
       patterns.push(
-        `to_tsvector($${index}, $${index + 1}:name) @@ to_tsquery($${
-          index + 2
-        }, $${index + 3})`
+        `to_tsvector($${index}, $${index + 1}:name) @@ to_tsquery($${index + 2}, $${index + 3})`
       );
       values.push(language, fieldName, language, search.$term);
       index += 4;
@@ -716,10 +673,7 @@ const buildWhereClause = ({
             return `(${point[0]}, ${point[1]})`;
           }
           if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
-            throw new Parse.Error(
-              Parse.Error.INVALID_JSON,
-              'bad $geoWithin value'
-            );
+            throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
           } else {
             Parse.GeoPoint._validate(point.latitude, point.longitude);
           }
@@ -830,9 +784,7 @@ const buildWhereClause = ({
     if (initialPatternsLength === patterns.length) {
       throw new Parse.Error(
         Parse.Error.OPERATION_FORBIDDEN,
-        `Postgres doesn't support this query type yet ${JSON.stringify(
-          fieldValue
-        )}`
+        `Postgres doesn't support this query type yet ${JSON.stringify(fieldValue)}`
       );
     }
   }
@@ -903,12 +855,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const self = this;
     await this._client.task('set-class-level-permissions', async t => {
       await self._ensureSchemaCollectionExists(t);
-      const values = [
-        className,
-        'schema',
-        'classLevelPermissions',
-        JSON.stringify(CLPs),
-      ];
+      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
       await t.none(
         `UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1`,
         values
@@ -936,10 +883,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     Object.keys(submittedIndexes).forEach(name => {
       const field = submittedIndexes[name];
       if (existingIndexes[name] && field.__op !== 'Delete') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Index ${name} exists, cannot update.`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
       if (!existingIndexes[name] && field.__op === 'Delete') {
         throw new Parse.Error(
@@ -990,24 +934,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
           'INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)',
           { className, schema }
         );
-        await this.setIndexesWithSchemaFormat(
-          className,
-          schema.indexes,
-          {},
-          schema.fields,
-          t
-        );
+        await this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
         return toParseSchema(schema);
       })
       .catch(err => {
-        if (
-          err.code === PostgresUniqueIndexViolationError &&
-          err.detail.includes(className)
-        ) {
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            `Class ${className} already exists.`
-          );
+        if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`);
         }
         throw err;
       });
@@ -1093,24 +1025,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
         .map(fieldName =>
-          self.addFieldIfNotExists(
-            className,
-            fieldName,
-            schema.fields[fieldName],
-            t
-          )
+          self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t)
         );
 
       await t.batch(newColumns);
     });
   }
 
-  async addFieldIfNotExists(
-    className: string,
-    fieldName: string,
-    type: any,
-    conn: any
-  ) {
+  async addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', { className, fieldName, type });
     conn = conn || this._client;
@@ -1128,11 +1050,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           );
         } catch (error) {
           if (error.code === PostgresRelationDoesNotExistError) {
-            return self.createClass(
-              className,
-              { fields: { [fieldName]: type } },
-              t
-            );
+            return self.createClass(className, { fields: { [fieldName]: type } }, t);
           }
           if (error.code !== PostgresDuplicateColumnError) {
             throw error;
@@ -1234,11 +1152,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // may do so.
 
   // Returns a Promise.
-  async deleteFields(
-    className: string,
-    schema: SchemaType,
-    fieldNames: string[]
-  ): Promise<void> {
+  async deleteFields(className: string, schema: SchemaType, fieldNames: string[]): Promise<void> {
     debug('deleteFields', className, fieldNames);
     fieldNames = fieldNames.reduce((list: Array<string>, fieldName: string) => {
       const field = schema.fields[fieldName];
@@ -1257,15 +1171,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
       .join(', DROP COLUMN');
 
     await this._client.tx('delete-fields', async t => {
-      await t.none(
-        'UPDATE "_SCHEMA" SET "schema" = $<schema> WHERE "className" = $<className>',
-        { schema, className }
-      );
+      await t.none('UPDATE "_SCHEMA" SET "schema" = $<schema> WHERE "className" = $<className>', {
+        schema,
+        className,
+      });
       if (values.length > 1) {
-        await t.none(
-          `ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`,
-          values
-        );
+        await t.none(`ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`, values);
       }
     });
   }
@@ -1412,10 +1323,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       const fieldName = columnsArray[index];
       if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
         termination = '::text[]';
-      } else if (
-        schema.fields[fieldName] &&
-        schema.fields[fieldName].type === 'Array'
-      ) {
+      } else if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Array') {
         termination = '::jsonb';
       }
       return `$${index + 2 + columnsArray.length}${termination}`;
@@ -1427,18 +1335,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
       return `POINT($${l}, $${l + 1})`;
     });
 
-    const columnsPattern = columnsArray
-      .map((col, index) => `$${index + 2}:name`)
-      .join();
+    const columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join();
     const valuesPattern = initialValues.concat(geoPointsInjects).join();
 
     const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`;
     const values = [className, ...columnsArray, ...valuesArray];
     debug(qs, values);
-    const promise = (transactionalSession
-      ? transactionalSession.t
-      : this._client
-    )
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
       .none(qs, values)
       .then(() => ({ ops: [object] }))
       .catch(error => {
@@ -1488,17 +1391,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
     const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
     debug(qs, values);
-    const promise = (transactionalSession
-      ? transactionalSession.t
-      : this._client
-    )
+    const promise = (transactionalSession ? transactionalSession.t : this._client)
       .one(qs, values, a => +a.count)
       .then(count => {
         if (count === 0) {
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'
-          );
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         } else {
           return count;
         }
@@ -1523,13 +1420,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     transactionalSession: ?any
   ): Promise<any> {
     debug('findOneAndUpdate', className, query, update);
-    return this.updateObjectsByQuery(
-      className,
-      schema,
-      query,
-      update,
-      transactionalSession
-    ).then(val => val[0]);
+    return this.updateObjectsByQuery(className, schema, query, update, transactionalSession).then(
+      val => val[0]
+    );
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -1592,39 +1485,28 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const fieldNameIndex = index;
         index += 1;
         values.push(fieldName);
-        const update = Object.keys(fieldValue).reduce(
-          (lastKey: string, key: string) => {
-            const str = generate(
-              lastKey,
-              `$${index}::text`,
-              `$${index + 1}::jsonb`
-            );
-            index += 2;
-            let value = fieldValue[key];
-            if (value) {
-              if (value.__op === 'Delete') {
-                value = null;
-              } else {
-                value = JSON.stringify(value);
-              }
+        const update = Object.keys(fieldValue).reduce((lastKey: string, key: string) => {
+          const str = generate(lastKey, `$${index}::text`, `$${index + 1}::jsonb`);
+          index += 2;
+          let value = fieldValue[key];
+          if (value) {
+            if (value.__op === 'Delete') {
+              value = null;
+            } else {
+              value = JSON.stringify(value);
             }
-            values.push(key, value);
-            return str;
-          },
-          lastKey
-        );
+          }
+          values.push(key, value);
+          return str;
+        }, lastKey);
         updatePatterns.push(`$${fieldNameIndex}:name = ${update}`);
       } else if (fieldValue.__op === 'Increment') {
-        updatePatterns.push(
-          `$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`
-        );
+        updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
         values.push(fieldName, fieldValue.amount);
         index += 2;
       } else if (fieldValue.__op === 'Add') {
         updatePatterns.push(
-          `$${index}:name = array_add(COALESCE($${index}:name, '[]'::jsonb), $${
-            index + 1
-          }::jsonb)`
+          `$${index}:name = array_add(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`
         );
         values.push(fieldName, JSON.stringify(fieldValue.objects));
         index += 2;
@@ -1678,9 +1560,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
       } else if (fieldValue.__type === 'GeoPoint') {
-        updatePatterns.push(
-          `$${index}:name = POINT($${index + 1}, $${index + 2})`
-        );
+        updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
         values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
         index += 3;
       } else if (fieldValue.__type === 'Polygon') {
@@ -1745,12 +1625,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
           })
           .map(k => k.split('.')[1]);
 
-        const deletePatterns = keysToDelete.reduce(
-          (p: string, c: string, i: number) => {
-            return p + ` - '$${index + 1 + i}:value'`;
-          },
-          ''
-        );
+        const deletePatterns = keysToDelete.reduce((p: string, c: string, i: number) => {
+          return p + ` - '$${index + 1 + i}:value'`;
+        }, '');
         // Override Object
         let updateObject = "'{}'::jsonb";
 
@@ -1799,14 +1676,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     values.push(...where.values);
 
-    const whereClause =
-      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
     debug('update: ', qs, values);
-    const promise = (transactionalSession
-      ? transactionalSession.t
-      : this._client
-    ).any(qs, values);
+    const promise = (transactionalSession ? transactionalSession.t : this._client).any(qs, values);
     if (transactionalSession) {
       transactionalSession.batch.push(promise);
     }
@@ -1823,23 +1696,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
   ) {
     debug('upsertOneObject', { className, query, update });
     const createValue = Object.assign({}, query, update);
-    return this.createObject(
-      className,
-      schema,
-      createValue,
-      transactionalSession
-    ).catch(error => {
+    return this.createObject(className, schema, createValue, transactionalSession).catch(error => {
       // ignore duplicate value errors as it's upsert
       if (error.code !== Parse.Error.DUPLICATE_VALUE) {
         throw error;
       }
-      return this.findOneAndUpdate(
-        className,
-        schema,
-        query,
-        update,
-        transactionalSession
-      );
+      return this.findOneAndUpdate(className, schema, query, update, transactionalSession);
     });
   }
 
@@ -1868,8 +1730,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     values.push(...where.values);
 
-    const wherePattern =
-      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {
       values.push(limit);
@@ -1892,10 +1753,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           return `${transformKey} DESC`;
         })
         .join();
-      sortPattern =
-        sort !== undefined && Object.keys(sort).length > 0
-          ? `ORDER BY ${sorting}`
-          : '';
+      sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
     if (where.sorts && Object.keys((where.sorts: any)).length > 0) {
       sortPattern = `ORDER BY ${where.sorts.join()}`;
@@ -1926,9 +1784,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     }
 
     const originalQuery = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
-    const qs = explain
-      ? this.createExplainableQuery(originalQuery)
-      : originalQuery;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client
       .any(qs, values)
@@ -1943,9 +1799,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (explain) {
           return results;
         }
-        return results.map(object =>
-          this.postgresObjectToParseObject(className, object, schema)
-        );
+        return results.map(object => this.postgresObjectToParseObject(className, object, schema));
       });
   }
 
@@ -1977,10 +1831,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         let coords = object[fieldName];
         coords = coords.substr(2, coords.length - 4).split('),(');
         coords = coords.map(point => {
-          return [
-            parseFloat(point.split(',')[1]),
-            parseFloat(point.split(',')[0]),
-          ];
+          return [parseFloat(point.split(',')[1]), parseFloat(point.split(',')[0])];
         });
         object[fieldName] = {
           __type: 'Polygon',
@@ -2052,37 +1903,26 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // As such, we shouldn't expose this function to users of parse until we have an out-of-band
   // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
   // which is why we use sparse indexes.
-  async ensureUniqueness(
-    className: string,
-    schema: SchemaType,
-    fieldNames: string[]
-  ) {
+  async ensureUniqueness(className: string, schema: SchemaType, fieldNames: string[]) {
     const constraintName = `${className}_unique_${fieldNames.sort().join('_')}`;
-    const constraintPatterns = fieldNames.map(
-      (fieldName, index) => `$${index + 3}:name`
-    );
+    const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE UNIQUE INDEX IF NOT EXISTS $2:name ON $1:name(${constraintPatterns.join()})`;
-    return this._client
-      .none(qs, [className, constraintName, ...fieldNames])
-      .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError &&
-          error.message.includes(constraintName)
-        ) {
-          // Index already exists. Ignore error.
-        } else if (
-          error.code === PostgresUniqueIndexViolationError &&
-          error.message.includes(constraintName)
-        ) {
-          // Cast the error into the proper parse error
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-        } else {
-          throw error;
-        }
-      });
+    return this._client.none(qs, [className, constraintName, ...fieldNames]).catch(error => {
+      if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
+        // Index already exists. Ignore error.
+      } else if (
+        error.code === PostgresUniqueIndexViolationError &&
+        error.message.includes(constraintName)
+      ) {
+        // Cast the error into the proper parse error
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_VALUE,
+          'A duplicate value for a field with unique values was provided'
+        );
+      } else {
+        throw error;
+      }
+    });
   }
 
   // Executes a count.
@@ -2103,15 +1943,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     values.push(...where.values);
 
-    const wherePattern =
-      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     let qs = '';
 
     if (where.pattern.length > 0 || !estimate) {
       qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     } else {
-      qs =
-        'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
+      qs = 'SELECT reltuples AS approximate_row_count FROM pg_class WHERE relname = $1';
     }
 
     return this._client
@@ -2130,12 +1968,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async distinct(
-    className: string,
-    schema: SchemaType,
-    query: QueryType,
-    fieldName: string
-  ) {
+  async distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
     debug('distinct', className, query);
     let field = fieldName;
     let column = fieldName;
@@ -2145,13 +1978,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
       column = fieldName.split('.')[0];
     }
     const isArrayField =
-      schema.fields &&
-      schema.fields[fieldName] &&
-      schema.fields[fieldName].type === 'Array';
+      schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Array';
     const isPointerField =
-      schema.fields &&
-      schema.fields[fieldName] &&
-      schema.fields[fieldName].type === 'Pointer';
+      schema.fields && schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
     const values = [field, column, className];
     const where = buildWhereClause({
       schema,
@@ -2161,8 +1990,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
     values.push(...where.values);
 
-    const wherePattern =
-      where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const transformer = isArrayField ? 'jsonb_array_elements' : 'ON';
     let qs = `SELECT DISTINCT ${transformer}($1:name) $2:name FROM $3:name ${wherePattern}`;
     if (isNested) {
@@ -2195,9 +2023,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         return results.map(object => object[column][child]);
       })
       .then(results =>
-        results.map(object =>
-          this.postgresObjectToParseObject(className, object, schema)
-        )
+        results.map(object => this.postgresObjectToParseObject(className, object, schema))
       );
   }
 
@@ -2235,11 +2061,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             index += 1;
             continue;
           }
-          if (
-            field === '_id' &&
-            typeof value === 'object' &&
-            Object.keys(value).length !== 0
-          ) {
+          if (field === '_id' && typeof value === 'object' && Object.keys(value).length !== 0) {
             groupValues = value;
             const groupByFields = [];
             for (const alias in value) {
@@ -2261,9 +2083,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
                   columns.push(
                     `EXTRACT(${
                       mongoAggregateToPostgres[operation]
-                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${
-                      index + 1
-                    }:name`
+                    } FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`
                   );
                   values.push(source, alias);
                   index += 2;
@@ -2323,10 +2143,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       if (stage.$match) {
         const patterns = [];
-        const orOrAnd = Object.prototype.hasOwnProperty.call(
-          stage.$match,
-          '$or'
-        )
+        const orOrAnd = Object.prototype.hasOwnProperty.call(stage.$match, '$or')
           ? ' OR '
           : ' AND ';
 
@@ -2345,9 +2162,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {
               const pgComparator = ParseToPosgresComparator[cmp];
-              matchPatterns.push(
-                `$${index}:name ${pgComparator} $${index + 1}`
-              );
+              matchPatterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
               values.push(field, toPostgresValue(value[cmp]));
               index += 2;
             }
@@ -2355,18 +2170,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
           if (matchPatterns.length > 0) {
             patterns.push(`(${matchPatterns.join(' AND ')})`);
           }
-          if (
-            schema.fields[field] &&
-            schema.fields[field].type &&
-            matchPatterns.length === 0
-          ) {
+          if (schema.fields[field] && schema.fields[field].type && matchPatterns.length === 0) {
             patterns.push(`$${index}:name = $${index + 1}`);
             values.push(field, value);
             index += 2;
           }
         }
-        wherePattern =
-          patterns.length > 0 ? `WHERE ${patterns.join(` ${orOrAnd} `)}` : '';
+        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(` ${orOrAnd} `)}` : '';
       }
       if (stage.$limit) {
         limitPattern = `LIMIT $${index}`;
@@ -2390,8 +2200,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           })
           .join();
         values.push(...keys);
-        sortPattern =
-          sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
+        sortPattern = sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
 
@@ -2406,17 +2215,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const originalQuery = `SELECT ${columns
       .filter(Boolean)
       .join()} FROM $1:name ${wherePattern} ${skipPattern} ${groupPattern} ${sortPattern} ${limitPattern}`;
-    const qs = explain
-      ? this.createExplainableQuery(originalQuery)
-      : originalQuery;
+    const qs = explain ? this.createExplainableQuery(originalQuery) : originalQuery;
     debug(qs, values);
     return this._client.any(qs, values).then(a => {
       if (explain) {
         return a;
       }
-      const results = a.map(object =>
-        this.postgresObjectToParseObject(className, object, schema)
-      );
+      const results = a.map(object => this.postgresObjectToParseObject(className, object, schema));
       results.forEach(result => {
         if (!Object.prototype.hasOwnProperty.call(result, 'objectId')) {
           result.objectId = null;
@@ -2474,11 +2279,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  async createIndexes(
-    className: string,
-    indexes: any,
-    conn: ?any
-  ): Promise<void> {
+  async createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
     return (conn || this._client).tx(t =>
       t.batch(
         indexes.map(i => {
@@ -2498,9 +2299,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     type: any,
     conn: ?any
   ): Promise<void> {
-    await (
-      conn || this._client
-    ).none('CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)', [
+    await (conn || this._client).none('CREATE INDEX IF NOT EXISTS $1:name ON $2:name ($3:name)', [
       fieldName,
       className,
       type,
@@ -2512,9 +2311,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       query: 'DROP INDEX $1:name',
       values: i,
     }));
-    await (conn || this._client).tx(t =>
-      t.none(this._pgp.helpers.concat(queries))
-    );
+    await (conn || this._client).tx(t => t.none(this._pgp.helpers.concat(queries)));
   }
 
   async getIndexes(className: string) {
@@ -2547,18 +2344,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   commitTransactionalSession(transactionalSession: any): Promise<void> {
-    transactionalSession.resolve(
-      transactionalSession.t.batch(transactionalSession.batch)
-    );
+    transactionalSession.resolve(transactionalSession.t.batch(transactionalSession.batch));
     return transactionalSession.result;
   }
 
   abortTransactionalSession(transactionalSession: any): Promise<void> {
     const result = transactionalSession.result.catch();
     transactionalSession.batch.push(Promise.reject());
-    transactionalSession.resolve(
-      transactionalSession.t.batch(transactionalSession.batch)
-    );
+    transactionalSession.resolve(transactionalSession.t.batch(transactionalSession.batch));
     return result;
   }
 
@@ -2575,41 +2368,34 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const indexNameOptions: Object =
       indexName != null ? { name: indexName } : { name: defaultIndexName };
     const constraintPatterns = caseInsensitive
-      ? fieldNames.map(
-        (fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`
-      )
+      ? fieldNames.map((fieldName, index) => `lower($${index + 3}:name) varchar_pattern_ops`)
       : fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `CREATE INDEX IF NOT EXISTS $1:name ON $2:name (${constraintPatterns.join()})`;
-    await conn
-      .none(qs, [indexNameOptions.name, className, ...fieldNames])
-      .catch(error => {
-        if (
-          error.code === PostgresDuplicateRelationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Index already exists. Ignore error.
-        } else if (
-          error.code === PostgresUniqueIndexViolationError &&
-          error.message.includes(indexNameOptions.name)
-        ) {
-          // Cast the error into the proper parse error
-          throw new Parse.Error(
-            Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided'
-          );
-        } else {
-          throw error;
-        }
-      });
+    await conn.none(qs, [indexNameOptions.name, className, ...fieldNames]).catch(error => {
+      if (
+        error.code === PostgresDuplicateRelationError &&
+        error.message.includes(indexNameOptions.name)
+      ) {
+        // Index already exists. Ignore error.
+      } else if (
+        error.code === PostgresUniqueIndexViolationError &&
+        error.message.includes(indexNameOptions.name)
+      ) {
+        // Cast the error into the proper parse error
+        throw new Parse.Error(
+          Parse.Error.DUPLICATE_VALUE,
+          'A duplicate value for a field with unique values was provided'
+        );
+      } else {
+        throw error;
+      }
+    });
   }
 }
 
 function convertPolygonToSQL(polygon) {
   if (polygon.length < 3) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
-      `Polygon must have at least 3 values`
-    );
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `Polygon must have at least 3 values`);
   }
   if (
     polygon[0][0] !== polygon[polygon.length - 1][0] ||
@@ -2757,9 +2543,7 @@ function literalizeRegexPart(s: string) {
 
 var GeoPointCoder = {
   isValidJSON(value) {
-    return (
-      typeof value === 'object' && value !== null && value.__type === 'GeoPoint'
-    );
+    return typeof value === 'object' && value !== null && value.__type === 'GeoPoint';
   },
 };
 

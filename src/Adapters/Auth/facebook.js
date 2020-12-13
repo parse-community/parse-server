@@ -19,20 +19,12 @@ function getAppSecretPath(authData, options = {}) {
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
   return graphRequest(
-    'me?fields=id&access_token=' +
-      authData.access_token +
-      getAppSecretPath(authData, options)
+    'me?fields=id&access_token=' + authData.access_token + getAppSecretPath(authData, options)
   ).then(data => {
-    if (
-      (data && data.id == authData.id) ||
-      (process.env.TESTING && authData.id === 'test')
-    ) {
+    if ((data && data.id == authData.id) || (process.env.TESTING && authData.id === 'test')) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
   });
 }
 
@@ -43,10 +35,7 @@ function validateAppId(appIds, authData, options) {
     return Promise.resolve();
   }
   if (!appIds.length) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook auth is not configured.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.');
   }
   return graphRequest(
     'app?access_token=' + access_token + getAppSecretPath(authData, options)
@@ -54,10 +43,7 @@ function validateAppId(appIds, authData, options) {
     if (data && appIds.indexOf(data.id) != -1) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is invalid for this user.');
   });
 }
 
