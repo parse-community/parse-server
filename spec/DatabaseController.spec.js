@@ -276,6 +276,7 @@ describe('DatabaseController', function () {
     });
 
     it('reduceOrOperation', done => {
+      expect(databaseController.reduceOrOperation({ a: 1 })).toEqual({ a: 1 });
       expect(databaseController.reduceOrOperation({ $or: [{ a: 1 }, { b: 2 }] })).toEqual({
         $or: [{ a: 1 }, { b: 2 }],
       });
@@ -293,6 +294,7 @@ describe('DatabaseController', function () {
     });
 
     it('reduceAndOperation', done => {
+      expect(databaseController.reduceAndOperation({ a: 1 })).toEqual({ a: 1 });
       expect(databaseController.reduceAndOperation({ $and: [{ a: 1 }, { b: 2 }] })).toEqual({
         $and: [{ a: 1 }, { b: 2 }],
       });

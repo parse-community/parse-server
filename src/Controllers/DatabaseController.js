@@ -1372,6 +1372,7 @@ class DatabaseController {
     return Object.entries(query).map(a => a.map(s => JSON.stringify(s)).join(':'));
   }
 
+  // Naive logic reducer for OR operations meant to be used only for pointer permissions.
   reduceOrOperation(query: { $or: Array<any> }): any {
     if (!query.$or) {
       return query;
@@ -1393,11 +1394,13 @@ class DatabaseController {
       }
     }
     if (query.$or.length === 1) {
-      return query.$or[0];
+      query = { ...query, ...query.$or[0] };
+      delete query.$or;
     }
     return query;
   }
 
+  // Naive logic reducer for AND operations meant to be used only for pointer permissions.
   reduceAndOperation(query: { $and: Array<any> }): any {
     if (!query.$and) {
       return query;
@@ -1419,7 +1422,8 @@ class DatabaseController {
       }
     }
     if (query.$and.length === 1) {
-      return query.$and[0];
+      query = { ...query, ...query.$and[0] };
+      delete query.$and;
     }
     return query;
   }
