@@ -1,7 +1,7 @@
 const https = require('https');
 
 function makeCallback(resolve, reject, noJSON) {
-  return function(res) {
+  return function (res) {
     let data = '';
     res.on('data', chunk => {
       data += chunk;
@@ -23,9 +23,7 @@ function makeCallback(resolve, reject, noJSON) {
 
 function get(options, noJSON = false) {
   return new Promise((resolve, reject) => {
-    https
-      .get(options, makeCallback(resolve, reject, noJSON))
-      .on('error', reject);
+    https.get(options, makeCallback(resolve, reject, noJSON)).on('error', reject);
   });
 }
 

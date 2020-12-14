@@ -9,6 +9,7 @@ const serverURL1 = 'http://localhost:1234/1';
 const serverURLNaked = 'http://localhost:1234/';
 const publicServerURL = 'http://domain.com/parse';
 const publicServerURLNaked = 'http://domain.com/';
+const publicServerURLLong = 'https://domain.com/something/really/long';
 
 const headers = {
   'Content-Type': 'application/json',
@@ -21,6 +22,26 @@ describe('batch', () => {
   it('should return the proper url', () => {
     const internalURL = batch.makeBatchRoutingPathFunction(originalURL)('/parse/classes/Object');
 
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url given a public url-only path', () => {
+    const originalURL = '/something/really/long/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      serverURL,
+      publicServerURLLong
+    )('/parse/classes/Object');
+    expect(internalURL).toEqual('/classes/Object');
+  });
+
+  it('should return the proper url given a server url-only path', () => {
+    const originalURL = '/parse/batch';
+    const internalURL = batch.makeBatchRoutingPathFunction(
+      originalURL,
+      serverURL,
+      publicServerURLLong
+    )('/parse/classes/Object');
     expect(internalURL).toEqual('/classes/Object');
   });
 

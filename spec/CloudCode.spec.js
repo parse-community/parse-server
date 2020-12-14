@@ -216,6 +216,21 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('test beforeSave with invalid field', async () => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('length', 0);
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
+    try {
+      await obj.save();
+      fail('should not succeed');
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: length.');
+    }
+  });
+
   it("test beforeSave changed object fail doesn't change object", async function () {
     Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
       if (req.object.has('fail')) {

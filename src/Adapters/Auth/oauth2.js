@@ -63,8 +63,7 @@ const INVALID_ACCESS_APPID =
   "OAuth2: the access_token's appID is empty or is not in the list of permitted appIDs in the auth configuration.";
 const MISSING_APPIDS =
   'OAuth2 configuration is missing the client app IDs ("appIds" config parameter).';
-const MISSING_URL =
-  'OAuth2 token introspection endpoint URL is missing from configuration!';
+const MISSING_URL = 'OAuth2 token introspection endpoint URL is missing from configuration!';
 
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData, options) {

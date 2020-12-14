@@ -11,10 +11,7 @@ function validateAuthData(authData) {
     if (response && response.data && response.data.id == authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Instagram auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Instagram auth is invalid for this user.');
   });
 }
 

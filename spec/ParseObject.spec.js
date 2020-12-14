@@ -701,29 +701,24 @@ describe('Parse.Object testing', () => {
       });
   });
 
-  it('length attribute', function (done) {
+  it('acl attribute', function (done) {
     Parse.User.signUp('bob', 'password').then(function (user) {
       const TestObject = Parse.Object.extend('TestObject');
       const obj = new TestObject({
-        length: 5,
         ACL: new Parse.ACL(user), // ACLs cause things like validation to run
       });
-      equal(obj.get('length'), 5);
       ok(obj.get('ACL') instanceof Parse.ACL);
 
       obj.save().then(function (obj) {
-        equal(obj.get('length'), 5);
         ok(obj.get('ACL') instanceof Parse.ACL);
 
         const query = new Parse.Query(TestObject);
         query.get(obj.id).then(function (obj) {
-          equal(obj.get('length'), 5);
           ok(obj.get('ACL') instanceof Parse.ACL);
 
           const query = new Parse.Query(TestObject);
           query.find().then(function (results) {
             obj = results[0];
-            equal(obj.get('length'), 5);
             ok(obj.get('ACL') instanceof Parse.ACL);
 
             done();
@@ -731,6 +726,21 @@ describe('Parse.Object testing', () => {
         });
       });
     });
+  });
+
+  it('cannot save object with invalid field', async () => {
+    const invalidFields = ['className', 'length'];
+    const promises = invalidFields.map(async field => {
+      const obj = new TestObject();
+      obj.set(field, 'bar');
+      try {
+        await obj.save();
+        fail('should not succeed');
+      } catch (e) {
+        expect(e.message).toBe(`Invalid field name: ${field}.`);
+      }
+    });
+    await Promise.all(promises);
   });
 
   it('old attribute unset then unset', function (done) {

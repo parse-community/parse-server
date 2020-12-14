@@ -564,7 +564,7 @@ class DatabaseController {
                 }
                 const rootFieldName = getRootFieldName(fieldName);
                 if (
-                  !SchemaController.fieldNameIsValid(rootFieldName) &&
+                  !SchemaController.fieldNameIsValid(rootFieldName, className) &&
                   !isSpecialUpdateKey(rootFieldName)
                 ) {
                   throw new Parse.Error(
@@ -1213,7 +1213,7 @@ class DatabaseController {
               throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
             }
             const rootFieldName = getRootFieldName(fieldName);
-            if (!SchemaController.fieldNameIsValid(rootFieldName)) {
+            if (!SchemaController.fieldNameIsValid(rootFieldName, className)) {
               throw new Parse.Error(
                 Parse.Error.INVALID_KEY_NAME,
                 `Invalid field name: ${fieldName}.`
