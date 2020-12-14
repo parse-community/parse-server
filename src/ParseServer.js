@@ -81,7 +81,7 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete();
         }
-        if (options.securityChecks.logOutput) {
+        if ((options.securityChecks || {}).logOutput) {
           this.getSecurityChecks();
         }
       })
@@ -118,8 +118,7 @@ class ParseServer {
     const response = await securityChecks(config);
     const logger = logging.getLogger();
     const warnings = response.response;
-    const security = warnings.Security || [];
-    const clp = warnings.CLP || [];
+    const clp = warnings.CLP;
     const total = warnings.Total;
     if (total == 0) {
       return;
@@ -127,9 +126,13 @@ class ParseServer {
     let errorString = `We found ${total} improvement${
       total == 1 ? '' : 's'
     } for you to make on your Parse Server:\n\n`;
-    for (const issue of security) {
-      errorString += ` -${issue.title}\n`;
-      errorString += `   ${issue.message}\n\n`;
+    delete warnings.Total;
+    delete warnings.CLP;
+    for (const security in warnings) {
+      for (const issue of warnings[security]) {
+        errorString += ` -${issue.title}\n`;
+        errorString += `   ${issue.message}\n\n`;
+      }
     }
     for (const issue in clp) {
       errorString += `\n Add CLP for Class: ${issue}\n`;

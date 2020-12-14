@@ -18,6 +18,7 @@ import Parse from 'parse/node';
 import _ from 'lodash';
 import defaults from '../../../defaults';
 import logger from '../../../logger';
+import url from 'url';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -186,6 +187,54 @@ export class MongoStorageAdapter implements StorageAdapter {
       return Promise.resolve();
     }
     return this.client.close(false);
+  }
+  async getSecurityLogs(req: any) {
+    const options = req.config || req;
+    let databaseURI = options.databaseURI;
+    const warnings = [];
+    if (databaseURI.includes('@')) {
+      databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
+      const pwd = options.databaseURI.split('//')[1].split('@')[0].split(':')[1] || '';
+      if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
+        warnings.push({
+          title: `Weak Database Password`,
+          message: 'The password used to connect to your database could be stronger.',
+          link: 'https://docs.mongodb.com/manual/security/',
+        });
+      }
+    }
+    let databaseAdmin = '' + databaseURI;
+    try {
+      const parsedURI = url.parse(databaseAdmin);
+      parsedURI.port = '27017';
+      databaseAdmin = parsedURI.toString();
+    } catch (e) {
+      /* */
+    }
+    try {
+      await MongoClient.connect(databaseAdmin, { useNewUrlParser: true });
+      warnings.push({
+        title: `Unrestricted access to port 27017`,
+        message:
+          'It is possible to connect to the admin port of your mongoDb without authentication.',
+        link: 'https://docs.mongodb.com/manual/security/',
+      });
+    } catch (e) {
+      /* */
+    }
+    try {
+      await MongoClient.connect(databaseURI, { useNewUrlParser: true });
+      warnings.push({
+        title: `Unrestricted access to your database`,
+        message:
+          'It is possible to connect to your mongoDb without username and password on your connection string.',
+        link: 'https://docs.mongodb.com/manual/security/',
+      });
+    } catch (e) {
+      /* */
+    }
+
+    return warnings;
   }
 
   _adaptiveCollection(name: string) {

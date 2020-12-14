@@ -45,8 +45,10 @@ describe('SecurityChecks', () => {
       url: Parse.serverURL + '/securityChecks',
     });
     request(options).then(res => {
-      expect(res.data.Security).not.toBeUndefined();
       expect(res.data.CLP).not.toBeUndefined();
+      expect(res.data.ServerConfig).not.toBeUndefined();
+      expect(res.data.Files).not.toBeUndefined();
+      expect(res.data.Database).not.toBeUndefined();
       expect(res.data.Total).not.toBeUndefined();
       done();
     });
