@@ -199,8 +199,7 @@ export interface ParseServerOptions {
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
   /* View recommendations for server improvements
-  :ENV: PARSE_SERVER_EXPERIMENTAL_SECURITY_CHECKS_OPTIONS
-  :DEFAULT: false */
+  :ENV: PARSE_SERVER_SECURITY_CHECKS_OPTIONS */
   securityChecks: ?SecurityChecksOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;

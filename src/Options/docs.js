@@ -126,7 +126,9 @@
  * @interface SecurityChecksOptions
  * @property {Boolean} enabled Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
  * @property {Boolean} logOutput If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
+ */
 
+/**
  * @interface AccountLockoutOptions
  * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
  * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked

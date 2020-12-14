@@ -10,8 +10,12 @@ export async function securityChecks(req) {
     const clpWarnings = {};
     const securityWarnings = [];
     let totalWarnings = 0;
+    const addWarning = (dataset, warning) => {
+      dataset.push(warning);
+      totalWarnings++;
+    };
     if (options.allowClientClassCreation) {
-      securityWarnings.push({
+      addWarning(securityWarnings, {
         title: 'Allow Client Class Creation is not recommended.',
         message:
           'Allow client class creation is not recommended for production servers it allows any user - authorized or not - to create a new class.',
@@ -19,7 +23,7 @@ export async function securityChecks(req) {
       });
     }
     if (!options.masterKey.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
-      securityWarnings.push({
+      addWarning(securityWarnings, {
         title: 'Weak masterKey.',
         message:
           'masterKey is a key that overrides all permissions. You should use a secure string for your masterKey',
@@ -33,8 +37,7 @@ export async function securityChecks(req) {
       const clp = field.classLevelPermissions;
       const thisClassWarnings = clpWarnings[className] || [];
       if (!clp) {
-        totalWarnings++;
-        thisClassWarnings.push({
+        addWarning(thisClassWarnings, {
           title: `No Class Level Permissions on ${className}`,
           message:
             'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
@@ -50,15 +53,13 @@ export async function securityChecks(req) {
           continue;
         }
         if (!option || option['*']) {
-          totalWarnings++;
-          thisClassWarnings.push({
+          addWarning(thisClassWarnings, {
             title: `Unrestricted access to ${key}.`,
             message: `We recommend restricting ${key} on all classes`,
             link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
           });
         } else if (Object.keys(option).length != 0 && key === 'addField') {
-          totalWarnings++;
-          thisClassWarnings.push({
+          addWarning(thisClassWarnings, {
             title: `Certain users can add fields.`,
             message:
               'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
@@ -70,8 +71,7 @@ export async function securityChecks(req) {
     }
     const fileTrigger = getTrigger('@File', 'beforeSaveFile', options.appId);
     if (!fileTrigger) {
-      totalWarnings++;
-      securityWarnings.push({
+      addWarning(securityWarnings, {
         title: `No beforeFileSave Trigger`,
         message:
           "Even if you don't store files, we strongly recommend using a beforeFileSave trigger to prevent unauthorized uploads.",
@@ -81,8 +81,7 @@ export async function securityChecks(req) {
       try {
         const file = new Parse.File('testpopeye.txt', [1, 2, 3], 'text/plain');
         await file.save();
-        totalWarnings++;
-        securityWarnings.push({
+        addWarning(securityWarnings, {
           title: `Unrestricted access to file uploads`,
           message:
             'Even though you have a beforeFileSave trigger, it allows unregistered users to upload.',
@@ -101,8 +100,7 @@ export async function securityChecks(req) {
       /* */
     }
     if (!https) {
-      totalWarnings++;
-      securityWarnings.push({
+      addWarning(securityWarnings, {
         title: `Server served over HTTP`,
         message: 'We strongly recommend using a HTTPS protocol.',
       });
@@ -120,17 +118,11 @@ export async function securityChecks(req) {
         databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
         const pwd = options.databaseURI.split('//')[1].split('@')[0].split(':')[1] || '';
         if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
-          // DB string must contain at least 1 lowercase alphabetical character
-          // DB string must contain at least 1 uppercase alphabetical character
-          // DB string must contain at least 1 numeric character
-          // DB string must contain at least one special character
-          // DB string must be 14 characters or longer
-          securityWarnings.push({
+          addWarning(securityWarnings, {
             title: `Weak Database Password`,
             message: 'The password used to connect to your database could be stronger.',
             link: 'https://docs.mongodb.com/manual/security/',
           });
-          totalWarnings++;
         }
       }
       let databaseAdmin = '' + databaseURI;
@@ -145,25 +137,23 @@ export async function securityChecks(req) {
       const MongoClient = mongodb.MongoClient;
       try {
         await MongoClient.connect(databaseAdmin, { useNewUrlParser: true });
-        securityWarnings.push({
+        addWarning(securityWarnings, {
           title: `Unrestricted access to port 27017`,
           message:
             'It is possible to connect to the admin port of your mongoDb without authentication.',
           link: 'https://docs.mongodb.com/manual/security/',
         });
-        totalWarnings++;
       } catch (e) {
         /* */
       }
       try {
         await MongoClient.connect(databaseURI, { useNewUrlParser: true });
-        securityWarnings.push({
+        addWarning(securityWarnings, {
           title: `Unrestricted access to your database`,
           message:
             'It is possible to connect to your mongoDb without username and password on your connection string.',
           link: 'https://docs.mongodb.com/manual/security/',
         });
-        totalWarnings++;
       } catch (e) {
         /* */
       }

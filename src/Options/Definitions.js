@@ -361,10 +361,9 @@ module.exports.ParseServerOptions = {
     default: 5000,
   },
   securityChecks: {
-    env: 'PARSE_SERVER_EXPERIMENTAL_SECURITY_CHECKS_OPTIONS',
+    env: 'PARSE_SERVER_SECURITY_CHECKS_OPTIONS',
     help: 'View recommendations for server improvements',
     action: parsers.objectParser,
-    default: {},
   },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
@@ -572,8 +571,8 @@ module.exports.SecurityChecksOptions = {
       'If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs',
     action: parsers.booleanParser,
     default: false,
-  }
-}
+  },
+};
 module.exports.AccountLockoutOptions = {
   duration: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_DURATION',

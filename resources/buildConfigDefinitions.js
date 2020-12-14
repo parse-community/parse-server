@@ -47,13 +47,11 @@ function getENVPrefix(iface) {
     'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
-    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_'
+    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
+    'SecurityChecksOptions' : 'PARSE_SERVER_SECURITY_CHECKS_'
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
-  }
-  if (iface.id.name === 'SecurityChecksOptions') {
-    return 'PARSE_SERVER_SECURITY_CHECKS_';
   }
 }
 
@@ -166,14 +164,8 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    if (type == 'CustomPagesOptions') {
-      const object = parsers.objectParser(value);
-      const props = Object.keys(object).map((key) => {
-        return t.objectProperty(key, object[value]);
-      });
-      literalValue = t.objectExpression(props);
-    }
-    if (type == 'IdempotencyOptions' || type == 'SecurityChecksOptions') {
+    const literalTypes = ['IdempotencyOptions','CustomPagesOptions','SecurityChecksOptions'];
+    if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);
