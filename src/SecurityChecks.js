@@ -2,7 +2,47 @@ import { getTrigger } from './triggers.js';
 import url from 'url';
 import Parse from 'parse/node';
 
-async function CLP(req) {
+export async function securityChecks(req) {
+  try {
+    const options = req.config || req;
+    if (!options.securityChecks.enabled) {
+      return { error: { code: 1, error: 'Security checks are not enabled.' } };
+    }
+    const functions = {
+      CLP: checkCLP,
+      ServerConfig: checkServerConfig,
+      Files: checkFiles,
+    };
+    if (
+      options.databaseAdapter.getSecurityLogs &&
+      typeof options.databaseAdapter.getSecurityLogs === 'function'
+    ) {
+      functions.Database = options.databaseAdapter.getSecurityLogs;
+    }
+    const response = {};
+    let totalWarnings = 0;
+    for (const name in functions) {
+      try {
+        const theFunction = functions[name];
+        const result = await theFunction(req);
+        if (Array.isArray(result)) {
+          totalWarnings += result.length;
+        } else {
+          totalWarnings += Object.keys(result).length;
+        }
+        response[name] = result;
+      } catch (e) {
+        /* */
+      }
+    }
+    response.Total = totalWarnings;
+    return { response };
+  } catch (error) {
+    return { error: { code: 1, error: error.message || 'Internal Server Error.' } };
+  }
+}
+
+async function checkCLP(req) {
   const options = req.config || req;
   const schema = await options.database.loadSchema();
   const all = await schema.getAllClasses();
@@ -46,7 +86,7 @@ async function CLP(req) {
   }
   return clpWarnings;
 }
-function ServerConfig(req) {
+function checkServerConfig(req) {
   const options = req.config || req;
   const warnings = [];
   if (options.allowClientClassCreation) {
@@ -80,7 +120,7 @@ function ServerConfig(req) {
   }
   return warnings;
 }
-async function Files(req) {
+async function checkFiles(req) {
   const options = req.config || req;
   const fileTrigger = getTrigger('@File', 'beforeSaveFile', options.appId);
   const fileWarnings = [];
@@ -107,44 +147,4 @@ async function Files(req) {
     }
   }
   return fileWarnings;
-}
-
-export async function securityChecks(req) {
-  try {
-    const options = req.config || req;
-    if (!options.securityChecks.enabled) {
-      return { error: { code: 1, error: 'Security checks are not enabled.' } };
-    }
-    const functions = {
-      CLP,
-      ServerConfig,
-      Files,
-    };
-    if (
-      options.databaseAdapter.getSecurityLogs &&
-      typeof options.databaseAdapter.getSecurityLogs === 'function'
-    ) {
-      functions.Database = options.databaseAdapter.getSecurityLogs;
-    }
-    const response = {};
-    let totalWarnings = 0;
-    for (const name in functions) {
-      try {
-        const theFunction = functions[name];
-        const result = await theFunction(req);
-        if (Array.isArray(result)) {
-          totalWarnings += result.length;
-        } else {
-          totalWarnings += Object.keys(result).length;
-        }
-        response[name] = result;
-      } catch (e) {
-        /* */
-      }
-    }
-    response.Total = totalWarnings;
-    return { response };
-  } catch (error) {
-    return { error: { code: 1, error: error.message || 'Internal Server Error.' } };
-  }
 }
