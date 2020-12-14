@@ -1780,6 +1780,15 @@ describe('Auth Adapter features', () => {
     policy: 'solo',
   };
 
+  const challengeAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateAuthData: () => Promise.resolve(),
+    challenge: () => Promise.resolve({ token: 'test' }),
+    options: {
+      anOption: true,
+    },
+  };
+
   const headers = {
     'Content-Type': 'application/json',
     'X-Parse-Application-Id': 'test',
@@ -2065,5 +2074,239 @@ describe('Auth Adapter features', () => {
       alwaysValidateAdapter: { someData2: true },
     });
   });
-  xit('should return challenge');
+  it('should return challenge with no logged user', async () => {
+    spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+
+    await reconfigureServer({
+      auth: { challengeAdapter },
+    });
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: {},
+      });
+      fail('should throw Nothing to challenge.');
+    } catch (e) {
+      expect(e.text).toContain('Nothing to challenge.');
+    }
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: { challengeData: true },
+      });
+      fail('should throw challengeData should be an object.');
+    } catch (e) {
+      expect(e.text).toContain('challengeData should be an object.');
+    }
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: { challengeData: { data: true }, authData: true },
+      });
+      fail('should throw authData should be an object.');
+    } catch (e) {
+      expect(e.text).toContain('authData should be an object.');
+    }
+
+    const res = await request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/challenge',
+      body: JSON.stringify({
+        challengeData: {
+          challengeAdapter: { someData: true },
+        },
+      }),
+    });
+
+    expect(JSON.parse(res.text)).toEqual({
+      challengeData: {
+        challengeAdapter: {
+          token: 'test',
+        },
+      },
+    });
+    const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
+    expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
+    expect(challengeCall[0]).toEqual({ someData: true });
+    expect(challengeCall[1]).toBeUndefined();
+    expect(challengeCall[2].config).toBeDefined();
+    expect(challengeCall[2].auth).toBeDefined();
+    expect(challengeCall[2].config.headers).toBeDefined();
+    expect(challengeCall[2]).toBeDefined({ anOption: true });
+  });
+  it('should return challenge with username created user', async () => {
+    spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+
+    await reconfigureServer({
+      auth: { challengeAdapter },
+    });
+
+    const user = new Parse.User();
+    await user.save({ username: 'username', password: 'password' });
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          username: 'username',
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+        }),
+      });
+      fail('should throw You provided username or email, you need to also provide password.');
+    } catch (e) {
+      expect(e.text).toContain(
+        'You provided username or email, you need to also provide password.'
+      );
+    }
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          username: 'username',
+          password: 'password',
+          authData: { data: true },
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+        }),
+      });
+      fail(
+        'should throw You cant provide username/email and authData, only use one identification method.'
+      );
+    } catch (e) {
+      expect(e.text).toContain(
+        'You cant provide username/email and authData, only use one identification method.'
+      );
+    }
+
+    const res = await request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/challenge',
+      body: JSON.stringify({
+        username: 'username',
+        password: 'password',
+        challengeData: {
+          challengeAdapter: { someData: true },
+        },
+      }),
+    });
+
+    expect(JSON.parse(res.text)).toEqual({
+      challengeData: {
+        challengeAdapter: {
+          token: 'test',
+        },
+      },
+    });
+    const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
+    expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
+    expect(challengeCall[0]).toEqual({ someData: true });
+    expect(challengeCall[1] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[1].id).toEqual(user.id);
+    expect(challengeCall[2].config).toBeDefined();
+    expect(challengeCall[2].auth).toBeDefined();
+    expect(challengeCall[2].config.headers).toBeDefined();
+    expect(challengeCall[2]).toBeDefined({ anOption: true });
+  });
+  it('should return challenge with authData created user', async () => {
+    spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+
+    await reconfigureServer({
+      auth: { challengeAdapter, soloAdapter },
+    });
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+          authData: {
+            challengeAdapter: { id: 'challengeAdapter' },
+          },
+        }),
+      });
+      fail('should throw User not found.');
+    } catch (e) {
+      expect(e.text).toContain('User not found.');
+    }
+
+    const user = new Parse.User();
+    await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
+
+    const user2 = new Parse.User();
+    await user2.save({ authData: { soloAdapter: { id: 'soloAdapter' } } });
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+          authData: {
+            challengeAdapter: { id: 'challengeAdapter' },
+            soloAdapter: { id: 'soloAdapter' },
+          },
+        }),
+      });
+      fail('should throw You cant provide more than one authData provider with an id.');
+    } catch (e) {
+      expect(e.text).toContain('You cant provide more than one authData provider with an id.');
+    }
+
+    const res = await request({
+      headers: headers,
+      method: 'POST',
+      url: 'http://localhost:8378/1/challenge',
+      body: JSON.stringify({
+        challengeData: {
+          challengeAdapter: { someData: true },
+        },
+        authData: {
+          challengeAdapter: { id: 'challengeAdapter' },
+        },
+      }),
+    });
+
+    expect(JSON.parse(res.text)).toEqual({
+      challengeData: {
+        challengeAdapter: {
+          token: 'test',
+        },
+      },
+    });
+    const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
+    expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
+    expect(challengeCall[0]).toEqual({ someData: true });
+    expect(challengeCall[1] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[1].id).toEqual(user.id);
+    expect(challengeCall[2].config).toBeDefined();
+    expect(challengeCall[2].auth).toBeDefined();
+    expect(challengeCall[2].config.headers).toBeDefined();
+    expect(challengeCall[2]).toBeDefined({ anOption: true });
+  });
 });

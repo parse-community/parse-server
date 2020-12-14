@@ -425,8 +425,7 @@ export class UsersRouter extends ClassesRouter {
   }
 
   async handleChallenge(req) {
-    if (!req.body) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Missing body');
-    const { username, email, password, authData } = req.body;
+    const { username, email, password, authData, challengeData } = req.body;
 
     // if username or email provided with password try to find the user with default
     // system
@@ -435,55 +434,51 @@ export class UsersRouter extends ClassesRouter {
       if (!password)
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
-          'You provide username or email, you need to also provide password.'
+          'You provided username or email, you need to also provide password.'
         );
       user = await this._authenticateUserFromRequest(req);
     }
 
-    if (!authData && !user) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge');
-    // If no authData provided but user found just return the user id
-    if (!authData && user) return { response: undefined };
+    if (!challengeData) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Nothing to challenge.');
 
-    // First try to find authData with an id
-    if (typeof authData !== 'object')
-      new Parse.Error(Parse.Error.OTHER_CAUSE, 'authData should be an object');
+    if (typeof challengeData !== 'object')
+      throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'challengeData should be an object.');
 
-    const authDataWithIds = Object.keys(authData).filter(key => authData[key].id);
-
-    // We need to prevent security breach by providing multi id authData at same time
-    if (authDataWithIds > 1)
-      new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
-        'You cant provide more than one authData service with an id'
-      );
-    if (authDataWithIds.length && user)
-      new Parse.Error(
-        Parse.Error.OTHER_CAUSE,
-        'You cant provide username/email and an authData service with an id'
-      );
+    // Try to find user by authData
+    if (authData) {
+      if (typeof authData !== 'object')
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'authData should be an object.');
+      // To avoid security issue we should only support one identifying method
+      if (user)
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          'You cant provide username/email and authData, only use one identification method.'
+        );
+      const results = await Auth.findUsersWithAuthData(req.config, authData);
+      if (results.length > 1) {
+        throw new Parse.Error(
+          Parse.Error.OTHER_CAUSE,
+          'You cant provide more than one authData provider with an id.'
+        );
+      }
+      if (!results[0]) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+      user = results[0];
+    }
 
     const authAdapters = req.config.auth;
-
-    // Find the user via authData
-    if (authDataWithIds.length) {
-      const [authDataWithId] = authDataWithIds;
-      const [userFound] = await Auth.findUsersWithAuthData(req.config, authData[authDataWithId]);
-      if (!userFound) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found');
-      user = userFound;
-    }
 
     // Execute challenge step by step
     // with consistent order
     const challenge = await Auth.reducePromise(
-      Object.keys(authData).sort(),
-      async (acc, key) => {
-        if (typeof authAdapters[key].challenge === 'function') {
-          acc[key] =
-            (await authAdapters[key].challenge(
-              authData[key],
-              user,
+      Object.keys(challengeData).sort(),
+      async (acc, provider) => {
+        if (typeof authAdapters[provider].challenge === 'function') {
+          acc[provider] =
+            (await authAdapters[provider].challenge(
+              challengeData[provider],
+              user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined,
               req,
-              authAdapters[key].options
+              authAdapters[provider].options
             )) || true;
           return acc;
         }
@@ -491,7 +486,7 @@ export class UsersRouter extends ClassesRouter {
       {}
     );
 
-    return { response: Object.keys(challenge).length ? challenge : undefined };
+    return { response: Object.keys(challenge).length ? { challengeData: challenge } : undefined };
   }
 
   mountRoutes() {
@@ -531,10 +526,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('GET', '/verifyPassword', req => {
       return this.handleVerifyPassword(req);
     });
-    this.route('GET', '/loginChallenge', req => {
-      return this.handleChallenge(req);
-    });
-    this.route('POST', '/loginChallenge', req => {
+    this.route('POST', '/challenge', req => {
       return this.handleChallenge(req);
     });
   }
