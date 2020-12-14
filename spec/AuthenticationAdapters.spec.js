@@ -1755,17 +1755,17 @@ describe('Auth Adapter features', () => {
     validateAuthData: () => Promise.resolve(),
     required: true,
   };
-  const eachTimeAdapter = {
+  const alwaysValidateAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
     options: { anOption: true },
-    validateEachTime: true,
+    alwaysValidate: true,
   };
 
   const doNotSaveAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve({ doNotSave: true }),
-    validateEachTime: true,
+    alwaysValidate: true,
   };
 
   const additionalAdapter = {
@@ -1787,8 +1787,8 @@ describe('Auth Adapter features', () => {
   };
 
   it('should pass authData, options, req, user to validateAuthData', async () => {
-    spyOn(eachTimeAdapter, 'validateAuthData').and.resolveTo({});
-    await reconfigureServer({ auth: { eachTimeAdapter } });
+    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { alwaysValidateAdapter } });
 
     const user = new Parse.User();
 
@@ -1797,14 +1797,14 @@ describe('Auth Adapter features', () => {
     await user.save({
       username: 'test',
       password: 'password',
-      authData: { eachTimeAdapter: payload },
+      authData: { alwaysValidateAdapter: payload },
     });
 
     expect(user.getSessionToken()).toBeDefined();
 
-    const firstCall = eachTimeAdapter.validateAuthData.calls.argsFor(0);
+    const firstCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(0);
     expect(firstCall[0]).toEqual(payload);
-    expect(firstCall[1]).toEqual(eachTimeAdapter);
+    expect(firstCall[1]).toEqual(alwaysValidateAdapter);
     expect(firstCall[2].config).toBeDefined();
     expect(firstCall[2].config.headers).toBeDefined();
     expect(firstCall[2].auth).toBeDefined();
@@ -1818,12 +1818,12 @@ describe('Auth Adapter features', () => {
       body: JSON.stringify({
         username: 'test',
         password: 'password',
-        authData: { eachTimeAdapter: payload },
+        authData: { alwaysValidateAdapter: payload },
       }),
     });
-    const secondCall = eachTimeAdapter.validateAuthData.calls.argsFor(1);
+    const secondCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(1);
     expect(secondCall[0]).toEqual(payload);
-    expect(secondCall[1]).toEqual(eachTimeAdapter);
+    expect(secondCall[1]).toEqual(alwaysValidateAdapter);
     expect(secondCall[2].config).toBeDefined();
     expect(secondCall[2].auth).toBeDefined();
     expect(secondCall[2].config.headers).toBeDefined();
@@ -1863,7 +1863,7 @@ describe('Auth Adapter features', () => {
     const user = new Parse.User();
 
     try {
-      await user.save({ authData: { eachTimeAdapter: { id: 'shouldRequireAdapter' } } });
+      await user.save({ authData: { alwaysValidateAdapter: { id: 'shouldRequireAdapter' } } });
       fail('should not save the user');
     } catch (e) {
       expect(e.message).toContain('Missing required authData requiredAdapter');
@@ -1895,11 +1895,11 @@ describe('Auth Adapter features', () => {
 
     expect(user.get('authData')).toEqual({ requiredAdapter: { id: 'requiredAdapter' } });
   });
-  it('should force authData validation if provider use validateEachTime', async () => {
-    spyOn(eachTimeAdapter, 'validateAuthData').and.resolveTo({});
+  it('should force authData validation if provider use alwaysValidate', async () => {
+    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
     spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({
-      auth: { eachTimeAdapter, requiredAdapter },
+      auth: { alwaysValidateAdapter, requiredAdapter },
     });
 
     const user = new Parse.User();
@@ -1907,11 +1907,11 @@ describe('Auth Adapter features', () => {
     await user.save({
       authData: {
         requiredAdapter: { id: 'requiredAdapter' },
-        eachTimeAdapter: { token: true },
+        alwaysValidateAdapter: { token: true },
       },
     });
 
-    expect(eachTimeAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(1);
 
     const user2 = new Parse.User();
     await user2.save({
@@ -1920,17 +1920,17 @@ describe('Auth Adapter features', () => {
       },
     });
 
-    expect(eachTimeAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(1);
 
     const user3 = new Parse.User();
     await user3.save({
       authData: {
         requiredAdapter: { id: 'requiredAdapter' },
-        eachTimeAdapter: { token: true },
+        alwaysValidateAdapter: { token: true },
       },
     });
 
-    expect(eachTimeAdapter.validateAuthData).toHaveBeenCalledTimes(2);
+    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(2);
   });
   it('should require additional provider if configured', async () => {
     await reconfigureServer({
@@ -1992,9 +1992,11 @@ describe('Auth Adapter features', () => {
   });
   it('should return authData response on non username login', async () => {
     spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({ response: { someData: true } });
-    spyOn(eachTimeAdapter, 'validateAuthData').and.resolveTo({ response: { someData2: true } });
+    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+      response: { someData2: true },
+    });
     await reconfigureServer({
-      auth: { requiredAdapter, eachTimeAdapter },
+      auth: { requiredAdapter, alwaysValidateAdapter },
     });
 
     const user = new Parse.User();
@@ -2002,30 +2004,32 @@ describe('Auth Adapter features', () => {
     await user.save({
       authData: {
         requiredAdapter: { id: 'requiredAdapter' },
-        eachTimeAdapter: { test: true },
+        alwaysValidateAdapter: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
       requiredAdapter: { someData: true },
-      eachTimeAdapter: { someData2: true },
+      alwaysValidateAdapter: { someData2: true },
     });
 
     const user2 = new Parse.User();
     await user2.save({
       authData: {
         requiredAdapter: { id: 'requiredAdapter' },
-        eachTimeAdapter: { test: true },
+        alwaysValidateAdapter: { test: true },
       },
     });
 
-    expect(user2.get('authDataResponse')).toEqual({ eachTimeAdapter: { someData2: true } });
+    expect(user2.get('authDataResponse')).toEqual({ alwaysValidateAdapter: { someData2: true } });
   });
   it('should return authData response on username login', async () => {
     spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({ response: { someData: true } });
-    spyOn(eachTimeAdapter, 'validateAuthData').and.resolveTo({ response: { someData2: true } });
+    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+      response: { someData2: true },
+    });
     await reconfigureServer({
-      auth: { requiredAdapter, eachTimeAdapter },
+      auth: { requiredAdapter, alwaysValidateAdapter },
     });
 
     const user = new Parse.User();
@@ -2035,13 +2039,13 @@ describe('Auth Adapter features', () => {
       password: 'password',
       authData: {
         requiredAdapter: { id: 'requiredAdapter' },
-        eachTimeAdapter: { test: true },
+        alwaysValidateAdapter: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
       requiredAdapter: { someData: true },
-      eachTimeAdapter: { someData2: true },
+      alwaysValidateAdapter: { someData2: true },
     });
 
     const res = await request({
@@ -2051,11 +2055,14 @@ describe('Auth Adapter features', () => {
       body: JSON.stringify({
         username: 'username',
         password: 'password',
-        authData: { eachTimeAdapter: { test: true }, requiredAdapter: { id: 'requiredAdapter' } },
+        authData: {
+          alwaysValidateAdapter: { test: true },
+          requiredAdapter: { id: 'requiredAdapter' },
+        },
       }),
     });
     expect(JSON.parse(res.text).authDataResponse).toEqual({
-      eachTimeAdapter: { someData2: true },
+      alwaysValidateAdapter: { someData2: true },
     });
   });
   xit('should return challenge');

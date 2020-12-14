@@ -12,7 +12,7 @@ export class AuthAdapter {
      * Set to true if you want to force to validateAuthData
      * even if authData do not change
      */
-    this.validateEachTime = false;
+    this.alwaysValidate = false;
 
     /**
      * Usage policy

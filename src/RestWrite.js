@@ -406,7 +406,7 @@ RestWrite.prototype.validateAuthData = function () {
     }
 
     // Will throw if user do not provide required auth data
-    Auth.checkRequiredProviders({}, undefined, this.config);
+    Auth.checkRequiredProviders(authData, undefined, this.config);
 
     return;
   } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
@@ -510,6 +510,9 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         this,
         userResult
       );
+
+      // Replace current authData by the new validated one
+      this.data.authData = validatedAuthData;
 
       this.authDataResponse = authDataResponse;
       // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...

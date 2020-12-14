@@ -379,7 +379,7 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
     if (provider === 'anonymous') return;
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
-    if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].validateEachTime) {
+    if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].alwaysValidate) {
       mutatedAuthData[provider] = providerData;
     }
   });
@@ -408,7 +408,7 @@ const checkRequiredProviders = (authData = {}, userAuthData, config) => {
   const savedUserProviders = Object.keys(userAuthData);
 
   const hasProvidedASoloProvider = savedUserProviders.some(
-    provider => config.auth[provider].policy === 'solo'
+    provider => config.auth[provider] && config.auth[provider].policy === 'solo'
   );
 
   // Solo providers can be considered as safe
@@ -418,7 +418,7 @@ const checkRequiredProviders = (authData = {}, userAuthData, config) => {
 
   const additionProvidersNotFound = [];
   const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
-    if (config.auth[provider].policy === 'additional') {
+    if (config.auth[provider] && config.auth[provider].policy === 'additional') {
       if (authData[provider]) {
         return true;
       } else {
@@ -453,7 +453,7 @@ const handleAuthDataValidation = (authData, req, foundUser) => {
     Object.keys(authData).sort(),
     async (acc, provider) => {
       if (authData[provider] === null) {
-        authData[provider] = null;
+        acc.authData[provider] = null;
         return acc;
       }
       const validateAuthData = req.config.authDataManager.getValidatorForProvider(provider);
