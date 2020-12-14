@@ -175,6 +175,11 @@ module.exports.ParseServerOptions = {
     help: 'Adapter module for the files sub-system',
     action: parsers.moduleOrObjectParser,
   },
+  fileUpload: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
+    help: 'Options for file uploads',
+    action: parsers.objectParser,
+  },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
     help: 'Mount path for the GraphQL endpoint, defaults to /graphql',
@@ -598,5 +603,26 @@ module.exports.PasswordPolicyOptions = {
   validatorPattern: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_VALIDATOR_PATTERN',
     help: 'a RegExp object or a regex string representing the pattern to enforce',
+  },
+};
+module.exports.FileUploadOptions = {
+  enabledForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_ANONYMOUS_USER',
+    help: 'File upload is enabled for Anonymous Users.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enabledForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_AUTHENTICATED_USER',
+    help: 'File upload is enabled for authenticated users.',
+    action: parsers.booleanParser,
+    default: true,
+  },
+  enabledForPublic: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_PUBLIC',
+    help:
+      'File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.',
+    action: parsers.booleanParser,
+    default: false,
   },
 };

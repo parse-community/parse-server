@@ -94,6 +94,29 @@ export class FilesRouter {
 
   async createHandler(req, res, next) {
     const config = req.config;
+    if (
+      !req.config.fileUpload.enabledForAnonymousUser &&
+      req.auth.user &&
+      Parse.AnonymousUtils.isLinked(req.auth.user)
+    ) {
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Anonymous file upload is not enabled.'));
+      return;
+    }
+    if (
+      !req.config.fileUpload.enabledForAuthenticatedUser &&
+      req.config.fileUpload.enabledForAuthenticatedUser != null &&
+      req.auth.user &&
+      !Parse.AnonymousUtils.isLinked(req.auth.user)
+    ) {
+      next(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Authenticated file upload is not enabled.')
+      );
+      return;
+    }
+    if (!req.config.fileUpload.enabledForPublic && !req.auth.user) {
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Public file upload is not enabled.'));
+      return;
+    }
     const filesController = config.filesController;
     const { filename } = req.params;
     const contentType = req.get('Content-type');

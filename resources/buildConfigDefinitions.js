@@ -47,7 +47,8 @@ function getENVPrefix(iface) {
     'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
-    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_'
+    'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
+    'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_'
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
@@ -163,14 +164,8 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    if (type == 'CustomPagesOptions') {
-      const object = parsers.objectParser(value);
-      const props = Object.keys(object).map((key) => {
-        return t.objectProperty(key, object[value]);
-      });
-      literalValue = t.objectExpression(props);
-    }
-    if (type == 'IdempotencyOptions') {
+    const literalTypes = ['IdempotencyOptions','FileUploadOptions','CustomPagesOptions'];
+    if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);

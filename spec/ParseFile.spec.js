@@ -860,4 +860,125 @@ describe('Parse.File testing', () => {
       });
     });
   });
+  describe('file upload restrictions', () => {
+    it('can reject file upload with unspecified', async () => {
+      await reconfigureServer({
+        fileUpload: {},
+      });
+      try {
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save();
+        fail('should not have been able to save file.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Public file upload is not enabled.');
+      }
+    });
+    it('disable file upload', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForPublic: false,
+          enabledForAnonymousUser: false,
+          enabledForAuthenticatedUser: false,
+        },
+      });
+      try {
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save();
+        fail('should not have been able to save file.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Public file upload is not enabled.');
+      }
+    });
+    it('disable for public', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForPublic: false,
+        },
+      });
+      try {
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save();
+        fail('should not have been able to save file.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Public file upload is not enabled.');
+      }
+    });
+
+    it('disable for public allow user', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForPublic: false,
+        },
+      });
+      try {
+        const user = await Parse.User.signUp('myUser', 'password');
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+      } catch (e) {
+        fail('should have allowed file to save.');
+      }
+    });
+
+    it('disable for anonymous', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForAnonymousUser: false,
+        },
+      });
+      try {
+        const user = await Parse.AnonymousUtils.logIn();
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+        fail('should not have been able to save file.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Anonymous file upload is not enabled.');
+      }
+    });
+
+    it('enable for anonymous', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForPublic: false,
+          enabledForAnonymousUser: true,
+        },
+      });
+      try {
+        const user = await Parse.AnonymousUtils.logIn();
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+      } catch (e) {
+        fail('should have allowed file to save.');
+      }
+    });
+
+    it('enable for anonymous but not authenticated', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enabledForPublic: false,
+          enabledForAnonymousUser: true,
+          enabledForAuthenticatedUser: false,
+        },
+      });
+      try {
+        const user = await Parse.AnonymousUtils.logIn();
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+      } catch (e) {
+        fail('should have allowed file to save.');
+      }
+      try {
+        const user = await Parse.User.signUp('myUser', 'password');
+        const file = new Parse.File('hello.txt', data, 'text/plain');
+        await file.save({ sessionToken: user.getSessionToken() });
+        fail('should have not allowed file to save.');
+      } catch (e) {
+        expect(e.code).toBe(130);
+        expect(e.message).toBe('Authenticated file upload is not enabled.');
+      }
+    });
+  });
 });

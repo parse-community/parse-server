@@ -88,6 +88,9 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
+  fileUpload: {
+    enabledForPublic: true,
+  },
   push: {
     android: {
       senderId: 'yolo',
