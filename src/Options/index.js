@@ -11,6 +11,7 @@ import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 type Adapter<T> = string | any | T;
 type NumberOrBoolean = number | boolean;
 type NumberOrString = number | string;
+type StringOrAny = string | any;
 type ProtectedFields = any;
 
 export interface ParseServerOptions {
@@ -198,6 +199,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* Options for default ACL on classes
+  :ENV: PARSE_SERVER_DEFAULT_ACL
+  :DEFAULT: private */
+  defaultACL: ?StringOrAny;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint

@@ -931,4 +931,177 @@ describe('Parse.ACL', () => {
 
     rest.create(config, auth.nobody(config), '_User', anonUser);
   });
+
+  it('defaultACL private', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'private',
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
+    done();
+  });
+
+  it('defaultACL publicRead', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'publicRead',
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBeUndefined();
+    done();
+  });
+
+  it('defaultACL publicWrite', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'publicWrite',
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].write).toBe(true);
+    expect(acl['*'].read).toBeUndefined();
+    done();
+  });
+
+  it('defaultACL roleRead', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'roleRead:Administrator',
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBeUndefined();
+    done();
+  });
+
+  it('defaultACL roleWrite', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'roleWrite:Administrator',
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBeUndefined();
+    expect(acl['role:Administrator'].write).toBe(true);
+    done();
+  });
+
+  it('defaultACL roleReadWrite', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'roleReadWrite:Administrator',
+    });
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBe(true);
+    done();
+  });
+
+  it('defaultACL object readWrite', async function (done) {
+    await reconfigureServer({
+      defaultACL: {
+        TestObject: {
+          public: 'readWrite',
+          private: 'readWrite',
+          'role:Administrator': 'readWrite',
+          customId: 'readWrite',
+        },
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBe(true);
+    expect(acl[user.id].read).toBe(true);
+    expect(acl[user.id].write).toBe(true);
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBe(true);
+    expect(acl['customId'].read).toBe(true);
+    expect(acl['customId'].write).toBe(true);
+    done();
+  });
+
+  it('defaultACL object read', async function (done) {
+    await reconfigureServer({
+      defaultACL: {
+        TestObject: {
+          public: 'read',
+          private: 'read',
+          'role:Administrator': 'read',
+          customId: 'read',
+        },
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].read).toBe(true);
+    expect(acl['*'].write).toBeUndefined();
+    expect(acl[user.id].read).toBe(true);
+    expect(acl[user.id].write).toBeUndefined();
+    expect(acl['role:Administrator'].read).toBe(true);
+    expect(acl['role:Administrator'].write).toBeUndefined();
+    expect(acl['customId'].read).toBe(true);
+    expect(acl['customId'].write).toBeUndefined();
+    done();
+  });
+
+  it('defaultACL object write', async function (done) {
+    await reconfigureServer({
+      defaultACL: {
+        TestObject: {
+          public: 'write',
+          private: 'write',
+          'role:Administrator': 'write',
+          customId: 'write',
+        },
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*'].write).toBe(true);
+    expect(acl['*'].read).toBeUndefined();
+    expect(acl[user.id].write).toBe(true);
+    expect(acl[user.id].read).toBeUndefined();
+    expect(acl['role:Administrator'].write).toBe(true);
+    expect(acl['role:Administrator'].read).toBeUndefined();
+    expect(acl['customId'].write).toBe(true);
+    expect(acl['customId'].read).toBeUndefined();
+    done();
+  });
 });

@@ -163,6 +163,13 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
+    if (type == 'StringOrAny') {
+      if (value == '""' || value == "''") {
+        literalValue = t.stringLiteral('');
+      } else {
+        literalValue = t.stringLiteral(value);
+      }
+    }
     if (type == 'CustomPagesOptions') {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {

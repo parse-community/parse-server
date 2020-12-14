@@ -109,6 +109,12 @@ module.exports.ParseServerOptions = {
     required: true,
     default: 'mongodb://localhost:27017/parse',
   },
+  defaultACL: {
+    env: 'PARSE_SERVER_DEFAULT_ACL',
+    help: 'Options for default ACL on classes',
+    action: parsers.objectParser,
+    default: 'private',
+  },
   directAccess: {
     env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
     help:
