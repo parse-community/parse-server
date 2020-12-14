@@ -25,6 +25,6 @@ Related issue: FILL_THIS_OUT
 - [ ] Add test cases
 - [ ] Add entry to changelog
 - [ ] Add changes to documentation (guides, repository pages, in-code descriptions)
-- [ ] Add security check warning <!-- see PR #6973 -->
+- [ ] Add [security check](https://github.com/parse-community/parse-server/blob/master/CONTRIBUTING.md#security-checks)
 - [ ] Add new Parse Error codes to Parse JS SDK <!-- no hard-coded error codes in Parse Server -->
 - [ ] ...
