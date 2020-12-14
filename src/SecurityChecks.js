@@ -1,6 +1,7 @@
 import { getTrigger } from './triggers.js';
 import url from 'url';
 import Parse from 'parse/node';
+
 async function CLP(req) {
   const options = req.config || req;
   const schema = await options.database.loadSchema();
