@@ -1378,21 +1378,28 @@ class DatabaseController {
       return query;
     }
     const queries = query.$or.map(q => this.objectToEntriesStrings(q));
-    for (let i = 0; i < queries.length - 1; i++) {
-      for (let j = i + 1; j < queries.length; j++) {
-        const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
-        const foundEntries = queries[shorter].reduce(
-          (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
-          0
-        );
-        if (foundEntries === queries[shorter].length) {
-          // If the shorter query is completely contained in the longer one, we can strike
-          // out the longer query.
-          query.$or.splice(longer, 1);
-          queries.splice(longer, 1);
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the longer query.
+            query.$or.splice(longer, 1);
+            queries.splice(longer, 1);
+            repeat = true;
+            break;
+          }
         }
       }
-    }
+    } while (repeat);
     if (query.$or.length === 1) {
       query = { ...query, ...query.$or[0] };
       delete query.$or;
@@ -1406,21 +1413,28 @@ class DatabaseController {
       return query;
     }
     const queries = query.$and.map(q => this.objectToEntriesStrings(q));
-    for (let i = 0; i < queries.length - 1; i++) {
-      for (let j = i + 1; j < queries.length; j++) {
-        const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
-        const foundEntries = queries[shorter].reduce(
-          (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
-          0
-        );
-        if (foundEntries === queries[shorter].length) {
-          // If the shorter query is completely contained in the longer one, we can strike
-          // out the shorter query.
-          query.$and.splice(shorter, 1);
-          queries.splice(shorter, 1);
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the shorter query.
+            query.$and.splice(shorter, 1);
+            queries.splice(shorter, 1);
+            repeat = true;
+            break;
+          }
         }
       }
-    }
+    } while (repeat);
     if (query.$and.length === 1) {
       query = { ...query, ...query.$and[0] };
       delete query.$and;

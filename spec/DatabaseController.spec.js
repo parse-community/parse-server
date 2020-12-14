@@ -236,6 +236,65 @@ describe('DatabaseController', function () {
       done();
     });
 
+    it('should not return a $or operation if the query involves one of the two fields also used as array/pointer permissions', done => {
+      const clp = buildCLP(['users', 'user']);
+      const query = { a: 'b', user: createUserPointer(USER_ID) };
+
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Pointer' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'users')
+        .and.returnValue({ type: 'Array' });
+
+      const output = databaseController.addPointerPermissions(
+        schemaController,
+        CLASS_NAME,
+        OPERATION,
+        query,
+        ACL_GROUP
+      );
+
+      expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
+
+      done();
+    });
+
+    it('should not return a $or operation if the query involves one of the fields also used as array/pointer permissions', done => {
+      const clp = buildCLP(['user', 'users', 'userObject']);
+      const query = { a: 'b', user: createUserPointer(USER_ID) };
+
+      schemaController.testPermissionsForClassName
+        .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
+        .and.returnValue(false);
+      schemaController.getClassLevelPermissions.withArgs(CLASS_NAME).and.returnValue(clp);
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'user')
+        .and.returnValue({ type: 'Pointer' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'users')
+        .and.returnValue({ type: 'Array' });
+      schemaController.getExpectedType
+        .withArgs(CLASS_NAME, 'userObject')
+        .and.returnValue({ type: 'Object' });
+
+      const output = databaseController.addPointerPermissions(
+        schemaController,
+        CLASS_NAME,
+        OPERATION,
+        query,
+        ACL_GROUP
+      );
+
+      expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
+
+      done();
+    });
+
     it('should throw an error if for some unexpected reason the property specified in the CLP is neither a pointer nor an array', done => {
       const clp = buildCLP(['user']);
       const query = { a: 'b' };
