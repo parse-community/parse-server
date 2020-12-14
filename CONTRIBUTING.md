@@ -8,12 +8,12 @@ If you are not familiar with Pull Requests and want to know more about them, you
 
 ### Recommended setup:
 
-* [vscode](https://code.visualstudio.com), the popular IDE.
-* [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
+- [vscode](https://code.visualstudio.com), the popular IDE.
+- [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up you local machine:
 
-* [Fork](https://github.com/parse-community/parse-server) this project and clone the fork on your local machine:
+- [Fork](https://github.com/parse-community/parse-server) this project and clone the fork on your local machine:
 
 ```sh
 $ git clone https://github.com/parse-community/parse-server
@@ -29,44 +29,44 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 ### Good to know:
 
-* The `lib/` folder is not commited, so never make changes in there.
-* Always make changes to files in the `src/` folder.
-* All the tests should point to sources in the `lib/` folder.
+- The `lib/` folder is not commited, so never make changes in there.
+- Always make changes to files in the `src/` folder.
+- All the tests should point to sources in the `lib/` folder.
 
 ### Troubleshooting:
 
-*Question*: I modify the code in the src folder but it doesn't seem to have any effect.<br/>
-*Answer*: Check that `npm run watch` is running
+_Question_: I modify the code in the src folder but it doesn't seem to have any effect.<br/>
+_Answer_: Check that `npm run watch` is running
 
-*Question*: How do I use breakpoints and debug step by step?<br/>
-*Answer*: The easiest way is to install [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), it will let you run selectively tests and debug them.
+_Question_: How do I use breakpoints and debug step by step?<br/>
+_Answer_: The easiest way is to install [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), it will let you run selectively tests and debug them.
 
-*Question*: How do I deploy my forked version on my servers?<br/>
-*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/MY_USERNAME/parse-server#MY_FEATURE`. Run `npm install`, commit the changes and deploy to your servers.
-
+_Question_: How do I deploy my forked version on my servers?<br/>
+_Answer_: In your `package.json`, update the `parse-server` dependency to `https://github.com/MY_USERNAME/parse-server#MY_FEATURE`. Run `npm install`, commit the changes and deploy to your servers.
 
 ### Please Do's
 
-* Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
-* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run: `npm run coverage`
-* Run the tests for the file you are working on with the following command: `npm test spec/MyFile.spec.js`
-* Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
-* Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
-* **Do not** publish the *lib* folder.
+- Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
+- Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run: `npm run coverage`
+- Run the tests for the file you are working on with the following command: `npm test spec/MyFile.spec.js`
+- Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at _<PROJECT_ROOT>/coverage/lcov-report/index.html_.
+- Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
+- **Do not** publish the _lib_ folder.
 
 ### Run your tests against Postgres (optional)
 
 If your pull request introduces a change that may affect the storage or retrieval of objects, you may want to make sure it plays nice with Postgres.
 
-* Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly`. You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/.travis.yml#L43) or use [`Docker`](#run-a-parse-postgres-with-docker).
-* The Postgres adapter has a special debugger that traces all the sql commands. You can enable it with setting the environment variable `PARSE_SERVER_LOG_LEVEL=debug`
-* If your feature is intended to only work with MongoDB, you should disable PostgreSQL-specific tests with:
+- Run the tests against the postgres database with `PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_TEST_DATABASE_URI=postgres://postgres:password@localhost:5432/parse_server_postgres_adapter_test_database npm run testonly`. You'll need to have postgres running on your machine and setup [appropriately](https://github.com/parse-community/parse-server/blob/master/.travis.yml#L43) or use [`Docker`](#run-a-parse-postgres-with-docker).
+- The Postgres adapter has a special debugger that traces all the sql commands. You can enable it with setting the environment variable `PARSE_SERVER_LOG_LEVEL=debug`
+- If your feature is intended to only work with MongoDB, you should disable PostgreSQL-specific tests with:
 
   - `describe_only_db('mongo')` // will create a `describe` that runs only on mongoDB
   - `it_only_db('mongo')` // will make a test that only runs on mongo
   - `it_exclude_dbs(['postgres'])` // will make a test that runs against all DB's but postgres
-* Similarly, if your feature is intended to only work with PostgreSQL, you should disable MongoDB-specific tests with:
- 
+
+- Similarly, if your feature is intended to only work with PostgreSQL, you should disable MongoDB-specific tests with:
+
   - `describe_only_db('postgres')` // will create a `describe` that runs only on postgres
   - `it_only_db('postgres')` // will make a test that only runs on postgres
   - `it_exclude_dbs(['mongo'])` // will make a test that runs against all DB's but mongo
@@ -75,9 +75,10 @@ If your pull request introduces a change that may affect the storage or retrieva
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
-```
+```sh
 docker run -d --name parse-postgres -p 5432:5432 -e POSTGRES_PASSWORD=password --rm postgis/postgis:11-3.0-alpine && sleep 20 && docker exec -it parse-postgres psql -U postgres -c 'CREATE DATABASE parse_server_postgres_adapter_test_database;' && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis;' -d parse_server_postgres_adapter_test_database && docker exec -it parse-postgres psql -U postgres -c 'CREATE EXTENSION postgis_topology;' -d parse_server_postgres_adapter_test_database
 ```
+
 To stop the Postgres instance:
 
 ```
