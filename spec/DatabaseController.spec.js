@@ -239,7 +239,6 @@ describe('DatabaseController', function () {
     it('should not return a $or operation if the query involves one of the two fields also used as array/pointer permissions', done => {
       const clp = buildCLP(['users', 'user']);
       const query = { a: 'b', user: createUserPointer(USER_ID) };
-
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
@@ -250,7 +249,6 @@ describe('DatabaseController', function () {
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'users')
         .and.returnValue({ type: 'Array' });
-
       const output = databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
@@ -258,16 +256,13 @@ describe('DatabaseController', function () {
         query,
         ACL_GROUP
       );
-
       expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
-
       done();
     });
 
     it('should not return a $or operation if the query involves one of the fields also used as array/pointer permissions', done => {
       const clp = buildCLP(['user', 'users', 'userObject']);
       const query = { a: 'b', user: createUserPointer(USER_ID) };
-
       schemaController.testPermissionsForClassName
         .withArgs(CLASS_NAME, ACL_GROUP, OPERATION)
         .and.returnValue(false);
@@ -281,7 +276,6 @@ describe('DatabaseController', function () {
       schemaController.getExpectedType
         .withArgs(CLASS_NAME, 'userObject')
         .and.returnValue({ type: 'Object' });
-
       const output = databaseController.addPointerPermissions(
         schemaController,
         CLASS_NAME,
@@ -289,9 +283,7 @@ describe('DatabaseController', function () {
         query,
         ACL_GROUP
       );
-
       expect(output).toEqual({ ...query, user: createUserPointer(USER_ID) });
-
       done();
     });
 
