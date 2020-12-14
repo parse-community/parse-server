@@ -96,7 +96,7 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject, message) {
+  static createResponseObject(resolve, reject) {
     return {
       success: function (result) {
         resolve({
@@ -109,7 +109,6 @@ export class FunctionsRouter extends PromiseRouter {
         const error = triggers.resolveError(message);
         reject(error);
       },
-      message: message,
     };
   }
   static handleCloudFunction(req) {
@@ -137,7 +136,7 @@ export class FunctionsRouter extends PromiseRouter {
     return new Promise(function (resolve, reject) {
       const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
-      const { success, error, message } = FunctionsRouter.createResponseObject(
+      const { success, error } = FunctionsRouter.createResponseObject(
         result => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
@@ -177,7 +176,7 @@ export class FunctionsRouter extends PromiseRouter {
           return triggers.maybeRunValidator(request, functionName);
         })
         .then(() => {
-          return theFunction(request, { message });
+          return theFunction(request);
         })
         .then(success, error);
     });

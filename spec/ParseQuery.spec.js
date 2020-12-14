@@ -2860,33 +2860,6 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('object with length', function (done) {
-    const TestObject = Parse.Object.extend('TestObject');
-    const obj = new TestObject();
-    obj.set('length', 5);
-    equal(obj.get('length'), 5);
-    obj.save().then(
-      function () {
-        const query = new Parse.Query(TestObject);
-        query.find().then(
-          function (results) {
-            equal(results.length, 1);
-            equal(results[0].get('length'), 5);
-            done();
-          },
-          function (error) {
-            ok(false, error.message);
-            done();
-          }
-        );
-      },
-      function (error) {
-        ok(false, error.message);
-        done();
-      }
-    );
-  });
-
   it('include user', function (done) {
     Parse.User.signUp('bob', 'password', { age: 21 }).then(function (user) {
       const TestObject = Parse.Object.extend('TestObject');
@@ -4006,6 +3979,90 @@ describe('Parse.Query testing', () => {
         equal(result.child3.name, 'mo');
         done();
       });
+  });
+
+  it('include pointer and pointer array', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
+    child.set('foo', 'bar');
+    child2.set('hello', 'world');
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.include(['child', 'child2']);
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
+      });
+    });
+  });
+
+  it('include pointer and pointer array (keys switched)', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
+    child.set('foo', 'bar');
+    child2.set('hello', 'world');
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.include(['child2', 'child']);
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
+      });
+    });
+  });
+
+  it('includeAll pointer and pointer array', function (done) {
+    const child = new TestObject();
+    const child2 = new TestObject();
+    child.set('foo', 'bar');
+    child2.set('hello', 'world');
+    Parse.Object.saveAll([child, child2]).then(function () {
+      const parent = new Container();
+      parent.set('child', child.toPointer());
+      parent.set('child2', [child2.toPointer()]);
+      parent.save().then(function () {
+        const query = new Parse.Query(Container);
+        query.includeAll();
+        query.find().then(function (results) {
+          equal(results.length, 1);
+          const parentAgain = results[0];
+          const childAgain = parentAgain.get('child');
+          ok(childAgain);
+          equal(childAgain.get('foo'), 'bar');
+          const child2Again = parentAgain.get('child2');
+          equal(child2Again.length, 1);
+          ok(child2Again);
+          equal(child2Again[0].get('hello'), 'world');
+          done();
+        });
+      });
+    });
   });
 
   it('select nested keys 2 level includeAll', done => {

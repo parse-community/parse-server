@@ -1,6 +1,6 @@
 /**
  * @interface ParseServerOptions
- * @property {Any} accountLockout account lockout policy for failed login attempts
+ * @property {AccountLockoutOptions} accountLockout account lockout policy for failed login attempts
  * @property {Boolean} allowClientClassCreation Enable (or disable) client class creation, defaults to true
  * @property {Boolean} allowCustomObjectId Enable (or disable) custom objectId
  * @property {String[]} allowHeaders Add headers to Access-Control-Allow-Headers
@@ -23,10 +23,12 @@
  * @property {Boolean} directAccess Replace HTTP Interface when using JS SDK in current node runtime, defaults to false. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {String} dotNetKey Key for Unity and .Net SDK
  * @property {Adapter<MailAdapter>} emailAdapter Adapter module for email sending
+ * @property {Boolean} emailVerifyTokenReuseIfValid an existing email verify token should be reused when resend verification email is requested
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
  * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
+ * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
@@ -51,7 +53,7 @@
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
- * @property {Any} passwordPolicy Password policy for enforcing password related rules
+ * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
  * @property {Boolean} preserveFileName Enable (or disable) the addition of a unique hash to the file names
@@ -124,4 +126,19 @@
  * @interface SecurityChecksOptions
  * @property {Boolean} enabled Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
  * @property {Boolean} logOutput If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
+
+ * @interface AccountLockoutOptions
+ * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
+ * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
+ */
+
+/**
+ * @interface PasswordPolicyOptions
+ * @property {Boolean} doNotAllowUsername disallow username in passwords
+ * @property {Number} maxPasswordAge days for password expiry
+ * @property {Number} maxPasswordHistory setting to prevent reuse of previous n passwords
+ * @property {Boolean} resetTokenReuseIfValid resend token if it's still valid
+ * @property {Number} resetTokenValidityDuration time for token to expire
+ * @property {Function} validatorCallback a callback function to be invoked to validate the password
+ * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
  */

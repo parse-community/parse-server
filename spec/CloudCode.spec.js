@@ -122,6 +122,24 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('beforeFind can throw string', async function (done) {
+    Parse.Cloud.beforeFind('beforeFind', () => {
+      throw 'throw beforeFind';
+    });
+    const obj = new Parse.Object('beforeFind');
+    obj.set('foo', 'bar');
+    await obj.save();
+    expect(obj.get('foo')).toBe('bar');
+    try {
+      const query = new Parse.Query('beforeFind');
+      await query.first();
+    } catch (e) {
+      expect(e.code).toBe(141);
+      expect(e.message).toBe('throw beforeFind');
+      done();
+    }
+  });
+
   it('beforeSave rejection with custom error code', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function () {
       throw new Parse.Error(999, 'Nope');
@@ -196,6 +214,21 @@ describe('Cloud Code', () => {
         done();
       }
     );
+  });
+
+  it('test beforeSave with invalid field', async () => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('length', 0);
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
+    try {
+      await obj.save();
+      fail('should not succeed');
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: length.');
+    }
   });
 
   it("test beforeSave changed object fail doesn't change object", async function () {
@@ -1313,7 +1346,7 @@ describe('Cloud Code', () => {
       object.set('before', 'save');
     });
 
-    Parse.Cloud.define('removeme', (req, res) => {
+    Parse.Cloud.define('removeme', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1324,11 +1357,10 @@ describe('Cloud Code', () => {
         .then(object => {
           object.unset('remove');
           return object.save();
-        })
-        .catch(res.error);
+        });
     });
 
-    Parse.Cloud.define('removeme2', (req, res) => {
+    Parse.Cloud.define('removeme2', () => {
       const testObject = new TestObject();
       return testObject
         .save()
@@ -1339,8 +1371,7 @@ describe('Cloud Code', () => {
         .then(object => {
           object.unset('remove');
           return object.save();
-        })
-        .catch(res.error);
+        });
     });
 
     Parse.Cloud.run('removeme')
@@ -1463,6 +1494,45 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('beforeSave should not sanitize database', async done => {
+    const { adapter } = Config.get(Parse.applicationId).database;
+    const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+    spy.calls.saveArgumentsByValue();
+
+    let count = 0;
+    Parse.Cloud.beforeSave('CloudIncrementNested', req => {
+      count += 1;
+      req.object.set('foo', 'baz');
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    Parse.Cloud.afterSave('CloudIncrementNested', req => {
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    const obj = new Parse.Object('CloudIncrementNested');
+    obj.set('objectField', { number: 5 });
+    obj.set('foo', 'bar');
+    await obj.save();
+
+    obj.increment('objectField.number', 10);
+    await obj.save();
+
+    const [
+      ,
+      ,
+      ,
+      /* className */ /* schema */ /* query */ update,
+    ] = adapter.findOneAndUpdate.calls.first().args;
+    expect(update).toEqual({
+      'objectField.number': { __op: 'Increment', amount: 10 },
+      foo: 'baz',
+      updatedAt: obj.updatedAt.toISOString(),
+    });
+
+    count === 2 ? done() : fail();
+  });
+
   /**
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
@@ -1578,9 +1648,8 @@ describe('Cloud Code', () => {
 
     it('should set the message / success on the job', done => {
       Parse.Cloud.job('myJob', req => {
-        req.message('hello');
         const promise = req
-          .message()
+          .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
           })
@@ -1661,9 +1730,15 @@ describe('Cloud Code', () => {
         throw new Parse.Error(101, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
-      const jobStatus = await Parse.Cloud.getJobStatus(job);
+      let jobStatus, status;
+      while (status !== 'failed') {
+        if (jobStatus) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        jobStatus = await Parse.Cloud.getJobStatus(job);
+        status = jobStatus.get('status');
+      }
       expect(jobStatus.get('message')).toEqual('Something went wrong');
-      expect(jobStatus.get('status')).toEqual('failed');
     });
 
     function getJobStatus(jobId) {
@@ -1896,7 +1971,7 @@ describe('beforeFind hooks', () => {
         done();
       },
       err => {
-        expect(err.code).toBe(1);
+        expect(err.code).toBe(141);
         expect(err.message).toEqual('Do not run that query');
         done();
       }

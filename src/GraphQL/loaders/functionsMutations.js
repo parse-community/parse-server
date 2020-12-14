@@ -24,8 +24,7 @@ const load = parseGraphQLSchema => {
 
     const callCloudCodeMutation = mutationWithClientMutationId({
       name: 'CallCloudCode',
-      description:
-        'The callCloudCode mutation can be used to invoke a cloud code function.',
+      description: 'The callCloudCode mutation can be used to invoke a cloud code function.',
       inputFields: {
         functionName: {
           description: 'This is the function to be called.',
@@ -38,8 +37,7 @@ const load = parseGraphQLSchema => {
       },
       outputFields: {
         result: {
-          description:
-            'This is the result value of the cloud code function execution.',
+          description: 'This is the result value of the cloud code function execution.',
           type: defaultGraphQLTypes.ANY,
         },
       },
@@ -49,15 +47,17 @@ const load = parseGraphQLSchema => {
           const { config, auth, info } = context;
 
           return {
-            result: (await FunctionsRouter.handleCloudFunction({
-              params: {
-                functionName,
-              },
-              config,
-              auth,
-              info,
-              body: params,
-            })).response.result,
+            result: (
+              await FunctionsRouter.handleCloudFunction({
+                params: {
+                  functionName,
+                },
+                config,
+                auth,
+                info,
+                body: params,
+              })
+            ).response.result,
           };
         } catch (e) {
           parseGraphQLSchema.handleError(e);
@@ -65,18 +65,9 @@ const load = parseGraphQLSchema => {
       },
     });
 
-    parseGraphQLSchema.addGraphQLType(
-      callCloudCodeMutation.args.input.type.ofType,
-      true,
-      true
-    );
+    parseGraphQLSchema.addGraphQLType(callCloudCodeMutation.args.input.type.ofType, true, true);
     parseGraphQLSchema.addGraphQLType(callCloudCodeMutation.type, true, true);
-    parseGraphQLSchema.addGraphQLMutation(
-      'callCloudCode',
-      callCloudCodeMutation,
-      true,
-      true
-    );
+    parseGraphQLSchema.addGraphQLMutation('callCloudCode', callCloudCodeMutation, true, true);
   }
 };
 

@@ -1,7 +1,13 @@
 const ldapjs = require('ldapjs');
+const fs = require('fs');
 
-function newServer(port, dn, provokeSearchError = false) {
-  const server = ldapjs.createServer();
+const tlsOptions = {
+  key: fs.readFileSync(__dirname + '/support/cert/key.pem'),
+  certificate: fs.readFileSync(__dirname + '/support/cert/cert.pem'),
+};
+
+function newServer(port, dn, provokeSearchError = false, ssl = false) {
+  const server = ssl ? ldapjs.createServer(tlsOptions) : ldapjs.createServer();
 
   server.bind('o=example', function (req, res, next) {
     if (req.dn.toString() !== dn || req.credentials !== 'secret')
