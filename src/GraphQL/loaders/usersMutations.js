@@ -39,7 +39,7 @@ const load = parseGraphQLSchema => {
           req: { config, auth, info },
         });
 
-        const { sessionToken, objectId } = await objectsMutations.createObject(
+        const { sessionToken, objectId, authDataResponse } = await objectsMutations.createObject(
           '_User',
           parseFields,
           config,
@@ -48,9 +48,15 @@ const load = parseGraphQLSchema => {
         );
 
         context.info.sessionToken = sessionToken;
-
+        const viewer = await getUserFromSessionToken(
+          context,
+          mutationInfo,
+          'viewer.user.',
+          objectId
+        );
+        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
         return {
-          viewer: await getUserFromSessionToken(context, mutationInfo, 'viewer.user.', objectId),
+          viewer,
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -109,7 +115,7 @@ const load = parseGraphQLSchema => {
           req: { config, auth, info },
         });
 
-        const { sessionToken, objectId } = await objectsMutations.createObject(
+        const { sessionToken, objectId, authDataResponse } = await objectsMutations.createObject(
           '_User',
           { ...parseFields, authData },
           config,
@@ -118,9 +124,15 @@ const load = parseGraphQLSchema => {
         );
 
         context.info.sessionToken = sessionToken;
-
+        const viewer = await getUserFromSessionToken(
+          context,
+          mutationInfo,
+          'viewer.user.',
+          objectId
+        );
+        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
         return {
-          viewer: await getUserFromSessionToken(context, mutationInfo, 'viewer.user.', objectId),
+          viewer,
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -157,14 +169,15 @@ const load = parseGraphQLSchema => {
     },
     mutateAndGetPayload: async (args, context, mutationInfo) => {
       try {
-        const { username, password } = args;
+        const { username, password, authData } = args;
         const { config, auth, info } = context;
 
-        const { sessionToken, objectId } = (
+        const { sessionToken, objectId, authDataResponse } = (
           await usersRouter.handleLogIn({
             body: {
               username,
               password,
+              authData,
             },
             query: {},
             config,
@@ -175,8 +188,15 @@ const load = parseGraphQLSchema => {
 
         context.info.sessionToken = sessionToken;
 
+        const viewer = await getUserFromSessionToken(
+          context,
+          mutationInfo,
+          'viewer.user.',
+          objectId
+        );
+        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
         return {
-          viewer: await getUserFromSessionToken(context, mutationInfo, 'viewer.user.', objectId),
+          viewer,
         };
       } catch (e) {
         parseGraphQLSchema.handleError(e);
@@ -303,10 +323,10 @@ const load = parseGraphQLSchema => {
     true
   );
 
-  const loginChallengeMutation = mutationWithClientMutationId({
-    name: 'LoginChallenge',
+  const challengeMutation = mutationWithClientMutationId({
+    name: 'Challenge',
     description:
-      'The loginChallenge mutation can be used to initiate an authentication challenge when an auth adapter need it.',
+      'The challenge mutation can be used to initiate an authentication challenge when an auth adapter need it.',
     inputFields: {
       username: {
         description: 'This is the username used to log in the user.',
@@ -318,35 +338,41 @@ const load = parseGraphQLSchema => {
       },
       authData: {
         description:
-          'Auth data challenge payload, needed if some required auth adapters with challenge method are configured.',
+          'Auth data allow to pre identify the user if the auth adapter need pre identification.',
+        type: OBJECT,
+      },
+      challengeData: {
+        description:
+          'Challenge data payload, could be used to post some data to auth providers if they need data for the response.',
         type: OBJECT,
       },
     },
     outputFields: {
-      challenge: {
-        description: 'Challenges from configured auth adapters.',
+      challengeData: {
+        description: 'Challenge response from configured auth adapters.',
         type: OBJECT,
       },
     },
-    mutateAndGetPayload: async ({ email }, context) => {
-      const { config, auth, info } = context;
+    mutateAndGetPayload: async (input, context) => {
+      try {
+        const { config, auth, info } = context;
 
-      await usersRouter.handleResetRequest({
-        body: {
-          email,
-        },
-        config,
-        auth,
-        info,
-      });
-
-      return { ok: true };
+        const { response } = await usersRouter.handleChallenge({
+          body: input,
+          config,
+          auth,
+          info,
+        });
+        return response;
+      } catch (e) {
+        parseGraphQLSchema.handleError(e);
+      }
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(loginChallengeMutation.args.input.type.ofType, true, true);
-  parseGraphQLSchema.addGraphQLType(loginChallengeMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation('loginChallenge', loginChallengeMutation, true, true);
+  parseGraphQLSchema.addGraphQLType(challengeMutation.args.input.type.ofType, true, true);
+  parseGraphQLSchema.addGraphQLType(challengeMutation.type, true, true);
+  parseGraphQLSchema.addGraphQLMutation('challenge', challengeMutation, true, true);
 };
 
 export { load };

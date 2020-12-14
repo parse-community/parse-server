@@ -373,6 +373,7 @@ const findUsersWithAuthData = (config, authData) => {
 };
 
 const hasMutatedAuthData = (authData, userAuthData, config) => {
+  if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
     // Anonymous provider is not handled this way

@@ -141,11 +141,7 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
               ...fields,
               [field]: {
                 description: `This is the object ${field}.`,
-                type:
-                  (className === '_User' && (field === 'username' || field === 'password')) ||
-                  parseClass.fields[field].required
-                    ? new GraphQLNonNull(type)
-                    : type,
+                type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
               },
             };
           } else {

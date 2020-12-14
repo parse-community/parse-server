@@ -237,7 +237,7 @@ export class UsersRouter extends ClassesRouter {
 
     // If we have some new validated authData
     // update directly
-    if (validatedAuthData) {
+    if (validatedAuthData && Object.keys(validatedAuthData).length) {
       await req.config.database.update(
         '_User',
         { objectId: user.objectId },
