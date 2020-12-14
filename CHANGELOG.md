@@ -5,6 +5,10 @@
 
 ### 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
+
+__BREAKING CHANGES:__
+- FIX: Consistent casing for afterLiveQueryEvent. The afterLiveQueryEvent was introduced in 4.4.0 with inconsistent casing for the event names, which was fixed in 4.5.0. [#7023](https://github.com/parse-community/parse-server/pull/7023). Thanks to [dblythy](https://github.com/dblythy).
+___
 - FIX: Properly handle serverURL and publicServerUrl in Batch requests. [#7049](https://github.com/parse-community/parse-server/pull/7049). Thanks to [Zach Goldberg](https://github.com/ZachGoldberg).
 - IMPROVE: Prevent invalid column names (className and length). [#7053](https://github.com/parse-community/parse-server/pull/7053). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - IMPROVE: GraphQL: Remove viewer from logout mutation. [#7029](https://github.com/parse-community/parse-server/pull/7029). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
@@ -14,7 +18,6 @@
 - FIX: Fix typo in server definitions for emailVerifyTokenReuseIfValid. [#7037](https://github.com/parse-community/parse-server/pull/7037). Thanks to [dblythy](https://github.com/dblythy).
 - SECURITY FIX: LDAP auth stores password in plain text. See [GHSA-4w46-w44m-3jq3](https://github.com/parse-community/parse-server/security/advisories/GHSA-4w46-w44m-3jq3) for more details about the vulnerability and [da905a3](https://github.com/parse-community/parse-server/commit/da905a357d062ab4fea727a21eac231acc2ed92a) for the fix. Thanks to [Fabian Strachanski](https://github.com/fastrde).
 - NEW: Reuse tokens if they haven't expired. [#7017](https://github.com/parse-community/parse-server/pull/7017). Thanks to [dblythy](https://github.com/dblythy).
-- FIX (BREAKING CHANGE): Consistent casing for afterLiveQueryEvent. The afterLiveQueryEvent was introduced in 4.4.0 with inconsistent casing for the event names, which was fixed in 4.5.0. [#7023](https://github.com/parse-community/parse-server/pull/7023). Thanks to [dblythy](https://github.com/dblythy).
 - NEW: Add LDAPS-support to LDAP-Authcontroller. [#7014](https://github.com/parse-community/parse-server/pull/7014). Thanks to [Fabian Strachanski](https://github.com/fastrde).
 - FIX: (beforeSave/afterSave): Return value instead of Parse.Op for nested fields. [#7005](https://github.com/parse-community/parse-server/pull/7005). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - FIX: (beforeSave): Skip Sanitizing Database results. [#7003](https://github.com/parse-community/parse-server/pull/7003). Thanks to [Diamond Lewis](https://github.com/dplewis).
