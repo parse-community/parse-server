@@ -20,7 +20,7 @@
 - FIX: (beforeSave): Skip Sanitizing Database results. [#7003](https://github.com/parse-community/parse-server/pull/7003). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - FIX: Fix includeAll for querying a Pointer and Pointer array. [#7002](https://github.com/parse-community/parse-server/pull/7002). Thanks to [Corey Baker](https://github.com/cbaker6).
 - FIX: Add encryptionKey to src/options/index.js. [#6999](https://github.com/parse-community/parse-server/pull/6999). Thanks to [dblythy](https://github.com/dblythy).
-- IMPROVE: Update PostgresStorageAdapter.js. [#6989](https://github.com/parse-community/parse-server/pull/6989). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+- IMPROVE: Update PostgresStorageAdapter.js. [#6989](https://github.com/parse-community/parse-server/pull/6989). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t).
 
 ### 4.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...4.4.0)
