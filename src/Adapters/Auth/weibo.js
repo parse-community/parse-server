@@ -5,14 +5,11 @@ var querystring = require('querystring');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest(authData.access_token).then(function(data) {
+  return graphRequest(authData.access_token).then(function (data) {
     if (data && data.uid == authData.id) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'weibo auth is invalid for this user.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'weibo auth is invalid for this user.');
   });
 }
 

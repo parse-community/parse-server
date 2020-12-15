@@ -4,17 +4,14 @@ var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest(
-    'auth?access_token=' + authData.access_token + '&openid=' + authData.id
-  ).then(function(data) {
-    if (data.errcode == 0) {
-      return;
+  return graphRequest('auth?access_token=' + authData.access_token + '&openid=' + authData.id).then(
+    function (data) {
+      if (data.errcode == 0) {
+        return;
+      }
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'wechat auth is invalid for this user.');
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'wechat auth is invalid for this user.'
-    );
-  });
+  );
 }
 
 // Returns a promise that fulfills if this app id is valid.

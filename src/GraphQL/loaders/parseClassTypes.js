@@ -8,11 +8,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
 } from 'graphql';
-import {
-  globalIdField,
-  connectionArgs,
-  connectionDefinitions,
-} from 'graphql-relay';
+import { globalIdField, connectionArgs, connectionDefinitions } from 'graphql-relay';
 import getFieldNames from 'graphql-list-fields';
 import * as defaultGraphQLTypes from './defaultGraphQLTypes';
 import * as objectsQueries from '../helpers/objectsQueries';
@@ -21,14 +17,9 @@ import { transformClassNameToGraphQL } from '../transformers/className';
 import { transformInputTypeToGraphQL } from '../transformers/inputType';
 import { transformOutputTypeToGraphQL } from '../transformers/outputType';
 import { transformConstraintTypeToGraphQL } from '../transformers/constraintType';
-import {
-  extractKeysAndInclude,
-  getParseClassMutationConfig,
-} from '../parseGraphQLUtils';
+import { extractKeysAndInclude, getParseClassMutationConfig } from '../parseGraphQLUtils';
 
-const getParseClassTypeConfig = function (
-  parseClassConfig: ?ParseGraphQLClassConfig
-) {
+const getParseClassTypeConfig = function (parseClassConfig: ?ParseGraphQLClassConfig) {
   return (parseClassConfig && parseClassConfig.type) || {};
 };
 
@@ -51,22 +42,19 @@ const getInputFieldsAndConstraints = function (
   let classSortFields;
 
   // All allowed customs fields
-  const classCustomFields = classFields.filter((field) => {
-    return (
-      !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(field) &&
-      field !== 'id'
-    );
+  const classCustomFields = classFields.filter(field => {
+    return !Object.keys(defaultGraphQLTypes.PARSE_OBJECT_FIELDS).includes(field) && field !== 'id';
   });
 
   if (allowedInputFields && allowedInputFields.create) {
-    classCreateFields = classCustomFields.filter((field) => {
+    classCreateFields = classCustomFields.filter(field => {
       return allowedInputFields.create.includes(field);
     });
   } else {
     classCreateFields = classCustomFields;
   }
   if (allowedInputFields && allowedInputFields.update) {
-    classUpdateFields = classCustomFields.filter((field) => {
+    classUpdateFields = classCustomFields.filter(field => {
       return allowedInputFields.update.includes(field);
     });
   } else {
@@ -74,7 +62,7 @@ const getInputFieldsAndConstraints = function (
   }
 
   if (allowedOutputFields) {
-    classOutputFields = classCustomFields.filter((field) => {
+    classOutputFields = classCustomFields.filter(field => {
       return allowedOutputFields.includes(field);
     });
   } else {
@@ -82,13 +70,11 @@ const getInputFieldsAndConstraints = function (
   }
   // Filters the "password" field from class _User
   if (parseClass.className === '_User') {
-    classOutputFields = classOutputFields.filter(
-      (outputField) => outputField !== 'password'
-    );
+    classOutputFields = classOutputFields.filter(outputField => outputField !== 'password');
   }
 
   if (allowedConstraintFields) {
-    classConstraintFields = classCustomFields.filter((field) => {
+    classConstraintFields = classCustomFields.filter(field => {
       return allowedConstraintFields.includes(field);
     });
   } else {
@@ -107,7 +93,7 @@ const getInputFieldsAndConstraints = function (
       });
     }
   } else {
-    classSortFields = classFields.map((field) => {
+    classSortFields = classFields.map(field => {
       return { field, asc: true, desc: true };
     });
   }
@@ -121,11 +107,7 @@ const getInputFieldsAndConstraints = function (
   };
 };
 
-const load = (
-  parseGraphQLSchema,
-  parseClass,
-  parseClassConfig: ?ParseGraphQLClassConfig
-) => {
+const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLClassConfig) => {
   const className = parseClass.className;
   const graphQLClassName = transformClassNameToGraphQL(className);
   const {
@@ -159,8 +141,7 @@ const load = (
               [field]: {
                 description: `This is the object ${field}.`,
                 type:
-                  (className === '_User' &&
-                    (field === 'username' || field === 'password')) ||
+                  (className === '_User' && (field === 'username' || field === 'password')) ||
                   parseClass.fields[field].required
                     ? new GraphQLNonNull(type)
                     : type,
@@ -175,9 +156,7 @@ const load = (
         }
       ),
   });
-  classGraphQLCreateType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLCreateType
-  );
+  classGraphQLCreateType = parseGraphQLSchema.addGraphQLType(classGraphQLCreateType);
 
   const classGraphQLUpdateTypeName = `Update${graphQLClassName}FieldsInput`;
   let classGraphQLUpdateType = new GraphQLInputObjectType({
@@ -208,9 +187,7 @@ const load = (
         }
       ),
   });
-  classGraphQLUpdateType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLUpdateType
-  );
+  classGraphQLUpdateType = parseGraphQLSchema.addGraphQLType(classGraphQLUpdateType);
 
   const classGraphQLPointerTypeName = `${graphQLClassName}PointerInput`;
   let classGraphQLPointerType = new GraphQLInputObjectType({
@@ -233,8 +210,7 @@ const load = (
     },
   });
   classGraphQLPointerType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLPointerType) ||
-    defaultGraphQLTypes.OBJECT;
+    parseGraphQLSchema.addGraphQLType(classGraphQLPointerType) || defaultGraphQLTypes.OBJECT;
 
   const classGraphQLRelationTypeName = `${graphQLClassName}RelationInput`;
   let classGraphQLRelationType = new GraphQLInputObjectType({
@@ -261,8 +237,7 @@ const load = (
     },
   });
   classGraphQLRelationType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLRelationType) ||
-    defaultGraphQLTypes.OBJECT;
+    parseGraphQLSchema.addGraphQLType(classGraphQLRelationType) || defaultGraphQLTypes.OBJECT;
 
   const classGraphQLConstraintsTypeName = `${graphQLClassName}WhereInput`;
   let classGraphQLConstraintsType = new GraphQLInputObjectType({
@@ -310,8 +285,7 @@ const load = (
     }),
   });
   classGraphQLConstraintsType =
-    parseGraphQLSchema.addGraphQLType(classGraphQLConstraintsType) ||
-    defaultGraphQLTypes.OBJECT;
+    parseGraphQLSchema.addGraphQLType(classGraphQLConstraintsType) || defaultGraphQLTypes.OBJECT;
 
   const classGraphQLRelationConstraintsTypeName = `${graphQLClassName}RelationWhereInput`;
   let classGraphQLRelationConstraintsType = new GraphQLInputObjectType({
@@ -319,8 +293,7 @@ const load = (
     description: `The ${classGraphQLRelationConstraintsTypeName} input type is used in operations that involve filtering objects of ${graphQLClassName} class.`,
     fields: () => ({
       have: {
-        description:
-          'Run a relational/pointer query where at least one child object can match.',
+        description: 'Run a relational/pointer query where at least one child object can match.',
         type: classGraphQLConstraintsType,
       },
       haveNot: {
@@ -357,14 +330,11 @@ const load = (
       return updatedSortFields;
     }, {}),
   });
-  classGraphQLOrderType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLOrderType
-  );
+  classGraphQLOrderType = parseGraphQLSchema.addGraphQLType(classGraphQLOrderType);
 
   const classGraphQLFindArgs = {
     where: {
-      description:
-        'These are the conditions that the objects need to match in order to be found.',
+      description: 'These are the conditions that the objects need to match in order to be found.',
       type: classGraphQLConstraintsType,
     },
     order: {
@@ -378,12 +348,9 @@ const load = (
     options: defaultGraphQLTypes.READ_OPTIONS_ATT,
   };
   const classGraphQLOutputTypeName = `${graphQLClassName}`;
-  const interfaces = [
-    defaultGraphQLTypes.PARSE_OBJECT,
-    parseGraphQLSchema.relayNodeInterface,
-  ];
+  const interfaces = [defaultGraphQLTypes.PARSE_OBJECT, parseGraphQLSchema.relayNodeInterface];
   const parseObjectFields = {
-    id: globalIdField(className, (obj) => obj.objectId),
+    id: globalIdField(className, obj => obj.objectId),
     ...defaultGraphQLTypes.PARSE_OBJECT_FIELDS,
   };
   const outputFields = () => {
@@ -395,44 +362,26 @@ const load = (
       );
       if (parseClass.fields[field].type === 'Relation') {
         const targetParseClassTypes =
-          parseGraphQLSchema.parseClassTypes[
-            parseClass.fields[field].targetClass
-          ];
-        const args = targetParseClassTypes
-          ? targetParseClassTypes.classGraphQLFindArgs
-          : undefined;
+          parseGraphQLSchema.parseClassTypes[parseClass.fields[field].targetClass];
+        const args = targetParseClassTypes ? targetParseClassTypes.classGraphQLFindArgs : undefined;
         return {
           ...fields,
           [field]: {
             description: `This is the object ${field}.`,
             args,
-            type: parseClass.fields[field].required
-              ? new GraphQLNonNull(type)
-              : type,
+            type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
             async resolve(source, args, context, queryInfo) {
               try {
-                const {
-                  where,
-                  order,
-                  skip,
-                  first,
-                  after,
-                  last,
-                  before,
-                  options,
-                } = args;
-                const {
-                  readPreference,
-                  includeReadPreference,
-                  subqueryReadPreference,
-                } = options || {};
+                const { where, order, skip, first, after, last, before, options } = args;
+                const { readPreference, includeReadPreference, subqueryReadPreference } =
+                  options || {};
                 const { config, auth, info } = context;
                 const selectedFields = getFieldNames(queryInfo);
 
                 const { keys, include } = extractKeysAndInclude(
                   selectedFields
-                    .filter((field) => field.startsWith('edges.node.'))
-                    .map((field) => field.replace('edges.node.', ''))
+                    .filter(field => field.startsWith('edges.node.'))
+                    .map(field => field.replace('edges.node.', ''))
                 );
                 const parseOrder = order && order.join(',');
 
@@ -478,12 +427,10 @@ const load = (
           ...fields,
           [field]: {
             description: `This is the object ${field}.`,
-            type: parseClass.fields[field].required
-              ? new GraphQLNonNull(type)
-              : type,
+            type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
             async resolve(source) {
               if (source[field] && source[field].coordinates) {
-                return source[field].coordinates.map((coordinate) => ({
+                return source[field].coordinates.map(coordinate => ({
                   latitude: coordinate[0],
                   longitude: coordinate[1],
                 }));
@@ -498,17 +445,11 @@ const load = (
           ...fields,
           [field]: {
             description: `Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments`,
-            type: parseClass.fields[field].required
-              ? new GraphQLNonNull(type)
-              : type,
+            type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
             async resolve(source) {
               if (!source[field]) return null;
-              return source[field].map(async (elem) => {
-                if (
-                  elem.className &&
-                  elem.objectId &&
-                  elem.__type === 'Object'
-                ) {
+              return source[field].map(async elem => {
+                if (elem.className && elem.objectId && elem.__type === 'Object') {
                   return elem;
                 } else {
                   return { value: elem };
@@ -522,9 +463,7 @@ const load = (
           ...fields,
           [field]: {
             description: `This is the object ${field}.`,
-            type: parseClass.fields[field].required
-              ? new GraphQLNonNull(type)
-              : type,
+            type: parseClass.fields[field].required ? new GraphQLNonNull(type) : type,
           },
         };
       } else {
@@ -538,9 +477,7 @@ const load = (
     interfaces,
     fields: outputFields,
   });
-  classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(
-    classGraphQLOutputType
-  );
+  classGraphQLOutputType = parseGraphQLSchema.addGraphQLType(classGraphQLOutputType);
 
   const { connectionType, edgeType } = connectionDefinitions({
     name: graphQLClassName,

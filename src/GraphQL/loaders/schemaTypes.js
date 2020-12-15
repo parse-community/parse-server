@@ -14,8 +14,7 @@ const SCHEMA_FIELD_NAME_ATT = {
 
 const SCHEMA_FIELD_INPUT = new GraphQLInputObjectType({
   name: 'SchemaFieldInput',
-  description:
-    'The SchemaFieldInput is used to specify a field of an object class schema.',
+  description: 'The SchemaFieldInput is used to specify a field of an object class schema.',
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
   },
@@ -57,8 +56,7 @@ const SCHEMA_STRING_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_STRING_FIELD = new GraphQLObjectType({
   name: 'SchemaStringField',
-  description:
-    'The SchemaStringField is used to return information of a String field.',
+  description: 'The SchemaStringField is used to return information of a String field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -76,8 +74,7 @@ const SCHEMA_NUMBER_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_NUMBER_FIELD = new GraphQLObjectType({
   name: 'SchemaNumberField',
-  description:
-    'The SchemaNumberField is used to return information of a Number field.',
+  description: 'The SchemaNumberField is used to return information of a Number field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -95,8 +92,7 @@ const SCHEMA_BOOLEAN_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_BOOLEAN_FIELD = new GraphQLObjectType({
   name: 'SchemaBooleanField',
-  description:
-    'The SchemaBooleanField is used to return information of a Boolean field.',
+  description: 'The SchemaBooleanField is used to return information of a Boolean field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -114,8 +110,7 @@ const SCHEMA_ARRAY_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_ARRAY_FIELD = new GraphQLObjectType({
   name: 'SchemaArrayField',
-  description:
-    'The SchemaArrayField is used to return information of an Array field.',
+  description: 'The SchemaArrayField is used to return information of an Array field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -133,8 +128,7 @@ const SCHEMA_OBJECT_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_OBJECT_FIELD = new GraphQLObjectType({
   name: 'SchemaObjectField',
-  description:
-    'The SchemaObjectField is used to return information of an Object field.',
+  description: 'The SchemaObjectField is used to return information of an Object field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -152,8 +146,7 @@ const SCHEMA_DATE_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_DATE_FIELD = new GraphQLObjectType({
   name: 'SchemaDateField',
-  description:
-    'The SchemaDateField is used to return information of a Date field.',
+  description: 'The SchemaDateField is used to return information of a Date field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -171,8 +164,7 @@ const SCHEMA_FILE_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_FILE_FIELD = new GraphQLObjectType({
   name: 'SchemaFileField',
-  description:
-    'The SchemaFileField is used to return information of a File field.',
+  description: 'The SchemaFileField is used to return information of a File field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -190,8 +182,7 @@ const SCHEMA_GEO_POINT_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_GEO_POINT_FIELD = new GraphQLObjectType({
   name: 'SchemaGeoPointField',
-  description:
-    'The SchemaGeoPointField is used to return information of a Geo Point field.',
+  description: 'The SchemaGeoPointField is used to return information of a Geo Point field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -209,8 +200,7 @@ const SCHEMA_POLYGON_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_POLYGON_FIELD = new GraphQLObjectType({
   name: 'SchemaPolygonField',
-  description:
-    'The SchemaPolygonField is used to return information of a Polygon field.',
+  description: 'The SchemaPolygonField is used to return information of a Polygon field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -228,8 +218,7 @@ const SCHEMA_BYTES_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_BYTES_FIELD = new GraphQLObjectType({
   name: 'SchemaBytesField',
-  description:
-    'The SchemaBytesField is used to return information of a Bytes field.',
+  description: 'The SchemaBytesField is used to return information of a Bytes field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -253,8 +242,7 @@ const SCHEMA_POINTER_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_POINTER_FIELD = new GraphQLObjectType({
   name: 'SchemaPointerField',
-  description:
-    'The SchemaPointerField is used to return information of a Pointer field.',
+  description: 'The SchemaPointerField is used to return information of a Pointer field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -274,8 +262,7 @@ const SCHEMA_RELATION_FIELD_INPUT = new GraphQLInputObjectType({
 
 const SCHEMA_RELATION_FIELD = new GraphQLObjectType({
   name: 'SchemaRelationField',
-  description:
-    'The SchemaRelationField is used to return information of a Relation field.',
+  description: 'The SchemaRelationField is used to return information of a Relation field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -285,8 +272,7 @@ const SCHEMA_RELATION_FIELD = new GraphQLObjectType({
 
 const SCHEMA_ACL_FIELD = new GraphQLObjectType({
   name: 'SchemaACLField',
-  description:
-    'The SchemaACLField is used to return information of an ACL field.',
+  description: 'The SchemaACLField is used to return information of an ACL field.',
   interfaces: [SCHEMA_FIELD],
   fields: {
     name: SCHEMA_FIELD_NAME_ATT,
@@ -298,28 +284,23 @@ const SCHEMA_FIELDS_INPUT = new GraphQLInputObjectType({
   description: `The CreateClassSchemaInput type is used to specify the schema for a new object class to be created.`,
   fields: {
     addStrings: {
-      description:
-        'These are the String fields to be added to the class schema.',
+      description: 'These are the String fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_STRING_FIELD_INPUT)),
     },
     addNumbers: {
-      description:
-        'These are the Number fields to be added to the class schema.',
+      description: 'These are the Number fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_NUMBER_FIELD_INPUT)),
     },
     addBooleans: {
-      description:
-        'These are the Boolean fields to be added to the class schema.',
+      description: 'These are the Boolean fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_BOOLEAN_FIELD_INPUT)),
     },
     addArrays: {
-      description:
-        'These are the Array fields to be added to the class schema.',
+      description: 'These are the Array fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_ARRAY_FIELD_INPUT)),
     },
     addObjects: {
-      description:
-        'These are the Object fields to be added to the class schema.',
+      description: 'These are the Object fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_OBJECT_FIELD_INPUT)),
     },
     addDates: {
@@ -336,23 +317,19 @@ const SCHEMA_FIELDS_INPUT = new GraphQLInputObjectType({
       type: SCHEMA_GEO_POINT_FIELD_INPUT,
     },
     addPolygons: {
-      description:
-        'These are the Polygon fields to be added to the class schema.',
+      description: 'These are the Polygon fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_POLYGON_FIELD_INPUT)),
     },
     addBytes: {
-      description:
-        'These are the Bytes fields to be added to the class schema.',
+      description: 'These are the Bytes fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_BYTES_FIELD_INPUT)),
     },
     addPointers: {
-      description:
-        'These are the Pointer fields to be added to the class schema.',
+      description: 'These are the Pointer fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_POINTER_FIELD_INPUT)),
     },
     addRelations: {
-      description:
-        'These are the Relation fields to be added to the class schema.',
+      description: 'These are the Relation fields to be added to the class schema.',
       type: new GraphQLList(new GraphQLNonNull(SCHEMA_RELATION_FIELD_INPUT)),
     },
     remove: {
@@ -374,9 +351,7 @@ const CLASS = new GraphQLObjectType({
     name: CLASS_NAME_ATT,
     schemaFields: {
       description: "These are the schema's fields of the object class.",
-      type: new GraphQLNonNull(
-        new GraphQLList(new GraphQLNonNull(SCHEMA_FIELD))
-      ),
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(SCHEMA_FIELD))),
     },
   },
 });

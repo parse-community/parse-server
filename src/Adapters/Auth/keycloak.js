@@ -37,12 +37,7 @@ const { Parse } = require('parse/node');
 const httpsRequest = require('./httpsRequest');
 
 const arraysEqual = (_arr1, _arr2) => {
-  if (
-    !Array.isArray(_arr1) ||
-    !Array.isArray(_arr2) ||
-    _arr1.length !== _arr2.length
-  )
-    return false;
+  if (!Array.isArray(_arr1) || !Array.isArray(_arr2) || _arr1.length !== _arr2.length) return false;
 
   var arr1 = _arr1.concat().sort();
   var arr2 = _arr2.concat().sort();
@@ -54,21 +49,12 @@ const arraysEqual = (_arr1, _arr2) => {
   return true;
 };
 
-const handleAuth = async (
-  { access_token, id, roles, groups } = {},
-  { config } = {}
-) => {
+const handleAuth = async ({ access_token, id, roles, groups } = {}, { config } = {}) => {
   if (!(access_token && id)) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Missing access token and/or User id'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing access token and/or User id');
   }
   if (!config || !(config['auth-server-url'] && config['realm'])) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Missing keycloak configuration'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Missing keycloak configuration');
   }
   try {
     const response = await httpsRequest.get({
@@ -87,10 +73,7 @@ const handleAuth = async (
     ) {
       return;
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Invalid authentication'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid authentication');
   } catch (e) {
     if (e instanceof Parse.Error) {
       throw e;

@@ -28,11 +28,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     this._algorithm = 'aes-256-gcm';
     this._encryptionKey =
       encryptionKey !== undefined
-        ? crypto
-          .createHash('sha256')
-          .update(String(encryptionKey))
-          .digest('base64')
-          .substr(0, 32)
+        ? crypto.createHash('sha256').update(String(encryptionKey)).digest('base64').substr(0, 32)
         : null;
     const defaultMongoOptions = {
       useNewUrlParser: true,
@@ -43,13 +39,12 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(
-        this._databaseURI,
-        this._mongoOptions
-      ).then(client => {
-        this._client = client;
-        return client.db(client.s.options.dbName);
-      });
+      this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
+        client => {
+          this._client = client;
+          return client.db(client.s.options.dbName);
+        }
+      );
     }
     return this._connectionPromise;
   }
@@ -68,11 +63,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
     if (this._encryptionKey !== null) {
       try {
         const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv(
-          this._algorithm,
-          this._encryptionKey,
-          iv
-        );
+        const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
         const encryptedResult = Buffer.concat([
           cipher.update(data),
           cipher.final(),
@@ -126,16 +117,9 @@ export class GridFSBucketAdapter extends FilesAdapter {
             const authTag = data.slice(authTagLocation);
             const iv = data.slice(ivLocation, authTagLocation);
             const encrypted = data.slice(0, ivLocation);
-            const decipher = crypto.createDecipheriv(
-              this._algorithm,
-              this._encryptionKey,
-              iv
-            );
+            const decipher = crypto.createDecipheriv(this._algorithm, this._encryptionKey, iv);
             decipher.setAuthTag(authTag);
-            const decrypted = Buffer.concat([
-              decipher.update(encrypted),
-              decipher.final(),
-            ]);
+            const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
             return resolve(decrypted);
           } catch (err) {
             return reject(err);
@@ -160,10 +144,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
         options.oldKey
       );
     } else {
-      oldKeyFileAdapter = new GridFSBucketAdapter(
-        this._databaseURI,
-        this._mongoOptions
-      );
+      oldKeyFileAdapter = new GridFSBucketAdapter(this._databaseURI, this._mongoOptions);
     }
     if (options.fileNames !== undefined) {
       fileNames = options.fileNames;
@@ -186,9 +167,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
             this.createFile(fileName, plainTextData)
               .then(() => {
                 fileNamesRotated.push(fileName);
-                fileNamesNotRotated = fileNamesNotRotated.filter(function (
-                  value
-                ) {
+                fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
                   return value !== fileName;
                 });
                 fileNameIndex += 1;
@@ -223,13 +202,7 @@ export class GridFSBucketAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return (
-      config.mount +
-      '/files/' +
-      config.applicationId +
-      '/' +
-      encodeURIComponent(filename)
-    );
+    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
   }
 
   async getMetadata(filename) {
