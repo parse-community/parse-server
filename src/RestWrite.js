@@ -424,10 +424,16 @@ RestWrite.prototype.validateAuthData = function () {
       var hasToken = providerAuthData && providerAuthData.id;
       return hasToken || providerAuthData == null;
     });
-    if (canHandleAuthData || hasUsernameAndPassword) {
+    if (
+      canHandleAuthData ||
+      hasUsernameAndPassword ||
+      this.auth.isMaster ||
+      (this.auth.user && this.auth.user.id === this.getUserId())
+    ) {
       return this.handleAuthData(authData);
     }
   }
+  console.log('Je throw ici', this.auth);
   throw new Parse.Error(
     Parse.Error.UNSUPPORTED_SERVICE,
     'This authentication method is unsupported.'

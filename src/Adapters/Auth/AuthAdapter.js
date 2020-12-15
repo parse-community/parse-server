@@ -40,7 +40,8 @@ export class AuthAdapter {
   @returns a promise that resolves, the resolved value will be handled by the server like:
   - resolve undefined|void|{} parse server will save authData
   - resolve { doNotSave: boolean, response: Object} parse server will do not save provided authData and send response to the client under authDataResponse
-  - resolve { response: Object} parse server will save authData and send response to the client under authDataResponse
+  - resolve { response: Object } parse server will save authData and send response to the client under authDataResponse
+  - resolve { response: Object, save: Object } parse server will save the object provided into `save` key and send response to the client under authDataResponse
    */
   validateAuthData(authData, options, req) {
     return Promise.resolve({});

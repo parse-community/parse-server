@@ -444,7 +444,22 @@ const getRequiredProviders = config => {
 // Validate each authData step by step and return the provider responses
 const handleAuthDataValidation = (authData, req, foundUser) => {
   let user;
-  if (foundUser) user = Parse.User.fromJSON({ className: '_User', ...foundUser });
+  if (foundUser) {
+    user = Parse.User.fromJSON({ className: '_User', ...foundUser });
+    // Find the user by session and current object id
+    // Only pass user if it's the current one or master key
+  } else if (
+    (req.auth &&
+      req.auth.user &&
+      typeof req.getUserId === 'function' &&
+      req.getUserId() === req.auth.user.id) ||
+    (req.auth && req.auth.isMaster)
+  ) {
+    user = new Parse.User();
+    user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
+    user.fetch({ useMasterKey: true });
+  }
+
   // Perform validation as step by step pipeline
   // for better error consistency and also to avoid to trigger a provider (like OTP SMS)
   // if another one fail
@@ -476,9 +491,11 @@ const handleAuthDataValidation = (authData, req, foundUser) => {
         // Some auth providers after initialization will avoid
         // to replace authData already stored
         if (!validationResult.doNotSave) {
-          acc.authData[provider] = authData[provider];
+          acc.authData[provider] = validationResult.save || authData[provider];
         }
       } else {
+        // Support current authData behavior
+        // no result store the new AuthData
         acc.authData[provider] = authData[provider];
       }
       return acc;
