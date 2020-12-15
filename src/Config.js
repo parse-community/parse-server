@@ -71,6 +71,7 @@ export class Config {
     allowHeaders,
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
+    fileUpload,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -90,6 +91,8 @@ export class Config {
     this.validateAccountLockoutPolicy(accountLockout);
 
     this.validatePasswordPolicy(passwordPolicy);
+
+    this.validateFileUploadOptions(fileUpload);
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -244,7 +247,25 @@ export class Config {
       throw 'You cannot use emailVerifyTokenReuseIfValid without emailVerifyTokenValidityDuration';
     }
   }
+  static validateFileUploadOptions(fileUpload) {
+    if (
+      fileUpload.enableForAnonymousUser &&
+      typeof fileUpload.enableForAnonymousUser !== 'boolean'
+    ) {
+      throw 'enableForAnonymousUser must be a boolean value';
+    }
 
+    if (fileUpload.enableForPublic && typeof fileUpload.enableForPublic !== 'boolean') {
+      throw 'enableForPublic must be a boolean value';
+    }
+
+    if (
+      fileUpload.enableForAuthenticatedUser &&
+      typeof fileUpload.enableForAuthenticatedUser !== 'boolean'
+    ) {
+      throw 'enableForAuthenticatedUser must be a boolean value';
+    }
+  }
   static validateMasterKeyIps(masterKeyIps) {
     for (const ip of masterKeyIps) {
       if (!net.isIP(ip)) {

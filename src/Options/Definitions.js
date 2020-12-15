@@ -606,22 +606,21 @@ module.exports.PasswordPolicyOptions = {
   },
 };
 module.exports.FileUploadOptions = {
-  enabledForAnonymousUser: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_ANONYMOUS_USER',
-    help: 'File upload is enabled for Anonymous Users.',
+  enableForAnonymousUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_ANONYMOUS_USER',
+    help: 'Is true if file upload should be allowed for anonymous users.',
     action: parsers.booleanParser,
     default: false,
   },
-  enabledForAuthenticatedUser: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_AUTHENTICATED_USER',
-    help: 'File upload is enabled for authenticated users.',
+  enableForAuthenticatedUser: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_AUTHENTICATED_USER',
+    help: 'Is true if file upload should be allowed for authenticated users.',
     action: parsers.booleanParser,
-    default: true,
+    default: false,
   },
-  enabledForPublic: {
-    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLED_FOR_PUBLIC',
-    help:
-      'File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.',
+  enableForPublic: {
+    env: 'PARSE_SERVER_FILE_UPLOAD_ENABLE_FOR_PUBLIC',
+    help: 'Is true if file upload should be allowed for anyone, regardless of user authentication.',
     action: parsers.booleanParser,
     default: false,
   },

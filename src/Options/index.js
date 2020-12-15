@@ -320,13 +320,13 @@ export interface PasswordPolicyOptions {
 }
 
 export interface FileUploadOptions {
-  /* File upload is enabled for Anonymous Users.
+  /*  Is true if file upload should be allowed for anonymous users.
   :DEFAULT: false */
-  enabledForAnonymousUser: ?boolean;
-  /* File upload is enabled for anyone with access to the Parse Server file upload endpoint, regardless of user authentication.
+  enableForAnonymousUser: ?boolean;
+  /* Is true if file upload should be allowed for authenticated users.
   :DEFAULT: false */
-  enabledForPublic: ?boolean;
-  /* File upload is enabled for authenticated users.
-  :DEFAULT: true */
-  enabledForAuthenticatedUser: ?boolean;
+  enableForAuthenticatedUser: ?boolean;
+  /* Is true if file upload should be allowed for anyone, regardless of user authentication.
+  :DEFAULT: false */
+  enableForPublic: ?boolean;
 }

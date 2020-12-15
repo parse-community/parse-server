@@ -94,27 +94,28 @@ export class FilesRouter {
 
   async createHandler(req, res, next) {
     const config = req.config;
-    if (
-      !req.config.fileUpload.enabledForAnonymousUser &&
-      req.auth.user &&
-      Parse.AnonymousUtils.isLinked(req.auth.user)
-    ) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Anonymous file upload is not enabled.'));
-      return;
-    }
-    if (
-      !req.config.fileUpload.enabledForAuthenticatedUser &&
-      req.config.fileUpload.enabledForAuthenticatedUser != null &&
-      req.auth.user &&
-      !Parse.AnonymousUtils.isLinked(req.auth.user)
-    ) {
+    const user = req.auth.user;
+    const isLinked = user && Parse.AnonymousUtils.isLinked(user);
+    if (!config.fileUpload.enableForAnonymousUser && isLinked) {
       next(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Authenticated file upload is not enabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by anonymous user is not allowed.'
+        )
       );
       return;
     }
-    if (!req.config.fileUpload.enabledForPublic && !req.auth.user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Public file upload is not enabled.'));
+    if (!config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated users is not enabled.'
+        )
+      );
+      return;
+    }
+    if (!config.fileUpload.enableForPublic && !user) {
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is not enabled.'));
       return;
     }
     const filesController = config.filesController;
