@@ -131,6 +131,16 @@ Introducing new Parse Errors requires the following steps:
     ```
 1. Add the new Parse Error to the [docs](https://github.com/parse-community/docs/blob/gh-pages/_includes/common/errors.md).
 
+### Parse Server Configuration
+
+Introducing new Parse Server configuration parameters requires the following steps:
+
+1. Add parameters definitions in [/src/Options/index.js](https://github.com/parse-community/parse-server/blob/master/src/Options/index.js).
+1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
+1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
+1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
+1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+
 ## Code of Conduct
 
 This project adheres to the [Contributor Covenant Code of Conduct](https://github.com/parse-community/parse-server/blob/master/CODE_OF_CONDUCT.md). By participating, you are expected to honor this code.
