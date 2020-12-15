@@ -248,6 +248,9 @@ export class Config {
     }
   }
   static validateFileUploadOptions(fileUpload) {
+    if (!fileUpload) {
+      fileUpload = {};
+    }
     if (
       fileUpload.enableForAnonymousUser &&
       typeof fileUpload.enableForAnonymousUser !== 'boolean'
