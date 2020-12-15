@@ -476,6 +476,7 @@ export class UsersRouter extends ClassesRouter {
           acc[provider] =
             (await authAdapters[provider].challenge(
               challengeData[provider],
+              authData && authData[provider],
               user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined,
               req,
               authAdapters[provider].options

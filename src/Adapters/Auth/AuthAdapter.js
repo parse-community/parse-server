@@ -50,11 +50,12 @@ export class AuthAdapter {
   /**
    *
    * @param challengeData: data provided by the client
+   * @param authData: auth data provided by the client, can be used for validation
    * @param options: additional options
    * @param req: RestWrite instance with config/auth/data
    * @returns a promise that resolves, resolved value will be added to challenge response under challenge key
    */
-  challenge(challengeData, options, req) {
+  challenge(challengeData, authData, options, req) {
     return Promise.resolve({});
   }
 }

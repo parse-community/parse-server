@@ -2204,10 +2204,11 @@ describe('Auth Adapter features', () => {
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
     expect(challengeCall[1]).toBeUndefined();
-    expect(challengeCall[2].config).toBeDefined();
-    expect(challengeCall[2].auth).toBeDefined();
-    expect(challengeCall[2].config.headers).toBeDefined();
-    expect(challengeCall[2]).toBeDefined({ anOption: true });
+    expect(challengeCall[2]).toBeUndefined();
+    expect(challengeCall[3].config).toBeDefined();
+    expect(challengeCall[3].auth).toBeDefined();
+    expect(challengeCall[3].config.headers).toBeDefined();
+    expect(challengeCall[4]).toEqual({ anOption: true });
   });
   it('should return challenge with username created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
@@ -2284,12 +2285,13 @@ describe('Auth Adapter features', () => {
     const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
-    expect(challengeCall[1] instanceof Parse.User).toBeTruthy();
-    expect(challengeCall[1].id).toEqual(user.id);
-    expect(challengeCall[2].config).toBeDefined();
-    expect(challengeCall[2].auth).toBeDefined();
-    expect(challengeCall[2].config.headers).toBeDefined();
-    expect(challengeCall[2]).toBeDefined({ anOption: true });
+    expect(challengeCall[1]).toEqual(undefined);
+    expect(challengeCall[2] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[2].id).toEqual(user.id);
+    expect(challengeCall[3].config).toBeDefined();
+    expect(challengeCall[3].auth).toBeDefined();
+    expect(challengeCall[3].config.headers).toBeDefined();
+    expect(challengeCall[4]).toEqual({ anOption: true });
   });
   it('should return challenge with authData created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
@@ -2367,11 +2369,12 @@ describe('Auth Adapter features', () => {
     const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
-    expect(challengeCall[1] instanceof Parse.User).toBeTruthy();
-    expect(challengeCall[1].id).toEqual(user.id);
-    expect(challengeCall[2].config).toBeDefined();
-    expect(challengeCall[2].auth).toBeDefined();
-    expect(challengeCall[2].config.headers).toBeDefined();
-    expect(challengeCall[2]).toBeDefined({ anOption: true });
+    expect(challengeCall[1]).toEqual({ id: 'challengeAdapter' });
+    expect(challengeCall[2] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[2].id).toEqual(user.id);
+    expect(challengeCall[3].config).toBeDefined();
+    expect(challengeCall[3].auth).toBeDefined();
+    expect(challengeCall[3].config.headers).toBeDefined();
+    expect(challengeCall[4]).toEqual({ anOption: true });
   });
 });
