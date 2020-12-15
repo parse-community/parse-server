@@ -81,7 +81,7 @@ class ParseServer {
         if (serverStartComplete) {
           serverStartComplete();
         }
-        if ((options.securityChecks || {}).logOutput) {
+        if ((options.securityChecks || {}).enableLogOutput) {
           this.getSecurityChecks();
         }
       })
@@ -123,9 +123,7 @@ class ParseServer {
     if (total == 0) {
       return;
     }
-    let errorString = `We found ${total} improvement${
-      total == 1 ? '' : 's'
-    } for you to make on your Parse Server:\n\n`;
+    let errorString = `${total} security warning(s) for Parse Server:\n\n`;
     delete warnings.Total;
     delete warnings.CLP;
     for (const security in warnings) {

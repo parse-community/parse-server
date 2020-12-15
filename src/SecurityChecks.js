@@ -1,40 +1,34 @@
-import { getTrigger } from './triggers.js';
 import url from 'url';
-import Parse from 'parse/node';
 
 export async function securityChecks(req) {
   try {
     const options = req.config || req;
-    if (!options.securityChecks.enabled) {
+    if (!options.securityChecks.enableSecurityChecks) {
       return { error: { code: 1, error: 'Security checks are not enabled.' } };
-    }
-    const functions = {
-      CLP: checkCLP,
-      ServerConfig: checkServerConfig,
-      Files: checkFiles,
-    };
-    if (
-      options.databaseAdapter.getSecurityLogs &&
-      typeof options.databaseAdapter.getSecurityLogs === 'function'
-    ) {
-      functions.Database = options.databaseAdapter.getSecurityLogs;
     }
     const response = {};
     let totalWarnings = 0;
-    for (const name in functions) {
+    const getResultForSecurityCheck = async (name, theFunction) => {
       try {
-        const theFunction = functions[name];
         const result = await theFunction(req);
-        if (Array.isArray(result)) {
-          totalWarnings += result.length;
-        } else {
-          totalWarnings += Object.keys(result).length;
-        }
+        totalWarnings += result.length || Object.keys(result).length || 0;
         response[name] = result;
       } catch (e) {
         /* */
       }
+    };
+    const promises = [
+      getResultForSecurityCheck('CLP', checkCLP),
+      getResultForSecurityCheck('ServerConfig', checkServerConfig),
+      getResultForSecurityCheck('Files', checkFiles),
+    ];
+    if (
+      options.databaseAdapter.getSecurityLogs &&
+      typeof options.databaseAdapter.getSecurityLogs === 'function'
+    ) {
+      promises.push(getResultForSecurityCheck('Database', options.databaseAdapter.getSecurityLogs));
     }
+    await Promise.all(promises);
     response.Total = totalWarnings;
     return { response };
   } catch (error) {
@@ -54,9 +48,7 @@ async function checkCLP(req) {
     if (!clp) {
       thisClassWarnings.push({
         title: `No Class Level Permissions on ${className}`,
-        message:
-          'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
-        link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+        message: `Any client can create, find, count, get, update, delete, or add field on ${className}. This allows an attacker to create new objects or fieldNames without restriction and potentially flood the database. Set CLPs using Parse Dashboard.`,
       });
       clpWarnings[className] = thisClassWarnings;
       continue;
@@ -70,15 +62,12 @@ async function checkCLP(req) {
       if (!option || option['*']) {
         thisClassWarnings.push({
           title: `Unrestricted access to ${key}.`,
-          message: `We recommend restricting ${key} on all classes`,
-          link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+          message: `Any client can ${key} on ${className}.`,
         });
       } else if (Object.keys(option).length != 0 && key === 'addField') {
         thisClassWarnings.push({
           title: `Certain users can add fields.`,
-          message:
-            'Class level permissions are a security feature from that allows one to restrict access on a broader way than the ACL based permissions. We recommend implementing CLPs on all database classes.',
-          link: 'https://docs.parseplatform.org/parse-server/guide/#class-level-permissions',
+          message: `Certain users can add fields on ${className}. This allows these users to create new fieldNames and potentially flood the schema. Set CLPs using Parse Dashboard.`,
         });
       }
     }
@@ -91,18 +80,16 @@ function checkServerConfig(req) {
   const warnings = [];
   if (options.allowClientClassCreation) {
     warnings.push({
-      title: 'Allow Client Class Creation is not recommended.',
+      title: 'Client class creation allowed',
       message:
-        'Allow client class creation is not recommended for production servers it allows any user - authorized or not - to create a new class.',
-      link: 'https://docs.parseplatform.org/js/guide/#restricting-class-creation',
+        'Clients are currently allowed to create new classes. This allows an attacker to create new classes without restriction and potentially flood the database. Change the Parse Server configuration to allowClientClassCreation: false.',
     });
   }
   if (!options.masterKey.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
     warnings.push({
       title: 'Weak masterKey.',
       message:
-        'masterKey is a key that overrides all permissions. You should use a secure string for your masterKey',
-      link: 'https://docs.parseplatform.org/parse-server/guide/#keys',
+        'The masterKey set to your configuration lacks complexity and length. This could potentially allow an attacker to brute force the masterKey, exposing all the entire Parse Server.',
     });
   }
   let https = false;
@@ -114,37 +101,22 @@ function checkServerConfig(req) {
   }
   if (!https) {
     warnings.push({
-      title: `Server served over HTTP`,
-      message: 'We strongly recommend using a HTTPS protocol.',
+      title: `Parse Server served over HTTP`,
+      message:
+        'The server url is currently HTTP. This allows an attacker to listen to all traffic in-between the server and the client. Change the Parse Server configuration serverURL to HTTPS.',
     });
   }
   return warnings;
 }
 async function checkFiles(req) {
   const options = req.config || req;
-  const fileTrigger = getTrigger('@File', 'beforeSaveFile', options.appId);
   const fileWarnings = [];
-  if (!fileTrigger) {
+  if (options.fileUpload && options.fileUpload.enableForPublic) {
     fileWarnings.push({
-      title: `No beforeFileSave Trigger`,
+      title: `Public File Upload Enabled`,
       message:
-        "Even if you don't store files, we strongly recommend using a beforeFileSave trigger to prevent unauthorized uploads.",
-      link: 'https://docs.parseplatform.org/cloudcode/guide/#beforesavefile',
+        'Public file upload is currently enabled. This allows a client to upload files without requiring login or authentication. Remove enableForPublic from fileUpload in the Parse Server configuration.',
     });
-  } else {
-    try {
-      const file = new Parse.File('testpopeye.txt', [1, 2, 3], 'text/plain');
-      await file.save();
-      fileWarnings.push({
-        title: `Unrestricted access to file uploads`,
-        message:
-          'Even though you have a beforeFileSave trigger, it allows unregistered users to upload.',
-        link: 'https://docs.parseplatform.org/cloudcode/guide/#beforesavefile',
-      });
-      await options.filesController.deleteFile(file._name);
-    } catch (e) {
-      /* */
-    }
   }
   return fileWarnings;
 }

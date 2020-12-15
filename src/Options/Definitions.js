@@ -558,17 +558,16 @@ module.exports.IdempotencyOptions = {
   },
 };
 module.exports.SecurityChecksOptions = {
-  enabled: {
-    env: 'PARSE_SERVER_SECURITY_CHECKS_ENABLED',
+  enableLogOutput: {
+    env: 'PARSE_SERVER_SECURITY_CHECKS_ENABLE_LOG_OUTPUT',
     help:
-      'Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.',
+      'Is true if security warnings should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
     action: parsers.booleanParser,
     default: false,
   },
-  logOutput: {
-    env: 'PARSE_SERVER_SECURITY_CHECKS_LOG_OUTPUT',
-    help:
-      'If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs',
+  enableSecurityChecks: {
+    env: 'PARSE_SERVER_SECURITY_CHECKS_ENABLE_SECURITY_CHECKS',
+    help: 'If true if Parse Server should self-check the security of its current configuration.',
     action: parsers.booleanParser,
     default: false,
   },

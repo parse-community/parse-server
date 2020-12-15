@@ -36,8 +36,8 @@ describe('SecurityChecks', () => {
   it('can get security advice', async done => {
     await reconfigureServer({
       securityChecks: {
-        enabled: true,
-        logOutput: true,
+        enableSecurityChecks: true,
+        enableLogOutput: true,
       },
     });
     const options = Object.assign({}, masterKeyOptions, {
@@ -56,8 +56,8 @@ describe('SecurityChecks', () => {
   it('can get security on start', async done => {
     await reconfigureServer({
       securityChecks: {
-        enabled: true,
-        logOutput: true,
+        enableSecurityChecks: true,
+        enableLogOutput: true,
       },
     });
     const logger = require('../lib/logger').logger;
@@ -68,7 +68,7 @@ describe('SecurityChecks', () => {
       }, 2000);
     });
     expect(logger.warn.calls.mostRecent().args[0]).toContain(
-      'Allow Client Class Creation is not recommended.'
+      'Clients are currently allowed to create new classes.'
     );
     done();
   });

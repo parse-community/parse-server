@@ -296,12 +296,12 @@ export interface IdempotencyOptions {
 }
 
 export interface SecurityChecksOptions {
-  /* Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
+  /* If true if Parse Server should self-check the security of its current configuration.
   :DEFAULT: false */
-  enabled: ?boolean;
-  /* If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
+  enableSecurityChecks: ?boolean;
+  /* Is true if security warnings should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
   :DEFAULT: false */
-  logOutput: ?boolean;
+  enableLogOutput: ?boolean;
 }
 
 export interface AccountLockoutOptions {

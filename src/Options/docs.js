@@ -124,8 +124,8 @@
 
 /**
  * @interface SecurityChecksOptions
- * @property {Boolean} enabled Parse Server should self-check the security of its current configuration. The results are visible in the Parse Dashboard.
- * @property {Boolean} logOutput If security warnings should be written to logs. This should only be enabled temporarily to not expose vulnerabilities in logs
+ * @property {Boolean} enableLogOutput Is true if security warnings should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+ * @property {Boolean} enableSecurityChecks If true if Parse Server should self-check the security of its current configuration.
  */
 
 /**

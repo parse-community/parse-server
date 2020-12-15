@@ -198,8 +198,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
         warnings.push({
           title: `Weak Database Password`,
-          message: 'The password used to connect to your database could be stronger.',
-          link: 'https://docs.mongodb.com/manual/security/',
+          message:
+            'The database password set lacks complexity and length. This could potentially allow an attacker to brute force their way into the database, exposing the database.',
         });
       }
     }
@@ -216,8 +216,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       warnings.push({
         title: `Unrestricted access to port 27017`,
         message:
-          'It is possible to connect to the admin port of your mongoDb without authentication.',
-        link: 'https://docs.mongodb.com/manual/security/',
+          'The database requires no authentication to the admin port. This could potentially allow an attacker to easily access the database, exposing all of the database.',
       });
     } catch (e) {
       /* */
@@ -225,10 +224,9 @@ export class MongoStorageAdapter implements StorageAdapter {
     try {
       await MongoClient.connect(databaseURI, { useNewUrlParser: true });
       warnings.push({
-        title: `Unrestricted access to your database`,
+        title: `Unrestricted access to the database`,
         message:
-          'It is possible to connect to your mongoDb without username and password on your connection string.',
-        link: 'https://docs.mongodb.com/manual/security/',
+          'The database requires no authentication to connect. This could potentially allow an attacker to easily access the database, exposing all of the database.',
       });
     } catch (e) {
       /* */
