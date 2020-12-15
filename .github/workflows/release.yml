@@ -1,0 +1,63 @@
+name: release
+on:
+  release:
+    types: [published]
+jobs:
+  publish-npm:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.14'
+          registry-url: https://registry.npmjs.org/
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+              ${{ runner.os }}-node-
+      - run: npm ci
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+  publish-docs:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.14'
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+              ${{ runner.os }}-node-
+      - name: Get Tag
+        uses: actions/github-script@v3
+        id: tag
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          result-encoding: string
+          script: |
+            const ref = process.env.GITHUB_REF
+            if(!ref.startsWith('refs/tags/'))
+              return ''
+            return ref.replace(/^refs\/tags\//, '')
+      - name: Generate Docs
+        run: |
+          echo $SOURCE_TAG
+          npm ci
+          ./release_docs.sh
+        env:
+          SOURCE_TAG: ${{ steps.tag.outputs.result }}
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3.7.3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
