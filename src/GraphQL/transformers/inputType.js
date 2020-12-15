@@ -1,16 +1,7 @@
-import {
-  GraphQLString,
-  GraphQLFloat,
-  GraphQLBoolean,
-  GraphQLList,
-} from 'graphql';
+import { GraphQLString, GraphQLFloat, GraphQLBoolean, GraphQLList } from 'graphql';
 import * as defaultGraphQLTypes from '../loaders/defaultGraphQLTypes';
 
-const transformInputTypeToGraphQL = (
-  parseType,
-  targetClass,
-  parseClassTypes
-) => {
+const transformInputTypeToGraphQL = (parseType, targetClass, parseClassTypes) => {
   switch (parseType) {
     case 'String':
       return GraphQLString;

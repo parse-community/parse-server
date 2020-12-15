@@ -11,10 +11,7 @@ function validateAuthData(authData, params) {
     if (response && response.access_token) {
       return request(
         'api.vk.com',
-        'method/users.get?access_token=' +
-          authData.access_token +
-          '&v=' +
-          params.apiVersion
+        'method/users.get?access_token=' + authData.access_token + '&v=' + params.apiVersion
       ).then(function (response) {
         if (
           response &&
@@ -24,16 +21,10 @@ function validateAuthData(authData, params) {
         ) {
           return;
         }
-        throw new Parse.Error(
-          Parse.Error.OBJECT_NOT_FOUND,
-          'Vk auth is invalid for this user.'
-        );
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is invalid for this user.');
       });
     }
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Vk appIds or appSecret is incorrect.'
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk appIds or appSecret is incorrect.');
   });
 }
 
