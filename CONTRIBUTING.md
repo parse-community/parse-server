@@ -94,12 +94,6 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
 
-### Generate Parse Server Config Definition
-
-If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs].
-
-To view docs run `npm run docs` and check the `/out` directory.
-
 ## Feature Considerations
 ### Security Checks
 
@@ -133,13 +127,14 @@ Introducing new Parse Errors requires the following steps:
 
 ### Parse Server Configuration
 
-Introducing new Parse Server configuration parameters requires the following steps:
+Introducing new [Parse Server configuration][config] parameters requires the following steps:
 
-1. Add parameters definitions in [/src/Options/index.js](https://github.com/parse-community/parse-server/blob/master/src/Options/index.js).
+1. Add parameters definitions in [/src/Options/index.js][config-index].
 1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
-1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
+1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
 1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
 1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
 ## Code of Conduct
 
