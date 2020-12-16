@@ -97,21 +97,17 @@ export class FilesRouter {
     const user = req.auth.user;
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
     if (!config.fileUpload.enableForAnonymousUser && isLinked) {
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by anonymous user is disabled.'
-        )
-      );
+      next(new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        'File upload by anonymous user is disabled.'
+      ));
       return;
     }
     if (!config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
-      next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'File upload by authenticated user is disabled.'
-        )
-      );
+      next(new Parse.Error(
+        Parse.Error.FILE_SAVE_ERROR,
+        'File upload by authenticated user is disabled.'
+      ));
       return;
     }
     if (!config.fileUpload.enableForPublic && !user) {
