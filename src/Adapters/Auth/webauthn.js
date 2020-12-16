@@ -1,0 +1,181 @@
+/**
+ * WebAuthn Adapter can be used as an alternative way to login
+ * Since we cannot support currently signup with webauthn will throw an error (due to lack of reset process)
+ * User need to be logged in to setup the webauthn provider
+ */
+import {
+  generateAttestationOptions,
+  verifyAttestationResponse,
+  generateAssertionOptions,
+  verifyAssertionResponse,
+} from '@simplewebauthn/server';
+import Parse from 'parse/node';
+import { sign, verify } from 'jsonwebtoken';
+import crypto from 'crypto';
+
+export const validateAppId = () => Promise.resolve();
+
+const toUserFriendlyRpName = url => {
+  const domain = getDomainWithoutWww(url);
+  const baseDomain = getBaseDomain(domain).split('.')[0];
+  const words = baseDomain.split('-');
+  return words.reduce((acc, word) => `${acc} ${word.charAt(0).toUpperCase() + word.slice(1)}`, '');
+};
+
+const getJwtSecret = config => {
+  const hash = crypto.createHash('sha512');
+  hash.update(config.masterKey, 'utf-8');
+  // Security:
+  // sha512 return 128 chars, we can keep only 64 chars since it represent 6,61E98 combinations
+  // using the hash allow to reduce risk of compromising the master key
+  // if brute force is attempted on the JWT
+  return hash.digest().slice(64);
+};
+
+// Example here: https://regex101.com/r/wN6cZ7/365
+const getDomainWithoutWww = url =>
+  /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/g.exec(url)[0];
+
+const getBaseDomain = domain => {
+  const splittedDomain = domain.split('.');
+  // Handle localhost
+  if (splittedDomain.length === 1) return domain;
+  // Classic domains
+  return `${splittedDomain[splittedDomain.length - 2]}.${
+    splittedDomain[splittedDomain.length - 1]
+  }`;
+};
+
+const getOrigin = config =>
+  getBaseDomain(getDomainWithoutWww(config.publicServerURL || config.serverURL));
+
+const extractSignedChallenge = (signedChallenge, config) => {
+  if (!signedChallenge)
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'signedChallenge is required.');
+  let expectedChallenge;
+  try {
+    expectedChallenge = verify(signedChallenge, getJwtSecret(config)).challenge;
+    if (!expectedChallenge) throw new Error();
+    return expectedChallenge;
+  } catch (e) {
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid signedChallenge');
+  }
+};
+
+// Used to tell to the client wich
+// format is expected
+const signUpOptions = (user, options = {}, config) => {
+  if (!user)
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User need to be logged in to set up webauthn');
+  const attestationOptions = generateAttestationOptions({
+    rpName:
+      (options && options.rpName) ||
+      toUserFriendlyRpName(config.publicServerURL || config.serverURL),
+    rpID: options.rpID || getOrigin(config),
+    // here userId is only used as an identifier and this is never
+    // retrieved by the user device
+    // this has not real value for parse
+    userID: user.id,
+    // Could be an email or a firstname lastname depending of
+    // the developer usage
+    userName:
+      typeof options.getUsernameToDisplay === 'function'
+        ? options.getUsernameToDisplay(user)
+        : user.get('username'),
+    timeout: 60000,
+    attestationType: 'indirect',
+    authenticatorSelection: {
+      // Use required to avoid silent sign up
+      userVerification: 'required',
+      requireResidentKey: false,
+    },
+  });
+  return {
+    // Use jwt signed challenge to avoid storing challenge in DB
+    // Master key is considered safe here to sign the challenge
+    // Add additional 20sec for a bad network latency
+    signedChallenge: sign({ challenge: attestationOptions.challenge }, getJwtSecret(config), {
+      expiresIn: attestationOptions.timeout + 20000,
+    }),
+    options: attestationOptions,
+  };
+};
+
+// Verify the attestation provided by the client
+const verifySignup = async ({ signedChallenge, attestation }, options = {}, config) => {
+  if (!attestation) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'attestation is required.');
+
+  const expectedChallenge = extractSignedChallenge(signedChallenge, config);
+  try {
+    const { verified, authenticatorInfo } = await verifyAttestationResponse({
+      credential: attestation,
+      expectedChallenge,
+      expectedOrigin: options.expectedOrigin || getOrigin(config),
+      expectedRPID: options.rpID || getOrigin(config),
+    });
+    if (verified) {
+      return {
+        counter: authenticatorInfo.counter,
+        publicKey: authenticatorInfo.base64PublicKey,
+        id: authenticatorInfo.base64CredentialID,
+      };
+    }
+    throw new Error();
+  } catch (e) {
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid webauthn attestation');
+  }
+};
+
+const loginOptions = config => {
+  const options = generateAssertionOptions();
+  return {
+    options,
+    signedChallenge: sign({ challenge: options.challenge }, getJwtSecret(config), {
+      expiresIn: options.timeout + 20000,
+    }),
+  };
+};
+
+const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user) => {
+  const dbAuthData = user && user.get('authData') && user.get('authData').webauthn;
+  if (!dbAuthData)
+    throw new Parse.Error(
+      Parse.Error.OTHER_CAUSE,
+      'webauthn not configured for this user or credential id not recognized.'
+    );
+  if (!assertion) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'assertion is required.');
+  const expectedChallenge = extractSignedChallenge(signedChallenge, config);
+
+  try {
+    const { verified, authenticatorInfo } = verifyAssertionResponse({
+      credential: assertion,
+      expectedChallenge,
+      expectedOrigin: options.expectedOrigin || getOrigin(config),
+      expectedRPID: options.rpID || getOrigin(config),
+      authenticator: {
+        credentialID: dbAuthData.id,
+        counter: dbAuthData.counter,
+        publicKey: dbAuthData.publicKey,
+      },
+    });
+    if (verified) {
+      return {
+        ...dbAuthData,
+        counter: authenticatorInfo.counter,
+      };
+    }
+    throw new Error();
+  } catch (e) {
+    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'Invalid webauthn assertion');
+  }
+};
+
+export const challenge = async (challengeData, authData, options, req) => {
+  // TODO: handle options
+};
+
+export const validateAuthData = async (authData, options, req) => {
+  // TODO: handle verify
+};
+
+export const policy = 'solo';
