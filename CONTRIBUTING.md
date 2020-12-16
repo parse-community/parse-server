@@ -100,7 +100,18 @@ If you want to make changes to [Parse Server Configuration][config] add the desi
 
 To view docs run `npm run docs` and check the `/out` directory.
 
-### Code of Conduct
+## Feature Considerations
+### Security Checks
+
+The Parse Server security checks feature warns developers about weak security settings in their Parse Server deployment.
+
+A security check needs to be added for every new feature or enhancement that allows the developer to configure it in a way that weakens security mechanisms or exposes functionality which creates a weak spot for malicious attacks. If you are not sure whether your feature or enhancements requires a security check, feel free to ask.
+
+For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
+
+Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+
+## Code of Conduct
 
 This project adheres to the [Contributor Covenant Code of Conduct](https://github.com/parse-community/parse-server/blob/master/CODE_OF_CONDUCT.md). By participating, you are expected to honor this code.
 
