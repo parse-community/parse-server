@@ -90,6 +90,7 @@ const defaultConfiguration = {
   logLevel,
   fileUpload: {
     enableForPublic: true,
+    enableForAnonymousUser: true,
     enableForAuthenticatedUser: true,
   },
   push: {
