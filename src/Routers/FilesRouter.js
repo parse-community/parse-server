@@ -100,7 +100,7 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          'File upload by anonymous user is not allowed.'
+          'File upload by anonymous user is disabled.'
         )
       );
       return;
@@ -109,13 +109,13 @@ export class FilesRouter {
       next(
         new Parse.Error(
           Parse.Error.FILE_SAVE_ERROR,
-          'File upload by authenticated users is not enabled.'
+          'File upload by authenticated user is disabled.'
         )
       );
       return;
     }
     if (!config.fileUpload.enableForPublic && !user) {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is not enabled.'));
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
       return;
     }
     const filesController = config.filesController;
