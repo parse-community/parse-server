@@ -1031,7 +1031,7 @@ describe('Parse.File testing', () => {
       }
       for (const key of keys) {
         for (const value of invalidValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeRejectedWith(
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeRejectedWith(
             `fileUpload.${key} must be a boolean value.`
           );
         }
