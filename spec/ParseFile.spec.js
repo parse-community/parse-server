@@ -4,6 +4,7 @@
 'use strict';
 
 const request = require('../lib/request');
+const Definitions = require('../src/Options/Definitions');
 
 const str = 'Hello World!';
 const data = [];
@@ -861,22 +862,30 @@ describe('Parse.File testing', () => {
     });
   });
 
-  describe('disable file upload', () => {
-    it('can reject file upload with unspecified', async () => {
+  describe('file upload configuration', () => {
+    it('allows file upload only for authenticated user by default', async () => {
       await reconfigureServer({
-        fileUpload: {},
+        fileUpload: {
+          enableForPublic: Definitions.FileUploadOptions.enableForPublic.default,
+          enableForAnonymousUser: Definitions.FileUploadOptions.enableForAnonymousUser.default,
+          enableForAuthenticatedUser: Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
+        }
       });
-      try {
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save();
-        fail('should not have been able to save file.');
-      } catch (e) {
-        expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload by public is not enabled.');
-      }
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeResolved();
     });
 
-    it('disable all file upload', async () => {
+    it('rejects all file uploads', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: false,
@@ -884,82 +893,63 @@ describe('Parse.File testing', () => {
           enableForAuthenticatedUser: false,
         },
       });
-      try {
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save();
-        fail('should not have been able to save file.');
-      } catch (e) {
-        expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload by public is not enabled.');
-      }
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+      );
     });
 
-    it('disable public file upload', async () => {
+    it('allows all file uploads', async () => {
       await reconfigureServer({
         fileUpload: {
-          enableForPublic: false,
-        },
-      });
-      try {
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save();
-        fail('should not have been able to save file.');
-      } catch (e) {
-        expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload by public is not enabled.');
-      }
-    });
-
-    it('disable file upload for public but allow for user', async () => {
-      await reconfigureServer({
-        fileUpload: {
-          enableForPublic: false,
+          enableForPublic: true,
+          enableForAnonymousUser: true,
           enableForAuthenticatedUser: true,
         },
       });
-      try {
-        const user = await Parse.User.signUp('myUser', 'password');
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save({ sessionToken: user.getSessionToken() });
-      } catch (e) {
-        fail('should have allowed file to save.');
-      }
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeResolved();
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeResolved();
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeResolved();
     });
 
-    it('disable file upload for anonymous', async () => {
+    it('allows file upload only for public', async () => {
       await reconfigureServer({
         fileUpload: {
+          enableForPublic: true,
           enableForAnonymousUser: false,
+          enableForAuthenticatedUser: false,
         },
       });
-      try {
-        const user = await Parse.AnonymousUtils.logIn();
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save({ sessionToken: user.getSessionToken() });
-        fail('should not have been able to save file.');
-      } catch (e) {
-        expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload by anonymous user is not allowed.');
-      }
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeResolved();
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+      );
     });
 
-    it('enable file upload for anonymous', async () => {
-      await reconfigureServer({
-        fileUpload: {
-          enableForPublic: false,
-          enableForAnonymousUser: true,
-        },
-      });
-      try {
-        const user = await Parse.AnonymousUtils.logIn();
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save({ sessionToken: user.getSessionToken() });
-      } catch (e) {
-        fail('should have allowed file to save.');
-      }
-    });
-
-    it('enable file upload for anonymous but not authenticated users', async () => {
+    it('allows file upload only for anonymous user', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: false,
@@ -967,55 +957,88 @@ describe('Parse.File testing', () => {
           enableForAuthenticatedUser: false,
         },
       });
-      try {
-        const user = await Parse.AnonymousUtils.logIn();
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save({ sessionToken: user.getSessionToken() });
-      } catch (e) {
-        fail('should have allowed file to save.');
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeResolved();
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+      );
+    });
+
+    it('allows file upload only for authenticated user', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: false,
+          enableForAnonymousUser: false,
+          enableForAuthenticatedUser: true,
+        },
+      });
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save()).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const anonUser = await Parse.AnonymousUtils.logIn();
+      await expectAsync(file.save({ sessionToken: anonUser.getSessionToken() })).toBeRejectedWith(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
+      file = new Parse.File('hello.txt', data, 'text/plain');
+      const authUser = await Parse.User.signUp('user', 'password');
+      await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeResolved();
+    });
+
+    it('rejects invalid fileUpload configuration', async () => {
+      const invalidConfigs = [
+        { fileUpload: [] },
+        { fileUpload: 1 },
+        { fileUpload: "string" },
+      ];
+      const validConfigs = [
+        { fileUpload: {} },
+        { fileUpload: null },
+        { fileUpload: undefined },
+      ];
+      const keys = [
+        "enableForPublic",
+        "enableForAnonymousUser",
+        "enableForAuthenticatedUser",
+      ];
+      const invalidValues = [
+        [],
+        {},
+        1,
+        "string",
+        null,
+      ];
+      const validValues = [
+        undefined,
+        true,
+        false,
+      ];
+      for (const config of invalidConfigs) {
+        await expectAsync(reconfigureServer(config)).toBeRejectedWith(
+          'fileUpload must be an object value.'
+        );
       }
-      try {
-        const user = await Parse.User.signUp('myUser', 'password');
-        const file = new Parse.File('hello.txt', data, 'text/plain');
-        await file.save({ sessionToken: user.getSessionToken() });
-        fail('should have not allowed file to save.');
-      } catch (e) {
-        expect(e.code).toBe(130);
-        expect(e.message).toBe('File upload by authenticated users is not enabled.');
+      for (const config of validConfigs) {
+        await expectAsync(reconfigureServer(config)).toBeResolved();
+      }
+      for (const key of keys) {
+        for (const value of invalidValues) {
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeRejectedWith(
+            `fileUpload.${key} must be a boolean value.`
+          );
+        }
+        for (const value of validValues) {
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeResolved();
+        }
       }
     });
-  });
-
-  it('setup with invalid configuration', async () => {
-    try {
-      await reconfigureServer({
-        fileUpload: {
-          enableForPublic: [],
-        },
-      });
-      fail('should not allow invalid configuration');
-    } catch (e) {
-      expect(e).toBe('enableForPublic must be a boolean value');
-    }
-    try {
-      await reconfigureServer({
-        fileUpload: {
-          enableForAnonymousUser: [],
-        },
-      });
-      fail('should not allow invalid configuration');
-    } catch (e) {
-      expect(e).toBe('enableForAnonymousUser must be a boolean value');
-    }
-    try {
-      await reconfigureServer({
-        fileUpload: {
-          enableForAuthenticatedUser: [],
-        },
-      });
-      fail('should not allow invalid configuration');
-    } catch (e) {
-      expect(e).toBe('enableForAuthenticatedUser must be a boolean value');
-    }
   });
 });
