@@ -324,7 +324,7 @@ export interface FileUploadOptions {
   :DEFAULT: false */
   enableForAnonymousUser: ?boolean;
   /* Is true if file upload should be allowed for authenticated users.
-  :DEFAULT: false */
+  :DEFAULT: true */
   enableForAuthenticatedUser: ?boolean;
   /* Is true if file upload should be allowed for anyone, regardless of user authentication.
   :DEFAULT: false */
