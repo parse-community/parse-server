@@ -885,6 +885,18 @@ describe('Parse.File testing', () => {
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeResolved();
     });
 
+    fit('allows file upload with master key', async () => {
+      await reconfigureServer({
+        fileUpload: {
+          enableForPublic: false,
+          enableForAnonymousUser: false,
+          enableForAuthenticatedUser: false,
+        },
+      });
+      let file = new Parse.File('hello.txt', data, 'text/plain');
+      await expectAsync(file.save({ useMasterKey: true })).toBeResolved();
+    });
+
     it('rejects all file uploads', async () => {
       await reconfigureServer({
         fileUpload: {
