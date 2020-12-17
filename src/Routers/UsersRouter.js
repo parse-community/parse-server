@@ -173,21 +173,14 @@ export class UsersRouter extends ClassesRouter {
     const user = await this._authenticateUserFromRequest(req);
     const authData = req.body && req.body.authData;
     // Check if user has provided his required auth providers
-    Auth.checkRequiredProviders(authData, user.authData, req.config);
+    Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(authData, user.authData, req.config);
 
     let authDataResponse;
     let validatedAuthData;
     if (authData) {
-      const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
-        authData,
-        user.authData,
-        req.config
-      );
-      if (hasMutatedAuthData) {
-        const res = await Auth.handleAuthDataValidation(mutatedAuthData, req, user);
-        authDataResponse = res.authDataResponse;
-        validatedAuthData = res.authData;
-      }
+      const res = await Auth.handleAuthDataValidation(authData, req, user);
+      authDataResponse = res.authDataResponse;
+      validatedAuthData = res.authData;
     }
 
     // handle password expiry policy

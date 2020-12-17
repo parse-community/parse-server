@@ -388,28 +388,16 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
   return { hasMutatedAuthData, mutatedAuthData };
 };
 
-const checkRequiredProviders = (authData = {}, userAuthData, config) => {
-  if (!config.auth) return;
-
-  const missingRequiredProviders = Object.keys(config.auth).filter(
-    provider => config.auth[provider].required && !authData[provider]
-  );
-
-  if (missingRequiredProviders.length) {
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      `Missing required authData ${missingRequiredProviders.join(',')}`
-    );
-  }
-
-  // In case of signup we need to only check
-  // required providers
-  if (!userAuthData) return;
-
+const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  authData = {},
+  userAuthData = {},
+  config
+) => {
   const savedUserProviders = Object.keys(userAuthData);
 
   const hasProvidedASoloProvider = savedUserProviders.some(
-    provider => config.auth[provider] && config.auth[provider].policy === 'solo'
+    provider =>
+      config.auth[provider] && config.auth[provider].policy === 'solo' && authData[provider]
   );
 
   // Solo providers can be considered as safe
@@ -434,11 +422,6 @@ const checkRequiredProviders = (authData = {}, userAuthData, config) => {
     Parse.Error.OTHER_CAUSE,
     `Missing additional authData ${additionProvidersNotFound.join(',')}`
   );
-};
-
-const getRequiredProviders = config => {
-  if (!config.auth) return [];
-  return Object.keys(config.auth).filter(key => config.auth[key].required);
 };
 
 // Validate each authData step by step and return the provider responses
@@ -514,8 +497,7 @@ module.exports = {
   createSession,
   findUsersWithAuthData,
   hasMutatedAuthData,
-  checkRequiredProviders,
-  getRequiredProviders,
+  checkIfUserHasProvidedConfiguredProvidersForLogin,
   reducePromise,
   handleAuthDataValidation,
 };

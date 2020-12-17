@@ -2,18 +2,9 @@
 export class AuthAdapter {
   constructor() {
     /**
-     * If set to true the signup/login
-     * will fail if user do not provide
-     * authData associated to this Auth Adapter
-     */
-    this.required = false;
-
-    /**
-     * Set to true if you want to force to validateAuthData
-     * even if authData do not change
+     * Force authData validation even if authData are the same into the DB
      */
     this.alwaysValidate = false;
-
     /**
      * Usage policy
      * default: can be combined with ONE additional auth provider if additional configured on user
@@ -101,7 +92,7 @@ export class AuthAdapter {
   }
 
   /**
-   *
+   * Triggered in pre authentication process if needed (like webauthn, SMS OTP)
    * @param challengeData: data provided by the client
    * @param authData: auth data provided by the client, can be used for validation
    * @param options: additional options

@@ -1,4 +1,5 @@
 import loadAdapter from '../AdapterLoader';
+import Parse from 'parse/node';
 
 const apple = require('./apple');
 const gcenter = require('./gcenter');
@@ -61,13 +62,49 @@ const providers = {
   ldap,
 };
 
-function authDataValidator(adapter, appIds, options) {
+function authDataValidator(provider, adapter, appIds, options) {
   return async function (authData, req, user) {
-    const result = await adapter.validateAuthData(authData, options, req, user);
     if (appIds) {
       await adapter.validateAppId(appIds, authData, options, req, user);
     }
-    return result;
+    if (typeof adapter.validateAuthData === 'function') {
+      return adapter.validateAuthData(authData, options, req, user);
+    } else if (
+      typeof adapter.validateSetUp === 'function' &&
+      typeof adapter.validateLogin === 'function' &&
+      typeof adapter.validateUpdate === 'function'
+    ) {
+      // We can consider for DX purpose when masterKey is detected, we should
+      // trigger a logged in user
+      const isLoggedIn =
+        (req.auth.user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+      let isUpdate = false;
+      let hasAuthDataConfigured = false;
+
+      if (user && user.get('authData') && user.get('authData')[provider]) {
+        hasAuthDataConfigured = true;
+      }
+
+      if (isLoggedIn && hasAuthDataConfigured) {
+        isUpdate = true;
+      }
+
+      if (isUpdate) {
+        return adapter.validateUpdate(authData, options, req, user);
+      }
+
+      if (!isLoggedIn && hasAuthDataConfigured) {
+        return adapter.validateLogin(authData, options, req, user);
+      }
+
+      if (!hasAuthDataConfigured) {
+        return adapter.validateSetUp(authData, options, req, user);
+      }
+    }
+    throw new Parse.Error(
+      Parse.Error.OTHER_CAUSE,
+      'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+    );
   };
 }
 
@@ -125,7 +162,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
 
     const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
 
-    return authDataValidator(adapter, appIds, providerOptions);
+    return authDataValidator(provider, adapter, appIds, providerOptions);
   };
 
   return Object.freeze({

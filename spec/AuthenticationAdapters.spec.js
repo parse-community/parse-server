@@ -1750,10 +1750,9 @@ describe('microsoft graph auth adapter', () => {
 });
 
 describe('Auth Adapter features', () => {
-  const requiredAdapter = {
+  const baseAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
-    required: true,
   };
   const alwaysValidateAdapter = {
     validateAppId: () => Promise.resolve(),
@@ -1788,6 +1787,13 @@ describe('Auth Adapter features', () => {
       anOption: true,
     },
   };
+
+  /*   const modernAdapter = {
+    validateAppId: () => Promise.resolve(),
+    validateSetUp: () => Promise.resolve(),
+    validateUpdate: () => Promise.resolve(),
+    validateLogin: () => Promise.resolve(),
+  }; */
 
   const headers = {
     'Content-Type': 'application/json',
@@ -1839,83 +1845,39 @@ describe('Auth Adapter features', () => {
     expect(secondCall[3] instanceof Parse.User).toBeTruthy();
     expect(secondCall[3].id).toEqual(user.id);
   });
-  it('should require authData on username/password signup', async () => {
-    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({});
-    await reconfigureServer({ auth: { requiredAdapter } });
 
-    const user = new Parse.User();
-
-    try {
-      await user.save({ username: 'test', password: 'test' });
-      fail('should not save the user');
-    } catch (e) {
-      expect(e.message).toContain('Missing required authData requiredAdapter');
-      expect(user.getSessionToken()).toBeUndefined();
-    }
-
-    const payload = { someData: true };
-
-    await user.save({
-      username: 'test',
-      password: 'test',
-      authData: { requiredAdapter: payload },
-    });
-
-    expect(requiredAdapter.validateAuthData.calls.argsFor(0)[0]).toEqual(payload);
-
-    expect(user.getSessionToken()).toBeDefined();
-  });
-  it('should require authData on login with', async () => {
-    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({});
-    await reconfigureServer({ auth: { requiredAdapter } });
-
-    const user = new Parse.User();
-
-    try {
-      await user.save({ authData: { alwaysValidateAdapter: { id: 'shouldRequireAdapter' } } });
-      fail('should not save the user');
-    } catch (e) {
-      expect(e.message).toContain('Missing required authData requiredAdapter');
-      expect(user.getSessionToken()).toBeUndefined();
-    }
-
-    const payload = { someData: true, id: 'requiredAdapter' };
-
-    await user.save({
-      authData: { requiredAdapter: payload },
-    });
-
-    expect(requiredAdapter.validateAuthData.calls.argsFor(0)[0]).toEqual(payload);
-    expect(user.getSessionToken()).toBeDefined();
-  });
+  xit('should trigger correctly validateSetUp');
+  xit('should trigger correctly validateLogin');
+  xit('should trigger correctly validateUpdate');
+  xit('should throw if no triggers found');
   it('should not update authData if provider return doNotSave', async () => {
     spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
     await reconfigureServer({
-      auth: { doNotSaveAdapter, requiredAdapter },
+      auth: { doNotSaveAdapter, baseAdapter },
     });
 
     const user = new Parse.User();
 
     await user.save({
-      authData: { requiredAdapter: { id: 'requiredAdapter' }, doNotSaveAdapter: { token: true } },
+      authData: { baseAdapter: { id: 'baseAdapter' }, doNotSaveAdapter: { token: true } },
     });
 
     await user.fetch({ useMasterKey: true });
 
-    expect(user.get('authData')).toEqual({ requiredAdapter: { id: 'requiredAdapter' } });
+    expect(user.get('authData')).toEqual({ baseAdapter: { id: 'baseAdapter' } });
   });
   it('should force authData validation if provider use alwaysValidate', async () => {
     spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
-    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({});
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({
-      auth: { alwaysValidateAdapter, requiredAdapter },
+      auth: { alwaysValidateAdapter, baseAdapter },
     });
 
     const user = new Parse.User();
 
     await user.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { token: true },
       },
     });
@@ -1925,7 +1887,7 @@ describe('Auth Adapter features', () => {
     const user2 = new Parse.User();
     await user2.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
       },
     });
 
@@ -1934,7 +1896,7 @@ describe('Auth Adapter features', () => {
     const user3 = new Parse.User();
     await user3.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { token: true },
       },
     });
@@ -1943,14 +1905,14 @@ describe('Auth Adapter features', () => {
   });
   it('should require additional provider if configured', async () => {
     await reconfigureServer({
-      auth: { requiredAdapter, additionalAdapter },
+      auth: { baseAdapter, additionalAdapter },
     });
 
     const user = new Parse.User();
 
     await user.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         additionalAdapter: { token: true },
       },
     });
@@ -1959,7 +1921,7 @@ describe('Auth Adapter features', () => {
     try {
       await user2.save({
         authData: {
-          requiredAdapter: { id: 'requiredAdapter' },
+          baseAdapter: { id: 'baseAdapter' },
         },
       });
       fail('should require additional authData');
@@ -1970,7 +1932,7 @@ describe('Auth Adapter features', () => {
 
     await user2.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         additionalAdapter: { token: true },
       },
     });
@@ -2000,7 +1962,7 @@ describe('Auth Adapter features', () => {
     expect(user2.getSessionToken()).toBeDefined();
   });
   it('should return authData response and save some info on non username login', async () => {
-    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
       response: { someData: true },
     });
     spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
@@ -2008,27 +1970,27 @@ describe('Auth Adapter features', () => {
       save: { otherData: true },
     });
     await reconfigureServer({
-      auth: { requiredAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, alwaysValidateAdapter },
     });
 
     const user = new Parse.User();
 
     await user.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
-      requiredAdapter: { someData: true },
+      baseAdapter: { someData: true },
       alwaysValidateAdapter: { someData2: true },
     });
 
     const user2 = new Parse.User();
     await user2.save({
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { test: true },
       },
     });
@@ -2039,13 +2001,12 @@ describe('Auth Adapter features', () => {
     userViaMasterKey.id = user2.id;
     await userViaMasterKey.fetch({ useMasterKey: true });
     expect(userViaMasterKey.get('authData')).toEqual({
-      requiredAdapter: { id: 'requiredAdapter' },
+      baseAdapter: { id: 'baseAdapter' },
       alwaysValidateAdapter: { otherData: true },
     });
   });
-
   it('should return authData response and save some info on username login', async () => {
-    spyOn(requiredAdapter, 'validateAuthData').and.resolveTo({
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
       response: { someData: true },
     });
     spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
@@ -2053,7 +2014,7 @@ describe('Auth Adapter features', () => {
       save: { otherData: true },
     });
     await reconfigureServer({
-      auth: { requiredAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, alwaysValidateAdapter },
     });
 
     const user = new Parse.User();
@@ -2062,13 +2023,13 @@ describe('Auth Adapter features', () => {
       username: 'username',
       password: 'password',
       authData: {
-        requiredAdapter: { id: 'requiredAdapter' },
+        baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
-      requiredAdapter: { someData: true },
+      baseAdapter: { someData: true },
       alwaysValidateAdapter: { someData2: true },
     });
 
@@ -2081,23 +2042,111 @@ describe('Auth Adapter features', () => {
         password: 'password',
         authData: {
           alwaysValidateAdapter: { test: true },
-          requiredAdapter: { id: 'requiredAdapter' },
+          baseAdapter: { id: 'baseAdapter' },
         },
       }),
     });
-    expect(JSON.parse(res.text).authDataResponse).toEqual({
+    const result = JSON.parse(res.text);
+    expect(result.authDataResponse).toEqual({
       alwaysValidateAdapter: { someData2: true },
+      baseAdapter: { someData: true },
     });
 
-    const userViaMasterKey = new Parse.User();
-    userViaMasterKey.id = user.id;
-    await userViaMasterKey.fetch({ useMasterKey: true });
-    expect(userViaMasterKey.get('authData')).toEqual({
-      requiredAdapter: { id: 'requiredAdapter' },
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toEqual({
+      baseAdapter: { id: 'baseAdapter' },
       alwaysValidateAdapter: { otherData: true },
     });
   });
+  it('should allow update of authData', async () => {
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
+      response: { someData: true },
+    });
+    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+      response: { someData2: true },
+      save: { otherData: true },
+    });
+    await reconfigureServer({
+      auth: { baseAdapter, alwaysValidateAdapter },
+    });
+    await reconfigureServer({
+      auth: { baseAdapter, alwaysValidateAdapter },
+    });
 
+    const user = new Parse.User();
+
+    await user.save({
+      username: 'username',
+      password: 'password',
+      authData: {
+        baseAdapter: { id: 'baseAdapter' },
+        alwaysValidateAdapter: { test: true },
+      },
+    });
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    expect(user.id).toBeDefined();
+    expect(user.getSessionToken()).toBeDefined();
+    // Should not re validate the baseAdapter
+    // when user is already logged in and authData not changed
+    await user.save(
+      {
+        authData: {
+          alwaysValidateAdapter: { test: true },
+          baseAdapter: { id: 'baseAdapter' },
+        },
+      },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    // Should not re validate the baseAdapter
+    // when master key used and authData are not changed
+    await user.save(
+      {
+        authData: {
+          alwaysValidateAdapter: { test: true },
+          baseAdapter: { id: 'baseAdapter' },
+        },
+      },
+      { useMasterKey: true }
+    );
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+
+    // Should allow user to change authData
+    await user.save(
+      {
+        authData: {
+          alwaysValidateAdapter: { test: true },
+          baseAdapter: { id: 'baseAdapter2' },
+        },
+      },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(2);
+
+    // Should allow master key to change authData
+    await user.save(
+      {
+        authData: {
+          alwaysValidateAdapter: { test: true },
+          baseAdapter: { id: 'baseAdapter3' },
+        },
+      },
+      { useMasterKey: true }
+    );
+
+    expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(3);
+
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toEqual({
+      baseAdapter: { id: 'baseAdapter3' },
+      alwaysValidateAdapter: { otherData: true },
+    });
+  });
   it('should pass user to auth adapter on update by matching session', async () => {
     spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({ auth: { alwaysValidateAdapter } });
@@ -2138,7 +2187,6 @@ describe('Auth Adapter features', () => {
     expect(secondCall[3] instanceof Parse.User).toBeTruthy();
     expect(secondCall[3].id).toEqual(user.id);
   });
-
   it('should return challenge with no logged user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
 
