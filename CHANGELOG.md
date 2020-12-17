@@ -2,6 +2,7 @@
 
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
+- FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 
 ### 4.5.0
