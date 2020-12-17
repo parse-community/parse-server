@@ -34,16 +34,69 @@ export class AuthAdapter {
   }
 
   /**
+   * Legacy usage, if provided it will be triggered when authData related to this provider is touched (signup/update/login)
+   * otherwise you should implement validateSetup, validateLogin and validateUpdate
   @param authData: the client provided authData
   @param options: additional options
   @param req: RestWrite instance with config/auth/data
+  @param user: Parse.User instance if Parse.User found
   @returns a promise that resolves, the resolved value will be handled by the server like:
   - resolve undefined|void|{} parse server will save authData
   - resolve { doNotSave: boolean, response: Object} parse server will do not save provided authData and send response to the client under authDataResponse
   - resolve { response: Object } parse server will save authData and send response to the client under authDataResponse
   - resolve { response: Object, save: Object } parse server will save the object provided into `save` key and send response to the client under authDataResponse
    */
-  validateAuthData(authData, options, req) {
+  validateAuthData(authData, options, req, user) {
+    return Promise.resolve({});
+  }
+
+  /**
+   * Triggered when user provide for the first time this auth provider
+  @param authData: the client provided authData
+  @param options: additional options
+  @param req: RestWrite instance with config/auth/data
+  @param user: Parse.User instance if Parse.User found
+  @returns a promise that resolves, the resolved value will be handled by the server like:
+  - resolve undefined|void|{} parse server will save authData
+  - resolve { doNotSave: boolean, response: Object} parse server will do not save provided authData and send response to the client under authDataResponse
+  - resolve { response: Object } parse server will save authData and send response to the client under authDataResponse
+  - resolve { response: Object, save: Object } parse server will save the object provided into `save` key and send response to the client under authDataResponse
+   */
+  validateSetUp(authData, options, req, user) {
+    return Promise.resolve({});
+  }
+
+  /**
+   * Triggered when user provide authData related to this provider
+   * he is not logged in and has already set this provider before
+  @param authData: the client provided authData
+  @param options: additional options
+  @param req: RestWrite instance with config/auth/data
+  @param user: Parse.User instance if Parse.User found
+  @returns a promise that resolves, the resolved value will be handled by the server like:
+  - resolve undefined|void|{} parse server will save authData
+  - resolve { doNotSave: boolean, response: Object} parse server will do not save provided authData and send response to the client under authDataResponse
+  - resolve { response: Object } parse server will save authData and send response to the client under authDataResponse
+  - resolve { response: Object, save: Object } parse server will save the object provided into `save` key and send response to the client under authDataResponse
+   */
+  validateLogin(authData, options, req, user) {
+    return Promise.resolve({});
+  }
+
+  /**
+   * Triggered when user provide authData related to this provider
+   * he is logged in and has already set this provider before
+  @param authData: the client provided authData
+  @param options: additional options
+  @param req: RestWrite instance with config/auth/data
+  @param user: Parse.User instance if Parse.User found
+  @returns a promise that resolves, the resolved value will be handled by the server like:
+  - resolve undefined|void|{} parse server will save authData
+  - resolve { doNotSave: boolean, response: Object} parse server will do not save provided authData and send response to the client under authDataResponse
+  - resolve { response: Object } parse server will save authData and send response to the client under authDataResponse
+  - resolve { response: Object, save: Object } parse server will save the object provided into `save` key and send response to the client under authDataResponse
+   */
+  validateUpdate(authData, options, req, user) {
     return Promise.resolve({});
   }
 
