@@ -893,7 +893,7 @@ describe('Parse.File testing', () => {
           enableForAuthenticatedUser: false,
         },
       });
-      let file = new Parse.File('hello.txt', data, 'text/plain');
+      const file = new Parse.File('hello.txt', data, 'text/plain');
       await expectAsync(file.save({ useMasterKey: true })).toBeResolved();
     });
 
