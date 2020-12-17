@@ -425,7 +425,7 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 };
 
 // Validate each authData step by step and return the provider responses
-const handleAuthDataValidation = (authData, req, foundUser) => {
+const handleAuthDataValidation = async (authData, req, foundUser) => {
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -440,7 +440,7 @@ const handleAuthDataValidation = (authData, req, foundUser) => {
   ) {
     user = new Parse.User();
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
-    user.fetch({ useMasterKey: true });
+    await user.fetch({ useMasterKey: true });
   }
 
   // Perform validation as step by step pipeline

@@ -527,20 +527,15 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         );
       }
 
-      // We have authData that is updated on login
-      // that can happen when token are refreshed,
-      // We should update the token and let the user in
-      // We should only check the mutated keys
-      const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
-        mutatedAuthData,
+      // Force to validate all provided authData on login
+      // on update only validate mutated ones
+      const res = await Auth.handleAuthDataValidation(
+        isLogin ? authData : mutatedAuthData,
         this,
         userResult
       );
-
-      // Replace current authData by the new validated one
-      this.data.authData = validatedAuthData;
-
-      this.authDataResponse = authDataResponse;
+      this.data.authData = res.authData;
+      this.authDataResponse = res.authDataResponse;
 
       // IF we are in login we'll skip the database operation / beforeSave / afterSave etc...
       // we need to set it up there.
@@ -558,7 +553,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         await this.config.database.update(
           this.className,
           { objectId: this.data.objectId },
-          { authData: validatedAuthData },
+          { authData: this.data.authData },
           {}
         );
       }

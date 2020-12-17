@@ -1788,12 +1788,12 @@ describe('Auth Adapter features', () => {
     },
   };
 
-  /*   const modernAdapter = {
+  const modernAdapter = {
     validateAppId: () => Promise.resolve(),
     validateSetUp: () => Promise.resolve(),
     validateUpdate: () => Promise.resolve(),
     validateLogin: () => Promise.resolve(),
-  }; */
+  };
 
   const headers = {
     'Content-Type': 'application/json',
@@ -1846,9 +1846,105 @@ describe('Auth Adapter features', () => {
     expect(secondCall[3].id).toEqual(user.id);
   });
 
-  xit('should trigger correctly validateSetUp');
-  xit('should trigger correctly validateLogin');
-  xit('should trigger correctly validateUpdate');
+  it('should trigger correctly validateSetUp', async () => {
+    spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
+    spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
+    spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
+
+    await reconfigureServer({ auth: { modernAdapter } });
+    const user = new Parse.User();
+
+    await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
+
+    expect(modernAdapter.validateUpdate).toHaveBeenCalledTimes(0);
+    expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(0);
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+    const call = modernAdapter.validateSetUp.calls.argsFor(0);
+    expect(call[0]).toEqual({ id: 'modernAdapter' });
+    expect(call[1]).toEqual(modernAdapter);
+    expect(call[2].config).toBeDefined();
+    expect(call[2].auth).toBeDefined();
+    expect(call[2].config.headers).toBeDefined();
+    expect(call[3]).toBeUndefined();
+    expect(user.getSessionToken()).toBeDefined();
+  });
+  it('should trigger correctly validateLogin', async () => {
+    spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
+    spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
+    spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
+
+    await reconfigureServer({ auth: { modernAdapter } });
+    const user = new Parse.User();
+
+    // Signup
+    await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
+
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+    // Login
+    const user2 = new Parse.User();
+    await user2.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
+
+    expect(modernAdapter.validateUpdate).toHaveBeenCalledTimes(0);
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+    expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(1);
+    const call = modernAdapter.validateLogin.calls.argsFor(0);
+    expect(call[0]).toEqual({ id: 'modernAdapter' });
+    expect(call[1]).toEqual(modernAdapter);
+    expect(call[2].config).toBeDefined();
+    expect(call[2].auth).toBeDefined();
+    expect(call[2].config.headers).toBeDefined();
+    expect(call[3] instanceof Parse.User).toBeTruthy();
+    expect(call[3].id).toEqual(user2.id);
+    expect(call[3].id).toEqual(user.id);
+    expect(user2.getSessionToken()).toBeDefined();
+  });
+  it('should trigger correctly validateUpdate', async () => {
+    spyOn(modernAdapter, 'validateSetUp').and.resolveTo({});
+    spyOn(modernAdapter, 'validateUpdate').and.resolveTo({});
+    spyOn(modernAdapter, 'validateLogin').and.resolveTo({});
+
+    await reconfigureServer({ auth: { modernAdapter } });
+    const user = new Parse.User();
+
+    // Signup
+    await user.save({ authData: { modernAdapter: { id: 'modernAdapter' } } });
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+
+    // Save same data
+    await user.save(
+      { authData: { modernAdapter: { id: 'modernAdapter' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    // Save same data with master key
+    await user.save(
+      { authData: { modernAdapter: { id: 'modernAdapter' } } },
+      { useMasterKey: true }
+    );
+
+    expect(modernAdapter.validateUpdate).toHaveBeenCalledTimes(0);
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+    expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(0);
+
+    // Change authData
+    await user.save(
+      { authData: { modernAdapter: { id: 'modernAdapter2' } } },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    expect(modernAdapter.validateUpdate).toHaveBeenCalledTimes(1);
+    expect(modernAdapter.validateSetUp).toHaveBeenCalledTimes(1);
+    expect(modernAdapter.validateLogin).toHaveBeenCalledTimes(0);
+    const call = modernAdapter.validateUpdate.calls.argsFor(0);
+    expect(call[0]).toEqual({ id: 'modernAdapter2' });
+    expect(call[1]).toEqual(modernAdapter);
+    expect(call[2].config).toBeDefined();
+    expect(call[2].auth).toBeDefined();
+    expect(call[2].config.headers).toBeDefined();
+    expect(call[3] instanceof Parse.User).toBeTruthy();
+    expect(call[3].id).toEqual(user.id);
+    expect(user.getSessionToken()).toBeDefined();
+  });
   xit('should throw if no triggers found');
   it('should not update authData if provider return doNotSave', async () => {
     spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
@@ -1988,14 +2084,32 @@ describe('Auth Adapter features', () => {
     });
 
     const user2 = new Parse.User();
-    await user2.save({
+    user2.id = user.id;
+    await user2.save(
+      {
+        authData: {
+          baseAdapter: { id: 'baseAdapter' },
+          alwaysValidateAdapter: { test: true },
+        },
+      },
+      { sessionToken: user.getSessionToken() }
+    );
+
+    expect(user2.get('authDataResponse')).toEqual({ alwaysValidateAdapter: { someData2: true } });
+
+    const user3 = new Parse.User();
+    await user3.save({
       authData: {
         baseAdapter: { id: 'baseAdapter' },
         alwaysValidateAdapter: { test: true },
       },
     });
 
-    expect(user2.get('authDataResponse')).toEqual({ alwaysValidateAdapter: { someData2: true } });
+    // On logIn all authData are revalidated
+    expect(user3.get('authDataResponse')).toEqual({
+      baseAdapter: { someData: true },
+      alwaysValidateAdapter: { someData2: true },
+    });
 
     const userViaMasterKey = new Parse.User();
     userViaMasterKey.id = user2.id;

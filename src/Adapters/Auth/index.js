@@ -64,7 +64,7 @@ const providers = {
 
 function authDataValidator(provider, adapter, appIds, options) {
   return async function (authData, req, user) {
-    if (appIds) {
+    if (appIds && typeof adapter.validateAppId === 'function') {
       await adapter.validateAppId(appIds, authData, options, req, user);
     }
     if (typeof adapter.validateAuthData === 'function') {
@@ -130,20 +130,18 @@ function loadAuthAdapter(provider, authOptions) {
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      ['validateAuthData', 'validateAppId'].forEach(key => {
+      [
+        'validateAuthData',
+        'validateAppId',
+        'validateSetUp',
+        'validateLogin',
+        'validateUpdate',
+      ].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
       });
     }
-  }
-
-  // TODO: create a new module from validateAdapter() in
-  // src/Controllers/AdaptableController.js so we can use it here for adapter
-  // validation based on the src/Adapters/Auth/AuthAdapter.js expected class
-  // signature.
-  if (!adapter.validateAuthData || !adapter.validateAppId) {
-    return;
   }
 
   return { adapter, appIds, providerOptions };
