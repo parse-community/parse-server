@@ -32,6 +32,7 @@
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
  * @property {String} fileKey Key for your files
  * @property {Adapter<FilesAdapter>} filesAdapter Adapter module for the files sub-system
+ * @property {FileUploadOptions} fileUpload Options for file uploads
  * @property {String} graphQLPath Mount path for the GraphQL endpoint, defaults to /graphql
  * @property {String} graphQLSchema Full path to your GraphQL custom schema.graphql file
  * @property {String} host The host to serve ParseServer on, defaults to 0.0.0.0
@@ -136,4 +137,11 @@
  * @property {Number} resetTokenValidityDuration time for token to expire
  * @property {Function} validatorCallback a callback function to be invoked to validate the password
  * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
+ */
+
+/**
+ * @interface FileUploadOptions
+ * @property {Boolean} enableForAnonymousUser Is true if file upload should be allowed for anonymous users.
+ * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
+ * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
  */
