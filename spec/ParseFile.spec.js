@@ -885,7 +885,7 @@ describe('Parse.File testing', () => {
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeResolved();
     });
 
-    fit('allows file upload with master key', async () => {
+    it('allows file upload with master key', async () => {
       await reconfigureServer({
         fileUpload: {
           enableForPublic: false,
