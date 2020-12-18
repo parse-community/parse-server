@@ -62,9 +62,9 @@ const extractSignedChallenge = (signedChallenge, config) => {
   }
 };
 
-// Used to tell to the client wich
-// format is expected
-const signUpOptions = (user, options = {}, config) => {
+// Return credentials options to the client
+// for register public key process
+const registerOptions = (user, options = {}, config) => {
   if (!user)
     throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User need to be logged in to set up webauthn');
   const attestationOptions = generateAttestationOptions({
@@ -102,7 +102,7 @@ const signUpOptions = (user, options = {}, config) => {
 };
 
 // Verify the attestation provided by the client
-const verifySignup = async ({ signedChallenge, attestation }, options = {}, config) => {
+const verifyRegister = async ({ signedChallenge, attestation }, options = {}, config) => {
   if (!attestation) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'attestation is required.');
 
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
@@ -170,12 +170,31 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
   }
 };
 
-export const challenge = async (challengeData, authData, options, req) => {
-  // TODO: handle options
+export const challenge = async (challengeData, authData, user, req, options = {}) => {
+  // Allow logged user to update/setUp webauthn
+  if (req.auth.user && req.auth.user.id) {
+    return registerOptions(user, options, req.config);
+  }
+
+  return loginOptions(req.config);
 };
 
-export const validateAuthData = async (authData, options, req) => {
-  // TODO: handle verify
+export const validateSetUp = async (authData, options, req) => {
+  if (!req.auth.user)
+    throw new Parse.Error(
+      Parse.Error.OTHER_CAUSE,
+      'Webauthn can only be configured on an already logged in user.'
+    );
+  return { save: await verifyRegister(authData, options, req.config) };
+};
+
+export const validateUpdate = validateSetUp;
+
+export const validateLogin = async (authData, options, req, user) => {
+  if (!user) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found for webauthn login.');
+  // Will save updated counter of the credential
+  // and avoid cloned/bugged authenticators
+  return { save: verifyLogin(authData, options, req.config, user) };
 };
 
 export const policy = 'solo';

@@ -93,9 +93,10 @@ export class AuthAdapter {
    * @param authData: auth data provided by the client, can be used for validation
    * @param options: additional options
    * @param req: RestWrite instance with config/auth/data
+   * @param user: Parse.User instance if Parse.User found
    * @returns a promise that resolves, resolved value will be added to challenge response under challenge key
    */
-  challenge(challengeData, authData, options, req) {
+  challenge(challengeData, authData, options, req, user) {
     return Promise.resolve({});
   }
 }
