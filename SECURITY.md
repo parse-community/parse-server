@@ -18,7 +18,7 @@ We ask that:
 
 All vulnerabilities should be privately reported to us at the following address [security&#64;parseplatform&#46;org](mailto:security&#64;parseplatform&#46;org)
 
-You can use our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
+If you want you can encrypt your email to us by using our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
