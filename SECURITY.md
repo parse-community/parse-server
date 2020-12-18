@@ -16,7 +16,7 @@ We ask that:
 
 # Communicating with us
 
-All vulnerabilities should be privately reported to either [Node Security](https://nodesecurity.io/report) or directly to us at the following address [security at parseplatform dot org](mailto:security@parseplatform.org)
+All vulnerabilities should be privately reported to us at the following address [security&#64;parseplatform&#46;org](mailto:security&#64;parseplatform&#46;org)
 
 You can use our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
 
