@@ -372,7 +372,7 @@ const findUsersWithAuthData = (config, authData) => {
   return findPromise;
 };
 
-const hasMutatedAuthData = (authData, userAuthData, config) => {
+const hasMutatedAuthData = (authData, userAuthData) => {
   if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
@@ -380,7 +380,7 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
     if (provider === 'anonymous') return;
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
-    if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].alwaysValidate) {
+    if (!_.isEqual(providerData, userProviderAuthData)) {
       mutatedAuthData[provider] = providerData;
     }
   });
@@ -388,28 +388,16 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
   return { hasMutatedAuthData, mutatedAuthData };
 };
 
-const checkRequiredProviders = (authData = {}, userAuthData, config) => {
-  if (!config.auth) return;
-
-  const missingRequiredProviders = Object.keys(config.auth).filter(
-    provider => config.auth[provider].required && !authData[provider]
-  );
-
-  if (missingRequiredProviders.length) {
-    throw new Parse.Error(
-      Parse.Error.OTHER_CAUSE,
-      `Missing required authData ${missingRequiredProviders.join(',')}`
-    );
-  }
-
-  // In case of signup we need to only check
-  // required providers
-  if (!userAuthData) return;
-
+const checkIfUserHasProvidedConfiguredProvidersForLogin = (
+  authData = {},
+  userAuthData = {},
+  config
+) => {
   const savedUserProviders = Object.keys(userAuthData);
 
   const hasProvidedASoloProvider = savedUserProviders.some(
-    provider => config.auth[provider] && config.auth[provider].policy === 'solo'
+    provider =>
+      config.auth[provider] && config.auth[provider].policy === 'solo' && authData[provider]
   );
 
   // Solo providers can be considered as safe
@@ -436,13 +424,8 @@ const checkRequiredProviders = (authData = {}, userAuthData, config) => {
   );
 };
 
-const getRequiredProviders = config => {
-  if (!config.auth) return [];
-  return Object.keys(config.auth).filter(key => config.auth[key].required);
-};
-
 // Validate each authData step by step and return the provider responses
-const handleAuthDataValidation = (authData, req, foundUser) => {
+const handleAuthDataValidation = async (authData, req, foundUser) => {
   let user;
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
@@ -457,7 +440,7 @@ const handleAuthDataValidation = (authData, req, foundUser) => {
   ) {
     user = new Parse.User();
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
-    user.fetch({ useMasterKey: true });
+    await user.fetch({ useMasterKey: true });
   }
 
   // Perform validation as step by step pipeline
@@ -514,8 +497,7 @@ module.exports = {
   createSession,
   findUsersWithAuthData,
   hasMutatedAuthData,
-  checkRequiredProviders,
-  getRequiredProviders,
+  checkIfUserHasProvidedConfiguredProvidersForLogin,
   reducePromise,
   handleAuthDataValidation,
 };

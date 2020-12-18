@@ -146,8 +146,6 @@ RestWrite.prototype.execute = function () {
       if (this.authDataResponse) {
         if (this.response && this.response.response) {
           this.response.response.authDataResponse = this.authDataResponse;
-        } else {
-          this.response.response = { authDataResponse: this.authDataResponse };
         }
       }
       return this.response;
@@ -385,6 +383,7 @@ RestWrite.prototype.validateAuthData = function () {
   const authData = this.data.authData;
   const hasUsernameAndPassword =
     typeof this.data.username === 'string' && typeof this.data.password === 'string';
+
   if (!this.query && !authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'bad or missing username');
@@ -394,20 +393,11 @@ RestWrite.prototype.validateAuthData = function () {
     }
   }
 
-  const requiredProviders = Auth.getRequiredProviders(this.config);
   if (
     (authData && !Object.keys(authData).length) ||
     !Object.prototype.hasOwnProperty.call(this.data, 'authData')
   ) {
-    // If user try to signup via username/password and no requiredProviders
-    // found we can safely return
-    if (this.data.username && this.data.password && !requiredProviders.length) {
-      return;
-    }
-
-    // Will throw if user do not provide required auth data
-    Auth.checkRequiredProviders(authData, undefined, this.config);
-
+    // Nothing to validate here
     return;
   } else if (Object.prototype.hasOwnProperty.call(this.data, 'authData') && !this.data.authData) {
     // Handle saving authData to null
@@ -422,18 +412,12 @@ RestWrite.prototype.validateAuthData = function () {
     const canHandleAuthData = providers.some(provider => {
       var providerAuthData = authData[provider];
       var hasToken = providerAuthData && providerAuthData.id;
-      return hasToken || providerAuthData == null;
+      return hasToken || providerAuthData === null;
     });
-    if (
-      canHandleAuthData ||
-      hasUsernameAndPassword ||
-      this.auth.isMaster ||
-      (this.auth.user && this.auth.user.id === this.getUserId())
-    ) {
+    if (canHandleAuthData || hasUsernameAndPassword || this.auth.isMaster || this.getUserId()) {
       return this.handleAuthData(authData);
     }
   }
-  console.log('Je throw ici', this.auth);
   throw new Parse.Error(
     Parse.Error.UNSUPPORTED_SERVICE,
     'This authentication method is unsupported.'
@@ -465,19 +449,53 @@ RestWrite.prototype.handleAuthData = async function (authData) {
   const r = await Auth.findUsersWithAuthData(this.config, authData);
   const results = this.filteredObjectsByACL(r);
 
-  if (results.length == 1) {
-    this.storage['authProvider'] = Object.keys(authData).join(',');
+  if (results.length > 1) {
+    // To avoid https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5
+    // Let's run some validation before throwing
+    await Auth.handleAuthDataValidation(authData, this, results[0]);
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
 
+  // No user found with provided authData we need to validate
+  if (!results.length) {
+    const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
+      authData,
+      this
+    );
+    this.authDataResponse = authDataResponse;
+    // Replace current authData by the new validated one
+    this.data.authData = validatedAuthData;
+    return;
+  }
+
+  // User found with provided authData
+  if (results.length === 1) {
+    const userId = this.getUserId();
     const userResult = results[0];
+    // Prevent duplicate authData id
+    if (userId && userId !== userResult.objectId) {
+      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+    }
+
+    this.storage['authProvider'] = Object.keys(authData).join(',');
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
       authData,
-      userResult.authData,
-      this.config
+      userResult.authData
     );
 
-    const userId = this.getUserId();
-    if (!userId || userId === userResult.objectId) {
+    const isCurrentUserLoggedOrMaster =
+      (this.auth && this.auth.user && this.auth.user.id === userResult.objectId) ||
+      this.auth.isMaster;
+
+    // Prevent validating if no mutated data detected
+    if (!hasMutatedAuthData && isCurrentUserLoggedOrMaster) {
+      return;
+    }
+
+    const isLogin = !userId;
+
+    if (isLogin || hasMutatedAuthData) {
       // no user making the call
       // OR the user making the call is the right one
       // Login with auth data
@@ -486,8 +504,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       // need to set the objectId first otherwise location has trailing undefined
       this.data.objectId = userResult.objectId;
 
-      if (!this.query || !this.query.objectId) {
-        // this a login call, no userId passed
+      if (isLogin) {
         this.response = {
           response: userResult,
           location: this.location(),
@@ -500,32 +517,28 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         // If we are in login operation via authData
         // we need to be sure that the user has provided
         // required authData
-        Auth.checkRequiredProviders(authData, userResult.authData, this.config);
+        Auth.checkIfUserHasProvidedConfiguredProvidersForLogin(
+          authData,
+          userResult.authData,
+          this.config
+        );
       }
 
-      // If we didn't change the auth data, just keep going
-      if (!hasMutatedAuthData) {
-        return;
-      }
-      // We have authData that is updated on login
-      // that can happen when token are refreshed,
-      // We should update the token and let the user in
-      // We should only check the mutated keys
-      const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
-        mutatedAuthData,
+      // Force to validate all provided authData on login
+      // on update only validate mutated ones
+      const res = await Auth.handleAuthDataValidation(
+        isLogin ? authData : mutatedAuthData,
         this,
         userResult
       );
+      this.data.authData = res.authData;
+      this.authDataResponse = res.authDataResponse;
 
-      // Replace current authData by the new validated one
-      this.data.authData = validatedAuthData;
-
-      this.authDataResponse = authDataResponse;
-      // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
+      // IF we are in login we'll skip the database operation / beforeSave / afterSave etc...
       // we need to set it up there.
       // We are supposed to have a response only on LOGIN with authData, so we skip those
       // If we're not logging in, but just updating the current user, we can safely skip that part
-      if (this.response) {
+      if (isLogin && hasMutatedAuthData) {
         // Assign the new authData in the response
         Object.keys(mutatedAuthData).forEach(provider => {
           this.response.response.authData[provider] = mutatedAuthData[provider];
@@ -537,45 +550,17 @@ RestWrite.prototype.handleAuthData = async function (authData) {
         await this.config.database.update(
           this.className,
           { objectId: this.data.objectId },
-          { authData: validatedAuthData },
+          { authData: this.data.authData },
           {}
         );
-        return;
-      }
-    } else if (userId) {
-      // Trying to update auth data but users
-      // are different
-      if (userResult.objectId !== userId) {
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
-      }
-      // No auth data was mutated, just keep going
-      if (!hasMutatedAuthData) {
-        return;
       }
     }
-  }
-
-  // If we are in sign up operation
-  // we need to ensure that the user has provided
-  // all required authData
-  Auth.checkRequiredProviders(authData, undefined, this.config);
-  const { authData: validatedAuthData, authDataResponse } = await Auth.handleAuthDataValidation(
-    authData,
-    this
-  );
-  this.authDataResponse = authDataResponse;
-  // Replace current authData by the new validated one
-  this.data.authData = validatedAuthData;
-  if (results.length > 1) {
-    // More than 1 user with the passed id's
-    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
 };
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function () {
   var promise = Promise.resolve();
-
   if (this.className !== '_User') {
     return promise;
   }
