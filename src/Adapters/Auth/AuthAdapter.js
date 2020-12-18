@@ -2,10 +2,6 @@
 export class AuthAdapter {
   constructor() {
     /**
-     * Force authData validation even if authData are the same into the DB
-     */
-    this.alwaysValidate = false;
-    /**
      * Usage policy
      * default: can be combined with ONE additional auth provider if additional configured on user
      * additional: could be only used with a default policy auth provider

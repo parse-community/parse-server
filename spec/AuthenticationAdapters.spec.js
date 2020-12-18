@@ -1754,17 +1754,15 @@ describe('Auth Adapter features', () => {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
   };
-  const alwaysValidateAdapter = {
+  const baseAdapter2 = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
     options: { anOption: true },
-    alwaysValidate: true,
   };
 
   const doNotSaveAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve({ doNotSave: true }),
-    alwaysValidate: true,
   };
 
   const additionalAdapter = {
@@ -1795,6 +1793,10 @@ describe('Auth Adapter features', () => {
     validateLogin: () => Promise.resolve(),
   };
 
+  const wrongAdapter = {
+    validateAppId: () => Promise.resolve(),
+  };
+
   const headers = {
     'Content-Type': 'application/json',
     'X-Parse-Application-Id': 'test',
@@ -1802,8 +1804,8 @@ describe('Auth Adapter features', () => {
   };
 
   it('should pass authData, options, req, user to validateAuthData', async () => {
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
-    await reconfigureServer({ auth: { alwaysValidateAdapter } });
+    spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { baseAdapter } });
 
     const user = new Parse.User();
 
@@ -1812,14 +1814,14 @@ describe('Auth Adapter features', () => {
     await user.save({
       username: 'test',
       password: 'password',
-      authData: { alwaysValidateAdapter: payload },
+      authData: { baseAdapter: payload },
     });
 
     expect(user.getSessionToken()).toBeDefined();
 
-    const firstCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(0);
+    const firstCall = baseAdapter.validateAuthData.calls.argsFor(0);
     expect(firstCall[0]).toEqual(payload);
-    expect(firstCall[1]).toEqual(alwaysValidateAdapter);
+    expect(firstCall[1]).toEqual(baseAdapter);
     expect(firstCall[2].config).toBeDefined();
     expect(firstCall[2].config.headers).toBeDefined();
     expect(firstCall[2].auth).toBeDefined();
@@ -1833,12 +1835,12 @@ describe('Auth Adapter features', () => {
       body: JSON.stringify({
         username: 'test',
         password: 'password',
-        authData: { alwaysValidateAdapter: payload },
+        authData: { baseAdapter: payload },
       }),
     });
-    const secondCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(1);
+    const secondCall = baseAdapter.validateAuthData.calls.argsFor(1);
     expect(secondCall[0]).toEqual(payload);
-    expect(secondCall[1]).toEqual(alwaysValidateAdapter);
+    expect(secondCall[1]).toEqual(baseAdapter);
     expect(secondCall[2].config).toBeDefined();
     expect(secondCall[2].auth).toBeDefined();
     expect(secondCall[2].config.headers).toBeDefined();
@@ -1945,7 +1947,18 @@ describe('Auth Adapter features', () => {
     expect(call[3].id).toEqual(user.id);
     expect(user.getSessionToken()).toBeDefined();
   });
-  xit('should throw if no triggers found');
+  it('should throw if no triggers found', async () => {
+    await reconfigureServer({ auth: { wrongAdapter } });
+    const user = new Parse.User();
+    try {
+      await user.save({ authData: { wrongAdapter: { id: 'wrongAdapter' } } });
+      fail('should throw');
+    } catch (e) {
+      expect(e.message).toContain(
+        'Adapter not ready, need to implement validateAuthData or (validateSetUp, validateLogin, validateUpdate)'
+      );
+    }
+  });
   it('should not update authData if provider return doNotSave', async () => {
     spyOn(doNotSaveAdapter, 'validateAuthData').and.resolveTo({ doNotSave: true });
     await reconfigureServer({
@@ -1962,11 +1975,11 @@ describe('Auth Adapter features', () => {
 
     expect(user.get('authData')).toEqual({ baseAdapter: { id: 'baseAdapter' } });
   });
-  it('should force authData validation if provider use alwaysValidate', async () => {
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
+  it('should perform authData validation only when its required', async () => {
+    spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({});
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({
-      auth: { alwaysValidateAdapter, baseAdapter },
+      auth: { baseAdapter2, baseAdapter },
     });
 
     const user = new Parse.User();
@@ -1974,11 +1987,11 @@ describe('Auth Adapter features', () => {
     await user.save({
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { token: true },
+        baseAdapter2: { token: true },
       },
     });
 
-    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(1);
 
     const user2 = new Parse.User();
     await user2.save({
@@ -1987,17 +2000,17 @@ describe('Auth Adapter features', () => {
       },
     });
 
-    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(1);
 
     const user3 = new Parse.User();
     await user3.save({
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { token: true },
+        baseAdapter2: { token: true },
       },
     });
 
-    expect(alwaysValidateAdapter.validateAuthData).toHaveBeenCalledTimes(2);
+    expect(baseAdapter2.validateAuthData).toHaveBeenCalledTimes(2);
   });
   it('should require additional provider if configured', async () => {
     await reconfigureServer({
@@ -2061,12 +2074,12 @@ describe('Auth Adapter features', () => {
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
       response: { someData: true },
     });
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+    spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({
       response: { someData2: true },
       save: { otherData: true },
     });
     await reconfigureServer({
-      auth: { baseAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, baseAdapter2 },
     });
 
     const user = new Parse.User();
@@ -2074,13 +2087,13 @@ describe('Auth Adapter features', () => {
     await user.save({
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { test: true },
+        baseAdapter2: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
       baseAdapter: { someData: true },
-      alwaysValidateAdapter: { someData2: true },
+      baseAdapter2: { someData2: true },
     });
 
     const user2 = new Parse.User();
@@ -2089,26 +2102,26 @@ describe('Auth Adapter features', () => {
       {
         authData: {
           baseAdapter: { id: 'baseAdapter' },
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
         },
       },
       { sessionToken: user.getSessionToken() }
     );
 
-    expect(user2.get('authDataResponse')).toEqual({ alwaysValidateAdapter: { someData2: true } });
+    expect(user2.get('authDataResponse')).toEqual({ baseAdapter2: { someData2: true } });
 
     const user3 = new Parse.User();
     await user3.save({
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { test: true },
+        baseAdapter2: { test: true },
       },
     });
 
     // On logIn all authData are revalidated
     expect(user3.get('authDataResponse')).toEqual({
       baseAdapter: { someData: true },
-      alwaysValidateAdapter: { someData2: true },
+      baseAdapter2: { someData2: true },
     });
 
     const userViaMasterKey = new Parse.User();
@@ -2116,19 +2129,19 @@ describe('Auth Adapter features', () => {
     await userViaMasterKey.fetch({ useMasterKey: true });
     expect(userViaMasterKey.get('authData')).toEqual({
       baseAdapter: { id: 'baseAdapter' },
-      alwaysValidateAdapter: { otherData: true },
+      baseAdapter2: { otherData: true },
     });
   });
   it('should return authData response and save some info on username login', async () => {
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
       response: { someData: true },
     });
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+    spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({
       response: { someData2: true },
       save: { otherData: true },
     });
     await reconfigureServer({
-      auth: { baseAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, baseAdapter2 },
     });
 
     const user = new Parse.User();
@@ -2138,13 +2151,13 @@ describe('Auth Adapter features', () => {
       password: 'password',
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { test: true },
+        baseAdapter2: { test: true },
       },
     });
 
     expect(user.get('authDataResponse')).toEqual({
       baseAdapter: { someData: true },
-      alwaysValidateAdapter: { someData2: true },
+      baseAdapter2: { someData2: true },
     });
 
     const res = await request({
@@ -2155,36 +2168,36 @@ describe('Auth Adapter features', () => {
         username: 'username',
         password: 'password',
         authData: {
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
           baseAdapter: { id: 'baseAdapter' },
         },
       }),
     });
     const result = JSON.parse(res.text);
     expect(result.authDataResponse).toEqual({
-      alwaysValidateAdapter: { someData2: true },
+      baseAdapter2: { someData2: true },
       baseAdapter: { someData: true },
     });
 
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData')).toEqual({
       baseAdapter: { id: 'baseAdapter' },
-      alwaysValidateAdapter: { otherData: true },
+      baseAdapter2: { otherData: true },
     });
   });
   it('should allow update of authData', async () => {
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({
       response: { someData: true },
     });
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({
+    spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({
       response: { someData2: true },
       save: { otherData: true },
     });
     await reconfigureServer({
-      auth: { baseAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, baseAdapter2 },
     });
     await reconfigureServer({
-      auth: { baseAdapter, alwaysValidateAdapter },
+      auth: { baseAdapter, baseAdapter2 },
     });
 
     const user = new Parse.User();
@@ -2194,7 +2207,7 @@ describe('Auth Adapter features', () => {
       password: 'password',
       authData: {
         baseAdapter: { id: 'baseAdapter' },
-        alwaysValidateAdapter: { test: true },
+        baseAdapter2: { test: true },
       },
     });
     expect(baseAdapter.validateAuthData).toHaveBeenCalledTimes(1);
@@ -2206,7 +2219,7 @@ describe('Auth Adapter features', () => {
     await user.save(
       {
         authData: {
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
           baseAdapter: { id: 'baseAdapter' },
         },
       },
@@ -2220,7 +2233,7 @@ describe('Auth Adapter features', () => {
     await user.save(
       {
         authData: {
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
           baseAdapter: { id: 'baseAdapter' },
         },
       },
@@ -2233,7 +2246,7 @@ describe('Auth Adapter features', () => {
     await user.save(
       {
         authData: {
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
           baseAdapter: { id: 'baseAdapter2' },
         },
       },
@@ -2246,7 +2259,7 @@ describe('Auth Adapter features', () => {
     await user.save(
       {
         authData: {
-          alwaysValidateAdapter: { test: true },
+          baseAdapter2: { test: true },
           baseAdapter: { id: 'baseAdapter3' },
         },
       },
@@ -2258,12 +2271,12 @@ describe('Auth Adapter features', () => {
     await user.fetch({ useMasterKey: true });
     expect(user.get('authData')).toEqual({
       baseAdapter: { id: 'baseAdapter3' },
-      alwaysValidateAdapter: { otherData: true },
+      baseAdapter2: { otherData: true },
     });
   });
   it('should pass user to auth adapter on update by matching session', async () => {
-    spyOn(alwaysValidateAdapter, 'validateAuthData').and.resolveTo({});
-    await reconfigureServer({ auth: { alwaysValidateAdapter } });
+    spyOn(baseAdapter2, 'validateAuthData').and.resolveTo({});
+    await reconfigureServer({ auth: { baseAdapter2 } });
 
     const user = new Parse.User();
 
@@ -2277,24 +2290,24 @@ describe('Auth Adapter features', () => {
     expect(user.getSessionToken()).toBeDefined();
 
     await user.save(
-      { authData: { alwaysValidateAdapter: payload } },
+      { authData: { baseAdapter2: payload } },
       { sessionToken: user.getSessionToken() }
     );
 
-    const firstCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(0);
+    const firstCall = baseAdapter2.validateAuthData.calls.argsFor(0);
     expect(firstCall[0]).toEqual(payload);
-    expect(firstCall[1]).toEqual(alwaysValidateAdapter);
+    expect(firstCall[1]).toEqual(baseAdapter2);
     expect(firstCall[2].config).toBeDefined();
     expect(firstCall[2].auth).toBeDefined();
     expect(firstCall[2].config.headers).toBeDefined();
     expect(firstCall[3] instanceof Parse.User).toBeTruthy();
     expect(firstCall[3].id).toEqual(user.id);
 
-    await user.save({ authData: { alwaysValidateAdapter: payload } }, { useMasterKey: true });
+    await user.save({ authData: { baseAdapter2: payload } }, { useMasterKey: true });
 
-    const secondCall = alwaysValidateAdapter.validateAuthData.calls.argsFor(1);
+    const secondCall = baseAdapter2.validateAuthData.calls.argsFor(1);
     expect(secondCall[0]).toEqual(payload);
-    expect(secondCall[1]).toEqual(alwaysValidateAdapter);
+    expect(secondCall[1]).toEqual(baseAdapter2);
     expect(secondCall[2].config).toBeDefined();
     expect(secondCall[2].auth).toBeDefined();
     expect(secondCall[2].config.headers).toBeDefined();

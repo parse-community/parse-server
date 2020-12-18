@@ -372,7 +372,7 @@ const findUsersWithAuthData = (config, authData) => {
   return findPromise;
 };
 
-const hasMutatedAuthData = (authData, userAuthData, config) => {
+const hasMutatedAuthData = (authData, userAuthData) => {
   if (!userAuthData) return { hasMutatedAuthData: true, mutatedAuthData: authData };
   const mutatedAuthData = {};
   Object.keys(authData).forEach(provider => {
@@ -380,7 +380,7 @@ const hasMutatedAuthData = (authData, userAuthData, config) => {
     if (provider === 'anonymous') return;
     const providerData = authData[provider];
     const userProviderAuthData = userAuthData[provider];
-    if (!_.isEqual(providerData, userProviderAuthData) || config.auth[provider].alwaysValidate) {
+    if (!_.isEqual(providerData, userProviderAuthData)) {
       mutatedAuthData[provider] = providerData;
     }
   });

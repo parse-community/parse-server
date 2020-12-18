@@ -146,8 +146,6 @@ RestWrite.prototype.execute = function () {
       if (this.authDataResponse) {
         if (this.response && this.response.response) {
           this.response.response.authDataResponse = this.authDataResponse;
-        } else {
-          this.response.response = { authDataResponse: this.authDataResponse };
         }
       }
       return this.response;
@@ -483,8 +481,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
 
     const { hasMutatedAuthData, mutatedAuthData } = Auth.hasMutatedAuthData(
       authData,
-      userResult.authData,
-      this.config
+      userResult.authData
     );
 
     const isCurrentUserLoggedOrMaster =
