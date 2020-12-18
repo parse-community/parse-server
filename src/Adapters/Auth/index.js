@@ -25,6 +25,7 @@ const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
 const keycloak = require('./keycloak');
 const ldap = require('./ldap');
+const webauthn = require('./webauthn');
 
 const anonymous = {
   validateAuthData: () => {
@@ -60,6 +61,7 @@ const providers = {
   microsoft,
   keycloak,
   ldap,
+  webauthn,
 };
 
 function authDataValidator(provider, adapter, appIds, options) {
@@ -136,6 +138,7 @@ function loadAuthAdapter(provider, authOptions) {
         'validateSetUp',
         'validateLogin',
         'validateUpdate',
+        'challenge',
       ].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
@@ -155,12 +158,12 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   // To handle the test cases on configuration
   const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
-      return;
+      return { validator: undefined };
     }
 
     const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
 
-    return authDataValidator(provider, adapter, appIds, providerOptions);
+    return { validator: authDataValidator(provider, adapter, appIds, providerOptions), adapter };
   };
 
   return Object.freeze({

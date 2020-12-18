@@ -19,7 +19,9 @@ const toUserFriendlyRpName = url => {
   const domain = getDomainWithoutWww(url);
   const baseDomain = getBaseDomain(domain).split('.')[0];
   const words = baseDomain.split('-');
-  return words.reduce((acc, word) => `${acc} ${word.charAt(0).toUpperCase() + word.slice(1)}`, '');
+  return words
+    .reduce((acc, word) => `${acc} ${word.charAt(0).toUpperCase() + word.slice(1)}`, '')
+    .trim();
 };
 
 const getJwtSecret = config => {
@@ -29,24 +31,24 @@ const getJwtSecret = config => {
   // sha512 return 128 chars, we can keep only 64 chars since it represent 6,61E98 combinations
   // using the hash allow to reduce risk of compromising the master key
   // if brute force is attempted on the JWT
-  return hash.digest().slice(64);
+  return hash.digest().toString('hex').slice(64);
 };
 
 // Example here: https://regex101.com/r/wN6cZ7/365
 const getDomainWithoutWww = url =>
-  /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/g.exec(url)[0];
+  /^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/?\n]+)/g.exec(url)[1];
 
 const getBaseDomain = domain => {
   const splittedDomain = domain.split('.');
   // Handle localhost
-  if (splittedDomain.length === 1) return domain;
+  if (splittedDomain.length === 1) return domain.trim();
   // Classic domains
   return `${splittedDomain[splittedDomain.length - 2]}.${
     splittedDomain[splittedDomain.length - 1]
-  }`;
+  }`.trim();
 };
 
-const getOrigin = config =>
+export const getOrigin = config =>
   getBaseDomain(getDomainWithoutWww(config.publicServerURL || config.serverURL));
 
 const extractSignedChallenge = (signedChallenge, config) => {
@@ -65,23 +67,22 @@ const extractSignedChallenge = (signedChallenge, config) => {
 // Return credentials options to the client
 // for register public key process
 const registerOptions = (user, options = {}, config) => {
-  if (!user)
-    throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User need to be logged in to set up webauthn');
   const attestationOptions = generateAttestationOptions({
     rpName:
       (options && options.rpName) ||
       toUserFriendlyRpName(config.publicServerURL || config.serverURL),
-    rpID: options.rpID || getOrigin(config),
+    rpID: options.rpId || getOrigin(config),
     // here userId is only used as an identifier and this is never
     // retrieved by the user device
     // this has not real value for parse
     userID: user.id,
     // Could be an email or a firstname lastname depending of
     // the developer usage
-    userName:
-      typeof options.getUsernameToDisplay === 'function'
-        ? options.getUsernameToDisplay(user)
-        : user.get('username'),
+    userDisplayName:
+      typeof options.getUsername === 'function'
+        ? options.getUsername(user)
+        : user.get('email') || user.get('username'),
+    userName: user.get('username'),
     timeout: 60000,
     attestationType: 'indirect',
     authenticatorSelection: {
@@ -104,14 +105,13 @@ const registerOptions = (user, options = {}, config) => {
 // Verify the attestation provided by the client
 const verifyRegister = async ({ signedChallenge, attestation }, options = {}, config) => {
   if (!attestation) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'attestation is required.');
-
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
   try {
     const { verified, authenticatorInfo } = await verifyAttestationResponse({
       credential: attestation,
       expectedChallenge,
-      expectedOrigin: options.expectedOrigin || getOrigin(config),
-      expectedRPID: options.rpID || getOrigin(config),
+      expectedOrigin: options.origin || getOrigin(config),
+      expectedRPID: options.rpId || getOrigin(config),
     });
     if (verified) {
       return {
@@ -145,13 +145,12 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
     );
   if (!assertion) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'assertion is required.');
   const expectedChallenge = extractSignedChallenge(signedChallenge, config);
-
   try {
     const { verified, authenticatorInfo } = verifyAssertionResponse({
       credential: assertion,
       expectedChallenge,
-      expectedOrigin: options.expectedOrigin || getOrigin(config),
-      expectedRPID: options.rpID || getOrigin(config),
+      expectedOrigin: options.origin || getOrigin(config),
+      expectedRPID: options.rpId || getOrigin(config),
       authenticator: {
         credentialID: dbAuthData.id,
         counter: dbAuthData.counter,
@@ -170,31 +169,31 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
   }
 };
 
-export const challenge = async (challengeData, authData, user, req, options = {}) => {
+export const challenge = async (challengeData, authData, user, req, adapterConfig = {}) => {
   // Allow logged user to update/setUp webauthn
   if (req.auth.user && req.auth.user.id) {
-    return registerOptions(user, options, req.config);
+    return registerOptions(req.auth.user, adapterConfig.options, req.config);
   }
 
   return loginOptions(req.config);
 };
 
-export const validateSetUp = async (authData, options, req) => {
+export const validateSetUp = async (authData, adapterConfig = {}, req) => {
   if (!req.auth.user)
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
       'Webauthn can only be configured on an already logged in user.'
     );
-  return { save: await verifyRegister(authData, options, req.config) };
+  return { save: await verifyRegister(authData, adapterConfig.options, req.config) };
 };
 
 export const validateUpdate = validateSetUp;
 
-export const validateLogin = async (authData, options, req, user) => {
+export const validateLogin = async (authData, adapterConfig = {}, req, user) => {
   if (!user) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found for webauthn login.');
   // Will save updated counter of the credential
   // and avoid cloned/bugged authenticators
-  return { save: verifyLogin(authData, options, req.config, user) };
+  return { save: verifyLogin(authData, adapterConfig.options, req.config, user) };
 };
 
 export const policy = 'solo';

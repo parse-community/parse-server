@@ -455,14 +455,14 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
         acc.authData[provider] = null;
         return acc;
       }
-      const validateAuthData = req.config.authDataManager.getValidatorForProvider(provider);
-      if (!validateAuthData) {
+      const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+      if (!validator) {
         throw new Parse.Error(
           Parse.Error.UNSUPPORTED_SERVICE,
           'This authentication method is unsupported.'
         );
       }
-      const validationResult = await validateAuthData(
+      const validationResult = await validator(
         authData[provider],
         { config: req.config, auth: req.auth },
         user

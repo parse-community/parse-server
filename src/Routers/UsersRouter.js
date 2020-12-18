@@ -458,21 +458,21 @@ export class UsersRouter extends ClassesRouter {
       user = results[0];
     }
 
-    const authAdapters = req.config.auth;
-
     // Execute challenge step by step
     // with consistent order
     const challenge = await Auth.reducePromise(
       Object.keys(challengeData).sort(),
       async (acc, provider) => {
-        if (typeof authAdapters[provider].challenge === 'function') {
+        const challengeHandler = req.config.authDataManager.getValidatorForProvider(provider)
+          .adapter.challenge;
+        if (typeof challengeHandler === 'function') {
           acc[provider] =
-            (await authAdapters[provider].challenge(
+            (await challengeHandler(
               challengeData[provider],
               authData && authData[provider],
               user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined,
               req,
-              authAdapters[provider].options
+              req.config.auth[provider]
             )) || true;
           return acc;
         }

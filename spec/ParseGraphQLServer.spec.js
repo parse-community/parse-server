@@ -6985,7 +6985,7 @@ describe('ParseGraphQLServer', () => {
           expect(challengeCall[3].config).toBeDefined();
           expect(challengeCall[3].auth).toBeDefined();
           expect(challengeCall[3].config.headers).toBeDefined();
-          expect(challengeCall[4]).toEqual({ anOption: true });
+          expect(challengeCall[4]).toEqual(challengeAdapter);
           expect(result.data.challenge.clientMutationId).toEqual(clientMutationId);
           expect(result.data.challenge.challengeData).toEqual({
             challengeAdapter: { someData: true },
