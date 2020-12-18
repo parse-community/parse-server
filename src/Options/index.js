@@ -198,6 +198,9 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* Options for file uploads
+  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS */
+  fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -314,4 +317,16 @@ export interface PasswordPolicyOptions {
   resetTokenValidityDuration: ?number;
   /* resend token if it's still valid */
   resetTokenReuseIfValid: ?boolean;
+}
+
+export interface FileUploadOptions {
+  /*  Is true if file upload should be allowed for anonymous users.
+  :DEFAULT: false */
+  enableForAnonymousUser: ?boolean;
+  /* Is true if file upload should be allowed for authenticated users.
+  :DEFAULT: true */
+  enableForAuthenticatedUser: ?boolean;
+  /* Is true if file upload should be allowed for anyone, regardless of user authentication.
+  :DEFAULT: false */
+  enableForPublic: ?boolean;
 }
