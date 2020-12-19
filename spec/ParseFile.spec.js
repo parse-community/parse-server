@@ -4,7 +4,6 @@
 'use strict';
 
 const request = require('../lib/request');
-const Definitions = require('../src/Options/Definitions');
 
 const str = 'Hello World!';
 const data = [];
@@ -865,11 +864,7 @@ describe('Parse.File testing', () => {
   describe('file upload configuration', () => {
     it('allows file upload only for authenticated user by default', async () => {
       await reconfigureServer({
-        fileUpload: {
-          enableForPublic: Definitions.FileUploadOptions.enableForPublic.default,
-          enableForAnonymousUser: Definitions.FileUploadOptions.enableForAnonymousUser.default,
-          enableForAuthenticatedUser: Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
-        }
+        fileUpload: {},
       });
       let file = new Parse.File('hello.txt', data, 'text/plain');
       await expectAsync(file.save()).toBeRejectedWith(
