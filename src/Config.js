@@ -250,11 +250,15 @@ export class Config {
   }
 
   static validateFileUploadOptions(fileUpload) {
-    if (!fileUpload) {
-      fileUpload = {};
-    }
-    if (typeof fileUpload !== 'object' || fileUpload instanceof Array) {
-      throw 'fileUpload must be an object value.';
+    try {
+      if (fileUpload == null || typeof fileUpload !== 'object' || fileUpload instanceof Array) {
+        throw 'fileUpload must be an object value.';
+      }
+    } catch (e) {
+      if (e instanceof ReferenceError) {
+        return;
+      }
+      throw e;
     }
     if (fileUpload.enableForAnonymousUser === undefined) {
       fileUpload.enableForAnonymousUser = FileUploadOptions.enableForAnonymousUser.default;

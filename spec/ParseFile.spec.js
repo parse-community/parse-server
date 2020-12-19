@@ -1007,14 +1007,14 @@ describe('Parse.File testing', () => {
 
     it('rejects invalid fileUpload configuration', async () => {
       const invalidConfigs = [
+        { fileUpload: undefined },
+        { fileUpload: null },
         { fileUpload: [] },
         { fileUpload: 1 },
         { fileUpload: "string" },
       ];
       const validConfigs = [
         { fileUpload: {} },
-        { fileUpload: null },
-        { fileUpload: undefined },
       ];
       const keys = [
         "enableForPublic",
