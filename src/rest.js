@@ -39,7 +39,16 @@ function find(config, auth, className, restWhere, restOptions, clientSDK, contex
     .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
-      const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        true,
+        context
+      );
       return query.execute();
     });
 }
@@ -62,7 +71,16 @@ const get = (config, auth, className, objectId, restOptions, clientSDK, context)
     .then(result => {
       restWhere = result.restWhere || restWhere;
       restOptions = result.restOptions || restOptions;
-      const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        true,
+        context
+      );
       return query.execute();
     });
 };
@@ -187,7 +205,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK, conte
           restWhere,
           undefined,
           undefined,
-          false
+          false,
+          context
         ).execute({
           op: 'update',
         });
