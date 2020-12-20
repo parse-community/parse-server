@@ -33,15 +33,6 @@ const addFileDataIfNeeded = async file => {
   return file;
 };
 
-const errorMessageFromError = e => {
-  if (typeof e === 'string') {
-    return e;
-  } else if (e && e.message) {
-    return e.message;
-  }
-  return undefined;
-};
-
 const createFileData = async fileObject => {
   const fileData = new Parse.Object('_File');
   fileData.set('references', []);
@@ -120,11 +111,7 @@ export class FilesRouter {
       this.config.database.update('_File', { file }, fileObject);
     }
     if (fileObject.ACL) {
-      const allowed = await filesController.canViewFile(
-        config,
-        fileObject,
-        user
-      );
+      const allowed = await filesController.canViewFile(config, fileObject, user);
       if (!allowed) {
         res.status(404);
         res.set('Content-Type', 'text/plain');
@@ -164,12 +151,7 @@ export class FilesRouter {
         res.set('Content-Length', data.length);
         res.end(data);
         try {
-          await triggers.maybeRunFileTrigger(
-            triggers.Types.afterFind,
-            { file },
-            config,
-            { user }
-          );
+          await triggers.maybeRunFileTrigger(triggers.Types.afterFind, { file }, config, { user });
         } catch (e) {
           /* */
         }
@@ -187,24 +169,25 @@ export class FilesRouter {
     const isMaster = req.auth.isMaster;
     const isLinked = user && Parse.AnonymousUtils.isLinked(user);
     if (!isMaster && !config.fileUpload.enableForAnonymousUser && isLinked) {
-      next(new Parse.Error(
-        Parse.Error.FILE_SAVE_ERROR,
-        'File upload by anonymous user is disabled.'
-      ));
+      next(
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by anonymous user is disabled.')
+      );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForAuthenticatedUser && !isLinked && user) {
-      next(new Parse.Error(
-        Parse.Error.FILE_SAVE_ERROR,
-        'File upload by authenticated user is disabled.'
-      ));
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
+      );
       return;
     }
     if (!isMaster && !config.fileUpload.enableForPublic && !user) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by public is disabled.'));
       return;
     }
-    
+
     const schema = await config.database.loadSchema();
     // CLP for _File always returns {}, even though I thought I set default CLP in SchemaController.js line 694
     const schemaPerms = schema.testPermissionsForClassName(
@@ -214,10 +197,7 @@ export class FilesRouter {
     );
     if (!schemaPerms) {
       next(
-        new Parse.Error(
-          Parse.Error.FILE_SAVE_ERROR,
-          'You are not authorized to upload a file.'
-        )
+        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'You are not authorized to upload a file.')
       );
       return;
     }
