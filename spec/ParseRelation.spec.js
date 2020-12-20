@@ -101,7 +101,7 @@ describe('Parse.Relation testing', () => {
     let relation;
 
     Parse.Object.saveAll(childObjects)
-      .then(function() {
+      .then(function () {
         const ParentObject = Parse.Object.extend('ParentObject');
         parent = new ParentObject();
         parent.set('x', 4);
@@ -112,10 +112,10 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects[2]);
         return parent.save();
       })
-      .then(function() {
+      .then(function () {
         return relation.query().find();
       })
-      .then(function(list) {
+      .then(function (list) {
         equal(list.length, 2, 'Should have gotten two elements back');
         ok(!parent.dirty('child'), 'The relation should not be dirty');
         relation.remove(childObjects[1]);
@@ -124,16 +124,16 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects[0]);
         return parent.save();
       })
-      .then(function() {
+      .then(function () {
         return relation.query().find();
       })
       .then(
-        function(list) {
+        function (list) {
           equal(list.length, 2, 'Deletes and then adds should have worked');
           ok(!parent.dirty('child'), 'The relation should not be dirty');
           done();
         },
-        function(err) {
+        function (err) {
           ok(false, err.message);
           done();
         }
@@ -151,7 +151,7 @@ describe('Parse.Relation testing', () => {
     let relation;
 
     Parse.Object.saveAll(childObjects)
-      .then(function() {
+      .then(function () {
         const ParentObject = Parse.Object.extend('ParentObject');
         parent = new ParentObject();
         parent.set('x', 4);
@@ -159,14 +159,14 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects);
         return parent.save();
       })
-      .then(function() {
+      .then(function () {
         const query = relation.query();
         query.descending('createdAt');
         query.skip(1);
         query.limit(3);
         return query.find();
       })
-      .then(function(list) {
+      .then(function (list) {
         expect(list.length).toBe(3);
       })
       .then(done, done.fail);
@@ -193,11 +193,7 @@ describe('Parse.Relation testing', () => {
     const list = await query.find();
     equal(list.length, 1, 'There should only be one element');
     ok(list[0] instanceof ChildObject, 'Should be of type ChildObject');
-    equal(
-      list[0].id,
-      childObjects[2].id,
-      'We should have gotten back the right result'
-    );
+    equal(list[0].id, childObjects[2].id, 'We should have gotten back the right result');
   });
 
   it('queries on relation fields', async () => {
@@ -267,9 +263,7 @@ describe('Parse.Relation testing', () => {
       .then(() => {
         const objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
         objectsWithChild0InBothChildren.containedIn('child', [childObjects[0]]);
-        objectsWithChild0InBothChildren.containedIn('otherChild', [
-          childObjects[0],
-        ]);
+        objectsWithChild0InBothChildren.containedIn('otherChild', [childObjects[0]]);
         return objectsWithChild0InBothChildren.find();
       })
       .then(objectsWithChild0InBothChildren => {
@@ -279,9 +273,7 @@ describe('Parse.Relation testing', () => {
       .then(() => {
         const objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
         objectsWithChild4andOtherChild1.containedIn('child', [childObjects[4]]);
-        objectsWithChild4andOtherChild1.containedIn('otherChild', [
-          childObjects[1],
-        ]);
+        objectsWithChild4andOtherChild1.containedIn('otherChild', [childObjects[1]]);
         return objectsWithChild4andOtherChild1.find();
       })
       .then(objects => {
@@ -291,51 +283,48 @@ describe('Parse.Relation testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])(
-    'query on pointer and relation fields with equal',
-    done => {
-      const ChildObject = Parse.Object.extend('ChildObject');
-      const childObjects = [];
-      for (let i = 0; i < 10; i++) {
-        childObjects.push(new ChildObject({ x: i }));
-      }
-
-      Parse.Object.saveAll(childObjects)
-        .then(() => {
-          const ParentObject = Parse.Object.extend('ParentObject');
-          const parent = new ParentObject();
-          parent.set('x', 4);
-          const relation = parent.relation('toChilds');
-          relation.add(childObjects[0]);
-          relation.add(childObjects[1]);
-          relation.add(childObjects[2]);
-
-          const parent2 = new ParentObject();
-          parent2.set('x', 3);
-          parent2.set('toChild', childObjects[2]);
-
-          const parents = [];
-          parents.push(parent);
-          parents.push(parent2);
-          parents.push(new ParentObject());
-
-          return Parse.Object.saveAll(parents).then(() => {
-            const query = new Parse.Query(ParentObject);
-            query.equalTo('objectId', parent.id);
-            query.equalTo('toChilds', childObjects[2]);
-
-            return query.find().then(list => {
-              equal(list.length, 1, 'There should be 1 result');
-              done();
-            });
-          });
-        })
-        .catch(err => {
-          jfail(err);
-          done();
-        });
+  it_exclude_dbs(['postgres'])('query on pointer and relation fields with equal', done => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({ x: i }));
     }
-  );
+
+    Parse.Object.saveAll(childObjects)
+      .then(() => {
+        const ParentObject = Parse.Object.extend('ParentObject');
+        const parent = new ParentObject();
+        parent.set('x', 4);
+        const relation = parent.relation('toChilds');
+        relation.add(childObjects[0]);
+        relation.add(childObjects[1]);
+        relation.add(childObjects[2]);
+
+        const parent2 = new ParentObject();
+        parent2.set('x', 3);
+        parent2.set('toChild', childObjects[2]);
+
+        const parents = [];
+        parents.push(parent);
+        parents.push(parent2);
+        parents.push(new ParentObject());
+
+        return Parse.Object.saveAll(parents).then(() => {
+          const query = new Parse.Query(ParentObject);
+          query.equalTo('objectId', parent.id);
+          query.equalTo('toChilds', childObjects[2]);
+
+          return query.find().then(list => {
+            equal(list.length, 1, 'There should be 1 result');
+            done();
+          });
+        });
+      })
+      .catch(err => {
+        jfail(err);
+        done();
+      });
+  });
 
   it('query on pointer and relation fields with equal bis', done => {
     const ChildObject = Parse.Object.extend('ChildObject');
@@ -377,52 +366,49 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])(
-    'or queries on pointer and relation fields',
-    done => {
-      const ChildObject = Parse.Object.extend('ChildObject');
-      const childObjects = [];
-      for (let i = 0; i < 10; i++) {
-        childObjects.push(new ChildObject({ x: i }));
-      }
+  it_exclude_dbs(['postgres'])('or queries on pointer and relation fields', done => {
+    const ChildObject = Parse.Object.extend('ChildObject');
+    const childObjects = [];
+    for (let i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({ x: i }));
+    }
 
-      Parse.Object.saveAll(childObjects).then(() => {
-        const ParentObject = Parse.Object.extend('ParentObject');
-        const parent = new ParentObject();
-        parent.set('x', 4);
-        const relation = parent.relation('toChilds');
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+    Parse.Object.saveAll(childObjects).then(() => {
+      const ParentObject = Parse.Object.extend('ParentObject');
+      const parent = new ParentObject();
+      parent.set('x', 4);
+      const relation = parent.relation('toChilds');
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        const parent2 = new ParentObject();
-        parent2.set('x', 3);
-        parent2.set('toChild', childObjects[2]);
+      const parent2 = new ParentObject();
+      parent2.set('x', 3);
+      parent2.set('toChild', childObjects[2]);
 
-        const parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      const parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-        return Parse.Object.saveAll(parents).then(() => {
-          const query1 = new Parse.Query(ParentObject);
-          query1.containedIn('toChilds', [childObjects[2]]);
-          const query2 = new Parse.Query(ParentObject);
-          query2.equalTo('toChild', childObjects[2]);
-          const query = Parse.Query.or(query1, query2);
-          return query.find().then(list => {
-            const objectIds = list.map(function(item) {
-              return item.id;
-            });
-            expect(objectIds.indexOf(parent.id)).not.toBe(-1);
-            expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
-            equal(list.length, 2, 'There should be 2 results');
-            done();
+      return Parse.Object.saveAll(parents).then(() => {
+        const query1 = new Parse.Query(ParentObject);
+        query1.containedIn('toChilds', [childObjects[2]]);
+        const query2 = new Parse.Query(ParentObject);
+        query2.equalTo('toChild', childObjects[2]);
+        const query = Parse.Query.or(query1, query2);
+        return query.find().then(list => {
+          const objectIds = list.map(function (item) {
+            return item.id;
           });
+          expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+          expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+          equal(list.length, 2, 'There should be 2 results');
+          done();
         });
       });
-    }
-  );
+    });
+  });
 
   it('Get query on relation using un-fetched parent object', done => {
     // Setup data model
@@ -431,13 +417,13 @@ describe('Parse.Relation testing', () => {
     const origWheel = new Wheel();
     origWheel
       .save()
-      .then(function() {
+      .then(function () {
         const car = new Car();
         const relation = car.relation('wheels');
         relation.add(origWheel);
         return car.save();
       })
-      .then(function(car) {
+      .then(function (car) {
         // Test starts here.
         // Create an un-fetched shell car object
         const unfetchedCar = new Car();
@@ -449,16 +435,16 @@ describe('Parse.Relation testing', () => {
         // of /1/classes/Wheel and pass { "redirectClassNameForKey":"wheels" }.
         return query.get(origWheel.id);
       })
-      .then(function(wheel) {
+      .then(function (wheel) {
         // Make sure this is Wheel and not Car.
         strictEqual(wheel.className, 'Wheel');
         strictEqual(wheel.id, origWheel.id);
       })
       .then(
-        function() {
+        function () {
           done();
         },
-        function(err) {
+        function (err) {
           ok(false, 'unexpected error: ' + JSON.stringify(err));
           done();
         }
@@ -472,13 +458,13 @@ describe('Parse.Relation testing', () => {
     const origWheel = new Wheel();
     origWheel
       .save()
-      .then(function() {
+      .then(function () {
         const car = new Car();
         const relation = car.relation('wheels');
         relation.add(origWheel);
         return car.save();
       })
-      .then(function(car) {
+      .then(function (car) {
         // Test starts here.
         // Create an un-fetched shell car object
         const unfetchedCar = new Car();
@@ -490,17 +476,17 @@ describe('Parse.Relation testing', () => {
         // of /1/classes/Wheel and pass { "redirectClassNameForKey":"wheels" }.
         return query.find(origWheel.id);
       })
-      .then(function(results) {
+      .then(function (results) {
         // Make sure this is Wheel and not Car.
         const wheel = results[0];
         strictEqual(wheel.className, 'Wheel');
         strictEqual(wheel.id, origWheel.id);
       })
       .then(
-        function() {
+        function () {
           done();
         },
-        function(err) {
+        function (err) {
           ok(false, 'unexpected error: ' + JSON.stringify(err));
           done();
         }
@@ -611,7 +597,7 @@ describe('Parse.Relation testing', () => {
       );
   });
 
-  it('select query', function(done) {
+  it('select query', function (done) {
     const RestaurantObject = Parse.Object.extend('Restaurant');
     const PersonObject = Parse.Object.extend('Person');
     const OwnerObject = Parse.Object.extend('Owner');
@@ -628,7 +614,7 @@ describe('Parse.Relation testing', () => {
     const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons))
-      .then(function() {
+      .then(function () {
         owner.relation('restaurants').add(restaurants);
         return owner.save();
       })
@@ -654,7 +640,7 @@ describe('Parse.Relation testing', () => {
       );
   });
 
-  it('dontSelect query', function(done) {
+  it('dontSelect query', function (done) {
     const RestaurantObject = Parse.Object.extend('Restaurant');
     const PersonObject = Parse.Object.extend('Person');
     const OwnerObject = Parse.Object.extend('Owner');
@@ -671,7 +657,7 @@ describe('Parse.Relation testing', () => {
     const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons))
-      .then(function() {
+      .then(function () {
         owner.relation('restaurants').add(restaurants);
         return owner.save();
       })
@@ -838,10 +824,7 @@ describe('Parse.Relation testing', () => {
         // After saves or finds
         const otherParent = new Parse.Object('Parent');
         otherParent.id = parent.id;
-        return otherParent
-          .relation('children')
-          .query()
-          .find();
+        return otherParent.relation('children').query().find();
       })
       .then(children => {
         // Without an after find all is good, all results have been redirected with proper className
@@ -857,10 +840,7 @@ describe('Parse.Relation testing', () => {
         });
         const otherParent = new Parse.Object('Parent');
         otherParent.id = parent.id;
-        return otherParent
-          .relation('children')
-          .query()
-          .find();
+        return otherParent.relation('children').query().find();
       })
       .then(children => {
         children.forEach(child => {

@@ -39,9 +39,7 @@ function getGoogleKeyByKeyId(keyId) {
 
             if (expire) {
               cache = Object.assign({}, pems, {
-                expiresAt: new Date(
-                  new Date().getTime() + Number(expire[1]) * 1000
-                ),
+                expiresAt: new Date(new Date().getTime() + Number(expire[1]) * 1000),
               });
             }
           }
@@ -57,10 +55,7 @@ function getHeaderFromToken(token) {
   const decodedToken = jwt.decode(token, { complete: true });
 
   if (!decodedToken) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `provided token does not decode as JWT`
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `provided token does not decode as JWT`);
   }
 
   return decodedToken.header;
@@ -68,10 +63,7 @@ function getHeaderFromToken(token) {
 
 async function verifyIdToken({ id_token: token, id }, { clientId }) {
   if (!token) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `id token is invalid for this user.`
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `id token is invalid for this user.`);
   }
 
   const { kid: keyId, alg: algorithm } = getHeaderFromToken(token);
@@ -96,10 +88,7 @@ async function verifyIdToken({ id_token: token, id }, { clientId }) {
   }
 
   if (jwtClaims.sub !== id) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      `auth data is invalid for this user.`
-    );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, `auth data is invalid for this user.`);
   }
 
   if (clientId && jwtClaims.aud !== clientId) {
@@ -140,9 +129,7 @@ function rsaPublicKeyToPEM(modulusB64, exponentB64) {
   const encodedExplen = encodeLengthHex(explen);
   const encodedPubkey =
     '30' +
-    encodeLengthHex(
-      modlen + explen + encodedModlen.length / 2 + encodedExplen.length / 2 + 2
-    ) +
+    encodeLengthHex(modlen + explen + encodedModlen.length / 2 + encodedExplen.length / 2 + 2) +
     '02' +
     encodedModlen +
     modulusHex +

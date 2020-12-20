@@ -2,7 +2,7 @@
 
 const Config = require('../lib/Config');
 
-const loginWithWrongCredentialsShouldFail = function(username, password) {
+const loginWithWrongCredentialsShouldFail = function (username, password) {
   return new Promise((resolve, reject) => {
     Parse.User.logIn(username, password)
       .then(() => reject('login should have failed'))
@@ -16,7 +16,7 @@ const loginWithWrongCredentialsShouldFail = function(username, password) {
   });
 };
 
-const isAccountLockoutError = function(username, password, duration, waitTime) {
+const isAccountLockoutError = function (username, password, duration, waitTime) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       Parse.User.logIn(username, password)
@@ -50,28 +50,17 @@ describe('Account Lockout Policy: ', () => {
         return user.signUp(null);
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username1',
-          'incorrect password 1'
-        );
+        return loginWithWrongCredentialsShouldFail('username1', 'incorrect password 1');
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username1',
-          'incorrect password 2'
-        );
+        return loginWithWrongCredentialsShouldFail('username1', 'incorrect password 2');
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username1',
-          'incorrect password 3'
-        );
+        return loginWithWrongCredentialsShouldFail('username1', 'incorrect password 3');
       })
       .then(() => done())
       .catch(err => {
-        fail(
-          'allow unlimited failed login attempts failed: ' + JSON.stringify(err)
-        );
+        fail('allow unlimited failed login attempts failed: ' + JSON.stringify(err));
         done();
       });
   });
@@ -93,15 +82,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout duration should be greater than 0 and less than 100000'
+          err === 'Account lockout duration should be greater than 0 and less than 100000'
         ) {
           done();
         } else {
-          fail(
-            'set duration to an invalid number test failed: ' +
-              JSON.stringify(err)
-          );
+          fail('set duration to an invalid number test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -124,15 +109,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout threshold should be an integer greater than 0 and less than 1000'
+          err === 'Account lockout threshold should be an integer greater than 0 and less than 1000'
         ) {
           done();
         } else {
-          fail(
-            'set threshold to an invalid number test failed: ' +
-              JSON.stringify(err)
-          );
+          fail('set threshold to an invalid number test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -155,14 +136,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout threshold should be an integer greater than 0 and less than 1000'
+          err === 'Account lockout threshold should be an integer greater than 0 and less than 1000'
         ) {
           done();
         } else {
-          fail(
-            'threshold value < 1 is invalid test failed: ' + JSON.stringify(err)
-          );
+          fail('threshold value < 1 is invalid test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -185,15 +163,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout threshold should be an integer greater than 0 and less than 1000'
+          err === 'Account lockout threshold should be an integer greater than 0 and less than 1000'
         ) {
           done();
         } else {
-          fail(
-            'threshold value > 999 is invalid test failed: ' +
-              JSON.stringify(err)
-          );
+          fail('threshold value > 999 is invalid test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -216,14 +190,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout duration should be greater than 0 and less than 100000'
+          err === 'Account lockout duration should be greater than 0 and less than 100000'
         ) {
           done();
         } else {
-          fail(
-            'duration value < 1 is invalid test failed: ' + JSON.stringify(err)
-          );
+          fail('duration value < 1 is invalid test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -246,15 +217,11 @@ describe('Account Lockout Policy: ', () => {
       .catch(err => {
         if (
           err &&
-          err ===
-            'Account lockout duration should be greater than 0 and less than 100000'
+          err === 'Account lockout duration should be greater than 0 and less than 100000'
         ) {
           done();
         } else {
-          fail(
-            'duration value > 99999 is invalid test failed: ' +
-              JSON.stringify(err)
-          );
+          fail('duration value > 99999 is invalid test failed: ' + JSON.stringify(err));
           done();
         }
       });
@@ -276,16 +243,10 @@ describe('Account Lockout Policy: ', () => {
         return user.signUp();
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username2',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username2', 'wrong password');
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username2',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username2', 'wrong password');
       })
       .then(() => {
         return isAccountLockoutError('username2', 'wrong password', 1, 1);
@@ -294,10 +255,7 @@ describe('Account Lockout Policy: ', () => {
         done();
       })
       .catch(err => {
-        fail(
-          'lock account after failed login attempts test failed: ' +
-            JSON.stringify(err)
-        );
+        fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));
         done();
       });
   });
@@ -318,16 +276,10 @@ describe('Account Lockout Policy: ', () => {
         return user.signUp();
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username3',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username3', 'wrong password');
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username3',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username3', 'wrong password');
       })
       .then(() => {
         return isAccountLockoutError('username3', 'wrong password', 0.05, 1);
@@ -340,10 +292,7 @@ describe('Account Lockout Policy: ', () => {
         done();
       })
       .catch(err => {
-        fail(
-          'account should be locked for duration mins test failed: ' +
-            JSON.stringify(err)
-        );
+        fail('account should be locked for duration mins test failed: ' + JSON.stringify(err));
         done();
       });
   });
@@ -364,16 +313,10 @@ describe('Account Lockout Policy: ', () => {
         return user.signUp();
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username4',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username4', 'wrong password');
       })
       .then(() => {
-        return loginWithWrongCredentialsShouldFail(
-          'username4',
-          'wrong password'
-        );
+        return loginWithWrongCredentialsShouldFail('username4', 'wrong password');
       })
       .then(() => {
         // allow locked user to login after 3 seconds with a valid userid and password

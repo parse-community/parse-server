@@ -11,26 +11,26 @@ const httpRequestServer = 'http://localhost:' + port;
 function startServer(done) {
   const app = express();
   app.use(bodyParser.json({ type: '*/*' }));
-  app.get('/hello', function(req, res) {
+  app.get('/hello', function (req, res) {
     res.json({ response: 'OK' });
   });
 
-  app.get('/404', function(req, res) {
+  app.get('/404', function (req, res) {
     res.status(404);
     res.send('NO');
   });
 
-  app.get('/301', function(req, res) {
+  app.get('/301', function (req, res) {
     res.status(301);
     res.location('/hello');
     res.send();
   });
 
-  app.post('/echo', function(req, res) {
+  app.post('/echo', function (req, res) {
     res.json(req.body);
   });
 
-  app.get('/qs', function(req, res) {
+  app.get('/qs', function (req, res) {
     res.json(req.query);
   });
 
@@ -50,7 +50,7 @@ describe('httpRequest', () => {
   it('should do /hello', done => {
     httpRequest({
       url: httpRequestServer + '/hello',
-    }).then(function(httpResponse) {
+    }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
       expect(httpResponse.text).toEqual('{"response":"OK"}');
@@ -62,7 +62,7 @@ describe('httpRequest', () => {
   it('should do not follow redirects by default', done => {
     httpRequest({
       url: httpRequestServer + '/301',
-    }).then(function(httpResponse) {
+    }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(301);
       done();
     }, done.fail);
@@ -72,7 +72,7 @@ describe('httpRequest', () => {
     httpRequest({
       url: httpRequestServer + '/301',
       followRedirects: true,
-    }).then(function(httpResponse) {
+    }).then(function (httpResponse) {
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
       expect(httpResponse.text).toEqual('{"response":"OK"}');
@@ -86,12 +86,12 @@ describe('httpRequest', () => {
     httpRequest({
       url: httpRequestServer + '/404',
     }).then(
-      function() {
+      function () {
         calls++;
         fail('should not succeed');
         done();
       },
-      function(httpResponse) {
+      function (httpResponse) {
         calls++;
         expect(calls).toBe(1);
         expect(httpResponse.status).toBe(404);
@@ -114,12 +114,12 @@ describe('httpRequest', () => {
         'Content-Type': 'application/json',
       },
     }).then(
-      function(httpResponse) {
+      function (httpResponse) {
         expect(httpResponse.status).toBe(200);
         expect(httpResponse.data).toEqual({ foo: 'bar' });
         done();
       },
-      function() {
+      function () {
         fail('should not fail');
         done();
       }
@@ -132,9 +132,7 @@ describe('httpRequest', () => {
     };
     const result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('foo=bar');
-    expect(result.headers['Content-Type']).toEqual(
-      'application/x-www-form-urlencoded'
-    );
+    expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
     done();
   });
 
@@ -169,7 +167,7 @@ describe('httpRequest', () => {
   it('should fail gracefully', done => {
     httpRequest({
       url: 'http://not a good url',
-    }).then(done.fail, function(error) {
+    }).then(done.fail, function (error) {
       expect(error).not.toBeUndefined();
       expect(error).not.toBeNull();
       done();
@@ -183,12 +181,12 @@ describe('httpRequest', () => {
         foo: 'bar',
       },
     }).then(
-      function(httpResponse) {
+      function (httpResponse) {
         expect(httpResponse.status).toBe(200);
         expect(httpResponse.data).toEqual({ foo: 'bar' });
         done();
       },
-      function() {
+      function () {
         fail('should not fail');
         done();
       }
@@ -200,12 +198,12 @@ describe('httpRequest', () => {
       url: httpRequestServer + '/qs',
       params: 'foo=bar&foo2=bar2',
     }).then(
-      function(httpResponse) {
+      function (httpResponse) {
         expect(httpResponse.status).toBe(200);
         expect(httpResponse.data).toEqual({ foo: 'bar', foo2: 'bar2' });
         done();
       },
-      function() {
+      function () {
         fail('should not fail');
         done();
       }

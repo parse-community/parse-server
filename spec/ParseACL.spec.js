@@ -9,7 +9,7 @@ describe('Parse.ACL', () => {
     const user = new Parse.User();
     ok(
       !user.setACL("Ceci n'est pas un ACL.", {
-        error: function(user, error) {
+        error: function (user, error) {
           equal(error.code, -1);
           done();
         },
@@ -466,7 +466,7 @@ describe('Parse.ACL', () => {
     await Parse.User.logOut();
     // Find
     const query = new Parse.Query(TestObject);
-    query.find().then(function(results) {
+    query.find().then(function (results) {
       equal(results.length, 0);
       done();
     });
@@ -747,7 +747,7 @@ describe('Parse.ACL', () => {
     // Start making requests by the public.
     Parse.User.logOut().then(() => {
       const query = new Parse.Query(TestObject);
-      query.find().then(function(results) {
+      query.find().then(function (results) {
         equal(results.length, 0);
         done();
       });
@@ -846,7 +846,7 @@ describe('Parse.ACL', () => {
     await Parse.Object.saveAll([object1, object2]);
     const query = new Parse.Query(TestObject);
     query.equalTo('foo', 'bar');
-    query.find().then(function(results) {
+    query.find().then(function (results) {
       equal(results.length, 2);
       done();
     });

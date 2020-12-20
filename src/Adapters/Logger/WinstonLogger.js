@@ -20,11 +20,7 @@ function configureTransports(options) {
             {
               filename: 'parse-server.info',
               json: true,
-              format: format.combine(
-                format.timestamp(),
-                format.splat(),
-                format.json()
-              ),
+              format: format.combine(format.timestamp(), format.splat(), format.json()),
             },
             options
           )
@@ -37,11 +33,7 @@ function configureTransports(options) {
             {
               filename: 'parse-server.err',
               json: true,
-              format: format.combine(
-                format.timestamp(),
-                format.splat(),
-                format.json()
-              ),
+              format: format.combine(format.timestamp(), format.splat(), format.json()),
             },
             options,
             { level: 'error' }
@@ -120,9 +112,7 @@ export function addTransport(transport) {
 
 export function removeTransport(transport) {
   const matchingTransport = logger.transports.find(t1 => {
-    return typeof transport === 'string'
-      ? t1.name === transport
-      : t1 === transport;
+    return typeof transport === 'string' ? t1.name === transport : t1 === transport;
   });
 
   if (matchingTransport) {

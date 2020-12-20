@@ -16,8 +16,8 @@ const emailAdapter = {
 const appName = 'test';
 const publicServerURL = 'http://localhost:8378/1';
 
-describe('Regex Vulnerabilities', function() {
-  beforeEach(async function() {
+describe('Regex Vulnerabilities', function () {
+  beforeEach(async function () {
     await reconfigureServer({
       verifyUserEmails: true,
       emailAdapter,
@@ -42,8 +42,8 @@ describe('Regex Vulnerabilities', function() {
     this.partialSessionToken = this.sessionToken.slice(0, 3);
   });
 
-  describe('on session token', function() {
-    it('should not work with regex', async function() {
+  describe('on session token', function () {
+    it('should not work with regex', async function () {
       try {
         await request({
           url: `${serverURL}/users/me`,
@@ -64,7 +64,7 @@ describe('Regex Vulnerabilities', function() {
       }
     });
 
-    it('should work with plain token', async function() {
+    it('should work with plain token', async function () {
       const meResponse = await request({
         url: `${serverURL}/users/me`,
         method: 'POST',
@@ -80,13 +80,13 @@ describe('Regex Vulnerabilities', function() {
     });
   });
 
-  describe('on verify e-mail', function() {
-    beforeEach(async function() {
+  describe('on verify e-mail', function () {
+    beforeEach(async function () {
       const userQuery = new Parse.Query(Parse.User);
       this.user = await userQuery.get(this.objectId, { useMasterKey: true });
     });
 
-    it('should not work with regex', async function() {
+    it('should not work with regex', async function () {
       expect(this.user.get('emailVerified')).toEqual(false);
       await request({
         url: `${serverURL}/apps/test/verify_email?username=someemail@somedomain.com&token[$regex]=`,
@@ -96,7 +96,7 @@ describe('Regex Vulnerabilities', function() {
       expect(this.user.get('emailVerified')).toEqual(false);
     });
 
-    it('should work with plain token', async function() {
+    it('should work with plain token', async function () {
       expect(this.user.get('emailVerified')).toEqual(false);
       // It should work
       await request({
@@ -110,15 +110,12 @@ describe('Regex Vulnerabilities', function() {
     });
   });
 
-  describe('on password reset', function() {
-    beforeEach(async function() {
-      this.user = await Parse.User.logIn(
-        'someemail@somedomain.com',
-        'somepassword'
-      );
+  describe('on password reset', function () {
+    beforeEach(async function () {
+      this.user = await Parse.User.logIn('someemail@somedomain.com', 'somepassword');
     });
 
-    it('should not work with regex', async function() {
+    it('should not work with regex', async function () {
       expect(this.user.id).toEqual(this.objectId);
       await request({
         url: `${serverURL}/requestPasswordReset`,
@@ -136,9 +133,7 @@ describe('Regex Vulnerabilities', function() {
         method: 'GET',
       });
       expect(passwordResetResponse.status).toEqual(302);
-      expect(passwordResetResponse.headers.location).toMatch(
-        `\\/invalid\\_link\\.html`
-      );
+      expect(passwordResetResponse.headers.location).toMatch(`\\/invalid\\_link\\.html`);
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
@@ -157,7 +152,7 @@ describe('Regex Vulnerabilities', function() {
       }
     });
 
-    it('should work with plain token', async function() {
+    it('should work with plain token', async function () {
       expect(this.user.id).toEqual(this.objectId);
       await request({
         url: `${serverURL}/requestPasswordReset`,
@@ -188,10 +183,7 @@ describe('Regex Vulnerabilities', function() {
           new_password: 'newpassword',
         },
       });
-      const userAgain = await Parse.User.logIn(
-        'someemail@somedomain.com',
-        'newpassword'
-      );
+      const userAgain = await Parse.User.logIn('someemail@somedomain.com', 'newpassword');
       expect(userAgain.id).toEqual(this.objectId);
     });
   });

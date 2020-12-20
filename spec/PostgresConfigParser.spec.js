@@ -60,9 +60,7 @@ dbOptionsTest[
 dbOptionsTest[`${baseURI}?rejectUnauthorized=true`] = {
   ssl: { rejectUnauthorized: true },
 };
-dbOptionsTest[
-  `${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`
-] = {
+dbOptionsTest[`${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`] = {
   max: 5,
   query_timeout: 100,
   idleTimeoutMillis: 1000,

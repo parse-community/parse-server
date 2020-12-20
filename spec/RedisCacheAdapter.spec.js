@@ -1,5 +1,4 @@
-const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter')
-  .default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 const Config = require('../lib/Config');
 
 /*
@@ -19,7 +18,7 @@ describe_only(() => {
     });
   }
 
-  it('should get/set/clear', (done) => {
+  it('should get/set/clear', done => {
     const cache = new RedisCacheAdapter({
       ttl: NaN,
     });
@@ -27,78 +26,78 @@ describe_only(() => {
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(VALUE))
+      .then(value => expect(value).toEqual(VALUE))
       .then(() => cache.clear())
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(null))
+      .then(value => expect(value).toEqual(null))
       .then(done);
   });
 
-  it('should expire after ttl', (done) => {
+  it('should expire after ttl', done => {
     const cache = new RedisCacheAdapter(null, 50);
 
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(VALUE))
+      .then(value => expect(value).toEqual(VALUE))
       .then(wait.bind(null, 52))
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(null))
+      .then(value => expect(value).toEqual(null))
       .then(done);
   });
 
-  it('should not store value for ttl=0', (done) => {
+  it('should not store value for ttl=0', done => {
     const cache = new RedisCacheAdapter(null, 5);
 
     cache
       .put(KEY, VALUE, 0)
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(null))
+      .then(value => expect(value).toEqual(null))
       .then(done);
   });
 
-  it('should not expire when ttl=Infinity', (done) => {
+  it('should not expire when ttl=Infinity', done => {
     const cache = new RedisCacheAdapter(null, 1);
 
     cache
       .put(KEY, VALUE, Infinity)
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(VALUE))
+      .then(value => expect(value).toEqual(VALUE))
       .then(wait.bind(null, 5))
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(VALUE))
+      .then(value => expect(value).toEqual(VALUE))
       .then(done);
   });
 
-  it('should fallback to default ttl', (done) => {
+  it('should fallback to default ttl', done => {
     const cache = new RedisCacheAdapter(null, 1);
     let promise = Promise.resolve();
 
-    [-100, null, undefined, 'not number', true].forEach((ttl) => {
+    [-100, null, undefined, 'not number', true].forEach(ttl => {
       promise = promise.then(() =>
         cache
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))
-          .then((value) => expect(value).toEqual(VALUE))
+          .then(value => expect(value).toEqual(VALUE))
           .then(wait.bind(null, 5))
           .then(() => cache.get(KEY))
-          .then((value) => expect(value).toEqual(null))
+          .then(value => expect(value).toEqual(null))
       );
     });
 
     promise.then(done);
   });
 
-  it('should find un-expired records', (done) => {
+  it('should find un-expired records', done => {
     const cache = new RedisCacheAdapter(null, 5);
 
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).toEqual(VALUE))
+      .then(value => expect(value).toEqual(VALUE))
       .then(wait.bind(null, 1))
       .then(() => cache.get(KEY))
-      .then((value) => expect(value).not.toEqual(null))
+      .then(value => expect(value).not.toEqual(null))
       .then(done);
   });
 
@@ -129,7 +128,7 @@ describe_only(() => {
     return Object.keys(cache.queue.queue).length;
   }
 
-  it('it should clear completed operations from queue', (done) => {
+  it('it should clear completed operations from queue', done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
 
     // execute a bunch of operations in sequence
@@ -151,7 +150,7 @@ describe_only(() => {
     promise.then(() => expect(getQueueCount(cache)).toEqual(0)).then(done);
   });
 
-  it('it should count per key chained operations correctly', (done) => {
+  it('it should count per key chained operations correctly', done => {
     const cache = new RedisCacheAdapter({ ttl: NaN });
 
     let key1Promise = Promise.resolve();

@@ -28,15 +28,9 @@ function getOneSchema(req) {
     .then(schema => ({ response: schema }))
     .catch(error => {
       if (error === undefined) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_CLASS_NAME,
-          `Class ${className} does not exist.`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       } else {
-        throw new Parse.Error(
-          Parse.Error.INTERNAL_SERVER_ERROR,
-          'Database adapter error.'
-        );
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
       }
     });
 }
@@ -50,10 +44,7 @@ function createSchema(req) {
   }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
-      return classNameMismatchResponse(
-        req.body.className,
-        req.params.className
-      );
+      return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
 
@@ -116,31 +107,19 @@ const deleteSchema = req => {
       SchemaController.invalidClassNameMessage(req.params.className)
     );
   }
-  return req.config.database
-    .deleteSchema(req.params.className)
-    .then(() => ({ response: {} }));
+  return req.config.database.deleteSchema(req.params.className).then(() => ({ response: {} }));
 };
 
 export class SchemasRouter extends PromiseRouter {
   mountRoutes() {
-    this.route(
-      'GET',
-      '/schemas',
-      middleware.promiseEnforceMasterKeyAccess,
-      getAllSchemas
-    );
+    this.route('GET', '/schemas', middleware.promiseEnforceMasterKeyAccess, getAllSchemas);
     this.route(
       'GET',
       '/schemas/:className',
       middleware.promiseEnforceMasterKeyAccess,
       getOneSchema
     );
-    this.route(
-      'POST',
-      '/schemas',
-      middleware.promiseEnforceMasterKeyAccess,
-      createSchema
-    );
+    this.route('POST', '/schemas', middleware.promiseEnforceMasterKeyAccess, createSchema);
     this.route(
       'POST',
       '/schemas/:className',

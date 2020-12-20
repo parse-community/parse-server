@@ -137,13 +137,7 @@ describe('rest query', () => {
       })
       .then(() => {
         queryWhere.photo.objectId = photo.objectId;
-        return rest.find(
-          config,
-          nobody,
-          'TestActivity',
-          queryWhere,
-          queryOptions
-        );
+        return rest.find(config, nobody, 'TestActivity', queryWhere, queryOptions);
       })
       .then(response => {
         const results = response.results;
@@ -163,22 +157,19 @@ describe('rest query', () => {
     const customConfig = Object.assign({}, config, {
       allowClientClassCreation: false,
     });
-    rest
-      .find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
-      .then(
-        () => {
-          fail('Should throw an error');
-          done();
-        },
-        err => {
-          expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
-          expect(err.message).toEqual(
-            'This user is not allowed to access ' +
-              'non-existent class: ClientClassCreation'
-          );
-          done();
-        }
-      );
+    rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {}).then(
+      () => {
+        fail('Should throw an error');
+        done();
+      },
+      err => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual(
+          'This user is not allowed to access ' + 'non-existent class: ClientClassCreation'
+        );
+        done();
+      }
+    );
   });
 
   it('query existent class when disabled client class creation', async () => {
@@ -186,10 +177,7 @@ describe('rest query', () => {
       allowClientClassCreation: false,
     });
     const schema = await config.database.loadSchema();
-    const actualSchema = await schema.addClassIfNotExists(
-      'ClientClassCreation',
-      {}
-    );
+    const actualSchema = await schema.addClassIfNotExists('ClientClassCreation', {});
     expect(actualSchema.className).toEqual('ClientClassCreation');
 
     await schema.reloadData({ clearCache: true });
@@ -277,13 +265,7 @@ describe('rest query', () => {
         return rest.create(config, nobody, 'TestObject', { foo: 'qux' });
       })
       .then(() => {
-        return rest.find(
-          config,
-          nobody,
-          'TestObject',
-          {},
-          { limit: 0, count: 1 }
-        );
+        return rest.find(config, nobody, 'TestObject', {}, { limit: 0, count: 1 });
       })
       .then(response => {
         expect(response.results.length).toEqual(0);
@@ -421,12 +403,12 @@ describe('RestQuery.each', () => {
   });
 
   it('test afterSave response object is return', done => {
-    Parse.Cloud.beforeSave('TestObject2', function(req) {
+    Parse.Cloud.beforeSave('TestObject2', function (req) {
       req.object.set('tobeaddbefore', true);
       req.object.set('tobeaddbeforeandremoveafter', true);
     });
 
-    Parse.Cloud.afterSave('TestObject2', function(req) {
+    Parse.Cloud.afterSave('TestObject2', function (req) {
       const jsonObject = req.object.toJSON();
       delete jsonObject.todelete;
       delete jsonObject.tobeaddbeforeandremoveafter;
@@ -435,15 +417,13 @@ describe('RestQuery.each', () => {
       return jsonObject;
     });
 
-    rest
-      .create(config, nobody, 'TestObject2', { todelete: true, tokeep: true })
-      .then(response => {
-        expect(response.response.toadd).toBeTruthy();
-        expect(response.response.tokeep).toBeTruthy();
-        expect(response.response.tobeaddbefore).toBeTruthy();
-        expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
-        expect(response.response.todelete).toBeUndefined();
-        done();
-      });
+    rest.create(config, nobody, 'TestObject2', { todelete: true, tokeep: true }).then(response => {
+      expect(response.response.toadd).toBeTruthy();
+      expect(response.response.tokeep).toBeTruthy();
+      expect(response.response.tobeaddbefore).toBeTruthy();
+      expect(response.response.tobeaddbeforeandremoveafter).toBeUndefined();
+      expect(response.response.todelete).toBeUndefined();
+      done();
+    });
   });
 });

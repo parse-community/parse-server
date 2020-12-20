@@ -1,7 +1,5 @@
 const { offsetToCursor } = require('graphql-relay');
-const {
-  calculateSkipAndLimit,
-} = require('../lib/GraphQL/helpers/objectsQueries');
+const { calculateSkipAndLimit } = require('../lib/GraphQL/helpers/objectsQueries');
 
 describe('GraphQL objectsQueries', () => {
   describe('calculateSkipAndLimit', () => {
@@ -18,9 +16,9 @@ describe('GraphQL objectsQueries', () => {
       expect(() => calculateSkipAndLimit(1, 1, offsetToCursor(1), -1)).toThrow(
         jasmine.stringMatching('Last should be a positive number')
       );
-      expect(() =>
-        calculateSkipAndLimit(1, 1, offsetToCursor(1), 1, offsetToCursor(-1))
-      ).toThrow(jasmine.stringMatching('Before is not a valid curso'));
+      expect(() => calculateSkipAndLimit(1, 1, offsetToCursor(1), 1, offsetToCursor(-1))).toThrow(
+        jasmine.stringMatching('Before is not a valid curso')
+      );
     });
 
     it('should work only with skip', () => {
@@ -32,9 +30,7 @@ describe('GraphQL objectsQueries', () => {
     });
 
     it('should work only with after', () => {
-      expect(
-        calculateSkipAndLimit(undefined, undefined, offsetToCursor(9))
-      ).toEqual({
+      expect(calculateSkipAndLimit(undefined, undefined, offsetToCursor(9))).toEqual({
         skip: 10,
         limit: undefined,
         needToPreCount: false,
@@ -59,13 +55,7 @@ describe('GraphQL objectsQueries', () => {
 
     it('if before cursor is less than skipped items, no objects will be returned', () => {
       expect(
-        calculateSkipAndLimit(
-          10,
-          30,
-          offsetToCursor(9),
-          undefined,
-          offsetToCursor(5)
-        )
+        calculateSkipAndLimit(10, 30, offsetToCursor(9), undefined, offsetToCursor(5))
       ).toEqual({
         skip: 20,
         limit: 0,
@@ -75,13 +65,7 @@ describe('GraphQL objectsQueries', () => {
 
     it('if before cursor is greater than returned objects set by limit, nothing is changed', () => {
       expect(
-        calculateSkipAndLimit(
-          10,
-          30,
-          offsetToCursor(9),
-          undefined,
-          offsetToCursor(100)
-        )
+        calculateSkipAndLimit(10, 30, offsetToCursor(9), undefined, offsetToCursor(100))
       ).toEqual({
         skip: 20,
         limit: 30,
@@ -91,13 +75,7 @@ describe('GraphQL objectsQueries', () => {
 
     it('if before cursor is less than returned objects set by limit, limit is adjusted', () => {
       expect(
-        calculateSkipAndLimit(
-          10,
-          30,
-          offsetToCursor(9),
-          undefined,
-          offsetToCursor(40)
-        )
+        calculateSkipAndLimit(10, 30, offsetToCursor(9), undefined, offsetToCursor(40))
       ).toEqual({
         skip: 20,
         limit: 20,
@@ -106,9 +84,7 @@ describe('GraphQL objectsQueries', () => {
     });
 
     it('last should work alone but requires pre count', () => {
-      expect(
-        calculateSkipAndLimit(undefined, undefined, undefined, 10)
-      ).toEqual({
+      expect(calculateSkipAndLimit(undefined, undefined, undefined, 10)).toEqual({
         skip: undefined,
         limit: 10,
         needToPreCount: true,
@@ -116,9 +92,7 @@ describe('GraphQL objectsQueries', () => {
     });
 
     it('last should be adjusted to max limit', () => {
-      expect(
-        calculateSkipAndLimit(undefined, undefined, undefined, 10, undefined, 5)
-      ).toEqual({
+      expect(calculateSkipAndLimit(undefined, undefined, undefined, 10, undefined, 5)).toEqual({
         skip: undefined,
         limit: 5,
         needToPreCount: true,
@@ -126,19 +100,15 @@ describe('GraphQL objectsQueries', () => {
     });
 
     it('no objects will be returned if last is equal to 0', () => {
-      expect(calculateSkipAndLimit(undefined, undefined, undefined, 0)).toEqual(
-        {
-          skip: undefined,
-          limit: 0,
-          needToPreCount: false,
-        }
-      );
+      expect(calculateSkipAndLimit(undefined, undefined, undefined, 0)).toEqual({
+        skip: undefined,
+        limit: 0,
+        needToPreCount: false,
+      });
     });
 
     it('nothing changes if last is bigger than the calculared limit', () => {
-      expect(
-        calculateSkipAndLimit(10, 30, offsetToCursor(9), 30, offsetToCursor(40))
-      ).toEqual({
+      expect(calculateSkipAndLimit(10, 30, offsetToCursor(9), 30, offsetToCursor(40))).toEqual({
         skip: 20,
         limit: 20,
         needToPreCount: false,
@@ -146,9 +116,7 @@ describe('GraphQL objectsQueries', () => {
     });
 
     it('If last is small than limit, new limit is calculated', () => {
-      expect(
-        calculateSkipAndLimit(10, 30, offsetToCursor(9), 10, offsetToCursor(40))
-      ).toEqual({
+      expect(calculateSkipAndLimit(10, 30, offsetToCursor(9), 10, offsetToCursor(40))).toEqual({
         skip: 30,
         limit: 10,
         needToPreCount: false,

@@ -16,16 +16,13 @@ const { verbose, level } = (() => {
   return { verbose, level: verbose ? 'verbose' : undefined };
 })();
 
-const DefinitionDefaults = Object.keys(ParseServerOptions).reduce(
-  (memo, key) => {
-    const def = ParseServerOptions[key];
-    if (Object.prototype.hasOwnProperty.call(def, 'default')) {
-      memo[key] = def.default;
-    }
-    return memo;
-  },
-  {}
-);
+const DefinitionDefaults = Object.keys(ParseServerOptions).reduce((memo, key) => {
+  const def = ParseServerOptions[key];
+  if (Object.prototype.hasOwnProperty.call(def, 'default')) {
+    memo[key] = def.default;
+  }
+  return memo;
+}, {});
 
 const computedDefaults = {
   jsonLogs: process.env.JSON_LOGS || false,

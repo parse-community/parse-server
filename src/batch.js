@@ -28,10 +28,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   const makeRoutablePath = function (requestPath) {
     // The routablePath is the path minus the api prefix
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'cannot route batch path ' + requestPath
-      );
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot route batch path ' + requestPath);
     }
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   };
@@ -39,17 +36,23 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   if (serverURL && publicServerURL && serverURL.path != publicServerURL.path) {
     const localPath = serverURL.path;
     const publicPath = publicServerURL.path;
+
     // Override the api prefix
     apiPrefix = localPath;
     return function (requestPath) {
-      // Build the new path by removing the public path
-      // and joining with the local path
-      const newPath = path.posix.join(
-        '/',
-        localPath,
-        '/',
-        requestPath.slice(publicPath.length)
-      );
+      // Figure out which server url was used by figuring out which
+      // path more closely matches requestPath
+      const startsWithLocal = requestPath.startsWith(localPath);
+      const startsWithPublic = requestPath.startsWith(publicPath);
+      const pathLengthToUse =
+        startsWithLocal && startsWithPublic
+          ? Math.max(localPath.length, publicPath.length)
+          : startsWithLocal
+            ? localPath.length
+            : publicPath.length;
+
+      const newPath = path.posix.join('/', localPath, '/', requestPath.slice(pathLengthToUse));
+
       // Use the method for local routing
       return makeRoutablePath(newPath);
     };
@@ -62,10 +65,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 // TODO: pass along auth correctly
 function handleBatch(router, req) {
   if (!Array.isArray(req.body.requests)) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_JSON,
-      'requests must be an array'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'requests must be an array');
   }
 
   // The batch paths are all from the root of our domain.
@@ -100,16 +100,14 @@ function handleBatch(router, req) {
         info: req.info,
       };
 
-      return router
-        .tryRouteRequest(restRequest.method, routablePath, request)
-        .then(
-          response => {
-            return { success: response.response };
-          },
-          error => {
-            return { error: { code: error.code, error: error.message } };
-          }
-        );
+      return router.tryRouteRequest(restRequest.method, routablePath, request).then(
+        response => {
+          return { success: response.response };
+        },
+        error => {
+          return { error: { code: error.code, error: error.message } };
+        }
+      );
     });
 
     return Promise.all(promises).then(results => {

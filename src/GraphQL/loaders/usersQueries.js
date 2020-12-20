@@ -5,18 +5,10 @@ import rest from '../../rest';
 import { extractKeysAndInclude } from './parseClassTypes';
 import { Auth } from '../../Auth';
 
-const getUserFromSessionToken = async (
-  context,
-  queryInfo,
-  keysPrefix,
-  userId
-) => {
+const getUserFromSessionToken = async (context, queryInfo, keysPrefix, userId) => {
   const { info, config } = context;
   if (!info || !info.sessionToken) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_SESSION_TOKEN,
-      'Invalid session token'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   }
   const sessionToken = info.sessionToken;
   const selectedFields = getFieldNames(queryInfo)
@@ -70,10 +62,7 @@ const getUserFromSessionToken = async (
     info.context
   );
   if (!response.results || response.results.length == 0) {
-    throw new Parse.Error(
-      Parse.Error.INVALID_SESSION_TOKEN,
-      'Invalid session token'
-    );
+    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
   } else {
     const user = response.results[0];
     return {
@@ -91,17 +80,11 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLQuery(
     'viewer',
     {
-      description:
-        'The viewer query can be used to return the current user data.',
+      description: 'The viewer query can be used to return the current user data.',
       type: new GraphQLNonNull(parseGraphQLSchema.viewerType),
       async resolve(_source, _args, context, queryInfo) {
         try {
-          return await getUserFromSessionToken(
-            context,
-            queryInfo,
-            'user.',
-            false
-          );
+          return await getUserFromSessionToken(context, queryInfo, 'user.', false);
         } catch (e) {
           parseGraphQLSchema.handleError(e);
         }
