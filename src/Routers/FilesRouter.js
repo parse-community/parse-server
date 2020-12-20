@@ -5,7 +5,6 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
-import { authenticator } from 'otplib';
 const triggers = require('../triggers');
 const http = require('http');
 
@@ -44,11 +43,9 @@ const errorMessageFromError = e => {
 };
 const createFileData = async fileObject => {
   const fileData = new Parse.Object('_File');
-  fileData.set('references', 0);
+  fileData.set('references', []);
   fileData.set('file', fileObject.file);
-  fileData.set('authACL', fileObject._ACL);
-  authenticator.options = { step: 600, digits: 10 };
-  fileData.set('authSecret', authenticator.generateSecret());
+  fileData.set('ACL', fileObject._ACL || { '*': { read: true } });
   await fileData.save(null, { useMasterKey: true });
 };
 
@@ -88,21 +85,48 @@ export class FilesRouter {
   async getHandler(req, res) {
     const config = Config.get(req.params.appId);
     const filesController = config.filesController;
-    const filename = req.params.filename;
+    let filename = req.params.filename;
     const file = new Parse.File(filename);
     file._url = filesController.adapter.getFileLocation(config, filename);
-    const [fileObject] = await config.database.find('_File', {
+    let [fileObject] = await config.database.find('_File', {
       file: file.toJSON(),
     });
-    if (fileObject && fileObject.authACL) {
-      const acl = new Parse.ACL(fileObject.authACL);
-      if (
-        !acl.getPublicReadAccess() &&
-        !authenticator.verify({
-          token: req.query.token,
-          secret: fileObject.authSecret,
-        })
-      ) {
+    if (!fileObject) {
+      fileObject = {
+        ACL: { '*': { read: true } },
+        references: [],
+        file: {
+          __type: 'File',
+          name: filename,
+        },
+        tokens: [],
+      };
+    }
+    const requestToken = req.query.token;
+    let user;
+    const tokens = fileObject.tokens || [];
+    let toSave = false;
+    for (var i = tokens.length - 1; i >= 0; i--) {
+      const token = tokens[i];
+      const expiry = token.expiry;
+      if (!expiry || expiry < new Date()) {
+        tokens.splice(i, 1);
+        toSave = true;
+      } else if (token.token === requestToken) {
+        user = token.user;
+      }
+    }
+    if (toSave) {
+      fileObject.tokens = tokens;
+      this.config.database.update('_File', { file }, fileObject);
+    }
+    if (fileObject.ACL) {
+      const allowed = await filesController.canViewFile(
+        config,
+        fileObject,
+        user
+      );
+      if (!allowed) {
         res.status(404);
         res.set('Content-Type', 'text/plain');
         res.end('File not found.');
@@ -120,24 +144,65 @@ export class FilesRouter {
           res.end('File not found.');
         });
     } else {
-      filesController
-        .getFileData(config, filename)
-        .then(data => {
-          res.status(200);
-          res.set('Content-Type', contentType);
-          res.set('Content-Length', data.length);
-          res.end(data);
-        })
-        .catch(() => {
-          res.status(404);
-          res.set('Content-Type', 'text/plain');
-          res.end('File not found.');
-        });
+      try {
+        const triggerResult = await triggers.maybeRunFileTrigger(
+          triggers.Types.beforeFind,
+          { file },
+          config,
+          { user }
+        );
+        let data;
+        if (triggerResult instanceof Parse.File) {
+          if (triggerResult._data) {
+            data = Buffer.from(triggerResult._data, 'base64');
+          } else if (triggerResult._name) {
+            filename = triggerResult._name;
+          }
+        }
+        if (!data) {
+          data = await filesController.getFileData(config, filename);
+        }
+        res.status(200);
+        res.set('Content-Type', contentType);
+        res.set('Content-Length', data.length);
+        res.end(data);
+        try {
+          await triggers.maybeRunFileTrigger(
+            triggers.Types.afterFind,
+            { file },
+            config,
+            { user }
+          );
+        } catch (e) {
+          /* */
+        }
+      } catch (e) {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end((e && e.message) || e || 'File not found.');
+      }
     }
   }
 
   async createHandler(req, res, next) {
     const config = req.config;
+    const schema = await config.database.loadSchema();
+
+    // CLP for _File always returns {}, even though I thought I set default CLP in SchemaController.js line 694
+    const schemaPerms = schema.testPermissionsForClassName(
+      '_File',
+      [req.auth.user && req.auth.user.id],
+      'create'
+    );
+    if (!schemaPerms) {
+      next(
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'You are not authorized to upload a file.'
+        )
+      );
+      return;
+    }
     const filesController = config.filesController;
     const { filename } = req.params;
     const contentType = req.get('Content-type');
@@ -148,13 +213,11 @@ export class FilesRouter {
       );
       return;
     }
-
     const error = filesController.validateFilename(filename);
     if (error) {
       next(error);
       return;
     }
-
     const base64 = req.body.toString('base64');
     const file = new Parse.File(filename, { base64 }, contentType);
     const { metadata = {}, tags = {} } = req.fileData || {};

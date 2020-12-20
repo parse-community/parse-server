@@ -78,9 +78,8 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
   _File: {
     file: { type: 'File' },
-    references: { type: 'Number' },
-    authSecret: { type: 'String' },
-    authACL: { type: 'Object' },
+    references: { type: 'Array' },
+    ACL: { type: 'Object' },
   },
   _Product: {
     productIdentifier: { type: 'String' },
@@ -685,7 +684,15 @@ const _FileSchema = convertSchemaToAdapterSchema(
   injectDefaultSchema({
     className: '_File',
     fields: defaultColumns._File,
-    classLevelPermissions: {},
+    classLevelPermissions: {
+      find: {
+        '*': true,
+      },
+      get: {
+        '*': true,
+      },
+      create: { requiresAuthentication: true },
+    },
   })
 );
 const VolatileClassesSchemas = [

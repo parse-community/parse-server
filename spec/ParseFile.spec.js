@@ -4,6 +4,7 @@
 'use strict';
 
 const request = require('../lib/request');
+const Config = require('../lib/Config');
 
 const str = 'Hello World!';
 const data = [];
@@ -882,6 +883,7 @@ describe('Parse.File testing', () => {
     const acl = new Parse.ACL();
     acl.setPublicReadAccess(false);
     acl.setReadAccess(user, true);
+    // EXPERIMENTAL - NO WAY TO PASS ACL THROUGH IN SDK AT THE MOMENT
     file.setTags({ acl: acl.toJSON() });
     const result = await file.save({ sessionToken: user.getSessionToken() });
     strictEqual(result, file);
@@ -890,7 +892,6 @@ describe('Parse.File testing', () => {
     notEqual(file.name(), 'hello.txt');
     const object = new Parse.Object('TestObject');
     await object.save({ file: file }, { sessionToken: user.getSessionToken() });
-
     const query = await new Parse.Query('TestObject').get(object.id, {
       sessionToken: user.getSessionToken(),
     });
@@ -908,6 +909,107 @@ describe('Parse.File testing', () => {
       fail('should have been able to get file.');
     }
   });
+
+  it('can run beforeFind on File', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+
+    let callCount = 0;
+    Parse.Cloud.beforeSave(Parse.File, req => {
+      callCount++;
+      expect(req.file).toBeDefined();
+      expect(req.file._name).toContain('hello.txt');
+      expect(req.triggerName).toBe('beforeSaveFile');
+      expect(req.master).toBe(false);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe(user.id);
+    });
+    Parse.Cloud.afterSave(Parse.File, req => {
+      callCount++;
+      expect(req.file).toBeDefined();
+      expect(req.file._name).toContain('hello.txt');
+      expect(req.triggerName).toBe('afterSaveFile');
+      expect(req.master).toBe(false);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe(user.id);
+    });
+    Parse.Cloud.beforeFind(Parse.File, req => {
+      callCount++;
+      expect(req.file).toBeDefined();
+      expect(req.file._name).toContain('hello.txt');
+      expect(req.triggerName).toBe('beforeFind');
+      expect(req.master).toBe(false);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe(user.id);
+      const newStr = 'test';
+      const newData = [];
+      for (let i = 0; i < newStr.length; i++) {
+        newData.push(newStr.charCodeAt(i));
+      }
+      return new Parse.File('new.txt', newData, 'text/plain');
+    });
+    Parse.Cloud.afterFind(Parse.File, req => {
+      callCount++;
+      expect(req.file).toBeDefined();
+      expect(req.file._name).toContain('hello.txt');
+      expect(req.triggerName).toBe('afterFind');
+      expect(req.master).toBe(false);
+      expect(req.user).toBeDefined();
+      expect(req.user.id).toBe(user.id);
+    });
+
+    await file.save({ sessionToken: user.getSessionToken() });
+
+    const object = new Parse.Object('TestObject');
+    await object.save({ file: file }, { sessionToken: user.getSessionToken() });
+
+    const query = await new Parse.Query('TestObject').get(object.id, {
+      sessionToken: user.getSessionToken(),
+    });
+    const aclFile = query.get('file');
+    const response = await request({
+      url: aclFile.url(),
+    });
+    expect(response.text).toEqual('test');
+    expect(callCount).toBe(4);
+    done();
+  });
+
+  it('can throw from beforeFind', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    await file.save({ sessionToken: user.getSessionToken() });
+
+    const object = new Parse.Object('TestObject');
+    await object.save({ file: file }, { sessionToken: user.getSessionToken() });
+
+    const query = await new Parse.Query('TestObject').get(object.id, {
+      sessionToken: user.getSessionToken(),
+    });
+    const aclFile = query.get('file');
+    Parse.Cloud.beforeFind(Parse.File, () => {
+      throw new Parse.Error(200, 'You are not allowed to access this file');
+    });
+    try {
+      await request({
+        url: aclFile.url(),
+      });
+      fail('should not have been able to get file.');
+    } catch (e) {
+      expect(e.text).toEqual('You are not allowed to access this file');
+      expect(e.status).toBe(404);
+      done();
+    }
+  });
+
   it('can save file and not get public', async done => {
     const user = new Parse.User();
     await user.signUp({
@@ -918,6 +1020,7 @@ describe('Parse.File testing', () => {
     const acl = new Parse.ACL();
     acl.setPublicReadAccess(false);
     acl.setReadAccess(user, true);
+    // EXPERIMENTAL - NO WAY TO PASS ACL THROUGH IN SDK AT THE MOMENT
     file.setTags({ acl: acl.toJSON() });
     const result = await file.save({ sessionToken: user.getSessionToken() });
     strictEqual(result, file);
@@ -926,7 +1029,6 @@ describe('Parse.File testing', () => {
     notEqual(file.name(), 'hello.txt');
     const object = new Parse.Object('TestObject');
     await object.save({ file: file }, { sessionToken: user.getSessionToken() });
-
     await Parse.User.logOut();
     const query = await new Parse.Query('TestObject').get(object.id);
     const aclFile = query.get('file');
@@ -944,6 +1046,45 @@ describe('Parse.File testing', () => {
       done();
     }
   });
+
+  it('can set schema on _File', async done => {
+    // WIP - cannot get schema for _File
+    try {
+      const file = new Parse.File('hello.txt', data, 'text/plain');
+      await file.save();
+    } catch (e) {
+      console.log(e);
+      expect(e.text).toBe('You are not authorized to upload a file.');
+    }
+    done();
+  });
+
+  it('can track file references', async done => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'hello',
+      password: 'password',
+    });
+    const file = new Parse.File('hello.txt', data, 'text/plain');
+    await file.save();
+
+    const config = Config.get('test');
+    let [fileObject] = await config.database.find('_File', {
+      file: file.toJSON(),
+    });
+    expect(fileObject).toBeDefined();
+    expect(fileObject.references.length).toBe(0);
+
+    const object = new Parse.Object('TestObject');
+    await object.save({ file: file });
+
+    [fileObject] = await config.database.find('_File', {
+      file: file.toJSON(),
+    });
+    expect(fileObject.references.length).toBe(1);
+    done();
+  });
+
   it('can query file data', async done => {
     const user = new Parse.User();
     await user.signUp({
@@ -954,6 +1095,7 @@ describe('Parse.File testing', () => {
     const acl = new Parse.ACL();
     acl.setPublicReadAccess(false);
     acl.setReadAccess(user, true);
+    // EXPERIMENTAL - NO WAY TO PASS ACL THROUGH IN SDK AT THE MOMENT
     file.setTags({ acl: acl.toJSON() });
     await file.save({ sessionToken: user.getSessionToken() });
     const query = new Parse.Query('_File');

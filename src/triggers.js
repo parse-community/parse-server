@@ -746,7 +746,13 @@ export async function maybeRunFileTrigger(
   config,
   auth
 ) {
-  const fileTrigger = getFileTrigger(triggerType, config.applicationId);
+  let fileTrigger = getFileTrigger(triggerType, config.applicationId);
+  if (!fileTrigger) {
+    fileTrigger = getFileTrigger(
+      triggerType.replace('File', ''),
+      config.applicationId
+    );
+  }
   if (typeof fileTrigger === 'function') {
     try {
       const request = getRequestFileObject(

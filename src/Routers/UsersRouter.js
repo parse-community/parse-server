@@ -246,7 +246,8 @@ export class UsersRouter extends ClassesRouter {
     await req.config.filesController.expandFilesInObject(
       req.config,
       user,
-      req.auth
+      req.auth,
+      '_User'
     );
 
     // Before login trigger; throws if failure

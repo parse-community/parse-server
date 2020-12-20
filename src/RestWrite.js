@@ -334,7 +334,8 @@ RestWrite.prototype.runBeforeLoginTrigger = async function (userData) {
   await this.config.filesController.expandFilesInObject(
     this.config,
     userData,
-    this.auth
+    this.auth,
+    this.className
   );
   const user = triggers.inflate(extraData, userData);
 
@@ -1403,7 +1404,14 @@ RestWrite.prototype.expandFilesForExistingObjects = async function () {
     await this.config.filesController.expandFilesInObject(
       this.config,
       this.response.response,
-      this.auth
+      this.auth,
+      this.className
+    );
+  } else if (this.className !== '_File') {
+    await this.config.filesController.updateReferences(
+      this.data,
+      this.originalData,
+      this.className
     );
   }
 };

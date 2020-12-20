@@ -677,7 +677,8 @@ RestQuery.prototype.runFind = function (options = {}) {
       return this.config.filesController.expandFilesInObject(
         this.config,
         results,
-        this.auth
+        this.auth,
+        this.className
       );
     })
     .then(() => {

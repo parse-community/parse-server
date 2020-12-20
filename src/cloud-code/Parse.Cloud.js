@@ -9,6 +9,9 @@ function isParseObjectConstructor(object) {
 }
 
 function getClassName(parseClass) {
+  if (parseClass === Parse.File) {
+    return '@File';
+  }
   if (parseClass && parseClass.className) {
     return parseClass.className;
   }
