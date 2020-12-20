@@ -64,9 +64,7 @@ export class FilesController extends AdaptableController {
     return Promise.resolve()
       .then(async () => {
         // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some(key =>
-          key.startsWith('role:')
-        );
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith('role:'));
         if (!acl_has_roles) {
           return false;
         }
@@ -102,7 +100,7 @@ export class FilesController extends AdaptableController {
         keyOriginalData = {};
       }
       for (const key in keyData) {
-        const val = keyData[key];
+        const val = keyData[key] || {};
         const original = keyOriginalData[key] || {};
         if (typeof val !== 'object') {
           continue;
@@ -203,9 +201,7 @@ export class FilesController extends AdaptableController {
   async expandFilesInObject(config, object, auth, className) {
     const promises = [];
     if (object instanceof Array) {
-      object.map(obj =>
-        promises.push(this.expandFilesInObject(config, obj, auth, className))
-      );
+      object.map(obj => promises.push(this.expandFilesInObject(config, obj, auth, className)));
     }
     if (promises.length != 0) {
       await Promise.all(promises);
@@ -218,13 +214,7 @@ export class FilesController extends AdaptableController {
       const fileObject = object[key];
       if (fileObject && fileObject['__type'] === 'File') {
         if (fileObject['url']) {
-          await this.getAuthForFile(
-            config,
-            fileObject,
-            auth,
-            object,
-            className
-          );
+          await this.getAuthForFile(config, fileObject, auth, object, className);
           continue;
         }
         const filename = fileObject['name'];

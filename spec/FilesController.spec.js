@@ -22,11 +22,11 @@ const mockAdapter = {
 
 // Small additional tests to improve overall coverage
 describe('FilesController', () => {
-  it('should properly expand objects', done => {
+  it('should properly expand objects', async done => {
     const config = Config.get(Parse.applicationId);
     const gridStoreAdapter = new GridFSBucketAdapter('mongodb://localhost:27017/parse');
     const filesController = new FilesController(gridStoreAdapter);
-    const result = filesController.expandFilesInObject(config, function () {});
+    const result = await filesController.expandFilesInObject(config, function () {});
 
     expect(result).toBeUndefined();
 
