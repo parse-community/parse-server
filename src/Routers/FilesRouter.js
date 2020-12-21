@@ -5,6 +5,7 @@ import Parse from 'parse/node';
 import Config from '../Config';
 import mime from 'mime';
 import logger from '../logger';
+import { randomString } from '../cryptoUtils';
 const triggers = require('../triggers');
 const http = require('http');
 
@@ -33,12 +34,35 @@ const addFileDataIfNeeded = async file => {
   return file;
 };
 
-const createFileData = async fileObject => {
+const createFileData = async (fileObject, auth) => {
   const fileData = new Parse.Object('_File');
-  fileData.set('references', []);
   fileData.set('file', fileObject.file);
   fileData.set('ACL', fileObject._ACL || { '*': { read: true } });
-  await fileData.save(null, { useMasterKey: true });
+
+  const url = fileObject.file._url.split('?');
+  let appendToken = '';
+  if (url.length > 1) {
+    appendToken = `${url[1]}&`;
+  }
+  const token = randomString(25);
+  appendToken += `token=${token}`;
+  const fileURL = `${url[0]}?${appendToken}`;
+  fileObject.file._url = fileURL;
+  const expiry = new Date(new Date().getTime() + 30 * 60000);
+
+  const fileToken = new Parse.Object('_FileToken');
+  fileToken.set('fileObject', fileData);
+  fileToken.set('file', fileObject.file);
+  fileToken.set('token', token);
+  fileToken.set('expiry', expiry);
+  if (auth && auth.user) {
+    fileToken.set('user', auth.user);
+  }
+  if (auth && auth.master) {
+    fileToken.set('master', true);
+  }
+  await Parse.Object.saveAll([fileData, fileToken], { useMasterKey: true });
+  return fileURL;
 };
 
 export class FilesRouter {
@@ -78,9 +102,38 @@ export class FilesRouter {
     let filename = req.params.filename;
     const file = new Parse.File(filename);
     file._url = filesController.adapter.getFileLocation(config, filename);
-    let [fileObject] = await config.database.find('_File', {
-      file: file.toJSON(),
-    });
+
+    const fileQuery = new Parse.Query('_FileToken');
+    fileQuery.equalTo('file', file);
+    fileQuery.equalTo('token', req.query.token);
+    fileQuery.greaterThan('expiry', new Date());
+    fileQuery.include('user');
+    const fileToken = await fileQuery.first({ useMasterKey: true });
+    if (!fileToken || !fileToken.get('fileObject')) {
+      // token does not exist or has expired.
+      res.status(404);
+      res.set('Content-Type', 'text/plain');
+      res.end('File not found.');
+      return;
+    }
+    const user = fileToken.get('user');
+    let fileObject = fileToken.get('fileObject');
+    try {
+      const fetchData = {};
+      if (user && user.getSessionToken()) {
+        fetchData.sessionToken = user.getSessionToken();
+      }
+      if (fileToken.get('master')) {
+        fetchData.useMasterKey = true;
+      }
+      fileObject = await fileToken.get('fileObject').fetch(fetchData);
+    } catch (e) {
+      // if not found, you cannot view the file.
+      res.status(404);
+      res.set('Content-Type', 'text/plain');
+      res.end('File not found.');
+      return;
+    }
     if (!fileObject) {
       fileObject = {
         ACL: { '*': { read: true } },
@@ -92,34 +145,6 @@ export class FilesRouter {
         tokens: [],
       };
     }
-    const requestToken = req.query.token;
-    let user;
-    const tokens = fileObject.tokens || [];
-    let toSave = false;
-    for (var i = tokens.length - 1; i >= 0; i--) {
-      const token = tokens[i];
-      const expiry = token.expiry;
-      if (!expiry || expiry < new Date()) {
-        tokens.splice(i, 1);
-        toSave = true;
-      } else if (token.token === requestToken) {
-        user = token.user;
-      }
-    }
-    if (toSave) {
-      fileObject.tokens = tokens;
-      this.config.database.update('_File', { file }, fileObject);
-    }
-    if (fileObject.ACL) {
-      const allowed = await filesController.canViewFile(config, fileObject, user);
-      if (!allowed) {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-        return;
-      }
-    }
-
     const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController.handleFileStream(config, filename, req, res, contentType).catch(() => {
@@ -129,11 +154,15 @@ export class FilesRouter {
       });
     } else {
       try {
+        const request = { user };
+        if (fileToken.get('master')) {
+          request.master = true;
+        }
         const triggerResult = await triggers.maybeRunFileTrigger(
           triggers.Types.beforeFind,
           { file },
           config,
-          { user }
+          request
         );
         let data;
         if (triggerResult instanceof Parse.File) {
@@ -274,7 +303,8 @@ export class FilesRouter {
       }
       fileObject._ACL = acl;
       try {
-        await createFileData(fileObject);
+        const fileTokenURL = await createFileData(fileObject, req.auth);
+        saveResult.url = fileTokenURL;
       } catch (e) {
         /* */
       }

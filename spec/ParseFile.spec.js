@@ -4,7 +4,6 @@
 'use strict';
 
 const request = require('../lib/request');
-const Config = require('../lib/Config');
 const Definitions = require('../src/Options/Definitions');
 
 const str = 'Hello World!';
@@ -29,7 +28,9 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.txt$/);
-        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
+        expect(b.url.split('?')[0]).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
+        );
         request({ url: b.url }).then(response => {
           const body = response.text;
           expect(body).toEqual('argle bargle');
@@ -51,7 +52,9 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.html/);
-        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
+        expect(b.url.split('?')[0]).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/
+        );
         request({ url: b.url }).then(response => {
           const body = response.text;
           try {
@@ -78,7 +81,9 @@ describe('Parse.File testing', () => {
       }).then(response => {
         const b = response.data;
         expect(b.name).toMatch(/_file.txt$/);
-        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
+        expect(b.url.split('?')[0]).toMatch(
+          /^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/
+        );
         request({ url: b.url }).then(response => {
           expect(response.text).toEqual('argle bargle');
           done();
@@ -101,7 +106,9 @@ describe('Parse.File testing', () => {
     }).then(response => {
       const b = response.data;
       expect(b.name).toMatch(/_testfile.txt$/);
-      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/);
+      expect(b.url.split('?')[0]).toMatch(
+        /^http:\/\/localhost:8378\/1\/files\/test\/.*testfile.txt$/
+      );
       request({ url: b.url }).then(response => {
         const body = response.text;
         expect(body).toEqual('check one two');
@@ -143,7 +150,9 @@ describe('Parse.File testing', () => {
       body: 'the file body',
     }).then(response => {
       const b = response.data;
-      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/);
+      expect(b.url.split('?')[0]).toMatch(
+        /^http:\/\/localhost:8378\/1\/files\/test\/.*thefile.jpg$/
+      );
       // missing X-Parse-Master-Key header
       request({
         method: 'DELETE',
@@ -189,7 +198,7 @@ describe('Parse.File testing', () => {
     }).then(response => {
       const b = response.data;
       expect(b.name).toMatch(/_file.jpg$/);
-      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/.*file.jpg$/);
+      expect(b.url.split('?')[0]).toMatch(/^http:\/\/localhost:8378\/1\/files\/.*file.jpg$/);
       request({ url: b.url }).then(response => {
         const body = response.text;
         expect(body).toEqual('argle bargle');
@@ -359,7 +368,7 @@ describe('Parse.File testing', () => {
       body: 'oh emm gee',
     }).then(response => {
       const b = response.data;
-      expect(b.url).toMatch(/hello%20world/);
+      expect(b.url.split('?')[0]).toMatch(/hello%20world/);
       done();
     });
   });
@@ -959,10 +968,12 @@ describe('Parse.File testing', () => {
     const query = await new Parse.Query('TestObject').get(object.id, {
       sessionToken: user.getSessionToken(),
     });
+
     const aclFile = query.get('file');
     const response = await request({
       url: aclFile.url(),
     });
+
     expect(response.text).toEqual('test');
     expect(callCount).toBe(4);
     done();
@@ -1057,20 +1068,20 @@ describe('Parse.File testing', () => {
     const file = new Parse.File('hello.txt', data, 'text/plain');
     await file.save();
 
-    const config = Config.get('test');
-    let [fileObject] = await config.database.find('_File', {
-      file: file.toJSON(),
-    });
-    expect(fileObject).toBeDefined();
-    expect(fileObject.references.length).toBe(0);
+    const fileQuery = new Parse.Query('_File');
+    fileQuery.equalTo('file', file);
+
+    const fileObject = await fileQuery.first({ useMasterKey: true });
+    const fileRelation = fileObject.relation('references').query();
+
+    let references = await fileRelation.find({ useMasterKey: true });
+    expect(references.length).toBe(0);
 
     const object = new Parse.Object('TestObject');
     await object.save({ file: file });
 
-    [fileObject] = await config.database.find('_File', {
-      file: file.toJSON(),
-    });
-    expect(fileObject.references.length).toBe(1);
+    references = await fileRelation.find({ useMasterKey: true });
+    expect(references.length).toBe(1);
     done();
   });
 
@@ -1087,14 +1098,14 @@ describe('Parse.File testing', () => {
     // EXPERIMENTAL - NO WAY TO PASS ACL THROUGH IN SDK AT THE MOMENT
     file.setTags({ acl: acl.toJSON() });
     await file.save({ sessionToken: user.getSessionToken() });
-    const query = new Parse.Query('_File');
+    const query = new Parse.Query('_FileToken');
     try {
       await query.first();
-      fail('Should not have been able to query _Files');
+      fail('Should not have been able to query _FileToken');
     } catch (e) {
       expect(e.code).toBe(119);
       expect(e.message).toBe(
-        "Clients aren't allowed to perform the find operation on the _File collection."
+        "Clients aren't allowed to perform the find operation on the _FileToken collection."
       );
       done();
     }
@@ -1106,8 +1117,9 @@ describe('Parse.File testing', () => {
         fileUpload: {
           enableForPublic: Definitions.FileUploadOptions.enableForPublic.default,
           enableForAnonymousUser: Definitions.FileUploadOptions.enableForAnonymousUser.default,
-          enableForAuthenticatedUser: Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
-        }
+          enableForAuthenticatedUser:
+            Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
+        },
       });
       let file = new Parse.File('hello.txt', data, 'text/plain');
       await expectAsync(file.save()).toBeRejectedWith(
@@ -1155,7 +1167,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -1195,7 +1210,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -1217,7 +1235,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -1244,33 +1265,11 @@ describe('Parse.File testing', () => {
     });
 
     it('rejects invalid fileUpload configuration', async () => {
-      const invalidConfigs = [
-        { fileUpload: [] },
-        { fileUpload: 1 },
-        { fileUpload: "string" },
-      ];
-      const validConfigs = [
-        { fileUpload: {} },
-        { fileUpload: null },
-        { fileUpload: undefined },
-      ];
-      const keys = [
-        "enableForPublic",
-        "enableForAnonymousUser",
-        "enableForAuthenticatedUser",
-      ];
-      const invalidValues = [
-        [],
-        {},
-        1,
-        "string",
-        null,
-      ];
-      const validValues = [
-        undefined,
-        true,
-        false,
-      ];
+      const invalidConfigs = [{ fileUpload: [] }, { fileUpload: 1 }, { fileUpload: 'string' }];
+      const validConfigs = [{ fileUpload: {} }, { fileUpload: null }, { fileUpload: undefined }];
+      const keys = ['enableForPublic', 'enableForAnonymousUser', 'enableForAuthenticatedUser'];
+      const invalidValues = [[], {}, 1, 'string', null];
+      const validValues = [undefined, true, false];
       for (const config of invalidConfigs) {
         await expectAsync(reconfigureServer(config)).toBeRejectedWith(
           'fileUpload must be an object value.'
@@ -1281,12 +1280,12 @@ describe('Parse.File testing', () => {
       }
       for (const key of keys) {
         for (const value of invalidValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeRejectedWith(
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeRejectedWith(
             `fileUpload.${key} must be a boolean value.`
           );
         }
         for (const value of validValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeResolved();
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeResolved();
         }
       }
     });

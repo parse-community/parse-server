@@ -78,8 +78,21 @@ const defaultColumns: { [string]: SchemaFields } = Object.freeze({
   },
   _File: {
     file: { type: 'File' },
-    references: { type: 'Array' },
+    references: { type: 'Relation', targetClass: '_FileReference' },
+    tokens: { type: 'Relation', targetClass: '_FileToken' },
     ACL: { type: 'Object' },
+  },
+  _FileReference: {
+    class: { type: 'String' },
+    reference: { type: 'String' },
+  },
+  _FileToken: {
+    file: { type: 'File' },
+    fileObject: { type: 'Pointer', targetClass: '_File' },
+    token: { type: 'String' },
+    expiry: { type: 'Date' },
+    user: { type: 'Pointer', targetClass: '_User' },
+    master: { type: 'Boolean' },
   },
   _Product: {
     productIdentifier: { type: 'String' },
@@ -168,6 +181,8 @@ const systemClasses = Object.freeze([
   '_Role',
   '_Session',
   '_File',
+  '_FileReference',
+  '_FileToken',
   '_Product',
   '_PushStatus',
   '_JobStatus',
@@ -186,6 +201,8 @@ const volatileClasses = Object.freeze([
   '_Audience',
   '_Idempotency',
   '_File',
+  '_FileReference',
+  '_FileToken',
 ]);
 
 // Anything that start with role

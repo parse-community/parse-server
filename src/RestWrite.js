@@ -1274,7 +1274,7 @@ RestWrite.prototype.expandFilesForExistingObjects = async function () {
       this.auth,
       this.className
     );
-  } else if (this.className !== '_File') {
+  } else {
     await this.config.filesController.updateReferences(
       this.data,
       this.originalData,

@@ -6,7 +6,6 @@ import path from 'path';
 import mime from 'mime';
 import { randomString } from '../cryptoUtils';
 import { Parse } from 'parse/node';
-import { getAuthForSessionToken } from '../Auth';
 
 const legacyFilesRegex = new RegExp(
   '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*'
@@ -44,45 +43,6 @@ export class FilesController extends AdaptableController {
   deleteFile(config, filename) {
     return this.adapter.deleteFile(filename);
   }
-  async canViewFile(config, fileObject, user) {
-    const acl = new Parse.ACL(fileObject.ACL);
-    if (!acl || acl.getPublicReadAccess()) {
-      return true;
-    }
-    if (!user) {
-      return false;
-    }
-    if (acl.getReadAccess(user.id)) {
-      return true;
-    }
-    const auth = getAuthForSessionToken({
-      config,
-      sessionToken: user.getSessionToken(),
-    });
-
-    // Check if the user has any roles that match the ACL
-    return Promise.resolve()
-      .then(async () => {
-        // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith('role:'));
-        if (!acl_has_roles) {
-          return false;
-        }
-
-        const roleNames = await auth.getUserRoles();
-        // Finally, see if any of the user's roles allow them read access
-        for (const role of roleNames) {
-          // We use getReadAccess as `role` is in the form `role:roleName`
-          if (acl.getReadAccess(role)) {
-            return true;
-          }
-        }
-        return false;
-      })
-      .catch(() => {
-        return false;
-      });
-  }
   getMetadata(filename) {
     if (typeof this.adapter.getMetadata === 'function') {
       return this.adapter.getMetadata(filename);
@@ -90,6 +50,9 @@ export class FilesController extends AdaptableController {
     return Promise.resolve({});
   }
   async updateReferences(data, originalData, className) {
+    if (className === '_File' || className === '_FileToken') {
+      return;
+    }
     const referencesToAdd = [];
     const referencesToRemove = [];
     const searchForSubfiles = (keyData, keyOriginalData) => {
@@ -129,69 +92,114 @@ export class FilesController extends AdaptableController {
     const filesToFind = allFiles.map(val => new Parse.File(val).toJSON());
     const fileQuery = new Parse.Query('_File');
     fileQuery.containedIn('file', filesToFind);
-    const fileData = await fileQuery.find({ useMasterKey: true });
+
+    const refFileQuery = new Parse.Query('_FileReference');
+    refFileQuery.equalTo('reference', data.objectId);
+    refFileQuery.equalTo('class', className);
+
+    const promises = await Promise.all([
+      fileQuery.find({ useMasterKey: true }),
+      refFileQuery.first({ useMasterKey: true }),
+    ]);
+    const fileData = promises[0];
+    let fileReference = promises[1];
+    if (!fileReference) {
+      fileReference = new Parse.Object('_FileReference');
+      fileReference.set('reference', data.objectId);
+      fileReference.set('class', className);
+      await fileReference.save(null, { useMasterKey: true });
+    }
     const filesToSave = [];
     for (const fileObject of fileData) {
       const { _name } = fileObject.get('file');
+      const relation = fileObject.get('references');
+
       if (referencesToAdd.includes(_name)) {
-        fileObject.addUnique('references', {
-          objectId: data.objectId,
-          className,
-        });
+        relation.add(fileReference);
       } else {
-        fileObject.remove('references', { objectId: data.objectId, className });
+        relation.remove(fileReference);
       }
       filesToSave.push(fileObject);
     }
     await Parse.Object.saveAll(filesToSave, { useMasterKey: true });
   }
-  async getAuthForFile(config, file, auth, object, className) {
+  async getAuthForFile(file, auth, object, className) {
     if (className === '_File') {
       return;
     }
-    const [fileObject] = await config.database.find('_File', {
-      file,
-    });
+    const fileQuery = new Parse.Query('_File');
+    fileQuery.equalTo('file', file);
+    const getFileData = {};
+    if (auth && auth.user && auth.user.getSessionToken()) {
+      getFileData.sessionToken = auth.user.getSessionToken();
+    }
+    if (auth && auth.master) {
+      getFileData.useMasterKey = true;
+    }
+    let fileObject;
+    try {
+      fileObject = await fileQuery.first(getFileData);
+    } catch (e) {
+      console.log(e);
+      return;
+    }
     if (!fileObject) {
       return;
     }
-    let toSave = false;
-    const tokens = fileObject.tokens || [];
-    const allowed = await this.canViewFile(config, fileObject, auth.user);
-    if (allowed) {
-      const url = file.url.split('?');
-      let appendToken = '';
-      if (url.length > 1) {
-        appendToken = `${url[1]}&`;
+    const toSave = [];
+    const url = file.url.split('?');
+    let appendToken = '';
+    if (url.length > 1) {
+      appendToken = `${url[1]}&`;
+    }
+    const token = randomString(25);
+    appendToken += `token=${token}`;
+    file.url = `${url[0]}?${appendToken}`;
+    const expiry = new Date(new Date().getTime() + 30 * 60000);
+
+    const fileToken = new Parse.Object('_FileToken');
+    fileToken.set('fileObject', fileObject);
+    fileToken.set('file', file);
+    fileToken.set('token', token);
+    fileToken.set('expiry', expiry);
+    if (auth && auth.user) {
+      fileToken.set('user', auth.user);
+    }
+    if (auth && auth.master) {
+      fileToken.set('master', true);
+    }
+    toSave.push(fileToken);
+
+    const relation = fileObject.relation('references');
+    const refQuery = relation.query();
+    refQuery.equalTo('reference', object.objectId);
+    refQuery.equalTo('class', className);
+
+    const refFileQuery = new Parse.Query('_FileReference');
+    refFileQuery.equalTo('reference', object.objectId);
+    refFileQuery.equalTo('class', className);
+
+    const promises = await Promise.all([
+      refQuery.first({ useMasterKey: true }),
+      refFileQuery.first({ useMasterKey: true }),
+    ]);
+    const isAdded = promises[0];
+    let fileReference = promises[1];
+    if (!isAdded) {
+      if (!fileReference) {
+        fileReference = new Parse.Object('_FileReference');
+        fileReference.set('reference', object.objectId);
+        fileReference.set('class', className);
+        await fileReference.save(null, { useMasterKey: true });
       }
-      const token = randomString(25);
-      appendToken += `token=${token}`;
-      file.url = `${url[0]}?${appendToken}`;
-      const expiry = new Date(new Date().getTime() + 30 * 60000);
-      tokens.push({
-        token,
-        expiry,
-        user: auth.user,
-      });
-      toSave = true;
+      relation.add(fileReference);
+      toSave.push(fileObject);
     }
-    const references = fileObject.references || [];
-    if (!references.includes({ objectId: object.objectId, className })) {
-      references.push({ objectId: object.objectId, className });
-      toSave = true;
+
+    if (toSave.length == 0) {
+      return;
     }
-    for (var i = tokens.length - 1; i >= 0; i--) {
-      const token = tokens[i];
-      const expiry = token.expiry;
-      if (!expiry || expiry < new Date()) {
-        tokens.splice(i, 1);
-        toSave = true;
-      }
-    }
-    if (toSave) {
-      fileObject.tokens = tokens;
-      await this.config.database.update('_File', { file }, fileObject);
-    }
+    await Parse.Object.saveAll(toSave, { useMasterKey: true });
   }
   /**
    * Find file references in REST-format object and adds the url key
@@ -214,7 +222,7 @@ export class FilesController extends AdaptableController {
       const fileObject = object[key];
       if (fileObject && fileObject['__type'] === 'File') {
         if (fileObject['url']) {
-          await this.getAuthForFile(config, fileObject, auth, object, className);
+          await this.getAuthForFile(fileObject, auth, object, className);
           continue;
         }
         const filename = fileObject['name'];
@@ -234,7 +242,7 @@ export class FilesController extends AdaptableController {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
           }
         }
-        await this.getAuthForFile(config, fileObject, auth, object, className);
+        await this.getAuthForFile(fileObject, auth, object, className);
       }
     }
   }

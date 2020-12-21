@@ -250,7 +250,8 @@ const classesWithMasterOnlyAccess = [
   '_GlobalConfig',
   '_JobSchedule',
   '_Idempotency',
-  '_File',
+  '_FileToken',
+  '_FileReference',
 ];
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
