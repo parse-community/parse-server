@@ -94,7 +94,7 @@ function checkServerConfig(req) {
   }
   let https = false;
   try {
-    const serverURL = url.parse(options.serverURL);
+    const serverURL = url.parse(options.publicServerUrl || options.serverURL);
     https = serverURL.protocol === 'https:';
   } catch (e) {
     /* */

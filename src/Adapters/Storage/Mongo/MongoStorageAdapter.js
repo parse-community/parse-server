@@ -191,6 +191,9 @@ export class MongoStorageAdapter implements StorageAdapter {
   async getSecurityLogs(req: any) {
     const options = req.config || req;
     let databaseURI = options.databaseURI;
+    if (options.databaseAdapter && options.databaseAdapter._uri) {
+      databaseURI = options.databaseAdapter._uri;
+    }
     const warnings = [];
     if (databaseURI.includes('@')) {
       databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
@@ -207,12 +210,12 @@ export class MongoStorageAdapter implements StorageAdapter {
     try {
       const parsedURI = url.parse(databaseAdmin);
       parsedURI.port = '27017';
-      databaseAdmin = parsedURI.toString();
+      databaseAdmin = url.format(parsedURI);
     } catch (e) {
       /* */
     }
     try {
-      await MongoClient.connect(databaseAdmin, { useNewUrlParser: true });
+      await MongoClient.connect(databaseAdmin.toString(), { useNewUrlParser: true });
       warnings.push({
         title: `Unrestricted access to port 27017`,
         message:
@@ -231,7 +234,6 @@ export class MongoStorageAdapter implements StorageAdapter {
     } catch (e) {
       /* */
     }
-
     return warnings;
   }
 

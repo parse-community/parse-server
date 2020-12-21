@@ -79,8 +79,11 @@ class ParseServer {
     Promise.all([dbInitPromise, hooksLoadPromise])
       .then(() => {
         if (serverStartComplete) {
-          serverStartComplete();
+          return serverStartComplete();
         }
+        return Promise.resolve();
+      })
+      .then(() => {
         if ((options.securityChecks || {}).enableLogOutput) {
           this.getSecurityChecks();
         }
@@ -117,7 +120,7 @@ class ParseServer {
     const config = Config.get(this.config.appId);
     const response = await securityChecks(config);
     const logger = logging.getLogger();
-    const warnings = response.response;
+    const warnings = response.response || {};
     const clp = warnings.CLP;
     const total = warnings.Total;
     if (total == 0) {
