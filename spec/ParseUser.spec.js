@@ -1320,7 +1320,7 @@ describe('Parse.User testing', () => {
       .then(user => {
         const fileAgain = user.get('file');
         expect(fileAgain.name()).toMatch(/yolo.txt$/);
-        expect(fileAgain.url()).toMatch(/yolo.txt$/);
+        expect(fileAgain.url()).toMatch(/yolo.txt/);
       })
       .then(() => {
         done();
