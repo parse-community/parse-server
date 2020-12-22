@@ -60,6 +60,7 @@ describe('DefinedSchemas', () => {
 
   describe('ClassLevelPermissions', () => {
     xit('should save CLP');
+    xit('should force disabled addField');
   });
 
   xit('should disable class endpoint when schemas provided to avoid dual source of truth');

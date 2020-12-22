@@ -1,8 +1,42 @@
 import Parse from 'parse/node';
+import { internalCreateSchema, internalUpdateSchema } from './Routers/SchemasRouter';
 
 export class DefinedSchemas {
-  constructor(localSchemas) {
+  constructor(localSchemas, config) {
+    this.config = config;
     this.localSchemas = localSchemas;
+  }
+
+  // Simulate save like the SDK
+  // We cannot use SDK since routes are disabled
+  async saveSchemaToDB(schema) {
+    const payload = {
+      className: schema.className,
+      fields: schema._fields,
+      indexes: schema._indexes,
+      classLevelPermissions: schema._clp,
+    };
+    await internalCreateSchema(schema.className, payload, this.config);
+    this.resetSchemaOps(schema);
+  }
+
+  async resetSchemaOps(schema) {
+    // Reset ops like SDK
+    schema._fields = {};
+    schema._indexes = {};
+  }
+
+  // Simulate update like the SDK
+  // We cannot use SDK since routes are disabled
+  async updateSchemaToDB(schema) {
+    const payload = {
+      className: schema.className,
+      fields: schema._fields,
+      indexes: schema._indexes,
+      classLevelPermissions: schema._clp,
+    };
+    await internalUpdateSchema(schema.className, payload, this.config);
+    this.resetSchemaOps(schema);
   }
 
   async execute() {
@@ -60,8 +94,9 @@ export class DefinedSchemas {
       );
     }
 
-    if (localSchema.classLevelPermissions) newLocalSchema.setCLP(localSchema.classLevelPermissions);
-    return newLocalSchema.save();
+    this.handleCLP(localSchema, newLocalSchema);
+
+    return this.saveSchemaToDB(newLocalSchema);
   }
 
   async updateSchema(localSchema, cloudSchema) {
@@ -101,11 +136,6 @@ export class DefinedSchemas {
         ) {
           fieldsToRecreate.push(fieldName);
           fieldsToDelete.push(fieldName);
-          /*  newLocalSchema.deleteField(fieldName);
-          await newLocalSchema.update();
-
-          const { type, ...others } = localField;
-          this.handleFields(newLocalSchema, fieldName, type, others); */
           return;
         }
 
@@ -120,7 +150,7 @@ export class DefinedSchemas {
     });
 
     // Delete fields from the schema then apply changes
-    await newLocalSchema.update();
+    await this.updateSchemaToDB(newLocalSchema);
 
     fieldsToRecreate.forEach(fieldName => {
       const { type, ...others } = localSchema.fields[fieldName];
@@ -160,11 +190,18 @@ export class DefinedSchemas {
       }
     });
 
-    if (localSchema.classLevelPermissions) newLocalSchema.setCLP(localSchema.classLevelPermissions);
+    this.handleCLP(localSchema, newLocalSchema);
     if (indexesToAdd.length) {
       indexesToAdd.forEach(o => newLocalSchema.addIndex(o.indexName, o.index));
     }
-    await newLocalSchema.update();
+    await this.updateSchemaToDB(newLocalSchema);
+  }
+
+  handleCLP(localSchema, newLocalSchema) {
+    const clp = localSchema.classLevelPermissions || {};
+    // To avoid inconsistency we need to remove all rights on addField
+    clp.addField = {};
+    newLocalSchema.setCLP(clp);
   }
 
   isDefaultSchema(className) {
