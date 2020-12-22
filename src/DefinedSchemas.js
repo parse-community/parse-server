@@ -1,9 +1,11 @@
 import Parse from 'parse/node';
+import logger from './logger';
+import Config from './Config';
 import { internalCreateSchema, internalUpdateSchema } from './Routers/SchemasRouter';
 
 export class DefinedSchemas {
   constructor(localSchemas, config) {
-    this.config = config;
+    this.config = Config.get(config.appId);
     this.localSchemas = localSchemas;
   }
 
@@ -56,6 +58,8 @@ export class DefinedSchemas {
       await this.createDeleteSession();
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
     } catch (e) {
+      console.log(e);
+      logger.error(e);
       if (process.env.NODE_ENV === 'production') process.exit(1);
     }
   }
@@ -79,14 +83,15 @@ export class DefinedSchemas {
 
   async saveSchema(localSchema) {
     const newLocalSchema = new Parse.Schema(localSchema.className);
-    // Handle fields
-    Object.keys(localSchema.fields)
-      .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
-      .forEach(fieldName => {
-        const { type, ...others } = localSchema.fields[fieldName];
-        this.handleFields(newLocalSchema, fieldName, type, others);
-      });
-
+    if (localSchema.fields) {
+      // Handle fields
+      Object.keys(localSchema.fields)
+        .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
+        .forEach(fieldName => {
+          const { type, ...others } = localSchema.fields[fieldName];
+          this.handleFields(newLocalSchema, fieldName, type, others);
+        });
+    }
     // Handle indexes
     if (localSchema.indexes) {
       Object.keys(localSchema.indexes).forEach(indexName =>
@@ -104,13 +109,15 @@ export class DefinedSchemas {
 
     // Handle fields
     // Check addition
-    Object.keys(localSchema.fields)
-      .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
-      .forEach(fieldName => {
-        const { type, ...others } = localSchema.fields[fieldName];
-        if (!cloudSchema.fields[fieldName])
-          this.handleFields(newLocalSchema, fieldName, type, others);
-      });
+    if (localSchema.fields) {
+      Object.keys(localSchema.fields)
+        .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
+        .forEach(fieldName => {
+          const { type, ...others } = localSchema.fields[fieldName];
+          if (!cloudSchema.fields[fieldName])
+            this.handleFields(newLocalSchema, fieldName, type, others);
+        });
+    }
 
     const fieldsToDelete = [];
     const fieldsToRecreate = [];
@@ -121,7 +128,7 @@ export class DefinedSchemas {
       .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
       .forEach(async fieldName => {
         const field = cloudSchema.fields[fieldName];
-        if (!localSchema.fields[fieldName]) {
+        if (!localSchema.fields || !localSchema.fields[fieldName]) {
           fieldsToDelete.push(fieldName);
           return;
         }
@@ -156,7 +163,6 @@ export class DefinedSchemas {
       const { type, ...others } = localSchema.fields[fieldName];
       this.handleFields(newLocalSchema, fieldName, type, others);
     });
-
     fieldsWithChangedParams.forEach(fieldName => {
       const { type, ...others } = localSchema.fields[fieldName];
       this.handleFields(newLocalSchema, fieldName, type, others);

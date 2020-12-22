@@ -839,7 +839,11 @@ export default class SchemaController {
         const existingFields = schema.fields;
         Object.keys(submittedFields).forEach(name => {
           const field = submittedFields[name];
-          if (existingFields[name] && field.__op !== 'Delete') {
+          if (
+            existingFields[name] &&
+            existingFields[name].type !== field.type &&
+            field.__op !== 'Delete'
+          ) {
             throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
           }
           if (!existingFields[name] && field.__op === 'Delete') {
