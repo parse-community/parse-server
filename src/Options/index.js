@@ -221,8 +221,47 @@ export interface ParseServerOptions {
   playgroundPath: ?string;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
+  /* Callback when server has started and before running schemas migration operations if schemas key provided */
+  beforeSchemasMigration: ?() => void | Promise<void>;
+  /* Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema */
+  schemas: ?(JSONSchema[]);
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+}
+
+export interface FieldType {
+  type:
+    | 'String'
+    | 'Boolean'
+    | 'File'
+    | 'Number'
+    | 'Relation'
+    | 'Pointer'
+    | 'Date'
+    | 'GeoPoint'
+    | 'Polygon'
+    | 'Array'
+    | 'Object'
+    | string;
+  required?: boolean;
+  defaultValue?: mixed;
+  targetClass?: string;
+}
+
+export interface JSONSchema {
+  className: '_User' | '_Role' | string;
+  fields?: { [key: string]: FieldType };
+  indexes?: any;
+  classLevelPermissions?: {
+    find?: any,
+    count?: any,
+    get?: any,
+    update?: any,
+    create?: any,
+    delete?: any,
+    addField?: any,
+    protectedFields?: any,
+  };
 }
 
 export interface CustomPagesOptions {

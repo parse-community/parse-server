@@ -40,6 +40,7 @@ import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+import { DefinedSchemas } from './DefinedSchemas';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -60,6 +61,8 @@ class ParseServer {
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
       serverStartComplete,
+      beforeSchemasMigration,
+      schemas,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -76,7 +79,13 @@ class ParseServer {
 
     // Note: Tests will start to fail if any validation happens after this is called.
     Promise.all([dbInitPromise, hooksLoadPromise])
-      .then(() => {
+      .then(async () => {
+        if (beforeSchemasMigration) {
+          await Promise.resolve(beforeSchemasMigration());
+        }
+        if (schemas) {
+          await new DefinedSchemas(schemas).execute();
+        }
         if (serverStartComplete) {
           serverStartComplete();
         }

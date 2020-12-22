@@ -9,6 +9,7 @@
  * @property {String} appId Your Parse Application ID
  * @property {String} appName Sets the app name
  * @property {Any} auth Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
+ * @property {Function} beforeSchemasMigration Callback when server has started and before running schemas migration operations if schemas key provided
  * @property {Adapter<CacheAdapter>} cacheAdapter Adapter module for the cache
  * @property {Number} cacheMaxSize Sets the maximum size for the in memory cache, defaults to 10000
  * @property {Number} cacheTTL Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
@@ -67,6 +68,7 @@
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
  * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
+ * @property {Generic[]} schemas Rest representation on Parse.Schema https://docs.parseplatform.org/rest/guide/#adding-a-schema
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
@@ -77,6 +79,14 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Enable (or disable) user email validation, defaults to false
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ */
+
+/**
+ * @interface FieldType
+ */
+
+/**
+ * @interface JSONSchema
  */
 
 /**
