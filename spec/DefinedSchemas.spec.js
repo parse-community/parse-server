@@ -366,7 +366,7 @@ describe('DefinedSchemas', () => {
   });
 
   describe('ClassLevelPermissions', () => {
-    fit('should use default CLP', async () => {
+    it('should use default CLP', async () => {
       const server = await reconfigureServer();
       const schemas = [{ className: 'Test' }];
       await new DefinedSchemas(schemas, server.config).execute();
