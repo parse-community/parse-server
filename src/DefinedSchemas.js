@@ -2,6 +2,7 @@ import Parse from 'parse/node';
 import logger from './logger';
 import Config from './Config';
 import { internalCreateSchema, internalUpdateSchema } from './Routers/SchemasRouter';
+import { defaultColumns } from './Controllers/SchemaController';
 
 export class DefinedSchemas {
   constructor(localSchemas, config) {
@@ -50,18 +51,31 @@ export class DefinedSchemas {
       const timeout = setTimeout(() => {
         if (process.env.NODE_ENV === 'production') process.exit(1);
       }, 20000);
-      this.allCloudSchema = (await Parse.Schema.all()).filter(
-        s => !this.isDefaultSchema(s.className)
-      );
+      this.allCloudSchemas = await Parse.Schema.all();
       clearTimeout(timeout);
       // Hack to force session schema to be created
       await this.createDeleteSession();
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
+      await this.enforceCLPForNonProvidedClass();
     } catch (e) {
       console.log(e);
       logger.error(e);
       if (process.env.NODE_ENV === 'production') process.exit(1);
     }
+  }
+
+  async enforceCLPForNonProvidedClass() {
+    const nonProvidedClasses = this.allCloudSchemas.filter(
+      cloudSchema =>
+        !this.localSchemas.some(localSchema => localSchema.className === cloudSchema.className)
+    );
+    await Promise.all(
+      nonProvidedClasses.map(async schema => {
+        const parseSchema = new Parse.Schema(schema.className);
+        this.handleCLP(schema, parseSchema);
+        await this.updateSchemaToDB(parseSchema);
+      })
+    );
   }
 
   // Create a fake session since Parse do not create the _Session until
@@ -73,7 +87,7 @@ export class DefinedSchemas {
   }
 
   async saveOrUpdate(localSchema) {
-    const cloudSchema = this.allCloudSchema.find(sc => sc.className === localSchema.className);
+    const cloudSchema = this.allCloudSchemas.find(sc => sc.className === localSchema.className);
     if (cloudSchema) {
       await this.updateSchema(localSchema, cloudSchema);
     } else {
@@ -86,7 +100,7 @@ export class DefinedSchemas {
     if (localSchema.fields) {
       // Handle fields
       Object.keys(localSchema.fields)
-        .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
+        .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
         .forEach(fieldName => {
           const { type, ...others } = localSchema.fields[fieldName];
           this.handleFields(newLocalSchema, fieldName, type, others);
@@ -111,7 +125,7 @@ export class DefinedSchemas {
     // Check addition
     if (localSchema.fields) {
       Object.keys(localSchema.fields)
-        .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
+        .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
         .forEach(fieldName => {
           const { type, ...others } = localSchema.fields[fieldName];
           if (!cloudSchema.fields[fieldName])
@@ -125,7 +139,7 @@ export class DefinedSchemas {
 
     // Check deletion
     Object.keys(cloudSchema.fields)
-      .filter(fieldName => !this.isDefaultFields(localSchema.className, fieldName))
+      .filter(fieldName => !this.isProtectedFields(localSchema.className, fieldName))
       .forEach(async fieldName => {
         const field = cloudSchema.fields[fieldName];
         if (!localSchema.fields || !localSchema.fields[fieldName]) {
@@ -196,21 +210,32 @@ export class DefinedSchemas {
       }
     });
 
-    this.handleCLP(localSchema, newLocalSchema);
+    this.handleCLP(localSchema, newLocalSchema, cloudSchema);
     if (indexesToAdd.length) {
       indexesToAdd.forEach(o => newLocalSchema.addIndex(o.indexName, o.index));
     }
     await this.updateSchemaToDB(newLocalSchema);
   }
 
-  handleCLP(localSchema, newLocalSchema) {
+  handleCLP(localSchema, newLocalSchema, cloudSchema) {
+    if (!localSchema.classLevelPermissions && !cloudSchema) {
+      logger.warn(`classLevelPermissions not provided for ${localSchema.className}.`);
+    }
     const clp = localSchema.classLevelPermissions || {};
+    const cloudCLP = (cloudSchema && cloudSchema.classLevelPermissions) || {};
+    // Try to inject default CLPs
+    const CLPKeys = ['find', 'count', 'get', 'create', 'update', 'delete', 'addField'];
+    CLPKeys.forEach(key => {
+      if (!clp[key]) {
+        clp[key] = cloudCLP[key] || { '*': true };
+      }
+    });
     // To avoid inconsistency we need to remove all rights on addField
     clp.addField = {};
     newLocalSchema.setCLP(clp);
   }
 
-  isDefaultSchema(className) {
+  isProtectedSchema(className) {
     return (
       [
         '_Session',
@@ -226,19 +251,11 @@ export class DefinedSchemas {
     );
   }
 
-  isDefaultFields(className, fieldName) {
-    let fields = ['objectId', 'createdAt', 'updatedAt', 'ACL'];
-
-    if (className === '_Role') {
-      fields === [...fields, 'roles', 'users', 'name'];
-    }
-    if (className === '_User') {
-      fields =
-        [...fields, 'emailVerified', 'authData', 'username', 'password', 'email'].indexOf(
-          fieldName
-        ) !== -1;
-    }
-    return fields.indexOf(fieldName) !== -1;
+  isProtectedFields(className, fieldName) {
+    return (
+      !!defaultColumns._Default[fieldName] ||
+      !!(defaultColumns[className] && defaultColumns[className][fieldName])
+    );
   }
 
   convertCloudIndexes(cloudSchemaIndexes) {

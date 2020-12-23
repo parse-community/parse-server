@@ -16,6 +16,7 @@
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
 const Parse = require('parse/node').Parse;
+import _ from 'lodash';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
@@ -1110,7 +1111,15 @@ export default class SchemaController {
           )} but got ${typeToString(type)}`
         );
       }
-      return undefined;
+      // If type options do not change
+      // we can safely return
+      if (_.isEqual(expectedType, type)) {
+        return undefined;
+      } else {
+        // Field options are may be changed
+        // ensure to have an update to date schema field
+        return this._dbAdapter.updateFieldOptions(className, fieldName, type);
+      }
     }
 
     return this._dbAdapter

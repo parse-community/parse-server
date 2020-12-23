@@ -1,35 +1,5 @@
-// eslint-disable-next-line no-unused-vars
 const { DefinedSchemas } = require('../lib/DefinedSchemas');
 const Config = require('../lib/Config');
-
-// eslint-disable-next-line no-unused-vars
-const Toto = {
-  className: 'Toto',
-  fields: {
-    objectId: { type: 'String' },
-    createdAt: {
-      type: 'Date',
-    },
-    updatedAt: {
-      type: 'Date',
-    },
-    ACL: { type: 'ACL' },
-    string: { type: 'String' },
-    number: { type: 'Number' },
-    pointer: { type: 'Pointer', targetClass: 'Pointer' },
-    relation: { type: 'Relation', targetClass: 'Relation' },
-    email: { type: 'String' },
-  },
-  indexes: {
-    objectId: { objectId: 1 },
-    string: { string: 1 },
-    complex: { string: 1, number: 1 },
-  },
-  classLevelPermissions: {
-    addField: {},
-    create: { '*': true, 'role:ARole': false },
-  },
-};
 
 fdescribe('DefinedSchemas', () => {
   beforeEach(async () => {
@@ -45,23 +15,10 @@ fdescribe('DefinedSchemas', () => {
       // await server.config.databaseController.schemaCache.clear();
       let schema = await new Parse.Schema('Test').get();
       const expectedFields = {
-        className: 'Test',
-        fields: {
-          objectId: { type: 'String' },
-          createdAt: { type: 'Date' },
-          updatedAt: { type: 'Date' },
-          ACL: { type: 'ACL' },
-        },
-        classLevelPermissions: {
-          find: {},
-          count: {},
-          get: {},
-          create: {},
-          update: {},
-          delete: {},
-          addField: {},
-          protectedFields: {},
-        },
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        ACL: { type: 'ACL' },
       };
       expect(schema.fields).toEqual(expectedFields);
 
@@ -69,14 +26,30 @@ fdescribe('DefinedSchemas', () => {
       // Will perform update
       await new DefinedSchemas([{ className: 'Test' }], server.config).execute();
       schema = await new Parse.Schema('Test').get();
-      // indexes seems to be created in background so there was not found
-      // on the first request
       expect(schema.fields).toEqual(expectedFields);
     });
-    it('should not change  default fields', async () => {
+    it('should protect default fields', async () => {
       const server = await reconfigureServer();
 
       const schemas = [
+        {
+          className: '_User',
+          fields: {
+            email: 'Object',
+          },
+        },
+        {
+          className: '_Role',
+          fields: {
+            users: 'Object',
+          },
+        },
+        {
+          className: '_Installation',
+          fields: {
+            installationId: 'Object',
+          },
+        },
         {
           className: 'Test',
           fields: {
@@ -95,16 +68,76 @@ fdescribe('DefinedSchemas', () => {
         ACL: { type: 'ACL' },
       };
 
+      const expectedUserFields = {
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        ACL: { type: 'ACL' },
+        username: { type: 'String' },
+        password: { type: 'String' },
+        email: { type: 'String' },
+        emailVerified: { type: 'Boolean' },
+        authData: { type: 'Object' },
+      };
+
+      const expectedRoleFields = {
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        ACL: { type: 'ACL' },
+        name: { type: 'String' },
+        users: { type: 'Relation', targetClass: '_User' },
+        roles: { type: 'Relation', targetClass: '_Role' },
+      };
+
+      const expectedInstallationFields = {
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        ACL: { type: 'ACL' },
+        installationId: { type: 'String' },
+        deviceToken: { type: 'String' },
+        channels: { type: 'Array' },
+        deviceType: { type: 'String' },
+        pushType: { type: 'String' },
+        GCMSenderId: { type: 'String' },
+        timeZone: { type: 'String' },
+        localeIdentifier: { type: 'String' },
+        badge: { type: 'Number' },
+        appVersion: { type: 'String' },
+        appName: { type: 'String' },
+        appIdentifier: { type: 'String' },
+        parseVersion: { type: 'String' },
+      };
+
       // Perform create
       await new DefinedSchemas(schemas, server.config).execute();
       let schema = await new Parse.Schema('Test').get();
       expect(schema.fields).toEqual(expectedFields);
+
+      let userSchema = await new Parse.Schema('_User').get();
+      expect(userSchema.fields).toEqual(expectedUserFields);
+
+      let roleSchema = await new Parse.Schema('_Role').get();
+      expect(roleSchema.fields).toEqual(expectedRoleFields);
+
+      let installationSchema = await new Parse.Schema('_Installation').get();
+      expect(installationSchema.fields).toEqual(expectedInstallationFields);
 
       await server.config.databaseController.schemaCache.clear();
       // Perform update
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
       expect(schema.fields).toEqual(expectedFields);
+
+      userSchema = await new Parse.Schema('_User').get();
+      expect(userSchema.fields).toEqual(expectedUserFields);
+
+      roleSchema = await new Parse.Schema('_Role').get();
+      expect(roleSchema.fields).toEqual(expectedRoleFields);
+
+      installationSchema = await new Parse.Schema('_Installation').get();
+      expect(installationSchema.fields).toEqual(expectedInstallationFields);
     });
     it('should create new fields', async () => {
       const server = await reconfigureServer();
@@ -216,12 +249,6 @@ fdescribe('DefinedSchemas', () => {
 
       await object.fetch({ useMasterKey: true });
       expect(object.get('aField')).toEqual('Hello');
-    });
-    describe('User', () => {
-      xit('should protect default fields');
-    });
-    describe('Role', () => {
-      xit('should protect default fields');
     });
   });
 
