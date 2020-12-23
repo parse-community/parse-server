@@ -16,6 +16,7 @@
 // TODO: hide all schema logic inside the database adapter.
 // @flow-disable-next
 const Parse = require('parse/node').Parse;
+// @flow-disable-next
 import _ from 'lodash';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
 import DatabaseController from './DatabaseController';
