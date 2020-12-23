@@ -108,9 +108,11 @@ export class DefinedSchemas {
     }
     // Handle indexes
     if (localSchema.indexes) {
-      Object.keys(localSchema.indexes).forEach(indexName =>
-        newLocalSchema.addIndex(indexName, localSchema.indexes[indexName])
-      );
+      Object.keys(localSchema.indexes).forEach(indexName => {
+        if (!this.isProtectedIndex(localSchema.className, indexName)) {
+          newLocalSchema.addIndex(indexName, localSchema.indexes[indexName]);
+        }
+      });
     }
 
     this.handleCLP(localSchema, newLocalSchema);
@@ -184,11 +186,12 @@ export class DefinedSchemas {
 
     // Handle Indexes
     // Check addition
-    const cloudIndexes = this.convertCloudIndexes(cloudSchema.indexes);
-
     if (localSchema.indexes) {
       Object.keys(localSchema.indexes).forEach(indexName => {
-        if (!cloudIndexes[indexName] && !this.isNativeIndex(localSchema.className, indexName))
+        if (
+          (!cloudSchema.indexes || !cloudSchema.indexes[indexName]) &&
+          !this.isProtectedIndex(localSchema.className, indexName)
+        )
           newLocalSchema.addIndex(indexName, localSchema.indexes[indexName]);
       });
     }
@@ -196,25 +199,32 @@ export class DefinedSchemas {
     const indexesToAdd = [];
 
     // Check deletion
-    Object.keys(cloudIndexes).forEach(async indexName => {
-      if (!this.isNativeIndex(localSchema.className, indexName)) {
-        if (!localSchema.indexes[indexName]) {
-          newLocalSchema.deleteIndex(indexName);
-        } else if (!this.paramsAreEquals(localSchema.indexes[indexName], cloudIndexes[indexName])) {
-          newLocalSchema.deleteIndex(indexName);
-          indexesToAdd.push({
-            indexName,
-            index: localSchema.indexes[indexName],
-          });
+    if (cloudSchema.indexes) {
+      Object.keys(cloudSchema.indexes).forEach(async indexName => {
+        if (!this.isProtectedIndex(localSchema.className, indexName)) {
+          if (!localSchema.indexes[indexName]) {
+            newLocalSchema.deleteIndex(indexName);
+          } else if (
+            !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
+          ) {
+            newLocalSchema.deleteIndex(indexName);
+            indexesToAdd.push({
+              indexName,
+              index: localSchema.indexes[indexName],
+            });
+          }
         }
-      }
-    });
+      });
+    }
 
     this.handleCLP(localSchema, newLocalSchema, cloudSchema);
+    // Apply changes
+    await this.updateSchemaToDB(newLocalSchema);
+    // Apply new/changed indexes
     if (indexesToAdd.length) {
       indexesToAdd.forEach(o => newLocalSchema.addIndex(o.indexName, o.index));
+      await this.updateSchemaToDB(newLocalSchema);
     }
-    await this.updateSchemaToDB(newLocalSchema);
   }
 
   handleCLP(localSchema, newLocalSchema, cloudSchema) {
@@ -235,22 +245,6 @@ export class DefinedSchemas {
     newLocalSchema.setCLP(clp);
   }
 
-  isProtectedSchema(className) {
-    return (
-      [
-        '_Session',
-        '_PushStatus',
-        '_Installation',
-        '_JobStatus',
-        '_PushStatus',
-        '_Hooks',
-        '_GlobalConfig',
-        '_JobSchedule',
-        '_Idempotency',
-      ].indexOf(className) !== -1
-    );
-  }
-
   isProtectedFields(className, fieldName) {
     return (
       !!defaultColumns._Default[fieldName] ||
@@ -258,38 +252,13 @@ export class DefinedSchemas {
     );
   }
 
-  convertCloudIndexes(cloudSchemaIndexes) {
-    if (!cloudSchemaIndexes) return {};
-    // eslint-disable-next-line no-unused-vars
-    const { _id_, ...others } = cloudSchemaIndexes;
-
-    return {
-      objectId: { objectId: 1 },
-      ...others,
-    };
-  }
-
-  isNativeIndex(className, indexName) {
+  isProtectedIndex(className, indexName) {
+    let indexes = ['_id_'];
     if (className === '_User') {
-      switch (indexName) {
-        case 'case_insensitive_username':
-          return true;
-        case 'case_insensitive_email':
-          return true;
-        case 'username_1':
-          return true;
-        case 'objectId':
-          return true;
-        case 'email_1':
-          return true;
-        default:
-          break;
-      }
+      indexes = [...indexes, 'case_insensitive_username', 'case_insensitive_email'];
     }
-    if (className === '_Role') {
-      return true;
-    }
-    return false;
+
+    return indexes.indexOf(indexName) !== -1;
   }
 
   paramsAreEquals(indexA, indexB) {

@@ -1,9 +1,22 @@
 const { DefinedSchemas } = require('../lib/DefinedSchemas');
 const Config = require('../lib/Config');
 
-fdescribe('DefinedSchemas', () => {
+const cleanUpIndexes = schema => {
+  if (schema.indexes) {
+    delete schema.indexes._id_;
+    if (!Object.keys(schema.indexes).length) {
+      delete schema.indexes;
+    }
+  }
+};
+
+describe('DefinedSchemas', () => {
+  let config;
   beforeEach(async () => {
-    const config = Config.get('test');
+    config = Config.get('test');
+    await config.database.adapter.deleteAllClasses();
+  });
+  afterAll(async () => {
     await config.database.adapter.deleteAllClasses();
   });
 
@@ -253,14 +266,102 @@ fdescribe('DefinedSchemas', () => {
   });
 
   describe('Indexes', () => {
-    xit('should create new indexes');
-    xit('should re create changed indexes');
-    xit('should delete removed indexes');
-    describe('User', () => {
-      xit('should protect default indexes');
+    it('should create new indexes', async () => {
+      const server = await reconfigureServer();
+
+      const indexes = { complex: { createdAt: 1, updatedAt: 1 } };
+
+      const schemas = [{ className: 'Test', indexes }];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
+
+      await new DefinedSchemas(schemas, server.config).execute();
+      schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
     });
-    describe('Role', () => {
-      xit('should protect default indexes');
+    it('should re create changed indexes', async () => {
+      const server = await reconfigureServer();
+
+      let indexes = { complex: { createdAt: 1, updatedAt: 1 } };
+
+      let schemas = [{ className: 'Test', indexes }];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      indexes = { complex: { createdAt: 1 } };
+      schemas = [{ className: 'Test', indexes }];
+
+      // Change indexes
+      await new DefinedSchemas(schemas, server.config).execute();
+      let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
+
+      // Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toEqual(indexes);
+    });
+    it('should delete removed indexes', async () => {
+      const server = await reconfigureServer();
+
+      let indexes = { complex: { createdAt: 1, updatedAt: 1 } };
+
+      let schemas = [{ className: 'Test', indexes }];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      indexes = {};
+      schemas = [{ className: 'Test', indexes }];
+      // Change indexes
+      await new DefinedSchemas(schemas, server.config).execute();
+      let schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toBeUndefined();
+
+      // Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      schema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(schema);
+      expect(schema.indexes).toBeUndefined();
+    });
+    it('should keep protected indexes', async () => {
+      const server = await reconfigureServer();
+
+      const schemas = [
+        {
+          className: '_User',
+          indexes: {
+            case_insensitive_username: { password: true },
+            case_insensitive_email: { password: true },
+          },
+        },
+        { className: 'Test' },
+      ];
+      // Create
+      await new DefinedSchemas(schemas, server.config).execute();
+      let userSchema = await new Parse.Schema('_User').get();
+      let testSchema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(userSchema);
+      cleanUpIndexes(testSchema);
+      // If indexes are undefined it means that their
+      // were not touched
+      expect(testSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toBeUndefined();
+
+      // Update
+      await new DefinedSchemas(schemas, server.config).execute();
+      userSchema = await new Parse.Schema('_User').get();
+      testSchema = await new Parse.Schema('Test').get();
+      cleanUpIndexes(userSchema);
+      cleanUpIndexes(testSchema);
+      // If indexes are undefined it means that their
+      // were not touched
+      expect(testSchema.indexes).toBeUndefined();
+      expect(userSchema.indexes).toBeUndefined();
     });
   });
 

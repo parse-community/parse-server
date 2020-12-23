@@ -763,7 +763,7 @@ describe('schemas', () => {
     });
   });
 
-  it('refuses to put to existing fields, even if it would not be a change', done => {
+  it('refuses to put to existing fields with different type, even if it would not be a change', done => {
     const obj = hasAllPODobject();
     obj.save().then(() => {
       request({
@@ -773,7 +773,7 @@ describe('schemas', () => {
         json: true,
         body: {
           fields: {
-            aString: { type: 'String' },
+            aString: { type: 'Number' },
           },
         },
       }).then(fail, response => {

@@ -1067,7 +1067,12 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(className: string, fieldName: string, type: string | SchemaField) {
+  enforceFieldExists(
+    className: string,
+    fieldName: string,
+    type: string | SchemaField,
+    isValidation?: boolean
+  ) {
     if (fieldName.indexOf('.') > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split('.')[0];
@@ -1113,7 +1118,7 @@ export default class SchemaController {
       }
       // If type options do not change
       // we can safely return
-      if (_.isEqual(expectedType, type)) {
+      if (isValidation || _.isEqual(expectedType, type)) {
         return undefined;
       } else {
         // Field options are may be changed
@@ -1252,7 +1257,7 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promises.push(schema.enforceFieldExists(className, fieldName, expected));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected, true));
     }
     const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
