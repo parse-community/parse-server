@@ -51,10 +51,10 @@ export class DefinedSchemas {
       const timeout = setTimeout(() => {
         if (process.env.NODE_ENV === 'production') process.exit(1);
       }, 20000);
-      this.allCloudSchemas = await Parse.Schema.all();
-      clearTimeout(timeout);
       // Hack to force session schema to be created
       await this.createDeleteSession();
+      this.allCloudSchemas = await Parse.Schema.all();
+      clearTimeout(timeout);
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {

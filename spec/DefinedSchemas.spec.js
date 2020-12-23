@@ -366,8 +366,51 @@ describe('DefinedSchemas', () => {
   });
 
   describe('ClassLevelPermissions', () => {
-    xit('should save CLP');
-    xit('should force disabled addField');
+    fit('should use default CLP', async () => {
+      const server = await reconfigureServer();
+      const schemas = [{ className: 'Test' }];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      const expectedTestCLP = {
+        find: { '*': true },
+        count: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: {},
+      };
+      let testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+
+      await new DefinedSchemas(schemas, server.config).execute();
+      testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+    });
+    it('should force addField to empty', async () => {
+      const server = await reconfigureServer();
+      const schemas = [{ className: 'Test', classLevelPermissions: { addField: { '*': true } } }];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      const expectedTestCLP = {
+        find: { '*': true },
+        count: { '*': true },
+        get: { '*': true },
+        create: { '*': true },
+        update: { '*': true },
+        delete: { '*': true },
+        addField: {},
+        protectedFields: {},
+      };
+
+      let testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+
+      await new DefinedSchemas(schemas, server.config).execute();
+      testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+    });
   });
 
   xit('should disable class endpoint when schemas provided to avoid dual source of truth');
