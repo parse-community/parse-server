@@ -271,14 +271,14 @@ describe('DefinedSchemas', () => {
 
       const indexes = { complex: { createdAt: 1, updatedAt: 1 } };
 
-      const schemas = [{ className: 'Test', indexes }];
+      const schemas = [{ className: 'Test', fields: { aField: { type: 'String' } }, indexes }];
       await new DefinedSchemas(schemas, server.config).execute();
 
       let schema = await new Parse.Schema('Test').get();
       cleanUpIndexes(schema);
       expect(schema.indexes).toEqual(indexes);
 
-      indexes.complex2 = { createdAt: 1, ACL: 1 };
+      indexes.complex2 = { createdAt: 1, aField: 1 };
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
       cleanUpIndexes(schema);
