@@ -84,7 +84,7 @@ class ParseServer {
           await Promise.resolve(beforeSchemasMigration());
         }
         if (schemas) {
-          await new DefinedSchemas(schemas).execute();
+          await new DefinedSchemas(schemas, this.config).execute();
         }
         if (serverStartComplete) {
           serverStartComplete();

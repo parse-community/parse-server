@@ -186,7 +186,7 @@ describe('DefinedSchemas', () => {
       let schema = await new Parse.Schema('Test').get();
       expect(schema.fields).toEqual(fields);
 
-      await server.config.databaseController.schemaCache.clear();
+      fields.anotherObject = { type: 'Object' };
       // Update
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
@@ -278,6 +278,7 @@ describe('DefinedSchemas', () => {
       cleanUpIndexes(schema);
       expect(schema.indexes).toEqual(indexes);
 
+      indexes.complex2 = { createdAt: 1, ACL: 1 };
       await new DefinedSchemas(schemas, server.config).execute();
       schema = await new Parse.Schema('Test').get();
       cleanUpIndexes(schema);
@@ -388,6 +389,38 @@ describe('DefinedSchemas', () => {
       testSchema = await new Parse.Schema('Test').get();
       expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
     });
+    it('should save CLP', async () => {
+      const server = await reconfigureServer();
+
+      const expectedTestCLP = {
+        find: {},
+        count: { requiresAuthentication: true },
+        get: { 'role:Admin': true },
+        create: { 'role:ARole': true, requiresAuthentication: true },
+        update: { requiresAuthentication: true },
+        delete: { requiresAuthentication: true },
+        addField: {},
+        protectedFields: { '*': ['aField'], 'role:Admin': ['anotherField'] },
+      };
+      const schemas = [
+        {
+          className: 'Test',
+          fields: { aField: { type: 'String' }, anotherField: { type: 'Object' } },
+          classLevelPermissions: expectedTestCLP,
+        },
+      ];
+      await new DefinedSchemas(schemas, server.config).execute();
+
+      let testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+
+      expectedTestCLP.update = {};
+      expectedTestCLP.create = { requiresAuthentication: true };
+
+      await new DefinedSchemas(schemas, server.config).execute();
+      testSchema = await new Parse.Schema('Test').get();
+      expect(testSchema.classLevelPermissions).toEqual(expectedTestCLP);
+    });
     it('should force addField to empty', async () => {
       const server = await reconfigureServer();
       const schemas = [{ className: 'Test', classLevelPermissions: { addField: { '*': true } } }];
@@ -413,7 +446,76 @@ describe('DefinedSchemas', () => {
     });
   });
 
-  xit('should disable class endpoint when schemas provided to avoid dual source of truth');
-  xit('should only enable delete class endpoint since');
-  xit('should run beforeSchemasMigration before execution of DefinedSchemas');
+  it('should not delete automatically classes', async () => {
+    await reconfigureServer({ schemas: [{ className: '_User' }, { className: 'Test' }] });
+
+    await reconfigureServer({ schemas: [{ className: '_User' }] });
+
+    const schema = await new Parse.Schema('Test').get();
+    expect(schema.className).toEqual('Test');
+  });
+
+  it('should disable class PUT/POST endpoint when schemas provided to avoid dual source of truth', async () => {
+    await reconfigureServer({ schemas: [{ className: '_User' }, { className: 'Test' }] });
+    await reconfigureServer({ schemas: [{ className: '_User' }] });
+
+    const schema = await new Parse.Schema('Test').get();
+    expect(schema.className).toEqual('Test');
+
+    const schemas = await Parse.Schema.all();
+    expect(schemas.length).toEqual(4);
+
+    try {
+      await new Parse.Schema('Test').save();
+    } catch (e) {
+      expect(e.message).toContain('cannot perform this operation when schemas options is used.');
+    }
+
+    try {
+      await new Parse.Schema('_User').update();
+    } catch (e) {
+      expect(e.message).toContain('cannot perform this operation when schemas options is used.');
+    }
+  });
+  it('should only enable delete class endpoint since', async () => {
+    await reconfigureServer({ schemas: [{ className: '_User' }, { className: 'Test' }] });
+    await reconfigureServer({ schemas: [{ className: '_User' }] });
+
+    let schemas = await Parse.Schema.all();
+    expect(schemas.length).toEqual(4);
+
+    await new Parse.Schema('_User').delete();
+    schemas = await Parse.Schema.all();
+    expect(schemas.length).toEqual(3);
+  });
+  it('should run beforeSchemasMigration before execution of DefinedSchemas', async () => {
+    let before = false;
+    const server = await reconfigureServer({
+      schemas: [{ className: '_User' }, { className: 'Test' }],
+      beforeSchemasMigration: async () => {
+        expect(before).toEqual(false);
+        before = true;
+      },
+    });
+    before = true;
+    expect(before).toEqual(true);
+    expect(server).toBeDefined();
+  });
+  it('should use logger in case of error', async () => {
+    const server = await reconfigureServer({ schemas: [{ className: '_User' }] });
+
+    const error = new Error('A test error');
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callThrough();
+    spyOn(Parse.Schema, 'all').and.callFake(async () => {
+      throw error;
+    });
+
+    await new DefinedSchemas(
+      [{ className: 'Test', fields: { aField: { type: 'String' } } }],
+      server.config
+    ).execute();
+
+    expect(logger.error).toHaveBeenCalledWith(error);
+  });
 });

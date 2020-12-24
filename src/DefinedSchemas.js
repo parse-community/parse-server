@@ -1,5 +1,5 @@
 import Parse from 'parse/node';
-import logger from './logger';
+import { logger } from './logger';
 import Config from './Config';
 import { internalCreateSchema, internalUpdateSchema } from './Routers/SchemasRouter';
 import { defaultColumns } from './Controllers/SchemaController';
@@ -58,7 +58,6 @@ export class DefinedSchemas {
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {
-      console.log(e);
       logger.error(e);
       if (process.env.NODE_ENV === 'production') process.exit(1);
     }
@@ -202,7 +201,7 @@ export class DefinedSchemas {
     if (cloudSchema.indexes) {
       Object.keys(cloudSchema.indexes).forEach(async indexName => {
         if (!this.isProtectedIndex(localSchema.className, indexName)) {
-          if (!localSchema.indexes[indexName]) {
+          if (!localSchema.indexes || !localSchema.indexes[indexName]) {
             newLocalSchema.deleteIndex(indexName);
           } else if (
             !this.paramsAreEquals(localSchema.indexes[indexName], cloudSchema.indexes[indexName])
@@ -255,7 +254,13 @@ export class DefinedSchemas {
   isProtectedIndex(className, indexName) {
     let indexes = ['_id_'];
     if (className === '_User') {
-      indexes = [...indexes, 'case_insensitive_username', 'case_insensitive_email'];
+      indexes = [
+        ...indexes,
+        'case_insensitive_username',
+        'case_insensitive_email',
+        'username_1',
+        'email_1',
+      ];
     }
 
     return indexes.indexOf(indexName) !== -1;
