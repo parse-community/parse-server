@@ -3167,4 +3167,18 @@ describe('afterLogin hook', () => {
     const query = new Parse.Query(TestObject);
     await query.find({ context: { a: 'a' } });
   });
+  it('can send email via Parse.Cloud', async done => {
+    const emailAdapter = {
+      sendMail: mailData => {
+        expect(mailData).toBeDefined();
+        expect(mailData.to).toBe('test');
+        done();
+      },
+    };
+    await reconfigureServer({
+      emailAdapter: emailAdapter,
+    });
+    const mailData = { to: 'test' };
+    await Parse.Cloud.sendMail(mailData);
+  });
 });
