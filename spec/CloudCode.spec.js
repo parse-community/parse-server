@@ -3181,4 +3181,12 @@ describe('afterLogin hook', () => {
     const mailData = { to: 'test' };
     await Parse.Cloud.sendMail(mailData);
   });
+  it('cannot send email without adapter', async () => {
+    try {
+      await Parse.Cloud.sendMail({});
+      fail('Should have failed to send emails.');
+    } catch (e) {
+      expect(e).toBe('You cannot send mail without an email adapter');
+    }
+  });
 });

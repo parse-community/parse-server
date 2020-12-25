@@ -546,15 +546,11 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
  */
 ParseCloud.sendMail = function (data) {
   const config = Config.get(Parse.applicationId) || {};
-  const emailAdapter = config.emailAdapter;
+  const emailAdapter = config.userController.adapter;
   if (!emailAdapter) {
     throw 'You cannot send mail without an email adapter';
   }
-  const sendMail = emailAdapter.sendMail;
-  if (!sendMail || typeof sendMail !== 'function') {
-    throw 'This adapter does not support sendMail';
-  }
-  return sendMail(data);
+  return emailAdapter.sendMail(data);
 };
 
 /**
