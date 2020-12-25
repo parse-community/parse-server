@@ -530,25 +530,29 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
 };
 
 /**
- * Sends email through your mail adapter
+ * Sends an email through the Parse Server mail adapter.
  *
  * **Available in Cloud Code only.**
- *
- * **Requires a mail adapter to be set**
+ * **Requires a mail adapter to be configured for Parse Server.**
  *
  * ```
- * Parse.Cloud.sendMail(data);
+ * Parse.Cloud.sendMail({
+ *   from: 'Example <test@example.com>',
+ *   to: 'contact@example.com',
+ *   subject: 'Test email.',
+ *   text: 'This email is a test'
+ * });
  *```
  *
  * @method sendMail
  * @name Parse.Cloud.sendMail
- * @param {Any} data The object of the mail data that you'd like to send
+ * @param {Object} data The object of the mail data to send
  */
 ParseCloud.sendMail = function (data) {
   const config = Config.get(Parse.applicationId) || {};
   const emailAdapter = config.userController.adapter;
   if (!emailAdapter) {
-    throw 'You cannot send mail without an email adapter';
+    throw 'Failed to send email because no mail adapter is configured for Parse Server.';
   }
   return emailAdapter.sendMail(data);
 };

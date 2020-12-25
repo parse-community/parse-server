@@ -3167,6 +3167,9 @@ describe('afterLogin hook', () => {
     const query = new Parse.Query(TestObject);
     await query.find({ context: { a: 'a' } });
   });
+});
+
+describe('sendMail', () => {
   it('can send email via Parse.Cloud', async done => {
     const emailAdapter = {
       sendMail: mailData => {
@@ -3181,12 +3184,15 @@ describe('afterLogin hook', () => {
     const mailData = { to: 'test' };
     await Parse.Cloud.sendMail(mailData);
   });
+
   it('cannot send email without adapter', async () => {
     try {
       await Parse.Cloud.sendMail({});
       fail('Should have failed to send emails.');
     } catch (e) {
-      expect(e).toBe('You cannot send mail without an email adapter');
+      expect(e).toBe(
+        'Failed to send email because no mail adapter is configured for Parse Server.'
+      );
     }
   });
 });
