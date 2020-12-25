@@ -3186,13 +3186,11 @@ describe('sendMail', () => {
   });
 
   it('cannot send email without adapter', async () => {
-    try {
-      await Parse.Cloud.sendMail({});
-      fail('Should have failed to send emails.');
-    } catch (e) {
-      expect(e).toBe(
-        'Failed to send email because no mail adapter is configured for Parse Server.'
-      );
-    }
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'warn').and.callFake(() => {});
+    await Parse.Cloud.sendMail({});
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Failed to send email because no mail adapter is configured for Parse Server.'
+    );
   });
 });

@@ -551,10 +551,12 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
 ParseCloud.sendMail = function (data) {
   const config = Config.get(Parse.applicationId) || {};
   const emailAdapter = config.userController.adapter;
-  if (!emailAdapter) {
-    throw 'Failed to send email because no mail adapter is configured for Parse Server.';
+  if (emailAdapter) {
+    return emailAdapter.sendMail(data);
   }
-  return emailAdapter.sendMail(data);
+  config.loggerController.warn(
+    'Failed to send email because no mail adapter is configured for Parse Server.'
+  );
 };
 
 /**
