@@ -617,7 +617,7 @@ export function maybeRunValidator(request, functionName) {
       });
   });
 }
-function builtInTriggerValidator(options, request) {
+async function builtInTriggerValidator(options, request) {
   if (request.master && !options.validateMasterKey) {
     return;
   }
@@ -720,6 +720,19 @@ function builtInTriggerValidator(options, request) {
           validateOptions(opt, key, val);
         }
       }
+    }
+  }
+  let userRoles = options.requireUserRole || [];
+  if (typeof userRoles === 'string') {
+    userRoles = [userRoles];
+  }
+  if (userRoles.length != 0 && reqUser) {
+    const roleQuery = new Parse.Query(Parse.Role);
+    roleQuery.containedIn('name', userRoles);
+    roleQuery.equalTo('users', reqUser);
+    const role = await roleQuery.first({ useMasterKey: true });
+    if (!role) {
+      throw `Validation failed. User does not match the required roles.`;
     }
   }
   const userKeys = options.requireUserKeys || [];
