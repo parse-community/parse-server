@@ -3169,7 +3169,7 @@ describe('afterLogin hook', () => {
   });
 });
 
-describe('sendMail', () => {
+describe('sendEmail', () => {
   it('can send email via Parse.Cloud', async done => {
     const emailAdapter = {
       sendMail: mailData => {
@@ -3182,13 +3182,13 @@ describe('sendMail', () => {
       emailAdapter: emailAdapter,
     });
     const mailData = { to: 'test' };
-    await Parse.Cloud.sendMail(mailData);
+    await Parse.Cloud.sendEmail(mailData);
   });
 
   it('cannot send email without adapter', async () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
-    await Parse.Cloud.sendMail({});
+    await Parse.Cloud.sendEmail({});
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send email because no mail adapter is configured for Parse Server.'
     );

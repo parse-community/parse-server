@@ -536,19 +536,19 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
  * **Requires a mail adapter to be configured for Parse Server.**
  *
  * ```
- * Parse.Cloud.sendMail({
+ * Parse.Cloud.sendEmail({
  *   from: 'Example <test@example.com>',
  *   to: 'contact@example.com',
- *   subject: 'Test email.',
- *   text: 'This email is a test'
+ *   subject: 'Test email',
+ *   text: 'This email is a test.'
  * });
  *```
  *
  * @method sendMail
- * @name Parse.Cloud.sendMail
+ * @name Parse.Cloud.sendEmail
  * @param {Object} data The object of the mail data to send
  */
-ParseCloud.sendMail = function (data) {
+ParseCloud.sendEmail = function (data) {
   const config = Config.get(Parse.applicationId) || {};
   const emailAdapter = config.userController.adapter;
   if (!emailAdapter) {
