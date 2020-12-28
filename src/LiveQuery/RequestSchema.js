@@ -18,12 +18,8 @@ const connect = {
     applicationId: {
       type: 'string',
     },
-    javascriptKey: {
-      type: 'string',
-    },
-    masterKey: {
-      type: 'string',
-    },
+    javascriptKey: { oneOf: [{ type: "string" }, { type: "null" }] },
+    masterKey: { oneOf: [{ type: "string" }, { type: "null" }] },
     clientKey: {
       type: 'string',
     },
