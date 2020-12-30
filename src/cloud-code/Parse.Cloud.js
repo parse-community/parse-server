@@ -544,12 +544,12 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
  * });
  *```
  *
- * @method sendMail
+ * @method sendEmail
  * @name Parse.Cloud.sendEmail
- * @param {Object} data The object of the mail data to send
+ * @param {Object} data The object of the mail data to send.
  */
 ParseCloud.sendEmail = function (data) {
-  const config = Config.get(Parse.applicationId) || {};
+  const config = Config.get(Parse.applicationId);
   const emailAdapter = config.userController.adapter;
   if (!emailAdapter) {
     config.loggerController.error(
