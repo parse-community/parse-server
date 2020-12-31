@@ -23,10 +23,12 @@ export async function securityChecks(req) {
       getResultForSecurityCheck('Files', checkFiles),
     ];
     if (
-      options.databaseAdapter.getSecurityLogs &&
-      typeof options.databaseAdapter.getSecurityLogs === 'function'
+      options.database.adapter.getSecurityLogs &&
+      typeof options.database.adapter.getSecurityLogs === 'function'
     ) {
-      promises.push(getResultForSecurityCheck('Database', options.databaseAdapter.getSecurityLogs));
+      promises.push(
+        getResultForSecurityCheck('Database', options.database.adapter.getSecurityLogs)
+      );
     }
     await Promise.all(promises);
     response.Total = totalWarnings;
