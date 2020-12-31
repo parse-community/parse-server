@@ -8,7 +8,7 @@ __BREAKING CHANGES:__
 ___
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
-- NEW: Added convenience method Parse.Cloud.sendMail(...) to send email via mail adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
+- NEW: Added convenience method Parse.Cloud.sendEmail(...) to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
 
 ### 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
