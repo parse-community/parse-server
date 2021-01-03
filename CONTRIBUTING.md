@@ -14,7 +14,7 @@ If you are not familiar with Pull Requests and want to know more about them, you
 
 If you need any help along the way, you can open a Draft PR where we can help finalize your contribution.
 
-Contributing can be challenging, so don't be discouraged if your having difficulties. Please don't hesitate to ask for help.
+Contributing can be challenging, so don't be discouraged if you're having difficulties. Please don't hesitate to ask for help.
 
 ## Setting up the project for debugging and contributing:
 
