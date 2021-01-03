@@ -2,7 +2,19 @@
 
 We really want Parse to be yours, to see it grow and thrive in the open source community.
 
+Before you jump into the coding element of contributing, please make sure you first [open an issue](https://github.com/parse-community/parse-server/issues/new/choose) relating to your contribution, or continue the discussion in the existing issue.
+
+This helps us all plan out the best conceptual approach for the contribution, so that your time isn't wasted on approaches or features that could be tackled in a different way. Our team are also happy to give you pointers and suggestions to speed up the process.
+
+When opening an issue, please make sure you follow the templates and provide as much detail as possible.
+
+After you've completed the contribution, you'll need to submit a Pull Request (PR).
+
 If you are not familiar with Pull Requests and want to know more about them, you can visit the [Creating a pull request](https://help.github.com/articles/creating-a-pull-request/) article. It contains detailed informations about the process.
+
+If you need any help along the way, you can open a Draft PR where we can help finalize your contribution.
+
+Contributing can be challenging, so don't be discouraged if your having difficulties. Please don't hesitate to ask for help.
 
 ## Setting up the project for debugging and contributing:
 
