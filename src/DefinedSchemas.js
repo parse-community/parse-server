@@ -8,6 +8,8 @@ export class DefinedSchemas {
   constructor(localSchemas, config) {
     this.config = Config.get(config.appId);
     this.localSchemas = localSchemas;
+    this.retries = 0;
+    this.maxRetries = 3;
   }
 
   // Simulate save like the SDK
@@ -58,8 +60,18 @@ export class DefinedSchemas {
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {
-      logger.error(e);
-      if (process.env.NODE_ENV === 'production') process.exit(1);
+      if (this.retries <= this.maxRetries) {
+        this.retries++;
+        // first retry 1sec, 2sec, 3sec total 6sec retry sequence
+        // retry will only happen in case of deploying multi parse server instance
+        // at the same time
+        // modern systems like k8 avoid this by doing rolling updates
+        await new Promise(resolve => setTimeout(resolve, 1000 * this.retries));
+        await this.execute();
+      } else {
+        logger.error(e);
+        if (process.env.NODE_ENV === 'production') process.exit(1);
+      }
     }
   }
 
