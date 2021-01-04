@@ -630,7 +630,7 @@ async function builtInTriggerValidator(options, request) {
   ) {
     reqUser = request.object;
   }
-  if (options.requireUser && !reqUser) {
+  if ((options.requireUser || options.requireUserRoles) && !reqUser) {
     throw 'Validation failed. Please login to continue.';
   }
   if (options.requireMaster && !request.master) {
@@ -722,11 +722,8 @@ async function builtInTriggerValidator(options, request) {
       }
     }
   }
-  let userRoles = options.requireUserRole || [];
-  if (typeof userRoles === 'string') {
-    userRoles = [userRoles];
-  }
-  if (userRoles.length != 0 && reqUser) {
+  const userRoles = options.requireUserRoles;
+  if (userRoles) {
     const roleQuery = new Parse.Query(Parse.Role);
     roleQuery.containedIn('name', userRoles);
     roleQuery.equalTo('users', reqUser);
