@@ -26,7 +26,7 @@
     "@parse/fs-files-adapter": "1.2.0",
     "@parse/push-adapter": "3.4.0",
     "@parse/s3-files-adapter": "1.6.0",
-    "@parse/simple-mailgun-adapter": "1.1.0",
+    "@parse/simple-mailgun-adapter": "1.2.0",
     "apollo-server-express": "2.19.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
