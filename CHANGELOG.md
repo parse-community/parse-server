@@ -9,6 +9,7 @@ ___
 - NEW: Webauthn Adapter Auth Adapter [7079](https://github.com/parse-community/parse-server/pull/7079) Thanks to [Moumouls](https://github.com/Moumouls).
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
+- NEW: Added convenience method Parse.Cloud.sendEmail(...) to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
 
 ### 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
