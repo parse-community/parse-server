@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "4.5.0-beta.1",
+  "version": "4.5.0-beta.2",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -27,8 +27,8 @@
     "@parse/fs-files-adapter": "1.2.0",
     "@parse/push-adapter": "3.4.0",
     "@parse/s3-files-adapter": "1.6.0",
-    "@simplewebauthn/server": "^0.10.5",
     "@parse/simple-mailgun-adapter": "1.2.0",
+    "@simplewebauthn/server": "^0.10.5",
     "apollo-server-express": "2.19.0",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",

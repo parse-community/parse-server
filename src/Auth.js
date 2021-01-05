@@ -430,13 +430,13 @@ const handleAuthDataValidation = async (authData, req, foundUser) => {
   if (foundUser) {
     user = Parse.User.fromJSON({ className: '_User', ...foundUser });
     // Find the user by session and current object id
-    // Only pass user if it's the current one or master key
+    // Only pass user if it's the current one or master key with provided user
   } else if (
     (req.auth &&
       req.auth.user &&
       typeof req.getUserId === 'function' &&
       req.getUserId() === req.auth.user.id) ||
-    (req.auth && req.auth.isMaster)
+    (req.auth && req.auth.isMaster && typeof req.getUserId === 'function' && req.getUserId())
   ) {
     user = new Parse.User();
     user.id = req.auth.isMaster ? req.getUserId() : req.auth.user.id;
