@@ -736,16 +736,10 @@ async function builtInTriggerValidator(options, request, auth) {
   const userRoles = options.requireUserRoles;
   if (userRoles) {
     const roles = await auth.getUserRoles();
-    const validateRoles = () => {
-      const roleNames = roles.map(role => role.replace('role:', ''));
-      for (const role of userRoles) {
-        if (roleNames.includes(role)) {
-          return;
-        }
-        throw `Validation failed. User does not match the required roles.`;
-      }
-    };
-    validateRoles();
+    const hasRole = userRoles.some(requiredRole => roles.includes(`role:${requiredRole}`));
+    if (!hasRole) {
+      throw `Validation failed. User does not match the required roles.`;
+    }
   }
   const userKeys = options.requireUserKeys || [];
   if (Array.isArray(userKeys)) {
