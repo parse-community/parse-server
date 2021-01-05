@@ -1789,7 +1789,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should allow login with old authData token', done => {
+  it('should not allow login with old authData token', async () => {
     const provider = {
       authData: {
         id: '12345',
@@ -1810,22 +1810,17 @@ describe('Parse.User testing', () => {
     };
     defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
     Parse.User._registerAuthenticationProvider(provider);
-    Parse.User._logInWith('shortLivedAuth', {})
-      .then(() => {
-        // Simulate a remotely expired token (like a short lived one)
-        // In this case, we want success as it was valid once.
-        // If the client needs an updated one, do lock the user out
-        defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
-        return Parse.User._logInWith('shortLivedAuth', {});
-      })
-      .then(
-        () => {
-          done();
-        },
-        err => {
-          done.fail(err);
-        }
-      );
+    await Parse.User._logInWith('shortLivedAuth', {});
+    // Simulate a remotely expired token (like a short lived one)
+    // In this case, we want success as it was valid once.
+    // If the client needs an updated one, do lock the user out
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+    try {
+      await Parse.User._logInWith('shortLivedAuth', {});
+      fail('should not authenticate');
+    } catch (e) {
+      expect(e).toBeDefined();
+    }
   });
 
   it('should allow PUT request with stale auth Data', done => {
