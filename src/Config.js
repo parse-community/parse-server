@@ -6,10 +6,7 @@ import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
-import {
-  IdempotencyOptions,
-  FileUploadOptions,
-} from './Options/Definitions';
+import { IdempotencyOptions, FileUploadOptions } from './Options/Definitions';
 
 function removeTrailingSlash(str) {
   if (!str) {

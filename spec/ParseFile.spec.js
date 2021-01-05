@@ -868,8 +868,9 @@ describe('Parse.File testing', () => {
         fileUpload: {
           enableForPublic: Definitions.FileUploadOptions.enableForPublic.default,
           enableForAnonymousUser: Definitions.FileUploadOptions.enableForAnonymousUser.default,
-          enableForAuthenticatedUser: Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
-        }
+          enableForAuthenticatedUser:
+            Definitions.FileUploadOptions.enableForAuthenticatedUser.default,
+        },
       });
       let file = new Parse.File('hello.txt', data, 'text/plain');
       await expectAsync(file.save()).toBeRejectedWith(
@@ -917,7 +918,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -957,7 +961,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -979,7 +986,10 @@ describe('Parse.File testing', () => {
       file = new Parse.File('hello.txt', data, 'text/plain');
       const authUser = await Parse.User.signUp('user', 'password');
       await expectAsync(file.save({ sessionToken: authUser.getSessionToken() })).toBeRejectedWith(
-        new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'File upload by authenticated user is disabled.')
+        new Parse.Error(
+          Parse.Error.FILE_SAVE_ERROR,
+          'File upload by authenticated user is disabled.'
+        )
       );
     });
 
@@ -1006,33 +1016,11 @@ describe('Parse.File testing', () => {
     });
 
     it('rejects invalid fileUpload configuration', async () => {
-      const invalidConfigs = [
-        { fileUpload: [] },
-        { fileUpload: 1 },
-        { fileUpload: "string" },
-      ];
-      const validConfigs = [
-        { fileUpload: {} },
-        { fileUpload: null },
-        { fileUpload: undefined },
-      ];
-      const keys = [
-        "enableForPublic",
-        "enableForAnonymousUser",
-        "enableForAuthenticatedUser",
-      ];
-      const invalidValues = [
-        [],
-        {},
-        1,
-        "string",
-        null,
-      ];
-      const validValues = [
-        undefined,
-        true,
-        false,
-      ];
+      const invalidConfigs = [{ fileUpload: [] }, { fileUpload: 1 }, { fileUpload: 'string' }];
+      const validConfigs = [{ fileUpload: {} }, { fileUpload: null }, { fileUpload: undefined }];
+      const keys = ['enableForPublic', 'enableForAnonymousUser', 'enableForAuthenticatedUser'];
+      const invalidValues = [[], {}, 1, 'string', null];
+      const validValues = [undefined, true, false];
       for (const config of invalidConfigs) {
         await expectAsync(reconfigureServer(config)).toBeRejectedWith(
           'fileUpload must be an object value.'
@@ -1043,12 +1031,12 @@ describe('Parse.File testing', () => {
       }
       for (const key of keys) {
         for (const value of invalidValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeRejectedWith(
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeRejectedWith(
             `fileUpload.${key} must be a boolean value.`
           );
         }
         for (const value of validValues) {
-          await expectAsync(reconfigureServer({ fileUpload: { [key]: value }})).toBeResolved();
+          await expectAsync(reconfigureServer({ fileUpload: { [key]: value } })).toBeResolved();
         }
       }
     });
