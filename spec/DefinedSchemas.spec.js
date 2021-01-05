@@ -501,11 +501,11 @@ describe('DefinedSchemas', () => {
     expect(before).toEqual(true);
     expect(server).toBeDefined();
   });
-  it('should use logger in case of error', async () => {
+  it('should use logger in case of error after 3 retries', async () => {
     const server = await reconfigureServer({ schemas: [{ className: '_User' }] });
-
     const error = new Error('A test error');
     const logger = require('../lib/logger').logger;
+    spyOn(DefinedSchemas.prototype, 'wait').and.resolveTo();
     spyOn(logger, 'error').and.callThrough();
     spyOn(Parse.Schema, 'all').and.callFake(async () => {
       throw error;
@@ -517,5 +517,10 @@ describe('DefinedSchemas', () => {
     ).execute();
 
     expect(logger.error).toHaveBeenCalledWith(error);
+    expect(DefinedSchemas.prototype.wait).toHaveBeenCalledTimes(3);
+    const calls = DefinedSchemas.prototype.wait.calls.all();
+    expect(calls[0].args[0]).toEqual(1000);
+    expect(calls[1].args[0]).toEqual(2000);
+    expect(calls[2].args[0]).toEqual(3000);
   });
 });

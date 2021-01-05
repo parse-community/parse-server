@@ -45,12 +45,13 @@ export class DefinedSchemas {
   }
 
   async execute() {
+    let timeout;
     try {
       // Set up a time out in production
       // if we fail to get schema
       // pm2 or K8s and many other process managers will try to restart the process
       // after the exit
-      const timeout = setTimeout(() => {
+      timeout = setTimeout(() => {
         if (process.env.NODE_ENV === 'production') process.exit(1);
       }, 20000);
       // Hack to force session schema to be created
@@ -60,19 +61,25 @@ export class DefinedSchemas {
       await Promise.all(this.localSchemas.map(async localSchema => this.saveOrUpdate(localSchema)));
       await this.enforceCLPForNonProvidedClass();
     } catch (e) {
-      if (this.retries <= this.maxRetries) {
+      if (timeout) clearTimeout(timeout);
+      if (this.retries < this.maxRetries) {
         this.retries++;
         // first retry 1sec, 2sec, 3sec total 6sec retry sequence
         // retry will only happen in case of deploying multi parse server instance
         // at the same time
         // modern systems like k8 avoid this by doing rolling updates
-        await new Promise(resolve => setTimeout(resolve, 1000 * this.retries));
+        await this.wait(1000 * this.retries);
         await this.execute();
       } else {
         logger.error(e);
         if (process.env.NODE_ENV === 'production') process.exit(1);
       }
     }
+  }
+
+  // Required for testing purpose
+  async wait(time) {
+    await new Promise(resolve => setTimeout(resolve, time));
   }
 
   async enforceCLPForNonProvidedClass() {
