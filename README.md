@@ -87,71 +87,19 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 **Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
-### Saving your first object
+### Getting started with SDKs
 
-Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://parseplatform.org/#sdks). Run the following:
+Now that you're running Parse Server, it is time to save your first object. Parse Server has a broad range of [SDKs](http://parseplatform.org/#sdks) you can use to connect to your server.
 
-```bash
-$ curl -X POST \
--H "X-Parse-Application-Id: APPLICATION_ID" \
--H "Content-Type: application/json" \
--d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
-http://localhost:1337/parse/classes/GameScore
-```
-
-You should get a response similar to this:
-
-```js
-{
-  "objectId": "2ntvSpRGIK",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` with the actual `objectId` you received when the object was created):
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
-```
-```json
-// Response
-{
-  "objectId": "2ntvSpRGIK",
-  "score": 1337,
-  "playerName": "Sean Plott",
-  "cheatMode": false,
-  "updatedAt": "2016-03-11T23:51:48.050Z",
-  "createdAt": "2016-03-11T23:51:48.050Z"
-}
-```
-
-Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
-
-```bash
-$ curl -X GET \
-  -H "X-Parse-Application-Id: APPLICATION_ID" \
-  http://localhost:1337/parse/classes/GameScore
-```
-```json
-// The response will provide all the matching objects within the `results` array:
-{
-  "results": [
-    {
-      "objectId": "2ntvSpRGIK",
-      "score": 1337,
-      "playerName": "Sean Plott",
-      "cheatMode": false,
-      "updatedAt": "2016-03-11T23:51:48.050Z",
-      "createdAt": "2016-03-11T23:51:48.050Z"
-    }
-  ]
-}
-
-```
-
-To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
+- [Getting started with iOS](https://docs.parseplatform.org/ios/guide/#getting-started)
+- [Getting started with Android](https://docs.parseplatform.org/android/guide/#getting-started)
+- [Getting started with JavaScript](https://docs.parseplatform.org/js/guide/#getting-started)
+- [Getting started with .NET + Xamarin](https://docs.parseplatform.org/dotnet/guide/#getting-started)
+- [Getting started with macOS](https://docs.parseplatform.org/macos/guide/#getting-started)
+- [Getting started with Unity](https://docs.parseplatform.org/unity/guide/#getting-started)
+- [Getting started with PHP](https://docs.parseplatform.org/php/guide/#getting-started)
+- [Getting started with Arduino](https://docs.parseplatform.org/arduino/guide/#getting-started)
+- [Getting started with Embedded C](https://docs.parseplatform.org/embedded_c/guide/#getting-started)
 
 ### Connect your app to Parse Server
 
@@ -282,7 +230,3 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 Support us with a monthly donation and help us continue our activities. [Become a backer!](https://opencollective.com/parse-server#backer)
 
 <a href="https://opencollective.com/parse-server#backers" target="_blank"><img src="https://opencollective.com/parse-server/backers.svg?width=890" /></a>
-
------
-
-As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
