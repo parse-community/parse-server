@@ -215,10 +215,6 @@ RestWrite.prototype.buildDefaultACL = function () {
     if (aclOptions === 'private') {
       acl.setPublicReadAccess(false);
       acl.setPublicWriteAccess(false);
-      if (reqUser) {
-        acl.setReadAccess(reqUser, true);
-        acl.setWriteAccess(reqUser, true);
-      }
     } else if (aclOptions === 'publicRead') {
       acl.setPublicReadAccess(true);
       acl.setPublicWriteAccess(false);
@@ -252,6 +248,10 @@ RestWrite.prototype.buildDefaultACL = function () {
         acl.setRoleReadAccess(roleName, true);
         acl.setRoleWriteAccess(roleName, true);
       }
+    }
+    if (reqUser) {
+      acl.setReadAccess(reqUser, true);
+      acl.setWriteAccess(reqUser, true);
     }
   } else {
     aclOptions = aclOptions[this.className] || aclOptions['*'];
