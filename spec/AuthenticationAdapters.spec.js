@@ -2381,11 +2381,11 @@ describe('Auth Adapter features', () => {
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
     expect(challengeCall[1]).toBeUndefined();
-    expect(challengeCall[2]).toBeUndefined();
+    expect(challengeCall[2]).toEqual(challengeAdapter);
     expect(challengeCall[3].config).toBeDefined();
     expect(challengeCall[3].auth).toBeDefined();
     expect(challengeCall[3].config.headers).toBeDefined();
-    expect(challengeCall[4]).toEqual(challengeAdapter);
+    expect(challengeCall[4]).toBeUndefined();
   });
   it('should return challenge with username created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
@@ -2463,12 +2463,12 @@ describe('Auth Adapter features', () => {
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
     expect(challengeCall[1]).toEqual(undefined);
-    expect(challengeCall[2] instanceof Parse.User).toBeTruthy();
-    expect(challengeCall[2].id).toEqual(user.id);
+    expect(challengeCall[2]).toEqual(challengeAdapter);
     expect(challengeCall[3].config).toBeDefined();
     expect(challengeCall[3].auth).toBeDefined();
     expect(challengeCall[3].config.headers).toBeDefined();
-    expect(challengeCall[4]).toEqual(challengeAdapter);
+    expect(challengeCall[4] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[4].id).toEqual(user.id);
   });
   it('should return challenge with authData created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
@@ -2491,7 +2491,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       });
-      fail('should throw User not found.');
+      fail();
     } catch (e) {
       expect(e.text).toContain('User not found.');
     }
@@ -2517,7 +2517,7 @@ describe('Auth Adapter features', () => {
           },
         }),
       });
-      fail('should throw You cant provide more than one authData provider with an id.');
+      fail();
     } catch (e) {
       expect(e.text).toContain('You cant provide more than one authData provider with an id.');
     }
@@ -2547,12 +2547,72 @@ describe('Auth Adapter features', () => {
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
     expect(challengeCall[1]).toEqual({ id: 'challengeAdapter' });
-    expect(challengeCall[2] instanceof Parse.User).toBeTruthy();
-    expect(challengeCall[2].id).toEqual(user.id);
+    expect(challengeCall[2]).toEqual(challengeAdapter);
     expect(challengeCall[3].config).toBeDefined();
     expect(challengeCall[3].auth).toBeDefined();
     expect(challengeCall[3].config.headers).toBeDefined();
-    expect(challengeCall[4]).toEqual(challengeAdapter);
+    expect(challengeCall[4] instanceof Parse.User).toBeTruthy();
+    expect(challengeCall[4].id).toEqual(user.id);
+  });
+  it('should validate provided authData and prevent guess id attack', async () => {
+    spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+
+    await reconfigureServer({
+      auth: { challengeAdapter, soloAdapter },
+    });
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+          authData: {
+            challengeAdapter: { id: 'challengeAdapter' },
+          },
+        }),
+      });
+      fail();
+    } catch (e) {
+      expect(e.text).toContain('User not found.');
+    }
+
+    const user = new Parse.User();
+    await user.save({ authData: { challengeAdapter: { id: 'challengeAdapter' } } });
+
+    spyOn(challengeAdapter, 'validateAuthData').and.rejectWith({});
+
+    try {
+      await request({
+        headers: headers,
+        method: 'POST',
+        url: 'http://localhost:8378/1/challenge',
+        body: JSON.stringify({
+          challengeData: {
+            challengeAdapter: { someData: true },
+          },
+          authData: {
+            challengeAdapter: { id: 'challengeAdapter' },
+          },
+        }),
+      });
+      fail();
+    } catch (e) {
+      expect(e.text).toContain('User not found.');
+    }
+
+    const validateCall = challengeAdapter.validateAuthData.calls.argsFor(0);
+    expect(challengeAdapter.validateAuthData).toHaveBeenCalledTimes(1);
+    expect(validateCall[0]).toEqual({ id: 'challengeAdapter' });
+    expect(validateCall[1]).toEqual(challengeAdapter);
+    expect(validateCall[2].config).toBeDefined();
+    expect(validateCall[2].auth).toBeDefined();
+    expect(validateCall[2].config.headers).toBeDefined();
+    expect(validateCall[3] instanceof Parse.User).toBeTruthy();
+    expect(validateCall[3].id).toEqual(user.id);
   });
 });
 

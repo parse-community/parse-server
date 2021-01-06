@@ -169,7 +169,7 @@ const verifyLogin = ({ assertion, signedChallenge }, options = {}, config, user)
   }
 };
 
-export const challenge = async (challengeData, authData, user, req, adapterConfig = {}) => {
+export const challenge = async (challengeData, authData, adapterConfig = {}, req) => {
   // Allow logged user to update/setUp webauthn
   if (req.auth.user && req.auth.user.id) {
     return registerOptions(req.auth.user, adapterConfig.options, req.config);

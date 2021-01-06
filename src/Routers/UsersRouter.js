@@ -9,6 +9,7 @@ import Auth from '../Auth';
 import passwordCrypto from '../password';
 import { maybeRunTrigger, Types as TriggerTypes } from '../triggers';
 import { promiseEnsureIdempotency } from '../middlewares';
+import { logger } from '../../lib/Adapters/Logger/WinstonLogger';
 
 export class UsersRouter extends ClassesRouter {
   className() {
@@ -447,15 +448,37 @@ export class UsersRouter extends ClassesRouter {
           Parse.Error.OTHER_CAUSE,
           'You cant provide username/email and authData, only use one identification method.'
         );
-      const results = await Auth.findUsersWithAuthData(req.config, authData);
-      if (results.length > 1) {
+
+      if (Object.keys(authData).filter(key => authData[key].id).length > 1) {
         throw new Parse.Error(
           Parse.Error.OTHER_CAUSE,
           'You cant provide more than one authData provider with an id.'
         );
       }
-      if (!results[0]) throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
-      user = results[0];
+
+      const results = await Auth.findUsersWithAuthData(req.config, authData);
+
+      try {
+        if (!results[0] || results.length > 1)
+          throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+
+        // Find the provider used to find the user
+        const provider = Object.keys(authData).find(key => authData[key].id);
+
+        // Validate authData used to identify the user
+        // to avoid guess id attack
+        const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
+        await validator(
+          authData[provider],
+          { config: req.config, auth: req.auth },
+          Parse.User.fromJSON({ className: '_User', ...results[0] })
+        );
+        user = results[0];
+      } catch (e) {
+        // Rewrite the error to avoid guess id attack
+        logger.error(e);
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User not found.');
+      }
     }
 
     // Execute challenge step by step
@@ -470,9 +493,9 @@ export class UsersRouter extends ClassesRouter {
             (await challengeHandler(
               challengeData[provider],
               authData && authData[provider],
-              user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined,
+              req.config.auth[provider],
               req,
-              req.config.auth[provider]
+              user ? Parse.User.fromJSON({ className: '_User', ...user }) : undefined
             )) || true;
           return acc;
         }
