@@ -947,6 +947,26 @@ describe('Parse.ACL', () => {
     expect(acl[user.id].read).toBeTrue();
   });
 
+  it('set default ACL to invalid', async () => {
+    try {
+      await reconfigureServer({
+        defaultACL: 'foo',
+      });
+      fail('should not have been able to set up invalid ACL string');
+    } catch (e) {
+      expect(e).toBe('defaultACL must be an object');
+    }
+
+    try {
+      await reconfigureServer({
+        defaultACL: { foo: ['bar', 'xyz'], ['']: [] },
+      });
+      fail('should not have been able to set up invalid ACL object');
+    } catch (e) {
+      expect(e).toBe('Could not validate default ACL object. Error: invalid permission type.');
+    }
+  });
+
   it('defaultACL private', async function (done) {
     await reconfigureServer({
       defaultACL: {

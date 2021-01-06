@@ -105,10 +105,10 @@ RestWrite.prototype.execute = function () {
       return this.validateAuthData();
     })
     .then(() => {
-      return this.buildDefaultACL();
+      return this.runBeforeSaveTrigger();
     })
     .then(() => {
-      return this.runBeforeSaveTrigger();
+      return this.buildDefaultACL();
     })
     .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
