@@ -523,4 +523,35 @@ describe('DefinedSchemas', () => {
     expect(calls[1].args[0]).toEqual(2000);
     expect(calls[2].args[0]).toEqual(3000);
   });
+  it('should perform migration in parallel without failing', async () => {
+    const server = await reconfigureServer();
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callThrough();
+    const schema = {
+      className: 'Test',
+      fields: { aField: { type: 'String' } },
+      indexes: { aField: { aField: 1 } },
+      classLevelPermissions: {
+        create: { requiresAuthentication: true },
+      },
+    };
+
+    // Simulate parallel deployment
+    await Promise.all([
+      new DefinedSchemas([schema], server.config).execute(),
+      new DefinedSchemas([schema], server.config).execute(),
+      new DefinedSchemas([schema], server.config).execute(),
+      new DefinedSchemas([schema], server.config).execute(),
+      new DefinedSchemas([schema], server.config).execute(),
+    ]);
+
+    const testSchema = (await Parse.Schema.all()).find(
+      ({ className }) => className === schema.className
+    );
+
+    expect(testSchema.indexes.aField).toEqual({ aField: 1 });
+    expect(testSchema.fields.aField).toEqual({ type: 'String' });
+    expect(testSchema.classLevelPermissions.create).toEqual({ requiresAuthentication: true });
+    expect(logger.error).toHaveBeenCalledTimes(0);
+  });
 });
