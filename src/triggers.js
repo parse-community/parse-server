@@ -237,12 +237,12 @@ export function getRequestObject(
   if (originalParseObject) {
     request.original = originalParseObject;
   }
-
   if (
     triggerType === Types.beforeSave ||
     triggerType === Types.afterSave ||
     triggerType === Types.beforeDelete ||
-    triggerType === Types.afterDelete
+    triggerType === Types.afterDelete ||
+    triggerType === Types.afterFind
   ) {
     // Set a copy of the context on the request object.
     request.context = Object.assign({}, context);
@@ -388,13 +388,21 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   );
 }
 
-export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config, query) {
+export function maybeRunAfterFindTrigger(
+  triggerType,
+  auth,
+  className,
+  objects,
+  config,
+  query,
+  context
+) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
       return resolve();
     }
-    const request = getRequestObject(triggerType, auth, null, null, config);
+    const request = getRequestObject(triggerType, auth, null, null, config, context);
     if (query) {
       request.query = query;
     }
