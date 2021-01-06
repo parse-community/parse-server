@@ -979,6 +979,7 @@ describe('Parse.ACL', () => {
     });
     const user = await Parse.User.signUp('testuser', 'p@ssword');
     const user2 = await Parse.User.signUp('testuser2', 'p@ssword');
+    Parse.User.logOut();
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
     await obj.save(null, { sessionToken: user.getSessionToken() });
@@ -994,7 +995,6 @@ describe('Parse.ACL', () => {
     } catch (e) {
       expect(e.code).toBe(101);
     }
-
     done();
   });
 
@@ -1003,7 +1003,6 @@ describe('Parse.ACL', () => {
       defaultACL: {
         '*': {
           read: true,
-          write: true,
         },
       },
     });

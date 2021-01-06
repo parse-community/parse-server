@@ -211,7 +211,7 @@ RestWrite.prototype.buildDefaultACL = function () {
       write: true,
     },
   };
-  const aclOptions = this.config.defaultACL || defaultACL;
+  const aclOptions = Object.assign({}, this.config.defaultACL || defaultACL);
   const reqUser = this.auth.user && this.auth.user.id;
   if (reqUser && aclOptions.currentUser) {
     aclOptions[reqUser] = aclOptions.currentUser;
