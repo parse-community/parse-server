@@ -208,7 +208,7 @@ Parse Server can be configured using the following options. You may pass these a
 
 For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-[For more information, check out or docs.](https://docs.parseplatform.org/parse-server/guide/#usage)
+[For more information, check out our docs.](https://docs.parseplatform.org/parse-server/guide/#usage)
 
 
 
