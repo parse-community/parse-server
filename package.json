@@ -45,7 +45,7 @@
     "ldapjs": "2.2.3",
     "lodash": "4.17.20",
     "lru-cache": "5.1.1",
-    "mime": "2.4.6",
+    "mime": "2.4.7",
     "mongodb": "3.6.3",
     "parse": "2.19.0",
     "pg-promise": "10.8.1",
