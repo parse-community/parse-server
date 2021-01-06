@@ -164,13 +164,6 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    if (type == 'StringOrAny') {
-      if (value == '""' || value == "''") {
-        literalValue = t.stringLiteral('');
-      } else {
-        literalValue = t.stringLiteral(value);
-      }
-    }
     const literalTypes = ['IdempotencyOptions','FileUploadOptions','CustomPagesOptions'];
     if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
