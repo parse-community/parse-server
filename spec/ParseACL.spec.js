@@ -932,6 +932,21 @@ describe('Parse.ACL', () => {
     rest.create(config, auth.nobody(config), '_User', anonUser);
   });
 
+  it('defaultACL should be private', async () => {
+    await reconfigureServer({
+      defaultACL: null,
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
+  });
+
   it('defaultACL private', async function (done) {
     await reconfigureServer({
       defaultACL: 'private',

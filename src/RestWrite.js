@@ -205,7 +205,7 @@ RestWrite.prototype.buildDefaultACL = function () {
   if (this.data.ACL) {
     return;
   }
-  let aclOptions = this.config.defaultACL;
+  let aclOptions = this.config.defaultACL || 'private';
   const getRoleName = roleStr => {
     return aclOptions.split(`${roleStr}:`)[1];
   };
