@@ -949,7 +949,12 @@ describe('Parse.ACL', () => {
 
   it('defaultACL private', async function (done) {
     await reconfigureServer({
-      defaultACL: 'private',
+      defaultACL: {
+        currentUser: {
+          read: true,
+          write: true,
+        },
+      },
     });
     const user = await Parse.User.signUp('testuser', 'p@ssword');
     const obj = new Parse.Object('TestObject');
@@ -965,7 +970,12 @@ describe('Parse.ACL', () => {
 
   it('defaultACL prevents other users', async function (done) {
     await reconfigureServer({
-      defaultACL: 'private',
+      defaultACL: {
+        currentUser: {
+          read: true,
+          write: true,
+        },
+      },
     });
     const user = await Parse.User.signUp('testuser', 'p@ssword');
     const user2 = await Parse.User.signUp('testuser2', 'p@ssword');
@@ -990,7 +1000,12 @@ describe('Parse.ACL', () => {
 
   it('defaultACL publicRead', async function (done) {
     await reconfigureServer({
-      defaultACL: 'publicRead',
+      defaultACL: {
+        '*': {
+          read: true,
+          write: true,
+        },
+      },
     });
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1004,7 +1019,11 @@ describe('Parse.ACL', () => {
 
   it('defaultACL publicWrite', async function (done) {
     await reconfigureServer({
-      defaultACL: 'publicWrite',
+      defaultACL: {
+        '*': {
+          write: true,
+        },
+      },
     });
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1018,7 +1037,11 @@ describe('Parse.ACL', () => {
 
   it('defaultACL roleRead', async function (done) {
     await reconfigureServer({
-      defaultACL: 'roleRead:Administrator',
+      defaultACL: {
+        'role:Administrator': {
+          read: true,
+        },
+      },
     });
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1033,7 +1056,11 @@ describe('Parse.ACL', () => {
 
   it('defaultACL roleWrite', async function (done) {
     await reconfigureServer({
-      defaultACL: 'roleWrite:Administrator',
+      defaultACL: {
+        'role:Administrator': {
+          write: true,
+        },
+      },
     });
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1048,7 +1075,12 @@ describe('Parse.ACL', () => {
 
   it('defaultACL roleReadWrite', async function (done) {
     await reconfigureServer({
-      defaultACL: 'roleReadWrite:Administrator',
+      defaultACL: {
+        'role:Administrator': {
+          read: true,
+          write: true,
+        },
+      },
     });
     const obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
@@ -1064,11 +1096,21 @@ describe('Parse.ACL', () => {
   it('defaultACL object readWrite', async function (done) {
     await reconfigureServer({
       defaultACL: {
-        TestObject: {
-          public: 'readWrite',
-          private: 'readWrite',
-          'role:Administrator': 'readWrite',
-          customId: 'readWrite',
+        '*': {
+          read: true,
+          write: true,
+        },
+        currentUser: {
+          read: true,
+          write: true,
+        },
+        'role:Administrator': {
+          read: true,
+          write: true,
+        },
+        customId: {
+          read: true,
+          write: true,
         },
       },
     });
@@ -1092,11 +1134,17 @@ describe('Parse.ACL', () => {
   it('defaultACL object read', async function (done) {
     await reconfigureServer({
       defaultACL: {
-        TestObject: {
-          public: 'read',
-          private: 'read',
-          'role:Administrator': 'read',
-          customId: 'read',
+        '*': {
+          read: true,
+        },
+        currentUser: {
+          read: true,
+        },
+        'role:Administrator': {
+          read: true,
+        },
+        customId: {
+          read: true,
         },
       },
     });
@@ -1120,11 +1168,17 @@ describe('Parse.ACL', () => {
   it('defaultACL object write', async function (done) {
     await reconfigureServer({
       defaultACL: {
-        TestObject: {
-          public: 'write',
-          private: 'write',
-          'role:Administrator': 'write',
-          customId: 'write',
+        '*': {
+          write: true,
+        },
+        currentUser: {
+          write: true,
+        },
+        'role:Administrator': {
+          write: true,
+        },
+        customId: {
+          write: true,
         },
       },
     });

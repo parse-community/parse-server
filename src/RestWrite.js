@@ -105,10 +105,10 @@ RestWrite.prototype.execute = function () {
       return this.validateAuthData();
     })
     .then(() => {
-      return this.runBeforeSaveTrigger();
+      return this.buildDefaultACL();
     })
     .then(() => {
-      return this.buildDefaultACL();
+      return this.runBeforeSaveTrigger();
     })
     .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
@@ -202,120 +202,22 @@ RestWrite.prototype.validateSchema = function () {
 
 // builds the default ACL depending on the className
 RestWrite.prototype.buildDefaultACL = function () {
-  if (this.data.ACL || (this.originalData && this.originalData.ACL)) {
+  if ((this.query && this.query.objectId) || this.data.ACL) {
     return;
   }
-  let aclOptions = this.config.defaultACL || 'private';
-  const getRoleName = roleStr => {
-    return aclOptions.split(`${roleStr}:`)[1];
+  const defaultACL = {
+    currentUser: {
+      read: true,
+      write: true,
+    },
   };
+  const aclOptions = this.config.defaultACL || defaultACL;
   const reqUser = this.auth.user && this.auth.user.id;
-  const acl = new Parse.ACL();
-  if (typeof aclOptions === 'string') {
-    if (aclOptions === 'publicReadWrite') {
-      return;
-    }
-    if (aclOptions === 'private') {
-      acl.setPublicReadAccess(false);
-      acl.setPublicWriteAccess(false);
-    } else if (aclOptions === 'publicRead') {
-      acl.setPublicReadAccess(true);
-      acl.setPublicWriteAccess(false);
-    } else if (aclOptions === 'publicWrite') {
-      acl.setPublicReadAccess(false);
-      acl.setPublicWriteAccess(true);
-    } else if (aclOptions.includes('roleRead:')) {
-      const roleName = getRoleName('roleRead');
-      if (roleName) {
-        acl.setPublicReadAccess(false);
-        acl.setPublicWriteAccess(false);
-        acl.setRoleReadAccess(roleName, true);
-        acl.setRoleWriteAccess(roleName, false);
-      }
-    } else if (aclOptions.includes('roleWrite:')) {
-      const roleName = getRoleName('roleWrite');
-      if (roleName) {
-        acl.setPublicReadAccess(false);
-        acl.setPublicWriteAccess(false);
-        acl.setRoleReadAccess(roleName, false);
-        acl.setRoleWriteAccess(roleName, true);
-      }
-    } else if (aclOptions.includes('roleReadWrite:')) {
-      const roleName = getRoleName('roleReadWrite');
-      if (roleName) {
-        acl.setPublicReadAccess(false);
-        acl.setPublicWriteAccess(false);
-        acl.setRoleReadAccess(roleName, true);
-        acl.setRoleWriteAccess(roleName, true);
-      }
-    }
-    if (reqUser) {
-      acl.setReadAccess(reqUser, true);
-      acl.setWriteAccess(reqUser, true);
-    }
-  } else {
-    aclOptions = aclOptions[this.className] || aclOptions['*'];
-    if (!aclOptions) {
-      return;
-    }
-    if (aclOptions.public) {
-      if (aclOptions.public === 'readWrite') {
-        acl.setPublicReadAccess(true);
-        acl.setPublicWriteAccess(true);
-      } else if (aclOptions.public === 'read') {
-        acl.setPublicReadAccess(true);
-        acl.setPublicWriteAccess(false);
-      } else if (aclOptions.public === 'write') {
-        acl.setPublicReadAccess(false);
-        acl.setPublicWriteAccess(true);
-      }
-    } else {
-      acl.setPublicReadAccess(false);
-      acl.setPublicWriteAccess(false);
-    }
-    if (aclOptions['private'] && reqUser) {
-      if (aclOptions['private'] === 'readWrite') {
-        acl.setReadAccess(reqUser, true);
-        acl.setWriteAccess(reqUser, true);
-      } else if (aclOptions['private'] === 'read') {
-        acl.setReadAccess(reqUser, true);
-        acl.setWriteAccess(reqUser, false);
-      } else if (aclOptions['private'] === 'write') {
-        acl.setReadAccess(reqUser, false);
-        acl.setWriteAccess(reqUser, true);
-      }
-    }
-    delete aclOptions['private'];
-    delete aclOptions['public'];
-    for (const user in aclOptions) {
-      const aclValue = aclOptions[user];
-      if (aclValue.includes('role:')) {
-        const roleName = getRoleName('role');
-        if (aclValue === 'readWrite') {
-          acl.setRoleReadAccess(roleName, true);
-          acl.setRoleWriteAccess(roleName, true);
-        } else if (aclValue === 'read') {
-          acl.setRoleReadAccess(roleName, true);
-          acl.setRoleWriteAccess(roleName, false);
-        } else if (aclValue === 'write') {
-          acl.setRoleReadAccess(roleName, false);
-          acl.setRoleWriteAccess(roleName, true);
-        }
-      } else {
-        if (aclValue === 'readWrite') {
-          acl.setReadAccess(user, true);
-          acl.setWriteAccess(user, true);
-        } else if (aclValue === 'read') {
-          acl.setReadAccess(user, true);
-          acl.setWriteAccess(user, false);
-        } else if (aclValue === 'write') {
-          acl.setReadAccess(user, false);
-          acl.setWriteAccess(user, true);
-        }
-      }
-    }
+  if (reqUser && aclOptions.currentUser) {
+    aclOptions[reqUser] = aclOptions.currentUser;
   }
-  this.data.ACL = acl.toJSON();
+  delete aclOptions.currentUser;
+  this.data.ACL = aclOptions;
   this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
   if (this.storage.fieldsChangedByTrigger.indexOf('ACL') < 0) {
     this.storage.fieldsChangedByTrigger.push('ACL');

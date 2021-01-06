@@ -113,7 +113,12 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_DEFAULT_ACL',
     help: 'Options for default ACL on classes',
     action: parsers.objectParser,
-    default: 'private',
+    default: {
+      currentUser: {
+        read: true,
+        write: true,
+      },
+    },
   },
   directAccess: {
     env: 'PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS',
