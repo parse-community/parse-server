@@ -217,6 +217,13 @@ RestWrite.prototype.buildDefaultACL = function () {
     aclOptions[reqUser] = aclOptions.currentUser;
   }
   delete aclOptions.currentUser;
+  const publicACL = new Parse.ACL();
+  publicACL.setPublicReadAccess(true);
+  publicACL.setPublicWriteAccess(true);
+  const newACL = new Parse.ACL(aclOptions);
+  if (publicACL.equals(newACL)) {
+    return;
+  }
   this.data.ACL = aclOptions;
   this.storage.fieldsChangedByTrigger = this.storage.fieldsChangedByTrigger || [];
   if (this.storage.fieldsChangedByTrigger.indexOf('ACL') < 0) {
