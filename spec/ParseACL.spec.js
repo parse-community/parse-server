@@ -3,6 +3,7 @@
 const rest = require('../lib/rest');
 const Config = require('../lib/Config');
 const auth = require('../lib/Auth');
+const request = require('../lib/request');
 
 describe('Parse.ACL', () => {
   it('acl must be valid', done => {
@@ -1216,5 +1217,54 @@ describe('Parse.ACL', () => {
     expect(acl['customId'].write).toBe(true);
     expect(acl['customId'].read).toBeUndefined();
     done();
+  });
+  it('works with Parse REST API', async () => {
+    await reconfigureServer({
+      defaultACL: {
+        '*': {
+          read: true,
+        },
+        currentUser: {
+          read: true,
+        },
+        'role:Administrator': {
+          read: true,
+        },
+        customId: {
+          read: true,
+        },
+      },
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Session-Token': user.getSessionToken(),
+      'Content-Type': 'application/json',
+    };
+    const { data } = await request({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject',
+      body: {
+        foo: 'bar',
+      },
+      json: true,
+    });
+    const result = await request({
+      method: 'GET',
+      headers: headers,
+      url: `http://localhost:8378/1/classes/TestObject/${data.objectId}`,
+    });
+    const { ACL, objectId } = result.data;
+    expect(objectId).toBe(data.objectId);
+    expect(ACL['*'].read).toBe(true);
+    expect(ACL['*'].write).toBeUndefined();
+    expect(ACL[user.id].read).toBe(true);
+    expect(ACL[user.id].write).toBeUndefined();
+    expect(ACL['role:Administrator'].read).toBe(true);
+    expect(ACL['role:Administrator'].write).toBeUndefined();
+    expect(ACL['customId'].read).toBe(true);
+    expect(ACL['customId'].write).toBeUndefined();
   });
 });
