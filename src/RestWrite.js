@@ -105,10 +105,10 @@ RestWrite.prototype.execute = function () {
       return this.validateAuthData();
     })
     .then(() => {
-      return this.buildDefaultACL();
+      return this.runBeforeSaveTrigger();
     })
     .then(() => {
-      return this.runBeforeSaveTrigger();
+      return this.buildDefaultACL();
     })
     .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
@@ -202,7 +202,7 @@ RestWrite.prototype.validateSchema = function () {
 
 // builds the default ACL depending on the className
 RestWrite.prototype.buildDefaultACL = function () {
-  if (this.data.ACL) {
+  if (this.data.ACL || (this.originalData && this.originalData.ACL)) {
     return;
   }
   let aclOptions = this.config.defaultACL || 'private';
@@ -212,6 +212,9 @@ RestWrite.prototype.buildDefaultACL = function () {
   const reqUser = this.auth.user && this.auth.user.id;
   const acl = new Parse.ACL();
   if (typeof aclOptions === 'string') {
+    if (aclOptions === 'publicReadWrite') {
+      return;
+    }
     if (aclOptions === 'private') {
       acl.setPublicReadAccess(false);
       acl.setPublicWriteAccess(false);
@@ -220,9 +223,6 @@ RestWrite.prototype.buildDefaultACL = function () {
       acl.setPublicWriteAccess(false);
     } else if (aclOptions === 'publicWrite') {
       acl.setPublicReadAccess(false);
-      acl.setPublicWriteAccess(true);
-    } else if (aclOptions === 'publicReadWrite') {
-      acl.setPublicReadAccess(true);
       acl.setPublicWriteAccess(true);
     } else if (aclOptions.includes('roleRead:')) {
       const roleName = getRoleName('roleRead');

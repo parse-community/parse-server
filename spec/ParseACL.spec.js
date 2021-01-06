@@ -963,6 +963,31 @@ describe('Parse.ACL', () => {
     done();
   });
 
+  it('defaultACL prevents other users', async function (done) {
+    await reconfigureServer({
+      defaultACL: 'private',
+    });
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const user2 = await Parse.User.signUp('testuser2', 'p@ssword');
+    const obj = new Parse.Object('TestObject');
+    obj.set('foo', 'bar');
+    await obj.save(null, { sessionToken: user.getSessionToken() });
+    expect(obj.getACL()).toBeDefined();
+    const acl = obj.getACL().toJSON();
+    expect(acl['*']).toBeUndefined();
+    expect(acl[user.id].write).toBeTrue();
+    expect(acl[user.id].read).toBeTrue();
+    const objQuery = new Parse.Query('TestObject');
+    try {
+      await objQuery.get(obj.id, { sessionToken: user2.getSessionToken() });
+      fail('should not have been able to get this object');
+    } catch (e) {
+      expect(e.code).toBe(101);
+    }
+
+    done();
+  });
+
   it('defaultACL publicRead', async function (done) {
     await reconfigureServer({
       defaultACL: 'publicRead',
