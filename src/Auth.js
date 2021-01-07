@@ -393,11 +393,14 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
   userAuthData = {},
   config
 ) => {
-  const savedUserProviders = Object.keys(userAuthData);
+  const savedUserProviders = Object.keys(userAuthData).map(provider => ({
+    name: provider,
+    adapter: config.authDataManager.getValidatorForProvider(provider).adapter,
+  }));
 
   const hasProvidedASoloProvider = savedUserProviders.some(
     provider =>
-      config.auth[provider] && config.auth[provider].policy === 'solo' && authData[provider]
+      provider && provider.adapter && provider.adapter.policy === 'solo' && authData[provider.name]
   );
 
   // Solo providers can be considered as safe
@@ -407,12 +410,12 @@ const checkIfUserHasProvidedConfiguredProvidersForLogin = (
 
   const additionProvidersNotFound = [];
   const hasProvidedAtLeastOneAdditionalProvider = savedUserProviders.some(provider => {
-    if (config.auth[provider] && config.auth[provider].policy === 'additional') {
-      if (authData[provider]) {
+    if (provider && provider.adapter && provider.adapter.policy === 'additional') {
+      if (authData[provider.name]) {
         return true;
       } else {
         // Push missing provider for plausible error return
-        additionProvidersNotFound.push(provider);
+        additionProvidersNotFound.push(provider.name);
       }
     }
   });
