@@ -139,6 +139,7 @@ function loadAuthAdapter(provider, authOptions) {
         'validateLogin',
         'validateUpdate',
         'challenge',
+        'policy',
       ].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
