@@ -538,7 +538,7 @@ RestWrite.prototype.handleAuthData = async function (authData) {
       // we need to set it up there.
       // We are supposed to have a response only on LOGIN with authData, so we skip those
       // If we're not logging in, but just updating the current user, we can safely skip that part
-      if (isLogin && hasMutatedAuthData) {
+      if (isLogin && hasMutatedAuthData && Object.keys(this.data.authData).length) {
         // Assign the new authData in the response
         Object.keys(mutatedAuthData).forEach(provider => {
           this.response.response.authData[provider] = mutatedAuthData[provider];
