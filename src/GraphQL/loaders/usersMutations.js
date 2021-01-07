@@ -54,7 +54,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
         return {
           viewer,
         };
@@ -130,7 +130,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
         return {
           viewer,
         };
@@ -194,7 +194,7 @@ const load = parseGraphQLSchema => {
           'viewer.user.',
           objectId
         );
-        if (authDataResponse) viewer.user.authDataResponse = authDataResponse;
+        if (authDataResponse && viewer.user) viewer.user.authDataResponse = authDataResponse;
         return {
           viewer,
         };
