@@ -79,7 +79,7 @@ function authDataValidator(provider, adapter, appIds, options) {
       // We can consider for DX purpose when masterKey is detected, we should
       // trigger a logged in user
       const isLoggedIn =
-        (req.auth.user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
+        (req.auth.user && user && req.auth.user.id === user.id) || (user && req.auth.isMaster);
       let isUpdate = false;
       let hasAuthDataConfigured = false;
 
