@@ -52,7 +52,7 @@ function configureTransports(options) {
         colorize: true,
         name: 'console',
         silent,
-        format: consoleFormat,
+        format: format.combine(format.splat(), consoleFormat),
       },
       options
     );
