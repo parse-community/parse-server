@@ -135,6 +135,7 @@ const reconfigureServer = changedConfiguration => {
           if (error) {
             reject(error);
           } else {
+            Parse.CoreManager.setRESTController(RESTController);
             resolve(parseServer);
           }
         },
@@ -165,7 +166,6 @@ const reconfigureServer = changedConfiguration => {
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
-Parse.CoreManager.setRESTController(RESTController);
 
 beforeEach(done => {
   try {
@@ -189,7 +189,6 @@ beforeEach(done => {
     .then(() => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
-      Parse.CoreManager.setRESTController(RESTController);
 
       done();
     })
