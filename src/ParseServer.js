@@ -185,7 +185,7 @@ class ParseServer {
       });
     }
 
-    // Bypass HTTP calls made by SDK during node runtime
+    // Replace HTTP Interface when using JS SDK in current node runtime
     Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
 
     return api;
