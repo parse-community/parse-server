@@ -1805,6 +1805,30 @@ describe('Auth Adapter features', () => {
     'X-Parse-REST-API-Key': 'rest',
   };
 
+  it('should ensure no duplicate auth data id after before save', async () => {
+    await reconfigureServer({
+      auth: { baseAdapter },
+      cloud: () => {
+        Parse.Cloud.beforeSave('_User', async request => {
+          request.object.set('authData', { baseAdapter: { id: 'test' } });
+        });
+      },
+    });
+
+    const user = new Parse.User();
+    await user.save({ authData: { baseAdapter: { id: 'another' } } });
+    await user.fetch({ useMasterKey: true });
+    expect(user.get('authData')).toEqual({ baseAdapter: { id: 'test' } });
+
+    const user2 = new Parse.User();
+    try {
+      await user2.save({ authData: { baseAdapter: { id: 'another' } } });
+      fail();
+    } catch (e) {
+      expect(e.message).toContain('this auth is already used');
+    }
+  });
+
   it('should pass authData, options, req, user to validateAuthData', async () => {
     spyOn(baseAdapter, 'validateAuthData').and.resolveTo({});
     await reconfigureServer({ auth: { baseAdapter } });

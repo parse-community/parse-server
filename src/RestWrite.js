@@ -108,6 +108,9 @@ RestWrite.prototype.execute = function () {
       return this.runBeforeSaveTrigger();
     })
     .then(() => {
+      return this.ensureUniqueAuthDataId();
+    })
+    .then(() => {
       return this.deleteEmailResetTokenIfNeeded();
     })
     .then(() => {
@@ -442,6 +445,31 @@ RestWrite.prototype.getUserId = function () {
     return this.query.objectId;
   } else if (this.auth && this.auth.user && this.auth.user.id) {
     return this.auth.user.id;
+  }
+};
+
+// Developers are allowed to change authData via before save trigger
+// we need after before save to ensure that the developer
+// is not currently duplicating auth data ID
+RestWrite.prototype.ensureUniqueAuthDataId = async function () {
+  if (this.className !== '_User') return;
+  if (!this.data.authData) return;
+
+  const hasAuthDataId = Object.keys(this.data.authData).some(
+    key => this.data.authData[key] && this.data.authData[key].id
+  );
+
+  if (!hasAuthDataId) return;
+
+  const r = await Auth.findUsersWithAuthData(this.config, this.data.authData);
+  const results = this.filteredObjectsByACL(r);
+  if (results.length > 1) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
+  }
+  // use data.objectId in case of login time and found user during handle validateAuthData
+  const userId = this.getUserId() || this.data.objectId;
+  if (results.length === 1 && userId !== results[0].objectId) {
+    throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED, 'this auth is already used');
   }
 };
 
