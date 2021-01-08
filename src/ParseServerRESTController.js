@@ -12,7 +12,7 @@ function getSessionToken(options) {
 }
 
 function getAuth(options = {}, config) {
-  const installationId = options.installationId || (process.env.TESTING ? 'directAccess' : 'cloud');
+  const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
     return Promise.resolve(new Auth.Auth({ config, isMaster: true, installationId }));
   }
@@ -103,7 +103,7 @@ function ParseServerRESTController(applicationId, router) {
             applicationId: applicationId,
             sessionToken: options.sessionToken,
             installationId: options.installationId,
-            context: options.context || {}, // Add context
+            context: options.context || {},
           },
           query,
         };
@@ -139,6 +139,7 @@ function ParseServerRESTController(applicationId, router) {
   return {
     request: handleRequest,
     ajax: RESTController.ajax,
+    handleError: RESTController.handleError,
   };
 }
 

@@ -185,8 +185,9 @@ class ParseServer {
       });
     }
 
-    // Set direct access REST controller
+    // Bypass HTTP calls made by SDK during node runtime
     Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
+
     return api;
   }
 

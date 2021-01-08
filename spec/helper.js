@@ -30,6 +30,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const RESTController = require('parse/lib/node/RESTController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -164,6 +165,7 @@ const reconfigureServer = changedConfiguration => {
 // Set up a Parse client to talk to our test API server
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
+Parse.CoreManager.setRESTController(RESTController);
 
 beforeEach(done => {
   try {
@@ -187,6 +189,8 @@ beforeEach(done => {
     .then(() => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
+      Parse.CoreManager.setRESTController(RESTController);
+
       done();
     })
     .catch(done.fail);
