@@ -30,7 +30,6 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
-const RESTController = require('parse/lib/node/RESTController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -87,6 +86,7 @@ const defaultConfiguration = {
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
+  directAccess: false,
   silent,
   logLevel,
   fileUpload: {
@@ -135,7 +135,6 @@ const reconfigureServer = changedConfiguration => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.setRESTController(RESTController);
             resolve(parseServer);
           }
         },
