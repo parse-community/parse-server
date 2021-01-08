@@ -29,6 +29,8 @@ export interface ParseServerOptions {
   appName: ?string;
   /* Add headers to Access-Control-Allow-Headers */
   allowHeaders: ?(string[]);
+  /* Sets the origin to Access-Control-Allow-Origin */
+  allowOrigin: ?string;
   /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter<AnalyticsAdapter>;
   /* Adapter module for the files sub-system */
@@ -75,6 +77,9 @@ export interface ParseServerOptions {
   javascriptKey: ?string;
   /* Key for Unity and .Net SDK */
   dotNetKey: ?string;
+  /* Key for encrypting your files
+  :ENV: PARSE_SERVER_ENCRYPTION_KEY */
+  encryptionKey: ?string;
   /* Key for REST calls
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
@@ -93,7 +98,7 @@ export interface ParseServerOptions {
   /* Protected fields that should be treated with extra security when fetching details.
   :DEFAULT: {"_User": {"*": ["email"]}} */
   protectedFields: ?ProtectedFields;
-  /* Enable (or disable) anon users, defaults to true
+  /* Enable (or disable) anonymous users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS
   :DEFAULT: true */
   enableAnonymousUsers: ?boolean;
@@ -119,10 +124,13 @@ export interface ParseServerOptions {
   preventLoginWithUnverifiedEmail: ?boolean;
   /* Email verification token validity duration, in seconds */
   emailVerifyTokenValidityDuration: ?number;
+  /* an existing email verify token should be reused when resend verification email is requested
+  :DEFAULT: false */
+  emailVerifyTokenReuseIfValid: ?boolean;
   /* account lockout policy for failed login attempts */
-  accountLockout: ?any;
+  accountLockout: ?AccountLockoutOptions;
   /* Password policy for enforcing password related rules */
-  passwordPolicy: ?any;
+  passwordPolicy: ?PasswordPolicyOptions;
   /* Adapter module for the cache */
   cacheAdapter: ?Adapter<CacheAdapter>;
   /* Adapter module for email sending */
@@ -182,6 +190,13 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+  /* Options for request idempotency to deduplicate identical requests that may be caused by network issues. Caution, this is an experimental feature that may not be appropriate for production.
+  :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
+  :DEFAULT: false */
+  idempotencyOptions: ?IdempotencyOptions;
+  /* Options for file uploads
+  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS */
+  fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -250,7 +265,7 @@ export interface LiveQueryServerOptions {
   keyPairs: ?any;
   /* Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients, defaults to 10 * 1000 ms (10 s).*/
   websocketTimeout: ?number;
-  /* Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).*/
+  /* Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details, defaults to 5 * 1000 ms (5 seconds).*/
   cacheTimeout: ?number;
   /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE, defaults to INFO.*/
   logLevel: ?string;
@@ -265,4 +280,49 @@ export interface LiveQueryServerOptions {
   pubSubAdapter: ?Adapter<PubSubAdapter>;
   /* Adapter module for the WebSocketServer */
   wssAdapter: ?Adapter<WSSAdapter>;
+}
+
+export interface IdempotencyOptions {
+  /* An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
+  :DEFAULT: [] */
+  paths: ?(string[]);
+  /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+  :DEFAULT: 300 */
+  ttl: ?number;
+}
+
+export interface AccountLockoutOptions {
+  /* number of minutes that a locked-out account remains locked out before automatically becoming unlocked. */
+  duration: ?number;
+  /* number of failed sign-in attempts that will cause a user account to be locked */
+  threshold: ?number;
+}
+
+export interface PasswordPolicyOptions {
+  /* a RegExp object or a regex string representing the pattern to enforce */
+  validatorPattern: ?string;
+  /* a callback function to be invoked to validate the password  */
+  validatorCallback: ?() => void;
+  /* disallow username in passwords */
+  doNotAllowUsername: ?boolean;
+  /* days for password expiry */
+  maxPasswordAge: ?number;
+  /* setting to prevent reuse of previous n passwords */
+  maxPasswordHistory: ?number;
+  /* time for token to expire */
+  resetTokenValidityDuration: ?number;
+  /* resend token if it's still valid */
+  resetTokenReuseIfValid: ?boolean;
+}
+
+export interface FileUploadOptions {
+  /*  Is true if file upload should be allowed for anonymous users.
+  :DEFAULT: false */
+  enableForAnonymousUser: ?boolean;
+  /* Is true if file upload should be allowed for authenticated users.
+  :DEFAULT: true */
+  enableForAuthenticatedUser: ?boolean;
+  /* Is true if file upload should be allowed for anyone, regardless of user authentication.
+  :DEFAULT: false */
+  enableForPublic: ?boolean;
 }

@@ -10,16 +10,26 @@
 import { MongoClient, GridFSBucket, Db } from 'mongodb';
 import { FilesAdapter, validateFilename } from './FilesAdapter';
 import defaults from '../../defaults';
+const crypto = require('crypto');
 
 export class GridFSBucketAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
   _mongoOptions: Object;
+  _algorithm: string;
 
-  constructor(mongoDatabaseURI = defaults.DefaultMongoURI, mongoOptions = {}) {
+  constructor(
+    mongoDatabaseURI = defaults.DefaultMongoURI,
+    mongoOptions = {},
+    encryptionKey = undefined
+  ) {
     super();
     this._databaseURI = mongoDatabaseURI;
-
+    this._algorithm = 'aes-256-gcm';
+    this._encryptionKey =
+      encryptionKey !== undefined
+        ? crypto.createHash('sha256').update(String(encryptionKey)).digest('base64').substr(0, 32)
+        : null;
     const defaultMongoOptions = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -29,13 +39,12 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(
-        this._databaseURI,
-        this._mongoOptions
-      ).then(client => {
-        this._client = client;
-        return client.db(client.s.options.dbName);
-      });
+      this._connectionPromise = MongoClient.connect(this._databaseURI, this._mongoOptions).then(
+        client => {
+          this._client = client;
+          return client.db(client.s.options.dbName);
+        }
+      );
     }
     return this._connectionPromise;
   }
@@ -46,10 +55,30 @@ export class GridFSBucketAdapter extends FilesAdapter {
 
   // For a given config object, filename, and data, store a file
   // Returns a promise
-  async createFile(filename: string, data) {
+  async createFile(filename: string, data, contentType, options = {}) {
     const bucket = await this._getBucket();
-    const stream = await bucket.openUploadStream(filename);
-    await stream.write(data);
+    const stream = await bucket.openUploadStream(filename, {
+      metadata: options.metadata,
+    });
+    if (this._encryptionKey !== null) {
+      try {
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(this._algorithm, this._encryptionKey, iv);
+        const encryptedResult = Buffer.concat([
+          cipher.update(data),
+          cipher.final(),
+          iv,
+          cipher.getAuthTag(),
+        ]);
+        await stream.write(encryptedResult);
+      } catch (err) {
+        return new Promise((resolve, reject) => {
+          return reject(err);
+        });
+      }
+    } else {
+      await stream.write(data);
+    }
     stream.end();
     return new Promise((resolve, reject) => {
       stream.on('finish', resolve);
@@ -80,7 +109,23 @@ export class GridFSBucketAdapter extends FilesAdapter {
         chunks.push(data);
       });
       stream.on('end', () => {
-        resolve(Buffer.concat(chunks));
+        const data = Buffer.concat(chunks);
+        if (this._encryptionKey !== null) {
+          try {
+            const authTagLocation = data.length - 16;
+            const ivLocation = data.length - 32;
+            const authTag = data.slice(authTagLocation);
+            const iv = data.slice(ivLocation, authTagLocation);
+            const encrypted = data.slice(0, ivLocation);
+            const decipher = crypto.createDecipheriv(this._algorithm, this._encryptionKey, iv);
+            decipher.setAuthTag(authTag);
+            const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+            return resolve(decrypted);
+          } catch (err) {
+            return reject(err);
+          }
+        }
+        resolve(data);
       });
       stream.on('error', err => {
         reject(err);
@@ -88,14 +133,86 @@ export class GridFSBucketAdapter extends FilesAdapter {
     });
   }
 
+  async rotateEncryptionKey(options = {}) {
+    var fileNames = [];
+    var oldKeyFileAdapter = {};
+    const bucket = await this._getBucket();
+    if (options.oldKey !== undefined) {
+      oldKeyFileAdapter = new GridFSBucketAdapter(
+        this._databaseURI,
+        this._mongoOptions,
+        options.oldKey
+      );
+    } else {
+      oldKeyFileAdapter = new GridFSBucketAdapter(this._databaseURI, this._mongoOptions);
+    }
+    if (options.fileNames !== undefined) {
+      fileNames = options.fileNames;
+    } else {
+      const fileNamesIterator = await bucket.find().toArray();
+      fileNamesIterator.forEach(file => {
+        fileNames.push(file.filename);
+      });
+    }
+    return new Promise(resolve => {
+      var fileNamesNotRotated = fileNames;
+      var fileNamesRotated = [];
+      var fileNameTotal = fileNames.length;
+      var fileNameIndex = 0;
+      fileNames.forEach(fileName => {
+        oldKeyFileAdapter
+          .getFileData(fileName)
+          .then(plainTextData => {
+            //Overwrite file with data encrypted with new key
+            this.createFile(fileName, plainTextData)
+              .then(() => {
+                fileNamesRotated.push(fileName);
+                fileNamesNotRotated = fileNamesNotRotated.filter(function (value) {
+                  return value !== fileName;
+                });
+                fileNameIndex += 1;
+                if (fileNameIndex == fileNameTotal) {
+                  resolve({
+                    rotated: fileNamesRotated,
+                    notRotated: fileNamesNotRotated,
+                  });
+                }
+              })
+              .catch(() => {
+                fileNameIndex += 1;
+                if (fileNameIndex == fileNameTotal) {
+                  resolve({
+                    rotated: fileNamesRotated,
+                    notRotated: fileNamesNotRotated,
+                  });
+                }
+              });
+          })
+          .catch(() => {
+            fileNameIndex += 1;
+            if (fileNameIndex == fileNameTotal) {
+              resolve({
+                rotated: fileNamesRotated,
+                notRotated: fileNamesNotRotated,
+              });
+            }
+          });
+      });
+    });
+  }
+
   getFileLocation(config, filename) {
-    return (
-      config.mount +
-      '/files/' +
-      config.applicationId +
-      '/' +
-      encodeURIComponent(filename)
-    );
+    return config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename);
+  }
+
+  async getMetadata(filename) {
+    const bucket = await this._getBucket();
+    const files = await bucket.find({ filename }).toArray();
+    if (files.length === 0) {
+      return {};
+    }
+    const { metadata } = files[0];
+    return { metadata };
   }
 
   async handleFileStream(filename: string, req, res, contentType) {

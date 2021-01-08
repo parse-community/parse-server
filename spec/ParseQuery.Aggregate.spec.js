@@ -55,7 +55,7 @@ const loadTestData = () => {
   return Parse.Object.saveAll([obj1, obj2, obj3, obj4]);
 };
 
-const get = function(url, options) {
+const get = function (url, options) {
   options.qs = options.body;
   delete options.body;
   Object.keys(options.qs).forEach(key => {
@@ -128,15 +128,9 @@ describe('Parse.Query Aggregate testing', () => {
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(3);
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
-        ).toBe(true);
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).not.toBe(undefined);
         expect(resp.results[1].objectId).not.toBe(undefined);
         expect(resp.results[2].objectId).not.toBe(undefined);
@@ -155,15 +149,9 @@ describe('Parse.Query Aggregate testing', () => {
     });
     const resp = await get(Parse.serverURL + '/aggregate/TestObject', options);
     expect(resp.results.length).toBe(3);
-    expect(
-      Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-    ).toBe(true);
-    expect(
-      Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
-    ).toBe(true);
-    expect(
-      Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')
-    ).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(resp.results[2], 'objectId')).toBe(true);
     expect(resp.results[0].objectId).not.toBe(undefined);
     expect(resp.results[1].objectId).not.toBe(undefined);
     expect(resp.results[2].objectId).not.toBe(undefined);
@@ -321,15 +309,12 @@ describe('Parse.Query Aggregate testing', () => {
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
         expect(resp.results.length).toBe(2);
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')
-        ).toBe(true);
-        expect(
-          resp.results.sort((a, b) => (a.objectId > b.objectId ? 1 : -1))
-        ).toEqual([{ objectId: 10 }, { objectId: 20 }]);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[1], 'objectId')).toBe(true);
+        expect(resp.results.sort((a, b) => (a.objectId > b.objectId ? 1 : -1))).toEqual([
+          { objectId: 10 },
+          { objectId: 20 },
+        ]);
         done();
       })
       .catch(done.fail);
@@ -433,12 +418,8 @@ describe('Parse.Query Aggregate testing', () => {
       expect(results.length).toEqual(4);
       for (let i = 0; i < results.length; i++) {
         const item = results[i];
-        expect(Object.prototype.hasOwnProperty.call(item, 'updatedAt')).toEqual(
-          true
-        );
-        expect(Object.prototype.hasOwnProperty.call(item, 'objectId')).toEqual(
-          false
-        );
+        expect(Object.prototype.hasOwnProperty.call(item, 'updatedAt')).toEqual(true);
+        expect(Object.prototype.hasOwnProperty.call(item, 'objectId')).toEqual(false);
       }
       done();
     });
@@ -529,12 +510,8 @@ describe('Parse.Query Aggregate testing', () => {
       })
       .then(results => {
         expect(results.length).toEqual(3);
-        expect(results.some(result => result.objectId === pointer1.id)).toEqual(
-          true
-        );
-        expect(results.some(result => result.objectId === pointer2.id)).toEqual(
-          true
-        );
+        expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
+        expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
         expect(results.some(result => result.objectId === null)).toEqual(true);
         done();
       });
@@ -548,9 +525,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(50);
         done();
@@ -566,9 +541,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(4);
         done();
@@ -584,9 +557,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].minScore).toBe(10);
         done();
@@ -602,9 +573,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].maxScore).toBe(20);
         done();
@@ -620,9 +589,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
     get(Parse.serverURL + '/aggregate/TestObject', options)
       .then(resp => {
-        expect(
-          Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')
-        ).toBe(true);
+        expect(Object.prototype.hasOwnProperty.call(resp.results[0], 'objectId')).toBe(true);
         expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].avgScore).toBe(12.5);
         done();
@@ -783,10 +750,7 @@ describe('Parse.Query Aggregate testing', () => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         match: {
-          $or: [
-            { score: { $gt: 15, $lt: 25 } },
-            { views: { $gt: 750, $lt: 850 } },
-          ],
+          $or: [{ score: { $gt: 15, $lt: 25 } }, { views: { $gt: 750, $lt: 850 } }],
         },
       },
     });
@@ -854,12 +818,8 @@ describe('Parse.Query Aggregate testing', () => {
         expect(results.length).toEqual(2);
         expect(results[0].pointer.objectId).toEqual(pointer1.id);
         expect(results[1].pointer.objectId).toEqual(pointer1.id);
-        expect(results.some(result => result.objectId === obj1.id)).toEqual(
-          true
-        );
-        expect(results.some(result => result.objectId === obj3.id)).toEqual(
-          true
-        );
+        expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
+        expect(results.some(result => result.objectId === obj3.id)).toEqual(true);
         done();
       });
   });
@@ -880,11 +840,7 @@ describe('Parse.Query Aggregate testing', () => {
     Parse.Object.saveAll([obj1, obj2])
       .then(() => {
         const now = new Date();
-        const today = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const pipeline = [{ match: { createdAt: { $gte: today } } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
@@ -903,11 +859,7 @@ describe('Parse.Query Aggregate testing', () => {
     Parse.Object.saveAll([obj1, obj2])
       .then(() => {
         const now = new Date();
-        const today = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const pipeline = [{ match: { updatedAt: { $gte: today } } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
@@ -926,11 +878,7 @@ describe('Parse.Query Aggregate testing', () => {
     Parse.Object.saveAll([obj1, obj2])
       .then(() => {
         const now = new Date();
-        const future = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          now.getDate()
-        );
+        const future = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
         const pipeline = [{ match: { createdAt: future } }];
         const query = new Parse.Query(TestObject);
         return query.aggregate(pipeline);
@@ -958,12 +906,8 @@ describe('Parse.Query Aggregate testing', () => {
         expect(results.length).toEqual(2);
         expect(results[0].pointer.objectId).toEqual(pointer.id);
         expect(results[1].pointer.objectId).toEqual(pointer.id);
-        expect(results.some(result => result.objectId === obj1.id)).toEqual(
-          true
-        );
-        expect(results.some(result => result.objectId === obj2.id)).toEqual(
-          true
-        );
+        expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
+        expect(results.some(result => result.objectId === obj2.id)).toEqual(true);
         done();
       });
   });
@@ -1092,9 +1036,7 @@ describe('Parse.Query Aggregate testing', () => {
       .then(resp => {
         expect(resp.results.length).toBe(2);
         resp.results.forEach(result => {
-          expect(Object.prototype.hasOwnProperty.call(result, 'objectId')).toBe(
-            true
-          );
+          expect(Object.prototype.hasOwnProperty.call(result, 'objectId')).toBe(true);
           expect(result.name).toBe(undefined);
           expect(result.sender).toBe(undefined);
           expect(result.size).toBe(undefined);
@@ -1212,12 +1154,8 @@ describe('Parse.Query Aggregate testing', () => {
       })
       .then(results => {
         expect(results.length).toEqual(2);
-        expect(results.some(result => result.objectId === pointer1.id)).toEqual(
-          true
-        );
-        expect(results.some(result => result.objectId === pointer2.id)).toEqual(
-          true
-        );
+        expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
+        expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
         done();
       });
   });
@@ -1345,10 +1283,10 @@ describe('Parse.Query Aggregate testing', () => {
     user.set('score', score);
     user
       .signUp()
-      .then(function() {
+      .then(function () {
         return get(Parse.serverURL + '/aggregate/_User', options);
       })
-      .then(function(resp) {
+      .then(function (resp) {
         expect(resp.results.length).toBe(1);
         const result = resp.results[0];
 
@@ -1369,84 +1307,88 @@ describe('Parse.Query Aggregate testing', () => {
 
         done();
       })
-      .catch(function(err) {
+      .catch(function (err) {
         fail(err);
       });
   });
 
-  it_exclude_dbs(['postgres'])(
-    'aggregate allow multiple of same stage',
-    done => {
-      const pointer1 = new TestObject({ value: 1 });
-      const pointer2 = new TestObject({ value: 2 });
-      const pointer3 = new TestObject({ value: 3 });
+  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', done => {
+    const pointer1 = new TestObject({ value: 1 });
+    const pointer2 = new TestObject({ value: 2 });
+    const pointer3 = new TestObject({ value: 3 });
 
-      const obj1 = new TestObject({ pointer: pointer1, name: 'Hello' });
-      const obj2 = new TestObject({ pointer: pointer2, name: 'Hello' });
-      const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
+    const obj1 = new TestObject({ pointer: pointer1, name: 'Hello' });
+    const obj2 = new TestObject({ pointer: pointer2, name: 'Hello' });
+    const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
 
-      const options = Object.assign({}, masterKeyOptions, {
-        body: {
-          pipeline: [
-            {
-              match: { name: 'Hello' },
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        pipeline: [
+          {
+            match: { name: 'Hello' },
+          },
+          {
+            // Transform className$objectId to objectId and store in new field tempPointer
+            project: {
+              tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
             },
-            {
-              // Transform className$objectId to objectId and store in new field tempPointer
-              project: {
-                tempPointer: { $substr: ['$_p_pointer', 11, -1] }, // Remove TestObject$
-              },
+          },
+          {
+            // Left Join, replace objectId stored in tempPointer with an actual object
+            lookup: {
+              from: 'test_TestObject',
+              localField: 'tempPointer',
+              foreignField: '_id',
+              as: 'tempPointer',
             },
-            {
-              // Left Join, replace objectId stored in tempPointer with an actual object
-              lookup: {
-                from: 'test_TestObject',
-                localField: 'tempPointer',
-                foreignField: '_id',
-                as: 'tempPointer',
-              },
+          },
+          {
+            // lookup returns an array, Deconstructs an array field to objects
+            unwind: {
+              path: '$tempPointer',
             },
-            {
-              // lookup returns an array, Deconstructs an array field to objects
-              unwind: {
-                path: '$tempPointer',
-              },
-            },
-            {
-              match: { 'tempPointer.value': 2 },
-            },
-          ],
-        },
+          },
+          {
+            match: { 'tempPointer.value': 2 },
+          },
+        ],
+      },
+    });
+    Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3])
+      .then(() => {
+        return get(Parse.serverURL + '/aggregate/TestObject', options);
+      })
+      .then(resp => {
+        expect(resp.results.length).toEqual(1);
+        expect(resp.results[0].tempPointer.value).toEqual(2);
+        done();
       });
-      Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3])
-        .then(() => {
-          return get(Parse.serverURL + '/aggregate/TestObject', options);
-        })
-        .then(resp => {
-          expect(resp.results.length).toEqual(1);
-          expect(resp.results[0].tempPointer.value).toEqual(2);
-          done();
-        });
-    }
-  );
+  });
 
-  it_only_db('mongo')('geoNear with location query', async () => {
+  it_only_db('mongo')('aggregate geoNear with location query', async () => {
     // Create geo index which is required for `geoNear` query
     const database = Config.get(Parse.applicationId).database;
     const schema = await new Parse.Schema('GeoObject').save();
-    await database.adapter.ensureIndex(
-      'GeoObject',
-      schema,
-      ['location'],
-      'geoIndex',
-      false,
-      '2dsphere'
-    );
+    await database.adapter.ensureIndex('GeoObject', schema, ['location'], undefined, false, {
+      indexType: '2dsphere',
+    });
     // Create objects
     const GeoObject = Parse.Object.extend('GeoObject');
-    const obj1 = new GeoObject({ value: 1, location: new Parse.GeoPoint(1, 1), date: new Date(1) });
-    const obj2 = new GeoObject({ value: 2, location: new Parse.GeoPoint(2, 1), date: new Date(2) });
-    const obj3 = new GeoObject({ value: 3, location: new Parse.GeoPoint(3, 1), date: new Date(3) });
+    const obj1 = new GeoObject({
+      value: 1,
+      location: new Parse.GeoPoint(1, 1),
+      date: new Date(1),
+    });
+    const obj2 = new GeoObject({
+      value: 2,
+      location: new Parse.GeoPoint(2, 1),
+      date: new Date(2),
+    });
+    const obj3 = new GeoObject({
+      value: 3,
+      location: new Parse.GeoPoint(3, 1),
+      date: new Date(3),
+    });
     await Parse.Object.saveAll([obj1, obj2, obj3]);
     // Create query
     const pipeline = [
@@ -1454,18 +1396,18 @@ describe('Parse.Query Aggregate testing', () => {
         geoNear: {
           near: {
             type: 'Point',
-            coordinates: [1, 1]
+            coordinates: [1, 1],
           },
           key: 'location',
           spherical: true,
           distanceField: 'dist',
           query: {
             date: {
-              $gte: new Date(2)
-            }
-          }
-        }
-      }
+              $gte: new Date(2),
+            },
+          },
+        },
+      },
     ];
     const query = new Parse.Query(GeoObject);
     const results = await query.aggregate(pipeline);
@@ -1473,5 +1415,102 @@ describe('Parse.Query Aggregate testing', () => {
     expect(results.length).toEqual(2);
     expect(results[0].value).toEqual(2);
     expect(results[1].value).toEqual(3);
+  });
+
+  it_only_db('mongo')('aggregate geoNear with near GeoJSON point', async () => {
+    // Create geo index which is required for `geoNear` query
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('GeoObject').save();
+    await database.adapter.ensureIndex(
+      'GeoObject',
+      schema,
+      ['location'],
+      undefined,
+      false,
+      '2dsphere'
+    );
+    // Create objects
+    const GeoObject = Parse.Object.extend('GeoObject');
+    const obj1 = new GeoObject({
+      value: 1,
+      location: new Parse.GeoPoint(1, 1),
+      date: new Date(1),
+    });
+    const obj2 = new GeoObject({
+      value: 2,
+      location: new Parse.GeoPoint(2, 1),
+      date: new Date(2),
+    });
+    const obj3 = new GeoObject({
+      value: 3,
+      location: new Parse.GeoPoint(3, 1),
+      date: new Date(3),
+    });
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+    // Create query
+    const pipeline = [
+      {
+        geoNear: {
+          near: {
+            type: 'Point',
+            coordinates: [1, 1],
+          },
+          key: 'location',
+          spherical: true,
+          distanceField: 'dist',
+        },
+      },
+    ];
+    const query = new Parse.Query(GeoObject);
+    const results = await query.aggregate(pipeline);
+    // Check results
+    expect(results.length).toEqual(3);
+  });
+
+  it_only_db('mongo')('aggregate geoNear with near legacy coordinate pair', async () => {
+    // Create geo index which is required for `geoNear` query
+    const database = Config.get(Parse.applicationId).database;
+    const schema = await new Parse.Schema('GeoObject').save();
+    await database.adapter.ensureIndex(
+      'GeoObject',
+      schema,
+      ['location'],
+      undefined,
+      false,
+      '2dsphere'
+    );
+    // Create objects
+    const GeoObject = Parse.Object.extend('GeoObject');
+    const obj1 = new GeoObject({
+      value: 1,
+      location: new Parse.GeoPoint(1, 1),
+      date: new Date(1),
+    });
+    const obj2 = new GeoObject({
+      value: 2,
+      location: new Parse.GeoPoint(2, 1),
+      date: new Date(2),
+    });
+    const obj3 = new GeoObject({
+      value: 3,
+      location: new Parse.GeoPoint(3, 1),
+      date: new Date(3),
+    });
+    await Parse.Object.saveAll([obj1, obj2, obj3]);
+    // Create query
+    const pipeline = [
+      {
+        geoNear: {
+          near: [1, 1],
+          key: 'location',
+          spherical: true,
+          distanceField: 'dist',
+        },
+      },
+    ];
+    const query = new Parse.Query(GeoObject);
+    const results = await query.aggregate(pipeline);
+    // Check results
+    expect(results.length).toEqual(3);
   });
 });

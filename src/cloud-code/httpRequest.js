@@ -10,7 +10,7 @@ const clients = {
 };
 
 function makeCallback(resolve, reject) {
-  return function(response) {
+  return function (response) {
     const chunks = [];
     response.on('data', chunk => {
       chunks.push(chunk);
@@ -30,7 +30,7 @@ function makeCallback(resolve, reject) {
   };
 }
 
-const encodeBody = function({ body, headers = {} }) {
+const encodeBody = function ({ body, headers = {} }) {
   if (typeof body !== 'object') {
     return { body, headers };
   }
@@ -47,18 +47,13 @@ const encodeBody = function({ body, headers = {} }) {
   } else {
     /* istanbul ignore next */
     if (contentTypeKeys.length > 1) {
-      log.error(
-        'Parse.Cloud.httpRequest',
-        'multiple content-type headers are set.'
-      );
+      log.error('Parse.Cloud.httpRequest', 'multiple content-type headers are set.');
     }
     // There maybe many, we'll just take the 1st one
     var contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
       body = JSON.stringify(body);
-    } else if (
-      headers[contentType].match(/application\/x-www-form-urlencoded/i)
-    ) {
+    } else if (headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
       body = querystring.stringify(body);
     }
   }
@@ -137,10 +132,7 @@ module.exports = function httpRequest(options) {
     requestOptions.agent = options.agent;
   }
   return new Promise((resolve, reject) => {
-    const req = client.request(
-      requestOptions,
-      makeCallback(resolve, reject, options)
-    );
+    const req = client.request(requestOptions, makeCallback(resolve, reject, options));
     if (options.body) {
       req.write(options.body);
     }

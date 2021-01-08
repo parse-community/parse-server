@@ -9,25 +9,20 @@ import { handleParseErrors, handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
-import ParseGraphQLController, {
-  ParseGraphQLConfig,
-} from '../Controllers/ParseGraphQLController';
+import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
 
   constructor(parseServer, config) {
-    this.parseServer =
-      parseServer ||
-      requiredParameter('You must provide a parseServer instance!');
+    this.parseServer = parseServer || requiredParameter('You must provide a parseServer instance!');
     if (!config || !config.graphQLPath) {
       requiredParameter('You must provide a config.graphQLPath!');
     }
     this.config = config;
     this.parseGraphQLController = this.parseServer.config.parseGraphQLController;
     this.log =
-      (this.parseServer.config && this.parseServer.config.loggerController) ||
-      defaultLogger;
+      (this.parseServer.config && this.parseServer.config.loggerController) || defaultLogger;
     this.parseGraphQLSchema = new ParseGraphQLSchema({
       parseGraphQLController: this.parseGraphQLController,
       databaseController: this.parseServer.config.databaseController,
@@ -52,9 +47,7 @@ class ParseGraphQLServer {
         },
       };
     } catch (e) {
-      this.log.error(
-        e.stack || (typeof e.toString === 'function' && e.toString()) || e
-      );
+      this.log.error(e.stack || (typeof e.toString === 'function' && e.toString()) || e);
       throw e;
     }
   }
@@ -101,14 +94,13 @@ class ParseGraphQLServer {
     }
     app.get(
       this.config.playgroundPath ||
-        requiredParameter(
-          'You must provide a config.playgroundPath to applyPlayground!'
-        ),
+        requiredParameter('You must provide a config.playgroundPath to applyPlayground!'),
       (_req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.write(
           renderPlaygroundPage({
             endpoint: this.config.graphQLPath,
+            version: '1.7.25',
             subscriptionEndpoint: this.config.subscriptionsPath,
             headers: {
               'X-Parse-Application-Id': this.parseServer.config.appId,
@@ -127,19 +119,13 @@ class ParseGraphQLServer {
         execute,
         subscribe,
         onOperation: async (_message, params, webSocket) =>
-          Object.assign(
-            {},
-            params,
-            await this._getGraphQLOptions(webSocket.upgradeReq)
-          ),
+          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
       },
       {
         server,
         path:
           this.config.subscriptionsPath ||
-          requiredParameter(
-            'You must provide a config.subscriptionsPath to createSubscriptions!'
-          ),
+          requiredParameter('You must provide a config.subscriptionsPath to createSubscriptions!'),
       }
     );
   }

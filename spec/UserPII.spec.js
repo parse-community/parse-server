@@ -15,11 +15,7 @@ describe('Personally Identifiable Information', () => {
   beforeEach(async done => {
     user = await Parse.User.signUp('tester', 'abc');
     user = await Parse.User.logIn(user.get('username'), 'abc');
-    await user
-      .set('email', EMAIL)
-      .set('zip', ZIP)
-      .set('ssn', SSN)
-      .save();
+    await user.set('email', EMAIL).set('zip', ZIP).set('ssn', SSN).save();
     done();
   });
 
@@ -87,14 +83,12 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via API with Find using master key', done => {
     return Parse.User.logOut().then(() =>
-      new Parse.Query(Parse.User)
-        .first({ useMasterKey: true })
-        .then(fetchedUser => {
-          expect(fetchedUser.get('email')).toBe(EMAIL);
-          expect(fetchedUser.get('zip')).toBe(ZIP);
-          expect(fetchedUser.get('ssn')).toBe(SSN);
-          done();
-        })
+      new Parse.Query(Parse.User).first({ useMasterKey: true }).then(fetchedUser => {
+        expect(fetchedUser.get('email')).toBe(EMAIL);
+        expect(fetchedUser.get('zip')).toBe(ZIP);
+        expect(fetchedUser.get('ssn')).toBe(SSN);
+        done();
+      })
     );
   });
 
@@ -120,14 +114,12 @@ describe('Personally Identifiable Information', () => {
 
   it('should get PII via API with Get using master key', done => {
     return Parse.User.logOut().then(() =>
-      new Parse.Query(Parse.User)
-        .get(user.id, { useMasterKey: true })
-        .then(fetchedUser => {
-          expect(fetchedUser.get('email')).toBe(EMAIL);
-          expect(fetchedUser.get('zip')).toBe(ZIP);
-          expect(fetchedUser.get('ssn')).toBe(SSN);
-          done();
-        })
+      new Parse.Query(Parse.User).get(user.id, { useMasterKey: true }).then(fetchedUser => {
+        expect(fetchedUser.get('email')).toBe(EMAIL);
+        expect(fetchedUser.get('zip')).toBe(ZIP);
+        expect(fetchedUser.get('ssn')).toBe(SSN);
+        done();
+      })
     );
   });
 
@@ -249,9 +241,7 @@ describe('Personally Identifiable Information', () => {
 
   describe('with deprecated configured sensitive fields', () => {
     beforeEach(done => {
-      return reconfigureServer({ userSensitiveFields: ['ssn', 'zip'] }).then(
-        done
-      );
+      return reconfigureServer({ userSensitiveFields: ['ssn', 'zip'] }).then(done);
     });
 
     it('should be able to get own PII via API with object', done => {
@@ -322,14 +312,12 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via API with Find using master key', done => {
       Parse.User.logOut().then(() =>
-        new Parse.Query(Parse.User)
-          .first({ useMasterKey: true })
-          .then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(EMAIL);
-            expect(fetchedUser.get('zip')).toBe(ZIP);
-            expect(fetchedUser.get('ssn')).toBe(SSN);
-            done();
-          })
+        new Parse.Query(Parse.User).first({ useMasterKey: true }).then(fetchedUser => {
+          expect(fetchedUser.get('email')).toBe(EMAIL);
+          expect(fetchedUser.get('zip')).toBe(ZIP);
+          expect(fetchedUser.get('ssn')).toBe(SSN);
+          done();
+        })
       );
     });
 
@@ -355,14 +343,12 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via API with Get using master key', done => {
       Parse.User.logOut().then(() =>
-        new Parse.Query(Parse.User)
-          .get(user.id, { useMasterKey: true })
-          .then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(EMAIL);
-            expect(fetchedUser.get('zip')).toBe(ZIP);
-            expect(fetchedUser.get('ssn')).toBe(SSN);
-            done();
-          })
+        new Parse.Query(Parse.User).get(user.id, { useMasterKey: true }).then(fetchedUser => {
+          expect(fetchedUser.get('email')).toBe(EMAIL);
+          expect(fetchedUser.get('zip')).toBe(ZIP);
+          expect(fetchedUser.get('ssn')).toBe(SSN);
+          done();
+        })
       );
     });
 
@@ -499,15 +485,11 @@ describe('Personally Identifiable Information', () => {
       let adminUser;
 
       beforeEach(async done => {
-        const adminRole = await new Parse.Role(
-          'Administrator',
-          new Parse.ACL()
-        ).save(null, { useMasterKey: true });
+        const adminRole = await new Parse.Role('Administrator', new Parse.ACL()).save(null, {
+          useMasterKey: true,
+        });
 
-        const managementRole = new Parse.Role(
-          'managementOf_user' + user.id,
-          new Parse.ACL(user)
-        );
+        const managementRole = new Parse.Role('managementOf_user' + user.id, new Parse.ACL(user));
         managementRole.getRoles().add(adminRole);
         await managementRole.save(null, { useMasterKey: true });
 
@@ -517,10 +499,7 @@ describe('Personally Identifiable Information', () => {
 
         adminUser = await Parse.User.signUp('administrator', 'secure');
         adminUser = await Parse.User.logIn(adminUser.get('username'), 'secure');
-        await adminRole
-          .getUsers()
-          .add(adminUser)
-          .save(null, { useMasterKey: true });
+        await adminRole.getUsers().add(adminUser).save(null, { useMasterKey: true });
 
         done();
       });
@@ -782,14 +761,12 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via API with Find using master key', done => {
       Parse.User.logOut().then(() =>
-        new Parse.Query(Parse.User)
-          .first({ useMasterKey: true })
-          .then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(EMAIL);
-            expect(fetchedUser.get('zip')).toBe(ZIP);
-            expect(fetchedUser.get('ssn')).toBe(SSN);
-            done();
-          })
+        new Parse.Query(Parse.User).first({ useMasterKey: true }).then(fetchedUser => {
+          expect(fetchedUser.get('email')).toBe(EMAIL);
+          expect(fetchedUser.get('zip')).toBe(ZIP);
+          expect(fetchedUser.get('ssn')).toBe(SSN);
+          done();
+        })
       );
     });
 
@@ -815,14 +792,12 @@ describe('Personally Identifiable Information', () => {
 
     it('should get PII via API with Get using master key', done => {
       Parse.User.logOut().then(() =>
-        new Parse.Query(Parse.User)
-          .get(user.id, { useMasterKey: true })
-          .then(fetchedUser => {
-            expect(fetchedUser.get('email')).toBe(EMAIL);
-            expect(fetchedUser.get('zip')).toBe(ZIP);
-            expect(fetchedUser.get('ssn')).toBe(SSN);
-            done();
-          })
+        new Parse.Query(Parse.User).get(user.id, { useMasterKey: true }).then(fetchedUser => {
+          expect(fetchedUser.get('email')).toBe(EMAIL);
+          expect(fetchedUser.get('zip')).toBe(ZIP);
+          expect(fetchedUser.get('ssn')).toBe(SSN);
+          done();
+        })
       );
     });
 
@@ -962,15 +937,11 @@ describe('Personally Identifiable Information', () => {
       let adminUser;
 
       beforeEach(async done => {
-        const adminRole = await new Parse.Role(
-          'Administrator',
-          new Parse.ACL()
-        ).save(null, { useMasterKey: true });
+        const adminRole = await new Parse.Role('Administrator', new Parse.ACL()).save(null, {
+          useMasterKey: true,
+        });
 
-        const managementRole = new Parse.Role(
-          'managementOf_user' + user.id,
-          new Parse.ACL(user)
-        );
+        const managementRole = new Parse.Role('managementOf_user' + user.id, new Parse.ACL(user));
         managementRole.getRoles().add(adminRole);
         await managementRole.save(null, { useMasterKey: true });
 
@@ -980,10 +951,7 @@ describe('Personally Identifiable Information', () => {
 
         adminUser = await Parse.User.signUp('administrator', 'secure');
         adminUser = await Parse.User.logIn(adminUser.get('username'), 'secure');
-        await adminRole
-          .getUsers()
-          .add(adminUser)
-          .save(null, { useMasterKey: true });
+        await adminRole.getUsers().add(adminUser).save(null, { useMasterKey: true });
 
         done();
       });
@@ -1129,11 +1097,7 @@ describe('Personally Identifiable Information', () => {
             .then(loggedInUser => (anotherUser = loggedInUser))
             .then(() => Parse.User.logIn(anotherUser.get('username'), 'abc'))
             .then(() =>
-              anotherUser
-                .set('email', ANOTHER_EMAIL)
-                .set('zip', ZIP)
-                .set('ssn', SSN)
-                .save()
+              anotherUser.set('email', ANOTHER_EMAIL).set('zip', ZIP).set('ssn', SSN).save()
             )
             .then(() => done());
         });
@@ -1168,9 +1132,7 @@ describe('Personally Identifiable Information', () => {
           new Parse.Query(Parse.User)
             .find()
             .then(fetchedUsers => {
-              const notCurrentUser = fetchedUsers.find(
-                u => u.id !== anotherUser.id
-              );
+              const notCurrentUser = fetchedUsers.find(u => u.id !== anotherUser.id);
               expect(notCurrentUser.get('email')).toBe(undefined);
               expect(notCurrentUser.get('zip')).toBe(undefined);
               expect(notCurrentUser.get('ssn')).toBe(undefined);
@@ -1183,9 +1145,7 @@ describe('Personally Identifiable Information', () => {
           new Parse.Query(Parse.User)
             .find()
             .then(fetchedUsers => {
-              const currentUser = fetchedUsers.find(
-                u => u.id === anotherUser.id
-              );
+              const currentUser = fetchedUsers.find(u => u.id === anotherUser.id);
               expect(currentUser.get('email')).toBe(ANOTHER_EMAIL);
               expect(currentUser.get('zip')).toBe(ZIP);
               expect(currentUser.get('ssn')).toBe(SSN);

@@ -1,4 +1,5 @@
 const parser = require('../lib/Adapters/Storage/Postgres/PostgresConfigParser');
+const fs = require('fs');
 
 const queryParamTests = {
   'a=1&b=2': { a: '1', b: '2' },
@@ -23,7 +24,7 @@ describe('PostgresConfigParser.parseQueryParams', () => {
 });
 
 const baseURI = 'postgres://username:password@localhost:5432/db-name';
-
+const testfile = fs.readFileSync('./Dockerfile').toString();
 const dbOptionsTest = {};
 dbOptionsTest[
   `${baseURI}?ssl=true&binary=true&application_name=app_name&fallback_application_name=f_app_name&poolSize=10`
@@ -35,8 +36,35 @@ dbOptionsTest[
   poolSize: 10,
 };
 dbOptionsTest[`${baseURI}?ssl=&binary=aa`] = {
-  ssl: false,
   binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=true&ca=./Dockerfile&pfx=./Dockerfile&cert=./Dockerfile&key=./Dockerfile&binary=aa&passphrase=word&secureOptions=20`
+] = {
+  ssl: {
+    ca: testfile,
+    pfx: testfile,
+    cert: testfile,
+    key: testfile,
+    passphrase: 'word',
+    secureOptions: 20,
+  },
+  binary: false,
+};
+dbOptionsTest[
+  `${baseURI}?ssl=false&ca=./Dockerfile&pfx=./Dockerfile&cert=./Dockerfile&key=./Dockerfile&binary=aa`
+] = {
+  ssl: { ca: testfile, pfx: testfile, cert: testfile, key: testfile },
+  binary: false,
+};
+dbOptionsTest[`${baseURI}?rejectUnauthorized=true`] = {
+  ssl: { rejectUnauthorized: true },
+};
+dbOptionsTest[`${baseURI}?max=5&query_timeout=100&idleTimeoutMillis=1000&keepAlive=true`] = {
+  max: 5,
+  query_timeout: 100,
+  idleTimeoutMillis: 1000,
+  keepAlive: true,
 };
 
 describe('PostgresConfigParser.getDatabaseOptionsFromURI', () => {

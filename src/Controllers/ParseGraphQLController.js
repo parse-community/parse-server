@@ -57,9 +57,7 @@ class ParseGraphQLController {
     return graphQLConfig;
   }
 
-  async updateGraphQLConfig(
-    graphQLConfig: ParseGraphQLConfig
-  ): Promise<ParseGraphQLConfig> {
+  async updateGraphQLConfig(graphQLConfig: ParseGraphQLConfig): Promise<ParseGraphQLConfig> {
     // throws if invalid
     this._validateGraphQLConfig(
       graphQLConfig || requiredParameter('You must provide a graphQLConfig!')
@@ -97,11 +95,7 @@ class ParseGraphQLController {
   }
 
   _putCachedGraphQLConfig(graphQLConfig: ParseGraphQLConfig) {
-    return this.cacheController.graphQL.put(
-      this.configCacheKey,
-      graphQLConfig,
-      60000
-    );
+    return this.cacheController.graphQL.put(this.configCacheKey, graphQLConfig, 60000);
   }
 
   _validateGraphQLConfig(graphQLConfig: ?ParseGraphQLConfig): void {
@@ -119,20 +113,12 @@ class ParseGraphQLController {
       } = graphQLConfig;
 
       if (Object.keys(invalidKeys).length) {
-        errorMessages.push(
-          `encountered invalid keys: [${Object.keys(invalidKeys)}]`
-        );
+        errorMessages.push(`encountered invalid keys: [${Object.keys(invalidKeys)}]`);
       }
-      if (
-        enabledForClasses !== null &&
-        !isValidStringArray(enabledForClasses)
-      ) {
+      if (enabledForClasses !== null && !isValidStringArray(enabledForClasses)) {
         errorMessages.push(`"enabledForClasses" is not a valid array`);
       }
-      if (
-        disabledForClasses !== null &&
-        !isValidStringArray(disabledForClasses)
-      ) {
+      if (disabledForClasses !== null && !isValidStringArray(disabledForClasses)) {
         errorMessages.push(`"disabledForClasses" is not a valid array`);
       }
       if (classConfigs !== null) {
@@ -159,17 +145,9 @@ class ParseGraphQLController {
     if (!isValidSimpleObject(classConfig)) {
       return 'it must be a valid object';
     } else {
-      const {
-        className,
-        type = null,
-        query = null,
-        mutation = null,
-        ...invalidKeys
-      } = classConfig;
+      const { className, type = null, query = null, mutation = null, ...invalidKeys } = classConfig;
       if (Object.keys(invalidKeys).length) {
-        return `"invalidKeys" [${Object.keys(
-          invalidKeys
-        )}] should not be present`;
+        return `"invalidKeys" [${Object.keys(invalidKeys)}] should not be present`;
       }
       if (typeof className !== 'string' || !className.trim().length) {
         // TODO consider checking class exists in schema?
@@ -190,10 +168,7 @@ class ParseGraphQLController {
           return `"type" contains invalid keys, [${Object.keys(invalidKeys)}]`;
         } else if (outputFields !== null && !isValidStringArray(outputFields)) {
           return `"outputFields" must be a valid string array`;
-        } else if (
-          constraintFields !== null &&
-          !isValidStringArray(constraintFields)
-        ) {
+        } else if (constraintFields !== null && !isValidStringArray(constraintFields)) {
           return `"constraintFields" must be a valid string array`;
         }
         if (sortFields !== null) {
@@ -214,10 +189,7 @@ class ParseGraphQLController {
                   if (typeof field !== 'string' || field.trim().length === 0) {
                     errorMessage = `"sortField" at index ${index} did not provide the "field" as a string`;
                     return false;
-                  } else if (
-                    typeof asc !== 'boolean' ||
-                    typeof desc !== 'boolean'
-                  ) {
+                  } else if (typeof asc !== 'boolean' || typeof desc !== 'boolean') {
                     errorMessage = `"sortField" at index ${index} did not provide "asc" or "desc" as booleans`;
                     return false;
                   }
@@ -234,15 +206,9 @@ class ParseGraphQLController {
         }
         if (inputFields !== null) {
           if (isValidSimpleObject(inputFields)) {
-            const {
-              create = null,
-              update = null,
-              ...invalidKeys
-            } = inputFields;
+            const { create = null, update = null, ...invalidKeys } = inputFields;
             if (Object.keys(invalidKeys).length) {
-              return `"inputFields" contains invalid keys: [${Object.keys(
-                invalidKeys
-              )}]`;
+              return `"inputFields" contains invalid keys: [${Object.keys(invalidKeys)}]`;
             } else {
               if (update !== null && !isValidStringArray(update)) {
                 return `"inputFields.update" must be a valid string array`;
@@ -250,10 +216,7 @@ class ParseGraphQLController {
                 if (!isValidStringArray(create)) {
                   return `"inputFields.create" must be a valid string array`;
                 } else if (className === '_User') {
-                  if (
-                    !create.includes('username') ||
-                    !create.includes('password')
-                  ) {
+                  if (!create.includes('username') || !create.includes('password')) {
                     return `"inputFields.create" must include required fields, username and password`;
                   }
                 }
@@ -274,9 +237,7 @@ class ParseGraphQLController {
             ...invalidKeys
           } = query;
           if (Object.keys(invalidKeys).length) {
-            return `"query" contains invalid keys, [${Object.keys(
-              invalidKeys
-            )}]`;
+            return `"query" contains invalid keys, [${Object.keys(invalidKeys)}]`;
           } else if (find !== null && typeof find !== 'boolean') {
             return `"query.find" must be a boolean`;
           } else if (get !== null && typeof get !== 'boolean') {
@@ -302,9 +263,7 @@ class ParseGraphQLController {
             ...invalidKeys
           } = mutation;
           if (Object.keys(invalidKeys).length) {
-            return `"mutation" contains invalid keys, [${Object.keys(
-              invalidKeys
-            )}]`;
+            return `"mutation" contains invalid keys, [${Object.keys(invalidKeys)}]`;
           }
           if (create !== null && typeof create !== 'boolean') {
             return `"mutation.create" must be a boolean`;
@@ -332,7 +291,7 @@ class ParseGraphQLController {
   }
 }
 
-const isValidStringArray = function(array): boolean {
+const isValidStringArray = function (array): boolean {
   return Array.isArray(array)
     ? !array.some(s => typeof s !== 'string' || s.trim().length < 1)
     : false;
@@ -342,7 +301,7 @@ const isValidStringArray = function(array): boolean {
  * object, i.e. not an array, null, date
  * etc.
  */
-const isValidSimpleObject = function(obj): boolean {
+const isValidSimpleObject = function (obj): boolean {
   return (
     typeof obj === 'object' &&
     !Array.isArray(obj) &&

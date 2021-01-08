@@ -18,13 +18,27 @@ export class RedisCacheAdapter {
     this.queue = new KeyPromiseQueue();
   }
 
+  handleShutdown() {
+    if (!this.client) {
+      return Promise.resolve();
+    }
+    return new Promise(resolve => {
+      this.client.quit(err => {
+        if (err) {
+          logger.error('RedisCacheAdapter error on shutdown', { error: err });
+        }
+        resolve();
+      });
+    });
+  }
+
   get(key) {
     debug('get', key);
     return this.queue.enqueue(
       key,
       () =>
         new Promise(resolve => {
-          this.client.get(key, function(err, res) {
+          this.client.get(key, function (err, res) {
             debug('-> get', key, res);
             if (!res) {
               return resolve(null);
@@ -49,7 +63,7 @@ export class RedisCacheAdapter {
         key,
         () =>
           new Promise(resolve => {
-            this.client.set(key, value, function() {
+            this.client.set(key, value, function () {
               resolve();
             });
           })
@@ -64,7 +78,7 @@ export class RedisCacheAdapter {
       key,
       () =>
         new Promise(resolve => {
-          this.client.psetex(key, ttl, value, function() {
+          this.client.psetex(key, ttl, value, function () {
             resolve();
           });
         })
@@ -77,7 +91,7 @@ export class RedisCacheAdapter {
       key,
       () =>
         new Promise(resolve => {
-          this.client.del(key, function() {
+          this.client.del(key, function () {
             resolve();
           });
         })
@@ -90,7 +104,7 @@ export class RedisCacheAdapter {
       FLUSH_DB_KEY,
       () =>
         new Promise(resolve => {
-          this.client.flushdb(function() {
+          this.client.flushdb(function () {
             resolve();
           });
         })

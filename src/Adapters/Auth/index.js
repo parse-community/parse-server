@@ -4,7 +4,6 @@ const apple = require('./apple');
 const gcenter = require('./gcenter');
 const gpgames = require('./gpgames');
 const facebook = require('./facebook');
-const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require('./instagram');
 const linkedin = require('./linkedin');
 const meetup = require('./meetup');
@@ -23,6 +22,7 @@ const weibo = require('./weibo');
 const oauth2 = require('./oauth2');
 const phantauth = require('./phantauth');
 const microsoft = require('./microsoft');
+const keycloak = require('./keycloak');
 const ldap = require('./ldap');
 
 const anonymous = {
@@ -39,7 +39,6 @@ const providers = {
   gcenter,
   gpgames,
   facebook,
-  facebookaccountkit,
   instagram,
   linkedin,
   meetup,
@@ -58,11 +57,12 @@ const providers = {
   weibo,
   phantauth,
   microsoft,
+  keycloak,
   ldap,
 };
 
 function authDataValidator(adapter, appIds, options) {
-  return function(authData) {
+  return function (authData) {
     return adapter.validateAuthData(authData, options).then(() => {
       if (appIds) {
         return adapter.validateAppId(appIds, authData, options);
@@ -92,11 +92,7 @@ function loadAuthAdapter(provider, authOptions) {
 
   // Try the configuration methods
   if (providerOptions) {
-    const optionalAdapter = loadAdapter(
-      providerOptions,
-      undefined,
-      providerOptions
-    );
+    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
@@ -117,21 +113,18 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
-module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
+module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
   let _enableAnonymousUsers = enableAnonymousUsers;
-  const setEnableAnonymousUsers = function(enable) {
+  const setEnableAnonymousUsers = function (enable) {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function(provider) {
+  const getValidatorForProvider = function (provider) {
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
 
-    const { adapter, appIds, providerOptions } = loadAuthAdapter(
-      provider,
-      authOptions
-    );
+    const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
 
     return authDataValidator(adapter, appIds, providerOptions);
   };

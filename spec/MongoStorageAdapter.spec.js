@@ -1,13 +1,12 @@
 'use strict';
 
-const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter')
-  .default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const { MongoClient } = require('mongodb');
-const databaseURI =
-  'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const request = require('../lib/request');
 const Config = require('../lib/Config');
 const TestUtils = require('../lib/TestUtils');
+const semver = require('semver');
 
 const fakeClient = {
   s: { options: { dbName: null } },
@@ -18,16 +17,13 @@ const fakeClient = {
 // and will eventually be moved into their own repo
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
-    new MongoStorageAdapter({ uri: databaseURI })
-      .deleteAllClasses()
-      .then(done, fail);
+    new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses().then(done, fail);
   });
 
   it('auto-escapes symbols in auth information', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri:
-        'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse',
+      uri: 'mongodb://user!with@+ symbols:password!with@+ symbols@localhost:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
@@ -38,8 +34,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it("doesn't double escape already URI-encoded information", () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(fakeClient));
     new MongoStorageAdapter({
-      uri:
-        'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
+      uri: 'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
     }).connect();
     expect(MongoClient.connect).toHaveBeenCalledWith(
       'mongodb://user!with%40%2B%20symbols:password!with%40%2B%20symbols@localhost:1234/parse',
@@ -82,9 +77,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
     adapter
       .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() =>
-        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` })
-      )
+      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS / 2})` }))
       .then(
         () => done(),
         err => {
@@ -101,9 +94,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
     adapter
       .createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-      .then(() =>
-        adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` })
-      )
+      .then(() => adapter._rawFind('Foo', { $where: `sleep(${maxTimeMS * 2})` }))
       .then(
         () => {
           done.fail('Find succeeded despite taking too long!');
@@ -313,9 +304,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('getClass if not exists', async () => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
-    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(
-      undefined
-    );
+    await expectAsync(adapter.getClass('UnknownClass')).toBeRejectedWith(undefined);
   });
 
   it('should use index for caseInsensitive query', async () => {
@@ -350,8 +339,33 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     expect(postIndexPlan.executionStats.executionStages.stage).toBe('FETCH');
   });
 
+  it('should delete field without index', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    const obj = new Parse.Object('MyObject');
+    obj.set('test', 1);
+    await obj.save();
+    const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, ['test']);
+    const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
+    expect(schemaBeforeDeletion.fields.test).toBeDefined();
+    expect(schemaAfterDeletion.fields.test).toBeUndefined();
+  });
+
+  it('should delete field with index', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    const obj = new Parse.Object('MyObject');
+    obj.set('test', 1);
+    await obj.save();
+    const schemaBeforeDeletion = await new Parse.Schema('MyObject').get();
+    await database.adapter.ensureIndex('MyObject', schemaBeforeDeletion, ['test']);
+    await database.adapter.deleteFields('MyObject', schemaBeforeDeletion, ['test']);
+    const schemaAfterDeletion = await new Parse.Schema('MyObject').get();
+    expect(schemaBeforeDeletion.fields.test).toBeDefined();
+    expect(schemaAfterDeletion.fields.test).toBeUndefined();
+  });
+
   if (
-    process.env.MONGODB_VERSION === '4.0.4' &&
+    semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
     process.env.MONGODB_TOPOLOGY === 'replicaset' &&
     process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
   ) {
@@ -378,12 +392,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
 
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'command'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'command').and.callThrough();
 
         await request({
           method: 'POST',
@@ -402,14 +412,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         });
 
         let found = false;
-        databaseAdapter.database.serverConfig.command.calls
-          .all()
-          .forEach(call => {
-            found = true;
-            expect(call.args[2].session.transaction.state).not.toBe(
-              'NO_TRANSACTION'
-            );
-          });
+        databaseAdapter.database.serverConfig.command.calls.all().forEach(call => {
+          found = true;
+          expect(call.args[2].session.transaction.state).not.toBe('NO_TRANSACTION');
+        });
         expect(found).toBe(true);
       });
 
@@ -417,12 +423,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
 
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'command'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'command').and.callThrough();
 
         await request({
           method: 'POST',
@@ -441,12 +443,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         });
 
         let found = false;
-        databaseAdapter.database.serverConfig.command.calls
-          .all()
-          .forEach(call => {
-            found = true;
-            expect(call.args[2].session).toBe(undefined);
-          });
+        databaseAdapter.database.serverConfig.command.calls.all().forEach(call => {
+          found = true;
+          expect(call.args[2].session).toBe(undefined);
+        });
         expect(found).toBe(true);
       });
 
@@ -454,12 +454,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
 
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'command'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'command').and.callThrough();
 
         await request({
           method: 'POST',
@@ -477,12 +473,10 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         });
 
         let found = false;
-        databaseAdapter.database.serverConfig.command.calls
-          .all()
-          .forEach(call => {
-            found = true;
-            expect(call.args[2].session).toBe(undefined);
-          });
+        databaseAdapter.database.serverConfig.command.calls.all().forEach(call => {
+          found = true;
+          expect(call.args[2].session).toBe(undefined);
+        });
         expect(found).toBe(true);
       });
 
@@ -490,12 +484,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
 
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'command'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'command').and.callThrough();
 
         await request({
           method: 'PUT',
@@ -505,22 +495,16 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         });
 
         let found = false;
-        databaseAdapter.database.serverConfig.command.calls
-          .all()
-          .forEach(call => {
-            found = true;
-            expect(call.args[2].session).toBe(undefined);
-          });
+        databaseAdapter.database.serverConfig.command.calls.all().forEach(call => {
+          found = true;
+          expect(call.args[2].session).toBe(undefined);
+        });
         expect(found).toBe(true);
       });
 
       it('should not use transactions when using SDK insert', async () => {
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'insert'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'insert').and.callThrough();
 
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
@@ -533,12 +517,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
 
       it('should not use transactions when using SDK update', async () => {
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'update'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'update').and.callThrough();
 
         const myObject = new Parse.Object('MyObject');
         await myObject.save();
@@ -554,12 +534,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       });
 
       it('should not use transactions when using SDK delete', async () => {
-        const databaseAdapter = Config.get(Parse.applicationId).database
-          .adapter;
-        spyOn(
-          databaseAdapter.database.serverConfig,
-          'remove'
-        ).and.callThrough();
+        const databaseAdapter = Config.get(Parse.applicationId).database.adapter;
+        spyOn(databaseAdapter.database.serverConfig, 'remove').and.callThrough();
 
         const myObject = new Parse.Object('MyObject');
         await myObject.save();

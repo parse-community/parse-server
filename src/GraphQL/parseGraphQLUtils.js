@@ -3,10 +3,7 @@ import { ApolloError } from 'apollo-server-core';
 
 export function enforceMasterKeyAccess(auth) {
   if (!auth.isMaster) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
-      'unauthorized: master key is required'
-    );
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'unauthorized: master key is required');
   }
 }
 
@@ -23,10 +20,7 @@ export function toGraphQLError(error) {
 }
 
 export const extractKeysAndInclude = selectedFields => {
-  selectedFields = selectedFields.filter(
-    field => !field.includes('__typename')
-  );
-
+  selectedFields = selectedFields.filter(field => !field.includes('__typename'));
   // Handles "id" field for both current and included objects
   selectedFields = selectedFields.map(field => {
     if (field === 'id') return 'objectId';
@@ -36,27 +30,23 @@ export const extractKeysAndInclude = selectedFields => {
   });
   let keys = undefined;
   let include = undefined;
+
   if (selectedFields.length > 0) {
-    keys = selectedFields.join(',');
-    include = selectedFields
-      .reduce((fields, field) => {
-        fields = fields.slice();
-        let pointIndex = field.lastIndexOf('.');
-        while (pointIndex > 0) {
-          const lastField = field.slice(pointIndex + 1);
-          field = field.slice(0, pointIndex);
-          if (!fields.includes(field) && lastField !== 'objectId') {
-            fields.push(field);
-          }
-          pointIndex = field.lastIndexOf('.');
-        }
-        return fields;
-      }, [])
-      .join(',');
+    keys = [...new Set(selectedFields)].join(',');
+    // We can use this shortcut since optimization is handled
+    // later on RestQuery, avoid overhead here.
+    include = keys;
   }
-  return { keys, include };
+
+  return {
+    // If authData is detected keys will not work properly
+    // since authData has a special storage behavior
+    // so we need to skip keys currently
+    keys: keys && keys.indexOf('authData') === -1 ? keys : undefined,
+    include,
+  };
 };
 
-export const getParseClassMutationConfig = function(parseClassConfig) {
+export const getParseClassMutationConfig = function (parseClassConfig) {
   return (parseClassConfig && parseClassConfig.mutation) || {};
 };

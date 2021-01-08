@@ -16,16 +16,23 @@ export const Types = {
   afterSaveFile: 'afterSaveFile',
   beforeDeleteFile: 'beforeDeleteFile',
   afterDeleteFile: 'afterDeleteFile',
+  beforeConnect: 'beforeConnect',
+  beforeSubscribe: 'beforeSubscribe',
+  afterEvent: 'afterEvent',
 };
 
 const FileClassName = '@File';
+const ConnectClassName = '@Connect';
 
-const baseStore = function() {
-  const Validators = {};
+const baseStore = function () {
+  const Validators = Object.keys(Types).reduce(function (base, key) {
+    base[key] = {};
+    return base;
+  }, {});
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
-  const Triggers = Object.keys(Types).reduce(function(base, key) {
+  const Triggers = Object.keys(Types).reduce(function (base, key) {
     base[key] = {};
     return base;
   }, {});
@@ -46,10 +53,7 @@ function validateClassNameForTriggers(className, type) {
     // TODO: Allow proper documented way of using nested increment ops
     throw 'Only afterSave is allowed on _PushStatus';
   }
-  if (
-    (type === Types.beforeLogin || type === Types.afterLogin) &&
-    className !== '_User'
-  ) {
+  if ((type === Types.beforeLogin || type === Types.afterLogin) && className !== '_User') {
     // TODO: check if upstream code will handle `Error` instance rather
     // than this anti-pattern of throwing strings
     throw 'Only the _User class is allowed for the beforeLogin and afterLogin triggers';
@@ -94,6 +98,11 @@ function getStore(category, name, applicationId) {
 function add(category, name, handler, applicationId) {
   const lastComponent = name.split('.').splice(-1);
   const store = getStore(category, name, applicationId);
+  if (store[lastComponent]) {
+    logger.warn(
+      `Warning: Duplicate cloud functions exist for ${lastComponent}. Only the last one will be used and the others will be ignored.`
+    );
+  }
   store[lastComponent] = handler;
 }
 
@@ -109,12 +118,7 @@ function get(category, name, applicationId) {
   return store[lastComponent];
 }
 
-export function addFunction(
-  functionName,
-  handler,
-  validationHandler,
-  applicationId
-) {
+export function addFunction(functionName, handler, validationHandler, applicationId) {
   add(Category.Functions, functionName, handler, applicationId);
   add(Category.Validators, functionName, validationHandler, applicationId);
 }
@@ -123,13 +127,20 @@ export function addJob(jobName, handler, applicationId) {
   add(Category.Jobs, jobName, handler, applicationId);
 }
 
-export function addTrigger(type, className, handler, applicationId) {
+export function addTrigger(type, className, handler, applicationId, validationHandler) {
   validateClassNameForTriggers(className, type);
   add(Category.Triggers, `${type}.${className}`, handler, applicationId);
+  add(Category.Validators, `${type}.${className}`, validationHandler, applicationId);
 }
 
-export function addFileTrigger(type, handler, applicationId) {
+export function addFileTrigger(type, handler, applicationId, validationHandler) {
   add(Category.Triggers, `${type}.${FileClassName}`, handler, applicationId);
+  add(Category.Validators, `${type}.${FileClassName}`, validationHandler, applicationId);
+}
+
+export function addConnectTrigger(type, handler, applicationId, validationHandler) {
+  add(Category.Triggers, `${type}.${ConnectClassName}`, handler, applicationId);
+  add(Category.Validators, `${type}.${ConnectClassName}`, validationHandler, applicationId);
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
@@ -161,11 +172,7 @@ export function getFileTrigger(type, applicationId) {
   return getTrigger(FileClassName, type, applicationId);
 }
 
-export function triggerExists(
-  className: string,
-  type: string,
-  applicationId: string
-): boolean {
+export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return getTrigger(className, type, applicationId) != undefined;
 }
 
@@ -175,9 +182,7 @@ export function getFunction(functionName, applicationId) {
 
 export function getFunctionNames(applicationId) {
   const store =
-    (_triggerStore[applicationId] &&
-      _triggerStore[applicationId][Category.Functions]) ||
-    {};
+    (_triggerStore[applicationId] && _triggerStore[applicationId][Category.Functions]) || {};
   const functionNames = [];
   const extractFunctionNames = (namespace, store) => {
     Object.keys(store).forEach(name => {
@@ -232,8 +237,13 @@ export function getRequestObject(
   if (originalParseObject) {
     request.original = originalParseObject;
   }
-
-  if (triggerType === Types.beforeSave || triggerType === Types.afterSave) {
+  if (
+    triggerType === Types.beforeSave ||
+    triggerType === Types.afterSave ||
+    triggerType === Types.beforeDelete ||
+    triggerType === Types.afterDelete ||
+    triggerType === Types.afterFind
+  ) {
     // Set a copy of the context on the request object.
     request.context = Object.assign({}, context);
   }
@@ -253,14 +263,7 @@ export function getRequestObject(
   return request;
 }
 
-export function getRequestQueryObject(
-  triggerType,
-  auth,
-  query,
-  count,
-  config,
-  isGet
-) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, context, isGet) {
   isGet = !!isGet;
 
   var request = {
@@ -272,6 +275,7 @@ export function getRequestQueryObject(
     isGet,
     headers: config.headers,
     ip: config.ip,
+    context: context || {},
   };
 
   if (!auth) {
@@ -295,7 +299,7 @@ export function getRequestQueryObject(
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
   return {
-    success: function(response) {
+    success: function (response) {
       if (request.triggerName === Types.afterFind) {
         if (!response) {
           response = request.objects;
@@ -314,11 +318,7 @@ export function getResponseObject(request, resolve, reject) {
       ) {
         return resolve(response);
       }
-      if (
-        response &&
-        typeof response === 'object' &&
-        request.triggerName === Types.afterSave
-      ) {
+      if (response && typeof response === 'object' && request.triggerName === Types.afterSave) {
         return resolve(response);
       }
       if (request.triggerName === Types.afterSave) {
@@ -330,14 +330,12 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function(error) {
-      if (error instanceof Parse.Error) {
-        reject(error);
-      } else if (error instanceof Error) {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error.message));
-      } else {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
-      }
+    error: function (error) {
+      const e = resolveError(error, {
+        code: Parse.Error.SCRIPT_FAILED,
+        message: 'Script failed. Unknown error.',
+      });
+      reject(e);
     },
   };
 }
@@ -360,13 +358,7 @@ function logTriggerAfterHook(triggerType, className, input, auth) {
   );
 }
 
-function logTriggerSuccessBeforeHook(
-  triggerType,
-  className,
-  input,
-  result,
-  auth
-) {
+function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth) {
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
   logger.info(
@@ -401,14 +393,19 @@ export function maybeRunAfterFindTrigger(
   auth,
   className,
   objects,
-  config
+  config,
+  query,
+  context
 ) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
       return resolve();
     }
-    const request = getRequestObject(triggerType, auth, null, null, config);
+    const request = getRequestObject(triggerType, auth, null, null, config, context);
+    if (query) {
+      request.query = query;
+    }
     const { success, error } = getResponseObject(
       request,
       object => {
@@ -418,13 +415,7 @@ export function maybeRunAfterFindTrigger(
         reject(error);
       }
     );
-    logTriggerSuccessBeforeHook(
-      triggerType,
-      className,
-      'AfterFind',
-      JSON.stringify(objects),
-      auth
-    );
+    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
       object.className = className;
@@ -432,6 +423,12 @@ export function maybeRunAfterFindTrigger(
     });
     return Promise.resolve()
       .then(() => {
+        return maybeRunValidator(request, `${triggerType}.${className}`);
+      })
+      .then(() => {
+        if (request.skipWithMasterKey) {
+          return request.objects;
+        }
         const response = trigger(request);
         if (response && typeof response.then === 'function') {
           return response.then(results => {
@@ -460,6 +457,7 @@ export function maybeRunQueryTrigger(
   restOptions,
   config,
   auth,
+  context,
   isGet
 ) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
@@ -485,10 +483,17 @@ export function maybeRunQueryTrigger(
     parseQuery,
     count,
     config,
+    context,
     isGet
   );
   return Promise.resolve()
     .then(() => {
+      return maybeRunValidator(requestObject, `${triggerType}.${className}`);
+    })
+    .then(() => {
+      if (requestObject.skipWithMasterKey) {
+        return requestObject.query;
+      }
       return trigger(requestObject);
     })
     .then(
@@ -539,13 +544,11 @@ export function maybeRunQueryTrigger(
         }
         if (requestObject.includeReadPreference) {
           restOptions = restOptions || {};
-          restOptions.includeReadPreference =
-            requestObject.includeReadPreference;
+          restOptions.includeReadPreference = requestObject.includeReadPreference;
         }
         if (requestObject.subqueryReadPreference) {
           restOptions = restOptions || {};
-          restOptions.subqueryReadPreference =
-            requestObject.subqueryReadPreference;
+          restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
         }
         return {
           restWhere,
@@ -553,13 +556,191 @@ export function maybeRunQueryTrigger(
         };
       },
       err => {
-        if (typeof err === 'string') {
-          throw new Parse.Error(1, err);
-        } else {
-          throw err;
-        }
+        const error = resolveError(err, {
+          code: Parse.Error.SCRIPT_FAILED,
+          message: 'Script failed. Unknown error.',
+        });
+        throw error;
       }
     );
+}
+
+export function resolveError(message, defaultOpts) {
+  if (!defaultOpts) {
+    defaultOpts = {};
+  }
+  if (!message) {
+    return new Parse.Error(
+      defaultOpts.code || Parse.Error.SCRIPT_FAILED,
+      defaultOpts.message || 'Script failed.'
+    );
+  }
+  if (message instanceof Parse.Error) {
+    return message;
+  }
+
+  const code = defaultOpts.code || Parse.Error.SCRIPT_FAILED;
+  // If it's an error, mark it as a script failed
+  if (typeof message === 'string') {
+    return new Parse.Error(code, message);
+  }
+  const error = new Parse.Error(code, message.message || message);
+  if (message instanceof Error) {
+    error.stack = message.stack;
+  }
+  return error;
+}
+export function maybeRunValidator(request, functionName) {
+  const theValidator = getValidator(functionName, Parse.applicationId);
+  if (!theValidator) {
+    return;
+  }
+  if (typeof theValidator === 'object' && theValidator.skipWithMasterKey && request.master) {
+    request.skipWithMasterKey = true;
+  }
+  return new Promise((resolve, reject) => {
+    return Promise.resolve()
+      .then(() => {
+        return typeof theValidator === 'object'
+          ? builtInTriggerValidator(theValidator, request)
+          : theValidator(request);
+      })
+      .then(() => {
+        resolve();
+      })
+      .catch(e => {
+        const error = resolveError(e, {
+          code: Parse.Error.VALIDATION_ERROR,
+          message: 'Validation failed.',
+        });
+        reject(error);
+      });
+  });
+}
+function builtInTriggerValidator(options, request) {
+  if (request.master && !options.validateMasterKey) {
+    return;
+  }
+  let reqUser = request.user;
+  if (
+    !reqUser &&
+    request.object &&
+    request.object.className === '_User' &&
+    !request.object.existed()
+  ) {
+    reqUser = request.object;
+  }
+  if (options.requireUser && !reqUser) {
+    throw 'Validation failed. Please login to continue.';
+  }
+  if (options.requireMaster && !request.master) {
+    throw 'Validation failed. Master key is required to complete this request.';
+  }
+  let params = request.params || {};
+  if (request.object) {
+    params = request.object.toJSON();
+  }
+  const requiredParam = key => {
+    const value = params[key];
+    if (value == null) {
+      throw `Validation failed. Please specify data for ${key}.`;
+    }
+  };
+
+  const validateOptions = (opt, key, val) => {
+    let opts = opt.options;
+    if (typeof opts === 'function') {
+      try {
+        const result = opts(val);
+        if (!result && result != null) {
+          throw opt.error || `Validation failed. Invalid value for ${key}.`;
+        }
+      } catch (e) {
+        if (!e) {
+          throw opt.error || `Validation failed. Invalid value for ${key}.`;
+        }
+
+        throw opt.error || e.message || e;
+      }
+      return;
+    }
+    if (!Array.isArray(opts)) {
+      opts = [opt.options];
+    }
+
+    if (!opts.includes(val)) {
+      throw (
+        opt.error || `Validation failed. Invalid option for ${key}. Expected: ${opts.join(', ')}`
+      );
+    }
+  };
+
+  const getType = fn => {
+    const match = fn && fn.toString().match(/^\s*function (\w+)/);
+    return (match ? match[1] : '').toLowerCase();
+  };
+  if (Array.isArray(options.fields)) {
+    for (const key of options.fields) {
+      requiredParam(key);
+    }
+  } else {
+    for (const key in options.fields) {
+      const opt = options.fields[key];
+      let val = params[key];
+      if (typeof opt === 'string') {
+        requiredParam(opt);
+      }
+      if (typeof opt === 'object') {
+        if (opt.default != null && val == null) {
+          val = opt.default;
+          params[key] = val;
+          if (request.object) {
+            request.object.set(key, val);
+          }
+        }
+        if (opt.constant && request.object) {
+          if (request.original) {
+            request.object.set(key, request.original.get(key));
+          } else if (opt.default != null) {
+            request.object.set(key, opt.default);
+          }
+        }
+        if (opt.required) {
+          requiredParam(key);
+        }
+        if (opt.type) {
+          const type = getType(opt.type);
+          if (type == 'array' && !Array.isArray(val)) {
+            throw `Validation failed. Invalid type for ${key}. Expected: array`;
+          } else if (typeof val !== type) {
+            throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
+          }
+        }
+        if (opt.options) {
+          validateOptions(opt, key, val);
+        }
+      }
+    }
+  }
+  const userKeys = options.requireUserKeys || [];
+  if (Array.isArray(userKeys)) {
+    for (const key of userKeys) {
+      if (!reqUser) {
+        throw 'Please login to make this request.';
+      }
+
+      if (reqUser.get(key) == null) {
+        throw `Validation failed. Please set data for ${key} on your account.`;
+      }
+    }
+  } else if (typeof userKeys === 'object') {
+    for (const key in options.requireUserKeys) {
+      const opt = options.requireUserKeys[key];
+      if (opt.options) {
+        validateOptions(opt, key, reqUser.get(key));
+      }
+    }
+  }
 }
 
 // To be used as part of the promise chain when saving/deleting an object
@@ -578,12 +759,8 @@ export function maybeRunTrigger(
   if (!parseObject) {
     return Promise.resolve({});
   }
-  return new Promise(function(resolve, reject) {
-    var trigger = getTrigger(
-      parseObject.className,
-      triggerType,
-      config.applicationId
-    );
+  return new Promise(function (resolve, reject) {
+    var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(
       triggerType,
@@ -605,7 +782,9 @@ export function maybeRunTrigger(
         );
         if (
           triggerType === Types.beforeSave ||
-          triggerType === Types.afterSave
+          triggerType === Types.afterSave ||
+          triggerType === Types.beforeDelete ||
+          triggerType === Types.afterDelete
         ) {
           Object.assign(context, request.context);
         }
@@ -630,18 +809,19 @@ export function maybeRunTrigger(
     // to the RestWrite.execute() call.
     return Promise.resolve()
       .then(() => {
+        return maybeRunValidator(request, `${triggerType}.${parseObject.className}`);
+      })
+      .then(() => {
+        if (request.skipWithMasterKey) {
+          return Promise.resolve();
+        }
         const promise = trigger(request);
         if (
           triggerType === Types.afterSave ||
           triggerType === Types.afterDelete ||
           triggerType === Types.afterLogin
         ) {
-          logTriggerAfterHook(
-            triggerType,
-            parseObject.className,
-            parseObject.toJSON(),
-            auth
-          );
+          logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
         }
         // beforeSave is expected to return null (nothing)
         if (triggerType === Types.beforeSave) {
@@ -673,15 +853,8 @@ export function inflate(data, restObject) {
   return Parse.Object.fromJSON(copy);
 }
 
-export function runLiveQueryEventHandlers(
-  data,
-  applicationId = Parse.applicationId
-) {
-  if (
-    !_triggerStore ||
-    !_triggerStore[applicationId] ||
-    !_triggerStore[applicationId].LiveQuery
-  ) {
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) {
     return;
   }
   _triggerStore[applicationId].LiveQuery.forEach(handler => handler(data));
@@ -716,20 +889,19 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
   const fileTrigger = getFileTrigger(triggerType, config.applicationId);
   if (typeof fileTrigger === 'function') {
     try {
-      const request = getRequestFileObject(
-        triggerType,
-        auth,
-        fileObject,
-        config
-      );
+      const request = getRequestFileObject(triggerType, auth, fileObject, config);
+      await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
+      if (request.skipWithMasterKey) {
+        return fileObject;
+      }
       const result = await fileTrigger(request);
       logTriggerSuccessBeforeHook(
         triggerType,
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         result,
-        auth,
-      )
+        auth
+      );
       return result || fileObject;
     } catch (error) {
       logTriggerErrorBeforeHook(
@@ -737,10 +909,77 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
         'Parse.File',
         { ...fileObject.file.toJSON(), fileSize: fileObject.fileSize },
         auth,
-        error,
+        error
       );
       throw error;
     }
   }
   return fileObject;
+}
+
+export async function maybeRunConnectTrigger(triggerType, request) {
+  const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
+  return trigger(request);
+}
+
+export async function maybeRunSubscribeTrigger(triggerType, className, request) {
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  const parseQuery = new Parse.Query(className);
+  parseQuery.withJSON(request.query);
+  request.query = parseQuery;
+  request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${className}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
+  await trigger(request);
+  const query = request.query.toJSON();
+  if (query.keys) {
+    query.fields = query.keys.split(',');
+  }
+  request.query = query;
+}
+
+export async function maybeRunAfterEventTrigger(triggerType, className, request) {
+  const trigger = getTrigger(className, triggerType, Parse.applicationId);
+  if (!trigger) {
+    return;
+  }
+  if (request.object) {
+    request.object = Parse.Object.fromJSON(request.object);
+  }
+  if (request.original) {
+    request.original = Parse.Object.fromJSON(request.original);
+  }
+  request.user = await userForSessionToken(request.sessionToken);
+  await maybeRunValidator(request, `${triggerType}.${className}`);
+  if (request.skipWithMasterKey) {
+    return;
+  }
+  return trigger(request);
+}
+
+async function userForSessionToken(sessionToken) {
+  if (!sessionToken) {
+    return;
+  }
+  const q = new Parse.Query('_Session');
+  q.equalTo('sessionToken', sessionToken);
+  q.include('user');
+  const session = await q.first({ useMasterKey: true });
+  if (!session) {
+    return;
+  }
+  return session.get('user');
 }

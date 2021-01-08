@@ -2,10 +2,7 @@ import Parse from 'parse/node';
 import { GraphQLNonNull } from 'graphql';
 import { mutationWithClientMutationId } from 'graphql-relay';
 import * as schemaTypes from './schemaTypes';
-import {
-  transformToParse,
-  transformToGraphQL,
-} from '../transformers/schemaFields';
+import { transformToParse, transformToGraphQL } from '../transformers/schemaFields';
 import { enforceMasterKeyAccess } from '../parseGraphQLUtils';
 import { getClass } from './schemaQueries';
 
@@ -42,10 +39,7 @@ const load = parseGraphQLSchema => {
         }
 
         const schema = await config.database.loadSchema({ clearCache: true });
-        const parseClass = await schema.addClassIfNotExists(
-          name,
-          transformToParse(schemaFields)
-        );
+        const parseClass = await schema.addClassIfNotExists(name, transformToParse(schemaFields));
         return {
           class: {
             name: parseClass.className,
@@ -58,18 +52,9 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(
-    createClassMutation.args.input.type.ofType,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLType(createClassMutation.args.input.type.ofType, true, true);
   parseGraphQLSchema.addGraphQLType(createClassMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation(
-    'createClass',
-    createClassMutation,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLMutation('createClass', createClassMutation, true, true);
 
   const updateClassMutation = mutationWithClientMutationId({
     name: 'UpdateClass',
@@ -123,23 +108,13 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(
-    updateClassMutation.args.input.type.ofType,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLType(updateClassMutation.args.input.type.ofType, true, true);
   parseGraphQLSchema.addGraphQLType(updateClassMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation(
-    'updateClass',
-    updateClassMutation,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLMutation('updateClass', updateClassMutation, true, true);
 
   const deleteClassMutation = mutationWithClientMutationId({
     name: 'DeleteClass',
-    description:
-      'The deleteClass mutation can be used to delete an existing object class.',
+    description: 'The deleteClass mutation can be used to delete an existing object class.',
     inputFields: {
       name: schemaTypes.CLASS_NAME_ATT,
     },
@@ -178,18 +153,9 @@ const load = parseGraphQLSchema => {
     },
   });
 
-  parseGraphQLSchema.addGraphQLType(
-    deleteClassMutation.args.input.type.ofType,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLType(deleteClassMutation.args.input.type.ofType, true, true);
   parseGraphQLSchema.addGraphQLType(deleteClassMutation.type, true, true);
-  parseGraphQLSchema.addGraphQLMutation(
-    'deleteClass',
-    deleteClassMutation,
-    true,
-    true
-  );
+  parseGraphQLSchema.addGraphQLMutation('deleteClass', deleteClassMutation, true, true);
 };
 
 export { load };

@@ -4,12 +4,7 @@ import { Parse } from 'parse/node';
 
 export class PushRouter extends PromiseRouter {
   mountRoutes() {
-    this.route(
-      'POST',
-      '/push',
-      middleware.promiseEnforceMasterKeyAccess,
-      PushRouter.handlePOST
-    );
+    this.route('POST', '/push', middleware.promiseEnforceMasterKeyAccess, PushRouter.handlePOST);
   }
 
   static handlePOST(req) {
@@ -21,10 +16,7 @@ export class PushRouter extends PromiseRouter {
     }
     const pushController = req.config.pushController;
     if (!pushController) {
-      throw new Parse.Error(
-        Parse.Error.PUSH_MISCONFIGURED,
-        'Push controller is not set'
-      );
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Push controller is not set');
     }
 
     const where = PushRouter.getQueryCondition(req);

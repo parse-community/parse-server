@@ -4,7 +4,7 @@ var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess } from '../middlewares';
+import { promiseEnforceMasterKeyAccess, promiseEnsureIdempotency } from '../middlewares';
 import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
@@ -34,17 +34,19 @@ export class FunctionsRouter extends PromiseRouter {
     this.route(
       'POST',
       '/functions/:functionName',
+      promiseEnsureIdempotency,
       FunctionsRouter.handleCloudFunction
     );
     this.route(
       'POST',
       '/jobs/:jobName',
+      promiseEnsureIdempotency,
       promiseEnforceMasterKeyAccess,
-      function(req) {
+      function (req) {
         return FunctionsRouter.handleCloudJob(req);
       }
     );
-    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function(req) {
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function (req) {
       return FunctionsRouter.handleCloudJob(req);
     });
   }
@@ -94,48 +96,28 @@ export class FunctionsRouter extends PromiseRouter {
     });
   }
 
-  static createResponseObject(resolve, reject, message) {
+  static createResponseObject(resolve, reject) {
     return {
-      success: function(result) {
+      success: function (result) {
         resolve({
           response: {
             result: Parse._encode(result),
           },
         });
       },
-      error: function(message) {
-        // parse error, process away
-        if (message instanceof Parse.Error) {
-          return reject(message);
-        }
-
-        const code = Parse.Error.SCRIPT_FAILED;
-        // If it's an error, mark it as a script failed
-        if (typeof message === 'string') {
-          return reject(new Parse.Error(code, message));
-        }
-        if (message instanceof Error) {
-          message = message.message;
-        }
-        reject(new Parse.Error(code, message));
+      error: function (message) {
+        const error = triggers.resolveError(message);
+        reject(error);
       },
-      message: message,
     };
   }
-
   static handleCloudFunction(req) {
     const functionName = req.params.functionName;
     const applicationId = req.config.applicationId;
     const theFunction = triggers.getFunction(functionName, applicationId);
-    const theValidator = triggers.getValidator(
-      req.params.functionName,
-      applicationId
-    );
+
     if (!theFunction) {
-      throw new Parse.Error(
-        Parse.Error.SCRIPT_FAILED,
-        `Invalid function: "${functionName}"`
-      );
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
     let params = Object.assign({}, req.body, req.query);
     params = parseParams(params);
@@ -148,28 +130,16 @@ export class FunctionsRouter extends PromiseRouter {
       headers: req.config.headers,
       ip: req.config.ip,
       functionName,
+      context: req.info.context,
     };
 
-    if (theValidator && typeof theValidator === 'function') {
-      var result = theValidator(request);
-      if (!result) {
-        throw new Parse.Error(
-          Parse.Error.VALIDATION_ERROR,
-          'Validation failed.'
-        );
-      }
-    }
-
-    return new Promise(function(resolve, reject) {
-      const userString =
-        req.auth && req.auth.user ? req.auth.user.id : undefined;
+    return new Promise(function (resolve, reject) {
+      const userString = req.auth && req.auth.user ? req.auth.user.id : undefined;
       const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
-      const { success, error, message } = FunctionsRouter.createResponseObject(
+      const { success, error } = FunctionsRouter.createResponseObject(
         result => {
           try {
-            const cleanResult = logger.truncateLogMessage(
-              JSON.stringify(result.response.result)
-            );
+            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
             logger.info(
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`,
               {
@@ -203,7 +173,10 @@ export class FunctionsRouter extends PromiseRouter {
       );
       return Promise.resolve()
         .then(() => {
-          return theFunction(request, { message });
+          return triggers.maybeRunValidator(request, functionName);
+        })
+        .then(() => {
+          return theFunction(request);
         })
         .then(success, error);
     });

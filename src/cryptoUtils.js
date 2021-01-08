@@ -23,8 +23,7 @@ export function randomString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomString is useless.');
   }
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '0123456789';
   let objectId = '';
   const bytes = randomBytes(size);
   for (let i = 0; i < bytes.length; ++i) {
@@ -44,7 +43,5 @@ export function newToken(): string {
 }
 
 export function md5Hash(string: string): string {
-  return createHash('md5')
-    .update(string)
-    .digest('hex');
+  return createHash('md5').update(string).digest('hex');
 }

@@ -40,7 +40,6 @@ const portPattern = /:[0-9]*$/;
 // Special case for a simple path URL
 const simplePathPattern = /^(\/\/?(?!\/)[^\?\s]*)(\?[^\s]*)?$/;
 
-const hostnameMaxLen = 255;
 // protocols that can allow "unsafe" and "unwise" chars.
 const unsafeProtocol = {
   javascript: true,
@@ -76,7 +75,7 @@ function urlParse(url, parseQueryString, slashesDenoteHost) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
+Url.prototype.parse = function (url, parseQueryString, slashesDenoteHost) {
   if (typeof url !== 'string') {
     throw new TypeError('Parameter "url" must be a string, not ' + typeof url);
   }
@@ -192,18 +191,14 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
   // resolution will treat //foo/bar as host=foo,path=bar because that's
   // how the browser resolves relative URLs.
   if (slashesDenoteHost || proto || /^\/\/[^@\/]+@[^@\/]+/.test(rest)) {
-    var slashes =
-      rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
+    var slashes = rest.charCodeAt(0) === 47 /*/*/ && rest.charCodeAt(1) === 47; /*/*/
     if (slashes && !(proto && hostlessProtocol[proto])) {
       rest = rest.slice(2);
       this.slashes = true;
     }
   }
 
-  if (
-    !hostlessProtocol[proto] &&
-    (slashes || (proto && !slashedProtocol[proto]))
-  ) {
+  if (!hostlessProtocol[proto] && (slashes || (proto && !slashedProtocol[proto]))) {
     // there's a hostname.
     // the first instance of /, ?, ;, or # ends the host.
     //
@@ -284,8 +279,7 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
     // if hostname begins with [ and ends with ]
     // assume that it's an IPv6 address.
     var ipv6Hostname =
-      hostname.charCodeAt(0) === 91 /*[*/ &&
-      hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
+      hostname.charCodeAt(0) === 91 /*[*/ && hostname.charCodeAt(hostname.length - 1) === 93; /*]*/
 
     // validate a little.
     if (!ipv6Hostname) {
@@ -293,12 +287,8 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
       if (result !== undefined) rest = result;
     }
 
-    if (this.hostname.length > hostnameMaxLen) {
-      this.hostname = '';
-    } else {
-      // hostnames are always lower case.
-      this.hostname = this.hostname.toLowerCase();
-    }
+    // hostnames are always lower case.
+    this.hostname = this.hostname.toLowerCase();
 
     if (!ipv6Hostname) {
       // IDNA Support: Returns a punycoded representation of "domain".
@@ -363,9 +353,7 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
   }
 
   var firstIdx =
-    questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx)
-      ? questionIdx
-      : hashIdx;
+    questionIdx !== -1 && (hashIdx === -1 || questionIdx < hashIdx) ? questionIdx : hashIdx;
   if (firstIdx === -1) {
     if (rest.length > 0) this.pathname = rest;
   } else if (firstIdx > 0) {
@@ -518,9 +506,7 @@ function urlFormat(obj) {
   if (typeof obj === 'string') obj = urlParse(obj);
   else if (typeof obj !== 'object' || obj === null)
     throw new TypeError(
-      'Parameter "urlObj" must be an object, not ' + obj === null
-        ? 'null'
-        : typeof obj
+      'Parameter "urlObj" must be an object, not ' + obj === null ? 'null' : typeof obj
     );
   else if (!(obj instanceof Url)) return Url.prototype.format.call(obj);
 
@@ -528,7 +514,7 @@ function urlFormat(obj) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.format = function() {
+Url.prototype.format = function () {
   var auth = this.auth || '';
   if (auth) {
     auth = encodeAuth(auth);
@@ -544,11 +530,7 @@ Url.prototype.format = function() {
   if (this.host) {
     host = auth + this.host;
   } else if (this.hostname) {
-    host =
-      auth +
-      (this.hostname.indexOf(':') === -1
-        ? this.hostname
-        : '[' + this.hostname + ']');
+    host = auth + (this.hostname.indexOf(':') === -1 ? this.hostname : '[' + this.hostname + ']');
     if (this.port) {
       host += ':' + this.port;
     }
@@ -559,8 +541,7 @@ Url.prototype.format = function() {
 
   var search = this.search || (query && '?' + query) || '';
 
-  if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/)
-    protocol += ':';
+  if (protocol && protocol.charCodeAt(protocol.length - 1) !== 58 /*:*/) protocol += ':';
 
   var newPathname = '';
   var lastPos = 0;
@@ -579,20 +560,15 @@ Url.prototype.format = function() {
     }
   }
   if (lastPos > 0) {
-    if (lastPos !== pathname.length)
-      pathname = newPathname + pathname.slice(lastPos);
+    if (lastPos !== pathname.length) pathname = newPathname + pathname.slice(lastPos);
     else pathname = newPathname;
   }
 
   // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
   // unless they had them to begin with.
-  if (
-    this.slashes ||
-    ((!protocol || slashedProtocol[protocol]) && host !== false)
-  ) {
+  if (this.slashes || ((!protocol || slashedProtocol[protocol]) && host !== false)) {
     host = '//' + (host || '');
-    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/)
-      pathname = '/' + pathname;
+    if (pathname && pathname.charCodeAt(0) !== 47 /*/*/) pathname = '/' + pathname;
   } else if (!host) {
     host = '';
   }
@@ -611,7 +587,7 @@ function urlResolve(source, relative) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.resolve = function(relative) {
+Url.prototype.resolve = function (relative) {
   return this.resolveObject(urlParse(relative, false, true)).format();
 };
 
@@ -622,7 +598,7 @@ function urlResolveObject(source, relative) {
 }
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.resolveObject = function(relative) {
+Url.prototype.resolveObject = function (relative) {
   if (typeof relative === 'string') {
     var rel = new Url();
     rel.parse(relative, false, true);
@@ -656,11 +632,7 @@ Url.prototype.resolveObject = function(relative) {
     }
 
     //urlParse appends trailing / to urls like http://www.example.com
-    if (
-      slashedProtocol[result.protocol] &&
-      result.hostname &&
-      !result.pathname
-    ) {
+    if (slashedProtocol[result.protocol] && result.hostname && !result.pathname) {
       result.path = result.pathname = '/';
     }
 
@@ -721,10 +693,8 @@ Url.prototype.resolveObject = function(relative) {
   }
 
   var isSourceAbs = result.pathname && result.pathname.charAt(0) === '/';
-  var isRelAbs =
-    relative.host || (relative.pathname && relative.pathname.charAt(0) === '/');
-  var mustEndAbs =
-    isRelAbs || isSourceAbs || (result.host && relative.pathname);
+  var isRelAbs = relative.host || (relative.pathname && relative.pathname.charAt(0) === '/');
+  var mustEndAbs = isRelAbs || isSourceAbs || (result.host && relative.pathname);
   var removeAllDots = mustEndAbs;
   var srcPath = (result.pathname && result.pathname.split('/')) || [];
   var relPath = (relative.pathname && relative.pathname.split('/')) || [];
@@ -757,12 +727,9 @@ Url.prototype.resolveObject = function(relative) {
 
   if (isRelAbs) {
     // it's absolute.
-    result.host =
-      relative.host || relative.host === '' ? relative.host : result.host;
+    result.host = relative.host || relative.host === '' ? relative.host : result.host;
     result.hostname =
-      relative.hostname || relative.hostname === ''
-        ? relative.hostname
-        : result.hostname;
+      relative.hostname || relative.hostname === '' ? relative.hostname : result.hostname;
     result.search = relative.search;
     result.query = relative.query;
     srcPath = relPath;
@@ -785,9 +752,7 @@ Url.prototype.resolveObject = function(relative) {
       //this especially happens in cases like
       //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
       const authInHost =
-        result.host && result.host.indexOf('@') > 0
-          ? result.host.split('@')
-          : false;
+        result.host && result.host.indexOf('@') > 0 ? result.host.split('@') : false;
       if (authInHost) {
         result.auth = authInHost.shift();
         result.host = result.hostname = authInHost.shift();
@@ -797,9 +762,7 @@ Url.prototype.resolveObject = function(relative) {
     result.query = relative.query;
     //to support http.request
     if (result.pathname !== null || result.search !== null) {
-      result.path =
-        (result.pathname ? result.pathname : '') +
-        (result.search ? result.search : '');
+      result.path = (result.pathname ? result.pathname : '') + (result.search ? result.search : '');
     }
     result.href = result.format();
     return result;
@@ -824,8 +787,7 @@ Url.prototype.resolveObject = function(relative) {
   // then it must NOT get a trailing slash.
   var last = srcPath.slice(-1)[0];
   var hasTrailingSlash =
-    ((result.host || relative.host || srcPath.length > 1) &&
-      (last === '.' || last === '..')) ||
+    ((result.host || relative.host || srcPath.length > 1) && (last === '.' || last === '..')) ||
     last === '';
 
   // strip single dots, resolve double dots to parent dir
@@ -851,11 +813,7 @@ Url.prototype.resolveObject = function(relative) {
     }
   }
 
-  if (
-    mustEndAbs &&
-    srcPath[0] !== '' &&
-    (!srcPath[0] || srcPath[0].charAt(0) !== '/')
-  ) {
+  if (mustEndAbs && srcPath[0] !== '' && (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
     srcPath.unshift('');
   }
 
@@ -863,8 +821,7 @@ Url.prototype.resolveObject = function(relative) {
     srcPath.push('');
   }
 
-  var isAbsolute =
-    srcPath[0] === '' || (srcPath[0] && srcPath[0].charAt(0) === '/');
+  var isAbsolute = srcPath[0] === '' || (srcPath[0] && srcPath[0].charAt(0) === '/');
 
   // put the host back
   if (psychotic) {
@@ -876,10 +833,7 @@ Url.prototype.resolveObject = function(relative) {
     //occasionally the auth can get stuck only in host
     //this especially happens in cases like
     //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
-    const authInHost =
-      result.host && result.host.indexOf('@') > 0
-        ? result.host.split('@')
-        : false;
+    const authInHost = result.host && result.host.indexOf('@') > 0 ? result.host.split('@') : false;
     if (authInHost) {
       result.auth = authInHost.shift();
       result.host = result.hostname = authInHost.shift();
@@ -901,9 +855,7 @@ Url.prototype.resolveObject = function(relative) {
 
   //to support request.http
   if (result.pathname !== null || result.search !== null) {
-    result.path =
-      (result.pathname ? result.pathname : '') +
-      (result.search ? result.search : '');
+    result.path = (result.pathname ? result.pathname : '') + (result.search ? result.search : '');
   }
   result.auth = relative.auth || result.auth;
   result.slashes = result.slashes || relative.slashes;
@@ -912,7 +864,7 @@ Url.prototype.resolveObject = function(relative) {
 };
 
 /* istanbul ignore next: improve coverage */
-Url.prototype.parseHost = function() {
+Url.prototype.parseHost = function () {
   var host = this.host;
   var port = portPattern.exec(host);
   if (port) {
@@ -928,8 +880,7 @@ Url.prototype.parseHost = function() {
 // About 1.5x faster than the two-arg version of Array#splice().
 /* istanbul ignore next: improve coverage */
 function spliceOne(list, index) {
-  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1)
-    list[i] = list[k];
+  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) list[i] = list[k];
   list.pop();
 }
 

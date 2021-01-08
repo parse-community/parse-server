@@ -2,6 +2,7 @@ import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import _ from 'lodash';
 import Parse from 'parse/node';
+import { promiseEnsureIdempotency } from '../middlewares';
 
 const ALLOWED_GET_QUERY_KEYS = [
   'keys',
@@ -18,10 +19,7 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(
-      req.body,
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
     if (req.config.maxLimit && body.limit > req.config.maxLimit) {
       // Silently replace the limit on the query with the max configured
@@ -40,7 +38,8 @@ export class ClassesRouter extends PromiseRouter {
         this.className(req),
         body.where,
         options,
-        req.info.clientSDK
+        req.info.clientSDK,
+        req.info.context
       )
       .then(response => {
         return { response: response };
@@ -49,18 +48,12 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    const body = Object.assign(
-      req.body,
-      ClassesRouter.JSONFromQuery(req.query)
-    );
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
 
     for (const key of Object.keys(body)) {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          'Improper encode of parameter'
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
     }
 
@@ -94,10 +87,7 @@ export class ClassesRouter extends PromiseRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0) {
-          throw new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'
-          );
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
 
         if (this.className(req) === '_User') {
@@ -120,7 +110,8 @@ export class ClassesRouter extends PromiseRouter {
       req.auth,
       this.className(req),
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
@@ -132,19 +123,14 @@ export class ClassesRouter extends PromiseRouter {
       this.className(req),
       where,
       req.body,
-      req.info.clientSDK
+      req.info.clientSDK,
+      req.info.context
     );
   }
 
   handleDelete(req) {
     return rest
-      .del(
-        req.config,
-        req.auth,
-        this.className(req),
-        req.params.objectId,
-        req.info.clientSDK
-      )
+      .del(req.config, req.auth, this.className(req), req.params.objectId, req.info.context)
       .then(() => {
         return { response: {} };
       });
@@ -183,10 +169,7 @@ export class ClassesRouter extends PromiseRouter {
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_QUERY,
-          `Invalid parameter for query: ${key}`
-        );
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
     }
     const options = {};
@@ -225,10 +208,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.subqueryReadPreference === 'string') {
       options.subqueryReadPreference = body.subqueryReadPreference;
     }
-    if (
-      body.hint &&
-      (typeof body.hint === 'string' || typeof body.hint === 'object')
-    ) {
+    if (body.hint && (typeof body.hint === 'string' || typeof body.hint === 'object')) {
       options.hint = body.hint;
     }
     if (body.explain) {
@@ -244,10 +224,10 @@ export class ClassesRouter extends PromiseRouter {
     this.route('GET', '/classes/:className/:objectId', req => {
       return this.handleGet(req);
     });
-    this.route('POST', '/classes/:className', req => {
+    this.route('POST', '/classes/:className', promiseEnsureIdempotency, req => {
       return this.handleCreate(req);
     });
-    this.route('PUT', '/classes/:className/:objectId', req => {
+    this.route('PUT', '/classes/:className/:objectId', promiseEnsureIdempotency, req => {
       return this.handleUpdate(req);
     });
     this.route('DELETE', '/classes/:className/:objectId', req => {
