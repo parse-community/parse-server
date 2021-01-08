@@ -2252,37 +2252,14 @@ describe('Parse.User testing', () => {
     });
 
     describe('anonymous users', () => {
-      beforeEach(() => {
-        const insensitiveCollisions = [
-          'abcdefghijklmnop',
-          'Abcdefghijklmnop',
-          'ABcdefghijklmnop',
-          'ABCdefghijklmnop',
-          'ABCDefghijklmnop',
-          'ABCDEfghijklmnop',
-          'ABCDEFghijklmnop',
-          'ABCDEFGhijklmnop',
-          'ABCDEFGHijklmnop',
-          'ABCDEFGHIjklmnop',
-          'ABCDEFGHIJklmnop',
-          'ABCDEFGHIJKlmnop',
-          'ABCDEFGHIJKLmnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMnop',
-          'ABCDEFGHIJKLMNop',
-          'ABCDEFGHIJKLMNOp',
-          'ABCDEFGHIJKLMNOP',
-        ];
-
-        // need a bunch of spare random strings per api request
-        spyOn(cryptoUtils, 'randomString').and.returnValues(...insensitiveCollisions);
-      });
-
       it('should not fail on case insensitive matches', async () => {
-        const user1 = await Parse.AnonymousUtils.logIn();
+        spyOn(cryptoUtils, 'randomString').and.returnValue('abcdefghijklmnop');
+        const logIn = id => Parse.User.logInWith('anonymous', { authData: { id } });
+        const user1 = await logIn('test1');
         const username1 = user1.get('username');
 
-        const user2 = await Parse.AnonymousUtils.logIn();
+        cryptoUtils.randomString.and.returnValue('ABCDEFGHIJKLMNOp');
+        const user2 = await logIn('test2');
         const username2 = user2.get('username');
 
         expect(username1).not.toBeUndefined();
