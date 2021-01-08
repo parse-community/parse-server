@@ -12,7 +12,7 @@ function getSessionToken(options) {
 }
 
 function getAuth(options = {}, config) {
-  const installationId = options.installationId || 'cloud';
+  const installationId = options.installationId || (process.env.TESTING ? 'directAccess' : 'cloud');
   if (options.useMasterKey) {
     return Promise.resolve(new Auth.Auth({ config, isMaster: true, installationId }));
   }
