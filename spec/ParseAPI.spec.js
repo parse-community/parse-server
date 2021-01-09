@@ -24,14 +24,31 @@ const headers = {
 };
 
 describe_only_db('mongo')('miscellaneous', () => {
-  it('db contains document after successful save', async () => {
-    const obj = new Parse.Object('TestObject');
-    obj.set('foo', 'bar');
-    await obj.save();
-    const config = Config.get(defaultConfiguration.appId);
-    const results = await config.database.adapter.find('TestObject', { fields: {} }, {}, {});
-    expect(results.length).toEqual(1);
-    expect(results[0]['foo']).toEqual('bar');
+  it('test rest_create_app', function (done) {
+    let appId;
+    Parse._request('POST', 'rest_create_app')
+      .then(res => {
+        expect(typeof res.application_id).toEqual('string');
+        expect(res.master_key).toEqual('master');
+        appId = res.application_id;
+        Parse.initialize(appId, 'unused');
+        const obj = new Parse.Object('TestObject');
+        obj.set('foo', 'bar');
+        return obj.save();
+      })
+      .then(() => {
+        const config = Config.get(appId);
+        return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0]['foo']).toEqual('bar');
+        done();
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
+        done();
+      });
   });
 });
 
