@@ -496,7 +496,7 @@ describe('server', () => {
     await reconfigureServer({
       directAccess: true,
     });
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(2);
     Parse.CoreManager.setRESTController(RESTController);
   });
 
