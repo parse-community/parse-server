@@ -79,7 +79,7 @@ class ParseLiveQueryServer {
     // Register message handler for subscriber. When publisher get messages, it will publish message
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
-      logger.verbose('Subscribe messsage %j', messageStr);
+      logger.verbose('Subscribe message %j', messageStr);
       let message;
       try {
         message = JSON.parse(messageStr);
