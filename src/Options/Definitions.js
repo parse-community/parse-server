@@ -179,6 +179,7 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_FILE_UPLOAD_OPTIONS',
     help: 'Options for file uploads',
     action: parsers.objectParser,
+    default: {},
   },
   graphQLPath: {
     env: 'PARSE_SERVER_GRAPHQL_PATH',
