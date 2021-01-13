@@ -367,7 +367,7 @@ describe('Parse.File testing', () => {
         url: 'http://myBaseUrl/myFile',
         name: 'myFile',
       };
-    
+
       const jsonItem = {"file": file};
 
       const fileArray = [jsonItem];
