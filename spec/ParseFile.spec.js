@@ -361,6 +361,33 @@ describe('Parse.File testing', () => {
       });
     });
 
+    it('supports files in json that inside of array', done => {
+      const file = {
+        __type: 'File',
+        url: 'http://myBaseUrl/myFile',
+        name: 'myFile',
+      };
+    
+      const jsonItem = {"file": file};
+
+      const fileArray = [jsonItem];
+      const obj = new Parse.Object('FilesInJsonInArrayTest');
+      obj.set('files', fileArray);
+      obj
+        .save()
+        .then(() => {
+          const query = new Parse.Query('FilesInJsonInArrayTest');
+          return query.first();
+        })
+        .then(result => {
+          const filesAgain = result.get('files');
+          expect(filesAgain.length).toEqual(1);
+          expect(filesAgain[0].file.name()).toEqual('myFile');
+          expect(filesAgain[0].file.url()).toEqual('http://myBaseUrl/myFile');
+          done();
+        });
+    });
+
     it('supports array of files', done => {
       const file = {
         __type: 'File',
