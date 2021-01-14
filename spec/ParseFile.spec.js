@@ -366,7 +366,7 @@ describe('Parse.File testing', () => {
       const newBaseUrl = "http://new-file-url.example.com";
       const file = {
         __type: 'File',
-        url: oldBaseUrl+'/myFile',
+        url: oldBaseUrl + '/myFile',
         name: 'myFile',
       };
 
@@ -397,7 +397,7 @@ describe('Parse.File testing', () => {
       const filesAgain = result.get('files');
       expect(filesAgain.length).toEqual(1);
       expect(filesAgain[0].file.name()).toEqual('myFile');
-      expect(filesAgain[0].file.url()).toEqual(newBaseUrl+'/myFile');
+      expect(filesAgain[0].file.url()).toEqual(newBaseUrl + '/myFile');
       done();
     });
 
