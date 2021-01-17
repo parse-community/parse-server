@@ -1,7 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
-const fs = require('fs/promises');
+const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
 const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
 
