@@ -665,7 +665,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/apps/test/verify_email?token=exampleToken&username=exampleUsername',
+        url:
+          'http://localhost:8378/1/apps/test/verify_email?token=exampleToken&username=exampleUsername',
         followRedirects: false,
       }).then(response => {
         expect(response.status).toEqual(200);
@@ -709,7 +710,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     const emailAdapter = {
       sendVerificationEmail: () => {
         request({
-          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken&username=exampleUsername',
+          url:
+            'http://localhost:8378/1/apps/test/verify_email?token=invalidToken&username=exampleUsername',
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
@@ -755,7 +757,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           expect(response.status).toEqual(200);
           expect(response.text).toContain('ExampleApp');
           expect(response.text).toContain('exampleUsername');
-          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
+          expect(response.text).toContain(
+            'http://localhost:8378/1/apps/test/request_password_reset'
+          );
           done();
         });
       },
@@ -815,8 +819,10 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
-          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-          const re = /id="token" value="([a-zA-Z0-9]+)"/
+          expect(response.text).toContain(
+            'http://localhost:8378/1/apps/test/request_password_reset'
+          );
+          const re = /id="token" value="([a-zA-Z0-9]+)"/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -891,8 +897,10 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
-          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-          const re = /id="token" value="([a-zA-Z0-9]+)"/
+          expect(response.text).toContain(
+            'http://localhost:8378/1/apps/test/request_password_reset'
+          );
+          const re = /id="token" value="([a-zA-Z0-9]+)"/;
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -950,7 +958,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         });
         expect(response.status).toEqual(200);
         expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-        const re = /id="token" value="([a-zA-Z0-9]+)"/
+        const re = /id="token" value="([a-zA-Z0-9]+)"/;
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1083,7 +1091,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     let pageResponse;
     let redirectResponse;
     const config = {
-      appId: "test",
+      appId: 'test',
       appName: 'ExampleAppName',
       verifyUserEmails: true,
       emailAdapter: {
@@ -1108,8 +1116,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         },
         query: {
           locale: 'de-AT',
-        }
-      }
+        },
+      };
     });
 
     it('returns default file if localization is disabled', async () => {
@@ -1117,7 +1125,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
       await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
       expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`));
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
+      );
     });
 
     it('returns default file if no locale is specified', async () => {
@@ -1125,7 +1135,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
       await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
       expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`));
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
+      );
     });
 
     it('returns custom page regardless of localization enabled', async () => {
@@ -1139,18 +1151,22 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     it('returns file for locale match', async () => {
       await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
       expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-      expect(pageResponse.calls.all()[0].args[1]).toMatch(new RegExp(`\/de-AT\/${pages.invalidLink.defaultFile}`));
+      expect(pageResponse.calls.all()[0].args[1]).toMatch(
+        new RegExp(`\/de-AT\/${pages.invalidLink.defaultFile}`)
+      );
     });
 
     it('returns file for language match', async () => {
       // Pretend no locale matching file exists
-      spyOn(Utils, 'fileExists').and.callFake(async (path) => {
+      spyOn(Utils, 'fileExists').and.callFake(async path => {
         return !path.includes(`/de-AT/${pages.invalidLink.defaultFile}`);
       });
 
       await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
       expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-      expect(pageResponse.calls.all()[0].args[1]).toMatch(new RegExp(`\/de\/${pages.invalidLink.defaultFile}`));
+      expect(pageResponse.calls.all()[0].args[1]).toMatch(
+        new RegExp(`\/de\/${pages.invalidLink.defaultFile}`)
+      );
     });
 
     it('returns default file for neither locale nor language match', async () => {
@@ -1158,7 +1174,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
 
       await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
       expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/yo(-LO)?\/${pages.invalidLink.defaultFile}`));
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        new RegExp(`\/yo(-LO)?\/${pages.invalidLink.defaultFile}`)
+      );
     });
 
     it('returns a file for GET request', async () => {
@@ -1185,23 +1203,27 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       }
     });
 
-    it('localizes invalid link page with file response (e2e test)', async () => {
+    it('responds to POST request with redirect response (e2e test)', async () => {
       await reconfigureServer(config);
       const response = await request({
-        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+        url:
+          'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
         followRedirects: false,
-        method: 'POST'
+        method: 'POST',
       });
       expect(response.status).toEqual(303);
-      expect(response.headers.location).toEqual('http://localhost:8378/apps/de-AT/invalid_link.html');
+      expect(response.headers.location).toEqual(
+        'http://localhost:8378/apps/de-AT/invalid_link.html'
+      );
     });
 
-    it('localizes invalid link page with redirect response (e2e test)', async () => {
+    it('responds to GET request with content response (e2e test)', async () => {
       await reconfigureServer(config);
       const response = await request({
-        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+        url:
+          'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
         followRedirects: false,
-        method: 'GET'
+        method: 'GET',
       });
       expect(response.status).toEqual(200);
       expect(response.text).toContain('<html>');
