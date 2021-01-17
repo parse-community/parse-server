@@ -141,6 +141,9 @@ export interface ParseServerOptions {
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
+  /* Is true if pages should be localized; customPages must not be set.
+  :DEFAULT: false */
+  enablePageLocalization: ?boolean;
   /* parse-server's LiveQuery configuration object */
   liveQuery: ?LiveQueryOptions;
   /* Session duration, in seconds, defaults to 1 year

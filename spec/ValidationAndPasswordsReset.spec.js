@@ -1,8 +1,10 @@
 'use strict';
 
+const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const request = require('../lib/request');
 const Config = require('../lib/Config');
+const Utils = require('../lib/Utils');
 
 describe('Custom Pages, Email Verification, Password Reset', () => {
   it('should set the custom pages', done => {
@@ -271,10 +273,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
-          );
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('Successfully verified your email');
+          expect(response.text).toContain('account: user');
           user
             .fetch()
             .then(
@@ -596,7 +597,7 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     })
       .then(() => {
         user.setPassword('other-password');
-        user.setUsername('user');
+        user.setUsername('exampleUsername');
         user.set('email', 'user@parse.com');
         return user.signUp();
       })
@@ -606,10 +607,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user'
-          );
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('Successfully verified your email');
+          expect(response.text).toContain('exampleUsername');
           user
             .fetch()
             .then(
@@ -646,10 +646,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         url: 'http://localhost:8378/1/apps/test/verify_email',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('Invalid Link');
         done();
       });
     });
@@ -667,13 +665,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
       request({
-        url: 'http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga',
+        url: 'http://localhost:8378/1/apps/test/verify_email?token=exampleToken&username=exampleUsername',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=sadfasga&appId=test'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('value="exampleUsername"');
+        expect(response.text).toContain('action="/apps/test/resend_verification_email"');
         done();
       });
     });
@@ -695,12 +692,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         method: 'POST',
         followRedirects: false,
         body: {
-          username: 'sadfasga',
+          username: 'exampleUsername',
         },
       }).then(response => {
-        expect(response.status).toEqual(302);
+        expect(response.status).toEqual(303);
         expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html'
+          'Found. Redirecting to http://localhost:8378/apps/link_send_fail.html'
         );
         done();
       });
@@ -712,13 +709,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     const emailAdapter = {
       sendVerificationEmail: () => {
         request({
-          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv',
+          url: 'http://localhost:8378/1/apps/test/verify_email?token=invalidToken&username=exampleUsername',
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          expect(response.text).toEqual(
-            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=zxcv&appId=test'
-          );
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('value="exampleUsername"');
+          expect(response.text).toContain('action="/apps/test/resend_verification_email"');
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
             done();
@@ -729,13 +725,13 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'ExampleApp',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
+      user.setPassword('examplePassword');
+      user.setUsername('exampleUsername');
       user.set('email', 'user@parse.com');
       user.signUp(null, {
         success: () => {},
@@ -756,22 +752,23 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=zxcv%2Bzxcv/;
-          expect(response.text.match(re)).not.toBe(null);
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('ExampleApp');
+          expect(response.text).toContain('exampleUsername');
+          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
           done();
         });
       },
       sendMail: () => {},
     };
     reconfigureServer({
-      appName: 'emailing app',
+      appName: 'ExampleApp',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
-      user.setPassword('asdf');
-      user.setUsername('zxcv+zxcv');
+      user.setPassword('examplePassword');
+      user.setUsername('exampleUsername');
       user.set('email', 'user@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user@parse.com', {
@@ -801,10 +798,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           'http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga',
         followRedirects: false,
       }).then(response => {
-        expect(response.status).toEqual(302);
-        expect(response.text).toEqual(
-          'Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html'
-        );
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('Invalid Link');
         done();
       });
     });
@@ -819,8 +814,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
+          const re = /id="token" value="([a-zA-Z0-9]+)"/
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -838,10 +834,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             },
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(302);
-            expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv'
-            );
+            expect(response.status).toEqual(200);
+            expect(response.text).toContain('Your password has been updated.');
 
             Parse.User.logIn('zxcv', 'hello').then(
               function () {
@@ -896,8 +890,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(302);
-          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv%2B1/;
+          expect(response.status).toEqual(200);
+          expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
+          const re = /id="token" value="([a-zA-Z0-9]+)"/
           const match = response.text.match(re);
           if (!match) {
             fail('should have a token');
@@ -915,10 +910,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
             },
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(302);
-            expect(response.text).toEqual(
-              'Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv%2B1'
-            );
+            expect(response.status).toEqual(200);
+            expect(response.text).toContain('Your password has been updated.');
             done();
           });
         });
@@ -955,8 +948,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           url: options.link,
           followRedirects: false,
         });
-        expect(response.status).toEqual(302);
-        const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
+        const re = /id="token" value="([a-zA-Z0-9]+)"/
         const match = response.text.match(re);
         if (!match) {
           fail('should have a token');
@@ -1081,5 +1075,136 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         fail(JSON.stringify(error));
         done();
       });
+  });
+
+  describe('localization of custom pages', () => {
+    let router = new PublicAPIRouter();
+    let req;
+    let pageResponse;
+    let redirectResponse;
+    const config = {
+      appId: "test",
+      appName: 'ExampleAppName',
+      verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      },
+      publicServerURL: 'http://localhost:8378/1',
+      enablePageLocalization: true,
+    };
+
+    beforeEach(async () => {
+      router = new PublicAPIRouter();
+      pageResponse = spyOn(router, 'pageResponse').and.callThrough();
+      redirectResponse = spyOn(router, 'redirectResponse').and.callThrough();
+      req = {
+        method: 'GET',
+        config: {
+          customPages: {},
+          enablePageLocalization: true,
+          publicServerURL: 'http://example.com',
+        },
+        query: {
+          locale: 'de-AT',
+        }
+      }
+    });
+
+    it('returns default file if localization is disabled', async () => {
+      delete req.config.enablePageLocalization;
+
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`));
+    });
+
+    it('returns default file if no locale is specified', async () => {
+      delete req.query.locale;
+
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`));
+    });
+
+    it('returns custom page regardless of localization enabled', async () => {
+      req.config.customPages = { invalidLink: 'http://invalid-link.example.com' };
+
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse).not.toHaveBeenCalled();
+      expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.customPages.invalidLink);
+    });
+
+    it('returns file for locale match', async () => {
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
+      expect(pageResponse.calls.all()[0].args[1]).toMatch(new RegExp(`\/de-AT\/${pages.invalidLink.defaultFile}`));
+    });
+
+    it('returns file for language match', async () => {
+      // Pretend no locale matching file exists
+      spyOn(Utils, 'fileExists').and.callFake(async (path) => {
+        return !path.includes(`/de-AT/${pages.invalidLink.defaultFile}`);
+      });
+
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
+      expect(pageResponse.calls.all()[0].args[1]).toMatch(new RegExp(`\/de\/${pages.invalidLink.defaultFile}`));
+    });
+
+    it('returns default file for neither locale nor language match', async () => {
+      req.query.locale = 'yo-LO';
+
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
+      expect(pageResponse.calls.all()[0].args[1]).not.toMatch(new RegExp(`\/yo(-LO)?\/${pages.invalidLink.defaultFile}`));
+    });
+
+    it('returns a file for GET request', async () => {
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse).toHaveBeenCalled();
+      expect(redirectResponse).not.toHaveBeenCalled();
+    });
+
+    it('returns a redirect for POST request', async () => {
+      req.method = 'POST';
+      await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+      expect(pageResponse).not.toHaveBeenCalled();
+      expect(redirectResponse).toHaveBeenCalled();
+    });
+
+    it('returns a redirect for custom pages for GET and POST', async () => {
+      req.config.customPages = { invalidLink: 'http://invalid-link.example.com' };
+
+      for (const method of ['GET', 'POST']) {
+        req.method = method;
+        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        expect(pageResponse).not.toHaveBeenCalled();
+        expect(redirectResponse).toHaveBeenCalled();
+      }
+    });
+
+    it('localizes invalid link page with file response (e2e test)', async () => {
+      await reconfigureServer(config);
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+        followRedirects: false,
+        method: 'POST'
+      });
+      expect(response.status).toEqual(303);
+      expect(response.headers.location).toEqual('http://localhost:8378/apps/de-AT/invalid_link.html');
+    });
+
+    it('localizes invalid link page with redirect response (e2e test)', async () => {
+      await reconfigureServer(config);
+      const response = await request({
+        url: 'http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=de-AT',
+        followRedirects: false,
+        method: 'GET'
+      });
+      expect(response.status).toEqual(200);
+      expect(response.text).toContain('<html>');
+    });
   });
 });

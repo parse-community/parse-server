@@ -88,7 +88,7 @@ describe('public API', () => {
       appName: 'unused',
       publicServerURL: 'http://localhost:8378/1',
     }).then(() => {
-      request('http://localhost:8378/1/apps/choose_password?id=test', (err, httpResponse) => {
+      request('http://localhost:8378/1/apps/choose_password?appId=test', (err, httpResponse) => {
         expect(httpResponse.status).toBe(200);
         done();
       });
@@ -122,7 +122,7 @@ describe('public API without publicServerURL', () => {
   });
 
   it('should get 404 choose_password', done => {
-    request('http://localhost:8378/1/apps/choose_password?id=test', (err, httpResponse) => {
+    request('http://localhost:8378/1/apps/choose_password?appId=test', (err, httpResponse) => {
       expect(httpResponse.status).toBe(404);
       done();
     });
