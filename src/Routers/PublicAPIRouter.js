@@ -6,6 +6,7 @@ import { promises as fs } from 'fs';
 import qs from 'querystring';
 import { Parse } from 'parse/node';
 import Utils from '../Utils';
+import mustache from 'mustache';
 
 const publicPath = path.resolve(__dirname, '../../public');
 const defaultPagePath = file => {
@@ -271,7 +272,9 @@ export class PublicAPIRouter extends PromiseRouter {
     // Aggreate placeholders
     placeholders = Object.assign(
       {
+        // Default placeholders available for every page
         parseServerUrl: req.config.publicServerURL,
+        appName: req.config.appName,
       },
       placeholders
     );
@@ -289,10 +292,8 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.notFound();
     }
 
-    // Fill placeholders in content
-    for (const placeholder of Object.entries(placeholders)) {
-      data = data.replace(`{{${placeholder[0]}}}`, placeholder[1]);
-    }
+    // Fill placeholders
+    data = mustache.render(data, placeholders);
 
     // Add placeholers in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.

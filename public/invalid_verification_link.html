@@ -12,9 +12,10 @@
 </head>
 
 <body>
+  <h1>{{appName}}</h1>
   <h1>Invalid verification link!</h1>
-  <form id="resendForm" method="POST" action="/apps/{{appId}}/resend_verification_email">
-    <input id="usernameField" class="form-control" name="username" type="hidden" value="{{username}}">
+  <form id="resendForm" method="POST" action="/apps/{{{appId}}}/resend_verification_email">
+    <input id="usernameField" class="form-control" name="username" type="hidden" value="{{{username}}}">
     <button type="submit" class="btn btn-default">Resend Link</button>
   </form>
 </body>

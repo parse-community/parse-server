@@ -1,6 +1,7 @@
 'use strict';
 
 const request = require('../lib/request');
+const fs = require('fs/promises');
 const Utils = require('../lib/Utils');
 const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
 
@@ -177,6 +178,7 @@ describe('public API', () => {
     let req;
     let pageResponse;
     let redirectResponse;
+    let readFile;
     const config = {
       appId: 'test',
       appName: 'ExampleAppName',
@@ -188,23 +190,56 @@ describe('public API', () => {
       },
       publicServerURL: 'http://localhost:8378/1',
       enablePageLocalization: true,
+      customPages: {},
     };
 
     beforeEach(async () => {
       router = new PublicAPIRouter();
+      readFile = spyOn(fs, 'readFile').and.callThrough();
       pageResponse = spyOn(router, 'pageResponse').and.callThrough();
       redirectResponse = spyOn(router, 'redirectResponse').and.callThrough();
       req = {
         method: 'GET',
         config: {
-          customPages: {},
+          appId: 'test',
+          appName: 'ExampleAppName',
+          publicServerURL: 'http://localhost:8378/1',
           enablePageLocalization: true,
-          publicServerURL: 'http://example.com',
+          customPages: {},
         },
         query: {
           locale: 'de-AT',
         },
       };
+    });
+
+    describe('placeholders', () => {
+      it('replaces placeholder in response content', async () => {
+        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+
+        expect(readFile.calls.all()[0].returnValue).toBeDefined();
+        const originalContent = await readFile.calls.all()[0].returnValue;
+        expect(originalContent).toContain('{{appName}}');
+
+        expect(pageResponse.calls.all()[0].returnValue).toBeDefined();
+        const replacedContent = await pageResponse.calls.all()[0].returnValue;
+        expect(replacedContent.text).not.toContain('{{appName}}');
+        expect(replacedContent.text).toContain(req.config.appName);
+      });
+
+      it('removes undefined placeholder in response content', async () => {
+        await expectAsync(router.goToPage(req, pages.choosePassword)).toBeResolved();
+
+        expect(readFile.calls.all()[0].returnValue).toBeDefined();
+        const originalContent = await readFile.calls.all()[0].returnValue;
+        expect(originalContent).toContain('{{error}}');
+
+        // There is no error placeholder value set by default, so the
+        // {{error}} placeholder should just be removed from content
+        expect(pageResponse.calls.all()[0].returnValue).toBeDefined();
+        const replacedContent = await pageResponse.calls.all()[0].returnValue;
+        expect(replacedContent.text).not.toContain('{{error}}');
+      });
     });
 
     describe('localization', () => {
