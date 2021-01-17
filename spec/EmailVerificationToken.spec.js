@@ -435,7 +435,6 @@ describe('Email Verification Token Expiration: ', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
-          expect(response.text).toContain('Invalid verification link');
           expect(response.text).toContain('testEmailVerifyTokenValidity');
           expect(response.text).toContain('/apps/test/resend_verification_email');
           done();

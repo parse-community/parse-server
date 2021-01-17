@@ -822,14 +822,13 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           expect(response.text).toContain(
             'http://localhost:8378/1/apps/test/request_password_reset'
           );
-          const re = /id="token" value="([a-zA-Z0-9]+)"/;
-          const match = response.text.match(re);
-          if (!match) {
+
+          const token = response.headers['x-parse-page-param-token'];
+          if (!token) {
             fail('should have a token');
             done();
             return;
           }
-          const token = match[1];
 
           request({
             url: 'http://localhost:8378/1/apps/test/request_password_reset',
@@ -897,17 +896,13 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
-          expect(response.text).toContain(
-            'http://localhost:8378/1/apps/test/request_password_reset'
-          );
-          const re = /id="token" value="([a-zA-Z0-9]+)"/;
-          const match = response.text.match(re);
-          if (!match) {
+
+          const token = response.headers['x-parse-page-param-token'];
+          if (!token) {
             fail('should have a token');
             done();
             return;
           }
-          const token = match[1];
 
           request({
             url: 'http://localhost:8378/1/apps/test/request_password_reset',
@@ -957,14 +952,12 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         });
         expect(response.status).toEqual(200);
-        expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-        const re = /id="token" value="([a-zA-Z0-9]+)"/;
-        const match = response.text.match(re);
-        if (!match) {
+
+        const token = response.headers['x-parse-page-param-token'];
+        if (!token) {
           fail('should have a token');
           return;
         }
-        const token = match[1];
 
         const resetResponse = await request({
           url: 'http://localhost:8378/1/apps/test/request_password_reset',

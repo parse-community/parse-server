@@ -8,23 +8,36 @@ import { Parse } from 'parse/node';
 import Utils from '../Utils';
 
 const publicPath = path.resolve(__dirname, '../../public');
-const defaultPagePath = (file) => { return path.join(publicPath, file) };
-const defaultPageUrl = (file, serverUrl) => { return new URL('/apps/' + file, serverUrl).toString(); };
+const defaultPagePath = file => {
+  return path.join(publicPath, file);
+};
+const defaultPageUrl = (file, serverUrl) => {
+  return new URL('/apps/' + file, serverUrl).toString();
+};
 const pages = Object.freeze({
   invalidLink: { customPageKey: 'invalidLink', defaultFile: 'invalid_link.html' },
   linkSendFail: { customPageKey: 'linkSendFail', defaultFile: 'link_send_fail.html' },
   choosePassword: { customPageKey: 'choosePassword', defaultFile: 'choose_password.html' },
   linkSendSuccess: { customPageKey: 'linkSendSuccess', defaultFile: 'link_send_success.html' },
-  verifyEmailSuccess: { customPageKey: 'verifyEmailSuccess', defaultFile: 'verify_email_success.html' },
-  passwordResetSuccess: { customPageKey: 'passwordResetSuccess', defaultFile: 'password_reset_success.html' },
-  invalidVerificationLink: { customPageKey: 'invalidVerificationLink', defaultFile: 'invalid_verification_link.html' },
+  verifyEmailSuccess: {
+    customPageKey: 'verifyEmailSuccess',
+    defaultFile: 'verify_email_success.html',
+  },
+  passwordResetSuccess: {
+    customPageKey: 'passwordResetSuccess',
+    defaultFile: 'password_reset_success.html',
+  },
+  invalidVerificationLink: {
+    customPageKey: 'invalidVerificationLink',
+    defaultFile: 'invalid_verification_link.html',
+  },
 });
 const pageParams = Object.freeze({
-  appName: "appName",
-  appId: "appId",
-  token: "token",
-  username: "username",
-  error: "error",
+  appName: 'appName',
+  appId: 'appId',
+  token: 'token',
+  username: 'username',
+  error: 'error',
 });
 
 export class PublicAPIRouter extends PromiseRouter {
@@ -45,7 +58,7 @@ export class PublicAPIRouter extends PromiseRouter {
     return userController.verifyEmail(username, token).then(
       () => {
         const params = {
-          [pageParams.username]: username
+          [pageParams.username]: username,
         };
         return this.goToPage(req, pages.verifyEmailSuccess, params);
       },
@@ -116,7 +129,7 @@ export class PublicAPIRouter extends PromiseRouter {
         return this.goToPage(req, pages.choosePassword, params);
       },
       () => {
-        return this.goToPage(req, pages.invalidLink)
+        return this.goToPage(req, pages.invalidLink);
       }
     );
   }
@@ -178,7 +191,7 @@ export class PublicAPIRouter extends PromiseRouter {
         const encodedUsername = encodeURIComponent(username);
         const query = result.success
           ? {
-            [pageParams.username]: encodedUsername
+            [pageParams.username]: encodedUsername,
           }
           : {
             [pageParams.username]: username,
@@ -187,9 +200,7 @@ export class PublicAPIRouter extends PromiseRouter {
             [pageParams.error]: result.err,
             [pageParams.appName]: config.appName,
           };
-        const page = result.success
-          ? pages.passwordResetSuccess
-          : pages.choosePassword;
+        const page = result.success ? pages.passwordResetSuccess : pages.choosePassword;
 
         return this.goToPage(req, page, query, false);
       });
@@ -216,9 +227,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const redirect = responseType !== undefined ? responseType : req.method == 'POST';
 
     // Ensure required config
-    if ([
-      config.publicServerURL,
-    ].includes(undefined)) {
+    if ([config.publicServerURL].includes(undefined)) {
       return this.notFound();
     }
 
@@ -229,13 +238,19 @@ export class PublicAPIRouter extends PromiseRouter {
     const defaultUrl = defaultPageUrl(defaultFile, config.publicServerURL);
 
     // If custom page is set redirect to it without localization
-    if (customPage) { return this.redirectResponse(customPage, params); }
+    if (customPage) {
+      return this.redirectResponse(customPage, params);
+    }
 
     // If localization is enabled
     if (config.enablePageLocalization && locale) {
-      return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) => redirect
-        ? this.redirectResponse(new URL(`/apps/${subdir}/${defaultFile}`, config.publicServerURL).toString(), params)
-        : this.pageResponse(req, path, params)
+      return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
+        redirect
+          ? this.redirectResponse(
+            new URL(`/apps/${subdir}/${defaultFile}`, config.publicServerURL).toString(),
+            params
+          )
+          : this.pageResponse(req, path, params)
       );
     } else {
       return redirect
@@ -253,11 +268,13 @@ export class PublicAPIRouter extends PromiseRouter {
    * @returns {Object} The express file response.
    */
   async pageResponse(req, path, placeholders) {
-
     // Aggreate placeholders
-    placeholders = Object.assign({
-      'parseServerUrl': req.config.publicServerURL
-    }, placeholders);
+    placeholders = Object.assign(
+      {
+        parseServerUrl: req.config.publicServerURL,
+      },
+      placeholders
+    );
 
     // If any of the placeholder values fails to resolve
     if (Object.values(placeholders).includes(undefined)) {
@@ -277,7 +294,14 @@ export class PublicAPIRouter extends PromiseRouter {
       data = data.replace(`{{${placeholder[0]}}}`, placeholder[1]);
     }
 
-    return { text: data };
+    // Add placeholers in header to allow parsing for programmatic use
+    // of response, instead of having to parse the HTML content.
+    const headers = Object.entries(placeholders).reduce((m, p) => {
+      m[`x-parse-page-param-${p[0].toLowerCase()}`] = p[1];
+      return m;
+    }, {});
+
+    return { text: data, headers: headers };
   }
 
   /**
@@ -339,7 +363,9 @@ export class PublicAPIRouter extends PromiseRouter {
       }
     );
 
-    this.route('GET', '/apps/choose_password',
+    this.route(
+      'GET',
+      '/apps/choose_password',
       req => {
         this.setConfig(req);
       },

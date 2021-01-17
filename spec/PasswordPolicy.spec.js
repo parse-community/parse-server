@@ -105,9 +105,7 @@ describe('Password Policy: ', () => {
           })
             .then(response => {
               expect(response.status).toEqual(200);
-              expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-              const re = /id="token" value="([a-zA-Z0-9]+)"/
-              expect(response.text.match(re)).not.toBe(null);
+              expect(response.headers['x-parse-page-param-token']).toBeDefined();
               done();
             })
             .catch(error => {
@@ -621,15 +619,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               done();
               return;
             }
-            const token = match[1];
 
             request({
               method: 'POST',
@@ -712,15 +708,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               done();
               return;
             }
-            const token = match[1];
 
             request({
               method: 'POST',
@@ -897,15 +891,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               done();
               return;
             }
-            const token = match[1];
 
             request({
               method: 'POST',
@@ -987,14 +979,13 @@ describe('Password Policy: ', () => {
           resolveWithFullResponse: true,
         });
         expect(response.status).toEqual(200);
-        expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-        const re = /id="token" value="([a-zA-Z0-9]+)"/
-        const match = response.text.match(re);
-        if (!match) {
+
+        const token = response.headers['x-parse-page-param-token'];
+        if (!token) {
           fail('should have a token');
+          done();
           return;
         }
-        const token = match[1];
 
         try {
           await request({
@@ -1048,15 +1039,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               done();
               return;
             }
-            const token = match[1];
 
             request({
               method: 'POST',
@@ -1313,15 +1302,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               done();
               return;
             }
-            const token = match[1];
 
             request({
               method: 'POST',
@@ -1467,14 +1454,13 @@ describe('Password Policy: ', () => {
         })
           .then(response => {
             expect(response.status).toEqual(200);
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            const re = /id="token" value="([a-zA-Z0-9]+)"/
-            const match = response.text.match(re);
-            if (!match) {
+
+            const token = response.headers['x-parse-page-param-token'];
+            if (!token) {
               fail('should have a token');
               return Promise.reject('Invalid password link');
             }
-            return Promise.resolve(match[1]); // token
+            return Promise.resolve(token);
           })
           .then(token => {
             return request({
@@ -1497,8 +1483,12 @@ describe('Password Policy: ', () => {
             expect(response.status).toEqual(200);
             expect(response.text).toContain(token);
             expect(response.text).toContain(user.getUsername());
-            expect(response.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
-            expect(response.text).toContain('New password should not be the same as last 1 passwords');
+            expect(response.text).toContain(
+              'http://localhost:8378/1/apps/test/request_password_reset'
+            );
+            expect(response.text).toContain(
+              'New password should not be the same as last 1 passwords'
+            );
             done();
             return Promise.resolve();
           })
