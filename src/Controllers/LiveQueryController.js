@@ -43,7 +43,13 @@ export class LiveQueryController {
   }
 
   hasLiveQuery(className: string): boolean {
-    return this.classNames.has(className);
+    for (const name of this.classNames) {
+      const exp = new RegExp("^" + name + "$");
+      if (exp.test(className)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {
