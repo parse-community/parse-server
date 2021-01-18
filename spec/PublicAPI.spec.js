@@ -3,7 +3,7 @@
 const request = require('../lib/request');
 const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
-const { PublicAPIRouter, pages, pageParams } = require('../lib/Routers/PublicAPIRouter');
+const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
 
 describe('public API', () => {
   describe('basic request', () => {

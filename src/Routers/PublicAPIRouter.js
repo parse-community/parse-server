@@ -3,7 +3,6 @@ import Config from '../Config';
 import express from 'express';
 import path from 'path';
 import { promises as fs } from 'fs';
-import qs from 'querystring';
 import { Parse } from 'parse/node';
 import Utils from '../Utils';
 import mustache from 'mustache';
