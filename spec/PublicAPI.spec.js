@@ -3,105 +3,107 @@
 const request = require('../lib/request');
 const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
-const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
+const { PublicAPIRouter, pages, pageParams } = require('../lib/Routers/PublicAPIRouter');
 
 describe('public API', () => {
-  it('should return missing username error on ajax request without username provided', async () => {
-    await reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
-    });
-
-    try {
-      await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=43634643&username=`,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        followRedirects: false,
+  describe('basic request', () => {
+    it('should return missing username error on ajax request without username provided', async () => {
+      await reconfigureServer({
+        publicServerURL: 'http://localhost:8378/1',
       });
-    } catch (error) {
-      expect(error.status).not.toBe(302);
-      expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
-    }
-  });
 
-  it('should return missing token error on ajax request without token provided', async () => {
-    await reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=user1&token=43634643&username=`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+      } catch (error) {
+        expect(error.status).not.toBe(302);
+        expect(error.text).toEqual('{"code":200,"error":"Missing username"}');
+      }
     });
 
-    try {
-      await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=user1&token=&username=Johnny`,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        followRedirects: false,
+    it('should return missing token error on ajax request without token provided', async () => {
+      await reconfigureServer({
+        publicServerURL: 'http://localhost:8378/1',
       });
-    } catch (error) {
-      expect(error.status).not.toBe(302);
-      expect(error.text).toEqual('{"code":-1,"error":"Missing token"}');
-    }
-  });
 
-  it('should return missing password error on ajax request without password provided', async () => {
-    await reconfigureServer({
-      publicServerURL: 'http://localhost:8378/1',
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=user1&token=&username=Johnny`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+      } catch (error) {
+        expect(error.status).not.toBe(302);
+        expect(error.text).toEqual('{"code":-1,"error":"Missing token"}');
+      }
     });
 
-    try {
-      await request({
-        method: 'POST',
-        url: 'http://localhost:8378/1/apps/test/request_password_reset',
-        body: `new_password=&token=132414&username=Johnny`,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        followRedirects: false,
+    it('should return missing password error on ajax request without password provided', async () => {
+      await reconfigureServer({
+        publicServerURL: 'http://localhost:8378/1',
       });
-    } catch (error) {
-      expect(error.status).not.toBe(302);
-      expect(error.text).toEqual('{"code":201,"error":"Missing password"}');
-    }
-  });
 
-  it('should get invalid_link.html', async () => {
-    const httpResponse = await request({
-      url: 'http://localhost:8378/1/apps/invalid_link.html',
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=&token=132414&username=Johnny`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+      } catch (error) {
+        expect(error.status).not.toBe(302);
+        expect(error.text).toEqual('{"code":201,"error":"Missing password"}');
+      }
     });
-    expect(httpResponse.status).toBe(200);
-  });
 
-  it('should get choose_password', async () => {
-    await reconfigureServer({
-      appName: 'unused',
-      publicServerURL: 'http://localhost:8378/1',
+    it('should get invalid_link.html', async () => {
+      const httpResponse = await request({
+        url: 'http://localhost:8378/1/apps/invalid_link.html',
+      });
+      expect(httpResponse.status).toBe(200);
     });
-    const httpResponse = await request({
-      url: 'http://localhost:8378/1/apps/choose_password?appId=test',
-    });
-    expect(httpResponse.status).toBe(200);
-  });
 
-  it('should get verify_email_success.html', async () => {
-    const httpResponse = await request({
-      url: 'http://localhost:8378/1/apps/verify_email_success.html',
+    it('should get choose_password', async () => {
+      await reconfigureServer({
+        appName: 'unused',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+      const httpResponse = await request({
+        url: 'http://localhost:8378/1/apps/choose_password?appId=test',
+      });
+      expect(httpResponse.status).toBe(200);
     });
-    expect(httpResponse.status).toBe(200);
-  });
 
-  it('should get password_reset_success.html', async () => {
-    const httpResponse = await request({
-      url: 'http://localhost:8378/1/apps/password_reset_success.html',
+    it('should get verify_email_success.html', async () => {
+      const httpResponse = await request({
+        url: 'http://localhost:8378/1/apps/verify_email_success.html',
+      });
+      expect(httpResponse.status).toBe(200);
     });
-    expect(httpResponse.status).toBe(200);
+
+    it('should get password_reset_success.html', async () => {
+      const httpResponse = await request({
+        url: 'http://localhost:8378/1/apps/password_reset_success.html',
+      });
+      expect(httpResponse.status).toBe(200);
+    });
   });
 
   describe('public API without publicServerURL', function () {
@@ -196,8 +198,8 @@ describe('public API', () => {
     beforeEach(async () => {
       router = new PublicAPIRouter();
       readFile = spyOn(fs, 'readFile').and.callThrough();
-      pageResponse = spyOn(router, 'pageResponse').and.callThrough();
-      redirectResponse = spyOn(router, 'redirectResponse').and.callThrough();
+      pageResponse = spyOn(PublicAPIRouter.prototype, 'pageResponse').and.callThrough()
+      redirectResponse = spyOn(PublicAPIRouter.prototype, 'redirectResponse').and.callThrough();
       req = {
         method: 'GET',
         config: {
@@ -247,8 +249,8 @@ describe('public API', () => {
         delete req.config.enablePageLocalization;
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
-        expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-        expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
+        expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
           new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
         );
       });
@@ -257,8 +259,8 @@ describe('public API', () => {
         delete req.query.locale;
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
-        expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-        expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
+        expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
           new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
         );
       });
@@ -273,8 +275,8 @@ describe('public API', () => {
 
       it('returns file for locale match', async () => {
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
-        expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-        expect(pageResponse.calls.all()[0].args[1]).toMatch(
+        expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
+        expect(pageResponse.calls.all()[0].args[0]).toMatch(
           new RegExp(`\/de-AT\/${pages.invalidLink.defaultFile}`)
         );
       });
@@ -286,8 +288,8 @@ describe('public API', () => {
         });
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
-        expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-        expect(pageResponse.calls.all()[0].args[1]).toMatch(
+        expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
+        expect(pageResponse.calls.all()[0].args[0]).toMatch(
           new RegExp(`\/de\/${pages.invalidLink.defaultFile}`)
         );
       });
@@ -296,8 +298,8 @@ describe('public API', () => {
         req.query.locale = 'yo-LO';
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
-        expect(pageResponse.calls.all()[0].args[1]).toBeDefined();
-        expect(pageResponse.calls.all()[0].args[1]).not.toMatch(
+        expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
+        expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
           new RegExp(`\/yo(-LO)?\/${pages.invalidLink.defaultFile}`)
         );
       });
@@ -315,7 +317,7 @@ describe('public API', () => {
         expect(redirectResponse).toHaveBeenCalled();
       });
 
-      it('returns a redirect for custom pages for GET and POST', async () => {
+      it('returns a redirect for custom pages for GET and POST request', async () => {
         req.config.customPages = { invalidLink: 'http://invalid-link.example.com' };
 
         for (const method of ['GET', 'POST']) {

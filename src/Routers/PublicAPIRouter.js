@@ -9,37 +9,30 @@ import Utils from '../Utils';
 import mustache from 'mustache';
 
 const publicPath = path.resolve(__dirname, '../../public');
-const defaultPagePath = file => {
-  return path.join(publicPath, file);
-};
-const defaultPageUrl = (file, serverUrl) => {
-  return new URL('/apps/' + file, serverUrl).toString();
-};
+const defaultPagePath = file => { return path.join(publicPath, file); };
+const defaultPageUrl = (file, serverUrl) => { return new URL('/apps/' + file, serverUrl).toString(); };
+// All pages with custom page key for reference and file name
 const pages = Object.freeze({
   invalidLink: { customPageKey: 'invalidLink', defaultFile: 'invalid_link.html' },
   linkSendFail: { customPageKey: 'linkSendFail', defaultFile: 'link_send_fail.html' },
   choosePassword: { customPageKey: 'choosePassword', defaultFile: 'choose_password.html' },
   linkSendSuccess: { customPageKey: 'linkSendSuccess', defaultFile: 'link_send_success.html' },
-  verifyEmailSuccess: {
-    customPageKey: 'verifyEmailSuccess',
-    defaultFile: 'verify_email_success.html',
-  },
-  passwordResetSuccess: {
-    customPageKey: 'passwordResetSuccess',
-    defaultFile: 'password_reset_success.html',
-  },
-  invalidVerificationLink: {
-    customPageKey: 'invalidVerificationLink',
-    defaultFile: 'invalid_verification_link.html',
-  },
+  verifyEmailSuccess: { customPageKey: 'verifyEmailSuccess', defaultFile: 'verify_email_success.html', },
+  passwordResetSuccess: { customPageKey: 'passwordResetSuccess', defaultFile: 'password_reset_success.html', },
+  invalidVerificationLink: { customPageKey: 'invalidVerificationLink', defaultFile: 'invalid_verification_link.html', },
 });
+// All page parameters for reference to be used as template placeholders or query params
 const pageParams = Object.freeze({
   appName: 'appName',
   appId: 'appId',
   token: 'token',
   username: 'username',
   error: 'error',
+  locale: 'locale',
+  publicServerUrl: 'publicServerUrl',
 });
+// The header prefix to add page params as response headers
+const pageParamHeaderPrefix = 'x-parse-page-param-';
 
 export class PublicAPIRouter extends PromiseRouter {
   verifyEmail(req) {
@@ -212,25 +205,36 @@ export class PublicAPIRouter extends PromiseRouter {
    * redirect to a custom page.
    * @param {Object} req The express request.
    * @param {Object} page The page to go to.
-   * @param {Object} params The query parameters to attach to the URL in case of
+   * @param {Object} [params={}] The query parameters to attach to the URL in case of
    * HTTP redirect responses for POST requests, or the placeholders to fill into
    * the response content in case of HTTP content responses for GET requests.
-   * @param {Boolean} responseType Is true if a redirect response should be forced,
+   * @param {Boolean} [responseType] Is true if a redirect response should be forced,
    * false if a content response should be forced, undefined if the response type
    * should depend on the request type by default:
    * - GET request -> content response
    * - POST request -> redirect response (PRG pattern)
    * @returns {Promise<Object>} The express response.
    */
-  goToPage(req, page, params, responseType) {
+  goToPage(req, page, params = {}, responseType) {
     const config = req.config;
-    const locale = req.query.locale;
+    const locale = (req.query || {}).locale || (req.params || {}).locale;
     const redirect = responseType !== undefined ? responseType : req.method == 'POST';
 
-    // Ensure required config
-    if ([config.publicServerURL].includes(undefined)) {
+    // Ensure default parameters required for every page
+    const requiredParams = {
+      [pageParams.appId]: config.appId,
+      [pageParams.appName]: config.appName,
+      [pageParams.publicServerUrl]: config.publicServerURL,
+    };
+    if (Object.values(requiredParams).includes(undefined)) {
       return this.notFound();
     }
+    params = Object.assign(params, requiredParams);
+
+    // Add locale to params to ensure it is passed on with every request;
+    // that means, once a locale is set, it is passed on to any follow-up page,
+    // e.g. request_password_reset -> choose_password -> passwort_reset_success
+    params[pageParams.locale] = locale;
 
     // Compose paths and URLs
     const customPage = config.customPages[page.customPageKey];
@@ -251,39 +255,23 @@ export class PublicAPIRouter extends PromiseRouter {
             new URL(`/apps/${subdir}/${defaultFile}`, config.publicServerURL).toString(),
             params
           )
-          : this.pageResponse(req, path, params)
+          : this.pageResponse(path, params)
       );
     } else {
       return redirect
         ? this.redirectResponse(defaultUrl, params)
-        : this.pageResponse(req, defaultPath, params);
+        : this.pageResponse(defaultPath, params);
     }
   }
 
   /**
    * Creates a response with file content.
-   * @param {Object} req The express request.
    * @param {String} path The path of the file to return.
    * @param {Object} placeholders The placeholders to fill in the
    * content.
-   * @returns {Object} The express file response.
+   * @returns {Object} The Promise Router response.
    */
-  async pageResponse(req, path, placeholders) {
-    // Aggreate placeholders
-    placeholders = Object.assign(
-      {
-        // Default placeholders available for every page
-        parseServerUrl: req.config.publicServerURL,
-        appName: req.config.appName,
-      },
-      placeholders
-    );
-
-    // If any of the placeholder values fails to resolve
-    if (Object.values(placeholders).includes(undefined)) {
-      return this.notFound();
-    }
-
+  async pageResponse(path, placeholders) {
     // Get file content
     let data;
     try {
@@ -298,7 +286,9 @@ export class PublicAPIRouter extends PromiseRouter {
     // Add placeholers in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
     const headers = Object.entries(placeholders).reduce((m, p) => {
-      m[`x-parse-page-param-${p[0].toLowerCase()}`] = p[1];
+      if (p[1] !== undefined) {
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+      }
       return m;
     }, {});
 
@@ -309,13 +299,34 @@ export class PublicAPIRouter extends PromiseRouter {
    * Creates a response with http 303 rediret.
    * @param {Object} req The express request.
    * @param {String} path The path of the file to return.
-   * @returns {Object} The express file response.
+   * @returns {Object} The Promise Router response.
    */
   async redirectResponse(url, query) {
-    const location = query ? `${url}?${qs.stringify(query)}` : url;
+    // Remove any query parameters with undefined value
+    query = Object.entries(query).reduce((m, p) => {
+      if (p[1] !== undefined) {
+        m[p[0]] = p[1];
+      }
+      return m;
+    }, {});
+
+    // Maybe use this in the future to add params as query instead of headers?
+    // const location = new URL(url);
+    // Object.entries(query).forEach(p => location.searchParams.set(p[0], p[1]));
+
+    // Add placeholers in header to allow parsing for programmatic use
+    // of response, instead of having to parse the HTML content.
+    const headers = Object.entries(query).reduce((m, p) => {
+      if (p[1] !== undefined) {
+        m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
+      }
+      return m;
+    }, {});
+
     return {
       status: 303,
-      location: location,
+      location: url,
+      headers: headers,
     };
   }
 
@@ -407,4 +418,8 @@ export class PublicAPIRouter extends PromiseRouter {
 }
 
 export default PublicAPIRouter;
-module.exports = { pages, PublicAPIRouter };
+module.exports = {
+  PublicAPIRouter,
+  pageParams,
+  pages,
+};
