@@ -5,6 +5,7 @@ const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const Definitions = require('../lib/Options/Definitions');
+const UserController = require('../lib/Controllers/UserController').UserController;
 const { PublicAPIRouter, pages, pageParams } = require('../lib/Routers/PublicAPIRouter');
 
 describe('public API', () => {
@@ -183,6 +184,7 @@ describe('public API', () => {
     let pageResponse;
     let redirectResponse;
     let readFile;
+    const exampleLocale = 'de-AT';
     const config = {
       appId: 'test',
       appName: 'ExampleAppName',
@@ -224,7 +226,7 @@ describe('public API', () => {
           },
         },
         query: {
-          locale: 'de-AT',
+          locale: exampleLocale,
         },
       };
     });
@@ -314,14 +316,14 @@ describe('public API', () => {
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).toMatch(
-          new RegExp(`\/de-AT\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/${req.query.locale}\/${pages.invalidLink.defaultFile}`)
         );
       });
 
       it('returns file for language match', async () => {
         // Pretend no locale matching file exists
         spyOn(Utils, 'fileExists').and.callFake(async path => {
-          return !path.includes(`/de-AT/${pages.invalidLink.defaultFile}`);
+          return !path.includes(`/${req.query.locale}/${pages.invalidLink.defaultFile}`);
         });
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
@@ -374,9 +376,7 @@ describe('public API', () => {
           method: 'POST',
         });
         expect(response.status).toEqual(303);
-        expect(response.headers.location).toEqual(
-          'http://localhost:8378/apps/de-AT/invalid_link.html'
-        );
+        expect(response.headers.location).toEqual('http://localhost:8378/apps/de-AT/invalid_link.html');
       });
 
       it('responds to GET request with content response', async () => {
@@ -390,8 +390,10 @@ describe('public API', () => {
         expect(response.status).toEqual(200);
         expect(response.text).toContain('<html>');
       });
+    });
 
-      it('localizes end-to-end for password reset success', async () => {
+    describe('end-to-end tests', () => {
+      it('localizes end-to-end for password reset: success', async () => {
         await reconfigureServer(config);
         const sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
         const user = new Parse.User();
@@ -403,7 +405,7 @@ describe('public API', () => {
 
         const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
         const linkWithLocale = new URL(link);
-        linkWithLocale.searchParams.append(pageParams.locale, 'de-AT');
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
 
         const linkResponse = await request({
           url: linkWithLocale.toString(),
@@ -423,7 +425,7 @@ describe('public API', () => {
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(choosePasswordPagePath).toMatch(
-          new RegExp(`\/de-AT\/${pages.choosePassword.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.choosePassword.defaultFile}`)
         );
         pageResponse.calls.reset();
 
@@ -437,13 +439,179 @@ describe('public API', () => {
             username,
             new_password: 'newPassword',
           },
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(200);
-        expect(pageResponse.calls.all()[0].args[0]).toContain(`/${locale}/password_reset_success.html`);
+        expect(pageResponse.calls.all()[0].args[0]).toContain(`/${locale}/${pages.passwordResetSuccess.defaultFile}`);
+      });
+
+      it('localizes end-to-end for password reset: invalid link', async () => {
+        await reconfigureServer(config);
+        const sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+        await Parse.User.requestPasswordReset(user.getEmail());
+
+        const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
+        linkWithLocale.searchParams.set(pageParams.token, 'invalidToken');
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const pagePath = pageResponse.calls.all()[0].args[0];
+        expect(pagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.invalidLink.defaultFile}`)
+        );
+      });
+
+      it('localizes end-to-end for verify email: success', async () => {
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const pagePath = pageResponse.calls.all()[0].args[0];
+        expect(pagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.verifyEmailSuccess.defaultFile}`)
+        );
+      });
+
+      it('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
+        linkWithLocale.searchParams.set(pageParams.token, 'invalidToken');
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const locale = linkResponse.headers['x-parse-page-param-locale'];
+        const username = linkResponse.headers['x-parse-page-param-username'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(locale).toBe(exampleLocale);
+        expect(username).toBeDefined();
+        expect(publicServerUrl).toBeDefined();
+        expect(invalidVerificationPagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.invalidVerificationLink.defaultFile}`)
+        );
+
+        const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            locale,
+            username,
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(303);
+        expect(formResponse.text).toContain(`/${locale}/${pages.linkSendSuccess.defaultFile}`);
+      });
+
+      it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, exampleLocale);
+        linkWithLocale.searchParams.set(pageParams.token, 'invalidToken');
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const locale = linkResponse.headers['x-parse-page-param-locale'];
+        const username = linkResponse.headers['x-parse-page-param-username'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        const invalidVerificationPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(locale).toBe(exampleLocale);
+        expect(username).toBeDefined();
+        expect(publicServerUrl).toBeDefined();
+        expect(invalidVerificationPagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.invalidVerificationLink.defaultFile}`)
+        );
+
+        spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() => Promise.reject(
+          'failed to resend verification email'
+        ));
+
+        const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            locale,
+            username,
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(303);
+        expect(formResponse.text).toContain(`/${locale}/${pages.linkSendFail.defaultFile}`);
+      });
+
+      it('localizes end-to-end for verify email: invalid link', async () => {
+        await reconfigureServer(config);
+        const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            locale: exampleLocale,
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(303);
+        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.invalidLink.defaultFile}`);
       });
     });
   });
