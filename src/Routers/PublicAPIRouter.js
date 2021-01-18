@@ -215,7 +215,11 @@ export class PublicAPIRouter extends PromiseRouter {
    */
   goToPage(req, page, params = {}, responseType) {
     const config = req.config;
-    const locale = (req.query || {}).locale || (req.params || {}).locale;
+    const locale =
+      (req.query || {})[pageParams.locale]
+      || (req.body || {})[pageParams.locale]
+      || (req.params || {})[pageParams.locale]
+      || (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
     const redirect = responseType !== undefined ? responseType : req.method == 'POST';
 
     // Ensure default parameters required for every page
