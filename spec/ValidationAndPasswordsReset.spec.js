@@ -668,8 +668,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         followRedirects: false,
       }).then(response => {
         expect(response.status).toEqual(200);
-        expect(response.text).toContain('value="exampleUsername"');
-        expect(response.text).toContain('action="/apps/test/resend_verification_email"');
+        expect(response.text).toContain('exampleUsername');
+        expect(response.text).toContain('/apps/test/resend_verification_email');
         done();
       });
     });
@@ -713,8 +713,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
           followRedirects: false,
         }).then(response => {
           expect(response.status).toEqual(200);
-          expect(response.text).toContain('value="exampleUsername"');
-          expect(response.text).toContain('action="/apps/test/resend_verification_email"');
+          expect(response.text).toContain('exampleUsername');
+          expect(response.text).toContain('/apps/test/resend_verification_email');
           user.fetch().then(() => {
             expect(user.get('emailVerified')).toEqual(false);
             done();
