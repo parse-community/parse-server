@@ -181,10 +181,9 @@ export class PublicAPIRouter extends PromiseRouter {
           }
         }
 
-        const encodedUsername = encodeURIComponent(username);
         const query = result.success
           ? {
-            [pageParams.username]: encodedUsername,
+            [pageParams.username]: username,
           }
           : {
             [pageParams.username]: username,
