@@ -253,10 +253,11 @@ export class PublicAPIRouter extends PromiseRouter {
     if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
-          ? this.redirectResponse(
-            new URL(`/apps/${subdir}/${defaultFile}`, config.publicServerURL).toString(),
-            params
-          )
+          ? this.redirectResponse(new URL(
+            subdir
+              ? `/apps/${subdir}/${defaultFile}`
+              : `/apps/${defaultFile}`,
+            config.publicServerURL).toString(), params)
           : this.pageResponse(path, params)
       );
     } else {
