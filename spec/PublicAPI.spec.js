@@ -3,6 +3,8 @@
 const request = require('../lib/request');
 const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
+const Config = require('../lib/Config');
+const Definitions = require('../lib/Options/Definitions');
 const { PublicAPIRouter, pages, pageParams } = require('../lib/Routers/PublicAPIRouter');
 
 describe('public API', () => {
@@ -191,9 +193,19 @@ describe('public API', () => {
         sendMail: () => {},
       },
       publicServerURL: 'http://localhost:8378/1',
-      enablePageLocalization: true,
       customPages: {},
+      pages: {
+        enableLocalization: true,
+      },
     };
+    async function reconfigureServerWithPageOptions(options) {
+      await reconfigureServer({
+        appId: Parse.applicationId,
+        masterKey: Parse.masterKey,
+        serverURL: Parse.serverURL,
+        pages: options,
+      });
+    }
 
     beforeEach(async () => {
       router = new PublicAPIRouter();
@@ -206,13 +218,38 @@ describe('public API', () => {
           appId: 'test',
           appName: 'ExampleAppName',
           publicServerURL: 'http://localhost:8378/1',
-          enablePageLocalization: true,
           customPages: {},
+          pages: {
+            enableLocalization: true,
+          },
         },
         query: {
           locale: 'de-AT',
         },
       };
+    });
+
+    describe('server options', () => {
+      it('uses default configuration when none is set', async () => {
+        await reconfigureServerWithPageOptions({});
+        expect(Config.get(Parse.applicationId).pages.enableLocalization).toBe(
+          Definitions.PagesOptions.enableLocalization.default
+        );
+      });
+
+      it('throws on invalid configuration', async () => {
+        const options = [
+          [],
+          'a',
+          0,
+          { enableLocalization: 'a' },
+          { enableLocalization: 0 },
+          { enableLocalization: {} },
+        ];
+        for (const option of options) {
+          await expectAsync(reconfigureServerWithPageOptions(option)).toBeRejected();
+        }
+      });
     });
 
     describe('placeholders', () => {
@@ -246,7 +283,7 @@ describe('public API', () => {
 
     describe('localization', () => {
       it('returns default file if localization is disabled', async () => {
-        delete req.config.enablePageLocalization;
+        delete req.config.pages.enableLocalization;
 
         await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();

@@ -27,7 +27,6 @@
  * @property {Number} emailVerifyTokenValidityDuration Email verification token validity duration, in seconds
  * @property {Boolean} enableAnonymousUsers Enable (or disable) anonymous users, defaults to true
  * @property {Boolean} enableExpressErrorHandler Enables the default express error handler for all errors
- * @property {Boolean} enablePageLocalization Is true if pages should be localized; customPages must not be set.
  * @property {Boolean} enableSingleSchemaCache Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
  * @property {String} encryptionKey Key for encrypting your files
  * @property {Boolean} expireInactiveSessions Sets wether we should expire the inactive sessions, defaults to true
@@ -55,6 +54,7 @@
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
+ * @property {PagesOptions} pages The options for pages such as password reset and email verification.
  * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
@@ -78,6 +78,11 @@
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Enable (or disable) user email validation, defaults to false
  * @property {String} webhookKey Key sent with outgoing webhook calls
+ */
+
+/**
+ * @interface PagesOptions
+ * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  */
 
 /**

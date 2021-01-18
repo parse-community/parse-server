@@ -9,7 +9,9 @@ import net from 'net';
 import {
   IdempotencyOptions,
   FileUploadOptions,
+  PagesOptions,
 } from './Options/Definitions';
+import { isBoolean } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -75,6 +77,7 @@ export class Config {
     idempotencyOptions,
     emailVerifyTokenReuseIfValid,
     fileUpload,
+    pages,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -109,6 +112,21 @@ export class Config {
     this.validateMaxLimit(maxLimit);
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
+    this.validatePagesOptions(pages);
+  }
+
+  static validatePagesOptions(pages) {
+    if (pages === undefined) {
+      return;
+    }
+    if (Object.prototype.toString.call(pages) !== '[object Object]') {
+      throw 'Parse Server option pages must be an object.';
+    }
+    if (pages.enableLocalization === undefined) {
+      pages.enableLocalization = PagesOptions.enableLocalization.default;
+    } else if (!isBoolean(pages.enableLocalization)) {
+      throw 'Parse Server option pages.enableLocalization must be a boolean.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {

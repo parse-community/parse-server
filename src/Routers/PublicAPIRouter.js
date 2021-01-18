@@ -250,7 +250,7 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     // If localization is enabled
-    if (config.enablePageLocalization && locale) {
+    if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
           ? this.redirectResponse(

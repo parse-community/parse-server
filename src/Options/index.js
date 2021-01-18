@@ -138,12 +138,12 @@ export interface ParseServerOptions {
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
+  /* The options for pages such as password reset and email verification.
+  :DEFAULT:{} */
+  pages: ?PagesOptions;
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
-  /* Is true if pages should be localized; customPages must not be set.
-  :DEFAULT: false */
-  enablePageLocalization: ?boolean;
   /* parse-server's LiveQuery configuration object */
   liveQuery: ?LiveQueryOptions;
   /* Session duration, in seconds, defaults to 1 year
@@ -227,6 +227,12 @@ export interface ParseServerOptions {
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+}
+
+export interface PagesOptions {
+  /* Is true if pages should be localized; this has no effect on custom page redirects.
+  :DEFAULT: false */
+  enableLocalization: ?boolean;
 }
 
 export interface CustomPagesOptions {

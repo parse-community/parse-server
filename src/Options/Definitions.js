@@ -146,12 +146,6 @@ module.exports.ParseServerOptions = {
     "action": parsers.booleanParser,
     "default": false
   },
-  "enablePageLocalization": {
-    "env": "PARSE_SERVER_ENABLE_PAGE_LOCALIZATION",
-    "help": "Is true if pages should be localized; customPages must not be set.",
-    "action": parsers.booleanParser,
-    "default": false
-  },
   "enableSingleSchemaCache": {
     "env": "PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE",
     "help": "Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.",
@@ -289,6 +283,12 @@ module.exports.ParseServerOptions = {
     "action": parsers.numberParser("objectIdSize"),
     "default": 10
   },
+  "pages": {
+    "env": "PARSE_SERVER_PAGES",
+    "help": "The options for pages such as password reset and email verification.",
+    "action": parsers.objectParser,
+    "default": {}
+  },
   "passwordPolicy": {
     "env": "PARSE_SERVER_PASSWORD_POLICY",
     "help": "Password policy for enforcing password related rules",
@@ -410,6 +410,14 @@ module.exports.ParseServerOptions = {
   "webhookKey": {
     "env": "PARSE_SERVER_WEBHOOK_KEY",
     "help": "Key sent with outgoing webhook calls"
+  }
+};
+module.exports.PagesOptions = {
+  "enableLocalization": {
+    "env": "PARSE_SERVER_PAGES_ENABLE_LOCALIZATION",
+    "help": "Is true if pages should be localized; this has no effect on custom page redirects.",
+    "action": parsers.booleanParser,
+    "default": false
   }
 };
 module.exports.CustomPagesOptions = {
