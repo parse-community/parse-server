@@ -3,7 +3,7 @@
 const request = require('../lib/request');
 const fs = require('fs').promises;
 const Utils = require('../lib/Utils');
-const { PublicAPIRouter, pages } = require('../lib/Routers/PublicAPIRouter');
+const { PublicAPIRouter, pages, pageParams } = require('../lib/Routers/PublicAPIRouter');
 
 describe('public API', () => {
   describe('basic request', () => {
@@ -328,7 +328,7 @@ describe('public API', () => {
         }
       });
 
-      it('responds to POST request with redirect response (e2e test)', async () => {
+      it('responds to POST request with redirect response', async () => {
         await reconfigureServer(config);
         const response = await request({
           url:
@@ -342,7 +342,7 @@ describe('public API', () => {
         );
       });
 
-      it('responds to GET request with content response (e2e test)', async () => {
+      it('responds to GET request with content response', async () => {
         await reconfigureServer(config);
         const response = await request({
           url:
@@ -352,6 +352,61 @@ describe('public API', () => {
         });
         expect(response.status).toEqual(200);
         expect(response.text).toContain('<html>');
+      });
+
+      it('localizes end-to-end for password reset success', async () => {
+        await reconfigureServer(config);
+        const sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+        await Parse.User.requestPasswordReset(user.getEmail());
+
+        const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+        const linkWithLocale = new URL(link);
+        linkWithLocale.searchParams.append(pageParams.locale, 'de-AT');
+
+        const linkResponse = await request({
+          url: linkWithLocale.toString(),
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const token = linkResponse.headers['x-parse-page-param-token'];
+        const locale = linkResponse.headers['x-parse-page-param-locale'];
+        const username = linkResponse.headers['x-parse-page-param-username'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        const choosePasswordPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(token).toBeDefined();
+        expect(locale).toBeDefined();
+        expect(username).toBeDefined();
+        expect(publicServerUrl).toBeDefined();
+        expect(choosePasswordPagePath).toMatch(
+          new RegExp(`\/de-AT\/${pages.choosePassword.defaultFile}`)
+        );
+        pageResponse.calls.reset();
+
+        const formUrl = `${publicServerUrl}/apps/${appId}/request_password_reset`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            token,
+            locale,
+            username,
+            new_password: 'newPassword',
+          },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(200);
+        expect(pageResponse.calls.all()[0].args[0]).toContain(`/${locale}/password_reset_success.html`);
       });
     });
   });
