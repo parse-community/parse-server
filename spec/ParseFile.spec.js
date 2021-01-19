@@ -364,11 +364,23 @@ describe('Parse.File testing', () => {
     it('supports files in json that inside of array', async done => {
       const oldBaseUrl = "http://old-file-url.example.com";
       const newBaseUrl = "http://new-file-url.example.com";
-      const file = {
-        __type: 'File',
-        url: oldBaseUrl + '/myFile',
-        name: 'myFile',
+
+      const mockAdapter = {
+        createFile: async filename => ({
+          name: filename,
+          location: `${oldBaseUrl}/${filename}`,
+        }),
+        deleteFile: () => {},
+        getFileData: () => {},
+        getFileLocation: (config, filename) => `${oldBaseUrl}/${filename}`,
+        validateFilename: () => {
+          return null;
+        },
       };
+      await reconfigureServer({ filesAdapter: mockAdapter });
+
+      const base64 = "V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=";
+      const file = new Parse.File("myFile", { base64: base64 });
 
       const jsonItem = {"file": file};
 
