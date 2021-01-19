@@ -470,7 +470,7 @@ export class UsersRouter extends ClassesRouter {
         const { validator } = req.config.authDataManager.getValidatorForProvider(provider);
         await validator(
           authData[provider],
-          { config: req.config, auth: req.auth },
+          { config: req.config, auth: req.auth, isChallenge: true },
           Parse.User.fromJSON({ className: '_User', ...results[0] })
         );
         user = results[0];
