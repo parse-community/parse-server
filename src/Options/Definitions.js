@@ -430,6 +430,10 @@ module.exports.PagesOptions = {
     "help": "Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).",
     "action": parsers.booleanParser,
     "default": false
+  },
+  "pagesPath": {
+    "env": "PARSE_SERVER_PAGES_PAGES_PATH",
+    "help": "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory."
   }
 };
 module.exports.CustomPagesOptions = {

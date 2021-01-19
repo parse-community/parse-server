@@ -85,6 +85,7 @@
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+ * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
  */
 
 /**

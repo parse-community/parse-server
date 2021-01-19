@@ -11,7 +11,7 @@ import {
   FileUploadOptions,
   PagesOptions,
 } from './Options/Definitions';
-import { isBoolean } from 'lodash';
+import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -136,6 +136,11 @@ export class Config {
       pages.forceRedirect = PagesOptions.forceRedirect.default;
     } else if (!isBoolean(pages.forceRedirect)) {
       throw 'Parse Server option pages.forceRedirect must be a boolean.';
+    }
+    if (pages.pagesPath === undefined) {
+      pages.pagesPath = PagesOptions.pagesPath.default;
+    } else if (!isString(pages.pagesPath)) {
+      throw 'Parse Server option pages.pagesPath must be a string.';
     }
   }
 

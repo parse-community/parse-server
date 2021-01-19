@@ -82,6 +82,15 @@ class Utils {
       return false;
     }
   }
+
+  /**
+   * Evaluates whether a string is a file path (as opposed to a URL for example).
+   * @param {String} s The string to evaluate.
+   * @returns {Boolean} Returns true if the evaluated string is a path.
+   */
+  static isPath(s) {
+    return /(^\/)|(^\.\/)|(^\.\.\/)/.test(s);
+  }
 }
 
 module.exports = Utils;

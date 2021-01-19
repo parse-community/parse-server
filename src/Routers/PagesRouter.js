@@ -8,16 +8,6 @@ import Utils from '../Utils';
 import mustache from 'mustache';
 import Page from '../Page';
 
-const publicPath = path.resolve(__dirname, '../../public');
-const defaultPagePath = file => { return path.join(publicPath, file); };
-const composePageUrl = (file, publicServerUrl, locale) => {
-  let url = publicServerUrl;
-  url += url.endsWith('/') ? '' : '/';
-  url += 'apps/';
-  url += locale === undefined ? '' : locale + '/';
-  url += file;
-  return url;
-};
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
   invalidLink: new Page({ id: 'invalidLink', defaultFile: 'invalid_link.html' }),
@@ -42,6 +32,19 @@ const pageParams = Object.freeze({
 const pageParamHeaderPrefix = 'x-parse-page-param-';
 
 export class PagesRouter extends PromiseRouter {
+  /**
+   * Constructs a PagesRouter.
+   * @param {Object} pages The pages options from the Parse Server configuration.
+   */
+  constructor(pages = {}) {
+    super();
+    this.pagesEndpoint = 'apps';
+    this.pagesPath = pages.pagesPath
+      ? path.resolve('./', pages.pagesPath)
+      : path.resolve(__dirname, '../../public');
+    this.mountPagesRoutes();
+  }
+
   verifyEmail(req) {
     const config = req.config;
     const { username, token: rawToken } = req.query;
@@ -262,12 +265,12 @@ export class PagesRouter extends PromiseRouter {
 
     // Compose paths and URLs
     const defaultFile = page.defaultFile;
-    const defaultPath = defaultPagePath(defaultFile);
-    const defaultUrl = composePageUrl(defaultFile, config.publicServerURL);
+    const defaultPath = this.defaultPagePath(defaultFile);
+    const defaultUrl = this.composePageUrl(defaultFile, config.publicServerURL);
 
     // If custom page URL is set redirect to it without localization
     const customPageUrl = config.customPages[page.id];
-    if (customPageUrl) {
+    if (customPageUrl && !Utils.isPath(customPageUrl)) {
       return this.redirectResponse(customPageUrl, params);
     }
 
@@ -275,7 +278,7 @@ export class PagesRouter extends PromiseRouter {
     if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
-          ? this.redirectResponse(composePageUrl(defaultFile, config.publicServerURL, subdir), params)
+          ? this.redirectResponse(this.composePageUrl(defaultFile, config.publicServerURL, subdir), params)
           : this.pageResponse(path, params)
       );
     } else {
@@ -353,6 +356,19 @@ export class PagesRouter extends PromiseRouter {
     };
   }
 
+  defaultPagePath(file) {
+    return path.join(this.pagesPath, file);
+  }
+
+  composePageUrl(file, publicServerUrl, locale) {
+    let url = publicServerUrl;
+    url += url.endsWith('/') ? '' : '/';
+    url += this.pagesEndpoint + '/';
+    url += locale === undefined ? '' : locale + '/';
+    url += file;
+    return url;
+  }
+
   notFound() {
     return {
       text: 'Not found.',
@@ -375,10 +391,10 @@ export class PagesRouter extends PromiseRouter {
     return Promise.resolve();
   }
 
-  mountRoutes() {
+  mountPagesRoutes() {
     this.route(
       'GET',
-      '/apps/:appId/verify_email',
+      `/${this.pagesEndpoint}/:appId/verify_email`,
       req => {
         this.setConfig(req);
       },
@@ -389,7 +405,7 @@ export class PagesRouter extends PromiseRouter {
 
     this.route(
       'POST',
-      '/apps/:appId/resend_verification_email',
+      `/${this.pagesEndpoint}/:appId/resend_verification_email`,
       req => {
         this.setConfig(req);
       },
@@ -400,7 +416,7 @@ export class PagesRouter extends PromiseRouter {
 
     this.route(
       'GET',
-      '/apps/choose_password',
+      `/${this.pagesEndpoint}/choose_password`,
       req => {
         this.setConfig(req);
       },
@@ -411,7 +427,7 @@ export class PagesRouter extends PromiseRouter {
 
     this.route(
       'POST',
-      '/apps/:appId/request_password_reset',
+      `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
         this.setConfig(req);
       },
@@ -422,7 +438,7 @@ export class PagesRouter extends PromiseRouter {
 
     this.route(
       'GET',
-      '/apps/:appId/request_password_reset',
+      `/${this.pagesEndpoint}/:appId/request_password_reset`,
       req => {
         this.setConfig(req);
       },
@@ -434,7 +450,7 @@ export class PagesRouter extends PromiseRouter {
 
   expressRouter() {
     const router = express.Router();
-    router.use('/apps', express.static(publicPath));
+    router.use(`/${this.pagesEndpoint}`, express.static(this.pagesPath));
     router.use('/', super.expressRouter());
     return router;
   }

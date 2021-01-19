@@ -157,7 +157,7 @@ class ParseServer {
     });
 
     api.use('/', bodyParser.urlencoded({ extended: false }), pages.enableRouter
-      ? new PagesRouter().expressRouter()
+      ? new PagesRouter(pages).expressRouter()
       : new PublicAPIRouter().expressRouter()
     );
 
