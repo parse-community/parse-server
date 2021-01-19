@@ -10,12 +10,85 @@ const { PagesRouter, pages, pageParams } = require('../lib/Routers/PagesRouter')
 
 describe('Pages Router', () => {
   describe('basic request', () => {
+    const config = {
+      appName: 'exampleAppname',
+      publicServerURL: 'http://localhost:8378/1',
+      pages: { enableRouter: true },
+    };
+
+    beforeEach(async () => {
+      await reconfigureServer(config);
+    });
+
+    it('responds with file content on direct page request', async () => {
+      const urls = [
+        'http://localhost:8378/1/apps/invalid_link.html',
+        'http://localhost:8378/1/apps/choose_password?appId=test',
+        'http://localhost:8378/1/apps/verify_email_success.html',
+        'http://localhost:8378/1/apps/password_reset_success.html',
+      ];
+      for (const url of urls) {
+        const response = await request({ url }).catch(e => e);
+        expect(response.status).toBe(200);
+      }
+    });
+
+    it('responds with 404 if publicServerURL is not confgured', async () => {
+      await reconfigureServer({
+        appName: 'unused',
+        pages: { enableRouter: true }
+      });
+      const urls = [
+        'http://localhost:8378/1/apps/test/verify_email',
+        'http://localhost:8378/1/apps/choose_password?appId=test',
+        'http://localhost:8378/1/apps/test/request_password_reset',
+      ];
+      for (const url of urls) {
+        const response = await request({ url }).catch(e => e);
+        expect(response.status).toBe(404);
+      }
+    });
+
+    it('respones with 403 access denied with invalid appId', async () => {
+      const reqs = [
+        { url: 'http://localhost:8378/1/apps/invalid/verify_email', method: 'GET' },
+        { url: 'http://localhost:8378/1/apps/choose_password?id=invalid', method: 'GET' },
+        { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'GET' },
+        { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'POST' },
+        { url: 'http://localhost:8378/1/apps/invalid/resend_verification_email', method: 'GET' },
+      ];
+      for (const req of reqs) {
+        const response = await request(req).catch(e => e);
+        expect(response.status).toBe(403);
+      }
+    });
+  });
+
+  describe('AJAX requests', () => {
     beforeEach(async () => {
       await reconfigureServer({
         appName: 'exampleAppname',
         publicServerURL: 'http://localhost:8378/1',
         pages: { enableRouter: true },
       });
+    });
+
+    it('should return missing password error on ajax request without password provided', async () => {
+      try {
+        await request({
+          method: 'POST',
+          url: 'http://localhost:8378/1/apps/test/request_password_reset',
+          body: `new_password=&token=132414&username=Johnny`,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          followRedirects: false,
+        });
+      } catch (error) {
+        expect(error.status).not.toBe(302);
+        expect(error.text).toEqual('{"code":201,"error":"Missing password"}');
+      }
     });
 
     it('should return missing username error on ajax request without username provided', async () => {
@@ -52,98 +125,6 @@ describe('Pages Router', () => {
         expect(error.status).not.toBe(302);
         expect(error.text).toEqual('{"code":-1,"error":"Missing token"}');
       }
-    });
-
-    it('should return missing password error on ajax request without password provided', async () => {
-      try {
-        await request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/apps/test/request_password_reset',
-          body: `new_password=&token=132414&username=Johnny`,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          followRedirects: false,
-        });
-      } catch (error) {
-        expect(error.status).not.toBe(302);
-        expect(error.text).toEqual('{"code":201,"error":"Missing password"}');
-      }
-    });
-
-    it('responds with file content on direct page request', async () => {
-      const urls = [
-        'http://localhost:8378/1/apps/invalid_link.html',
-        'http://localhost:8378/1/apps/choose_password?appId=test',
-        'http://localhost:8378/1/apps/verify_email_success.html',
-        'http://localhost:8378/1/apps/password_reset_success.html',
-      ];
-      for (const url of urls) {
-        const response = await request({ url }).catch(e => e);
-        expect(response.status).toBe(200);
-      }
-    });
-
-    it('responds with 404 if publicServerURL is not confgured', async () => {
-      await reconfigureServer({
-        appName: 'unused',
-        pages: { enableRouter: true }
-      });
-      const urls = [
-        'http://localhost:8378/1/apps/test/verify_email',
-        'http://localhost:8378/1/apps/choose_password?appId=test',
-        'http://localhost:8378/1/apps/test/request_password_reset',
-      ];
-      for (const url of urls) {
-        const response = await request({ url }).catch(e => e);
-        expect(response.status).toBe(404);
-      }
-    });
-  });
-
-  describe('public API supplied with invalid application id', () => {
-    beforeEach(async () => {
-      await reconfigureServer({
-        appName: 'unused',
-        pages: { enableRouter: true }
-      });
-    });
-
-    it('should get 403 on verify_email', async () => {
-      const httpResponse = await request({
-        url: 'http://localhost:8378/1/apps/invalid/verify_email',
-      }).catch(e => e);
-      expect(httpResponse.status).toBe(403);
-    });
-
-    it('should get 403 choose_password', async () => {
-      const httpResponse = await request({
-        url: 'http://localhost:8378/1/apps/choose_password?id=invalid',
-      }).catch(e => e);
-      expect(httpResponse.status).toBe(403);
-    });
-
-    it('should get 403 on get of request_password_reset', async () => {
-      const httpResponse = await request({
-        url: 'http://localhost:8378/1/apps/invalid/request_password_reset',
-      }).catch(e => e);
-      expect(httpResponse.status).toBe(403);
-    });
-
-    it('should get 403 on post of request_password_reset', async () => {
-      const httpResponse = await request({
-        url: 'http://localhost:8378/1/apps/invalid/request_password_reset',
-        method: 'POST',
-      }).catch(e => e);
-      expect(httpResponse.status).toBe(403);
-    });
-
-    it('should get 403 on resendVerificationEmail', async () => {
-      const httpResponse = await request({
-        url: 'http://localhost:8378/1/apps/invalid/resend_verification_email',
-      }).catch(e => e);
-      expect(httpResponse.status).toBe(403);
     });
   });
 
