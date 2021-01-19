@@ -132,8 +132,8 @@ describe('Regex Vulnerabilities', function () {
         url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token[$regex]=`,
         method: 'GET',
       });
-      expect(passwordResetResponse.status).toEqual(200);
-      expect(passwordResetResponse.text).toContain('Invalid Link');
+      expect(passwordResetResponse.status).toEqual(302);
+      expect(passwordResetResponse.headers.location).toMatch(`\\/invalid\\_link\\.html`);
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',
@@ -170,9 +170,10 @@ describe('Regex Vulnerabilities', function () {
         url: `${serverURL}/apps/test/request_password_reset?username=someemail@somedomain.com&token=${token}`,
         method: 'GET',
       });
-      expect(passwordResetResponse.status).toEqual(200);
-      expect(passwordResetResponse.text).toContain(token);
-      expect(passwordResetResponse.text).toContain('http://localhost:8378/1/apps/test/request_password_reset');
+      expect(passwordResetResponse.status).toEqual(302);
+      expect(passwordResetResponse.headers.location).toMatch(
+        `\\/choose\\_password\\?token\\=${token}\\&`
+      );
       await request({
         url: `${serverURL}/apps/test/request_password_reset`,
         method: 'POST',

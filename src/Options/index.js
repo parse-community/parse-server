@@ -138,8 +138,8 @@ export interface ParseServerOptions {
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
-  /* The options for pages such as password reset and email verification.
-  :DEFAULT:{} */
+  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: {} */
   pages: ?PagesOptions;
   /* custom pages for password validation and reset
   :DEFAULT: {} */
@@ -230,9 +230,15 @@ export interface ParseServerOptions {
 }
 
 export interface PagesOptions {
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: false */
+  enableRouter: ?boolean;
   /* Is true if pages should be localized; this has no effect on custom page redirects.
   :DEFAULT: false */
   enableLocalization: ?boolean;
+  /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+  :DEFAULT: false */
+  forceRedirect: ?boolean;
 }
 
 export interface CustomPagesOptions {

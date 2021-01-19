@@ -36,9 +36,10 @@ describe('Email Verification Token Expiration: ', () => {
             url: sendEmailOptions.link,
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(200);
-            expect(response.text).toContain('testEmailVerifyTokenValidity');
-            expect(response.text).toContain('/apps/test/resend_verification_email');
+            expect(response.status).toEqual(302);
+            expect(response.text).toEqual(
+              'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+            );
             done();
           });
         }, 1000);
@@ -81,7 +82,7 @@ describe('Email Verification Token Expiration: ', () => {
             url: sendEmailOptions.link,
             followRedirects: false,
           }).then(response => {
-            expect(response.status).toEqual(200);
+            expect(response.status).toEqual(302);
             user
               .fetch()
               .then(() => {
@@ -129,9 +130,10 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
-          expect(response.text).toContain('Email verified');
-          expect(response.text).toContain('testEmailVerifyTokenValidity');
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+          );
           done();
         });
       })
@@ -169,7 +171,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
           user
             .fetch()
             .then(() => {
@@ -216,7 +218,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
           Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
             .then(user => {
               expect(typeof user).toBe('object');
@@ -308,7 +310,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
           const config = Config.get('test');
           return config.database
             .find('_User', {
@@ -367,7 +369,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
           return user.fetch();
         });
       })
@@ -382,9 +384,10 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
-          expect(response.text).toContain('Email verified');
-          expect(response.text).toContain('testEmailVerifyTokenValidity');
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity'
+          );
           done();
         });
       })
@@ -434,9 +437,10 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
-          expect(response.text).toContain('testEmailVerifyTokenValidity');
-          expect(response.text).toContain('/apps/test/resend_verification_email');
+          expect(response.status).toEqual(302);
+          expect(response.text).toEqual(
+            'Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test'
+          );
           done();
         });
       })
@@ -734,7 +738,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
         });
       })
       .then(() => {
@@ -972,7 +976,7 @@ describe('Email Verification Token Expiration: ', () => {
           url: sendEmailOptions.link,
           followRedirects: false,
         }).then(response => {
-          expect(response.status).toEqual(200);
+          expect(response.status).toEqual(302);
           Parse.User.logIn('testEmailVerifyTokenValidity', 'expiringToken')
             .then(user => {
               expect(typeof user).toBe('object');
@@ -991,7 +995,7 @@ describe('Email Verification Token Expiration: ', () => {
                 url: sendEmailOptions.link,
                 followRedirects: false,
               }).then(response => {
-                expect(response.status).toEqual(200);
+                expect(response.status).toEqual(302);
                 done();
               });
             })
