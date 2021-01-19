@@ -199,7 +199,8 @@ export interface ParseServerOptions {
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
   /* Options for file uploads
-  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS */
+  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
+  :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;

@@ -1751,7 +1751,7 @@ describe('microsoft graph auth adapter', () => {
   });
 });
 
-describe('Auth Adapter features', () => {
+fdescribe('Auth Adapter features', () => {
   const baseAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
@@ -1849,6 +1849,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[0]).toEqual(payload);
     expect(firstCall[1]).toEqual(baseAdapter);
     expect(firstCall[2].config).toBeDefined();
+    expect(firstCall[2].isChallenge).toBeUndefined();
     expect(firstCall[2].config.headers).toBeDefined();
     expect(firstCall[2].auth).toBeDefined();
     expect(firstCall[3]).toBeUndefined();
@@ -1868,6 +1869,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[0]).toEqual(payload);
     expect(secondCall[1]).toEqual(baseAdapter);
     expect(secondCall[2].config).toBeDefined();
+    expect(secondCall[2].isChallenge).toBeUndefined();
     expect(secondCall[2].auth).toBeDefined();
     expect(secondCall[2].config.headers).toBeDefined();
     expect(secondCall[3] instanceof Parse.User).toBeTruthy();
@@ -1891,6 +1893,7 @@ describe('Auth Adapter features', () => {
     expect(call[0]).toEqual({ id: 'modernAdapter' });
     expect(call[1]).toEqual(modernAdapter);
     expect(call[2].config).toBeDefined();
+    expect(call[2].isChallenge).toBeUndefined();
     expect(call[2].auth).toBeDefined();
     expect(call[2].config.headers).toBeDefined();
     expect(call[3]).toBeUndefined();
@@ -1919,6 +1922,7 @@ describe('Auth Adapter features', () => {
     expect(call[0]).toEqual({ id: 'modernAdapter' });
     expect(call[1]).toEqual(modernAdapter);
     expect(call[2].config).toBeDefined();
+    expect(call[2].isChallenge).toBeUndefined();
     expect(call[2].auth).toBeDefined();
     expect(call[2].config.headers).toBeDefined();
     expect(call[3] instanceof Parse.User).toBeTruthy();
@@ -1967,6 +1971,7 @@ describe('Auth Adapter features', () => {
     expect(call[0]).toEqual({ id: 'modernAdapter2' });
     expect(call[1]).toEqual(modernAdapter);
     expect(call[2].config).toBeDefined();
+    expect(call[2].isChallenge).toBeUndefined();
     expect(call[2].auth).toBeDefined();
     expect(call[2].config.headers).toBeDefined();
     expect(call[3] instanceof Parse.User).toBeTruthy();
@@ -2324,6 +2329,7 @@ describe('Auth Adapter features', () => {
     expect(firstCall[0]).toEqual(payload);
     expect(firstCall[1]).toEqual(baseAdapter2);
     expect(firstCall[2].config).toBeDefined();
+    expect(firstCall[2].isChallenge).toBeUndefined();
     expect(firstCall[2].auth).toBeDefined();
     expect(firstCall[2].config.headers).toBeDefined();
     expect(firstCall[3] instanceof Parse.User).toBeTruthy();
@@ -2335,6 +2341,7 @@ describe('Auth Adapter features', () => {
     expect(secondCall[0]).toEqual(payload);
     expect(secondCall[1]).toEqual(baseAdapter2);
     expect(secondCall[2].config).toBeDefined();
+    expect(secondCall[2].isChallenge).toBeUndefined();
     expect(secondCall[2].auth).toBeDefined();
     expect(secondCall[2].config.headers).toBeDefined();
     expect(secondCall[3] instanceof Parse.User).toBeTruthy();
@@ -2483,6 +2490,7 @@ describe('Auth Adapter features', () => {
         },
       },
     });
+
     const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
@@ -2496,6 +2504,7 @@ describe('Auth Adapter features', () => {
   });
   it('should return challenge with authData created user', async () => {
     spyOn(challengeAdapter, 'challenge').and.resolveTo({ token: 'test' });
+    spyOn(challengeAdapter, 'validateAuthData').and.callThrough();
 
     await reconfigureServer({
       auth: { challengeAdapter, soloAdapter },
@@ -2567,6 +2576,10 @@ describe('Auth Adapter features', () => {
         },
       },
     });
+
+    const validateCall = challengeAdapter.validateAuthData.calls.argsFor(1);
+    expect(validateCall[2].isChallenge).toBeTruthy();
+
     const challengeCall = challengeAdapter.challenge.calls.argsFor(0);
     expect(challengeAdapter.challenge).toHaveBeenCalledTimes(1);
     expect(challengeCall[0]).toEqual({ someData: true });
@@ -2633,6 +2646,7 @@ describe('Auth Adapter features', () => {
     expect(validateCall[0]).toEqual({ id: 'challengeAdapter' });
     expect(validateCall[1]).toEqual(challengeAdapter);
     expect(validateCall[2].config).toBeDefined();
+    expect(validateCall[2].isChallenge).toBeTruthy();
     expect(validateCall[2].auth).toBeDefined();
     expect(validateCall[2].config.headers).toBeDefined();
     expect(validateCall[3] instanceof Parse.User).toBeTruthy();
