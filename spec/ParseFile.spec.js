@@ -365,7 +365,7 @@ describe('Parse.File testing', () => {
       const oldBaseUrl = "http://old-file-url.example.com";
       const newBaseUrl = "http://new-file-url.example.com";
 
-      const mockAdapter = {
+      const mockAdapterOld = {
         createFile: async filename => ({
           name: filename,
           location: `${oldBaseUrl}/${filename}`,
@@ -377,7 +377,7 @@ describe('Parse.File testing', () => {
           return null;
         },
       };
-      await reconfigureServer({ filesAdapter: mockAdapter });
+      await reconfigureServer({ filesAdapter: mockAdapterOld });
 
       const base64 = "V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=";
       const file = new Parse.File("myFile", { base64: base64 });
@@ -389,7 +389,7 @@ describe('Parse.File testing', () => {
       obj.set('files', fileArray);
       await obj.save();
 
-      const mockAdapter = {
+      const mockAdapterNew = {
         createFile: async filename => ({
           name: filename,
           location: `${newBaseUrl}/${filename}`,
@@ -401,7 +401,7 @@ describe('Parse.File testing', () => {
           return null;
         },
       };
-      await reconfigureServer({ filesAdapter: mockAdapter });
+      await reconfigureServer({ filesAdapter: mockAdapterNew });
 
       const query = new Parse.Query('FilesInJsonInArrayTest');
       const result = await query.first();
