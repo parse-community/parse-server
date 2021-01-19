@@ -44,6 +44,17 @@ describe('Pages Router', () => {
       expect(response.status).toBe(200);
     });
 
+    it('can load file from custom pages endpoint', async () => {
+      const _config = config;
+      _config.pages.pagesEndpoint = 'pages';
+      await reconfigureServer(_config);
+
+      const response = await request({
+        url: `http://localhost:8378/1/pages/invalid_link.html`
+      }).catch(e => e);
+      expect(response.status).toBe(200);
+    });
+
     it('responds with 404 if publicServerURL is not confgured', async () => {
       await reconfigureServer({
         appName: 'unused',
@@ -208,6 +219,9 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.pagesPath).toBe(
           Definitions.PagesOptions.pagesPath.default
         );
+        expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
+          Definitions.PagesOptions.pagesEndpoint.default
+        );
       });
 
       it('throws on invalid configuration', async () => {
@@ -232,6 +246,10 @@ describe('Pages Router', () => {
           { pagesPath: 0 },
           { pagesPath: {} },
           { pagesPath: [] },
+          { pagesEndpoint: true },
+          { pagesEndpoint: 0 },
+          { pagesEndpoint: {} },
+          { pagesEndpoint: [] },
         ];
         for (const option of options) {
           await expectAsync(reconfigureServerWithPageOptions(option)).toBeRejected();

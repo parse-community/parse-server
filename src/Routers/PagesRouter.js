@@ -38,7 +38,10 @@ export class PagesRouter extends PromiseRouter {
    */
   constructor(pages = {}) {
     super();
-    this.pagesEndpoint = 'apps';
+
+    this.pagesEndpoint = pages.pagesEndpoint
+      ? pages.pagesEndpoint
+      : 'apps';
     this.pagesPath = pages.pagesPath
       ? path.resolve('./', pages.pagesPath)
       : path.resolve(__dirname, '../../public');

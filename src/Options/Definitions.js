@@ -431,9 +431,15 @@ module.exports.PagesOptions = {
     "action": parsers.booleanParser,
     "default": false
   },
+  "pagesEndpoint": {
+    "env": "PARSE_SERVER_PAGES_PAGES_ENDPOINT",
+    "help": "The API endoint for the pages. Default is the 'apps'.",
+    "default": "apps"
+  },
   "pagesPath": {
     "env": "PARSE_SERVER_PAGES_PAGES_PATH",
-    "help": "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory."
+    "help": "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.",
+    "default": "./public"
   }
 };
 module.exports.CustomPagesOptions = {

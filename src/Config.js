@@ -142,6 +142,11 @@ export class Config {
     } else if (!isString(pages.pagesPath)) {
       throw 'Parse Server option pages.pagesPath must be a string.';
     }
+    if (pages.pagesEndpoint === undefined) {
+      pages.pagesEndpoint = PagesOptions.pagesEndpoint.default;
+    } else if (!isString(pages.pagesEndpoint)) {
+      throw 'Parse Server option pages.pagesEndpoint must be a string.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
