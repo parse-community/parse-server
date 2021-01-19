@@ -337,6 +337,7 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
+- [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter)
 
 ### Custom Pages
 
