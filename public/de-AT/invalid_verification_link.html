@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <!--
-  This page is displayed when someone navigates to a verify email or reset password link
-  but their security token is wrong. This can either mean the user has clicked on a
-  stale link (i.e. re-click on a password reset link after resetting their password) or
-  (rarely) this could be a sign of a malicious user trying to tamper with your app.
+  This page is displayed when someone navigates to a verify email link with invalid
+  parameters. This can either mean the user has incorrectly entered the link or this
+  could be a sign of a malicious user trying to tamper with your app. If a verification
+  link contains an expired security token (e.g. the email has already been verified),
+  this page is not displayed, there is another page for that.
  -->
 <html>
 
@@ -14,11 +15,6 @@
 <body>
   <h1>{{appName}}</h1>
   <h1>Invalid verification link!</h1>
-  <form method="POST" action="{{{publicServerUrl}}}/apps/{{{appId}}}/resend_verification_email">
-    <input name="username" type="hidden" value="{{{username}}}">
-    <input name="locale" type="hidden" value="{{{locale}}}">
-    <button type="submit">Resend Link</button>
-  </form>
 </body>
 
 </html>

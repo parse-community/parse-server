@@ -8,12 +8,17 @@
 <html>
 
 <head>
-  <title>Invalid Link</title>
+  <title>Email Verification</title>
 </head>
 
 <body>
   <h1>{{appName}}</h1>
-  <h1>Invalid Link</h1>
+  <h1>Expired verification link!</h1>
+  <form method="POST" action="{{{publicServerUrl}}}/apps/{{{appId}}}/resend_verification_email">
+    <input name="username" type="hidden" value="{{{username}}}">
+    <input name="locale" type="hidden" value="{{{locale}}}">
+    <button type="submit">Resend Link</button>
+  </form>
 </body>
 
 </html>

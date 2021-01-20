@@ -10,13 +10,13 @@ import Page from '../Page';
 
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
-  invalidLink: new Page({ id: 'invalidLink', defaultFile: 'invalid_link.html' }),
   linkSendFail: new Page({ id: 'linkSendFail', defaultFile: 'link_send_fail.html' }),
   choosePassword: new Page({ id: 'choosePassword', defaultFile: 'choose_password.html' }),
   linkSendSuccess: new Page({ id: 'linkSendSuccess', defaultFile: 'link_send_success.html' }),
   verifyEmailSuccess: new Page({ id: 'verifyEmailSuccess', defaultFile: 'verify_email_success.html' }),
   passwordResetSuccess: new Page({ id: 'passwordResetSuccess', defaultFile: 'password_reset_success.html' }),
   invalidVerificationLink: new Page({ id: 'invalidVerificationLink', defaultFile: 'invalid_verification_link.html' }),
+  expiredVerificationLink: new Page({ id: 'expiredVerificationLink', defaultFile: 'expired_verification_link.html' }),
   invalidPasswordResetLink: new Page({ id: 'invalidPasswordResetLink', defaultFile: 'invalid_password_reset_link.html' }),
 });
 // All page parameters for reference to be used as template placeholders or query params
@@ -74,7 +74,7 @@ export class PagesRouter extends PromiseRouter {
         const params = {
           [pageParams.username]: username,
         };
-        return this.goToPage(req, pages.invalidVerificationLink, params);
+        return this.goToPage(req, pages.expiredVerificationLink, params);
       }
     );
   }

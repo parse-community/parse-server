@@ -23,7 +23,7 @@ describe('Pages Router', () => {
 
     it('responds with file content on direct page request', async () => {
       const urls = [
-        'http://localhost:8378/1/apps/invalid_link.html',
+        'http://localhost:8378/1/apps/invalid_verification_link.html',
         'http://localhost:8378/1/apps/choose_password?appId=test',
         'http://localhost:8378/1/apps/verify_email_success.html',
         'http://localhost:8378/1/apps/password_reset_success.html',
@@ -40,7 +40,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: 'http://localhost:8378/1/apps/invalid_link.html'
+        url: 'http://localhost:8378/1/apps/invalid_verification_link.html'
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -51,7 +51,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: `http://localhost:8378/1/pages/invalid_link.html`
+        url: `http://localhost:8378/1/pages/invalid_verification_link.html`
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -278,7 +278,7 @@ describe('Pages Router', () => {
 
     describe('placeholders', () => {
       it('replaces placeholder in response content', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
 
         expect(readFile.calls.all()[0].returnValue).toBeDefined();
         const originalContent = await readFile.calls.all()[0].returnValue;
@@ -309,81 +309,81 @@ describe('Pages Router', () => {
       it('returns default file if localization is disabled', async () => {
         delete req.config.pages.enableLocalization;
 
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/de(-AT)?\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
       it('returns default file if no locale is specified', async () => {
         delete req.query.locale;
 
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/de(-AT)?\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/de(-AT)?\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
       it('returns custom page regardless of localization enabled', async () => {
-        req.config.customPages = { invalidLink: 'http://invalid-link.example.com' };
+        req.config.customPages = { invalidPasswordResetLink: 'http://invalid-link.example.com' };
 
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse).not.toHaveBeenCalled();
-        expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.customPages.invalidLink);
+        expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.customPages.invalidPasswordResetLink);
       });
 
       it('returns file for locale match', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).toMatch(
-          new RegExp(`\/${req.query.locale}\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/${req.query.locale}\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
       it('returns file for language match', async () => {
         // Pretend no locale matching file exists
         spyOn(Utils, 'fileExists').and.callFake(async path => {
-          return !path.includes(`/${req.query.locale}/${pages.invalidLink.defaultFile}`);
+          return !path.includes(`/${req.query.locale}/${pages.invalidPasswordResetLink.defaultFile}`);
         });
 
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).toMatch(
-          new RegExp(`\/de\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/de\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
       it('returns default file for neither locale nor language match', async () => {
         req.query.locale = 'yo-LO';
 
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/yo(-LO)?\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/yo(-LO)?\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
       it('returns a file for GET request', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse).toHaveBeenCalled();
         expect(redirectResponse).not.toHaveBeenCalled();
       });
 
       it('returns a redirect for POST request', async () => {
         req.method = 'POST';
-        await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
         expect(pageResponse).not.toHaveBeenCalled();
         expect(redirectResponse).toHaveBeenCalled();
       });
 
       it('returns a redirect for custom pages for GET and POST request', async () => {
-        req.config.customPages = { invalidLink: 'http://invalid-link.example.com' };
+        req.config.customPages = { invalidPasswordResetLink: 'http://invalid-link.example.com' };
 
         for (const method of ['GET', 'POST']) {
           req.method = method;
-          await expectAsync(router.goToPage(req, pages.invalidLink)).toBeResolved();
+          await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
           expect(pageResponse).not.toHaveBeenCalled();
           expect(redirectResponse).toHaveBeenCalled();
         }
@@ -550,7 +550,7 @@ describe('Pages Router', () => {
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.invalidVerificationLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.expiredVerificationLink.defaultFile}`)
         );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
@@ -598,7 +598,7 @@ describe('Pages Router', () => {
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.invalidVerificationLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.expiredVerificationLink.defaultFile}`)
         );
 
         spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() => Promise.reject(
@@ -620,7 +620,7 @@ describe('Pages Router', () => {
         expect(formResponse.text).toContain(`/${locale}/${pages.linkSendFail.defaultFile}`);
       });
 
-      it('localizes end-to-end for verify email: invalid link', async () => {
+      it('localizes end-to-end for resend verification email: invalid link', async () => {
         await reconfigureServer(config);
         const formUrl = `${config.publicServerURL}/apps/${config.appId}/resend_verification_email`;
         const formResponse = await request({
@@ -662,9 +662,8 @@ describe('Pages Router', () => {
         expect(resetPassword(req)).toThrow();
       });
 
-      it('verifyEmail: responds with invalid link on missing appId', async () => {
+      it('verifyEmail: responds with invalid link on missing username', async () => {
         req.query.token = 'exampleToken';
-        req.query.username = 'exampleUsername';
         req.params = {};
         req.config.userController = { verifyEmail: () => Promise.reject() };
         const verifyEmail = (req) => new PagesRouter().verifyEmail(req);

@@ -262,6 +262,8 @@ export interface CustomPagesOptions {
   passwordResetSuccess: ?string;
   /* invalid verification link page path */
   invalidVerificationLink: ?string;
+  /* expired verification link page path */
+  expiredVerificationLink: ?string;
   /* invalid password reset link page path */
   invalidPasswordResetLink: ?string;
   /* for masking user-facing pages */
