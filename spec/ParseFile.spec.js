@@ -413,7 +413,7 @@ describe('Parse.File testing', () => {
       done();
     });
 
-    it('supports files in json that inside of array', async done => {
+    it('supports files in array', async done => {
       const oldBaseUrl = "http://old-file-url.example.com";
       const newBaseUrl = "http://new-file-url.example.com";
 
