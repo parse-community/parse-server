@@ -116,9 +116,6 @@ export class Config {
   }
 
   static validatePagesOptions(pages) {
-    if (pages === undefined) {
-      return;
-    }
     if (Object.prototype.toString.call(pages) !== '[object Object]') {
       throw 'Parse Server option pages must be an object.';
     }

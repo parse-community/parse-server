@@ -12,13 +12,8 @@ export class Page {
    * @param {String} params.defaultFile The page file name.
    * @returns {Page} The page.
    */
-  constructor(params) {
+  constructor(params = {}) {
     const { id, defaultFile } = params;
-
-    // Ensure requried parameters
-    if ([id, defaultFile].includes(undefined)) {
-      throw 'missing parameters';
-    }
 
     this.id = id;
     this.defaultFile = defaultFile;

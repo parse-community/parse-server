@@ -84,7 +84,8 @@ class Utils {
   }
 
   /**
-   * Evaluates whether a string is a file path (as opposed to a URL for example).
+   * @function isPath
+   * @description Evaluates whether a string is a file path (as opposed to a URL for example).
    * @param {String} s The string to evaluate.
    * @returns {Boolean} Returns true if the evaluated string is a path.
    */

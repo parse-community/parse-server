@@ -11,6 +11,7 @@ const { PagesRouter, pages, pageParams } = require('../lib/Routers/PagesRouter')
 describe('Pages Router', () => {
   describe('basic request', () => {
     const config = {
+      appId: 'test',
       appName: 'exampleAppname',
       publicServerURL: 'http://localhost:8378/1',
       pages: { enableRouter: true },
@@ -34,7 +35,7 @@ describe('Pages Router', () => {
     });
 
     it('can load file from custom pages path', async () => {
-      const _config = config;
+      const _config = Object.assign({}, config);
       _config.pages.pagesPath = './public';
       await reconfigureServer(_config);
 
@@ -45,7 +46,7 @@ describe('Pages Router', () => {
     });
 
     it('can load file from custom pages endpoint', async () => {
-      const _config = config;
+      const _config = Object.assign({}, config);
       _config.pages.pagesEndpoint = 'pages';
       await reconfigureServer(_config);
 
@@ -71,7 +72,7 @@ describe('Pages Router', () => {
       }
     });
 
-    it('respones with 403 access denied with invalid appId', async () => {
+    it('responds with 403 access denied with invalid appId', async () => {
       const reqs = [
         { url: 'http://localhost:8378/1/apps/invalid/verify_email', method: 'GET' },
         { url: 'http://localhost:8378/1/apps/choose_password?id=invalid', method: 'GET' },
@@ -95,7 +96,23 @@ describe('Pages Router', () => {
       });
     });
 
-    it('should return missing password error on ajax request without password provided', async () => {
+    it('request_password_reset: responds with AJAX success', async () => {
+      spyOn(UserController.prototype, 'updatePassword').and.callFake(() => Promise.resolve());
+      const res = await request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/apps/test/request_password_reset',
+        body: `new_password=user1&token=43634643&username=username`,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        followRedirects: false,
+      }).catch(e => e);
+      expect(res.status).toBe(200);
+      expect(res.text).toEqual('"Password successfully reset"');
+    });
+
+    it('request_password_reset: responds with AJAX error on missing password', async () => {
       try {
         await request({
           method: 'POST',
@@ -113,7 +130,7 @@ describe('Pages Router', () => {
       }
     });
 
-    it('should return missing username error on ajax request without username provided', async () => {
+    it('request_password_reset: responds with AJAX error on missing username', async () => {
       try {
         await request({
           method: 'POST',
@@ -131,7 +148,7 @@ describe('Pages Router', () => {
       }
     });
 
-    it('should return missing token error on ajax request without token provided', async () => {
+    it('request_password_reset: responds with AJAX error on missing token', async () => {
       try {
         await request({
           method: 'POST',
@@ -153,6 +170,7 @@ describe('Pages Router', () => {
   describe('pages', () => {
     let router = new PagesRouter();
     let req;
+    let goToPage;
     let pageResponse;
     let redirectResponse;
     let readFile;
@@ -185,6 +203,7 @@ describe('Pages Router', () => {
     beforeEach(async () => {
       router = new PagesRouter();
       readFile = spyOn(fs, 'readFile').and.callThrough();
+      goToPage = spyOn(PagesRouter.prototype, 'goToPage').and.callThrough()
       pageResponse = spyOn(PagesRouter.prototype, 'pageResponse').and.callThrough()
       redirectResponse = spyOn(PagesRouter.prototype, 'redirectResponse').and.callThrough();
       req = {
@@ -615,6 +634,73 @@ describe('Pages Router', () => {
         });
         expect(formResponse.status).toEqual(303);
         expect(formResponse.text).toContain(`/${exampleLocale}/${pages.invalidLink.defaultFile}`);
+      });
+    });
+
+    describe('failing with missing parameters', () => {
+      it('verifyEmail: throws on missing server configuration', async () => {
+        delete req.config;
+        const verifyEmail = (req) => (() => new PagesRouter().verifyEmail(req)).bind(null);
+        expect(verifyEmail(req)).toThrow();
+      });
+
+      it('resendVerificationEmail: throws on missing server configuration', async () => {
+        delete req.config;
+        const resendVerificationEmail = (req) => (() => new PagesRouter().resendVerificationEmail(req)).bind(null);
+        expect(resendVerificationEmail(req)).toThrow();
+      });
+
+      it('requestResetPassword: throws on missing server configuration', async () => {
+        delete req.config;
+        const requestResetPassword = (req) => (() => new PagesRouter().requestResetPassword(req)).bind(null);
+        expect(requestResetPassword(req)).toThrow();
+      });
+
+      it('resetPassword: throws on missing server configuration', async () => {
+        delete req.config;
+        const resetPassword = (req) => (() => new PagesRouter().resetPassword(req)).bind(null);
+        expect(resetPassword(req)).toThrow();
+      });
+
+      it('verifyEmail: responds with invalid link on missing appId', async () => {
+        req.query.token = 'exampleToken';
+        req.query.username = 'exampleUsername';
+        req.params = {};
+        req.config.userController = { verifyEmail: () => Promise.reject() };
+        const verifyEmail = (req) => new PagesRouter().verifyEmail(req);
+
+        await verifyEmail(req);
+        expect(goToPage.calls.all()[0].args[1]).toBe(pages.invalidLink);
+      });
+
+      it('resetPassword: responds with page choose password with error message on failed password update', async () => {
+        req.body = {
+          token: 'exampleToken',
+          username: 'exampleUsername',
+          new_password: 'examplePassword',
+        };
+        const error = 'exampleError';
+        req.config.userController = { updatePassword: () => Promise.reject(error) };
+        const resetPassword = (req) => new PagesRouter().resetPassword(req);
+
+        await resetPassword(req);
+        expect(goToPage.calls.all()[0].args[1]).toBe(pages.choosePassword);
+        expect(goToPage.calls.all()[0].args[2].error).toBe(error);
+      });
+
+      it('resetPassword: responds with AJAX error with error message on failed password update', async () => {
+        req.xhr = true;
+        req.body = {
+          token: 'exampleToken',
+          username: 'exampleUsername',
+          new_password: 'examplePassword',
+        };
+        const error = 'exampleError';
+        req.config.userController = { updatePassword: () => Promise.reject(error) };
+        const resetPassword = (req) => new PagesRouter().resetPassword(req).catch(e => e);
+
+        const response = await resetPassword(req);
+        expect(response.code).toBe(Parse.Error.OTHER_CAUSE);
       });
     });
   });
