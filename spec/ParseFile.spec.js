@@ -412,7 +412,7 @@ describe('Parse.File testing', () => {
       expect(filesAgain[0].file.url()).toEqual(newBaseUrl + '/' + filesAgain[0].file.name());
       done();
     });
-    
+
     it('supports files in json that inside of array', async done => {
       const oldBaseUrl = "http://old-file-url.example.com";
       const newBaseUrl = "http://new-file-url.example.com";
