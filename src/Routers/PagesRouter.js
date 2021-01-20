@@ -17,6 +17,7 @@ const pages = Object.freeze({
   verifyEmailSuccess: new Page({ id: 'verifyEmailSuccess', defaultFile: 'verify_email_success.html' }),
   passwordResetSuccess: new Page({ id: 'passwordResetSuccess', defaultFile: 'password_reset_success.html' }),
   invalidVerificationLink: new Page({ id: 'invalidVerificationLink', defaultFile: 'invalid_verification_link.html' }),
+  invalidPasswordResetLink: new Page({ id: 'invalidPasswordResetLink', defaultFile: 'invalid_password_reset_link.html' }),
 });
 // All page parameters for reference to be used as template placeholders or query params
 const pageParams = Object.freeze({
@@ -58,7 +59,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     if (!token || !username) {
-      return this.goToPage(req, pages.invalidLink);
+      return this.goToPage(req, pages.invalidVerificationLink);
     }
 
     const userController = config.userController;
@@ -70,15 +71,10 @@ export class PagesRouter extends PromiseRouter {
         return this.goToPage(req, pages.verifyEmailSuccess, params);
       },
       () => {
-        if (req.query.username && req.params.appId) {
-          const params = {
-            [pageParams.appId]: req.params.appId,
-            [pageParams.username]: req.query.username,
-          };
-          return this.goToPage(req, pages.invalidVerificationLink, params);
-        } else {
-          return this.goToPage(req, pages.invalidLink);
-        }
+        const params = {
+          [pageParams.username]: username,
+        };
+        return this.goToPage(req, pages.invalidVerificationLink, params);
       }
     );
   }
@@ -92,7 +88,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     if (!username) {
-      return this.goToPage(req, pages.invalidLink);
+      return this.goToPage(req, pages.invalidVerificationLink);
     }
 
     const userController = config.userController;
@@ -130,7 +126,7 @@ export class PagesRouter extends PromiseRouter {
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!username || !token) {
-      return this.goToPage(req, pages.invalidLink);
+      return this.goToPage(req, pages.invalidPasswordResetLink);
     }
 
     return config.userController.checkResetTokenValidity(username, token).then(
@@ -144,7 +140,10 @@ export class PagesRouter extends PromiseRouter {
         return this.goToPage(req, pages.choosePassword, params);
       },
       () => {
-        return this.goToPage(req, pages.invalidLink);
+        const params = {
+          [pageParams.username]: username,
+        };
+        return this.goToPage(req, pages.invalidPasswordResetLink, params);
       }
     );
   }
@@ -160,7 +159,7 @@ export class PagesRouter extends PromiseRouter {
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!username || !token || !new_password) && req.xhr === false) {
-      return this.goToPage(req, pages.invalidLink);
+      return this.goToPage(req, pages.invalidPasswordResetLink);
     }
 
     if (!username) {

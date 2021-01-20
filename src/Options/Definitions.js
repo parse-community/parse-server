@@ -451,6 +451,10 @@ module.exports.CustomPagesOptions = {
     "env": "PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK",
     "help": "invalid link page path"
   },
+  "invalidPasswordResetLink": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_INVALID_PASSWORD_RESET_LINK",
+    "help": "invalid password reset link page path"
+  },
   "invalidVerificationLink": {
     "env": "PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK",
     "help": "invalid verification link page path"

@@ -250,18 +250,20 @@ export interface PagesOptions {
 export interface CustomPagesOptions {
   /* invalid link page path */
   invalidLink: ?string;
-  /* verify email success page path */
-  verifyEmailSuccess: ?string;
-  /* invalid verification link page path */
-  invalidVerificationLink: ?string;
-  /* verification link send success page path */
-  linkSendSuccess: ?string;
   /* verification link send fail page path */
   linkSendFail: ?string;
   /* choose password page path */
   choosePassword: ?string;
+  /* verification link send success page path */
+  linkSendSuccess: ?string;
+  /* verify email success page path */
+  verifyEmailSuccess: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+  /* invalid verification link page path */
+  invalidVerificationLink: ?string;
+  /* invalid password reset link page path */
+  invalidPasswordResetLink: ?string;
   /* for masking user-facing pages */
   parseFrameURL: ?string;
 }

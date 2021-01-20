@@ -398,7 +398,7 @@ describe('Pages Router', () => {
           method: 'POST',
         });
         expect(response.status).toEqual(303);
-        expect(response.headers.location).toContain('http://localhost:8378/1/apps/de-AT/invalid_link.html');
+        expect(response.headers.location).toContain('http://localhost:8378/1/apps/de-AT/invalid_password_reset_link.html');
       });
 
       it('responds to GET request with content response', async () => {
@@ -491,7 +491,7 @@ describe('Pages Router', () => {
 
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.invalidLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.invalidPasswordResetLink.defaultFile}`)
         );
       });
 
@@ -633,7 +633,7 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.invalidLink.defaultFile}`);
+        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.invalidVerificationLink.defaultFile}`);
       });
     });
 
@@ -670,7 +670,7 @@ describe('Pages Router', () => {
         const verifyEmail = (req) => new PagesRouter().verifyEmail(req);
 
         await verifyEmail(req);
-        expect(goToPage.calls.all()[0].args[1]).toBe(pages.invalidLink);
+        expect(goToPage.calls.all()[0].args[1]).toBe(pages.invalidVerificationLink);
       });
 
       it('resetPassword: responds with page choose password with error message on failed password update', async () => {

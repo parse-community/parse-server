@@ -93,6 +93,7 @@
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
  * @property {String} invalidLink invalid link page path
+ * @property {String} invalidPasswordResetLink invalid password reset link page path
  * @property {String} invalidVerificationLink invalid verification link page path
  * @property {String} linkSendFail verification link send fail page path
  * @property {String} linkSendSuccess verification link send success page path
