@@ -1751,7 +1751,7 @@ describe('microsoft graph auth adapter', () => {
   });
 });
 
-fdescribe('Auth Adapter features', () => {
+describe('Auth Adapter features', () => {
   const baseAdapter = {
     validateAppId: () => Promise.resolve(),
     validateAuthData: () => Promise.resolve(),
