@@ -44,28 +44,49 @@ Parse Server works with the Express web application framework. It can be added t
 The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. An [API reference](http://parseplatform.org/parse-server/api/) and [Cloud Code guide](https://docs.parseplatform.org/cloudcode/guide/) are also available. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
 
 - [Getting Started](#getting-started)
-    - [Running Parse Server](#running-parse-server)
-        - [Locally](#locally)
-        - [Docker](#inside-a-docker-container)
-        - [Saving an Object](#saving-your-first-object)
-        - [Connect an SDK](#connect-your-app-to-parse-server)
-    - [Running elsewhere](#running-parse-server-elsewhere)
-        - [Sample Application](#parse-server-sample-application)
-        - [Parse Server + Express](#parse-server--express)
-    - [Configuration](#configuration)
-        - [Basic Options](#basic-options)
-        - [Client Key Options](#client-key-options)
-        - [Email Verification & Password Reset](#email-verification-and-password-reset)
-        - [Custom Pages](#custom-pages)
-        - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
-        - [Available Adapters](#available-adapters)
-        - [Configuring File Adapters](#configuring-file-adapters)
-        - [Logging](#logging)
+  - [Running Parse Server](#running-parse-server)
+    - [Locally](#locally)
+    - [Inside a Docker container](#inside-a-docker-container)
+      - [Running the Parse Server Image](#running-the-parse-server-image)
+    - [Saving your first object](#saving-your-first-object)
+    - [Connect your app to Parse Server](#connect-your-app-to-parse-server)
+  - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
+    - [Parse Server Sample Application](#parse-server-sample-application)
+    - [Parse Server + Express](#parse-server--express)
+  - [Configuration](#configuration)
+    - [Basic options](#basic-options)
+    - [Client key options](#client-key-options)
+    - [Email verification and password reset](#email-verification-and-password-reset)
+    - [Custom Pages](#custom-pages)
+    - [Using environment variables to configure Parse Server](#using-environment-variables-to-configure-parse-server)
+    - [Available Adapters](#available-adapters)
+    - [Configuring File Adapters](#configuring-file-adapters)
+    - [Idempodency Enforcement](#idempodency-enforcement)
+      - [Configuration example](#configuration-example)
+      - [Parameters](#parameters)
+      - [Notes](#notes)
+    - [Localization](#localization)
+      - [Pages](#pages)
+        - [Configuration example](#configuration-example-1)
+        - [Parameters](#parameters-1)
+        - [Notes](#notes-1)
+    - [Logging](#logging)
 - [Live Queries](#live-queries)
 - [GraphQL](#graphql)
+  - [Running](#running)
+    - [Using the CLI](#using-the-cli)
+    - [Using Docker](#using-docker)
+      - [Running the Parse Server Image](#running-the-parse-server-image-1)
+    - [Using Express.js](#using-expressjs)
+  - [Checking the API health](#checking-the-api-health)
+  - [Creating your first class](#creating-your-first-class)
+  - [Using automatically generated operations](#using-automatically-generated-operations)
+  - [Customizing your GraphQL Schema](#customizing-your-graphql-schema)
+    - [Creating your first custom query](#creating-your-first-custom-query)
+  - [Learning more](#learning-more)
 - [Upgrading to 3.0.0](#upgrading-to-300)
-- [Support](#support)
-- [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
+- [Want to ride the bleeding edge?](#want-to-ride-the-bleeding-edge)
+  - [Experimenting](#experimenting)
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Sponsors](#sponsors)
@@ -421,15 +442,101 @@ let api = new ParseServer({
 ```
 #### Parameters
 
-| Parameter | Optional | Type  | Default value | Example values | Environment variable | Description |
-|-----------|----------|--------|---------------|-----------|-----------|-------------|
-| `idempotencyOptions` | yes | `Object` | `undefined` |   | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths. |
-| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` |  `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
-| `idempotencyOptions.ttl` | yes | `Integer` | `300` | `60` (60 seconds) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`. |
+| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
 
 #### Notes
 
 - This feature is currently only available for MongoDB and not for Postgres.
+
+### Localization
+
+#### Pages 
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+Pagse for password reset and email verification can be localized with the `pages` option in the Parse Server configuration:
+
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for localization
+    enableLocalization: true,
+  }
+}
+```
+
+Localzation is achieved by matching a request-supplied `locale` parameter with a localized page. The locale can be supplied in either the request query, body or header with the following key:
+- query: `locale`
+- body: `locale`
+- header: `x-parse-page-param-locale`
+
+For example, a password reset link with the locale parameter in the query could look like this:
+```
+http://example.com/parse/apps/[appId]/request_password_reset?token=[token]&username=[username]&locale=de-AT
+```
+
+Localized pages are determined by the directory structure:
+```
+root/
+├── base/                    // base path to files
+│   ├── example.html         // default file
+│   └── de/                  // de language folder
+│   │   └── example.html     // de localized file
+│   └── de-AT/               // de-AT locale folder
+│   │   └── example.html     // de-AT localized file
+
+Files are matched with the locale in the following order:
+1. Locale match, e.g. locale `de-AT` matches file in folder `de-AT`.
+2. Language match, e.g. locale `de-CH` matches file in folder `de`.
+3. Default; file in base folder is returned.
+```
+
+Localization is only enabled for the default pages in the `public` directory; localization is disabled if `customUrls` are set (even if the custom URLs point to the default pages).
+##### Configuration example
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for localization
+    enableLocalization: true,
+    forceRedirect: false,
+    pagesPath: './public/pages',
+    pagesEndpoint: 'pages',
+    customUrls: {
+      passwordReset: 'https://example.com/page.html'
+    }
+  }
+}
+```
+##### Parameters
+
+| Parameter                                       | Optional | Type      | Default value                          | Example values                                       | Environment variable                                            | Description                                                                                                                                                                                                   |
+|-------------------------------------------------|----------|-----------|----------------------------------------|------------------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pages`                                         | yes      | `Object`  | `undefined`                            | -                                                    | `PARSE_SERVER_PAGES`                                            | The options for pages such as password reset and email verification.                                                                                                                                          |
+| `pages.enableRouter`                            | yes      | `Boolean` | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_ROUTER`                              | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**       |
+| `pages.forceRedirect`                           | yes      | `Boolean` | `false`                                | -                                                    | `PARSE_SERVER_PAGES_FORCE_REDIRECT`                             | Is `true` if responses should always be redirects and never content, `false` if the response type should depend on the request type (`GET` request -> content response; `POST` request -> redirect response). |
+| `pages.pagesPath`                               | yes      | `String`  | `./public`                             | `./files/pages`, `../../pages`                       | `PARSE_SERVER_PAGES_PAGES_PATH`                                 | The path to the pages directory; this also defines where the static endpoint `/apps` points to.                                                                                                               |
+| `pages.pagesEndpoint`                           | yes      | `String`  | `apps`                                 | -                                                    | `PARSE_SERVER_PAGES_PAGES_ENDPOINT`                             | The API endoint for the pages.                                                                                                                                                                                |
+| `pages.customUrls`                              | yes      | `Object`  | `{}`                                   | `{ passwordReset: 'https://example.com/page.html' }` | `PARSE_SERVER_PAGES_CUSTOM_URLS`                                | The URLs to the custom pages                                                                                                                                                                                  |
+| `pages.customUrls.passwordReset`                | yes      | `String`  | `password_reset.html`                  | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET`                  | The URL to the custom page for password reset.                                                                                                                                                                |
+| `pages.customUrls.passwordResetSuccess`         | yes      | `String`  | `password_reset_success.html`          | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_SUCCESS`          | The URL to the custom page for password reset -> success.                                                                                                                                                     |
+| `pages.customUrls.passwordResetLinkInvalid`     | yes      | `String`  | `password_reset_link_invalid.html`     | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_LINK_INVALID`     | The URL to the custom page for password reset -> link invalid.                                                                                                                                                |
+| `pages.customUrls.emailVerificationSuccess`     | yes      | `String`  | `email_verification_success.html`      | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS`      | The URL to the custom page for email verification -> success.                                                                                                                                                 |
+| `pages.customUrls.emailVerificationSendFail`    | yes      | `String`  | `email_verification_send_fail.html`    | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_FAIL`    | The URL to the custom page for email verification -> link send fail.                                                                                                                                          |
+| `pages.customUrls.emailVerificationSendSuccess` | yes      | `String`  | `email_verification_send_success.html` | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_SUCCESS` | The URL to the custom page for email verification -> resend link -> success.                                                                                                                                  |
+| `pages.customUrls.emailVerificationLinkInvalid` | yes      | `String`  | `email_verification_link_invalid.html` | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID` | The URL to the custom page for email verification -> link invalid.                                                                                                                                            |
+| `pages.customUrls.emailVerificationLinkExpired` | yes      | `String`  | `email_verification_link_expired.html` | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED` | The URL to the custom page for email verification -> link expired.                                                                                                                                            |
+
+##### Notes
+
+- In combination with the [Parse Server API Mail Adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) Parse Server provides a fully localized flow (emails, pages) for the user. The email adapter sends out a localized email and adds a locale parameter to the password reset / email verification link, which is then used to respond with localized pages.
+
 
 ### Logging
 
