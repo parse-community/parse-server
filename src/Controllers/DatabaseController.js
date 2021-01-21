@@ -77,6 +77,56 @@ const validateQuery = (query: any): void => {
   if (query.$or) {
     if (query.$or instanceof Array) {
       query.$or.forEach(validateQuery);
+
+      /* In MongoDB 3.2 & 3.4, $or queries which are not alone at the top
+       * level of the query can not make efficient use of indexes due to a
+       * long standing bug known as SERVER-13732.
+       *
+       * This bug was fixed in MongoDB version 3.6.
+       *
+       * For versions pre-3.6, the below logic produces a substantial
+       * performance improvement inside the database by avoiding the bug.
+       *
+       * For versions 3.6 and above, there is no performance improvement and
+       * the logic is unnecessary. Some query patterns are even slowed by
+       * the below logic, due to the bug having been fixed and better
+       * query plans being chosen.
+       *
+       * When versions before 3.4 are no longer supported by this project,
+       * this logic, and the accompanying `skipMongoDBServer13732Workaround`
+       * flag, can be removed.
+       *
+       * This block restructures queries in which $or is not the sole top
+       * level element by moving all other top-level predicates inside every
+       * subdocument of the $or predicate, allowing MongoDB's query planner
+       * to make full use of the most relevant indexes.
+       *
+       * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
+       * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
+       *
+       * The only exceptions are $near and $nearSphere operators, which are
+       * constrained to only 1 operator per query. As a result, these ops
+       * remain at the top level
+       *
+       * https://jira.mongodb.org/browse/SERVER-13732
+       * https://github.com/parse-community/parse-server/issues/3767
+       */
+      Object.keys(query).forEach((key) => {
+        const noCollisions = !query.$or.some((subq) =>
+          Object.prototype.hasOwnProperty.call(subq, key)
+        );
+        let hasNears = false;
+        if (query[key] != null && typeof query[key] == 'object') {
+          hasNears = '$near' in query[key] || '$nearSphere' in query[key];
+        }
+        if (key != '$or' && noCollisions && !hasNears) {
+          query.$or.forEach((subquery) => {
+            subquery[key] = query[key];
+          });
+          delete query[key];
+        }
+      });
+      query.$or.forEach(validateQuery);
     } else {
       throw new Parse.Error(
         Parse.Error.INVALID_QUERY,
