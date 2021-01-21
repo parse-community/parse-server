@@ -92,14 +92,14 @@
 
 /**
  * @interface PagesCustomUrlsOptions
- * @property {String} choosePassword The URL to the custom page for password reset.
- * @property {String} expiredVerificationLink The URL to the custom page for email verification -> link expired.
- * @property {String} invalidPasswordResetLink The URL to the custom page for password reset -> link invalid.
- * @property {String} invalidVerificationLink The URL to the custom page for email verification -> link invalid.
- * @property {String} linkSendFail The URL to the custom page for email verification -> link send fail.
- * @property {String} linkSendSuccess The URL to the custom page for email verification -> resend link -> success.
+ * @property {String} emailVerificationLinkExpired The URL to the custom page for email verification -> link expired.
+ * @property {String} emailVerificationLinkInvalid The URL to the custom page for email verification -> link invalid.
+ * @property {String} emailVerificationSendFail The URL to the custom page for email verification -> link send fail.
+ * @property {String} emailVerificationSendSuccess The URL to the custom page for email verification -> resend link -> success.
+ * @property {String} emailVerificationSuccess The URL to the custom page for email verification -> success.
+ * @property {String} passwordReset The URL to the custom page for password reset.
+ * @property {String} passwordResetLinkInvalid The URL to the custom page for password reset -> link invalid.
  * @property {String} passwordResetSuccess The URL to the custom page for password reset -> success.
- * @property {String} verifyEmailSuccess The URL to the custom page for email verification -> success.
  */
 
 /**

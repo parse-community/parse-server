@@ -449,37 +449,37 @@ module.exports.PagesOptions = {
   }
 };
 module.exports.PagesCustomUrlsOptions = {
-  "choosePassword": {
-    "env": "undefinedCHOOSE_PASSWORD",
-    "help": "The URL to the custom page for password reset."
-  },
-  "expiredVerificationLink": {
-    "env": "undefinedEXPIRED_VERIFICATION_LINK",
+  "emailVerificationLinkExpired": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED",
     "help": "The URL to the custom page for email verification -> link expired."
   },
-  "invalidPasswordResetLink": {
-    "env": "undefinedINVALID_PASSWORD_RESET_LINK",
-    "help": "The URL to the custom page for password reset -> link invalid."
-  },
-  "invalidVerificationLink": {
-    "env": "undefinedINVALID_VERIFICATION_LINK",
+  "emailVerificationLinkInvalid": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID",
     "help": "The URL to the custom page for email verification -> link invalid."
   },
-  "linkSendFail": {
-    "env": "undefinedLINK_SEND_FAIL",
+  "emailVerificationSendFail": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_FAIL",
     "help": "The URL to the custom page for email verification -> link send fail."
   },
-  "linkSendSuccess": {
-    "env": "undefinedLINK_SEND_SUCCESS",
+  "emailVerificationSendSuccess": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_SUCCESS",
     "help": "The URL to the custom page for email verification -> resend link -> success."
   },
-  "passwordResetSuccess": {
-    "env": "undefinedPASSWORD_RESET_SUCCESS",
-    "help": "The URL to the custom page for password reset -> success."
-  },
-  "verifyEmailSuccess": {
-    "env": "undefinedVERIFY_EMAIL_SUCCESS",
+  "emailVerificationSuccess": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS",
     "help": "The URL to the custom page for email verification -> success."
+  },
+  "passwordReset": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET",
+    "help": "The URL to the custom page for password reset."
+  },
+  "passwordResetLinkInvalid": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_LINK_INVALID",
+    "help": "The URL to the custom page for password reset -> link invalid."
+  },
+  "passwordResetSuccess": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_SUCCESS",
+    "help": "The URL to the custom page for password reset -> success."
   }
 };
 module.exports.CustomPagesOptions = {

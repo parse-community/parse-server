@@ -43,8 +43,8 @@ function getENVPrefix(iface) {
   const options = {
     'ParseServerOptions' : 'PARSE_SERVER_',
     'PagesOptions' : 'PARSE_SERVER_PAGES_',
+    'PagesCustomUrlsOptions' : 'PARSE_SERVER_PAGES_CUSTOM_URL_',
     'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
-    'CustomPageUrlsOptions' : 'PARSE_SERVER_PAGES_CUSTOM_URL_',
     'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
     'LiveQueryOptions' : 'PARSE_SERVER_LIVEQUERY_',
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',

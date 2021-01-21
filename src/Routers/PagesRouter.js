@@ -15,7 +15,7 @@ const pages = Object.freeze({
   passwordResetLinkInvalid: new Page({ id: 'passwordResetLinkInvalid', defaultFile: 'password_reset_link_invalid.html' }),
   emailVerificationSuccess: new Page({ id: 'emailVerificationSuccess', defaultFile: 'email_verification_success.html' }),
   emailVerificationSendFail: new Page({ id: 'emailVerificationSendFail', defaultFile: 'email_verification_send_fail.html' }),
-  emailVerificationResendSuccess: new Page({ id: 'emailVerificationResendSuccess', defaultFile: 'email_verification_send_success.html' }),
+  emailVerificationSendSuccess: new Page({ id: 'emailVerificationSendSuccess', defaultFile: 'email_verification_send_success.html' }),
   emailVerificationLinkInvalid: new Page({ id: 'emailVerificationLinkInvalid', defaultFile: 'email_verification_link_invalid.html' }),
   emailVerificationLinkExpired: new Page({ id: 'emailVerificationLinkExpired', defaultFile: 'email_verification_link_expired.html' }),
 });
@@ -95,7 +95,7 @@ export class PagesRouter extends PromiseRouter {
 
     return userController.resendVerificationEmail(username).then(
       () => {
-        return this.goToPage(req, pages.emailVerificationResendSuccess);
+        return this.goToPage(req, pages.emailVerificationSendSuccess);
       },
       () => {
         return this.goToPage(req, pages.emailVerificationSendFail);

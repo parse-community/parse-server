@@ -251,22 +251,22 @@ export interface PagesOptions {
 }
 
 export interface PagesCustomUrlsOptions {
-  /* The URL to the custom page for email verification -> link send fail. */
-  linkSendFail: ?string;
   /* The URL to the custom page for password reset. */
-  choosePassword: ?string;
-  /* The URL to the custom page for email verification -> resend link -> success. */
-  linkSendSuccess: ?string;
-  /* The URL to the custom page for email verification -> success. */
-  verifyEmailSuccess: ?string;
+  passwordReset: ?string;
+  /* The URL to the custom page for password reset -> link invalid. */
+  passwordResetLinkInvalid: ?string;
   /* The URL to the custom page for password reset -> success. */
   passwordResetSuccess: ?string;
+  /* The URL to the custom page for email verification -> success. */
+  emailVerificationSuccess: ?string;
+  /* The URL to the custom page for email verification -> link send fail. */
+  emailVerificationSendFail: ?string;
+  /* The URL to the custom page for email verification -> resend link -> success. */
+  emailVerificationSendSuccess: ?string;
   /* The URL to the custom page for email verification -> link invalid. */
-  invalidVerificationLink: ?string;
+  emailVerificationLinkInvalid: ?string;
   /* The URL to the custom page for email verification -> link expired. */
-  expiredVerificationLink: ?string;
-  /* The URL to the custom page for password reset -> link invalid. */
-  invalidPasswordResetLink: ?string;
+  emailVerificationLinkExpired: ?string;
 }
 
 export interface CustomPagesOptions {

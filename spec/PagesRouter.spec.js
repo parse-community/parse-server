@@ -572,7 +572,7 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationResendSuccess.defaultFile}`);
+        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationSendSuccess.defaultFile}`);
       });
 
       it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
