@@ -16,7 +16,7 @@ We ask that:
 
 # Communicating with us
 
-All vulnerabilities should be privately reported to us at the following address [security&#64;parseplatform&#46;org](mailto:security&#64;parseplatform&#46;org)
+All vulnerabilities should be privately reported to us by going to [report.parseplatform.org](https://report.parseplatform.org). Alternatively, you can send an email to [security&#64;parseplatform&#46;org](mailto:security&#64;parseplatform&#46;org).
 
 If you want you can encrypt your email to us by using our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
 
