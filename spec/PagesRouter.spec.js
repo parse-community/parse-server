@@ -23,9 +23,9 @@ describe('Pages Router', () => {
 
     it('responds with file content on direct page request', async () => {
       const urls = [
-        'http://localhost:8378/1/apps/invalid_verification_link.html',
+        'http://localhost:8378/1/apps/email_verification_link_invalid.html',
         'http://localhost:8378/1/apps/choose_password?appId=test',
-        'http://localhost:8378/1/apps/verify_email_success.html',
+        'http://localhost:8378/1/apps/email_verification_success.html',
         'http://localhost:8378/1/apps/password_reset_success.html',
       ];
       for (const url of urls) {
@@ -40,7 +40,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: 'http://localhost:8378/1/apps/invalid_verification_link.html'
+        url: 'http://localhost:8378/1/apps/email_verification_link_invalid.html'
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -51,7 +51,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: `http://localhost:8378/1/pages/invalid_verification_link.html`
+        url: `http://localhost:8378/1/pages/email_verification_link_invalid.html`
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -185,10 +185,10 @@ describe('Pages Router', () => {
         sendMail: () => {},
       },
       publicServerURL: 'http://localhost:8378/1',
-      customPages: {},
       pages: {
         enableRouter: true,
         enableLocalization: true,
+        customUrls: {},
       },
     };
     async function reconfigureServerWithPageOptions(options) {
@@ -212,9 +212,9 @@ describe('Pages Router', () => {
           appId: 'test',
           appName: 'ExampleAppName',
           publicServerURL: 'http://localhost:8378/1',
-          customPages: {},
           pages: {
             enableLocalization: true,
+            customUrls: {},
           },
         },
         query: {
@@ -240,6 +240,9 @@ describe('Pages Router', () => {
         );
         expect(Config.get(Parse.applicationId).pages.pagesEndpoint).toBe(
           Definitions.PagesOptions.pagesEndpoint.default
+        );
+        expect(Config.get(Parse.applicationId).pages.customUrls).toBe(
+          Definitions.PagesOptions.customUrls.default
         );
       });
 
@@ -269,6 +272,10 @@ describe('Pages Router', () => {
           { pagesEndpoint: 0 },
           { pagesEndpoint: {} },
           { pagesEndpoint: [] },
+          { customUrls: true },
+          { customUrls: 0 },
+          { customUrls: 'a' },
+          { customUrls: [] },
         ];
         for (const option of options) {
           await expectAsync(reconfigureServerWithPageOptions(option)).toBeRejected();
@@ -278,7 +285,7 @@ describe('Pages Router', () => {
 
     describe('placeholders', () => {
       it('replaces placeholder in response content', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
 
         expect(readFile.calls.all()[0].returnValue).toBeDefined();
         const originalContent = await readFile.calls.all()[0].returnValue;
@@ -291,7 +298,7 @@ describe('Pages Router', () => {
       });
 
       it('removes undefined placeholder in response content', async () => {
-        await expectAsync(router.goToPage(req, pages.choosePassword)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordReset)).toBeResolved();
 
         expect(readFile.calls.all()[0].returnValue).toBeDefined();
         const originalContent = await readFile.calls.all()[0].returnValue;
@@ -309,81 +316,81 @@ describe('Pages Router', () => {
       it('returns default file if localization is disabled', async () => {
         delete req.config.pages.enableLocalization;
 
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/de(-AT)?\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/de(-AT)?\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
       it('returns default file if no locale is specified', async () => {
         delete req.query.locale;
 
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/de(-AT)?\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/de(-AT)?\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
       it('returns custom page regardless of localization enabled', async () => {
-        req.config.customPages = { invalidPasswordResetLink: 'http://invalid-link.example.com' };
+        req.config.pages.customUrls = { passwordResetLinkInvalid: 'http://invalid-link.example.com' };
 
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse).not.toHaveBeenCalled();
-        expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.customPages.invalidPasswordResetLink);
+        expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.pages.customUrls.passwordResetLinkInvalid);
       });
 
       it('returns file for locale match', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).toMatch(
-          new RegExp(`\/${req.query.locale}\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/${req.query.locale}\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
       it('returns file for language match', async () => {
         // Pretend no locale matching file exists
         spyOn(Utils, 'fileExists').and.callFake(async path => {
-          return !path.includes(`/${req.query.locale}/${pages.invalidPasswordResetLink.defaultFile}`);
+          return !path.includes(`/${req.query.locale}/${pages.passwordResetLinkInvalid.defaultFile}`);
         });
 
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).toMatch(
-          new RegExp(`\/de\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/de\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
       it('returns default file for neither locale nor language match', async () => {
         req.query.locale = 'yo-LO';
 
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse.calls.all()[0].args[0]).toBeDefined();
         expect(pageResponse.calls.all()[0].args[0]).not.toMatch(
-          new RegExp(`\/yo(-LO)?\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/yo(-LO)?\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
       it('returns a file for GET request', async () => {
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse).toHaveBeenCalled();
         expect(redirectResponse).not.toHaveBeenCalled();
       });
 
       it('returns a redirect for POST request', async () => {
         req.method = 'POST';
-        await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+        await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse).not.toHaveBeenCalled();
         expect(redirectResponse).toHaveBeenCalled();
       });
 
       it('returns a redirect for custom pages for GET and POST request', async () => {
-        req.config.customPages = { invalidPasswordResetLink: 'http://invalid-link.example.com' };
+        req.config.pages.customUrls = { passwordResetLinkInvalid: 'http://invalid-link.example.com' };
 
         for (const method of ['GET', 'POST']) {
           req.method = method;
-          await expectAsync(router.goToPage(req, pages.invalidPasswordResetLink)).toBeResolved();
+          await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
           expect(pageResponse).not.toHaveBeenCalled();
           expect(redirectResponse).toHaveBeenCalled();
         }
@@ -398,7 +405,7 @@ describe('Pages Router', () => {
           method: 'POST',
         });
         expect(response.status).toEqual(303);
-        expect(response.headers.location).toContain('http://localhost:8378/1/apps/de-AT/invalid_password_reset_link.html');
+        expect(response.headers.location).toContain('http://localhost:8378/1/apps/de-AT/password_reset_link_invalid.html');
       });
 
       it('responds to GET request with content response', async () => {
@@ -440,14 +447,14 @@ describe('Pages Router', () => {
         const locale = linkResponse.headers['x-parse-page-param-locale'];
         const username = linkResponse.headers['x-parse-page-param-username'];
         const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
-        const choosePasswordPagePath = pageResponse.calls.all()[0].args[0];
+        const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
         expect(appId).toBeDefined();
         expect(token).toBeDefined();
         expect(locale).toBeDefined();
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
-        expect(choosePasswordPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.choosePassword.defaultFile}`)
+        expect(passwordResetPagePath).toMatch(
+          new RegExp(`\/${exampleLocale}\/${pages.passwordReset.defaultFile}`)
         );
         pageResponse.calls.reset();
 
@@ -491,7 +498,7 @@ describe('Pages Router', () => {
 
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.invalidPasswordResetLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
 
@@ -516,7 +523,7 @@ describe('Pages Router', () => {
 
         const pagePath = pageResponse.calls.all()[0].args[0];
         expect(pagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.verifyEmailSuccess.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationSuccess.defaultFile}`)
         );
       });
 
@@ -550,7 +557,7 @@ describe('Pages Router', () => {
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.expiredVerificationLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
         );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
@@ -565,7 +572,7 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${locale}/${pages.linkSendSuccess.defaultFile}`);
+        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationResendSuccess.defaultFile}`);
       });
 
       it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
@@ -598,7 +605,7 @@ describe('Pages Router', () => {
         expect(username).toBeDefined();
         expect(publicServerUrl).toBeDefined();
         expect(invalidVerificationPagePath).toMatch(
-          new RegExp(`\/${exampleLocale}\/${pages.expiredVerificationLink.defaultFile}`)
+          new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
         );
 
         spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() => Promise.reject(
@@ -617,7 +624,7 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${locale}/${pages.linkSendFail.defaultFile}`);
+        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationSendFail.defaultFile}`);
       });
 
       it('localizes end-to-end for resend verification email: invalid link', async () => {
@@ -633,7 +640,7 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.invalidVerificationLink.defaultFile}`);
+        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.emailVerificationLinkInvalid.defaultFile}`);
       });
     });
 
@@ -669,7 +676,7 @@ describe('Pages Router', () => {
         const verifyEmail = (req) => new PagesRouter().verifyEmail(req);
 
         await verifyEmail(req);
-        expect(goToPage.calls.all()[0].args[1]).toBe(pages.invalidVerificationLink);
+        expect(goToPage.calls.all()[0].args[1]).toBe(pages.emailVerificationLinkInvalid);
       });
 
       it('resetPassword: responds with page choose password with error message on failed password update', async () => {
@@ -683,7 +690,7 @@ describe('Pages Router', () => {
         const resetPassword = (req) => new PagesRouter().resetPassword(req);
 
         await resetPassword(req);
-        expect(goToPage.calls.all()[0].args[1]).toBe(pages.choosePassword);
+        expect(goToPage.calls.all()[0].args[1]).toBe(pages.passwordReset);
         expect(goToPage.calls.all()[0].args[2].error).toBe(error);
       });
 

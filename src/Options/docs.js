@@ -82,6 +82,7 @@
 
 /**
  * @interface PagesOptions
+ * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
@@ -90,8 +91,21 @@
  */
 
 /**
+ * @interface PagesCustomUrlsOptions
+ * @property {String} choosePassword The URL to the custom page for password reset.
+ * @property {String} expiredVerificationLink The URL to the custom page for email verification -> link expired.
+ * @property {String} invalidPasswordResetLink The URL to the custom page for password reset -> link invalid.
+ * @property {String} invalidVerificationLink The URL to the custom page for email verification -> link invalid.
+ * @property {String} linkSendFail The URL to the custom page for email verification -> link send fail.
+ * @property {String} linkSendSuccess The URL to the custom page for email verification -> resend link -> success.
+ * @property {String} passwordResetSuccess The URL to the custom page for password reset -> success.
+ * @property {String} verifyEmailSuccess The URL to the custom page for email verification -> success.
+ */
+
+/**
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
+ * @property {String} expiredVerificationLink expired verification link page path
  * @property {String} invalidLink invalid link page path
  * @property {String} invalidPasswordResetLink invalid password reset link page path
  * @property {String} invalidVerificationLink invalid verification link page path

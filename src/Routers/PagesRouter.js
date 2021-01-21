@@ -10,14 +10,14 @@ import Page from '../Page';
 
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
-  linkSendFail: new Page({ id: 'linkSendFail', defaultFile: 'link_send_fail.html' }),
-  choosePassword: new Page({ id: 'choosePassword', defaultFile: 'choose_password.html' }),
-  linkSendSuccess: new Page({ id: 'linkSendSuccess', defaultFile: 'link_send_success.html' }),
-  verifyEmailSuccess: new Page({ id: 'verifyEmailSuccess', defaultFile: 'verify_email_success.html' }),
+  passwordReset: new Page({ id: 'passwordReset', defaultFile: 'password_reset.html' }),
   passwordResetSuccess: new Page({ id: 'passwordResetSuccess', defaultFile: 'password_reset_success.html' }),
-  invalidVerificationLink: new Page({ id: 'invalidVerificationLink', defaultFile: 'invalid_verification_link.html' }),
-  expiredVerificationLink: new Page({ id: 'expiredVerificationLink', defaultFile: 'expired_verification_link.html' }),
-  invalidPasswordResetLink: new Page({ id: 'invalidPasswordResetLink', defaultFile: 'invalid_password_reset_link.html' }),
+  passwordResetLinkInvalid: new Page({ id: 'passwordResetLinkInvalid', defaultFile: 'password_reset_link_invalid.html' }),
+  emailVerificationSuccess: new Page({ id: 'emailVerificationSuccess', defaultFile: 'email_verification_success.html' }),
+  emailVerificationSendFail: new Page({ id: 'emailVerificationSendFail', defaultFile: 'email_verification_send_fail.html' }),
+  emailVerificationResendSuccess: new Page({ id: 'emailVerificationResendSuccess', defaultFile: 'email_verification_send_success.html' }),
+  emailVerificationLinkInvalid: new Page({ id: 'emailVerificationLinkInvalid', defaultFile: 'email_verification_link_invalid.html' }),
+  emailVerificationLinkExpired: new Page({ id: 'emailVerificationLinkExpired', defaultFile: 'email_verification_link_expired.html' }),
 });
 // All page parameters for reference to be used as template placeholders or query params
 const pageParams = Object.freeze({
@@ -59,7 +59,7 @@ export class PagesRouter extends PromiseRouter {
     }
 
     if (!token || !username) {
-      return this.goToPage(req, pages.invalidVerificationLink);
+      return this.goToPage(req, pages.emailVerificationLinkInvalid);
     }
 
     const userController = config.userController;
@@ -68,13 +68,13 @@ export class PagesRouter extends PromiseRouter {
         const params = {
           [pageParams.username]: username,
         };
-        return this.goToPage(req, pages.verifyEmailSuccess, params);
+        return this.goToPage(req, pages.emailVerificationSuccess, params);
       },
       () => {
         const params = {
           [pageParams.username]: username,
         };
-        return this.goToPage(req, pages.expiredVerificationLink, params);
+        return this.goToPage(req, pages.emailVerificationLinkExpired, params);
       }
     );
   }
@@ -88,22 +88,22 @@ export class PagesRouter extends PromiseRouter {
     }
 
     if (!username) {
-      return this.goToPage(req, pages.invalidVerificationLink);
+      return this.goToPage(req, pages.emailVerificationLinkInvalid);
     }
 
     const userController = config.userController;
 
     return userController.resendVerificationEmail(username).then(
       () => {
-        return this.goToPage(req, pages.linkSendSuccess);
+        return this.goToPage(req, pages.emailVerificationResendSuccess);
       },
       () => {
-        return this.goToPage(req, pages.linkSendFail);
+        return this.goToPage(req, pages.emailVerificationSendFail);
       }
     );
   }
 
-  choosePassword(req) {
+  passwordReset(req) {
     const config = req.config;
     const params = {
       [pageParams.appId]: req.params.appId,
@@ -112,7 +112,7 @@ export class PagesRouter extends PromiseRouter {
       [pageParams.username]: req.query.username,
       [pageParams.publicServerUrl]: config.publicServerURL
     };
-    return this.goToPage(req, pages.choosePassword, params);
+    return this.goToPage(req, pages.passwordReset, params);
   }
 
   requestResetPassword(req) {
@@ -126,7 +126,7 @@ export class PagesRouter extends PromiseRouter {
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if (!username || !token) {
-      return this.goToPage(req, pages.invalidPasswordResetLink);
+      return this.goToPage(req, pages.passwordResetLinkInvalid);
     }
 
     return config.userController.checkResetTokenValidity(username, token).then(
@@ -137,13 +137,13 @@ export class PagesRouter extends PromiseRouter {
           [pageParams.appId]: config.applicationId,
           [pageParams.appName]: config.appName,
         };
-        return this.goToPage(req, pages.choosePassword, params);
+        return this.goToPage(req, pages.passwordReset, params);
       },
       () => {
         const params = {
           [pageParams.username]: username,
         };
-        return this.goToPage(req, pages.invalidPasswordResetLink, params);
+        return this.goToPage(req, pages.passwordResetLinkInvalid, params);
       }
     );
   }
@@ -159,7 +159,7 @@ export class PagesRouter extends PromiseRouter {
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
     if ((!username || !token || !new_password) && req.xhr === false) {
-      return this.goToPage(req, pages.invalidPasswordResetLink);
+      return this.goToPage(req, pages.passwordResetLinkInvalid);
     }
 
     if (!username) {
@@ -213,7 +213,7 @@ export class PagesRouter extends PromiseRouter {
             [pageParams.error]: result.err,
             [pageParams.appName]: config.appName,
           };
-        const page = result.success ? pages.passwordResetSuccess : pages.choosePassword;
+        const page = result.success ? pages.passwordResetSuccess : pages.passwordReset;
 
         return this.goToPage(req, page, query, false);
       });
@@ -257,7 +257,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add locale to params to ensure it is passed on with every request;
     // that means, once a locale is set, it is passed on to any follow-up page,
-    // e.g. request_password_reset -> choose_password -> passwort_reset_success
+    // e.g. request_password_reset -> password_reset -> passwort_reset_success
     const locale =
       (req.query || {})[pageParams.locale]
       || (req.body || {})[pageParams.locale]
@@ -270,10 +270,10 @@ export class PagesRouter extends PromiseRouter {
     const defaultPath = this.defaultPagePath(defaultFile);
     const defaultUrl = this.composePageUrl(defaultFile, config.publicServerURL);
 
-    // If custom page URL is set redirect to it without localization
-    const customPageUrl = config.customPages[page.id];
-    if (customPageUrl && !Utils.isPath(customPageUrl)) {
-      return this.redirectResponse(customPageUrl, params);
+    // If custom URL is set redirect to it without localization
+    const customUrl = config.pages.customUrls[page.id];
+    if (customUrl && !Utils.isPath(customUrl)) {
+      return this.redirectResponse(customUrl, params);
     }
 
     // If localization is enabled
@@ -423,7 +423,7 @@ export class PagesRouter extends PromiseRouter {
         this.setConfig(req);
       },
       req => {
-        return this.choosePassword(req);
+        return this.passwordReset(req);
       }
     );
 

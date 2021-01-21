@@ -413,6 +413,12 @@ module.exports.ParseServerOptions = {
   }
 };
 module.exports.PagesOptions = {
+  "customUrls": {
+    "env": "PARSE_SERVER_PAGES_CUSTOM_URLS",
+    "help": "The URLs to the custom pages.",
+    "action": parsers.objectParser,
+    "default": {}
+  },
   "enableLocalization": {
     "env": "PARSE_SERVER_PAGES_ENABLE_LOCALIZATION",
     "help": "Is true if pages should be localized; this has no effect on custom page redirects.",
@@ -442,10 +448,48 @@ module.exports.PagesOptions = {
     "default": "./public"
   }
 };
+module.exports.PagesCustomUrlsOptions = {
+  "choosePassword": {
+    "env": "undefinedCHOOSE_PASSWORD",
+    "help": "The URL to the custom page for password reset."
+  },
+  "expiredVerificationLink": {
+    "env": "undefinedEXPIRED_VERIFICATION_LINK",
+    "help": "The URL to the custom page for email verification -> link expired."
+  },
+  "invalidPasswordResetLink": {
+    "env": "undefinedINVALID_PASSWORD_RESET_LINK",
+    "help": "The URL to the custom page for password reset -> link invalid."
+  },
+  "invalidVerificationLink": {
+    "env": "undefinedINVALID_VERIFICATION_LINK",
+    "help": "The URL to the custom page for email verification -> link invalid."
+  },
+  "linkSendFail": {
+    "env": "undefinedLINK_SEND_FAIL",
+    "help": "The URL to the custom page for email verification -> link send fail."
+  },
+  "linkSendSuccess": {
+    "env": "undefinedLINK_SEND_SUCCESS",
+    "help": "The URL to the custom page for email verification -> resend link -> success."
+  },
+  "passwordResetSuccess": {
+    "env": "undefinedPASSWORD_RESET_SUCCESS",
+    "help": "The URL to the custom page for password reset -> success."
+  },
+  "verifyEmailSuccess": {
+    "env": "undefinedVERIFY_EMAIL_SUCCESS",
+    "help": "The URL to the custom page for email verification -> success."
+  }
+};
 module.exports.CustomPagesOptions = {
   "choosePassword": {
     "env": "PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD",
     "help": "choose password page path"
+  },
+  "expiredVerificationLink": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_EXPIRED_VERIFICATION_LINK",
+    "help": "expired verification link page path"
   },
   "invalidLink": {
     "env": "PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK",

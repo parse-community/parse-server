@@ -245,6 +245,28 @@ export interface PagesOptions {
   /* The API endoint for the pages. Default is the 'apps'.
   :DEFAULT: apps */
   pagesEndpoint: ?string;
+  /* The URLs to the custom pages.
+  :DEFAULT: {} */
+  customUrls: ?PagesCustomUrlsOptions
+}
+
+export interface PagesCustomUrlsOptions {
+  /* The URL to the custom page for email verification -> link send fail. */
+  linkSendFail: ?string;
+  /* The URL to the custom page for password reset. */
+  choosePassword: ?string;
+  /* The URL to the custom page for email verification -> resend link -> success. */
+  linkSendSuccess: ?string;
+  /* The URL to the custom page for email verification -> success. */
+  verifyEmailSuccess: ?string;
+  /* The URL to the custom page for password reset -> success. */
+  passwordResetSuccess: ?string;
+  /* The URL to the custom page for email verification -> link invalid. */
+  invalidVerificationLink: ?string;
+  /* The URL to the custom page for email verification -> link expired. */
+  expiredVerificationLink: ?string;
+  /* The URL to the custom page for password reset -> link invalid. */
+  invalidPasswordResetLink: ?string;
 }
 
 export interface CustomPagesOptions {

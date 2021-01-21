@@ -144,6 +144,11 @@ export class Config {
     } else if (!isString(pages.pagesEndpoint)) {
       throw 'Parse Server option pages.pagesEndpoint must be a string.';
     }
+    if (pages.customUrls === undefined) {
+      pages.customUrls = PagesOptions.customUrls.default;
+    } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
+      throw 'Parse Server option pages.customUrls must be an object.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
