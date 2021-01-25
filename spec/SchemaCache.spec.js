@@ -88,4 +88,17 @@ describe('SchemaCache', () => {
     await sleep(4000);
     expect(await schemaCache.getOneSchema(schema.className)).not.toBeNull();
   });
+
+  it('should be expired', async () => {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const schemaCacheTTL = 2000;
+    const schemaCache = new SchemaCache(cacheController, schemaCacheTTL, true);
+    const schema = {
+      className: 'Class1',
+    };
+    await schemaCache.setAllClasses([schema]);
+    await sleep(3000);
+    expect(await schemaCache.getOneSchema(schema.className)).toBeNull();
+  });
 });
