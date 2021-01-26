@@ -28,6 +28,7 @@ const PIPELINE_KEYS = [
   'redact',
   'replaceRoot',
   'sample',
+  'search',
   'skip',
   'sort',
   'sortByCount',
