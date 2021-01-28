@@ -163,6 +163,9 @@ export class AccountLockout {
    * Removes the account lockout.
    */
   unlockAccount() {
+    if (!this._config.accountLockout || !this._config.accountLockout.unlockOnPasswordReset) {
+      return Promise.resolve();
+    }
     return this._config.database.update(
       '_User',
       { username: this._user.username },

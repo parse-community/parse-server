@@ -126,6 +126,7 @@
  * @interface AccountLockoutOptions
  * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
  * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
+ * @property {Boolean} unlockOnPasswordReset Is true if the account lock should be removed after a successful password reset.
  */
 
 /**
@@ -145,3 +146,4 @@
  * @property {Boolean} enableForAuthenticatedUser Is true if file upload should be allowed for authenticated users.
  * @property {Boolean} enableForPublic Is true if file upload should be allowed for anyone, regardless of user authentication.
  */
+
