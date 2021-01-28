@@ -179,7 +179,7 @@ export const challenge = async (challengeData, authData, adapterConfig = {}, req
 };
 
 export const validateSetUp = async (authData, adapterConfig = {}, req) => {
-  if (!req.auth.user)
+  if (!req.auth.user && !req.auth.isMaster)
     throw new Parse.Error(
       Parse.Error.OTHER_CAUSE,
       'Webauthn can only be configured on an already logged in user.'

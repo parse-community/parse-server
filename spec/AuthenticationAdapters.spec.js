@@ -2820,6 +2820,36 @@ describe('Webauthn', () => {
     expect(webauthnAuthData.counter).toEqual(0);
     expect(typeof webauthnAuthData.publicKey).toEqual('string');
   });
+  it('should register with master key and already created user', async () => {
+    await reconfigureServer({
+      auth: { webauthn: true },
+    });
+    const user = new Parse.User();
+    await user.save({ username: 'username', password: 'password' });
+
+    await reconfigureServer({
+      auth: { webauthn: { options: { rpId: attestationRpId, origin: attestationOrigin } } },
+    });
+
+    await user.save(
+      {
+        authData: {
+          webauthn: {
+            attestation: clientAttestation,
+            signedChallenge: sign({ challenge: attestationChallenge }, jwtSecret),
+          },
+        },
+      },
+      { useMasterKey: true }
+    );
+
+    await user.fetch({ useMasterKey: true });
+    const webauthnAuthData = user.get('authData').webauthn;
+    expect(webauthnAuthData).toBeDefined();
+    expect(webauthnAuthData.id).toEqual(clientAttestation.id);
+    expect(webauthnAuthData.counter).toEqual(0);
+    expect(typeof webauthnAuthData.publicKey).toEqual('string');
+  });
   it('should update registered credential', async () => {
     const server = await reconfigureServer({
       auth: { webauthn: { options: { rpId: attestationRpId, origin: attestationOrigin } } },
