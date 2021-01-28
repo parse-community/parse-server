@@ -4,6 +4,7 @@ import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 import rest from '../rest';
 import Parse from 'parse/node';
+import AccountLockout from '../AccountLockout';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -258,7 +259,11 @@ export class UserController extends AdaptableController {
 
   updatePassword(username, token, password) {
     return this.checkResetTokenValidity(username, token)
-      .then(user => updateUserPassword(user.objectId, password, this.config))
+      .then(user => updateUserPassword(user, password, this.config))
+      .then(user => {
+        const accountLockoutPolicy = new AccountLockout(user, this.config);
+        return accountLockoutPolicy.unlockAccount();
+      })
       .catch(error => {
         if (error && error.message) {
           // in case of Parse.Error, fail with the error message only
@@ -302,16 +307,16 @@ export class UserController extends AdaptableController {
 }
 
 // Mark this private
-function updateUserPassword(userId, password, config) {
+function updateUserPassword(user, password, config) {
   return rest.update(
     config,
     Auth.master(config),
     '_User',
-    { objectId: userId },
+    { objectId: user.objectId },
     {
       password: password,
     }
-  );
+  ).then(() => user);
 }
 
 function buildEmailLink(destination, username, token, config) {

@@ -158,6 +158,20 @@ export class AccountLockout {
       }
     });
   }
+
+  /**
+   * Removes the account lockout.
+   */
+  unlockAccount() {
+    return this._config.database.update(
+      '_User',
+      { username: this._user.username },
+      {
+        _failed_login_count: { __op: 'Delete' },
+        _account_lockout_expires_at: { __op: 'Delete' },
+      },
+    );
+  }
 }
 
 export default AccountLockout;
