@@ -117,7 +117,7 @@ const verifyRegister = async ({ signedChallenge, attestation }, options = {}, co
       return {
         counter: authenticatorInfo.counter,
         publicKey: authenticatorInfo.base64PublicKey,
-        id: authenticatorInfo.base64CredentialID,
+        id: attestation.id,
       };
     }
     throw new Error();
