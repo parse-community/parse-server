@@ -2300,6 +2300,66 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('case insensitive login with username', async () => {
+    let user = new Parse.User();
+    user.set('username', 'test1');
+    user.set('password', 'test');
+    await user.signUp();
+    await Parse.User.logOut();
+    user = new Parse.User();
+    user.set('username', 'TEST1');
+    user.set('password', 'test');
+    await user.logIn();
+  });
+
+  it('case insensitive login with username should fail with wrong password', async done => {
+    let user = new Parse.User();
+    user.set('username', 'test1');
+    user.set('password', 'test');
+    await user.signUp();
+    await Parse.User.logOut();
+    user = new Parse.User();
+    user.set('username', 'TEST1');
+    user.set('password', 'test1');
+    try {
+      await user.logIn();
+      done.fail();
+    } catch (error) {
+      done();
+    }
+  });
+
+  it('case insensitive login with email', async () => {
+    let user = new Parse.User();
+    user.set('username', 'test1');
+    user.set('password', 'test');
+    user.set('email', 'foo@example.com');
+    await user.signUp();
+    await Parse.User.logOut();
+    user = new Parse.User();
+    user.set('username', 'FOO@EXAMPLE.COM');
+    user.set('password', 'test');
+    await user.logIn();
+  });
+
+  it('case insensitive login with email should fail with wrong password', async done => {
+    let user = new Parse.User();
+    user.set('username', 'test1');
+    user.set('password', 'test');
+    user.set('email', 'foo@example.com');
+    await user.signUp();
+    await Parse.User.logOut();
+    user = new Parse.User();
+    user.set('username', 'FOO@EXAMPLE.COM');
+    user.set('password', 'test1');
+    try {
+      await user.logIn();
+      done.fail();
+    } catch (error) {
+      done();
+    }
+  });
+
   it('user cannot update email to existing user', done => {
     const user = new Parse.User();
     user.set('username', 'test1');
@@ -3274,7 +3334,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to emailVerified', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => {},
+      sendVerificationEmail: () => { },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3310,7 +3370,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/me (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => {},
+      sendVerificationEmail: () => { },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3353,7 +3413,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/id (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => {},
+      sendVerificationEmail: () => { },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3398,7 +3458,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on login (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => {},
+      sendVerificationEmail: () => { },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3442,7 +3502,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to hidden fields', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => {},
+      sendVerificationEmail: () => { },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };

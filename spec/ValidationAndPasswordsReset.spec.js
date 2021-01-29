@@ -527,6 +527,39 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
+  it('succeeds sending a password reset email with case insensitive email', done => {
+    reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+      .then(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        user.set('email', 'testCaseInsensitive@parse.com');
+        user
+          .signUp(null)
+          .then(() => Parse.User.requestPasswordReset('TESTCASEINSENSITIVE@parse.com'))
+          .then(
+            () => {
+              done();
+            },
+            error => {
+              done(error);
+            }
+          );
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
+        done();
+      });
+  });
+
   it('does not send verification email if email verification is disabled', done => {
     const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
