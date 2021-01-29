@@ -222,7 +222,10 @@ export class UserController extends AdaptableController {
             { username: email, email: { $exists: false }, _perishable_token: { $exists: true } },
           ],
         },
-        { limit: 1 }
+        {
+          limit: 1,
+          caseInsensitive: true,
+        }
       );
       if (results.length == 1) {
         let expiresDate = results[0]._perishable_token_expires_at;
