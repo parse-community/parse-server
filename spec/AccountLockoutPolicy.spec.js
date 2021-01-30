@@ -351,7 +351,8 @@ describe('lockout with password reset option', () => {
       {
         duration: 10000,
         threshold: 1,
-      }, options
+      },
+      options
     );
     const config = {
       appName: 'exampleApp',
@@ -377,7 +378,7 @@ describe('lockout with password reset option', () => {
   });
 
   it('rejects invalid unlockOnPasswordReset option', async () => {
-    const values = ["a", 0, {}, [], null];
+    const values = ['a', 0, {}, [], null];
 
     for (const value of values) {
       await expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected();
@@ -388,7 +389,9 @@ describe('lockout with password reset option', () => {
     await expectAsync(setup({ unlockOnPasswordReset: undefined })).toBeResolved();
 
     const parseConfig = Config.get(Parse.applicationId);
-    expect(parseConfig.accountLockout.unlockOnPasswordReset).toBe(Definitions.AccountLockoutOptions.unlockOnPasswordReset.default);
+    expect(parseConfig.accountLockout.unlockOnPasswordReset).toBe(
+      Definitions.AccountLockoutOptions.unlockOnPasswordReset.default
+    );
   });
 
   it('allow login for locked account after password reset', async () => {

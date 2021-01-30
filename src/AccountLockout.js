@@ -172,7 +172,7 @@ export class AccountLockout {
       {
         _failed_login_count: { __op: 'Delete' },
         _account_lockout_expires_at: { __op: 'Delete' },
-      },
+      }
     );
   }
 }
