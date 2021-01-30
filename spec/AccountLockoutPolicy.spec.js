@@ -407,6 +407,8 @@ describe('lockout with password reset option', () => {
     await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
 
     await Parse.User.requestPasswordReset(user.getEmail());
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
     const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
     const linkUrl = new URL(link);
     const token = linkUrl.searchParams.get('token');
@@ -440,6 +442,8 @@ describe('lockout with password reset option', () => {
     await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
 
     await Parse.User.requestPasswordReset(user.getEmail());
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
     const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
     const linkUrl = new URL(link);
     const token = linkUrl.searchParams.get('token');
