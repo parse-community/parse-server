@@ -141,7 +141,7 @@ class ParseLiveQueryServer {
         if (typeof client === 'undefined') {
           continue;
         }
-        for (const requestId of requestIds) {
+        requestsIds.forEach(async requestId => {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
@@ -237,7 +237,7 @@ class ParseLiveQueryServer {
         if (typeof client === 'undefined') {
           continue;
         }
-        for (const requestId of requestIds) {
+        requestsIds.forEach(async requestId => {
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
