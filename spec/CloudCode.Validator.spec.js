@@ -860,7 +860,7 @@ describe('cloud validator', () => {
       });
   });
 
-  it('basic validator requireUserRoles', async function (done) {
+  it('basic validator requireUserRole', async function (done) {
     Parse.Cloud.define(
       'cloudFunction',
       () => {
@@ -868,7 +868,7 @@ describe('cloud validator', () => {
       },
       {
         requireUser: true,
-        requireUserRoles: ['Admin'],
+        requireUserRole: ['Admin'],
       }
     );
     const user = await Parse.User.signUp('testuser', 'p@ssword');
@@ -883,6 +883,36 @@ describe('cloud validator', () => {
     const role = new Parse.Role('Admin', roleACL);
     role.getUsers().add(user);
     await role.save({ useMasterKey: true });
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
+  it('basic validator requireUserRoles', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireUser: true,
+        requireUserRoles: ['Admin', 'Admin2'],
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. User does not match all the required roles.');
+    }
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('Admin', roleACL);
+    role.getUsers().add(user);
+
+    const role2 = new Parse.Role('Admin2', roleACL);
+    role2.getUsers().add(user);
+    await Promise.all([role.save({ useMasterKey: true }), role2.save({ useMasterKey: true })]);
     await Parse.Cloud.run('cloudFunction');
     done();
   });

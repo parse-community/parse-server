@@ -641,7 +641,7 @@ async function builtInTriggerValidator(options, request, auth) {
   ) {
     reqUser = request.object;
   }
-  if ((options.requireUser || options.requireUserRoles) && !reqUser) {
+  if ((options.requireUser || options.requireUserRole || options.requireUserRoles) && !reqUser) {
     throw 'Validation failed. Please login to continue.';
   }
   if (options.requireMaster && !request.master) {
@@ -733,12 +733,23 @@ async function builtInTriggerValidator(options, request, auth) {
       }
     }
   }
-  const userRoles = options.requireUserRoles;
+  const userRoles = options.requireUserRole;
+  const requireAllRoles = options.requireUserRoles;
+  let roles;
+  if (userRoles || requireAllRoles) {
+    roles = await auth.getUserRoles();
+  }
   if (userRoles) {
-    const roles = await auth.getUserRoles();
     const hasRole = userRoles.some(requiredRole => roles.includes(`role:${requiredRole}`));
     if (!hasRole) {
       throw `Validation failed. User does not match the required roles.`;
+    }
+  }
+  if (requireAllRoles) {
+    for (const requiredRole of requireAllRoles) {
+      if (!roles.includes(`role:${requiredRole}`)) {
+        throw `Validation failed. User does not match all the required roles.`;
+      }
     }
   }
   const userKeys = options.requireUserKeys || [];
