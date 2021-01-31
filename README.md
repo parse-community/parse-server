@@ -532,7 +532,7 @@ root/
 │   └── translations.json    // JSON resource file
 ```
 
-The JSON resource file loosely follows the i18next syntax, which is a popular syntax that is often supported by translation platforms, making it easy to manage translations, exporting them for use in Parse Server, and even to automate this workflow.
+The JSON resource file loosely follows the [i18next](https://github.com/i18next/i18next) syntax, which is a syntax that is often supported by translation platforms, making it easy to manage translations, exporting them for use in Parse Server, and even to automate this workflow.
 
 **Example JSON Content:**
 ```json
