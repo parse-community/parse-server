@@ -1280,7 +1280,7 @@ describe('cloud validator', () => {
       fields: true,
     });
     expect(logger.error).toHaveBeenCalledWith(
-      'requiredUser is not a supported paramter for Parse.Cloud validators.'
+      'requiredUser is not a supported parameter for Parse.Cloud validators.'
     );
     expect(logger.error).toHaveBeenCalledWith(
       'Invalid type for Parse.Cloud validator key requireUser. Expected boolean, actual array'
@@ -1311,9 +1311,13 @@ describe('cloud validator', () => {
           constant: ['foo'],
           required: ['foo'],
           error: ['foo'],
+          otherKey: true,
         },
       },
     });
+    expect(logger.error).toHaveBeenCalledWith(
+      'otherKey is not a supported parameter for Parse.Cloud validators.'
+    );
     expect(logger.error).toHaveBeenCalledWith(
       'Invalid type for Parse.Cloud validator key constant. Expected boolean, actual array'
     );
