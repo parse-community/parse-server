@@ -11,7 +11,6 @@ const fs = require('fs').promises;
  * The general purpose utilities.
  */
 class Utils {
-
   /**
    * @function getLocalizedPath
    * @description Returns a localized file path accoring to the locale.
@@ -41,28 +40,33 @@ class Utils {
    *   there is no matching localized file.
    */
   static async getLocalizedPath(defaultPath, locale) {
-
     // Get file name and paths
     const file = path.basename(defaultPath);
     const basePath = path.dirname(defaultPath);
 
     // If locale is not set return default file
-    if (!locale) { return { path: defaultPath }; }
+    if (!locale) {
+      return { path: defaultPath };
+    }
 
     // Check file for locale exists
     const localePath = path.join(basePath, locale, file);
     const localeFileExists = await Utils.fileExists(localePath);
 
     // If file for locale exists return file
-    if (localeFileExists) { return { path: localePath, subdir: locale }; }
+    if (localeFileExists) {
+      return { path: localePath, subdir: locale };
+    }
 
     // Check file for language exists
-    const language = locale.split("-")[0];
+    const language = locale.split('-')[0];
     const languagePath = path.join(basePath, language, file);
     const languageFileExists = await Utils.fileExists(languagePath);
 
     // If file for language exists return file
-    if (languageFileExists) { return { path: languagePath, subdir: language }; }
+    if (languageFileExists) {
+      return { path: languagePath, subdir: language };
+    }
 
     // Return default file
     return { path: defaultPath };
@@ -91,6 +95,28 @@ class Utils {
    */
   static isPath(s) {
     return /(^\/)|(^\.\/)|(^\.\.\/)/.test(s);
+  }
+
+  /**
+   * Flattens an object and crates new keys with custom delimiters.
+   * @param {Object} obj The object to flatten.
+   * @param {String} [delimiter='.'] The delimiter of the newly generated keys.
+   * @param {Object} result
+   * @returns {Object} The flattened object.
+   **/
+  static flattenObject(obj, parentKey, delimiter = '.', result = {}) {
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const newKey = parentKey ? parentKey + delimiter + key : key;
+
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+          this.flattenObject(obj[key], newKey, delimiter, result);
+        } else {
+          result[newKey] = obj[key];
+        }
+      }
+    }
+    return result;
   }
 }
 

@@ -6,11 +6,7 @@ import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
-import {
-  IdempotencyOptions,
-  FileUploadOptions,
-  PagesOptions,
-} from './Options/Definitions';
+import { IdempotencyOptions, FileUploadOptions, PagesOptions } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
@@ -128,6 +124,16 @@ export class Config {
       pages.enableLocalization = PagesOptions.enableLocalization.default;
     } else if (!isBoolean(pages.enableLocalization)) {
       throw 'Parse Server option pages.enableLocalization must be a boolean.';
+    }
+    if (pages.localizationJsonPath === undefined) {
+      pages.localizationJsonPath = PagesOptions.localizationJsonPath.default;
+    } else if (!isString(pages.localizationJsonPath)) {
+      throw 'Parse Server option pages.localizationJsonPath must be a string.';
+    }
+    if (pages.localizationFallbackLocale === undefined) {
+      pages.localizationFallbackLocale = PagesOptions.localizationFallbackLocale.default;
+    } else if (!isString(pages.localizationFallbackLocale)) {
+      throw 'Parse Server option pages.localizationFallbackLocale must be a string.';
     }
     if (pages.forceRedirect === undefined) {
       pages.forceRedirect = PagesOptions.forceRedirect.default;

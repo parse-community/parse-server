@@ -156,9 +156,12 @@ class ParseServer {
       });
     });
 
-    api.use('/', bodyParser.urlencoded({ extended: false }), pages.enableRouter
-      ? new PagesRouter(pages).expressRouter()
-      : new PublicAPIRouter().expressRouter()
+    api.use(
+      '/',
+      bodyParser.urlencoded({ extended: false }),
+      pages.enableRouter
+        ? new PagesRouter(pages).expressRouter()
+        : new PublicAPIRouter().expressRouter()
     );
 
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));

@@ -236,6 +236,11 @@ export interface PagesOptions {
   /* Is true if pages should be localized; this has no effect on custom page redirects.
   :DEFAULT: false */
   enableLocalization: ?boolean;
+  /* The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale. */
+  localizationJsonPath: ?string;
+  /* The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
+  :DEFAULT: en */
+  localizationFallbackLocale: ?string;
   /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
   :DEFAULT: false */
   forceRedirect: ?boolean;
@@ -247,7 +252,7 @@ export interface PagesOptions {
   pagesEndpoint: ?string;
   /* The URLs to the custom pages.
   :DEFAULT: {} */
-  customUrls: ?PagesCustomUrlsOptions
+  customUrls: ?PagesCustomUrlsOptions;
 }
 
 export interface PagesCustomUrlsOptions {

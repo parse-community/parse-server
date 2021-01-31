@@ -19,6 +19,7 @@ const pages = Object.freeze({
   emailVerificationLinkInvalid: new Page({ id: 'emailVerificationLinkInvalid', defaultFile: 'email_verification_link_invalid.html' }),
   emailVerificationLinkExpired: new Page({ id: 'emailVerificationLinkExpired', defaultFile: 'email_verification_link_expired.html' }),
 });
+
 // All page parameters for reference to be used as template placeholders or query params
 const pageParams = Object.freeze({
   appName: 'appName',
@@ -29,8 +30,15 @@ const pageParams = Object.freeze({
   locale: 'locale',
   publicServerUrl: 'publicServerUrl',
 });
+
 // The header prefix to add page params as response headers
 const pageParamHeaderPrefix = 'x-parse-page-param-';
+
+// The errors being thrown
+const errors = Object.freeze({
+  jsonFailedFileLoading: "failed to load JSON file",
+  fileOutsideAllowedScope: "not allowed to read file outside of pages directory"
+});
 
 export class PagesRouter extends PromiseRouter {
   /**
@@ -40,12 +48,15 @@ export class PagesRouter extends PromiseRouter {
   constructor(pages = {}) {
     super();
 
+    // Set instance properties
+    this.pagesConfig = pages;
     this.pagesEndpoint = pages.pagesEndpoint
       ? pages.pagesEndpoint
       : 'apps';
     this.pagesPath = pages.pagesPath
       ? path.resolve('./', pages.pagesPath)
       : path.resolve(__dirname, '../../public');
+    this.loadJsonResource();
     this.mountPagesRoutes();
   }
 
@@ -232,7 +243,7 @@ export class PagesRouter extends PromiseRouter {
    * should depend on the request type by default:
    * - GET request -> content response
    * - POST request -> redirect response (PRG pattern)
-   * @returns {Promise<Object>} The express response.
+   * @returns {Promise<Object>} The PromiseRouter response.
    */
   goToPage(req, page, params = {}, responseType) {
     const config = req.config;
@@ -245,11 +256,7 @@ export class PagesRouter extends PromiseRouter {
         : req.method == 'POST';
 
     // Include default parameters
-    const defaultParams = {
-      [pageParams.appId]: config.appId,
-      [pageParams.appName]: config.appName,
-      [pageParams.publicServerUrl]: config.publicServerURL,
-    };
+    const defaultParams = this.getDefaultParams(config);
     if (Object.values(defaultParams).includes(undefined)) {
       return this.notFound();
     }
@@ -258,11 +265,7 @@ export class PagesRouter extends PromiseRouter {
     // Add locale to params to ensure it is passed on with every request;
     // that means, once a locale is set, it is passed on to any follow-up page,
     // e.g. request_password_reset -> password_reset -> passwort_reset_success
-    const locale =
-      (req.query || {})[pageParams.locale]
-      || (req.body || {})[pageParams.locale]
-      || (req.params || {})[pageParams.locale]
-      || (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+    const locale = this.getLocale(req);
     params[pageParams.locale] = locale;
 
     // Compose paths and URLs
@@ -291,27 +294,119 @@ export class PagesRouter extends PromiseRouter {
   }
 
   /**
+   * Serves a request to a static resource and localizes the resource if it
+   * is a HTML file.
+   * @param {Object} req The request object.
+   * @returns {Promise<Object>} The response.
+   */
+  staticRoute(req) {
+    // Get requested path
+    const relativePath = req.params[0];
+
+    // Resolve requested path to absolute path
+    const absolutePath = path.resolve(this.pagesPath, relativePath);
+
+    // If the requested file is not a HTML file send its raw content
+    if (!absolutePath || !absolutePath.endsWith('.html')) {
+      return this.fileResponse(absolutePath);
+    }
+
+    // Get default parameters
+    const params = this.getDefaultParams(req.config);
+
+    // Get locale
+    const locale = this.getLocale(req);
+    let placeholders = {};
+
+    // If localization is enabled and there is JSON resource is set
+    if (this.pagesConfig.enableLocalization && this.pagesConfig.localizationJsonPath) {
+      // Get JSON placeholders for locale
+      placeholders = this.getJsonPlaceholders(locale);
+
+      // Fill any placeholders within the localized params;
+      // this allows a translation string to contain default
+      // placeholders like {{appName}} which are filled here
+      placeholders = JSON.stringify(placeholders);
+      placeholders = mustache.render(placeholders, params);
+      placeholders = JSON.parse(placeholders);
+    }
+
+    return this.pageResponse(absolutePath, params, placeholders);
+  }
+
+  /**
+   * Returns a translation from the JSON resource for a given locale. The JSON
+   * resource is parsed according to i18next syntax.
+   *
+   * Example JSON content:
+   * ```js
+   *  {
+   *    "en": {               // resource for language `en` (English)
+   *      "translation": {
+   *        "greeting": "Hello!"
+   *      }
+   *    },
+   *    "de": {               // resource for language `de` (German)
+   *      "translation": {
+   *        "greeting": "Hallo!"
+   *      }
+   *    }
+   *    "de-CH": {            // resource for locale `de-CH` (Swiss German)
+   *      "translation": {
+   *        "greeting": "Grüezi!"
+   *      }
+   *    }
+   *  }
+   * ```
+   * @param {String} locale The locale to translate to.
+   * @returns {Object} The translation keys or an empty object if no matching
+   * translation was found.
+   */
+  getJsonPlaceholders(locale) {
+
+    // If there is no JSON resource
+    if (this.jsonParameters === undefined) {
+      return {};
+    }
+
+    // If locale is not set use the fallback locale
+    locale = locale || this.pagesConfig.localizationFallbackLocale;
+
+    // Get matching translation by locale, language or fallback locale
+    const language = locale.split("-")[0];
+    const resource = this.jsonParameters[locale]
+      || this.jsonParameters[language]
+      || this.jsonParameters[this.pagesConfig.localizationFallbackLocale]
+      || {};
+    const translation = resource.translation || {};
+    return translation;
+  }
+
+  /**
    * Creates a response with file content.
    * @param {String} path The path of the file to return.
-   * @param {Object} placeholders The placeholders to fill in the
-   * content.
+   * @param {Object} [params={}] The parameters to be included in the response
+   * header. These will also be used to fill placeholders.
+   * @param {Object} [placeholders={}] The placeholders to fill in the content.
+   * These will not be included in the response header.
    * @returns {Object} The Promise Router response.
    */
-  async pageResponse(path, placeholders) {
+  async pageResponse(path, params = {}, placeholders = {}) {
     // Get file content
     let data;
     try {
-      data = await fs.readFile(path, 'utf-8');
+      data = await this.readFile(path);
     } catch (e) {
       return this.notFound();
     }
 
     // Fill placeholders
-    data = mustache.render(data, placeholders);
+    const allPlaceholders = Object.assign({}, params, placeholders);
+    data = mustache.render(data, allPlaceholders);
 
     // Add placeholers in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
-    const headers = Object.entries(placeholders).reduce((m, p) => {
+    const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
         m[`${pageParamHeaderPrefix}${p[0].toLowerCase()}`] = p[1];
       }
@@ -319,6 +414,96 @@ export class PagesRouter extends PromiseRouter {
     }, {});
 
     return { text: data, headers: headers };
+  }
+
+  /**
+   * Creates a response with file content.
+   * @param {String} path The path of the file to return.
+   * @returns {Object} The PromiseRouter response.
+   */
+  async fileResponse(path) {
+    // Get file content
+    let data;
+    try {
+      data = await this.readFile(path);
+    } catch (e) {
+      return this.notFound();
+    }
+
+    return { text: data };
+  }
+
+  /**
+   * Reads and returns the contet of a file at a given path. File reading to
+   * serve content on the static route is only allowed from the pages
+   * directory on downwards.
+   * -----------------------------------------------------------------------
+   * **WARNING:** All file reads in the PagesRouter must be executed by this
+   * wrapper because it also detects and prevents common exploits.
+   * -----------------------------------------------------------------------
+   * @param {String} filePath The path to the file to read.
+   * @returns {Promise<String>} The file content.
+   */
+  async readFile(filePath) {
+
+    // Normalize path to prevent it from containing any directory changing
+    // UNIX patterns which could expose the whole file system, e.g.
+    // `http://example.com/parse/apps/../file.txt` requests a file outside
+    // of the pages directory scope.
+    const normalizedPath = path.normalize(filePath);
+
+    // Abort if the path is outside of the path directory scope
+    if (!normalizedPath.startsWith(this.pagesPath)) {
+      throw(errors.fileOutsideAllowedScope);
+    }
+
+    return await fs.readFile(normalizedPath, 'utf-8');
+  }
+
+  /**
+   * Loads a language resource JSON file that is used for translations.
+   */
+  loadJsonResource() {
+    if (this.pagesConfig.localizationJsonPath === undefined) {
+      return;
+    }
+    try {
+      const json = require(path.resolve('./', this.pagesConfig.localizationJsonPath));
+      this.jsonParameters = json;
+    } catch (e) {
+      throw(errors.jsonFailedFileLoading);
+    }
+  }
+
+  /**
+   * Extracts and returns the page default parameters from the Parse Server
+   * configuration. These parameters are made accessible in every page served
+   * by this router.
+   * @param {Object} config The Parse Server configuration.
+   * @returns {Object} The default parameters.
+   */
+  getDefaultParams(config) {
+    return config
+      ? {
+        [pageParams.appId]: config.appId,
+        [pageParams.appName]: config.appName,
+        [pageParams.publicServerUrl]: config.publicServerURL,
+      }
+      : {};
+  }
+
+  /**
+   * Extracts and returns the locale from an express request.
+   * @param {Object} req The express request.
+   * @returns {String|undefined} The locale, or undefined if no locale was set.
+   */
+  getLocale(req) {
+    const locale =
+      (req.query || {})[pageParams.locale]
+      || (req.body || {})[pageParams.locale]
+      || (req.params || {})[pageParams.locale]
+      || (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+    return locale;
   }
 
   /**
@@ -385,9 +570,16 @@ export class PagesRouter extends PromiseRouter {
     throw error;
   }
 
-  setConfig(req) {
+  /**
+   * Sets the Parse Server configuration in the request object to make it
+   * easily accessible throughtout request processing.
+   * @param {Object} req The request.
+   * @param {Boolean} failGracefully Is true if failing to set the config should
+   * not result in an invalid request response. Default is `false`.
+   */
+  setConfig(req, failGracefully = false) {
     req.config = Config.get(req.params.appId || req.query.appId);
-    if (!req.config) {
+    if (!req.config && !failGracefully) {
       this.invalidRequest();
     }
     return Promise.resolve();
@@ -448,11 +640,21 @@ export class PagesRouter extends PromiseRouter {
         return this.requestResetPassword(req);
       }
     );
+
+    this.route(
+      'GET',
+      `/${this.pagesEndpoint}/(*)?`,
+      req => {
+        this.setConfig(req, true);
+      },
+      req => {
+        return this.staticRoute(req);
+      }
+    );
   }
 
   expressRouter() {
     const router = express.Router();
-    router.use(`/${this.pagesEndpoint}`, express.static(this.pagesPath));
     router.use('/', super.expressRouter());
     return router;
   }
@@ -461,6 +663,7 @@ export class PagesRouter extends PromiseRouter {
 export default PagesRouter;
 module.exports = {
   PagesRouter,
+  pageParamHeaderPrefix,
   pageParams,
   pages,
 };

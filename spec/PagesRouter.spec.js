@@ -2,22 +2,29 @@
 
 const request = require('../lib/request');
 const fs = require('fs').promises;
+const mustache = require('mustache');
 const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const Definitions = require('../lib/Options/Definitions');
 const UserController = require('../lib/Controllers/UserController').UserController;
-const { PagesRouter, pages, pageParams } = require('../lib/Routers/PagesRouter');
+const {
+  PagesRouter,
+  pages,
+  pageParams,
+  pageParamHeaderPrefix,
+} = require('../lib/Routers/PagesRouter');
 
 describe('Pages Router', () => {
   describe('basic request', () => {
-    const config = {
-      appId: 'test',
-      appName: 'exampleAppname',
-      publicServerURL: 'http://localhost:8378/1',
-      pages: { enableRouter: true },
-    };
+    let config;
 
     beforeEach(async () => {
+      config = {
+        appId: 'test',
+        appName: 'exampleAppname',
+        publicServerURL: 'http://localhost:8378/1',
+        pages: { enableRouter: true },
+      };
       await reconfigureServer(config);
     });
 
@@ -40,7 +47,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: 'http://localhost:8378/1/apps/email_verification_link_invalid.html'
+        url: 'http://localhost:8378/1/apps/email_verification_link_invalid.html',
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -51,7 +58,7 @@ describe('Pages Router', () => {
       await reconfigureServer(_config);
 
       const response = await request({
-        url: `http://localhost:8378/1/pages/email_verification_link_invalid.html`
+        url: `http://localhost:8378/1/pages/email_verification_link_invalid.html`,
       }).catch(e => e);
       expect(response.status).toBe(200);
     });
@@ -59,7 +66,7 @@ describe('Pages Router', () => {
     it('responds with 404 if publicServerURL is not confgured', async () => {
       await reconfigureServer({
         appName: 'unused',
-        pages: { enableRouter: true }
+        pages: { enableRouter: true },
       });
       const urls = [
         'http://localhost:8378/1/apps/test/verify_email',
@@ -78,7 +85,7 @@ describe('Pages Router', () => {
         { url: 'http://localhost:8378/1/apps/choose_password?id=invalid', method: 'GET' },
         { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'GET' },
         { url: 'http://localhost:8378/1/apps/invalid/request_password_reset', method: 'POST' },
-        { url: 'http://localhost:8378/1/apps/invalid/resend_verification_email', method: 'GET' },
+        { url: 'http://localhost:8378/1/apps/invalid/resend_verification_email', method: 'POST' },
       ];
       for (const req of reqs) {
         const response = await request(req).catch(e => e);
@@ -170,53 +177,45 @@ describe('Pages Router', () => {
   describe('pages', () => {
     let router = new PagesRouter();
     let req;
+    let config;
     let goToPage;
     let pageResponse;
     let redirectResponse;
     let readFile;
-    const exampleLocale = 'de-AT';
-    const config = {
-      appId: 'test',
-      appName: 'ExampleAppName',
-      verifyUserEmails: true,
-      emailAdapter: {
-        sendVerificationEmail: () => Promise.resolve(),
-        sendPasswordResetEmail: () => Promise.resolve(),
-        sendMail: () => {},
-      },
-      publicServerURL: 'http://localhost:8378/1',
-      pages: {
-        enableRouter: true,
-        enableLocalization: true,
-        customUrls: {},
-      },
-    };
-    async function reconfigureServerWithPageOptions(options) {
-      await reconfigureServer({
-        appId: Parse.applicationId,
-        masterKey: Parse.masterKey,
-        serverURL: Parse.serverURL,
-        pages: options,
-      });
+    let exampleLocale;
+
+    const fillPlaceholders = (text, fill) => text.replace(/({{2,3}.*?}{2,3})/g, fill);
+    async function reconfigureServerWithPagesConfig(pagesConfig) {
+      config.pages = pagesConfig;
+      await reconfigureServer(config);
     }
 
     beforeEach(async () => {
       router = new PagesRouter();
       readFile = spyOn(fs, 'readFile').and.callThrough();
-      goToPage = spyOn(PagesRouter.prototype, 'goToPage').and.callThrough()
-      pageResponse = spyOn(PagesRouter.prototype, 'pageResponse').and.callThrough()
+      goToPage = spyOn(PagesRouter.prototype, 'goToPage').and.callThrough();
+      pageResponse = spyOn(PagesRouter.prototype, 'pageResponse').and.callThrough();
       redirectResponse = spyOn(PagesRouter.prototype, 'redirectResponse').and.callThrough();
+      exampleLocale = 'de-AT';
+      config = {
+        appId: 'test',
+        appName: 'ExampleAppName',
+        verifyUserEmails: true,
+        emailAdapter: {
+          sendVerificationEmail: () => Promise.resolve(),
+          sendPasswordResetEmail: () => Promise.resolve(),
+          sendMail: () => {},
+        },
+        publicServerURL: 'http://localhost:8378/1',
+        pages: {
+          enableRouter: true,
+          enableLocalization: true,
+          customUrls: {},
+        },
+      };
       req = {
         method: 'GET',
-        config: {
-          appId: 'test',
-          appName: 'ExampleAppName',
-          publicServerURL: 'http://localhost:8378/1',
-          pages: {
-            enableLocalization: true,
-            customUrls: {},
-          },
-        },
+        config,
         query: {
           locale: exampleLocale,
         },
@@ -225,12 +224,18 @@ describe('Pages Router', () => {
 
     describe('server options', () => {
       it('uses default configuration when none is set', async () => {
-        await reconfigureServerWithPageOptions({});
+        await reconfigureServerWithPagesConfig({});
         expect(Config.get(Parse.applicationId).pages.enableRouter).toBe(
           Definitions.PagesOptions.enableRouter.default
         );
         expect(Config.get(Parse.applicationId).pages.enableLocalization).toBe(
           Definitions.PagesOptions.enableLocalization.default
+        );
+        expect(Config.get(Parse.applicationId).pages.localizationJsonPath).toBe(
+          Definitions.PagesOptions.localizationJsonPath.default
+        );
+        expect(Config.get(Parse.applicationId).pages.localizationFallbackLocale).toBe(
+          Definitions.PagesOptions.localizationFallbackLocale.default
         );
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
           Definitions.PagesOptions.forceRedirect.default
@@ -276,9 +281,17 @@ describe('Pages Router', () => {
           { customUrls: 0 },
           { customUrls: 'a' },
           { customUrls: [] },
+          { localizationJsonPath: true },
+          { localizationJsonPath: 0 },
+          { localizationJsonPath: {} },
+          { localizationJsonPath: [] },
+          { localizationFallbackLocale: true },
+          { localizationFallbackLocale: 0 },
+          { localizationFallbackLocale: {} },
+          { localizationFallbackLocale: [] },
         ];
         for (const option of options) {
-          await expectAsync(reconfigureServerWithPageOptions(option)).toBeRejected();
+          await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();
         }
       });
     });
@@ -334,11 +347,15 @@ describe('Pages Router', () => {
       });
 
       it('returns custom page regardless of localization enabled', async () => {
-        req.config.pages.customUrls = { passwordResetLinkInvalid: 'http://invalid-link.example.com' };
+        req.config.pages.customUrls = {
+          passwordResetLinkInvalid: 'http://invalid-link.example.com',
+        };
 
         await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse).not.toHaveBeenCalled();
-        expect(redirectResponse.calls.all()[0].args[0]).toBe(req.config.pages.customUrls.passwordResetLinkInvalid);
+        expect(redirectResponse.calls.all()[0].args[0]).toBe(
+          req.config.pages.customUrls.passwordResetLinkInvalid
+        );
       });
 
       it('returns file for locale match', async () => {
@@ -352,7 +369,9 @@ describe('Pages Router', () => {
       it('returns file for language match', async () => {
         // Pretend no locale matching file exists
         spyOn(Utils, 'fileExists').and.callFake(async path => {
-          return !path.includes(`/${req.query.locale}/${pages.passwordResetLinkInvalid.defaultFile}`);
+          return !path.includes(
+            `/${req.query.locale}/${pages.passwordResetLinkInvalid.defaultFile}`
+          );
         });
 
         await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
@@ -371,7 +390,146 @@ describe('Pages Router', () => {
           new RegExp(`\/yo(-LO)?\/${pages.passwordResetLinkInvalid.defaultFile}`)
         );
       });
+    });
 
+    describe('localization with JSON resource', () => {
+      let jsonPageFile;
+      let jsonPageUrl;
+      let jsonResource;
+
+      beforeEach(async () => {
+        jsonPageFile = 'custom_json.html';
+        jsonPageUrl = new URL(`${config.publicServerURL}/apps/${jsonPageFile}`);
+        jsonResource = require('../public/custom_json.json');
+      });
+
+      it('does not localize with JSON resource if localization is disabled', async () => {
+        config.pages.enableLocalization = false;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
+
+        const response = await request({
+          url: jsonPageUrl.toString(),
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+        expect(pageResponse.calls.all()[0].args[1]).toEqual({});
+        expect(pageResponse.calls.all()[0].args[2]).toEqual({});
+
+        // Ensure header contains no page params
+        const pageParamHeaders = Object.keys(response.headers).filter(header =>
+          header.startsWith(pageParamHeaderPrefix)
+        );
+        expect(pageParamHeaders.length).toBe(0);
+
+        // Ensure page response does not contain any translation
+        const flattenedJson = Utils.flattenObject(jsonResource);
+        for (const value of Object.values(flattenedJson)) {
+          const valueWithoutPlaceholder = fillPlaceholders(value, '');
+          expect(response.text).not.toContain(valueWithoutPlaceholder);
+        }
+      });
+
+      it('localizes with JSON resource and fallback locale', async () => {
+        config.pages.enableLocalization = true;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
+
+        const response = await request({
+          url: jsonPageUrl.toString(),
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+
+        // Ensure page response contains translation of fallback locale
+        const translation = jsonResource[config.pages.localizationFallbackLocale].translation;
+        for (const value of Object.values(translation)) {
+          const valueWithoutPlaceholder = fillPlaceholders(value, '');
+          expect(response.text).toContain(valueWithoutPlaceholder);
+        }
+      });
+
+      it('localizes with JSON resource and request locale', async () => {
+        config.pages.enableLocalization = true;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
+
+        // Add locale to request URL
+        jsonPageUrl.searchParams.set('locale', exampleLocale);
+
+        const response = await request({
+          url: jsonPageUrl.toString(),
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+
+        // Ensure page response contains translations of request locale
+        const translation = jsonResource[exampleLocale].translation;
+        for (const value of Object.values(translation)) {
+          const valueWithoutPlaceholder = fillPlaceholders(value, '');
+          expect(response.text).toContain(valueWithoutPlaceholder);
+        }
+      });
+
+      it('localizes with JSON resource and language matching request locale', async () => {
+        config.pages.enableLocalization = true;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
+
+        // Add locale to request URL that has no locale match but only a language
+        // match in the JSON resource
+        jsonPageUrl.searchParams.set('locale', 'de-CH');
+
+        const response = await request({
+          url: jsonPageUrl.toString(),
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+
+        // Ensure page response contains translations of requst language
+        const translation = jsonResource['de'].translation;
+        for (const value of Object.values(translation)) {
+          const valueWithoutPlaceholder = fillPlaceholders(value, '');
+          expect(response.text).toContain(valueWithoutPlaceholder);
+        }
+      });
+
+      it('localizes with JSON resource and fills placeholders in JSON values', async () => {
+        config.pages.enableLocalization = true;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
+
+        // Add app ID to request URL so that the request is assigned to a Parse Server app
+        // and placeholders within translations strings can be replaced with default page
+        // parameters such as `appId`
+        jsonPageUrl.searchParams.set('appId', config.appId);
+        jsonPageUrl.searchParams.set('locale', exampleLocale);
+
+        const response = await request({
+          url: jsonPageUrl.toString(),
+          followRedirects: false,
+        });
+        expect(response.status).toBe(200);
+
+        // Fill placeholders in transation
+        let translation = jsonResource[exampleLocale].translation;
+        translation = JSON.stringify(translation);
+        translation = mustache.render(translation, { appName: config.appName });
+        translation = JSON.parse(translation);
+
+        // Ensure page response contains translation of request locale
+        for (const value of Object.values(translation)) {
+          expect(response.text).toContain(value);
+        }
+      });
+    });
+
+    describe('response type', () => {
       it('returns a file for GET request', async () => {
         await expectAsync(router.goToPage(req, pages.passwordResetLinkInvalid)).toBeResolved();
         expect(pageResponse).toHaveBeenCalled();
@@ -386,7 +544,9 @@ describe('Pages Router', () => {
       });
 
       it('returns a redirect for custom pages for GET and POST request', async () => {
-        req.config.pages.customUrls = { passwordResetLinkInvalid: 'http://invalid-link.example.com' };
+        req.config.pages.customUrls = {
+          passwordResetLinkInvalid: 'http://invalid-link.example.com',
+        };
 
         for (const method of ['GET', 'POST']) {
           req.method = method;
@@ -405,7 +565,9 @@ describe('Pages Router', () => {
           method: 'POST',
         });
         expect(response.status).toEqual(303);
-        expect(response.headers.location).toContain('http://localhost:8378/1/apps/de-AT/password_reset_link_invalid.html');
+        expect(response.headers.location).toContain(
+          'http://localhost:8378/1/apps/de-AT/password_reset_link_invalid.html'
+        );
       });
 
       it('responds to GET request with content response', async () => {
@@ -424,7 +586,10 @@ describe('Pages Router', () => {
     describe('end-to-end tests', () => {
       it('localizes end-to-end for password reset: success', async () => {
         await reconfigureServer(config);
-        const sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
+        const sendPasswordResetEmail = spyOn(
+          config.emailAdapter,
+          'sendPasswordResetEmail'
+        ).and.callThrough();
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
@@ -472,12 +637,17 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(200);
-        expect(pageResponse.calls.all()[0].args[0]).toContain(`/${locale}/${pages.passwordResetSuccess.defaultFile}`);
+        expect(pageResponse.calls.all()[0].args[0]).toContain(
+          `/${locale}/${pages.passwordResetSuccess.defaultFile}`
+        );
       });
 
       it('localizes end-to-end for password reset: invalid link', async () => {
         await reconfigureServer(config);
-        const sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
+        const sendPasswordResetEmail = spyOn(
+          config.emailAdapter,
+          'sendPasswordResetEmail'
+        ).and.callThrough();
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
@@ -504,7 +674,10 @@ describe('Pages Router', () => {
 
       it('localizes end-to-end for verify email: success', async () => {
         await reconfigureServer(config);
-        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
@@ -529,7 +702,10 @@ describe('Pages Router', () => {
 
       it('localizes end-to-end for verify email: invalid verification link - link send success', async () => {
         await reconfigureServer(config);
-        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
@@ -572,12 +748,17 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationSendSuccess.defaultFile}`);
+        expect(formResponse.text).toContain(
+          `/${locale}/${pages.emailVerificationSendSuccess.defaultFile}`
+        );
       });
 
       it('localizes end-to-end for verify email: invalid verification link - link send fail', async () => {
         await reconfigureServer(config);
-        const sendVerificationEmail = spyOn(config.emailAdapter, 'sendVerificationEmail').and.callThrough();
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
         const user = new Parse.User();
         user.setUsername('exampleUsername');
         user.setPassword('examplePassword');
@@ -608,9 +789,9 @@ describe('Pages Router', () => {
           new RegExp(`\/${exampleLocale}\/${pages.emailVerificationLinkExpired.defaultFile}`)
         );
 
-        spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() => Promise.reject(
-          'failed to resend verification email'
-        ));
+        spyOn(UserController.prototype, 'resendVerificationEmail').and.callFake(() =>
+          Promise.reject('failed to resend verification email')
+        );
 
         const formUrl = `${publicServerUrl}/apps/${appId}/resend_verification_email`;
         const formResponse = await request({
@@ -624,7 +805,9 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${locale}/${pages.emailVerificationSendFail.defaultFile}`);
+        expect(formResponse.text).toContain(
+          `/${locale}/${pages.emailVerificationSendFail.defaultFile}`
+        );
       });
 
       it('localizes end-to-end for resend verification email: invalid link', async () => {
@@ -640,32 +823,36 @@ describe('Pages Router', () => {
           followRedirects: false,
         });
         expect(formResponse.status).toEqual(303);
-        expect(formResponse.text).toContain(`/${exampleLocale}/${pages.emailVerificationLinkInvalid.defaultFile}`);
+        expect(formResponse.text).toContain(
+          `/${exampleLocale}/${pages.emailVerificationLinkInvalid.defaultFile}`
+        );
       });
     });
 
     describe('failing with missing parameters', () => {
       it('verifyEmail: throws on missing server configuration', async () => {
         delete req.config;
-        const verifyEmail = (req) => (() => new PagesRouter().verifyEmail(req)).bind(null);
+        const verifyEmail = req => (() => new PagesRouter().verifyEmail(req)).bind(null);
         expect(verifyEmail(req)).toThrow();
       });
 
       it('resendVerificationEmail: throws on missing server configuration', async () => {
         delete req.config;
-        const resendVerificationEmail = (req) => (() => new PagesRouter().resendVerificationEmail(req)).bind(null);
+        const resendVerificationEmail = req =>
+          (() => new PagesRouter().resendVerificationEmail(req)).bind(null);
         expect(resendVerificationEmail(req)).toThrow();
       });
 
       it('requestResetPassword: throws on missing server configuration', async () => {
         delete req.config;
-        const requestResetPassword = (req) => (() => new PagesRouter().requestResetPassword(req)).bind(null);
+        const requestResetPassword = req =>
+          (() => new PagesRouter().requestResetPassword(req)).bind(null);
         expect(requestResetPassword(req)).toThrow();
       });
 
       it('resetPassword: throws on missing server configuration', async () => {
         delete req.config;
-        const resetPassword = (req) => (() => new PagesRouter().resetPassword(req)).bind(null);
+        const resetPassword = req => (() => new PagesRouter().resetPassword(req)).bind(null);
         expect(resetPassword(req)).toThrow();
       });
 
@@ -673,7 +860,7 @@ describe('Pages Router', () => {
         req.query.token = 'exampleToken';
         req.params = {};
         req.config.userController = { verifyEmail: () => Promise.reject() };
-        const verifyEmail = (req) => new PagesRouter().verifyEmail(req);
+        const verifyEmail = req => new PagesRouter().verifyEmail(req);
 
         await verifyEmail(req);
         expect(goToPage.calls.all()[0].args[1]).toBe(pages.emailVerificationLinkInvalid);
@@ -687,7 +874,7 @@ describe('Pages Router', () => {
         };
         const error = 'exampleError';
         req.config.userController = { updatePassword: () => Promise.reject(error) };
-        const resetPassword = (req) => new PagesRouter().resetPassword(req);
+        const resetPassword = req => new PagesRouter().resetPassword(req);
 
         await resetPassword(req);
         expect(goToPage.calls.all()[0].args[1]).toBe(pages.passwordReset);
@@ -703,10 +890,26 @@ describe('Pages Router', () => {
         };
         const error = 'exampleError';
         req.config.userController = { updatePassword: () => Promise.reject(error) };
-        const resetPassword = (req) => new PagesRouter().resetPassword(req).catch(e => e);
+        const resetPassword = req => new PagesRouter().resetPassword(req).catch(e => e);
 
         const response = await resetPassword(req);
         expect(response.code).toBe(Parse.Error.OTHER_CAUSE);
+      });
+    });
+
+    describe('exploits', () => {
+      it('rejects requesting file outside of pages scope with UNIX path patterns', async () => {
+        await reconfigureServer(config);
+
+        // Do not compose this URL with `new URL(...)` because that would normalize
+        // the URL and remove path patterns; the path patterns must reach the router
+        const url = `${config.publicServerURL}/apps/../.gitignore`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(404);
+        expect(response.text).toBe('Not found.');
       });
     });
   });
