@@ -617,7 +617,7 @@ export function maybeRunValidator(request, functionName) {
       });
   });
 }
-function builtInTriggerValidator(options, request) {
+async function builtInTriggerValidator(options, request) {
   if (request.master && !options.validateMasterKey) {
     return;
   }
@@ -647,11 +647,11 @@ function builtInTriggerValidator(options, request) {
     }
   };
 
-  const validateOptions = (opt, key, val) => {
+  const validateOptions = async (opt, key, val) => {
     let opts = opt.options;
     if (typeof opts === 'function') {
       try {
-        const result = opts(val);
+        const result = await opts(val);
         if (!result && result != null) {
           throw opt.error || `Validation failed. Invalid value for ${key}.`;
         }
@@ -684,6 +684,7 @@ function builtInTriggerValidator(options, request) {
       requiredParam(key);
     }
   } else {
+    const optionPromises = [];
     for (const key in options.fields) {
       const opt = options.fields[key];
       let val = params[key];
@@ -717,10 +718,11 @@ function builtInTriggerValidator(options, request) {
           }
         }
         if (opt.options) {
-          validateOptions(opt, key, val);
+          optionPromises.push(validateOptions(opt, key, val));
         }
       }
     }
+    await Promise.all(optionPromises);
   }
   const userKeys = options.requireUserKeys || [];
   if (Array.isArray(userKeys)) {
@@ -734,12 +736,14 @@ function builtInTriggerValidator(options, request) {
       }
     }
   } else if (typeof userKeys === 'object') {
+    const optionPromises = [];
     for (const key in options.requireUserKeys) {
       const opt = options.requireUserKeys[key];
       if (opt.options) {
-        validateOptions(opt, key, reqUser.get(key));
+        optionPromises.push(validateOptions(opt, key, reqUser.get(key)));
       }
     }
+    await Promise.all(optionPromises);
   }
 }
 
