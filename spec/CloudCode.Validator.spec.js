@@ -1428,4 +1428,78 @@ describe('cloud validator', () => {
       done();
     }
   });
+
+  it('set params options function async', async () => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: String,
+            required: true,
+            options: async val => {
+              await new Promise(resolve => {
+                setTimeout(resolve, 500);
+              });
+              return val === 'f';
+            },
+            error: 'Validation failed.',
+          },
+        },
+      }
+    );
+    try {
+      await Parse.Cloud.run('hello', { data: 'd' });
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Validation failed.');
+    }
+    await Parse.Cloud.run('hello', { data: 'f' });
+  });
+
+  it('basic beforeSave requireUserKey as custom async function', async () => {
+    Parse.Cloud.beforeSave(Parse.User, () => {}, {
+      fields: {
+        accType: {
+          default: 'normal',
+          constant: true,
+        },
+      },
+    });
+    Parse.Cloud.define(
+      'secureFunction',
+      () => {
+        return "Here's all the secure data!";
+      },
+      {
+        requireUserKeys: {
+          accType: {
+            options: async val => {
+              await new Promise(resolve => {
+                setTimeout(resolve, 500);
+              });
+              return ['admin', 'admin2'].includes(val);
+            },
+            error: 'Unauthorized.',
+          },
+        },
+      }
+    );
+    const user = new Parse.User();
+    user.set('username', 'testuser');
+    user.set('password', 'p@ssword');
+    user.set('accType', 'admin');
+    await user.signUp();
+    expect(user.get('accType')).toBe('normal');
+    try {
+      await Parse.Cloud.run('secureFunction');
+      fail('function should only be available to admin users');
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Unauthorized.');
+    }
+  });
 });
