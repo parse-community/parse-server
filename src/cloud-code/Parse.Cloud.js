@@ -52,7 +52,7 @@ function validateValidator(validator) {
   const checkKey = (key, data, validatorParam) => {
     const parameter = data[key];
     if (!parameter) {
-      logger.error(`${key} is not a supported paramter for Parse.Cloud validators.`);
+      logger.error(`${key} is not a supported parameter for Parse.Cloud validators.`);
       return;
     }
     const types = parameter.map(type => getType(type));
