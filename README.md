@@ -52,17 +52,21 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Running Parse Server elsewhere](#running-parse-server-elsewhere)
     - [Sample Application](#sample-application)
     - [Parse Server + Express](#parse-server--express)
-  - [Configuration](#configuration)
-    - [Basic Options](#basic-options)
-    - [Client Key Options](#client-key-options)
-    - [Email Verification and Password Reset](#email-verification-and-password-reset)
-    - [Custom Pages](#custom-pages)
-    - [Using Environment Variables](#using-environment-variables)
-    - [Available Adapters](#available-adapters)
-    - [Configuring File Adapters](#configuring-file-adapters)
-    - [Idempodency Enforcement](#idempodency-enforcement)
-    - [Localization](#localization)
-    - [Logging](#logging)
+- [Configuration](#configuration)
+  - [Basic Options](#basic-options)
+  - [Client Key Options](#client-key-options)
+  - [Email Verification and Password Reset](#email-verification-and-password-reset)
+  - [Custom Pages](#custom-pages)
+  - [Using Environment Variables](#using-environment-variables)
+  - [Available Adapters](#available-adapters)
+  - [Configuring File Adapters](#configuring-file-adapters)
+  - [Idempodency Enforcement](#idempodency-enforcement)
+  - [Localization](#localization)
+    - [Pages](#pages)
+      - [Localization with Directory Structure](#localization-with-directory-structure)
+      - [Localization with JSON Resource](#localization-with-json-resource)
+      - [Parameters](#parameters)
+  - [Logging](#logging)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
   - [Running](#running)
@@ -243,13 +247,13 @@ app.listen(1337, function() {
 
 For a full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-## Configuration
+# Configuration
 
 Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
 For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
 
-### Basic Options
+## Basic Options
 
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
@@ -259,7 +263,7 @@ For the full list of available options, run `parse-server --help` or take a look
 * `cloud` - The absolute path to your cloud code `main.js` file.
 * `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
 
-### Client Key Options
+## Client Key Options
 
 The client keys used with Parse are no longer necessary with Parse Server. If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time. Setting any of these keys will require all requests to provide one of the configured keys.
 
@@ -268,7 +272,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `restAPIKey`
 * `dotNetKey`
 
-### Email Verification and Password Reset
+## Email Verification and Password Reset
 
 Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
 
@@ -348,7 +352,7 @@ You can also use other email adapters contributed by the community such as:
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
 
-### Custom Pages
+## Custom Pages
 
 It’s possible to change the default pages of the app and redirect the user to another path or domain.
 
@@ -369,7 +373,7 @@ var server = ParseServer({
 })
 ```
 
-### Using Environment Variables
+## Using Environment Variables
 
 You may configure the Parse Server using environment variables:
 
@@ -390,7 +394,7 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 
 For the full list of configurable environment variables, run `parse-server --help` or take a look at [Parse Server Configuration](https://github.com/parse-community/parse-server/blob/master/src/Options/Definitions.js).
 
-### Available Adapters
+## Available Adapters
 
 All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
 
@@ -398,7 +402,7 @@ Some well maintained adapters are also available on the [Parse Server Modules](h
 
 You can also find more adapters maintained by the community by searching on [npm](https://www.npmjs.com/search?q=parse-server%20adapter&page=1&ranking=optimal).
 
-### Configuring File Adapters
+## Configuring File Adapters
 
 Parse Server allows developers to choose from several options when hosting files:
 
@@ -408,7 +412,7 @@ Parse Server allows developers to choose from several options when hosting files
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
-### Idempodency Enforcement
+## Idempodency Enforcement
  
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
@@ -420,7 +424,7 @@ Identical requests are identified by their request header `X-Parse-Request-Id`. 
 
 Deduplication is only done for object creation and update (`POST` and `PUT` requests). Deduplication is not done for object finding and deletion (`GET` and `DELETE` requests), as these operations are already idempotent by definition.
 
-#### Configuration example <!-- omit in toc -->
+### Configuration example <!-- omit in toc -->
 ```
 let api = new ParseServer({
     idempotencyOptions: {
@@ -429,7 +433,7 @@ let api = new ParseServer({
     }
 }
 ```
-#### Parameters <!-- omit in toc -->
+### Parameters <!-- omit in toc -->
 
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 |----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -437,16 +441,16 @@ let api = new ParseServer({
 | `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
 | `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
 
-#### Notes <!-- omit in toc -->
+### Notes <!-- omit in toc -->
 
 - This feature is currently only available for MongoDB and not for Postgres.
 
-### Localization
+## Localization
 
-#### Pages <!-- omit in toc -->
+### Pages
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
-Pagse for password reset and email verification can be localized with the `pages` option in the Parse Server configuration:
+Custom pages as well as feature pages (e.g. password reset, email verification) can be localized with the `pages` option in the Parse Server configuration:
 
 ```js
 const api = new ParseServer({
@@ -459,7 +463,7 @@ const api = new ParseServer({
 }
 ```
 
-Localzation is achieved by matching a request-supplied `locale` parameter with a localized page. The locale can be supplied in either the request query, body or header with the following key:
+Localization is achieved by matching a request-supplied `locale` parameter with localized page content. The locale can be supplied in either the request query, body or header with the following keys:
 - query: `locale`
 - body: `locale`
 - header: `x-parse-page-param-locale`
@@ -469,24 +473,33 @@ For example, a password reset link with the locale parameter in the query could 
 http://example.com/parse/apps/[appId]/request_password_reset?token=[token]&username=[username]&locale=de-AT
 ```
 
-Localized pages are determined by the directory structure:
-```
+- Localization is only available for pages in the pages directory as set with `pages.pagesPath`.
+- Localization for feature pages (e.g. password reset, email verification) is disabled if `pages.customUrls` are set, even if the custom URLs point to the pages within the pages path.
+- Only `.html` files are considered for localization when localizing custom pages.
+
+Pages can be localized in two ways:
+
+#### Localization with Directory Structure
+
+Pages are localized by using the corresponding file in the directory structure where the files are placed in subdirectories named after the locale or language. The file in the base directory is the default file.
+
+**Example Directory Structure:**
+```js
 root/
-├── base/                    // base path to files
+├── public/                  // pages base path
 │   ├── example.html         // default file
 │   └── de/                  // de language folder
 │   │   └── example.html     // de localized file
 │   └── de-AT/               // de-AT locale folder
 │   │   └── example.html     // de-AT localized file
+```
 
 Files are matched with the locale in the following order:
 1. Locale match, e.g. locale `de-AT` matches file in folder `de-AT`.
-2. Language match, e.g. locale `de-CH` matches file in folder `de`.
-3. Default; file in base folder is returned.
-```
+1. Language match, e.g. locale `de-CH` matches file in folder `de`.
+1. Default; file in base folder is returned.
 
-Localization is only enabled for the default pages in the `public` directory; localization is disabled if `customUrls` are set (even if the custom URLs point to the default pages).
-##### Configuration example <!-- omit in toc -->
+**Configuration Example:**
 ```js
 const api = new ParseServer({
   ...otherOptions,
@@ -494,21 +507,83 @@ const api = new ParseServer({
   pages: {
     enableRouter: true, // Enables the experimental feature; required for localization
     enableLocalization: true,
-    forceRedirect: false,
-    pagesPath: './public/pages',
-    pagesEndpoint: 'pages',
     customUrls: {
       passwordReset: 'https://example.com/page.html'
     }
   }
 }
 ```
-##### Parameters <!-- omit in toc -->
+
+Pros:
+- All files are complete in their content and can be easily opened and previewed by viewing the file in a browser.
+Cons:
+- In most cases, a localized page differs only slighly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
+
+#### Localization with JSON Resource
+
+Pages are localized by adding placeholders in the HTML files and providing a JSON resource that contains the translations to fill into the placeholders.
+
+**Example Directory Structure:**
+```js
+root/
+├── public/                  // pages base path
+│   ├── example.html         // the page containg placeholders
+├── private/                 // folder outside of public scope
+│   └── translations.json    // JSON resource file
+```
+
+The JSON resource file loosely follows the i18next syntax, which is a popular syntax that is often supported by translation platforms, making it easy to manage translations, exporting them for use in Parse Server, and even to automate this workflow.
+
+**Example JSON Content:**
+```json
+{
+  "en": {               // resource for language `en` (English)
+    "translation": {
+      "greeting": "Hello!"
+    }
+  },
+  "de": {               // resource for language `de` (German)
+    "translation": {
+      "greeting": "Hallo!"
+    }
+  }
+  "de-AT": {            // resource for locale `de-AT` (Austrian German)
+    "translation": {
+      "greeting": "Servus!"
+    }
+  }
+}
+```
+
+**Configuration Example:**
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for localization
+    enableLocalization: true,
+    localizationJsonPath: './private/localization.json',
+    localizationFallbackLocale: 'en'
+  }
+}
+```
+
+Pros:
+- There is only one HTML file to maintain that contains the placeholders that are filled with the translations according to the locale.
+Cons:
+- Files cannot be easily previewed by viewing the file in a browser because the content contains only placeholders and even HTML or CSS changes may be dynamically applied, e.g. when a localization requires a Right-To-Left layout direction.
+- Style and other fundamental layout changes may be more difficult to apply.
+- 
+#### Parameters
 
 | Parameter                                       | Optional | Type      | Default value                          | Example values                                       | Environment variable                                            | Description                                                                                                                                                                                                   |
 |-------------------------------------------------|----------|-----------|----------------------------------------|------------------------------------------------------|-----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `pages`                                         | yes      | `Object`  | `undefined`                            | -                                                    | `PARSE_SERVER_PAGES`                                            | The options for pages such as password reset and email verification.                                                                                                                                          |
 | `pages.enableRouter`                            | yes      | `Boolean` | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_ROUTER`                              | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**       |
+| `pages.enableLocalization`                      | yes      | `Boolean` | `false`                                | -                                                    | `PARSE_SERVER_PAGES_ENABLE_LOCALIZATION`                        | Is true if pages should be localized; this has no effect on custom page redirects.                                                                                                                            |
+| `pages.localizationJsonPath`                    | yes      | `String`  | `undefined`                            | `./private/translations.json`                        | `PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH`                     | The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.                                                                              |
+| `pages.localizationFallbackLocale`              | yes      | `String`  | `en`                                   | `en`, `en-GB`, `default`                             | `PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE`               | The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.                                   |
 | `pages.forceRedirect`                           | yes      | `Boolean` | `false`                                | -                                                    | `PARSE_SERVER_PAGES_FORCE_REDIRECT`                             | Is `true` if responses should always be redirects and never content, `false` if the response type should depend on the request type (`GET` request -> content response; `POST` request -> redirect response). |
 | `pages.pagesPath`                               | yes      | `String`  | `./public`                             | `./files/pages`, `../../pages`                       | `PARSE_SERVER_PAGES_PAGES_PATH`                                 | The path to the pages directory; this also defines where the static endpoint `/apps` points to.                                                                                                               |
 | `pages.pagesEndpoint`                           | yes      | `String`  | `apps`                                 | -                                                    | `PARSE_SERVER_PAGES_PAGES_ENDPOINT`                             | The API endoint for the pages.                                                                                                                                                                                |
@@ -522,12 +597,11 @@ const api = new ParseServer({
 | `pages.customUrls.emailVerificationLinkInvalid` | yes      | `String`  | `email_verification_link_invalid.html` | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID` | The URL to the custom page for email verification -> link invalid.                                                                                                                                            |
 | `pages.customUrls.emailVerificationLinkExpired` | yes      | `String`  | `email_verification_link_expired.html` | -                                                    | `PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED` | The URL to the custom page for email verification -> link expired.                                                                                                                                            |
 
-##### Notes <!-- omit in toc -->
+### Notes <!-- omit in toc -->
 
-- In combination with the [Parse Server API Mail Adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) Parse Server provides a fully localized flow (emails, pages) for the user. The email adapter sends out a localized email and adds a locale parameter to the password reset / email verification link, which is then used to respond with localized pages.
+- In combination with the [Parse Server API Mail Adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter) Parse Server provides a fully localized flow (emails -> pages) for the user. The email adapter sends a localized email and adds a locale parameter to the password reset or email verification link, which is then used to respond with localized pages.
 
-
-### Logging
+## Logging
 
 Parse Server will, by default, log:
 * to the console
