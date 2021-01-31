@@ -1266,4 +1266,62 @@ describe('cloud validator', () => {
       done();
     }
   });
+
+  it('Logs on invalid config', () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    Parse.Cloud.define('myFunction', () => {}, {
+      requiredUser: true,
+      requireUser: ['foo'],
+      requireMaster: ['foo'],
+      validateMasterKey: ['foo'],
+      skipWithMasterKey: ['foo'],
+      requireUserKeys: true,
+      fields: true,
+    });
+    expect(logger.error).toHaveBeenCalledWith(
+      'requiredUser is not a supported paramter for Parse.Cloud validators.'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key requireUser. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key requireMaster. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key validateMasterKey. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key skipWithMasterKey. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key fields. Expected array|object, actual boolean'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key requireUserKeys. Expected array|object, actual boolean'
+    );
+  });
+
+  it('Logs on invalid config', () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    Parse.Cloud.define('myFunction', () => {}, {
+      fields: {
+        name: {
+          constant: ['foo'],
+          required: ['foo'],
+          error: ['foo'],
+        },
+      },
+    });
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key constant. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key required. Expected boolean, actual array'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Invalid type for Parse.Cloud validator key error. Expected string, actual array'
+    );
+  });
 });

@@ -13,6 +13,74 @@ function getClassName(parseClass) {
   return parseClass;
 }
 
+function validateValidator(validator) {
+  if (!validator || typeof validator === 'function') {
+    return;
+  }
+  const fieldOptions = {
+    type: ['Any'],
+    constant: [Boolean],
+    default: ['Any'],
+    options: [Array, 'function', 'Any'],
+    required: [Boolean],
+    error: [String],
+  };
+  const allowedKeys = {
+    requireUser: [Boolean],
+    requireMaster: [Boolean],
+    validateMasterKey: [Boolean],
+    skipWithMasterKey: [Boolean],
+    requireUserKeys: [Array, Object],
+    fields: [Array, Object],
+  };
+  const config = Config.get(Parse.applicationId);
+  const logger = config.loggerController;
+  const getType = fn => {
+    if (Array.isArray(fn)) {
+      return 'array';
+    }
+    if (fn === 'Any') {
+      return fn;
+    }
+    const type = typeof fn;
+    if (typeof fn === 'function') {
+      const match = fn && fn.toString().match(/^\s*function (\w+)/);
+      return (match ? match[1] : '').toLowerCase();
+    }
+    return type;
+  };
+  const checkKey = (key, data, validatorParam) => {
+    const parameter = data[key];
+    if (!parameter) {
+      logger.error(`${key} is not a supported paramter for Parse.Cloud validators.`);
+      return;
+    }
+    const types = parameter.map(type => getType(type));
+    const type = getType(validatorParam);
+    if (!types.includes(type) && !types.includes('Any')) {
+      logger.error(
+        `Invalid type for Parse.Cloud validator key ${key}. Expected ${types.join(
+          '|'
+        )}, actual ${type}`
+      );
+    }
+  };
+  for (const key in validator) {
+    checkKey(key, allowedKeys, validator[key]);
+    if (key === 'fields' || key === 'requireUserKeys') {
+      const values = validator[key];
+      if (Array.isArray(values)) {
+        continue;
+      }
+      for (const value in values) {
+        const data = values[value];
+        for (const subKey in data) {
+          checkKey(subKey, fieldOptions, data[subKey]);
+        }
+      }
+    }
+  }
+}
 /** @namespace
  * @name Parse
  * @description The Parse SDK.
@@ -50,6 +118,7 @@ var ParseCloud = {};
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FunctionRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.define = function (functionName, handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
 };
 
@@ -96,6 +165,7 @@ ParseCloud.job = function (functionName, handler) {
  */
 ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeSave,
     className,
@@ -131,6 +201,7 @@ ParseCloud.beforeSave = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.beforeDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeDelete,
     className,
@@ -260,6 +331,7 @@ ParseCloud.afterLogout = function (handler) {
  */
 ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterSave,
     className,
@@ -295,6 +367,7 @@ ParseCloud.afterSave = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterDelete,
     className,
@@ -330,6 +403,7 @@ ParseCloud.afterDelete = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
   var className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.beforeFind,
     className,
@@ -365,6 +439,7 @@ ParseCloud.beforeFind = function (parseClass, handler, validationHandler) {
  */
 ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
   const className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterFind,
     className,
@@ -397,6 +472,7 @@ ParseCloud.afterFind = function (parseClass, handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSaveFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.beforeSaveFile,
     handler,
@@ -428,6 +504,7 @@ ParseCloud.beforeSaveFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterSaveFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.afterSaveFile,
     handler,
@@ -459,6 +536,7 @@ ParseCloud.afterSaveFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.beforeDeleteFile,
     handler,
@@ -490,6 +568,7 @@ ParseCloud.beforeDeleteFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.FileTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.afterDeleteFile = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addFileTrigger(
     triggers.Types.afterDeleteFile,
     handler,
@@ -521,6 +600,7 @@ ParseCloud.afterDeleteFile = function (handler, validationHandler) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.ConnectTriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeConnect = function (handler, validationHandler) {
+  validateValidator(validationHandler);
   triggers.addConnectTrigger(
     triggers.Types.beforeConnect,
     handler,
@@ -585,6 +665,7 @@ ParseCloud.sendEmail = function (data) {
  * @param {(Object|Function)} validator An optional function to help validating cloud code. This function can be an async function and should take one parameter a {@link Parse.Cloud.TriggerRequest}, or a {@link Parse.Cloud.ValidatorObject}.
  */
 ParseCloud.beforeSubscribe = function (parseClass, handler, validationHandler) {
+  validateValidator(validationHandler);
   var className = getClassName(parseClass);
   triggers.addTrigger(
     triggers.Types.beforeSubscribe,
@@ -624,6 +705,7 @@ ParseCloud.onLiveQueryEvent = function (handler) {
  */
 ParseCloud.afterLiveQueryEvent = function (parseClass, handler, validationHandler) {
   const className = getClassName(parseClass);
+  validateValidator(validationHandler);
   triggers.addTrigger(
     triggers.Types.afterEvent,
     className,
