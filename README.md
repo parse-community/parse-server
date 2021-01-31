@@ -91,15 +91,18 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 Now that you're running Parse Server, it is time to save your first object. Parse Server has a broad range of [SDKs](http://parseplatform.org/#sdks) you can use to connect to your server.
 
-- [Getting started with iOS](https://docs.parseplatform.org/ios/guide/#getting-started)
-- [Getting started with Android](https://docs.parseplatform.org/android/guide/#getting-started)
-- [Getting started with JavaScript](https://docs.parseplatform.org/js/guide/#getting-started)
-- [Getting started with .NET + Xamarin](https://docs.parseplatform.org/dotnet/guide/#getting-started)
-- [Getting started with macOS](https://docs.parseplatform.org/macos/guide/#getting-started)
-- [Getting started with Unity](https://docs.parseplatform.org/unity/guide/#getting-started)
-- [Getting started with PHP](https://docs.parseplatform.org/php/guide/#getting-started)
-- [Getting started with Arduino](https://docs.parseplatform.org/arduino/guide/#getting-started)
-- [Getting started with Embedded C](https://docs.parseplatform.org/embedded_c/guide/#getting-started)
+Getting started with:
+- [REST API](https://docs.parseplatform.org/rest/guide/#your-configuration)
+- [GraphQL API](https://docs.parseplatform.org/graphql/guide/#getting-started)
+- [iOS SDK](https://docs.parseplatform.org/ios/guide/#getting-started)
+- [Android SDK](https://docs.parseplatform.org/android/guide/#getting-started)
+- [JavaScript SDK](https://docs.parseplatform.org/js/guide/#getting-started)
+- [.NET + Xamarin SDK](https://docs.parseplatform.org/dotnet/guide/#getting-started)
+- [macOS SDK](https://docs.parseplatform.org/macos/guide/#getting-started)
+- [Unity SDK](https://docs.parseplatform.org/unity/guide/#getting-started)
+- [PHP SDK](https://docs.parseplatform.org/php/guide/#getting-started)
+- [Arduino SDK](https://docs.parseplatform.org/arduino/guide/#getting-started)
+- [Embedded C SDK](https://docs.parseplatform.org/embedded_c/guide/#getting-started)
 
 ### Connect your app to Parse Server
 
