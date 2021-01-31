@@ -279,17 +279,20 @@ export class PagesRouter extends PromiseRouter {
       return this.redirectResponse(customUrl, params);
     }
 
+    // Get JSON placeholders
+    const placeholders = this.getJsonPlaceholders(locale, params);
+
     // If localization is enabled
     if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
           ? this.redirectResponse(this.composePageUrl(defaultFile, config.publicServerURL, subdir), params)
-          : this.pageResponse(path, params)
+          : this.pageResponse(path, params, placeholders)
       );
     } else {
       return redirect
         ? this.redirectResponse(defaultUrl, params)
-        : this.pageResponse(defaultPath, params);
+        : this.pageResponse(defaultPath, params, placeholders);
     }
   }
 
@@ -314,22 +317,9 @@ export class PagesRouter extends PromiseRouter {
     // Get default parameters
     const params = this.getDefaultParams(req.config);
 
-    // Get locale
+    // Get JSON placeholders
     const locale = this.getLocale(req);
-    let placeholders = {};
-
-    // If localization is enabled and there is JSON resource is set
-    if (this.pagesConfig.enableLocalization && this.pagesConfig.localizationJsonPath) {
-      // Get JSON placeholders for locale
-      placeholders = this.getJsonPlaceholders(locale);
-
-      // Fill any placeholders within the localized params;
-      // this allows a translation string to contain default
-      // placeholders like {{appName}} which are filled here
-      placeholders = JSON.stringify(placeholders);
-      placeholders = mustache.render(placeholders, params);
-      placeholders = JSON.parse(placeholders);
-    }
+    const placeholders = this.getJsonPlaceholders(locale, params);
 
     return this.pageResponse(absolutePath, params, placeholders);
   }
@@ -359,10 +349,10 @@ export class PagesRouter extends PromiseRouter {
    *  }
    * ```
    * @param {String} locale The locale to translate to.
-   * @returns {Object} The translation keys or an empty object if no matching
+   * @returns {Object} The translation or an empty object if no matching
    * translation was found.
    */
-  getJsonPlaceholders(locale) {
+  getJsonTranslation(locale) {
 
     // If there is no JSON resource
     if (this.jsonParameters === undefined) {
@@ -380,6 +370,34 @@ export class PagesRouter extends PromiseRouter {
       || {};
     const translation = resource.translation || {};
     return translation;
+  }
+
+  /**
+   * Returns a translation from the JSON resource for a given locale with
+   * placeholders filled in by given parameters.
+   * @param {String} locale The locale to translate to.
+   * @param {Object} params The parameters to fill into any placeholders
+   * within the translations.
+   * @returns {Object} The translation or an empty object if no matching
+   * translation was found.
+   */
+  getJsonPlaceholders(locale, params = {}) {
+
+    // If localization is disabled or there is no JSON resource
+    if (!this.pagesConfig.enableLocalization || !this.pagesConfig.localizationJsonPath) {
+      return {};
+    }
+
+    // Get JSON placeholders
+    let placeholders = this.getJsonTranslation(locale);
+
+    // Fill in any placeholders in the translation; this allows a translation
+    // to contain default placeholders like {{appName}} which are filled here
+    placeholders = JSON.stringify(placeholders);
+    placeholders = mustache.render(placeholders, params);
+    placeholders = JSON.parse(placeholders);
+
+    return placeholders;
   }
 
   /**

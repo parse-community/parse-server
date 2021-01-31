@@ -412,7 +412,7 @@ describe('Pages Router', () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
-        });
+        }).catch(e => e);
         expect(response.status).toBe(200);
         expect(pageResponse.calls.all()[0].args[1]).toEqual({});
         expect(pageResponse.calls.all()[0].args[2]).toEqual({});
@@ -440,7 +440,7 @@ describe('Pages Router', () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
-        });
+        }).catch(e => e);
         expect(response.status).toBe(200);
 
         // Ensure page response contains translation of fallback locale
@@ -463,7 +463,7 @@ describe('Pages Router', () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
-        });
+        }).catch(e => e);
         expect(response.status).toBe(200);
 
         // Ensure page response contains translations of request locale
@@ -487,7 +487,7 @@ describe('Pages Router', () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
-        });
+        }).catch(e => e);
         expect(response.status).toBe(200);
 
         // Ensure page response contains translations of requst language
@@ -513,7 +513,7 @@ describe('Pages Router', () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
-        });
+        }).catch(e => e);
         expect(response.status).toBe(200);
 
         // Fill placeholders in transation
