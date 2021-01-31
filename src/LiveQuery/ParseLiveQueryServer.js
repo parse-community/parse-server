@@ -141,7 +141,7 @@ class ParseLiveQueryServer {
         if (typeof client === 'undefined') {
           continue;
         }
-        requestsIds.forEach(async requestId => {
+        requestIds.forEach(async requestId => {
           const acl = message.currentParseObject.getACL();
           // Check CLP
           const op = this._getCLPOperation(subscription.query);
@@ -198,7 +198,7 @@ class ParseLiveQueryServer {
                 JSON.stringify(error)
             );
           }
-        }
+        });
       }
     }
   }
@@ -237,7 +237,7 @@ class ParseLiveQueryServer {
         if (typeof client === 'undefined') {
           continue;
         }
-        requestsIds.forEach(async requestId => {
+        requestIds.forEach(async requestId => {
           // Set orignal ParseObject ACL checking promise, if the object does not match
           // subscription, we do not need to check ACL
           let originalACLCheckingPromise;
@@ -352,7 +352,7 @@ class ParseLiveQueryServer {
                 JSON.stringify(error)
             );
           }
-        }
+        });
       }
     }
   }
