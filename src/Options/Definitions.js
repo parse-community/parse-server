@@ -669,6 +669,12 @@ module.exports.AccountLockoutOptions = {
     help: 'number of failed sign-in attempts that will cause a user account to be locked',
     action: parsers.numberParser('threshold'),
   },
+  unlockOnPasswordReset: {
+    env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_UNLOCK_ON_PASSWORD_RESET',
+    help: 'Is true if the account lock should be removed after a successful password reset.',
+    action: parsers.booleanParser,
+    default: false,
+  },
 };
 module.exports.PasswordPolicyOptions = {
   doNotAllowUsername: {

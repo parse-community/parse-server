@@ -6,7 +6,12 @@ import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
 import net from 'net';
-import { IdempotencyOptions, FileUploadOptions, PagesOptions } from './Options/Definitions';
+import {
+  IdempotencyOptions,
+  FileUploadOptions,
+  AccountLockoutOptions,
+  PagesOptions
+} from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
 function removeTrailingSlash(str) {
@@ -191,6 +196,12 @@ export class Config {
         accountLockout.threshold > 999
       ) {
         throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
+      }
+
+      if (accountLockout.unlockOnPasswordReset === undefined) {
+        accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
+      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
+        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
       }
     }
   }
