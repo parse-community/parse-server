@@ -3334,7 +3334,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to emailVerified', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3370,7 +3370,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/me (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3413,7 +3413,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on GET users/id (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3458,7 +3458,7 @@ describe('Parse.User testing', () => {
 
   it('should not retrieve hidden fields on login (#3432)', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
@@ -3502,7 +3502,7 @@ describe('Parse.User testing', () => {
 
   it('should not allow updates to hidden fields', done => {
     const emailAdapter = {
-      sendVerificationEmail: () => { },
+      sendVerificationEmail: () => {},
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve(),
     };
