@@ -30,7 +30,7 @@ export default class SchemaCache {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.put(this.prefix + MAIN_SCHEMA, schema);
+    return this.cache.put(this.prefix + MAIN_SCHEMA, schema, this.ttl);
   }
 
   getOneSchema(className) {

@@ -72,4 +72,33 @@ describe('SchemaCache', () => {
     const schemaCache = new SchemaCache(cacheController, ttl);
     expect(schemaCache.ttl).toBe(5000);
   });
+
+  it('should use the SchemaCache ttl', async () => {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const anotherCacheAdapter = new InMemoryCacheAdapter({ ttl: 2000 });
+    const anotherCacheController = new CacheController(anotherCacheAdapter, 'appId');
+
+    const schemaCacheTTL = 5000;
+    const schemaCache = new SchemaCache(anotherCacheController, schemaCacheTTL, true);
+    const schema = {
+      className: 'Class1',
+    };
+    await schemaCache.setAllClasses([schema]);
+    await sleep(4000);
+    expect(await schemaCache.getOneSchema(schema.className)).not.toBeNull();
+  });
+
+  it('should be expired', async () => {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    const schemaCacheTTL = 2000;
+    const schemaCache = new SchemaCache(cacheController, schemaCacheTTL, true);
+    const schema = {
+      className: 'Class1',
+    };
+    await schemaCache.setAllClasses([schema]);
+    await sleep(3000);
+    expect(await schemaCache.getOneSchema(schema.className)).toBeNull();
+  });
 });

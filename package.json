@@ -41,7 +41,7 @@
     "graphql-upload": "11.0.0",
     "intersect": "1.0.1",
     "jsonwebtoken": "8.5.1",
-    "jwks-rsa": "1.12.1",
+    "jwks-rsa": "1.12.2",
     "ldapjs": "2.2.3",
     "lodash": "4.17.20",
     "lru-cache": "5.1.1",
@@ -49,7 +49,7 @@
     "mongodb": "3.6.3",
     "mustache": "4.1.0",
     "parse": "2.19.0",
-    "pg-promise": "10.8.6",
+    "pg-promise": "10.8.7",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.4",
@@ -58,7 +58,7 @@
     "uuid": "8.3.2",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.0",
-    "ws": "7.4.1"
+    "ws": "7.4.2"
   },
   "devDependencies": {
     "@babel/cli": "7.10.0",
