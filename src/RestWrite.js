@@ -12,6 +12,7 @@ var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
+import Web3 from 'web3';
 import _ from 'lodash';
 import logger from './logger';
 
@@ -626,6 +627,9 @@ RestWrite.prototype.transformUser = function () {
     })
     .then(() => {
       return this._validateEmail();
+    })
+    .then(() => {
+      return this._validateEthAddress();
     });
 };
 
@@ -717,6 +721,66 @@ RestWrite.prototype._validateEmail = function () {
         // We updated the email, send a new validation
         this.storage['sendVerificationEmail'] = true;
         this.config.userController.setEmailVerifyToken(this.data);
+      }
+    });
+};
+
+/*
+  As with usernames, Parse should not allow case insensitive collisions of ethAddress.
+
+  This behavior can be enforced through a properly configured index see:
+  https://docs.mongodb.com/manual/core/index-case-insensitive/#create-a-case-insensitive-index
+  which could be implemented instead of this code based validation.
+
+  Given that this lookup should be a relatively low use case and that the case sensitive
+  unique index will be used by the db for the query, this is an adequate solution.
+*/
+
+RestWrite.prototype._validateEthAddress = function () {
+  console.log('Validate eth address', this.data);
+  if (!this.data.ethAddress || this.data.ethAddress.__op === 'Delete') {
+    return Promise.resolve();
+  }
+  const web3 = new Web3();
+  // Validate basic address format
+  if (!web3.utils.isAddress(this.data.ethAddress)) {
+    return Promise.reject(
+      new Parse.Error(Parse.Error.INVALID_ETH_ADDRESS, 'Eth address format is invalid.')
+    );
+  }
+
+  console.log('Valid address', this.data.ethAddress, this.data.ethSignature);
+  const recoveredAddress = web3.eth.accounts.recover(
+    'Moralis Authentication',
+    this.data.ethSignature
+  );
+  console.log('Recovered Address', recoveredAddress);
+  if (
+    web3.utils.toChecksumAddress(this.data.ethAddress) !==
+    web3.utils.toChecksumAddress(recoveredAddress)
+  ) {
+    return Promise.reject(
+      new Parse.Error(Parse.Error.INVALID_ETH_ADDRESS, 'Eth address not verified.')
+    );
+  }
+  // Case insensitive match, see note above function.
+  return this.config.database
+    .find(
+      this.className,
+      {
+        ethAddress: this.data.ethAddress,
+        objectId: { $ne: this.objectId() },
+      },
+      { limit: 1, caseInsensitive: true },
+      {},
+      this.validSchemaController
+    )
+    .then(results => {
+      if (results.length > 0) {
+        throw new Parse.Error(
+          Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this eth address.'
+        );
       }
     });
 };
