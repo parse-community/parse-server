@@ -519,6 +519,7 @@ const api = new ParseServer({
 
 Pros:
 - All files are complete in their content and can be easily opened and previewed by viewing the file in a browser.
+
 Cons:
 - In most cases, a localized page differs only slighly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
 
@@ -574,10 +575,11 @@ const api = new ParseServer({
 
 Pros:
 - There is only one HTML file to maintain that contains the placeholders that are filled with the translations according to the locale.
+
 Cons:
 - Files cannot be easily previewed by viewing the file in a browser because the content contains only placeholders and even HTML or CSS changes may be dynamically applied, e.g. when a localization requires a Right-To-Left layout direction.
 - Style and other fundamental layout changes may be more difficult to apply.
-- 
+
 #### Parameters
 
 | Parameter                                       | Optional | Type      | Default value                          | Example values                                       | Environment variable                                            | Description                                                                                                                                                                                                   |
