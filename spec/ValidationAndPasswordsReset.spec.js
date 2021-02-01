@@ -543,7 +543,9 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
     user.setUsername('zxcv');
     user.set('email', 'testCaseInsensitive@example.com');
     await user.signUp();
-    expectAsync(Parse.User.requestPasswordReset('TESTCASEINSENSITIVE@example.com')).toBeResolved();
+    await expectAsync(
+      Parse.User.requestPasswordReset('TESTCASEINSENSITIVE@example.com')
+    ).toBeResolved();
   });
 
   it('does not send verification email if email verification is disabled', done => {
