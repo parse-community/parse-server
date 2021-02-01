@@ -153,13 +153,9 @@ app.listen(1337, function() {
 });
 ```
 
-## Configuration
+## Documentation
 
-Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
-
-For the full list of available options, run `parse-server --help` or take a look at [Parse Server Configurations](http://parseplatform.org/parse-server/api/master/ParseServerOptions.html).
-
-[For more information, check out our docs.](https://docs.parseplatform.org/parse-server/guide/#usage)
+For more information as to how to configure your Parse Server, [check out our Parse Server guide.](https://docs.parseplatform.org/parse-server/guide/#usage)
 
 
 
