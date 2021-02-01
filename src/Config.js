@@ -9,7 +9,9 @@ import net from 'net';
 import {
   IdempotencyOptions,
   FileUploadOptions,
+  AccountLockoutOptions,
 } from './Options/Definitions';
+import { isBoolean } from 'lodash';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -145,6 +147,12 @@ export class Config {
         accountLockout.threshold > 999
       ) {
         throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
+      }
+
+      if (accountLockout.unlockOnPasswordReset === undefined) {
+        accountLockout.unlockOnPasswordReset = AccountLockoutOptions.unlockOnPasswordReset.default;
+      } else if (!isBoolean(accountLockout.unlockOnPasswordReset)) {
+        throw 'Parse Server option accountLockout.unlockOnPasswordReset must be a boolean.';
       }
     }
   }

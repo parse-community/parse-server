@@ -307,6 +307,8 @@ var server = ParseServer({
   accountLockout: {
     duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
     threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
+    unlockOnPasswordReset: true, // Is true if the account lock should be removed after a successful password reset. Default: false.
+}
   },
   // optional settings to enforce password policies
   passwordPolicy: {
