@@ -737,10 +737,10 @@ RestWrite.prototype._validateEmail = function () {
 */
 
 RestWrite.prototype._validateEthAddress = function () {
-  console.log('Validate eth address', this.data);
   if (!this.data.ethAddress || this.data.ethAddress.__op === 'Delete') {
     return Promise.resolve();
   }
+
   const web3 = new Web3();
   // Validate basic address format
   if (!web3.utils.isAddress(this.data.ethAddress)) {
@@ -749,12 +749,11 @@ RestWrite.prototype._validateEthAddress = function () {
     );
   }
 
-  console.log('Valid address', this.data.ethAddress, this.data.ethSignature);
   const recoveredAddress = web3.eth.accounts.recover(
     'Moralis Authentication',
     this.data.ethSignature
   );
-  console.log('Recovered Address', recoveredAddress);
+
   if (
     web3.utils.toChecksumAddress(this.data.ethAddress) !==
     web3.utils.toChecksumAddress(recoveredAddress)
@@ -763,6 +762,7 @@ RestWrite.prototype._validateEthAddress = function () {
       new Parse.Error(Parse.Error.INVALID_ETH_ADDRESS, 'Eth address not verified.')
     );
   }
+
   // Case insensitive match, see note above function.
   return this.config.database
     .find(
