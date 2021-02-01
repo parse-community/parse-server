@@ -2309,10 +2309,10 @@ describe('Parse.User testing', () => {
     user = new Parse.User();
     user.set('username', 'TEST1');
     user.set('password', 'test');
-    await user.logIn();
+    await expectAsync(user.logIn()).toBeResolved();
   });
 
-  it('case insensitive login with username should fail with wrong password', async done => {
+  it('case insensitive login with username should fail with wrong password', async () => {
     let user = new Parse.User();
     user.set('username', 'test1');
     user.set('password', 'test');
@@ -2321,12 +2321,9 @@ describe('Parse.User testing', () => {
     user = new Parse.User();
     user.set('username', 'TEST1');
     user.set('password', 'test1');
-    try {
-      await user.logIn();
-      done.fail();
-    } catch (error) {
-      done();
-    }
+    await expectAsync(user.logIn()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.')
+    );
   });
 
   it('case insensitive login with email', async () => {
@@ -2339,10 +2336,10 @@ describe('Parse.User testing', () => {
     user = new Parse.User();
     user.set('username', 'FOO@EXAMPLE.COM');
     user.set('password', 'test');
-    await user.logIn();
+    await expectAsync(user.logIn()).toBeResolved();
   });
 
-  it('case insensitive login with email should fail with wrong password', async done => {
+  it('case insensitive login with email should fail with wrong password', async () => {
     let user = new Parse.User();
     user.set('username', 'test1');
     user.set('password', 'test');
@@ -2352,12 +2349,9 @@ describe('Parse.User testing', () => {
     user = new Parse.User();
     user.set('username', 'FOO@EXAMPLE.COM');
     user.set('password', 'test1');
-    try {
-      await user.logIn();
-      done.fail();
-    } catch (error) {
-      done();
-    }
+    await expectAsync(user.logIn()).toBeRejectedWith(
+      new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.')
+    );
   });
 
   it('user cannot update email to existing user', done => {
