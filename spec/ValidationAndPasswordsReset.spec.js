@@ -527,8 +527,8 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
       });
   });
 
-  it('succeeds sending a password reset email with case insensitive email', done => {
-    reconfigureServer({
+  it('succeeds sending a password reset email with case insensitive email', async () => {
+    await reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
       emailAdapter: MockEmailAdapterWithOptions({
@@ -536,28 +536,14 @@ describe('Custom Pages, Email Verification, Password Reset', () => {
         apiKey: 'k',
         domain: 'd',
       }),
-    })
-      .then(() => {
-        const user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('zxcv');
-        user.set('email', 'testCaseInsensitive@parse.com');
-        user
-          .signUp(null)
-          .then(() => Parse.User.requestPasswordReset('TESTCASEINSENSITIVE@parse.com'))
-          .then(
-            () => {
-              done();
-            },
-            error => {
-              done(error);
-            }
-          );
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
+    });
+
+    const user = new Parse.User();
+    user.setPassword('asdf');
+    user.setUsername('zxcv');
+    user.set('email', 'testCaseInsensitive@example.com');
+    await user.signUp();
+    expectAsync(Parse.User.requestPasswordReset('TESTCASEINSENSITIVE@example.com')).toBeResolved();
   });
 
   it('does not send verification email if email verification is disabled', done => {
