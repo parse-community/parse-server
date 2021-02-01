@@ -6,6 +6,7 @@
 __BREAKING CHANGES:__
 - NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy).
 ___
+- IMPROVE: Added new account lockout policy option `accountLockout.unlockOnPasswordReset` to automatically unlock account on password reset. [#7146](https://github.com/parse-community/parse-server/pull/7146). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
 - NEW: Added convenience method Parse.Cloud.sendEmail(...) to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
