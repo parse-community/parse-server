@@ -280,9 +280,12 @@ export class PagesRouter extends PromiseRouter {
     }
 
     // Get JSON placeholders
-    const placeholders = this.getJsonPlaceholders(locale, params);
+    let placeholders = {};
+    if (config.pages.enableLocalization && config.pages.localizationJsonPath) {
+      placeholders = this.getJsonPlaceholders(locale, params);
+    }
 
-    // If localization is enabled
+    // Send response
     if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect

@@ -15,8 +15,21 @@ export class Page {
   constructor(params = {}) {
     const { id, defaultFile } = params;
 
-    this.id = id;
-    this.defaultFile = defaultFile;
+    this._id = id;
+    this._defaultFile = defaultFile;
+  }
+
+  get id() {
+    return this._id;
+  }
+  get defaultFile() {
+    return this._defaultFile;
+  }
+  set id(v) {
+    this._id = v;
+  }
+  set defaultFile(v) {
+    this._defaultFile = v;
   }
 }
 

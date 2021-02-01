@@ -4,6 +4,7 @@ const request = require('../lib/request');
 const fs = require('fs').promises;
 const mustache = require('mustache');
 const Utils = require('../lib/Utils');
+const { Page } = require('../lib/Page');
 const Config = require('../lib/Config');
 const Definitions = require('../lib/Options/Definitions');
 const UserController = require('../lib/Controllers/UserController').UserController;
@@ -401,6 +402,11 @@ describe('Pages Router', () => {
         jsonPageFile = 'custom_json.html';
         jsonPageUrl = new URL(`${config.publicServerURL}/apps/${jsonPageFile}`);
         jsonResource = require('../public/custom_json.json');
+
+        config.pages.enableLocalization = true;
+        config.pages.localizationJsonPath = './public/custom_json.json';
+        config.pages.localizationFallbackLocale = 'en';
+        await reconfigureServer(config);
       });
 
       it('does not localize with JSON resource if localization is disabled', async () => {
@@ -431,12 +437,7 @@ describe('Pages Router', () => {
         }
       });
 
-      it('localizes with JSON resource and fallback locale', async () => {
-        config.pages.enableLocalization = true;
-        config.pages.localizationJsonPath = './public/custom_json.json';
-        config.pages.localizationFallbackLocale = 'en';
-        await reconfigureServer(config);
-
+      it('localizes static page with JSON resource and fallback locale', async () => {
         const response = await request({
           url: jsonPageUrl.toString(),
           followRedirects: false,
@@ -451,12 +452,7 @@ describe('Pages Router', () => {
         }
       });
 
-      it('localizes with JSON resource and request locale', async () => {
-        config.pages.enableLocalization = true;
-        config.pages.localizationJsonPath = './public/custom_json.json';
-        config.pages.localizationFallbackLocale = 'en';
-        await reconfigureServer(config);
-
+      it('localizes static page with JSON resource and request locale', async () => {
         // Add locale to request URL
         jsonPageUrl.searchParams.set('locale', exampleLocale);
 
@@ -474,12 +470,7 @@ describe('Pages Router', () => {
         }
       });
 
-      it('localizes with JSON resource and language matching request locale', async () => {
-        config.pages.enableLocalization = true;
-        config.pages.localizationJsonPath = './public/custom_json.json';
-        config.pages.localizationFallbackLocale = 'en';
-        await reconfigureServer(config);
-
+      it('localizes static page with JSON resource and language matching request locale', async () => {
         // Add locale to request URL that has no locale match but only a language
         // match in the JSON resource
         jsonPageUrl.searchParams.set('locale', 'de-CH');
@@ -498,12 +489,7 @@ describe('Pages Router', () => {
         }
       });
 
-      it('localizes with JSON resource and fills placeholders in JSON values', async () => {
-        config.pages.enableLocalization = true;
-        config.pages.localizationJsonPath = './public/custom_json.json';
-        config.pages.localizationFallbackLocale = 'en';
-        await reconfigureServer(config);
-
+      it('localizes static page with JSON resource and fills placeholders in JSON values', async () => {
         // Add app ID to request URL so that the request is assigned to a Parse Server app
         // and placeholders within translations strings can be replaced with default page
         // parameters such as `appId`
@@ -515,6 +501,29 @@ describe('Pages Router', () => {
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toBe(200);
+
+        // Fill placeholders in transation
+        let translation = jsonResource[exampleLocale].translation;
+        translation = JSON.stringify(translation);
+        translation = mustache.render(translation, { appName: config.appName });
+        translation = JSON.parse(translation);
+
+        // Ensure page response contains translation of request locale
+        for (const value of Object.values(translation)) {
+          expect(response.text).toContain(value);
+        }
+      });
+
+      it('localizes feature page with JSON resource and fills placeholders in JSON values', async () => {
+        // Fake any page to load the JSON page file
+        spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
+
+        const response = await request({
+          url:
+            `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toEqual(200);
 
         // Fill placeholders in transation
         let translation = jsonResource[exampleLocale].translation;
