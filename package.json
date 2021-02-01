@@ -116,7 +116,7 @@
     "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "0.4.1"
+    "@node-rs/bcrypt": "1.1.0"
   },
   "collective": {
     "type": "opencollective",
