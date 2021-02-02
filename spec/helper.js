@@ -437,6 +437,24 @@ global.fit_only_mongodb_version = version => {
   }
 };
 
+global.it_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
