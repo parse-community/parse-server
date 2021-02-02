@@ -301,6 +301,9 @@ export interface AccountLockoutOptions {
   duration: ?number;
   /* number of failed sign-in attempts that will cause a user account to be locked */
   threshold: ?number;
+  /* Is true if the account lock should be removed after a successful password reset.
+  :DEFAULT: false */
+  unlockOnPasswordReset: ?boolean;
 }
 
 export interface PasswordPolicyOptions {
