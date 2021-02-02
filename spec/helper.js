@@ -1,4 +1,6 @@
 'use strict';
+const semver = require('semver');
+
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
@@ -412,6 +414,24 @@ global.it_only_db = db => {
     (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
   ) {
     return it;
+  } else {
+    return xit;
+  }
+};
+
+global.it_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
   } else {
     return xit;
   }
