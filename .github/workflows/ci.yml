@@ -30,7 +30,7 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.21
+          - name: Mongo 3.6.21, Standalone, MMAPv1
             MONGODB_VERSION: 3.6.21
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
