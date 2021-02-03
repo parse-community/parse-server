@@ -2933,7 +2933,7 @@ describe('Webauthn', () => {
     expect(webauthnAuthData.id).toEqual(assertionCredential.id);
     expect(webauthnAuthData.counter).toEqual(assertionCredential.counter);
   });
-  it('should handle options rpId, rpName, origin, getUsername', async () => {
+  it('should handle options rpId, rpName, origin, getUsername, getUserDisplayName, attestationType, requireResidentKey', async () => {
     await reconfigureServer({
       auth: { webauthn: true },
     });
@@ -2951,7 +2951,7 @@ describe('Webauthn', () => {
       auth: {
         webauthn: {
           options: {
-            getUsername: user => {
+            getUserDisplayName: user => {
               return user.get('username').toUpperCase();
             },
           },
@@ -2972,17 +2972,23 @@ describe('Webauthn', () => {
             rpId: 'my.app.com',
             rpName: 'App',
             origin: 'app.com',
-            getUsername: user => {
-              return user.get('username').toUpperCase();
-            },
+            attestationType: 'direct',
+            requireResidentKey: true,
+            getUserDisplayName: user => user.get('username').toUpperCase(),
+            getUsername: user => user.get('username') + user.id,
           },
         },
       },
     });
 
     options = (await callChallenge(user.getSessionToken())).options;
-
     expect(options.rp).toEqual({ name: 'App', id: 'my.app.com' });
-    expect(options.user).toEqual({ id: user.id, name: 'username', displayName: 'USERNAME' });
+    expect(options.authenticatorSelection.requireResidentKey).toBeTruthy();
+    expect(options.attestation).toEqual('direct');
+    expect(options.user).toEqual({
+      id: user.id,
+      name: 'username' + user.id,
+      displayName: 'USERNAME',
+    });
   });
 });
