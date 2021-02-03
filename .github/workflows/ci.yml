@@ -32,6 +32,8 @@ jobs:
             NODE_VERSION: 10
           - name: Mongo 3.6.21
             MONGODB_VERSION: 3.6.21
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: mmapv1
             NODE_VERSION: 10
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
