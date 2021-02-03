@@ -71,6 +71,11 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_db('postgres')` // will make a test that only runs on postgres
   - `it_exclude_dbs(['mongo'])` // will make a test that runs against all DB's but mongo
 
+* If your feature is intended to work with MongoDB and PostgreSQL, you can include or exclude tests more granularly with:
+
+  - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
+  - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
+
 #### Run Postgres setup for Parse with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
