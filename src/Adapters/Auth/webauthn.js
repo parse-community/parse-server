@@ -79,16 +79,17 @@ const registerOptions = (user, options = {}, config) => {
     // Could be an email or a firstname lastname depending of
     // the developer usage
     userDisplayName:
-      typeof options.getUsername === 'function'
-        ? options.getUsername(user)
+      typeof options.getUserDisplayName === 'function'
+        ? options.getUserDisplayName(user)
         : user.get('email') || user.get('username'),
-    userName: user.get('username'),
+    userName:
+      typeof options.getUsername === 'function' ? options.getUsername(user) : user.get('username'),
     timeout: 60000,
-    attestationType: 'indirect',
+    attestationType: options.attestationType || 'indirect',
     authenticatorSelection: {
       // Use required to avoid silent sign up
       userVerification: 'required',
-      requireResidentKey: false,
+      requireResidentKey: options.requireResidentKey || false,
     },
   });
   return {
