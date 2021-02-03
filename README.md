@@ -22,6 +22,8 @@
 <p align="center">
     <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 4.2" src="https://img.shields.io/badge/mongodb-4.2-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 4.4" src="https://img.shields.io/badge/mongodb-4.4-green.svg?logo=mongodb&style=flat">
 </p>
 
 <h2 align="center">Our Sponsors</h2>
