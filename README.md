@@ -45,6 +45,8 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 - [Getting Started](#getting-started)
     - [Running Parse Server](#running-parse-server)
+        - [Compatibility](#compabitility)
+          - [MongoDB Support](#mongodb-support)
         - [Locally](#locally)
         - [Docker](#inside-a-docker-container)
         - [Saving an Object](#saving-your-first-object)
@@ -83,6 +85,18 @@ Before you start make sure you have installed:
 - [NodeJS](https://www.npmjs.com/) that includes `npm`
 - [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)(with [PostGIS](https://postgis.net) 2.2.0 or higher)
 - Optionally [Docker](https://www.docker.com/)
+
+### Compabitility
+
+#### MongoDB Support
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibilty. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
+
+  | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
+  |-------------|----------------------|------------------|--------------------|
+  | MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
+  | MongoDB 4.0 | 4.0.22               | January 2022     | ✅ Fully compatible |
+  | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
+  | MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
 
 ### Locally
 ```bash
@@ -424,11 +438,11 @@ let api = new ParseServer({
 ```
 #### Parameters
 
-| Parameter | Optional | Type  | Default value | Example values | Environment variable | Description |
-|-----------|----------|--------|---------------|-----------|-----------|-------------|
-| `idempotencyOptions` | yes | `Object` | `undefined` |   | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths. |
-| `idempotencyOptions.paths`| yes | `Array<String>`  | `[]` |  `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
-| `idempotencyOptions.ttl` | yes | `Integer` | `300` | `60` (60 seconds) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`. |
+| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
 
 #### Notes
 
