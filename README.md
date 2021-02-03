@@ -47,7 +47,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 - [Getting Started](#getting-started)
     - [Running Parse Server](#running-parse-server)
-        - [Compatibility](#compabitility)
+        - [Compatibility](#compatibility)
           - [MongoDB Support](#mongodb-support)
         - [Locally](#locally)
         - [Docker](#inside-a-docker-container)
@@ -88,10 +88,10 @@ Before you start make sure you have installed:
 - [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)(with [PostGIS](https://postgis.net) 2.2.0 or higher)
 - Optionally [Docker](https://www.docker.com/)
 
-### Compabitility
+### Compatibility
 
 #### MongoDB Support
-Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibilty. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
 
   | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
   |-------------|----------------------|------------------|--------------------|
