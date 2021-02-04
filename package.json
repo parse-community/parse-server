@@ -93,7 +93,7 @@
     "prettier": "2.0.5"
   },
   "scripts": {
-    "definitions": "node ./resources/buildConfigDefinitions.js",
+    "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
     "lint-fix": "eslint --fix --cache ./",
