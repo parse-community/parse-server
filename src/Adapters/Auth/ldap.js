@@ -4,37 +4,46 @@ const Parse = require('parse/node').Parse;
 function validateAuthData(authData, options) {
   if (!optionsAreValid(options)) {
     return new Promise((_, reject) => {
-      reject(
-        new Parse.Error(
-          Parse.Error.INTERNAL_SERVER_ERROR,
-          'LDAP auth configuration missing'
-        )
-      );
+      reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP auth configuration missing'));
     });
   }
+  const clientOptions = options.url.startsWith('ldaps://')
+    ? { url: options.url, tlsOptions: options.tlsOptions }
+    : { url: options.url };
 
-  const client = ldapjs.createClient({ url: options.url });
+  const client = ldapjs.createClient(clientOptions);
   const userCn =
     typeof options.dn === 'string'
       ? options.dn.replace('{{id}}', authData.id)
       : `uid=${authData.id},${options.suffix}`;
 
   return new Promise((resolve, reject) => {
-    client.bind(userCn, authData.password, err => {
-      if (err) {
-        client.destroy(err);
-        return reject(
-          new Parse.Error(
-            Parse.Error.OBJECT_NOT_FOUND,
-            'LDAP: Wrong username or password'
-          )
-        );
+    client.bind(userCn, authData.password, ldapError => {
+      delete authData.password;
+      if (ldapError) {
+        let error;
+        switch (ldapError.code) {
+          case 49:
+            error = new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'LDAP: Wrong username or password'
+            );
+            break;
+          case 'DEPTH_ZERO_SELF_SIGNED_CERT':
+            error = new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'LDAPS: Certificate mismatch');
+            break;
+          default:
+            error = new Parse.Error(
+              Parse.Error.OBJECT_NOT_FOUND,
+              'LDAP: Somthing went wrong (' + ldapError.code + ')'
+            );
+        }
+        reject(error);
+        client.destroy(ldapError);
+        return;
       }
 
-      if (
-        typeof options.groupCn === 'string' &&
-        typeof options.groupFilter === 'string'
-      ) {
+      if (typeof options.groupCn === 'string' && typeof options.groupFilter === 'string') {
         searchForGroup(client, options, authData.id, resolve, reject);
       } else {
         client.unbind();
@@ -50,7 +59,8 @@ function optionsAreValid(options) {
     typeof options === 'object' &&
     typeof options.suffix === 'string' &&
     typeof options.url === 'string' &&
-    options.url.startsWith('ldap://')
+    (options.url.startsWith('ldap://') ||
+      (options.url.startsWith('ldaps://') && typeof options.tlsOptions === 'object'))
   );
 }
 
@@ -65,12 +75,7 @@ function searchForGroup(client, options, id, resolve, reject) {
     if (searchError) {
       client.unbind();
       client.destroy();
-      return reject(
-        new Parse.Error(
-          Parse.Error.INTERNAL_SERVER_ERROR,
-          'LDAP group search failed'
-        )
-      );
+      return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     }
     res.on('searchEntry', entry => {
       if (entry.object.cn === options.groupCn) {
@@ -85,20 +90,12 @@ function searchForGroup(client, options, id, resolve, reject) {
         client.unbind();
         client.destroy();
         return reject(
-          new Parse.Error(
-            Parse.Error.INTERNAL_SERVER_ERROR,
-            'LDAP: User not in group'
-          )
+          new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP: User not in group')
         );
       }
     });
     res.on('error', () => {
-      return reject(
-        new Parse.Error(
-          Parse.Error.INTERNAL_SERVER_ERROR,
-          'LDAP group search failed'
-        )
-      );
+      return reject(new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'LDAP group search failed'));
     });
   });
 }

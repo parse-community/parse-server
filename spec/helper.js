@@ -88,6 +88,11 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
+  fileUpload: {
+    enableForPublic: true,
+    enableForAnonymousUser: true,
+    enableForAuthenticatedUser: true,
+  },
   push: {
     android: {
       senderId: 'yolo',
@@ -129,6 +134,7 @@ const reconfigureServer = changedConfiguration => {
           if (error) {
             reject(error);
           } else {
+            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },
@@ -137,7 +143,6 @@ const reconfigureServer = changedConfiguration => {
       });
       cache.clear();
       parseServer = ParseServer.start(newConfiguration);
-      parseServer.app.use(require('./testing-routes').router);
       parseServer.expressApp.use('/1', err => {
         console.error(err);
         fail('should not call next');

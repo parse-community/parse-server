@@ -444,6 +444,21 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('test beforeSave with invalid field', async () => {
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
+      req.object.set('length', 0);
+    });
+
+    const obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bar');
+    try {
+      await obj.save();
+      fail('should not succeed');
+    } catch (e) {
+      expect(e.message).toBe('Invalid field name: length.');
+    }
+  });
+
   it("test beforeSave changed object fail doesn't change object", async function () {
     Parse.Cloud.beforeSave('BeforeSaveChanged', function (req) {
       if (req.object.has('fail')) {
@@ -1707,6 +1722,45 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('beforeSave should not sanitize database', async done => {
+    const { adapter } = Config.get(Parse.applicationId).database;
+    const spy = spyOn(adapter, 'findOneAndUpdate').and.callThrough();
+    spy.calls.saveArgumentsByValue();
+
+    let count = 0;
+    Parse.Cloud.beforeSave('CloudIncrementNested', req => {
+      count += 1;
+      req.object.set('foo', 'baz');
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    Parse.Cloud.afterSave('CloudIncrementNested', req => {
+      expect(typeof req.object.get('objectField').number).toBe('number');
+    });
+
+    const obj = new Parse.Object('CloudIncrementNested');
+    obj.set('objectField', { number: 5 });
+    obj.set('foo', 'bar');
+    await obj.save();
+
+    obj.increment('objectField.number', 10);
+    await obj.save();
+
+    const [
+      ,
+      ,
+      ,
+      /* className */ /* schema */ /* query */ update,
+    ] = adapter.findOneAndUpdate.calls.first().args;
+    expect(update).toEqual({
+      'objectField.number': { __op: 'Increment', amount: 10 },
+      foo: 'baz',
+      updatedAt: obj.updatedAt.toISOString(),
+    });
+
+    count === 2 ? done() : fail();
+  });
+
   /**
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
@@ -1822,9 +1876,8 @@ describe('Cloud Code', () => {
 
     it('should set the message / success on the job', done => {
       Parse.Cloud.job('myJob', req => {
-        req.message('hello');
         const promise = req
-          .message()
+          .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
           })
@@ -1905,9 +1958,15 @@ describe('Cloud Code', () => {
         throw new Parse.Error(101, 'Something went wrong');
       });
       const job = await Parse.Cloud.startJob('myJobError');
-      const jobStatus = await Parse.Cloud.getJobStatus(job);
+      let jobStatus, status;
+      while (status !== 'failed') {
+        if (jobStatus) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        jobStatus = await Parse.Cloud.getJobStatus(job);
+        status = jobStatus.get('status');
+      }
       expect(jobStatus.get('message')).toEqual('Something went wrong');
-      expect(jobStatus.get('status')).toEqual('failed');
     });
 
     function getJobStatus(jobId) {
@@ -3325,5 +3384,41 @@ describe('afterLogin hook', () => {
     });
 
     await Parse.Cloud.run('contextTest', {}, { context: { a: 'a' } });
+  });
+
+  it('afterFind should have access to context', async () => {
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    await query.find({ context: { a: 'a' } });
+  });
+});
+
+describe('sendEmail', () => {
+  it('can send email via Parse.Cloud', async done => {
+    const emailAdapter = {
+      sendMail: mailData => {
+        expect(mailData).toBeDefined();
+        expect(mailData.to).toBe('test');
+        done();
+      },
+    };
+    await reconfigureServer({
+      emailAdapter: emailAdapter,
+    });
+    const mailData = { to: 'test' };
+    await Parse.Cloud.sendEmail(mailData);
+  });
+
+  it('cannot send email without adapter', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    await Parse.Cloud.sendEmail({});
+    expect(logger.error).toHaveBeenCalledWith(
+      'Failed to send email because no mail adapter is configured for Parse Server.'
+    );
   });
 });

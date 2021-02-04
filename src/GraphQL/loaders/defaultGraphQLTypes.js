@@ -23,7 +23,7 @@ class TypeValidationError extends Error {
   }
 }
 
-const parseStringValue = (value) => {
+const parseStringValue = value => {
   if (typeof value === 'string') {
     return value;
   }
@@ -31,7 +31,7 @@ const parseStringValue = (value) => {
   throw new TypeValidationError(value, 'String');
 };
 
-const parseIntValue = (value) => {
+const parseIntValue = value => {
   if (typeof value === 'string') {
     const int = Number(value);
     if (Number.isInteger(int)) {
@@ -42,7 +42,7 @@ const parseIntValue = (value) => {
   throw new TypeValidationError(value, 'Int');
 };
 
-const parseFloatValue = (value) => {
+const parseFloatValue = value => {
   if (typeof value === 'string') {
     const float = Number(value);
     if (!isNaN(float)) {
@@ -53,7 +53,7 @@ const parseFloatValue = (value) => {
   throw new TypeValidationError(value, 'Float');
 };
 
-const parseBooleanValue = (value) => {
+const parseBooleanValue = value => {
   if (typeof value === 'boolean') {
     return value;
   }
@@ -61,7 +61,7 @@ const parseBooleanValue = (value) => {
   throw new TypeValidationError(value, 'Boolean');
 };
 
-const parseValue = (value) => {
+const parseValue = value => {
   switch (value.kind) {
     case Kind.STRING:
       return parseStringValue(value.value);
@@ -86,15 +86,15 @@ const parseValue = (value) => {
   }
 };
 
-const parseListValues = (values) => {
+const parseListValues = values => {
   if (Array.isArray(values)) {
-    return values.map((value) => parseValue(value));
+    return values.map(value => parseValue(value));
   }
 
   throw new TypeValidationError(values, 'List');
 };
 
-const parseObjectFields = (fields) => {
+const parseObjectFields = fields => {
   if (Array.isArray(fields)) {
     return fields.reduce(
       (object, field) => ({
@@ -112,15 +112,14 @@ const ANY = new GraphQLScalarType({
   name: 'Any',
   description:
     'The Any scalar type is used in operations and types that involve any type of value.',
-  parseValue: (value) => value,
-  serialize: (value) => value,
-  parseLiteral: (ast) => parseValue(ast),
+  parseValue: value => value,
+  serialize: value => value,
+  parseLiteral: ast => parseValue(ast),
 });
 
 const OBJECT = new GraphQLScalarType({
   name: 'Object',
-  description:
-    'The Object scalar type is used in operations and types that involve objects.',
+  description: 'The Object scalar type is used in operations and types that involve objects.',
   parseValue(value) {
     if (typeof value === 'object') {
       return value;
@@ -144,7 +143,7 @@ const OBJECT = new GraphQLScalarType({
   },
 });
 
-const parseDateIsoValue = (value) => {
+const parseDateIsoValue = value => {
   if (typeof value === 'string') {
     const date = new Date(value);
     if (!isNaN(date)) {
@@ -157,7 +156,7 @@ const parseDateIsoValue = (value) => {
   throw new TypeValidationError(value, 'Date');
 };
 
-const serializeDateIso = (value) => {
+const serializeDateIso = value => {
   if (typeof value === 'string') {
     return value;
   }
@@ -168,7 +167,7 @@ const serializeDateIso = (value) => {
   throw new TypeValidationError(value, 'Date');
 };
 
-const parseDateIsoLiteral = (ast) => {
+const parseDateIsoLiteral = ast => {
   if (ast.kind === Kind.STRING) {
     return parseDateIsoValue(ast.value);
   }
@@ -178,19 +177,14 @@ const parseDateIsoLiteral = (ast) => {
 
 const DATE = new GraphQLScalarType({
   name: 'Date',
-  description:
-    'The Date scalar type is used in operations and types that involve dates.',
+  description: 'The Date scalar type is used in operations and types that involve dates.',
   parseValue(value) {
     if (typeof value === 'string' || value instanceof Date) {
       return {
         __type: 'Date',
         iso: parseDateIsoValue(value),
       };
-    } else if (
-      typeof value === 'object' &&
-      value.__type === 'Date' &&
-      value.iso
-    ) {
+    } else if (typeof value === 'object' && value.__type === 'Date' && value.iso) {
       return {
         __type: value.__type,
         iso: parseDateIsoValue(value.iso),
@@ -202,11 +196,7 @@ const DATE = new GraphQLScalarType({
   serialize(value) {
     if (typeof value === 'string' || value instanceof Date) {
       return serializeDateIso(value);
-    } else if (
-      typeof value === 'object' &&
-      value.__type === 'Date' &&
-      value.iso
-    ) {
+    } else if (typeof value === 'object' && value.__type === 'Date' && value.iso) {
       return serializeDateIso(value.iso);
     }
 
@@ -219,8 +209,8 @@ const DATE = new GraphQLScalarType({
         iso: parseDateIsoLiteral(ast),
       };
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find((field) => field.name.value === '__type');
-      const iso = ast.fields.find((field) => field.name.value === 'iso');
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const iso = ast.fields.find(field => field.name.value === 'iso');
       if (__type && __type.value && __type.value.value === 'Date' && iso) {
         return {
           __type: __type.value.value,
@@ -273,8 +263,8 @@ const BYTES = new GraphQLScalarType({
         base64: ast.value,
       };
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find((field) => field.name.value === '__type');
-      const base64 = ast.fields.find((field) => field.name.value === 'base64');
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const base64 = ast.fields.find(field => field.name.value === 'base64');
       if (
         __type &&
         __type.value &&
@@ -294,7 +284,7 @@ const BYTES = new GraphQLScalarType({
   },
 });
 
-const parseFileValue = (value) => {
+const parseFileValue = value => {
   if (typeof value === 'string') {
     return {
       __type: 'File',
@@ -314,10 +304,9 @@ const parseFileValue = (value) => {
 
 const FILE = new GraphQLScalarType({
   name: 'File',
-  description:
-    'The File scalar type is used in operations and types that involve files.',
+  description: 'The File scalar type is used in operations and types that involve files.',
   parseValue: parseFileValue,
-  serialize: (value) => {
+  serialize: value => {
     if (typeof value === 'string') {
       return value;
     } else if (
@@ -335,9 +324,9 @@ const FILE = new GraphQLScalarType({
     if (ast.kind === Kind.STRING) {
       return parseFileValue(ast.value);
     } else if (ast.kind === Kind.OBJECT) {
-      const __type = ast.fields.find((field) => field.name.value === '__type');
-      const name = ast.fields.find((field) => field.name.value === 'name');
-      const url = ast.fields.find((field) => field.name.value === 'url');
+      const __type = ast.fields.find(field => field.name.value === '__type');
+      const name = ast.fields.find(field => field.name.value === 'name');
+      const url = ast.fields.find(field => field.name.value === 'url');
       if (__type && __type.value && name && name.value) {
         return parseFileValue({
           __type: __type.value.value,
@@ -353,8 +342,7 @@ const FILE = new GraphQLScalarType({
 
 const FILE_INFO = new GraphQLObjectType({
   name: 'FileInfo',
-  description:
-    'The FileInfo object type is used to return the information about files.',
+  description: 'The FileInfo object type is used to return the information about files.',
   fields: {
     name: {
       description: 'This is the file name.',
@@ -407,8 +395,7 @@ const GEO_POINT_INPUT = new GraphQLInputObjectType({
 
 const GEO_POINT = new GraphQLObjectType({
   name: 'GeoPoint',
-  description:
-    'The GeoPoint object type is used to return the information about geo point fields.',
+  description: 'The GeoPoint object type is used to return the information about geo point fields.',
   fields: GEO_POINT_FIELDS,
 });
 
@@ -444,13 +431,11 @@ const ROLE_ACL_INPUT = new GraphQLInputObjectType({
       type: new GraphQLNonNull(GraphQLString),
     },
     read: {
-      description:
-        'Allow users who are members of the role to read the current object.',
+      description: 'Allow users who are members of the role to read the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
-      description:
-        'Allow users who are members of the role to write on the current object.',
+      description: 'Allow users who are members of the role to write on the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
@@ -521,13 +506,11 @@ const ROLE_ACL = new GraphQLObjectType({
       type: new GraphQLNonNull(GraphQLID),
     },
     read: {
-      description:
-        'Allow users who are members of the role to read the current object.',
+      description: 'Allow users who are members of the role to read the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
     write: {
-      description:
-        'Allow users who are members of the role to write on the current object.',
+      description: 'Allow users who are members of the role to write on the current object.',
       type: new GraphQLNonNull(GraphQLBoolean),
     },
   },
@@ -557,7 +540,7 @@ const ACL = new GraphQLObjectType({
       type: new GraphQLList(new GraphQLNonNull(USER_ACL)),
       resolve(p) {
         const users = [];
-        Object.keys(p).forEach((rule) => {
+        Object.keys(p).forEach(rule => {
           if (rule !== '*' && rule.indexOf('role:') !== 0) {
             users.push({
               userId: toGlobalId('_User', rule),
@@ -574,7 +557,7 @@ const ACL = new GraphQLObjectType({
       type: new GraphQLList(new GraphQLNonNull(ROLE_ACL)),
       resolve(p) {
         const roles = [];
-        Object.keys(p).forEach((rule) => {
+        Object.keys(p).forEach(rule => {
           if (rule.indexOf('role:') === 0) {
             roles.push({
               roleName: rule.replace('role:', ''),
@@ -610,8 +593,7 @@ const CLASS_NAME_ATT = {
 };
 
 const GLOBAL_OR_OBJECT_ID_ATT = {
-  description:
-    'This is the object id. You can use either the global or the object id.',
+  description: 'This is the object id. You can use either the global or the object id.',
   type: OBJECT_ID,
 };
 
@@ -686,8 +668,7 @@ const READ_PREFERENCE_ATT = {
 };
 
 const INCLUDE_READ_PREFERENCE_ATT = {
-  description:
-    'The read preference for the queries to be executed to include fields.',
+  description: 'The read preference for the queries to be executed to include fields.',
   type: READ_PREFERENCE,
 };
 
@@ -713,8 +694,7 @@ const READ_OPTIONS_ATT = {
 };
 
 const WHERE_ATT = {
-  description:
-    'These are the conditions that the objects need to match in order to be found',
+  description: 'These are the conditions that the objects need to match in order to be found',
   type: OBJECT,
 };
 
@@ -736,8 +716,7 @@ const COUNT_ATT = {
 
 const SEARCH_INPUT = new GraphQLInputObjectType({
   name: 'SearchInput',
-  description:
-    'The SearchInput type is used to specifiy a search operation on a full text search.',
+  description: 'The SearchInput type is used to specifiy a search operation on a full text search.',
   fields: {
     term: {
       description: 'This is the term to be searched.',
@@ -749,13 +728,11 @@ const SEARCH_INPUT = new GraphQLInputObjectType({
       type: GraphQLString,
     },
     caseSensitive: {
-      description:
-        'This is the flag to enable or disable case sensitive search.',
+      description: 'This is the flag to enable or disable case sensitive search.',
       type: GraphQLBoolean,
     },
     diacriticSensitive: {
-      description:
-        'This is the flag to enable or disable diacritic sensitive search.',
+      description: 'This is the flag to enable or disable diacritic sensitive search.',
       type: GraphQLBoolean,
     },
   },
@@ -763,8 +740,7 @@ const SEARCH_INPUT = new GraphQLInputObjectType({
 
 const TEXT_INPUT = new GraphQLInputObjectType({
   name: 'TextInput',
-  description:
-    'The TextInput type is used to specify a text operation on a constraint.',
+  description: 'The TextInput type is used to specify a text operation on a constraint.',
   fields: {
     search: {
       description: 'This is the search to be executed.',
@@ -775,8 +751,7 @@ const TEXT_INPUT = new GraphQLInputObjectType({
 
 const BOX_INPUT = new GraphQLInputObjectType({
   name: 'BoxInput',
-  description:
-    'The BoxInput type is used to specifiy a box operation on a within geo query.',
+  description: 'The BoxInput type is used to specifiy a box operation on a within geo query.',
   fields: {
     bottomLeft: {
       description: 'This is the bottom left coordinates of the box.',
@@ -791,8 +766,7 @@ const BOX_INPUT = new GraphQLInputObjectType({
 
 const WITHIN_INPUT = new GraphQLInputObjectType({
   name: 'WithinInput',
-  description:
-    'The WithinInput type is used to specify a within operation on a constraint.',
+  description: 'The WithinInput type is used to specify a within operation on a constraint.',
   fields: {
     box: {
       description: 'This is the box to be specified.',
@@ -819,8 +793,7 @@ const CENTER_SPHERE_INPUT = new GraphQLInputObjectType({
 
 const GEO_WITHIN_INPUT = new GraphQLInputObjectType({
   name: 'GeoWithinInput',
-  description:
-    'The GeoWithinInput type is used to specify a geoWithin operation on a constraint.',
+  description: 'The GeoWithinInput type is used to specify a geoWithin operation on a constraint.',
   fields: {
     polygon: {
       description: 'This is the polygon to be specified.',
@@ -845,49 +818,49 @@ const GEO_INTERSECTS_INPUT = new GraphQLInputObjectType({
   },
 });
 
-const equalTo = (type) => ({
+const equalTo = type => ({
   description:
     'This is the equalTo operator to specify a constraint to select the objects where the value of a field equals to a specified value.',
   type,
 });
 
-const notEqualTo = (type) => ({
+const notEqualTo = type => ({
   description:
     'This is the notEqualTo operator to specify a constraint to select the objects where the value of a field do not equal to a specified value.',
   type,
 });
 
-const lessThan = (type) => ({
+const lessThan = type => ({
   description:
     'This is the lessThan operator to specify a constraint to select the objects where the value of a field is less than a specified value.',
   type,
 });
 
-const lessThanOrEqualTo = (type) => ({
+const lessThanOrEqualTo = type => ({
   description:
     'This is the lessThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is less than or equal to a specified value.',
   type,
 });
 
-const greaterThan = (type) => ({
+const greaterThan = type => ({
   description:
     'This is the greaterThan operator to specify a constraint to select the objects where the value of a field is greater than a specified value.',
   type,
 });
 
-const greaterThanOrEqualTo = (type) => ({
+const greaterThanOrEqualTo = type => ({
   description:
     'This is the greaterThanOrEqualTo operator to specify a constraint to select the objects where the value of a field is greater than or equal to a specified value.',
   type,
 });
 
-const inOp = (type) => ({
+const inOp = type => ({
   description:
     'This is the in operator to specify a constraint to select the objects where the value of a field equals any value in the specified array.',
   type: new GraphQLList(type),
 });
 
-const notIn = (type) => ({
+const notIn = type => ({
   description:
     'This is the notIn operator to specify a constraint to select the objects where the value of a field do not equal any value in the specified array.',
   type: new GraphQLList(type),
@@ -913,8 +886,7 @@ const options = {
 
 const SUBQUERY_INPUT = new GraphQLInputObjectType({
   name: 'SubqueryInput',
-  description:
-    'The SubqueryInput type is used to specify a sub query to another class.',
+  description: 'The SubqueryInput type is used to specify a sub query to another class.',
   fields: {
     className: CLASS_NAME_ATT,
     where: Object.assign({}, WHERE_ATT, {
@@ -988,8 +960,7 @@ const STRING_WHERE_INPUT = new GraphQLInputObjectType({
     matchesRegex,
     options,
     text: {
-      description:
-        'This is the $text operator to specify a full text search constraint.',
+      description: 'This is the $text operator to specify a full text search constraint.',
       type: TEXT_INPUT,
     },
     inQueryKey,
@@ -1225,27 +1196,21 @@ let ARRAY_RESULT;
 
 const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   const classTypes = parseClasses
-    .filter((parseClass) =>
-      parseGraphQLSchema.parseClassTypes[parseClass.className]
-        .classGraphQLOutputType
-        ? true
-        : false
+    .filter(parseClass =>
+      parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType ? true : false
     )
     .map(
-      (parseClass) =>
-        parseGraphQLSchema.parseClassTypes[parseClass.className]
-          .classGraphQLOutputType
+      parseClass => parseGraphQLSchema.parseClassTypes[parseClass.className].classGraphQLOutputType
     );
   ARRAY_RESULT = new GraphQLUnionType({
     name: 'ArrayResult',
     description:
       'Use Inline Fragment on Array to get results: https://graphql.org/learn/queries/#inline-fragments',
     types: () => [ELEMENT, ...classTypes],
-    resolveType: (value) => {
+    resolveType: value => {
       if (value.__type === 'Object' && value.className && value.objectId) {
         if (parseGraphQLSchema.parseClassTypes[value.className]) {
-          return parseGraphQLSchema.parseClassTypes[value.className]
-            .classGraphQLOutputType;
+          return parseGraphQLSchema.parseClassTypes[value.className].classGraphQLOutputType;
         } else {
           return ELEMENT;
         }
@@ -1257,7 +1222,7 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
-const load = (parseGraphQLSchema) => {
+const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GraphQLUpload, true);
   parseGraphQLSchema.addGraphQLType(ANY, true);
   parseGraphQLSchema.addGraphQLType(OBJECT, true);

@@ -1,5 +1,6 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
+const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
   return typeof object === 'function' && Object.prototype.hasOwnProperty.call(object, 'className');
@@ -526,6 +527,37 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
     Parse.applicationId,
     validationHandler
   );
+};
+
+/**
+ * Sends an email through the Parse Server mail adapter.
+ *
+ * **Available in Cloud Code only.**
+ * **Requires a mail adapter to be configured for Parse Server.**
+ *
+ * ```
+ * Parse.Cloud.sendEmail({
+ *   from: 'Example <test@example.com>',
+ *   to: 'contact@example.com',
+ *   subject: 'Test email',
+ *   text: 'This email is a test.'
+ * });
+ *```
+ *
+ * @method sendEmail
+ * @name Parse.Cloud.sendEmail
+ * @param {Object} data The object of the mail data to send.
+ */
+ParseCloud.sendEmail = function (data) {
+  const config = Config.get(Parse.applicationId);
+  const emailAdapter = config.userController.adapter;
+  if (!emailAdapter) {
+    config.loggerController.error(
+      'Failed to send email because no mail adapter is configured for Parse Server.'
+    );
+    return;
+  }
+  return emailAdapter.sendMail(data);
 };
 
 /**

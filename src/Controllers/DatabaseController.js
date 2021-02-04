@@ -564,7 +564,7 @@ class DatabaseController {
                 }
                 const rootFieldName = getRootFieldName(fieldName);
                 if (
-                  !SchemaController.fieldNameIsValid(rootFieldName) &&
+                  !SchemaController.fieldNameIsValid(rootFieldName, className) &&
                   !isSpecialUpdateKey(rootFieldName)
                 ) {
                   throw new Parse.Error(
@@ -1213,7 +1213,7 @@ class DatabaseController {
               throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
             }
             const rootFieldName = getRootFieldName(fieldName);
-            if (!SchemaController.fieldNameIsValid(rootFieldName)) {
+            if (!SchemaController.fieldNameIsValid(rootFieldName, className)) {
               throw new Parse.Error(
                 Parse.Error.INVALID_KEY_NAME,
                 `Invalid field name: ${fieldName}.`
@@ -1365,6 +1365,83 @@ class DatabaseController {
       });
   }
 
+  // This helps to create intermediate objects for simpler comparison of
+  // key value pairs used in query objects. Each key value pair will represented
+  // in a similar way to json
+  objectToEntriesStrings(query: any): Array<string> {
+    return Object.entries(query).map(a => a.map(s => JSON.stringify(s)).join(':'));
+  }
+
+  // Naive logic reducer for OR operations meant to be used only for pointer permissions.
+  reduceOrOperation(query: { $or: Array<any> }): any {
+    if (!query.$or) {
+      return query;
+    }
+    const queries = query.$or.map(q => this.objectToEntriesStrings(q));
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the longer query.
+            query.$or.splice(longer, 1);
+            queries.splice(longer, 1);
+            repeat = true;
+            break;
+          }
+        }
+      }
+    } while (repeat);
+    if (query.$or.length === 1) {
+      query = { ...query, ...query.$or[0] };
+      delete query.$or;
+    }
+    return query;
+  }
+
+  // Naive logic reducer for AND operations meant to be used only for pointer permissions.
+  reduceAndOperation(query: { $and: Array<any> }): any {
+    if (!query.$and) {
+      return query;
+    }
+    const queries = query.$and.map(q => this.objectToEntriesStrings(q));
+    let repeat = false;
+    do {
+      repeat = false;
+      for (let i = 0; i < queries.length - 1; i++) {
+        for (let j = i + 1; j < queries.length; j++) {
+          const [shorter, longer] = queries[i].length > queries[j].length ? [j, i] : [i, j];
+          const foundEntries = queries[shorter].reduce(
+            (acc, entry) => acc + (queries[longer].includes(entry) ? 1 : 0),
+            0
+          );
+          const shorterEntries = queries[shorter].length;
+          if (foundEntries === shorterEntries) {
+            // If the shorter query is completely contained in the longer one, we can strike
+            // out the shorter query.
+            query.$and.splice(shorter, 1);
+            queries.splice(shorter, 1);
+            repeat = true;
+            break;
+          }
+        }
+      }
+    } while (repeat);
+    if (query.$and.length === 1) {
+      query = { ...query, ...query.$and[0] };
+      delete query.$and;
+    }
+    return query;
+  }
+
   // Constraints query using CLP's pointer permissions (PP) if any.
   // 1. Etract the user id from caller's ACLgroup;
   // 2. Exctract a list of field names that are PP for target collection and operation;
@@ -1448,13 +1525,13 @@ class DatabaseController {
         }
         // if we already have a constraint on the key, use the $and
         if (Object.prototype.hasOwnProperty.call(query, key)) {
-          return { $and: [queryClause, query] };
+          return this.reduceAndOperation({ $and: [queryClause, query] });
         }
         // otherwise just add the constaint
         return Object.assign({}, query, queryClause);
       });
 
-      return queries.length === 1 ? queries[0] : { $or: queries };
+      return queries.length === 1 ? queries[0] : this.reduceOrOperation({ $or: queries });
     } else {
       return query;
     }

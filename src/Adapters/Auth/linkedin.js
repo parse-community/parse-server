@@ -4,17 +4,12 @@ const httpsRequest = require('./httpsRequest');
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request('me', authData.access_token, authData.is_mobile_sdk).then(
-    data => {
-      if (data && data.id == authData.id) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Linkedin auth is invalid for this user.'
-      );
+  return request('me', authData.access_token, authData.is_mobile_sdk).then(data => {
+    if (data && data.id == authData.id) {
+      return;
     }
-  );
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Linkedin auth is invalid for this user.');
+  });
 }
 
 // Returns a promise that fulfills iff this app id is valid.

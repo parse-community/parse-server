@@ -92,11 +92,7 @@ function loadAuthAdapter(provider, authOptions) {
 
   // Try the configuration methods
   if (providerOptions) {
-    const optionalAdapter = loadAdapter(
-      providerOptions,
-      undefined,
-      providerOptions
-    );
+    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
@@ -128,10 +124,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       return;
     }
 
-    const { adapter, appIds, providerOptions } = loadAuthAdapter(
-      provider,
-      authOptions
-    );
+    const { adapter, appIds, providerOptions } = loadAuthAdapter(provider, authOptions);
 
     return authDataValidator(adapter, appIds, providerOptions);
   };
