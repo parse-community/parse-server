@@ -133,10 +133,10 @@ async function check() {
       const version = test[ciKeyVersion];
       const newer = getNewerPatch(releasedVersions, version);
       if (newer) {
-        console.log(`❌ CI environment '${test.name}' uses old MongoDB version ${version} instead of latest version ${newer}.`);
+        console.log(`❌ CI environment '${test.name}' uses old MongoDB patch version ${version} instead of ${newer}.`);
         failed = true;
       } else {
-        console.log(`✅ CI environment '${test.name}' uses newest MongoDB version ${version}.`);
+        console.log(`✅ CI environment '${test.name}' uses newest MongoDB patch version ${version}.`);
       }
     }
 
@@ -144,10 +144,10 @@ async function check() {
     const testedVersions = tests.map(test => test[ciKeyVersion]);
     const untested = getUntestedMinorsAndMajors(releasedVersions, testedVersions);
     if (untested.length > 0) {
-      console.log(`❌ CI does not test against the following versions of MongoDB: ${untested.join(', ')}.`);
+      console.log(`❌ CI does not have environments using the following versions of MongoDB: ${untested.join(', ')}.`);
       failed = true;
     } else {
-      console.log(`✅ CI tests with all recent major and minor releases of MongoDB.`);
+      console.log(`✅ CI environments use all recent major and minor releases of MongoDB.`);
     }
 
     if (failed) {
