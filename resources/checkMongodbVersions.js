@@ -133,10 +133,10 @@ async function check() {
       const version = test[ciKeyVersion];
       const newer = getNewerPatch(releasedVersions, version);
       if (newer) {
-        console.log(`❌ CI environment '${test.name}' is testing with old MongoDB version ${version} instead of latest version ${newer}.`);
+        console.log(`❌ CI environment '${test.name}' uses old MongoDB version ${version} instead of latest version ${newer}.`);
         failed = true;
       } else {
-        console.log(`✅ CI environment '${test.name}' is testing with newest MongoDB version ${version}.`);
+        console.log(`✅ CI environment '${test.name}' uses newest MongoDB version ${version}.`);
       }
     }
 
@@ -147,11 +147,17 @@ async function check() {
       console.log(`❌ CI does not test against the following versions of MongoDB: ${untested.join(', ')}.`);
       failed = true;
     } else {
-      console.log(`✅ CI tests with recent major and minor releases of MongoDB.`);
+      console.log(`✅ CI tests with all recent major and minor releases of MongoDB.`);
     }
 
     if (failed) {
-      core.setFailed('CI environments are not up-to-date with MongoDB versions.');
+      core.setFailed(
+        `CI environments are not up-to-date with newest MongoDB versions.
+
+         Check the error messages above and update the MongoDB versions in the CI YAML
+         file. There may be versions of MongoDB that have reached their end-of-life
+         date and should be removed from the CI; see https://www.mongodb.com/support-policy.`
+      );
     }
 
   } catch (e) {
