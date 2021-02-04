@@ -36,22 +36,22 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.4.3, ReplicaSet, WiredTiger
+          - name: Mongo 4.4.x, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.4.3
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 4.2.12, ReplicaSet, WiredTiger
+          - name: Mongo 4.2.x, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.2.12
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 4.0.22, ReplicaSet, WiredTiger
+          - name: Mongo 4.0.x, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.0.22
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.22, Standalone, MMAPv1
+          - name: Mongo 3.6.x, Standalone, MMAPv1
             MONGODB_VERSION: 3.6.22
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
