@@ -192,6 +192,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
+  /* Options for Parse dashboard. Caution, do not use cloudFileEdit on a multi-instance production server.
+  :ENV: PARSE_SERVER_DASHBOARD_OPTIONS
+  :DEFAULT: false */
+  dashboardOptions: ?DashboardOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
   /* Mounts the GraphQL endpoint
@@ -284,4 +288,13 @@ export interface IdempotencyOptions {
   /* The duration in seconds after which a request record is discarded from the database, defaults to 300s.
   :DEFAULT: 300 */
   ttl: ?number;
+}
+
+export interface DashboardOptions {
+  /* Whether the Parse Dashboard can view cloud files.
+  :DEFAULT: false */
+  cloudFileView: ?boolean;
+  /* Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.
+  :DEFAULT: false */
+  cloudFileEdit: ?boolean;
 }

@@ -55,6 +55,9 @@ function getENVPrefix(iface) {
   if (iface.id.name === 'IdempotencyOptions') {
     return 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_';
   }
+  if (iface.id.name === 'DashboardOptions') {
+    return 'PARSE_SERVER_DASHBOARD_OPTIONS_';
+  }
 }
 
 function processProperty(property, iface) {
@@ -174,6 +177,13 @@ function parseDefaultValue(elt, value, t) {
       literalValue = t.objectExpression(props);
     }
     if (type == 'IdempotencyOptions') {
+      const object = parsers.objectParser(value);
+      const props = Object.keys(object).map((key) => {
+        return t.objectProperty(key, object[value]);
+      });
+      literalValue = t.objectExpression(props);
+    }
+    if (type == 'DashboardOptions') {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
         return t.objectProperty(key, object[value]);

@@ -141,6 +141,11 @@ export class CloudCodeRouter extends PromiseRouter {
       });
   }
   static saveCloudFile(req) {
+    const config = req.config || {};
+    const DashboardOptions = config.dashboardOptions || {};
+    if (!DashboardOptions.cloudFileEdit) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file editing is not active.');
+    }
     const file = req.url.replace('/scripts', '');
     const dirName = __dirname.split('lib')[0].split('node_modules')[0];
     const filePath = path.join(dirName, file);
@@ -154,6 +159,11 @@ export class CloudCodeRouter extends PromiseRouter {
     };
   }
   static getCloudFile(req) {
+    const config = req.config || {};
+    const DashboardOptions = config.dashboardOptions || {};
+    if (!(DashboardOptions.cloudFileView || DashboardOptions.cloudFileEdit)) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file viewing is not active.');
+    }
     const file = req.url.replace('/scripts', '');
     const dirName = __dirname.split('lib')[0].split('node_modules')[0];
     const filePath = path.join(dirName, file);
@@ -165,7 +175,11 @@ export class CloudCodeRouter extends PromiseRouter {
     };
   }
   static getCloudCode(req) {
-    const config = req.config;
+    const config = req.config || {};
+    const DashboardOptions = config.dashboardOptions || {};
+    if (!(DashboardOptions.cloudFileView || DashboardOptions.cloudFileEdit)) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file viewing is not active.');
+    }
     const dirName = __dirname.split('node_modules')[0];
     const cloudLocation = ('' + config.cloud).replace(dirName, '');
     const cloudFiles = [];

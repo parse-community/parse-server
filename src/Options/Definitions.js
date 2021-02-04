@@ -93,6 +93,13 @@ module.exports.ParseServerOptions = {
     action: parsers.objectParser,
     default: {},
   },
+  dashboardOptions: {
+    env: 'PARSE_SERVER_DASHBOARD_OPTIONS',
+    help:
+      'Options for Parse dashboard. Caution, do not use cloudFileEdit on a multi-instance production server.',
+    action: parsers.objectParser,
+    default: {},
+  },
   databaseAdapter: {
     env: 'PARSE_SERVER_DATABASE_ADAPTER',
     help: 'Adapter module for the database',
@@ -543,5 +550,20 @@ module.exports.IdempotencyOptions = {
       'The duration in seconds after which a request record is discarded from the database, defaults to 300s.',
     action: parsers.numberParser('ttl'),
     default: 300,
+  },
+};
+module.exports.DashboardOptions = {
+  cloudFileEdit: {
+    env: 'PARSE_SERVER_DASHBOARD_OPTIONS_CLOUD_FILE_EDIT',
+    help:
+      'Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  cloudFileView: {
+    env: 'PARSE_SERVER_DASHBOARD_OPTIONS_CLOUD_FILE_VIEW',
+    help: 'Whether the Parse Dashboard can view cloud files.',
+    action: parsers.booleanParser,
+    default: false,
   },
 };

@@ -21,7 +21,8 @@ export class FeaturesRouter extends PromiseRouter {
         },
         cloudCode: {
           jobs: true,
-          viewCode: true,
+          viewCode: (config.dashboardOptions || {}).cloudFileView || false,
+          editCode: (config.dashboardOptions || {}).cloudFileEdit || false,
         },
         logs: {
           level: true,

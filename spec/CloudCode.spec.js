@@ -50,7 +50,12 @@ describe('Cloud Code', () => {
   };
   it('can load cloud code file from dashboard', async done => {
     const cloudDir = './spec/cloud/cloudCodeAbsoluteFile.js';
-    await reconfigureServer({ cloud: cloudDir });
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+      },
+    });
     const options = Object.assign({}, masterKeyOptions, {
       method: 'GET',
       url: Parse.serverURL + '/releases/latest',
@@ -75,7 +80,12 @@ describe('Cloud Code', () => {
 
   it('can load multiple cloud code files from dashboard', async done => {
     const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
-    await reconfigureServer({ cloud: cloudDir });
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+      },
+    });
     const options = Object.assign({}, masterKeyOptions, {
       method: 'GET',
       url: Parse.serverURL + '/releases/latest',
@@ -95,9 +105,126 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('can server info for for file options', async () => {
+    const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
+    await reconfigureServer({
+      cloud: cloudDir,
+    });
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/serverInfo',
+    });
+    let { data } = await request(options);
+    expect(data).not.toBe(null);
+    expect(data.features).not.toBe(null);
+    expect(data.features.cloudCode).not.toBe(null);
+    expect(data.features.cloudCode.viewCode).toBe(false);
+    expect(data.features.cloudCode.editCode).toBe(false);
+
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+      },
+    });
+    data = (await request(options)).data;
+    expect(data).not.toBe(null);
+    expect(data.features).not.toBe(null);
+    expect(data.features.cloudCode).not.toBe(null);
+    expect(data.features.cloudCode.viewCode).toBe(true);
+    expect(data.features.cloudCode.editCode).toBe(false);
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+        cloudFileEdit: true,
+      },
+    });
+    data = (await request(options)).data;
+    expect(data).not.toBe(null);
+    expect(data.features).not.toBe(null);
+    expect(data.features.cloudCode).not.toBe(null);
+    expect(data.features.cloudCode.viewCode).toBe(true);
+    expect(data.features.cloudCode.editCode).toBe(true);
+  });
+
+  it('cannot view or edit cloud files by default', async () => {
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/releases/latest',
+    });
+    try {
+      await request(options);
+      fail('should not have been able to get cloud files');
+    } catch (e) {
+      expect(e.text).toBe('{"code":101,"error":"Dashboard file viewing is not active."}');
+    }
+    try {
+      options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+      await request(options);
+      fail('should not have been able to get cloud files');
+    } catch (e) {
+      expect(e.text).toBe('{"code":101,"error":"Dashboard file viewing is not active."}');
+    }
+    try {
+      options.method = 'POST';
+      options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+      options.body = {
+        data: 'new file text',
+      };
+      await request(options);
+      fail('should not have been able to get cloud files');
+    } catch (e) {
+      expect(e.text).toBe('{"code":101,"error":"Dashboard file editing is not active."}');
+    }
+  });
+
+  it('can view cloud code file from dashboard', async () => {
+    const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+      },
+    });
+    const options = Object.assign({}, masterKeyOptions, {
+      method: 'GET',
+      url: Parse.serverURL + '/releases/latest',
+    });
+    let res = await request(options);
+    expect(Array.isArray(res.data)).toBe(true);
+    const first = res.data[0];
+    expect(first.userFiles).toBeDefined();
+    expect(first.checksums).toBeDefined();
+    expect(first.userFiles).toContain(cloudDir);
+    expect(first.checksums).toContain(cloudDir);
+    options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+    res = await request(options);
+    let response = res.data;
+    expect(response).toContain(`require('./cloudCodeAbsoluteFile.js`);
+    response = response + '\nconst additionalData;\n';
+    options.method = 'POST';
+    options.url = Parse.serverURL + '/scripts/spec/cloud/cloudCodeRequireFiles.js';
+    options.body = {
+      data: response,
+    };
+    try {
+      await request(options);
+      fail('should have failed to save');
+    } catch (e) {
+      expect(e.text).toBe('{"code":101,"error":"Dashboard file editing is not active."}');
+    }
+  });
+
   it('can edit cloud code file from dashboard', async done => {
     const cloudDir = './spec/cloud/cloudCodeRequireFiles.js';
-    await reconfigureServer({ cloud: cloudDir });
+    await reconfigureServer({
+      cloud: cloudDir,
+      dashboardOptions: {
+        cloudFileView: true,
+        cloudFileEdit: true,
+      },
+    });
     const options = Object.assign({}, masterKeyOptions, {
       method: 'GET',
       url: Parse.serverURL + '/releases/latest',

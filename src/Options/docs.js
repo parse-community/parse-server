@@ -17,6 +17,7 @@
  * @property {Number|Boolean} cluster Run with cluster, optionally set the number of processes default to os.cpus().length
  * @property {String} collectionPrefix A collection prefix for the classes
  * @property {CustomPagesOptions} customPages custom pages for password validation and reset
+ * @property {DashboardOptions} dashboardOptions Options for Parse dashboard. Caution, do not use cloudFileEdit on a multi-instance production server.
  * @property {Adapter<StorageAdapter>} databaseAdapter Adapter module for the database
  * @property {Any} databaseOptions Options to pass to the mongodb client
  * @property {String} databaseURI The full URI to your database. Supported databases are mongodb or postgres.
@@ -117,4 +118,10 @@
  * @interface IdempotencyOptions
  * @property {String[]} paths An array of paths for which the feature should be enabled. The mount path must not be included, for example instead of `/parse/functions/myFunction` specifiy `functions/myFunction`. The entries are interpreted as regular expression, for example `functions/.*` matches all functions, `jobs/.*` matches all jobs, `classes/.*` matches all classes, `.*` matches all paths.
  * @property {Number} ttl The duration in seconds after which a request record is discarded from the database, defaults to 300s.
+ */
+
+/**
+ * @interface DashboardOptions
+ * @property {Boolean} cloudFileEdit Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.
+ * @property {Boolean} cloudFileView Whether the Parse Dashboard can view cloud files.
  */
