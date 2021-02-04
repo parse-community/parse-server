@@ -1,6 +1,7 @@
 'use strict'
 
 const mongoVersionList = require('mongodb-version-list');
+const core = require('@actions/core');
 const semver = require('semver');
 const yaml = require('yaml');
 const fs = require('fs').promises;
@@ -150,10 +151,11 @@ async function check() {
     }
 
     if (failed) {
-      throw 'CI environments are not up-to-date with MongoDB versions.';
+      core.setFailed('CI environments are not up-to-date with MongoDB versions.');
     }
 
   } catch (e) {
+    core.setFailed('Failed to check MongoDB versions with error: ' + e);
     throw 'Failed to check MongoDB versions with error: ' + e;
   }
 }
