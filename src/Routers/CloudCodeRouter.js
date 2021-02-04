@@ -142,8 +142,8 @@ export class CloudCodeRouter extends PromiseRouter {
   }
   static saveCloudFile(req) {
     const config = req.config || {};
-    const DashboardOptions = config.dashboardOptions || {};
-    if (!DashboardOptions.cloudFileEdit) {
+    const dashboardOptions = config.dashboardOptions || {};
+    if (!dashboardOptions.cloudFileEdit) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file editing is not active.');
     }
     const file = req.url.replace('/scripts', '');
@@ -160,8 +160,8 @@ export class CloudCodeRouter extends PromiseRouter {
   }
   static getCloudFile(req) {
     const config = req.config || {};
-    const DashboardOptions = config.dashboardOptions || {};
-    if (!(DashboardOptions.cloudFileView || DashboardOptions.cloudFileEdit)) {
+    const dashboardOptions = config.dashboardOptions || {};
+    if (!(dashboardOptions.cloudFileView || dashboardOptions.cloudFileEdit)) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file viewing is not active.');
     }
     const file = req.url.replace('/scripts', '');
@@ -176,8 +176,8 @@ export class CloudCodeRouter extends PromiseRouter {
   }
   static getCloudCode(req) {
     const config = req.config || {};
-    const DashboardOptions = config.dashboardOptions || {};
-    if (!(DashboardOptions.cloudFileView || DashboardOptions.cloudFileEdit)) {
+    const dashboardOptions = config.dashboardOptions || {};
+    if (!(dashboardOptions.cloudFileView || dashboardOptions.cloudFileEdit)) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Dashboard file viewing is not active.');
     }
     const dirName = __dirname.split('node_modules')[0];
