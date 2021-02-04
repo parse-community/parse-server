@@ -136,7 +136,7 @@ async function check() {
         console.log(`❌ CI environment '${test.name}' uses an old MongoDB patch version ${version} instead of ${newer}.`);
         failed = true;
       } else {
-        console.log(`✅ CI environment '${test.name}' uses the newest MongoDB patch version.`);
+        console.log(`✅ CI environment '${test.name}' uses the newest MongoDB patch version ${version}.`);
       }
     }
 
