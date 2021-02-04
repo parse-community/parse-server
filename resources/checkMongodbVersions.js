@@ -133,10 +133,10 @@ async function check() {
       const version = test[ciKeyVersion];
       const newer = getNewerPatch(releasedVersions, version);
       if (newer) {
-        console.log(`❌ CI environment '${test.name}' uses old MongoDB patch version ${version} instead of ${newer}.`);
+        console.log(`❌ CI environment '${test.name}' uses an old MongoDB patch version ${version} instead of ${newer}.`);
         failed = true;
       } else {
-        console.log(`✅ CI environment '${test.name}' uses newest MongoDB patch version ${version}.`);
+        console.log(`✅ CI environment '${test.name}' uses the newest MongoDB patch version.`);
       }
     }
 
