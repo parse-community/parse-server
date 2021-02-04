@@ -51,7 +51,7 @@ jobs:
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.21, Standalone, MMAPv1
+          - name: Mongo ${{ matrix.MONGODB_VERSION }}, Standalone, MMAPv1
             MONGODB_VERSION: 3.6.22
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
