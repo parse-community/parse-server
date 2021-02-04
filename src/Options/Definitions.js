@@ -579,7 +579,7 @@ module.exports.DashboardOptions = {
     action: parsers.booleanParser,
     default: false,
   },
-}
+};
 module.exports.AccountLockoutOptions = {
   duration: {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_DURATION',
