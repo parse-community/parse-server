@@ -88,11 +88,14 @@
     "jsdoc-babel": "0.5.0",
     "lint-staged": "10.2.3",
     "mongodb-runner": "4.8.1",
+    "mongodb-version-list": "1.0.0",
     "node-fetch": "2.6.1",
     "nyc": "15.1.0",
-    "prettier": "2.0.5"
+    "prettier": "2.0.5",
+    "yaml": "1.10.0"
   },
   "scripts": {
+    "ci:check": "node ./resources/checkMongodbVersions.js",
     "definitions": "node ./resources/buildConfigDefinitions.js",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
