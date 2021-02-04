@@ -152,11 +152,10 @@ async function check() {
 
     if (failed) {
       core.setFailed(
-        `CI environments are not up-to-date with newest MongoDB versions.
-
-         Check the error messages above and update the MongoDB versions in the CI YAML
-         file. There may be versions of MongoDB that have reached their end-of-life
-         date and should be removed from the CI; see https://www.mongodb.com/support-policy.`
+        'CI environments are not up-to-date with newest MongoDB versions.' +
+         '\n\nCheck the error messages above and update the MongoDB versions in the CI YAML' +
+         'file. There may be versions of MongoDB that have reached their official MongoDB end-of-life' +
+         'support date and should be removed from the CI; see https://www.mongodb.com/support-policy.'
       );
     }
 
