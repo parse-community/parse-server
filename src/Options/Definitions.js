@@ -27,7 +27,6 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_ALLOW_HEADERS',
     help: 'Add headers to Access-Control-Allow-Headers',
     action: parsers.arrayParser,
-  },
   allowOrigin: {
     env: 'PARSE_SERVER_ALLOW_ORIGIN',
     help: 'Sets the origin to Access-Control-Allow-Origin',
@@ -569,7 +568,7 @@ module.exports.DashboardOptions = {
   cloudFileEdit: {
     env: 'PARSE_SERVER_DASHBOARD_OPTIONS_CLOUD_FILE_EDIT',
     help:
-      'Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.',
+      'Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not use on multi-instance servers otherwise your cloud files will be inconsistent.',
     action: parsers.booleanParser,
     default: false,
   },
