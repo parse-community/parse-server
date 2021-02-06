@@ -304,7 +304,7 @@ export interface DashboardOptions {
   /* Whether the Parse Dashboard can view cloud files.
   :DEFAULT: false */
   cloudFileView: ?boolean;
-  /* Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.
+  /* Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not use on multi-instance servers otherwise your cloud files will be inconsistent.
   :DEFAULT: false */
   cloudFileEdit: ?boolean;
 }
