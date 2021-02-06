@@ -125,7 +125,7 @@
 
 /**
  * @interface DashboardOptions
- * @property {Boolean} cloudFileEdit Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not user on multi-instance servers otherwise your cloud files will be inconsistent.
+ * @property {Boolean} cloudFileEdit Whether the Parse Dashboard can edit cloud files. If set to true, dashboard can view and edit cloud code files. Do not use on multi-instance servers otherwise your cloud files will be inconsistent.
  * @property {Boolean} cloudFileView Whether the Parse Dashboard can view cloud files.
  */
 
