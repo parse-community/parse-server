@@ -22,6 +22,8 @@
 <p align="center">
     <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
     <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 4.2" src="https://img.shields.io/badge/mongodb-4.2-green.svg?logo=mongodb&style=flat">
+    <img alt="MongoDB 4.4" src="https://img.shields.io/badge/mongodb-4.4-green.svg?logo=mongodb&style=flat">
 </p>
 
 <h2 align="center">Our Sponsors</h2>
@@ -45,6 +47,8 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
+    - [Compatibility](#compatibility)
+      - [MongoDB Support](#mongodb-support)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
     - [Saving an Object](#saving-an-object)
@@ -60,7 +64,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
   - [Configuring File Adapters](#configuring-file-adapters)
-  - [Idempodency Enforcement](#idempodency-enforcement)
+  - [Idempotency Enforcement](#idempotency-enforcement)
   - [Localization](#localization)
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
@@ -85,7 +89,6 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Sponsors](#sponsors)
 - [Backers](#backers)
 
-
 # Getting Started
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
@@ -97,6 +100,18 @@ Before you start make sure you have installed:
 - [NodeJS](https://www.npmjs.com/) that includes `npm`
 - [MongoDB](https://www.mongodb.com/) or [PostgreSQL](https://www.postgresql.org/)(with [PostGIS](https://postgis.net) 2.2.0 or higher)
 - Optionally [Docker](https://www.docker.com/)
+
+### Compatibility
+
+#### MongoDB Support
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
+
+  | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
+  |-------------|----------------------|------------------|--------------------|
+  | MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
+  | MongoDB 4.0 | 4.0.22               | January 2022     | ✅ Fully compatible |
+  | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
+  | MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
 
 ### Locally
 ```bash
@@ -415,7 +430,7 @@ Parse Server allows developers to choose from several options when hosting files
 
 `GridFSBucketAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
-## Idempodency Enforcement
+## Idempotency Enforcement
  
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
