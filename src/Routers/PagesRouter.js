@@ -11,13 +11,34 @@ import Page from '../Page';
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
   passwordReset: new Page({ id: 'passwordReset', defaultFile: 'password_reset.html' }),
-  passwordResetSuccess: new Page({ id: 'passwordResetSuccess', defaultFile: 'password_reset_success.html' }),
-  passwordResetLinkInvalid: new Page({ id: 'passwordResetLinkInvalid', defaultFile: 'password_reset_link_invalid.html' }),
-  emailVerificationSuccess: new Page({ id: 'emailVerificationSuccess', defaultFile: 'email_verification_success.html' }),
-  emailVerificationSendFail: new Page({ id: 'emailVerificationSendFail', defaultFile: 'email_verification_send_fail.html' }),
-  emailVerificationSendSuccess: new Page({ id: 'emailVerificationSendSuccess', defaultFile: 'email_verification_send_success.html' }),
-  emailVerificationLinkInvalid: new Page({ id: 'emailVerificationLinkInvalid', defaultFile: 'email_verification_link_invalid.html' }),
-  emailVerificationLinkExpired: new Page({ id: 'emailVerificationLinkExpired', defaultFile: 'email_verification_link_expired.html' }),
+  passwordResetSuccess: new Page({
+    id: 'passwordResetSuccess',
+    defaultFile: 'password_reset_success.html',
+  }),
+  passwordResetLinkInvalid: new Page({
+    id: 'passwordResetLinkInvalid',
+    defaultFile: 'password_reset_link_invalid.html',
+  }),
+  emailVerificationSuccess: new Page({
+    id: 'emailVerificationSuccess',
+    defaultFile: 'email_verification_success.html',
+  }),
+  emailVerificationSendFail: new Page({
+    id: 'emailVerificationSendFail',
+    defaultFile: 'email_verification_send_fail.html',
+  }),
+  emailVerificationSendSuccess: new Page({
+    id: 'emailVerificationSendSuccess',
+    defaultFile: 'email_verification_send_success.html',
+  }),
+  emailVerificationLinkInvalid: new Page({
+    id: 'emailVerificationLinkInvalid',
+    defaultFile: 'email_verification_link_invalid.html',
+  }),
+  emailVerificationLinkExpired: new Page({
+    id: 'emailVerificationLinkExpired',
+    defaultFile: 'email_verification_link_expired.html',
+  }),
 });
 
 // All page parameters for reference to be used as template placeholders or query params
@@ -36,8 +57,8 @@ const pageParamHeaderPrefix = 'x-parse-page-param-';
 
 // The errors being thrown
 const errors = Object.freeze({
-  jsonFailedFileLoading: "failed to load JSON file",
-  fileOutsideAllowedScope: "not allowed to read file outside of pages directory"
+  jsonFailedFileLoading: 'failed to load JSON file',
+  fileOutsideAllowedScope: 'not allowed to read file outside of pages directory',
 });
 
 export class PagesRouter extends PromiseRouter {
@@ -50,9 +71,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Set instance properties
     this.pagesConfig = pages;
-    this.pagesEndpoint = pages.pagesEndpoint
-      ? pages.pagesEndpoint
-      : 'apps';
+    this.pagesEndpoint = pages.pagesEndpoint ? pages.pagesEndpoint : 'apps';
     this.pagesPath = pages.pagesPath
       ? path.resolve('./', pages.pagesPath)
       : path.resolve(__dirname, '../../public');
@@ -121,7 +140,7 @@ export class PagesRouter extends PromiseRouter {
       [pageParams.appName]: config.appName,
       [pageParams.token]: req.query.token,
       [pageParams.username]: req.query.username,
-      [pageParams.publicServerUrl]: config.publicServerURL
+      [pageParams.publicServerUrl]: config.publicServerURL,
     };
     return this.goToPage(req, pages.passwordReset, params);
   }
@@ -289,7 +308,10 @@ export class PagesRouter extends PromiseRouter {
     if (config.pages.enableLocalization && locale) {
       return Utils.getLocalizedPath(defaultPath, locale).then(({ path, subdir }) =>
         redirect
-          ? this.redirectResponse(this.composePageUrl(defaultFile, config.publicServerURL, subdir), params)
+          ? this.redirectResponse(
+            this.composePageUrl(defaultFile, config.publicServerURL, subdir),
+            params
+          )
           : this.pageResponse(path, params, placeholders)
       );
     } else {
@@ -356,7 +378,6 @@ export class PagesRouter extends PromiseRouter {
    * translation was found.
    */
   getJsonTranslation(locale) {
-
     // If there is no JSON resource
     if (this.jsonParameters === undefined) {
       return {};
@@ -366,11 +387,12 @@ export class PagesRouter extends PromiseRouter {
     locale = locale || this.pagesConfig.localizationFallbackLocale;
 
     // Get matching translation by locale, language or fallback locale
-    const language = locale.split("-")[0];
-    const resource = this.jsonParameters[locale]
-      || this.jsonParameters[language]
-      || this.jsonParameters[this.pagesConfig.localizationFallbackLocale]
-      || {};
+    const language = locale.split('-')[0];
+    const resource =
+      this.jsonParameters[locale] ||
+      this.jsonParameters[language] ||
+      this.jsonParameters[this.pagesConfig.localizationFallbackLocale] ||
+      {};
     const translation = resource.translation || {};
     return translation;
   }
@@ -385,7 +407,6 @@ export class PagesRouter extends PromiseRouter {
    * translation was found.
    */
   getJsonPlaceholders(locale, params = {}) {
-
     // If localization is disabled or there is no JSON resource
     if (!this.pagesConfig.enableLocalization || !this.pagesConfig.localizationJsonPath) {
       return {};
@@ -422,11 +443,12 @@ export class PagesRouter extends PromiseRouter {
     }
 
     // Get config placeholders; can be an object, a function or an async function
-    let configPlaceholders = typeof this.pagesConfig.placeholders === 'function'
-      ? this.pagesConfig.placeholders()
-      : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
-        ? this.pagesConfig.placeholders
-        : {};
+    let configPlaceholders =
+      typeof this.pagesConfig.placeholders === 'function'
+        ? this.pagesConfig.placeholders()
+        : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
+          ? this.pagesConfig.placeholders
+          : {};
     if (configPlaceholders instanceof Promise) {
       configPlaceholders = await configPlaceholders;
     }
@@ -477,7 +499,6 @@ export class PagesRouter extends PromiseRouter {
    * @returns {Promise<String>} The file content.
    */
   async readFile(filePath) {
-
     // Normalize path to prevent it from containing any directory changing
     // UNIX patterns which could expose the whole file system, e.g.
     // `http://example.com/parse/apps/../file.txt` requests a file outside
@@ -486,7 +507,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Abort if the path is outside of the path directory scope
     if (!normalizedPath.startsWith(this.pagesPath)) {
-      throw(errors.fileOutsideAllowedScope);
+      throw errors.fileOutsideAllowedScope;
     }
 
     return await fs.readFile(normalizedPath, 'utf-8');
@@ -503,7 +524,7 @@ export class PagesRouter extends PromiseRouter {
       const json = require(path.resolve('./', this.pagesConfig.localizationJsonPath));
       this.jsonParameters = json;
     } catch (e) {
-      throw(errors.jsonFailedFileLoading);
+      throw errors.jsonFailedFileLoading;
     }
   }
 
@@ -531,10 +552,10 @@ export class PagesRouter extends PromiseRouter {
    */
   getLocale(req) {
     const locale =
-      (req.query || {})[pageParams.locale]
-      || (req.body || {})[pageParams.locale]
-      || (req.params || {})[pageParams.locale]
-      || (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
+      (req.query || {})[pageParams.locale] ||
+      (req.body || {})[pageParams.locale] ||
+      (req.params || {})[pageParams.locale] ||
+      (req.headers || {})[pageParamHeaderPrefix + pageParams.locale];
     return locale;
   }
 
