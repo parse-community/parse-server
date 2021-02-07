@@ -48,7 +48,7 @@
     "mime": "2.4.7",
     "mongodb": "3.6.3",
     "parse": "2.19.0",
-    "pg-promise": "10.8.7",
+    "pg-promise": "10.9.0",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.4",
