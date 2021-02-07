@@ -35,6 +35,7 @@ describe('Pages Router', () => {
         'http://localhost:8378/1/apps/choose_password?appId=test',
         'http://localhost:8378/1/apps/email_verification_success.html',
         'http://localhost:8378/1/apps/password_reset_success.html',
+        'http://localhost:8378/1/apps/custom_json.html',
       ];
       for (const url of urls) {
         const response = await request({ url }).catch(e => e);
@@ -43,9 +44,8 @@ describe('Pages Router', () => {
     });
 
     it('can load file from custom pages path', async () => {
-      const _config = Object.assign({}, config);
-      _config.pages.pagesPath = './public';
-      await reconfigureServer(_config);
+      config.pages.pagesPath = './public';
+      await reconfigureServer(config);
 
       const response = await request({
         url: 'http://localhost:8378/1/apps/email_verification_link_invalid.html',
@@ -54,9 +54,8 @@ describe('Pages Router', () => {
     });
 
     it('can load file from custom pages endpoint', async () => {
-      const _config = Object.assign({}, config);
-      _config.pages.pagesEndpoint = 'pages';
-      await reconfigureServer(_config);
+      config.pages.pagesEndpoint = 'pages';
+      await reconfigureServer(config);
 
       const response = await request({
         url: `http://localhost:8378/1/pages/email_verification_link_invalid.html`,
