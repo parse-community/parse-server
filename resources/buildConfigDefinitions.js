@@ -166,7 +166,7 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    const literalTypes = ['IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
+    const literalTypes = ['Object', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
     if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
