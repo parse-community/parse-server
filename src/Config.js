@@ -10,7 +10,7 @@ import {
   IdempotencyOptions,
   FileUploadOptions,
   AccountLockoutOptions,
-  PagesOptions
+  PagesOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -139,6 +139,14 @@ export class Config {
       pages.localizationFallbackLocale = PagesOptions.localizationFallbackLocale.default;
     } else if (!isString(pages.localizationFallbackLocale)) {
       throw 'Parse Server option pages.localizationFallbackLocale must be a string.';
+    }
+    if (pages.placeholders === undefined) {
+      pages.placeholders = PagesOptions.placeholders.default;
+    } else if (
+      Object.prototype.toString.call(pages.placeholders) !== '[object Object]' &&
+      typeof pages.placeholders !== 'function'
+    ) {
+      throw 'Parse Server option pages.placeholders must be an object or a function.';
     }
     if (pages.forceRedirect === undefined) {
       pages.forceRedirect = PagesOptions.forceRedirect.default;

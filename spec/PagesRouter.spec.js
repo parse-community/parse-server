@@ -237,6 +237,9 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.localizationFallbackLocale).toBe(
           Definitions.PagesOptions.localizationFallbackLocale.default
         );
+        expect(Config.get(Parse.applicationId).pages.placeholders).toBe(
+          Definitions.PagesOptions.placeholders.default
+        );
         expect(Config.get(Parse.applicationId).pages.forceRedirect).toBe(
           Definitions.PagesOptions.forceRedirect.default
         );
@@ -269,6 +272,10 @@ describe('Pages Router', () => {
           { forceRedirect: 0 },
           { forceRedirect: {} },
           { forceRedirect: [] },
+          { placeholders: true },
+          { placeholders: 'a' },
+          { placeholders: 0 },
+          { placeholders: [] },
           { pagesPath: true },
           { pagesPath: 0 },
           { pagesPath: {} },
@@ -322,6 +329,51 @@ describe('Pages Router', () => {
         expect(pageResponse.calls.all()[0].returnValue).toBeDefined();
         const replacedContent = await pageResponse.calls.all()[0].returnValue;
         expect(replacedContent.text).not.toContain('{{error}}');
+      });
+
+      it('fills placeholders from config object', async () => {
+        config.pages.enableLocalization = false;
+        config.pages.placeholders = {
+          title: 'setViaConfig',
+        };
+        await reconfigureServer(config);
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/custom_json.html',
+          followRedirects: false,
+          method: 'GET',
+        });
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain(config.pages.placeholders.title);
+      });
+
+      it('fills placeholders from config function', async () => {
+        config.pages.enableLocalization = false;
+        config.pages.placeholders = () => {
+          return { title: 'setViaConfig' };
+        };
+        await reconfigureServer(config);
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/custom_json.html',
+          followRedirects: false,
+          method: 'GET',
+        });
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain(config.pages.placeholders().title);
+      });
+
+      it('fills placeholders from config promise', async () => {
+        config.pages.enableLocalization = false;
+        config.pages.placeholders = async () => {
+          return { title: 'setViaConfig' };
+        };
+        await reconfigureServer(config);
+        const response = await request({
+          url: 'http://localhost:8378/1/apps/custom_json.html',
+          followRedirects: false,
+          method: 'GET',
+        });
+        expect(response.status).toEqual(200);
+        expect(response.text).toContain((await config.pages.placeholders()).title);
       });
     });
 
@@ -518,8 +570,7 @@ describe('Pages Router', () => {
         spyOnProperty(Page.prototype, 'defaultFile').and.returnValue(jsonPageFile);
 
         const response = await request({
-          url:
-            `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
+          url: `http://localhost:8378/1/apps/test/request_password_reset?token=exampleToken&username=exampleUsername&locale=${exampleLocale}`,
           followRedirects: false,
         }).catch(e => e);
         expect(response.status).toEqual(200);

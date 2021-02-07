@@ -88,8 +88,9 @@
  * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
  * @property {String} localizationFallbackLocale The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
  * @property {String} localizationJsonPath The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.
- * @property {String} pagesEndpoint The API endoint for the pages. Default is the 'apps'.
+ * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
  * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+ * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be an simple object or a callback function.
  */
 
 /**

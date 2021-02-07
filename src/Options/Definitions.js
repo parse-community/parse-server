@@ -464,7 +464,7 @@ module.exports.PagesOptions = {
   },
   pagesEndpoint: {
     env: 'PARSE_SERVER_PAGES_PAGES_ENDPOINT',
-    help: "The API endoint for the pages. Default is the 'apps'.",
+    help: "The API endpoint for the pages. Default is 'apps'.",
     default: 'apps',
   },
   pagesPath: {
@@ -472,6 +472,13 @@ module.exports.PagesOptions = {
     help:
       "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.",
     default: './public',
+  },
+  placeholders: {
+    env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',
+    help:
+      'The placeholder keys and values which will be filled in pages; this can be an simple object or a callback function.',
+    action: parsers.objectParser,
+    default: {},
   },
 };
 module.exports.PagesCustomUrlsOptions = {

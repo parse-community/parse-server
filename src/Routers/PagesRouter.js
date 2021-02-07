@@ -421,11 +421,22 @@ export class PagesRouter extends PromiseRouter {
       return this.notFound();
     }
 
-    // Fill placeholders
-    const allPlaceholders = Object.assign({}, params, placeholders);
-    data = mustache.render(data, allPlaceholders);
+    // Get config placeholders; can be an object, a function or an async function
+    let configPlaceholders = typeof this.pagesConfig.placeholders === 'function'
+      ? this.pagesConfig.placeholders()
+      : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
+        ? this.pagesConfig.placeholders
+        : {};
+    if (configPlaceholders instanceof Promise) {
+      configPlaceholders = await configPlaceholders;
+    }
 
-    // Add placeholers in header to allow parsing for programmatic use
+    // Fill placeholders
+    const allPlaceholders = Object.assign({}, configPlaceholders, placeholders);
+    const paramsAndPlaceholders = Object.assign({}, params, allPlaceholders);
+    data = mustache.render(data, paramsAndPlaceholders);
+
+    // Add placeholders in header to allow parsing for programmatic use
     // of response, instead of having to parse the HTML content.
     const headers = Object.entries(params).reduce((m, p) => {
       if (p[1] !== undefined) {
@@ -455,7 +466,7 @@ export class PagesRouter extends PromiseRouter {
   }
 
   /**
-   * Reads and returns the contet of a file at a given path. File reading to
+   * Reads and returns the content of a file at a given path. File reading to
    * serve content on the static route is only allowed from the pages
    * directory on downwards.
    * -----------------------------------------------------------------------
