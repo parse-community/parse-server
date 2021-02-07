@@ -1,3 +1,5 @@
+'use strict';
+
 describe('Auth', () => {
   const { Auth, getAuthForSessionToken } = require('../lib/Auth.js');
   const Config = require('../lib/Config');
@@ -151,7 +153,7 @@ describe('Auth', () => {
   });
 
   describe('getRolesForUser', () => {
-    const rolesNumber = 300;
+    const rolesNumber = 100;
 
     it('should load all roles without config', async () => {
       const user = new Parse.User();
@@ -201,7 +203,6 @@ describe('Auth', () => {
     });
 
     it('should load all roles for different users with config', async () => {
-      const rolesNumber = 100;
       const user = new Parse.User();
       await user.signUp({
         username: 'hello',
