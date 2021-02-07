@@ -27,7 +27,7 @@
     "@parse/push-adapter": "3.4.0",
     "@parse/s3-files-adapter": "1.6.0",
     "@parse/simple-mailgun-adapter": "1.2.0",
-    "apollo-server-express": "2.19.1",
+    "apollo-server-express": "2.19.2",
     "bcryptjs": "2.4.3",
     "body-parser": "1.19.0",
     "commander": "5.1.0",
@@ -45,11 +45,11 @@
     "ldapjs": "2.2.3",
     "lodash": "4.17.20",
     "lru-cache": "5.1.1",
-    "mime": "2.4.7",
+    "mime": "2.5.0",
     "mongodb": "3.6.3",
     "mustache": "4.1.0",
     "parse": "2.19.0",
-    "pg-promise": "10.8.7",
+    "pg-promise": "10.9.0",
     "pluralize": "8.0.0",
     "redis": "3.0.2",
     "semver": "7.3.4",
@@ -94,7 +94,7 @@
     "prettier": "2.0.5"
   },
   "scripts": {
-    "definitions": "node ./resources/buildConfigDefinitions.js",
+    "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
     "lint-fix": "eslint --fix --cache ./",
@@ -117,7 +117,7 @@
     "parse-server": "bin/parse-server"
   },
   "optionalDependencies": {
-    "@node-rs/bcrypt": "0.4.1"
+    "@node-rs/bcrypt": "1.1.0"
   },
   "collective": {
     "type": "opencollective",
