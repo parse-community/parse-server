@@ -339,12 +339,12 @@ export class PagesRouter extends PromiseRouter {
       return this.fileResponse(absolutePath);
     }
 
-    // Get default parameters
+    // Get parameters
     const params = this.getDefaultParams(req.config);
+    params.locale = this.getLocale(req);
 
     // Get JSON placeholders
-    const locale = this.getLocale(req);
-    const placeholders = this.getJsonPlaceholders(locale, params);
+    const placeholders = this.getJsonPlaceholders(params.locale, params);
 
     return this.pageResponse(absolutePath, params, placeholders);
   }
@@ -445,7 +445,7 @@ export class PagesRouter extends PromiseRouter {
     // Get config placeholders; can be an object, a function or an async function
     let configPlaceholders =
       typeof this.pagesConfig.placeholders === 'function'
-        ? this.pagesConfig.placeholders()
+        ? this.pagesConfig.placeholders(params)
         : Object.prototype.toString.call(this.pagesConfig.placeholders) === '[object Object]'
           ? this.pagesConfig.placeholders
           : {};
