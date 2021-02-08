@@ -341,10 +341,13 @@ export class PagesRouter extends PromiseRouter {
 
     // Get parameters
     const params = this.getDefaultParams(req.config);
-    params.locale = this.getLocale(req);
+    const locale = this.getLocale(req);
+    if (locale) {
+      params.locale = locale;
+    }
 
     // Get JSON placeholders
-    const placeholders = this.getJsonPlaceholders(params.locale, params);
+    const placeholders = this.getJsonPlaceholders(locale, params);
 
     return this.pageResponse(absolutePath, params, placeholders);
   }
