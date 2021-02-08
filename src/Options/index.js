@@ -241,7 +241,7 @@ export interface PagesOptions {
   /* The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
   :DEFAULT: en */
   localizationFallbackLocale: ?string;
-  /* The placeholder keys and values which will be filled in pages; this can be an simple object or a callback function.
+  /* The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
   :DEFAULT: {} */
   placeholders: ?Object;
   /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).

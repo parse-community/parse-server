@@ -476,7 +476,7 @@ module.exports.PagesOptions = {
   placeholders: {
     env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',
     help:
-      'The placeholder keys and values which will be filled in pages; this can be an simple object or a callback function.',
+      'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
     action: parsers.objectParser,
     default: {},
   },
