@@ -161,6 +161,12 @@ function makeExpressHandler(appId, promiseHandler) {
             var status = result.status || 200;
             res.status(status);
 
+            if (result.headers) {
+              Object.keys(result.headers).forEach(header => {
+                res.set(header, result.headers[header]);
+              });
+            }
+
             if (result.text) {
               res.send(result.text);
               return;
@@ -174,11 +180,6 @@ function makeExpressHandler(appId, promiseHandler) {
                 res.send('Found. Redirecting to ' + result.location);
                 return;
               }
-            }
-            if (result.headers) {
-              Object.keys(result.headers).forEach(header => {
-                res.set(header, result.headers[header]);
-              });
             }
             res.json(result.response);
           },

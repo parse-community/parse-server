@@ -11,23 +11,62 @@ env:
   NODE_VERSION: 10
   PARSE_SERVER_TEST_TIMEOUT: 20000
 jobs:
+  check-ci:
+    name: CI Self-Check
+    timeout-minutes: 30
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.NODE_VERSION }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+      - name: Install dependencies
+        run: npm ci
+      - name: CI Self-Check
+        run: npm run ci:check
   check-mongo:
     strategy:
       matrix:
         include:
-          - name: Mongo 4.0.4, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.4
+          - name: Mongo 4.4, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.4.3
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Mongo 3.6.21
-            MONGODB_VERSION: 3.6.21
+          - name: Mongo 4.2, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.2.12
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 10
+          - name: Mongo 4.0, ReplicaSet, WiredTiger
+            MONGODB_VERSION: 4.0.22
+            MONGODB_TOPOLOGY: replicaset
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 10
+          - name: Mongo 3.6, Standalone, MMAPv1
+            MONGODB_VERSION: 3.6.22
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: mmapv1
             NODE_VERSION: 10
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
+            MONGODB_VERSION: 4.4.3
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 10
-          - name: Node 12.12.0
-            NODE_VERSION: 12.12.0
+          - name: Node 12.20
+            MONGODB_VERSION: 4.4.3
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 12.20.1
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04

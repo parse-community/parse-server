@@ -27,6 +27,7 @@ import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { LogsRouter } from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
+import { PagesRouter } from './Routers/PagesRouter';
 import { PublicAPIRouter } from './Routers/PublicAPIRouter';
 import { PushRouter } from './Routers/PushRouter';
 import { CloudCodeRouter } from './Routers/CloudCodeRouter';
@@ -134,7 +135,8 @@ class ParseServer {
    * @static
    * Create an express app for the parse server
    * @param {Object} options let you specify the maxUploadSize when creating the express app  */
-  static app({ maxUploadSize = '20mb', appId, directAccess }) {
+  static app(options) {
+    const { maxUploadSize = '20mb', appId, directAccess, pages } = options;
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -154,7 +156,13 @@ class ParseServer {
       });
     });
 
-    api.use('/', bodyParser.urlencoded({ extended: false }), new PublicAPIRouter().expressRouter());
+    api.use(
+      '/',
+      bodyParser.urlencoded({ extended: false }),
+      pages.enableRouter
+        ? new PagesRouter(pages).expressRouter()
+        : new PublicAPIRouter().expressRouter()
+    );
 
     api.use(bodyParser.json({ type: '*/*', limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
