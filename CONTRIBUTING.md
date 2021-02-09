@@ -99,12 +99,6 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
 
-### Generate Parse Server Config Definition
-
-If you want to make changes to [Parse Server Configuration][config] add the desired configuration to [src/Options/index.js][config-index] and run `npm run definitions`. This will output [src/Options/Definitions.js][config-def] and [src/Options/docs.js][config-docs].
-
-To view docs run `npm run docs` and check the `/out` directory.
-
 ## Feature Considerations
 ### Security Checks
 
@@ -115,6 +109,37 @@ A security check needs to be added for every new feature or enhancement that all
 For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
 
 Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+
+### Parse Error
+
+Introducing new Parse Errors requires the following steps:
+
+1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, eventhough an more general Parse Error already exists.
+⚠️ Currently (as of Dec. 2020), there are inconsistencies between the Parse Errors documented in the Parse Guides, coded in the Parse JS SDK and coded in Parse Server, therefore research regarding the availability of error codes has to be conducted in all of these sources.
+1. Add the new Parse Error to [/src/ParseError.js](https://github.com/parse-community/Parse-SDK-JS/blob/master/src/ParseError.js) in the Parse JavaScript SDK. This is the primary reference for Parse Errors for the Parse JavaScript SDK and Parse Server.
+1. Create a pull request for the Parse JavaScript SDK including the new Parse Errors. The PR needs to be merged and a new Parse JS SDK version needs to be released.
+1. Change the Parse JS SDK dependency in [package.json](https://github.com/parse-community/parse-server/blob/master/package.json) of Parse Server to the newly released Parse JS SDK version, so that the new Parse Error is recognized by Parse Server.
+1. When throwing the new Parse Error in code, do not hard-code the error code but instead reference the error code from the Parse Error. For example:
+    ```javascript
+    throw new Parse.Error(Parse.Error.EXAMPLE_ERROR_CODE, 'Example error message.');
+    ```
+1. Choose a descriptive error message that provdes more details about the specific error scenario. Different error messages may be used for the same error code. For example:
+    ```javascript
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'The file could not be saved because it exceeded the maximum allowed file size.');
+    throw new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'The file could not be saved because the file format was incorrect.');
+    ```
+1. Add the new Parse Error to the [docs](https://github.com/parse-community/docs/blob/gh-pages/_includes/common/errors.md).
+
+### Parse Server Configuration
+
+Introducing new [Parse Server configuration][config] parameters requires the following steps:
+
+1. Add parameters definitions in [/src/Options/index.js][config-index].
+1. If a nested configuration object has been added, add the environment variable option prefix to `getENVPrefix` in [/resources/buildConfigDefinition.js](https://github.com/parse-community/parse-server/blob/master/resources/buildConfigDefinition.js).
+1. Execute `npm run definitions` to automatically create the definitions in [/src/Options/Definitions.js][config-def] and [/src/Options/docs.js][config-docs].
+1. Add parameter value validation in [/src/Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js).
+1. Add test cases to ensure the correct parameter value validation. Parse Server throws an error at launch if an invalid value is set for any configuration parameter.
+1. Execute `npm run docs` to generate the documentation in the `/out` directory. Take a look at the documentation whether the description and formatting of the newly introduced parameters is satisfactory.
 
 ## Code of Conduct
 
