@@ -92,9 +92,7 @@ describe('cloud validator', () => {
       },
       async () => {
         await new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
+          setTimeout(resolve, 1000);
         });
         throw 'async error';
       }
@@ -132,7 +130,7 @@ describe('cloud validator', () => {
     await Parse.Cloud.run('myFunction');
   });
 
-  it('require user on cloud functions', done => {
+  it('require user on cloud functions', async done => {
     Parse.Cloud.define(
       'hello1',
       () => {
@@ -142,16 +140,14 @@ describe('cloud validator', () => {
         requireUser: true,
       }
     );
-
-    Parse.Cloud.run('hello1', {})
-      .then(() => {
-        fail('function should have failed.');
-      })
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
-        expect(error.message).toEqual('Validation failed. Please login to continue.');
-        done();
-      });
+    try {
+      await Parse.Cloud.run('hello1', {});
+      fail('function should have failed.');
+    } catch (error) {
+      expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
+      expect(error.message).toEqual('Validation failed. Please login to continue.');
+      done();
+    }
   });
 
   it('require master on cloud functions', done => {
@@ -605,16 +601,10 @@ describe('cloud validator', () => {
     expect(obj.get('foo')).toBe('bar');
 
     const query = new Parse.Query('beforeFind');
-    try {
-      const first = await query.first({ useMasterKey: true });
-      expect(first).toBeDefined();
-      expect(first.id).toBe(obj.id);
-      done();
-    } catch (e) {
-      console.log(e);
-      console.log(e.code);
-      throw e;
-    }
+    const first = await query.first({ useMasterKey: true });
+    expect(first).toBeDefined();
+    expect(first.id).toBe(obj.id);
+    done();
   });
 
   it('basic beforeDelete skipWithMasterKey', async function (done) {
@@ -1429,6 +1419,35 @@ describe('cloud validator', () => {
     }
   });
 
+  it('does not log on valid config', () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    Parse.Cloud.define('myFunction', () => {}, {
+      requireUser: true,
+      requireMaster: true,
+      validateMasterKey: false,
+      skipWithMasterKey: true,
+      requireUserKeys: {
+        Acc: {
+          constant: true,
+          options: ['A', 'B'],
+          required: true,
+          default: 'f',
+          type: String,
+        },
+      },
+      fields: {
+        Acc: {
+          constant: true,
+          options: ['A', 'B'],
+          required: true,
+          default: 'f',
+          type: String,
+        },
+      },
+    });
+    expect(logger.error).not.toHaveBeenCalled();
+  });
   it('Logs on invalid config', () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'error').and.callFake(() => {});
