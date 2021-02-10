@@ -25,7 +25,8 @@ function RestQuery(
   restWhere = {},
   restOptions = {},
   clientSDK,
-  runAfterFind = true
+  runAfterFind = true,
+  context
 ) {
   this.config = config;
   this.auth = auth;
@@ -36,6 +37,7 @@ function RestQuery(
   this.runAfterFind = runAfterFind;
   this.response = null;
   this.findOptions = {};
+  this.context = context || {};
 
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
@@ -98,7 +100,7 @@ function RestQuery(
   for (var option in restOptions) {
     switch (option) {
       case 'keys': {
-        const keys = restOptions.keys.split(',').concat(AlwaysSelectedKeys);
+        const keys = restOptions.keys.split(',').filter(key => key.length > 0).concat(AlwaysSelectedKeys);
         this.keys = Array.from(new Set(keys));
         break;
       }
@@ -222,7 +224,16 @@ RestQuery.prototype.each = function (callback) {
       return !finished;
     },
     async () => {
-      const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+      const query = new RestQuery(
+        config,
+        auth,
+        className,
+        restWhere,
+        restOptions,
+        clientSDK,
+        this.runAfterFind,
+        this.context
+      );
       const { results } = await query.execute();
       results.forEach(callback);
       finished = results.length < restOptions.limit;
@@ -772,7 +783,8 @@ RestQuery.prototype.runAfterFindTrigger = function () {
       this.className,
       this.response.results,
       this.config,
-      parseQuery
+      parseQuery,
+      this.context
     )
     .then(results => {
       // Ensure we properly set the className back

@@ -3157,4 +3157,40 @@ describe('afterLogin hook', () => {
 
     await Parse.Cloud.run('contextTest', {}, { context: { a: 'a' } });
   });
+
+  it('afterFind should have access to context', async () => {
+    Parse.Cloud.afterFind('TestObject', req => {
+      expect(req.context.a).toEqual('a');
+    });
+    const obj = new TestObject();
+    await obj.save();
+    const query = new Parse.Query(TestObject);
+    await query.find({ context: { a: 'a' } });
+  });
+});
+
+describe('sendEmail', () => {
+  it('can send email via Parse.Cloud', async done => {
+    const emailAdapter = {
+      sendMail: mailData => {
+        expect(mailData).toBeDefined();
+        expect(mailData.to).toBe('test');
+        done();
+      },
+    };
+    await reconfigureServer({
+      emailAdapter: emailAdapter,
+    });
+    const mailData = { to: 'test' };
+    await Parse.Cloud.sendEmail(mailData);
+  });
+
+  it('cannot send email without adapter', async () => {
+    const logger = require('../lib/logger').logger;
+    spyOn(logger, 'error').and.callFake(() => {});
+    await Parse.Cloud.sendEmail({});
+    expect(logger.error).toHaveBeenCalledWith(
+      'Failed to send email because no mail adapter is configured for Parse Server.'
+    );
+  });
 });

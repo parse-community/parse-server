@@ -1,7 +1,42 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
+
+__BREAKING CHANGES:__
+- NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
+___
+- NEW (EXPERIMENTAL): Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification. **Caution, this is an experimental feature that may not be appropriate for production.** [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- NEW: Added convenience method `Parse.Cloud.sendEmail(...)` to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
+- NEW: LiveQuery support for $and, $nor, $containedBy, $geoWithin, $geoIntersects queries [#7113](https://github.com/parse-community/parse-server/pull/7113). Thanks to [dplewis](https://github.com/dplewis)
+- NEW: Supporting patterns in LiveQuery server's config parameter `classNames` [#7131](https://github.com/parse-community/parse-server/pull/7131). Thanks to [Nes-si](https://github.com/Nes-si)
+- IMPROVE: Added new account lockout policy option `accountLockout.unlockOnPasswordReset` to automatically unlock account on password reset. [#7146](https://github.com/parse-community/parse-server/pull/7146). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- IMPROVE: Parse Server will from now on be continuously tested against all relevant MongoDB versions (minor versions). Added MongoDB compatibility table to Parse Server docs. [7161](https://github.com/parse-community/parse-server/pull/7161). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
+- FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
+- FIX: Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
+
+### 4.5.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
+
+__BREAKING CHANGES:__
+- FIX: Consistent casing for afterLiveQueryEvent. The afterLiveQueryEvent was introduced in 4.4.0 with inconsistent casing for the event names, which was fixed in 4.5.0. [#7023](https://github.com/parse-community/parse-server/pull/7023). Thanks to [dblythy](https://github.com/dblythy).
+___
+- FIX: Properly handle serverURL and publicServerUrl in Batch requests. [#7049](https://github.com/parse-community/parse-server/pull/7049). Thanks to [Zach Goldberg](https://github.com/ZachGoldberg).
+- IMPROVE: Prevent invalid column names (className and length). [#7053](https://github.com/parse-community/parse-server/pull/7053). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- IMPROVE: GraphQL: Remove viewer from logout mutation. [#7029](https://github.com/parse-community/parse-server/pull/7029). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- IMPROVE: GraphQL: Optimize on Relation. [#7044](https://github.com/parse-community/parse-server/pull/7044). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- NEW: Include sessionToken in onLiveQueryEvent. [#7043](https://github.com/parse-community/parse-server/pull/7043). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: Definitions for accountLockout and passwordPolicy. [#7040](https://github.com/parse-community/parse-server/pull/7040). Thanks to [dblythy](https://github.com/dblythy).
+- FIX: Fix typo in server definitions for emailVerifyTokenReuseIfValid. [#7037](https://github.com/parse-community/parse-server/pull/7037). Thanks to [dblythy](https://github.com/dblythy).
+- SECURITY FIX: LDAP auth stores password in plain text. See [GHSA-4w46-w44m-3jq3](https://github.com/parse-community/parse-server/security/advisories/GHSA-4w46-w44m-3jq3) for more details about the vulnerability and [da905a3](https://github.com/parse-community/parse-server/commit/da905a357d062ab4fea727a21eac231acc2ed92a) for the fix. Thanks to [Fabian Strachanski](https://github.com/fastrde).
+- NEW: Reuse tokens if they haven't expired. [#7017](https://github.com/parse-community/parse-server/pull/7017). Thanks to [dblythy](https://github.com/dblythy).
+- NEW: Add LDAPS-support to LDAP-Authcontroller. [#7014](https://github.com/parse-community/parse-server/pull/7014). Thanks to [Fabian Strachanski](https://github.com/fastrde).
+- FIX: (beforeSave/afterSave): Return value instead of Parse.Op for nested fields. [#7005](https://github.com/parse-community/parse-server/pull/7005). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- FIX: (beforeSave): Skip Sanitizing Database results. [#7003](https://github.com/parse-community/parse-server/pull/7003). Thanks to [Diamond Lewis](https://github.com/dplewis).
+- FIX: Fix includeAll for querying a Pointer and Pointer array. [#7002](https://github.com/parse-community/parse-server/pull/7002). Thanks to [Corey Baker](https://github.com/cbaker6).
+- FIX: Add encryptionKey to src/options/index.js. [#6999](https://github.com/parse-community/parse-server/pull/6999). Thanks to [dblythy](https://github.com/dblythy).
+- IMPROVE: Update PostgresStorageAdapter.js. [#6989](https://github.com/parse-community/parse-server/pull/6989). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t).
 
 ### 4.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...4.4.0)

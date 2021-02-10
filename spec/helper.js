@@ -1,4 +1,6 @@
 'use strict';
+const semver = require('semver');
+
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
@@ -88,6 +90,11 @@ const defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
+  fileUpload: {
+    enableForPublic: true,
+    enableForAnonymousUser: true,
+    enableForAuthenticatedUser: true,
+  },
   push: {
     android: {
       senderId: 'yolo',
@@ -129,6 +136,7 @@ const reconfigureServer = changedConfiguration => {
           if (error) {
             reject(error);
           } else {
+            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },
@@ -137,7 +145,6 @@ const reconfigureServer = changedConfiguration => {
       });
       cache.clear();
       parseServer = ParseServer.start(newConfiguration);
-      parseServer.app.use(require('./testing-routes').router);
       parseServer.expressApp.use('/1', err => {
         console.error(err);
         fail('should not call next');
@@ -407,6 +414,42 @@ global.it_only_db = db => {
     (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo')
   ) {
     return it;
+  } else {
+    return xit;
+  }
+};
+
+global.it_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_only_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || semver.satisfies(envVersion, version)) {
+    return fit;
+  } else {
+    return xit;
+  }
+};
+
+global.it_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
+global.fit_exclude_mongodb_version = version => {
+  const envVersion = process.env.MONGODB_VERSION;
+  if (!envVersion || !semver.satisfies(envVersion, version)) {
+    return fit;
   } else {
     return xit;
   }
