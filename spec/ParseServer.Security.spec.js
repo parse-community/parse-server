@@ -47,7 +47,6 @@ describe('SecurityChecks', () => {
     request(options).then(res => {
       expect(res.data.CLP).not.toBeUndefined();
       expect(res.data.ServerConfiguration).not.toBeUndefined();
-      expect(res.data.Files).not.toBeUndefined();
       expect(res.data.Database).not.toBeUndefined();
       expect(res.data.Total).not.toBeUndefined();
       done();

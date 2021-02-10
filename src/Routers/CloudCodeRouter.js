@@ -1,6 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 import Parse from 'parse/node';
 import rest from '../rest';
+import SecurityCheck from '../SecurityCheck';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');
 
@@ -131,7 +132,7 @@ export class CloudCodeRouter extends PromiseRouter {
     if (!req.config.securityChecks || !req.config.securityChecks.enableSecurityChecks) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
     }
-    const response = await Parse.SecurityCheck.getChecks();
+    const response = await SecurityCheck.getChecks();
     return {
       response,
     };

@@ -1,4 +1,3 @@
-import { _registerCheck, _getChecks } from './SecurityCheckStore';
 import logger from './logger';
 class SecurityCheck {
   constructor(data) {
@@ -8,7 +7,7 @@ class SecurityCheck {
         throw 'Security checks must have a group, title, and a warning.';
       }
       if (typeof group !== 'string') {
-        throw '"group" of the security check must be a string, e.g Parse.SecurityCheck.Category.Database';
+        throw '"group" of the security check must be a string, e.g SecurityCheck.Category.Database';
       }
       if (typeof success !== 'string') {
         throw '"success" message of the security check must be a string.';
@@ -68,7 +67,6 @@ SecurityCheck.Category = {
   ServerConfiguration: 'ServerConfiguration',
 };
 SecurityCheck.getChecks = async () => {
-  const checks = _getChecks();
   const resultsByGroup = {};
   let total = 0;
   const resolveSecurityCheck = async check => {
@@ -87,8 +85,18 @@ SecurityCheck.getChecks = async () => {
       total++;
     }
   };
-  await Promise.all(checks.map(check => resolveSecurityCheck(check)));
+  await Promise.all(securityCheckStore.map(check => resolveSecurityCheck(check)));
   resultsByGroup.Total = total;
   return resultsByGroup;
 };
+const securityCheckStore = [];
+function _registerCheck(securityCheck) {
+  for (const [i, check] of securityCheckStore.entries()) {
+    if (check.title == securityCheck.title && check.warning == securityCheck.warning) {
+      securityCheckStore[i] = securityCheck;
+      return;
+    }
+  }
+  securityCheckStore.push(securityCheck);
+}
 module.exports = SecurityCheck;

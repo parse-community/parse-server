@@ -42,7 +42,7 @@ import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import SecurityCheck from './SecurityCheck';
-import { registerServerSecurityChecks } from './ParseServerSecurityChecks';
+import { registerServerSecurityChecks } from './SecurityChecks';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -394,7 +394,6 @@ class ParseServer {
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
   Object.assign(Parse.Cloud, ParseCloud);
-  Parse.SecurityCheck = SecurityCheck;
   global.Parse = Parse;
 }
 
