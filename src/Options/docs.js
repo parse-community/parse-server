@@ -54,6 +54,7 @@
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
+ * @property {PagesOptions} pages The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
  * @property {String} playgroundPath Mount path for the GraphQL Playground, defaults to /playground
  * @property {Number} port The port to run the ParseServer, defaults to 1337.
@@ -80,9 +81,36 @@
  */
 
 /**
+ * @interface PagesOptions
+ * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
+ * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
+ * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+ * @property {Boolean} forceRedirect Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+ * @property {String} localizationFallbackLocale The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
+ * @property {String} localizationJsonPath The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.
+ * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
+ * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+ * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+ */
+
+/**
+ * @interface PagesCustomUrlsOptions
+ * @property {String} emailVerificationLinkExpired The URL to the custom page for email verification -> link expired.
+ * @property {String} emailVerificationLinkInvalid The URL to the custom page for email verification -> link invalid.
+ * @property {String} emailVerificationSendFail The URL to the custom page for email verification -> link send fail.
+ * @property {String} emailVerificationSendSuccess The URL to the custom page for email verification -> resend link -> success.
+ * @property {String} emailVerificationSuccess The URL to the custom page for email verification -> success.
+ * @property {String} passwordReset The URL to the custom page for password reset.
+ * @property {String} passwordResetLinkInvalid The URL to the custom page for password reset -> link invalid.
+ * @property {String} passwordResetSuccess The URL to the custom page for password reset -> success.
+ */
+
+/**
  * @interface CustomPagesOptions
  * @property {String} choosePassword choose password page path
+ * @property {String} expiredVerificationLink expired verification link page path
  * @property {String} invalidLink invalid link page path
+ * @property {String} invalidPasswordResetLink invalid password reset link page path
  * @property {String} invalidVerificationLink invalid verification link page path
  * @property {String} linkSendFail verification link send fail page path
  * @property {String} linkSendSuccess verification link send success page path
@@ -126,6 +154,7 @@
  * @interface AccountLockoutOptions
  * @property {Number} duration number of minutes that a locked-out account remains locked out before automatically becoming unlocked.
  * @property {Number} threshold number of failed sign-in attempts that will cause a user account to be locked
+ * @property {Boolean} unlockOnPasswordReset Is true if the account lock should be removed after a successful password reset.
  */
 
 /**

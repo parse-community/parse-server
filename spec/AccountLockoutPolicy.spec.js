@@ -1,6 +1,8 @@
 'use strict';
 
 const Config = require('../lib/Config');
+const Definitions = require('../lib/Options/Definitions');
+const request = require('../lib/request');
 
 const loginWithWrongCredentialsShouldFail = function (username, password) {
   return new Promise((resolve, reject) => {
@@ -338,5 +340,127 @@ describe('Account Lockout Policy: ', () => {
         );
         done();
       });
+  });
+});
+
+describe('lockout with password reset option', () => {
+  let sendPasswordResetEmail;
+
+  async function setup(options = {}) {
+    const accountLockout = Object.assign(
+      {
+        duration: 10000,
+        threshold: 1,
+      },
+      options
+    );
+    const config = {
+      appName: 'exampleApp',
+      accountLockout: accountLockout,
+      publicServerURL: 'http://localhost:8378/1',
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {},
+      },
+    };
+    await reconfigureServer(config);
+
+    sendPasswordResetEmail = spyOn(config.emailAdapter, 'sendPasswordResetEmail').and.callThrough();
+  }
+
+  it('accepts valid unlockOnPasswordReset option', async () => {
+    const values = [true, false];
+
+    for (const value of values) {
+      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeResolved();
+    }
+  });
+
+  it('rejects invalid unlockOnPasswordReset option', async () => {
+    const values = ['a', 0, {}, [], null];
+
+    for (const value of values) {
+      await expectAsync(setup({ unlockOnPasswordReset: value })).toBeRejected();
+    }
+  });
+
+  it('uses default value if unlockOnPasswordReset is not set', async () => {
+    await expectAsync(setup({ unlockOnPasswordReset: undefined })).toBeResolved();
+
+    const parseConfig = Config.get(Parse.applicationId);
+    expect(parseConfig.accountLockout.unlockOnPasswordReset).toBe(
+      Definitions.AccountLockoutOptions.unlockOnPasswordReset.default
+    );
+  });
+
+  it('allow login for locked account after password reset', async () => {
+    await setup({ unlockOnPasswordReset: true });
+    const config = Config.get(Parse.applicationId);
+
+    const user = new Parse.User();
+    const username = 'exampleUsername';
+    const password = 'examplePassword';
+    user.setUsername(username);
+    user.setPassword(password);
+    user.setEmail('mail@example.com');
+    await user.signUp();
+
+    await expectAsync(Parse.User.logIn(username, 'incorrectPassword')).toBeRejected();
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
+    await Parse.User.requestPasswordReset(user.getEmail());
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
+    const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+    const linkUrl = new URL(link);
+    const token = linkUrl.searchParams.get('token');
+    const newPassword = 'newPassword';
+    await request({
+      method: 'POST',
+      url: `${config.publicServerURL}/apps/test/request_password_reset`,
+      body: `new_password=${newPassword}&token=${token}&username=${username}`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      followRedirects: false,
+    });
+
+    await expectAsync(Parse.User.logIn(username, newPassword)).toBeResolved();
+  });
+
+  it('reject login for locked account after password reset (default)', async () => {
+    await setup();
+    const config = Config.get(Parse.applicationId);
+
+    const user = new Parse.User();
+    const username = 'exampleUsername';
+    const password = 'examplePassword';
+    user.setUsername(username);
+    user.setPassword(password);
+    user.setEmail('mail@example.com');
+    await user.signUp();
+
+    await expectAsync(Parse.User.logIn(username, 'incorrectPassword')).toBeRejected();
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
+    await Parse.User.requestPasswordReset(user.getEmail());
+    await expectAsync(Parse.User.logIn(username, password)).toBeRejected();
+
+    const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+    const linkUrl = new URL(link);
+    const token = linkUrl.searchParams.get('token');
+    const newPassword = 'newPassword';
+    await request({
+      method: 'POST',
+      url: `${config.publicServerURL}/apps/test/request_password_reset`,
+      body: `new_password=${newPassword}&token=${token}&username=${username}`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      followRedirects: false,
+    });
+
+    await expectAsync(Parse.User.logIn(username, newPassword)).toBeRejected();
   });
 });
