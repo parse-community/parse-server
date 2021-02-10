@@ -150,7 +150,9 @@ export class UsersRouter extends ClassesRouter {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid credentials.');
       }
 
-      const query = { objectId: req.userFromJWT.objectId };
+      const query = {
+        objectId: req.userFromJWT.id,
+      };
       return req.config.database
         .find('_User', query)
         .then(results => {
