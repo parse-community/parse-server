@@ -50,7 +50,7 @@ function getENVPrefix(iface) {
     'IdempotencyOptions' : 'PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_',
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
     'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
-    'SecurityChecksOptions' : 'PARSE_SERVER_SECURITY_CHECKS_'
+    'SecurityChecksOptions' : 'PARSE_SERVER_SECURITY_CHECKS_',
     'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_',
   }
   if (options[iface.id.name]) {
