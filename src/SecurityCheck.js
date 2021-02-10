@@ -83,15 +83,11 @@ SecurityCheck.getChecks = async () => {
       success,
     });
     resultsByGroup[group] = category;
-    if (result != 'success') {
+    if (result !== 'success') {
       total++;
     }
   };
-  const promises = [];
-  for (const check of checks) {
-    promises.push(resolveSecurityCheck(check));
-  }
-  await Promise.all(promises);
+  await Promise.all(checks.map(check => resolveSecurityCheck(check)));
   resultsByGroup.Total = total;
   return resultsByGroup;
 };
