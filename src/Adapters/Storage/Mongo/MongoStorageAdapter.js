@@ -132,6 +132,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     this._maxTimeMS = mongoOptions.maxTimeMS;
     this.canSortOnJoinTables = true;
     delete mongoOptions.maxTimeMS;
+    registerSecurityChecks(this);
   }
 
   connect() {
@@ -187,54 +188,6 @@ export class MongoStorageAdapter implements StorageAdapter {
       return Promise.resolve();
     }
     return this.client.close(false);
-  }
-  async getSecurityLogs(req: any) {
-    const options = req.config || req;
-    let databaseURI = options.databaseURI;
-    if (options.databaseAdapter && options.databaseAdapter._uri) {
-      databaseURI = options.databaseAdapter._uri;
-    }
-    const warnings = [];
-    if (databaseURI.includes('@')) {
-      databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
-      const pwd = options.databaseURI.split('//')[1].split('@')[0].split(':')[1] || '';
-      if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
-        warnings.push({
-          title: `Weak Database Password`,
-          message:
-            'The database password set lacks complexity and length. This could potentially allow an attacker to brute force their way into the database, exposing the database.',
-        });
-      }
-    }
-    let databaseAdmin = '' + databaseURI;
-    try {
-      const parsedURI = url.parse(databaseAdmin);
-      parsedURI.port = '27017';
-      databaseAdmin = url.format(parsedURI);
-    } catch (e) {
-      /* */
-    }
-    try {
-      await MongoClient.connect(databaseAdmin.toString(), { useNewUrlParser: true });
-      warnings.push({
-        title: `Unrestricted access to port 27017`,
-        message:
-          'The database requires no authentication to the admin port. This could potentially allow an attacker to easily access the database, exposing all of the database.',
-      });
-    } catch (e) {
-      /* */
-    }
-    try {
-      await MongoClient.connect(databaseURI, { useNewUrlParser: true });
-      warnings.push({
-        title: `Unrestricted access to the database`,
-        message:
-          'The database requires no authentication to connect. This could potentially allow an attacker to easily access the database, exposing all of the database.',
-      });
-    } catch (e) {
-      /* */
-    }
-    return warnings;
   }
 
   _adaptiveCollection(name: string) {
@@ -1106,5 +1059,61 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
   }
 }
-
+const registerSecurityChecks = database => {
+  let databaseURI = database._uri;
+  const databaseCheck = new Parse.SecurityCheck({
+    group: Parse.SecurityCheck.Category.Database,
+    title: `Weak Database Password`,
+    warning:
+      'The database password set lacks complexity and length. This could potentially allow an attacker to brute force their way into the database, exposing the database.',
+    success: `Strong Database Password`,
+  });
+  if (databaseURI.includes('@')) {
+    databaseURI = `mongodb://${databaseURI.split('@')[1]}`;
+    const pwd = database._uri.split('//')[1].split('@')[0].split(':')[1] || '';
+    if (!pwd.match('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{14,})')) {
+      databaseCheck.setFailed();
+    }
+  } else {
+    databaseCheck.setFailed();
+  }
+  let databaseAdmin = '' + databaseURI;
+  try {
+    const parsedURI = url.parse(databaseAdmin);
+    parsedURI.port = '27017';
+    databaseAdmin = url.format(parsedURI);
+  } catch (e) {
+    /* */
+  }
+  new Parse.SecurityCheck({
+    group: Parse.SecurityCheck.Category.Database,
+    title: `Unrestricted access to port 27017`,
+    warning:
+      'The database requires no authentication to the admin port. This could potentially allow an attacker to easily access the database, exposing all of the database.',
+    success: `Restricted port 27017`,
+    check: async () => {
+      try {
+        await MongoClient.connect(databaseAdmin.toString(), { useNewUrlParser: true });
+        return false;
+      } catch (e) {
+        console.log(e);
+      }
+    },
+  });
+  new Parse.SecurityCheck({
+    group: Parse.SecurityCheck.Category.Database,
+    title: `Unrestricted access to the database`,
+    warning:
+      'The database requires no authentication to connect. This could potentially allow an attacker to easily access the database, exposing all of the database.',
+    success: `Restricted access to the database`,
+    check: async () => {
+      try {
+        await MongoClient.connect(databaseURI, { useNewUrlParser: true });
+        return false;
+      } catch (e) {
+        console.log(e);
+      }
+    },
+  });
+};
 export default MongoStorageAdapter;

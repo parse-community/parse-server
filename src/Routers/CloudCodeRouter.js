@@ -1,7 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 import Parse from 'parse/node';
 import rest from '../rest';
-import { securityChecks } from '../SecurityChecks.js';
 const triggers = require('../triggers');
 const middleware = require('../middlewares');
 
@@ -54,7 +53,12 @@ export class CloudCodeRouter extends PromiseRouter {
       middleware.promiseEnforceMasterKeyAccess,
       CloudCodeRouter.deleteJob
     );
-    this.route('GET', '/securityChecks', middleware.promiseEnforceMasterKeyAccess, securityChecks);
+    this.route(
+      'GET',
+      '/securityChecks',
+      middleware.promiseEnforceMasterKeyAccess,
+      CloudCodeRouter.getSecurityChecks
+    );
   }
 
   static getJobs(req) {
@@ -121,5 +125,15 @@ export class CloudCodeRouter extends PromiseRouter {
           response,
         };
       });
+  }
+
+  static async getSecurityChecks(req) {
+    if (!req.config.securityChecks || !req.config.securityChecks.enableSecurityChecks) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Unauthorized');
+    }
+    const response = await Parse.SecurityCheck.getChecks();
+    return {
+      response,
+    };
   }
 }

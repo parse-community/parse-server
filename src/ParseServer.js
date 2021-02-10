@@ -40,7 +40,8 @@ import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
-import { securityChecks } from './SecurityChecks.js';
+import SecurityCheck from './SecurityCheck';
+import { registerServerSecurityChecks } from './ParseServerSecurityChecks';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -85,6 +86,12 @@ class ParseServer {
       })
       .then(() => {
         if ((options.securityChecks || {}).enableLogOutput) {
+          return registerServerSecurityChecks(this.config);
+        }
+        return Promise.resolve();
+      })
+      .then(() => {
+        if ((options.securityChecks || {}).enableLogOutput) {
           this.getSecurityChecks();
         }
       })
@@ -117,32 +124,25 @@ class ParseServer {
   }
 
   async getSecurityChecks() {
-    const config = Config.get(this.config.appId);
-    const response = await securityChecks(config);
+    const checks = await SecurityCheck.getChecks();
     const logger = logging.getLogger();
-    const warnings = response.response || {};
-    const clp = warnings.CLP;
-    const total = warnings.Total;
-    if (total == 0) {
-      return;
-    }
-    let errorString = `${total} security warning(s) for Parse Server:\n\n`;
-    delete warnings.Total;
-    delete warnings.CLP;
-    for (const security in warnings) {
-      for (const issue of warnings[security]) {
-        errorString += ` -${issue.title}\n`;
-        errorString += `   ${issue.message}\n\n`;
+    const { Total } = checks;
+    delete checks.Total;
+    for (const category in checks) {
+      const data = checks[category];
+      for (const check of data) {
+        const { title, warning, error, result, success } = check;
+        if (result === 'success') {
+          logger.warn(`✅ ${success}\n`);
+        } else {
+          const appendString = error && error !== 'Check failed.' ? ` with error: ${error}` : '';
+          logger.warn(`❌ ${warning}\n❗ Check "${title}" failed${appendString}\n`);
+        }
       }
     }
-    for (const issue in clp) {
-      errorString += `\n Add CLP for Class: ${issue}\n`;
-      const classData = clp[issue];
-      for (const clpIssue of classData) {
-        errorString += `   ${clpIssue.title}\n`;
-      }
+    if (Total !== 0) {
+      logger.warn(`❗ ${Total} security warning(s) for Parse Server`);
     }
-    logger.warn(errorString);
   }
 
   handleShutdown() {
@@ -386,6 +386,7 @@ class ParseServer {
 function addParseCloud() {
   const ParseCloud = require('./cloud-code/Parse.Cloud');
   Object.assign(Parse.Cloud, ParseCloud);
+  Parse.SecurityCheck = SecurityCheck;
   global.Parse = Parse;
 }
 

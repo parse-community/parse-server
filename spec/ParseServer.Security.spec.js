@@ -46,8 +46,9 @@ describe('SecurityChecks', () => {
     });
     request(options).then(res => {
       expect(res.data.CLP).not.toBeUndefined();
-      expect(res.data.ServerConfig).not.toBeUndefined();
+      expect(res.data.ServerConfiguration).not.toBeUndefined();
       expect(res.data.Files).not.toBeUndefined();
+      expect(res.data.Database).not.toBeUndefined();
       expect(res.data.Total).not.toBeUndefined();
       done();
     });
@@ -63,13 +64,14 @@ describe('SecurityChecks', () => {
     const logger = require('../lib/logger').logger;
     spyOn(logger, 'warn').and.callFake(() => {});
     await new Promise(resolve => {
-      setTimeout(() => {
-        resolve();
-      }, 2000);
+      setTimeout(resolve, 2000);
     });
-    expect(logger.warn.calls.mostRecent().args[0]).toContain(
-      'Clients are currently allowed to create new classes.'
-    );
+    let messagesCalled = '';
+    for (const item in logger.warn.calls.all()) {
+      const call = logger.warn.calls.all()[item];
+      messagesCalled = messagesCalled + ' ' + (call.args || []).join(' ');
+    }
+    expect(messagesCalled).toContain('Clients are currently allowed to create new classes.');
     done();
   });
 });
