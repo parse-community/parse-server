@@ -104,7 +104,7 @@ Before you start make sure you have installed:
 ### Compatibility
 
 #### MongoDB Support
-Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The tests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
 
   | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
   |-------------|----------------------|------------------|--------------------|
@@ -456,7 +456,7 @@ let api = new ParseServer({
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 |----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
-| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
 | `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
 
 ### Notes <!-- omit in toc -->
@@ -536,7 +536,7 @@ Pros:
 - All files are complete in their content and can be easily opened and previewed by viewing the file in a browser.
 
 Cons:
-- In most cases, a localized page differs only slighly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
+- In most cases, a localized page differs only slightly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
 
 #### Localization with JSON Resource
 
@@ -546,7 +546,7 @@ Pages are localized by adding placeholders in the HTML files and providing a JSO
 ```js
 root/
 ├── public/                  // pages base path
-│   ├── example.html         // the page containg placeholders
+│   ├── example.html         // the page containing placeholders
 ├── private/                 // folder outside of public scope
 │   └── translations.json    // JSON resource file
 ```
