@@ -104,7 +104,7 @@ Before you start make sure you have installed:
 ### Compatibility
 
 #### MongoDB Support
-Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The rests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
+Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. The tests run against the latest patch version of each MongoDB release. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported by MongoDB and have not reached their end-of-life date yet.
 
   | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
   |-------------|----------------------|------------------|--------------------|
@@ -112,6 +112,16 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
   | MongoDB 4.0 | 4.0.22               | January 2022     | ✅ Fully compatible |
   | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
   | MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
+  
+  #### Postgres Support
+  Parse Server is continuously tested with the most recent releases of Postgres and Postgis to ensure compatibility. The tests run against the latest patch version of each Postgres release. We follow the [Postgis docker  tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported by Postgres and Postgis and have not reached their end-of-life date yet.
+
+    | Postgres Version | Postgis Version | End-of-Life Date | Compatibility      |
+    |------------------|-----------------|------------------|--------------------|
+    | Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
+    | Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
+    | Postgres 12.x    | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
+    | Postgres 13.x    | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
 
 ### Locally
 ```bash
