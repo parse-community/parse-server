@@ -2,7 +2,19 @@
 
 We really want Parse to be yours, to see it grow and thrive in the open source community.
 
+Before you jump into the coding element of contributing, please make sure you first [open an issue](https://github.com/parse-community/parse-server/issues/new/choose) relating to your contribution, or continue the discussion in the existing issue.
+
+This helps us all plan out the best conceptual approach for the contribution, so that your time isn't wasted on approaches or features that could be tackled in a different way. Our team are also happy to give you pointers and suggestions to speed up the process.
+
+When opening an issue, please make sure you follow the templates and provide as much detail as possible.
+
+After you've completed the contribution, you'll need to submit a Pull Request (PR).
+
 If you are not familiar with Pull Requests and want to know more about them, you can visit the [Creating a pull request](https://help.github.com/articles/creating-a-pull-request/) article. It contains detailed informations about the process.
+
+If you need any help along the way, you can open a Draft PR where we can help finalize your contribution.
+
+Contributing can be challenging, so don't be discouraged if you're having difficulties. Please don't hesitate to ask for help.
 
 ## Setting up the project for debugging and contributing:
 
@@ -47,8 +59,6 @@ Once you have babel running in watch mode, you can start making changes to parse
 
 ### Please Do's
 
-* Before you jump into the coding element of contributing, please make sure you first [open an issue](https://github.com/parse-community/parse-server/issues/new/choose) relating to your contribution, or continue the discussion in the existing issue.
-* Feel free to ask the team or community for assistance with your contribition. If needed, you can open a Draft PR where we can help finalize your contribution.
 * Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
 * Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run: `npm run coverage`
 * Run the tests for the file you are working on with the following command: `npm test spec/MyFile.spec.js`
