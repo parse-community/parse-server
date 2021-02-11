@@ -26,6 +26,13 @@
     <img alt="MongoDB 4.4" src="https://img.shields.io/badge/mongodb-4.4-green.svg?logo=mongodb&style=flat">
 </p>
 
+<p align="center">
+    <img alt="Postgres 10" src="https://img.shields.io/badge/postgresql-10-green.svg?logo=postgresql&style=flat">
+    <img alt="Postgres 11" src="https://img.shields.io/badge/postgresql-11-green.svg?logo=postgresql&style=flat">
+    <img alt="Postgres 12" src="https://img.shields.io/badge/postgresql-12-green.svg?logo=postgresql&style=flat">
+    <img alt="Postgres 13" src="https://img.shields.io/badge/postgresql-13-green.svg?logo=postgresql&style=flat">
+</p>
+
 <h2 align="center">Our Sponsors</h2>
 <p align="center">
     <p align="center">Our backers and sponsors help to ensure the quality and timely development of the Parse Platform.</p>
