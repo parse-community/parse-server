@@ -65,6 +65,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
+* Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
 ### Run your tests against Postgres (optional)
 
