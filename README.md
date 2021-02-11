@@ -44,7 +44,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
-      - [Node.js Support](#node.js-support)
+      - [Node.js Support](#nodejs-support)
       - [MongoDB Support](#mongodb-support)
       - [Postgres Support](#postgres-support)
     - [Locally](#locally)
@@ -101,7 +101,7 @@ Before you start make sure you have installed:
 
 ### Compatibility
 
-#### Node.js
+#### Node.js Support
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
