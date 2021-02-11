@@ -56,6 +56,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
       - [MongoDB Support](#mongodb-support)
+      - [Postgres Support](#postgres-support)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
     - [Saving an Object](#saving-an-object)
