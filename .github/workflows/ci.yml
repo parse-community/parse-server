@@ -40,33 +40,43 @@ jobs:
             MONGODB_VERSION: 4.4.3
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10
+            NODE_VERSION: 14.15.5
           - name: Mongo 4.2, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.2.12
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10
+            NODE_VERSION: 14.15.5
           - name: Mongo 4.0, ReplicaSet, WiredTiger
             MONGODB_VERSION: 4.0.22
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10
+            NODE_VERSION: 14.15.5
           - name: Mongo 3.6, Standalone, MMAPv1
             MONGODB_VERSION: 3.6.22
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: mmapv1
-            NODE_VERSION: 10
+            NODE_VERSION: 14.15.5
           - name: Redis Cache
             PARSE_SERVER_TEST_CACHE: redis
             MONGODB_VERSION: 4.4.3
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 10
-          - name: Node 12.20
+            NODE_VERSION: 14.15.5
+          - name: Node 10
             MONGODB_VERSION: 4.4.3
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 12.20.1
+            NODE_VERSION: 10.23.3
+          - name: Node 12
+            MONGODB_VERSION: 4.4.3
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 12.20.2
+          - name: Node 15
+            MONGODB_VERSION: 4.4.3
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 15.8.0
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
