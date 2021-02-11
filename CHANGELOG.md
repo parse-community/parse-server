@@ -14,6 +14,7 @@ ___
 - IMPROVE: Parse Server is from now on continuously tested against all recent MongoDB versions that have not reached their end-of-life support date. Added MongoDB compatibility table to Parse Server docs. [7161](https://github.com/parse-community/parse-server/pull/7161). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - IMPROVE: Parse Server is from now on continuously tested against all recent Node.js versions that have not reached their end-of-life support date. [7161](https://github.com/parse-community/parse-server/pull/7177). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
+- IMPROVE: Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
 - FIX: Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
 

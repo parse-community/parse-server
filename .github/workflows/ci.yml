@@ -114,7 +114,20 @@ jobs:
           CI: true
       - run: bash <(curl -s https://codecov.io/bash)
   check-postgres:
-    name: Postgresql
+    strategy:
+      matrix:
+        include:
+          - name: Postgres 10, Postgis 3.1
+            POSTGRES_IMAGE: postgis/postgis:10-3.1
+          - name: Postgres 11, Postgis 3.1
+            POSTGRES_IMAGE: postgis/postgis:11-3.1
+          - name: Postgres 12, Postgis 3.1
+            POSTGRES_IMAGE: postgis/postgis:12-3.1
+          - name: Postgres 12, Postgis 3.0
+            POSTGRES_IMAGE: postgis/postgis:12-3.0
+          - name: Postgres 13, Postgis 3.1
+            POSTGRES_IMAGE: postgis/postgis:13-3.1
+    name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
     services:
@@ -123,7 +136,7 @@ jobs:
         ports:
           - 6379:6379
       postgres:
-        image: postgis/postgis:11-3.0
+        image: ${{ matrix.POSTGRES_IMAGE }}
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -135,7 +148,6 @@ jobs:
           --health-retries 5
     env:
       PARSE_SERVER_TEST_DB: postgres
-      POSTGRES_MAJOR_VERSION: 11
       PARSE_SERVER_TEST_DATABASE_URI: postgres://postgres:postgres@localhost:5432/parse_server_postgres_adapter_test_database
     steps:
       - uses: actions/checkout@v2
