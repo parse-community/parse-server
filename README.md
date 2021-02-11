@@ -116,12 +116,12 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
   #### Postgres Support
   Parse Server is continuously tested with the most recent releases of Postgres and Postgis to ensure compatibility. The tests run against the latest patch version of each Postgres release. We follow the [Postgis docker  tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported by Postgres and Postgis and have not reached their end-of-life date yet.
 
-    | Postgres Version | Postgis Version | End-of-Life Date | Compatibility      |
-    |------------------|-----------------|------------------|--------------------|
-    | Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
-    | Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
-    | Postgres 12.x    | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
-    | Postgres 13.x    | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
+| Postgres Version | Postgis Version | End-of-Life Date | Compatibility      |
+|------------------|-----------------|------------------|--------------------|
+| Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
+| Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
+| Postgres 12.x    | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
+| Postgres 13.x    | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
 
 ### Locally
 ```bash
