@@ -51,7 +51,7 @@ async function checkNodeVersions() {
   const releasedVersions = allVersions.versions;
 
   await new CiVersionCheck({
-    packageName: 'Nodejs',
+    packageName: 'Node.js',
     packageSupportUrl: 'https://github.com/nodejs/node/blob/master/CHANGELOG.md',
     yamlFilePath: './.github/workflows/ci.yml',
     ciEnvironmentsKeyPath: 'jobs.check-mongo.strategy.matrix.include',
