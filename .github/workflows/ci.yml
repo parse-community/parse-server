@@ -72,6 +72,11 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.15.5
+          - name: Node 15
+            MONGODB_VERSION: 4.4.3
+            MONGODB_TOPOLOGY: standalone
+            MONGODB_STORAGE_ENGINE: wiredTiger
+            NODE_VERSION: 15.8.0
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
