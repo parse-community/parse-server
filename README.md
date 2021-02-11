@@ -17,20 +17,9 @@
     <a href="https://www.npmjs.com/package/parse-server"><img alt="npm version" src="https://img.shields.io/npm/v/parse-server.svg?style=flat"></a>
     <a href="https://community.parseplatform.org/"><img alt="Join the conversation" src="https://img.shields.io/discourse/https/community.parseplatform.org/topics.svg"></a>
     <a href="https://snyk.io/test/github/parse-community/parse-server"><img alt="Snyk badge" src="https://snyk.io/test/github/parse-community/parse-server/badge.svg"></a>
-</p>
-
-<p align="center">
-    <img alt="MongoDB 3.6" src="https://img.shields.io/badge/mongodb-3.6-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 4.0" src="https://img.shields.io/badge/mongodb-4.0-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 4.2" src="https://img.shields.io/badge/mongodb-4.2-green.svg?logo=mongodb&style=flat">
-    <img alt="MongoDB 4.4" src="https://img.shields.io/badge/mongodb-4.4-green.svg?logo=mongodb&style=flat">
-</p>
-
-<p align="center">
-    <img alt="Postgres 10" src="https://img.shields.io/badge/postgresql-10-green.svg?logo=postgresql&style=flat">
-    <img alt="Postgres 11" src="https://img.shields.io/badge/postgresql-11-green.svg?logo=postgresql&style=flat">
-    <img alt="Postgres 12" src="https://img.shields.io/badge/postgresql-12-green.svg?logo=postgresql&style=flat">
-    <img alt="Postgres 13" src="https://img.shields.io/badge/postgresql-13-green.svg?logo=postgresql&style=flat">
+    <a href="https://nodejs.org/"><img alt="Node.js 10,12,14,15" src="https://img.shields.io/badge/nodejs-10,_12,_14,_15-green.svg?logo=node.js&style=flat"></a>
+    <a href="https://www.mongodb.com/"><img alt="MongoDB 3.6,4.0,4.2,4.4" src="https://img.shields.io/badge/mongodb-3.6,_4.0,_4.2,_4.4-green.svg?logo=mongodb&style=flat"></a>
+   <a href="https://www.postgresql.org"> <img alt="PostgreSQL 10,11,12,13" src="https://img.shields.io/badge/postgresql-10,_11,_12,_13-green.svg?logo=postgresql&style=flat"></a>
 </p>
 
 <h2 align="center">Our Sponsors</h2>
