@@ -107,16 +107,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Postgres 10
+          - name: Postgres 10, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:10-3.1
             POSTGRES_MAJOR_VERSION: 10
-          - name: Postgres 11
+          - name: Postgres 11, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:11-3.1
             POSTGRES_MAJOR_VERSION: 11
-          - name: Postgres 12
+          - name: Postgres 12, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:12-3.1
             POSTGRES_MAJOR_VERSION: 12
-          - name: Postgres 13
+          - name: Postgres 12, Postgis 3.0
+            POSTGRES_IMAGE: postgis/postgis:12-3.0
+            POSTGRES_MAJOR_VERSION: 12
+          - name: Postgres 13, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
             POSTGRES_MAJOR_VERSION: 13
     name: ${{ matrix.name }}
