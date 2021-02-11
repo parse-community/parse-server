@@ -24,7 +24,7 @@ class CiVersionCheck {
    * @param {Array<String>} config.releasedVersions The released versions of
    * the package to check against.
    * @param {Array<String>} config.ignoreReleasedVersions The versions to
-   * ignore when checking whether the CI tests against the newest versions.
+   * ignore when checking whether the CI tests against the latest versions.
    * This can be used in case there is a package release for which Parse
    * Server compatibility is not required.
    * @param {String} [config.latestComponent='patch'] The version component
@@ -177,7 +177,7 @@ class CiVersionCheck {
   }
 
   /**
-   * Returns the newest version for a given version and component.
+   * Returns the latest version for a given version and component.
    * @param {Array<String>} versions The versions in which to search.
    * @param {String} version The version for which a newer version
    * should be searched.
@@ -250,7 +250,7 @@ class CiVersionCheck {
           console.log(`❌ CI environment '${test.name}' uses an old ${this.packageName} ${this.latestComponent} version ${version} instead of ${newer}.`);
           failed = true;
         } else {
-          console.log(`✅ CI environment '${test.name}' uses the newest ${this.packageName} ${this.latestComponent} version ${version}.`);
+          console.log(`✅ CI environment '${test.name}' uses the latest ${this.packageName} ${this.latestComponent} version ${version}.`);
         }
       }
 
@@ -266,10 +266,10 @@ class CiVersionCheck {
 
       if (failed) {
         core.setFailed(
-          `CI environments are not up-to-date with newest ${this.packageName} versions.` +
+          `CI environments are not up-to-date with the latest ${this.packageName} versions.` +
           `\n\nCheck the error messages above and update the ${this.packageName} versions in the CI YAML ` +
-          `file. Additionally, there may be versions of ${this.packageName} that have reached their official end-of-life ` +
-          `support date and should be removed from the CI; see ${this.packageSupportUrl}.`
+          `file.\n\nℹ️ Additionally, there may be versions of ${this.packageName} that have reached their official end-of-life ` +
+          `support date and should be removed from the CI, see ${this.packageSupportUrl}.`
         );
       }
 
