@@ -101,7 +101,7 @@ Before you start make sure you have installed:
 
 ### Compatibility
 
-#### Node.js Support
+#### Node.js
 Parse Server is continuously tested with the most recent releases of Node.js to ensure compatibility. We follow the [Node.js Long Term Support plan](https://github.com/nodejs/Release) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
@@ -111,7 +111,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 14 | 14.15.4              | April 2023       | ✅ Fully compatible |
 | Node.js 15 | 15.8.0               | June 2021        | ✅ Fully compatible |
 
-#### MongoDB Support
+#### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
@@ -121,7 +121,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
 | MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
   
-#### Postgres Support
+#### Postgres
 Parse Server is continuously tested with the most recent releases of Postgres and Postgis to ensure compatibility. We follow the [Postgis docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
 
 | Postgres Version | Postgis Version | End-of-Life Date | Compatibility      |
