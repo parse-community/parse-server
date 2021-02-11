@@ -3340,94 +3340,130 @@ describe('schemas', () => {
       });
     });
 
-    it('lets you add and delete indexes', done => {
-      request({
+    it('lets you add and delete indexes', async () => {
+      // Wait due to index building in MongoDB on background process with collection lock
+      const waitForIndexBuild = new Promise(r => setTimeout(r, 500));
+
+      await request({
         url: 'http://localhost:8378/1/schemas/NewClass',
         method: 'POST',
         headers: masterKeyHeaders,
         json: true,
         body: {},
-      }).then(() => {
-        request({
-          url: 'http://localhost:8378/1/schemas/NewClass',
-          method: 'PUT',
-          headers: masterKeyHeaders,
-          json: true,
-          body: {
-            fields: {
-              aString: { type: 'String' },
-              bString: { type: 'String' },
-              cString: { type: 'String' },
-              dString: { type: 'String' },
-            },
-            indexes: {
-              name1: { aString: 1 },
-              name2: { bString: 1 },
-              name3: { cString: 1 },
-            },
-          },
-        }).then(response => {
-          expect(
-            dd(response.data, {
-              className: 'NewClass',
-              fields: {
-                ACL: { type: 'ACL' },
-                createdAt: { type: 'Date' },
-                updatedAt: { type: 'Date' },
-                objectId: { type: 'String' },
-                aString: { type: 'String' },
-                bString: { type: 'String' },
-                cString: { type: 'String' },
-                dString: { type: 'String' },
-              },
-              classLevelPermissions: defaultClassLevelPermissions,
-              indexes: {
-                _id_: { _id: 1 },
-                name1: { aString: 1 },
-                name2: { bString: 1 },
-                name3: { cString: 1 },
-              },
-            })
-          ).toEqual(undefined);
-          request({
-            url: 'http://localhost:8378/1/schemas/NewClass',
-            method: 'PUT',
-            headers: masterKeyHeaders,
-            json: true,
-            body: {
-              indexes: {
-                name1: { __op: 'Delete' },
-                name2: { __op: 'Delete' },
-                name4: { dString: 1 },
-              },
-            },
-          }).then(response => {
-            expect(response.data).toEqual({
-              className: 'NewClass',
-              fields: {
-                ACL: { type: 'ACL' },
-                createdAt: { type: 'Date' },
-                updatedAt: { type: 'Date' },
-                objectId: { type: 'String' },
-                aString: { type: 'String' },
-                bString: { type: 'String' },
-                cString: { type: 'String' },
-                dString: { type: 'String' },
-              },
-              classLevelPermissions: defaultClassLevelPermissions,
-              indexes: {
-                _id_: { _id: 1 },
-                name3: { cString: 1 },
-                name4: { dString: 1 },
-              },
-            });
-            config.database.adapter.getIndexes('NewClass').then(indexes => {
-              expect(indexes.length).toEqual(3);
-              done();
-            });
-          });
-        });
       });
+
+      let response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aString: { type: 'String' },
+            bString: { type: 'String' },
+            cString: { type: 'String' },
+            dString: { type: 'String' },
+          },
+          indexes: {
+            name1: { aString: 1 },
+            name2: { bString: 1 },
+            name3: { cString: 1 },
+          },
+        },
+      });
+
+      expect(
+        dd(response.data, {
+          className: 'NewClass',
+          fields: {
+            ACL: { type: 'ACL' },
+            createdAt: { type: 'Date' },
+            updatedAt: { type: 'Date' },
+            objectId: { type: 'String' },
+            aString: { type: 'String' },
+            bString: { type: 'String' },
+            cString: { type: 'String' },
+            dString: { type: 'String' },
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            name1: { aString: 1 },
+            name2: { bString: 1 },
+            name3: { cString: 1 },
+          },
+        })
+      ).toEqual(undefined);
+
+      await waitForIndexBuild;
+      response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { __op: 'Delete' },
+            name2: { __op: 'Delete' },
+          },
+        },
+      });
+
+      expect(response.data).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          aString: { type: 'String' },
+          bString: { type: 'String' },
+          cString: { type: 'String' },
+          dString: { type: 'String' },
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: {
+          _id_: { _id: 1 },
+          name3: { cString: 1 },
+        },
+      });
+
+      await waitForIndexBuild;
+      response = await request({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        method: 'PUT',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name4: { dString: 1 },
+          },
+        },
+      });
+
+      expect(response.data).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: { type: 'ACL' },
+          createdAt: { type: 'Date' },
+          updatedAt: { type: 'Date' },
+          objectId: { type: 'String' },
+          aString: { type: 'String' },
+          bString: { type: 'String' },
+          cString: { type: 'String' },
+          dString: { type: 'String' },
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: {
+          _id_: { _id: 1 },
+          name3: { cString: 1 },
+          name4: { dString: 1 },
+        },
+      });
+
+      await waitForIndexBuild;
+      const indexes = await config.database.adapter.getIndexes('NewClass');
+      expect(indexes.length).toEqual(3);
     });
 
     it('cannot delete index that does not exist', done => {

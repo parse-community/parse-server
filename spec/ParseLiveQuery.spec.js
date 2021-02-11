@@ -56,6 +56,29 @@ describe('ParseLiveQuery', function () {
     await object.save();
   });
 
+  it('can use patterns in className', async done => {
+    await reconfigureServer({
+      liveQuery: {
+        classNames: ['Test.*'],
+      },
+      startLiveQueryServer: true,
+      verbose: false,
+      silent: true,
+    });
+    const object = new TestObject();
+    await object.save();
+
+    const query = new Parse.Query(TestObject);
+    query.equalTo('objectId', object.id);
+    const subscription = await query.subscribe();
+    subscription.on('update', object => {
+      expect(object.get('foo')).toBe('bar');
+      done();
+    });
+    object.set({ foo: 'bar' });
+    await object.save();
+  });
+
   it('expect afterEvent create', async done => {
     await reconfigureServer({
       liveQuery: {

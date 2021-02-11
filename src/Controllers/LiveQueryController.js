@@ -9,7 +9,9 @@ export class LiveQueryController {
     if (!config || !config.classNames) {
       this.classNames = new Set();
     } else if (config.classNames instanceof Array) {
-      this.classNames = new Set(config.classNames);
+      const classNames = config.classNames
+        .map(name => new RegExp("^" + name + "$"));
+      this.classNames = new Set(classNames);
     } else {
       throw 'liveQuery.classes should be an array of string';
     }
@@ -43,7 +45,12 @@ export class LiveQueryController {
   }
 
   hasLiveQuery(className: string): boolean {
-    return this.classNames.has(className);
+    for (const name of this.classNames) {
+      if (name.test(className)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {

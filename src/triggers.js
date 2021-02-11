@@ -721,9 +721,8 @@ async function builtInTriggerValidator(options, request, auth) {
         }
         if (opt.type) {
           const type = getType(opt.type);
-          if (type == 'array' && !Array.isArray(val)) {
-            throw `Validation failed. Invalid type for ${key}. Expected: array`;
-          } else if (typeof val !== type) {
+          const valType = Array.isArray(val) ? 'array' : typeof val;
+          if (valType !== type) {
             throw `Validation failed. Invalid type for ${key}. Expected: ${type}`;
           }
         }

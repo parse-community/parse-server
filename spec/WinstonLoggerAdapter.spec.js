@@ -258,4 +258,15 @@ describe('verbose logs', () => {
     const log = results.find(x => x.message === 'testing verbose logs with 123');
     expect(log);
   });
+
+  it('verbose logs should interpolate stdout', async () => {
+    await reconfigureServer({ verbose: true, silent: false, logsFolder: null });
+    spyOn(process.stdout, 'write');
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('verbose', 'testing verbose logs with %j', {
+      hello: 'world',
+    });
+    const firstLog = process.stdout.write.calls.first().args[0];
+    expect(firstLog).toBe('verbose: testing verbose logs with {"hello":"world"}\n');
+  });
 });

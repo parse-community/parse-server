@@ -313,6 +313,50 @@ describe('matchesQuery', function () {
     expect(matchesQuery(player, orQuery)).toBe(true);
   });
 
+  it('matches an $and query', () => {
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+      score: 12,
+    };
+
+    const q = new Parse.Query('Player');
+    q.equalTo('name', 'Player 1');
+    const q2 = new Parse.Query('Player');
+    q2.equalTo('score', 12);
+    const q3 = new Parse.Query('Player');
+    q3.equalTo('score', 100);
+    const andQuery1 = Parse.Query.and(q, q2);
+    const andQuery2 = Parse.Query.and(q, q3);
+    expect(matchesQuery(player, q)).toBe(true);
+    expect(matchesQuery(player, q2)).toBe(true);
+    expect(matchesQuery(player, andQuery1)).toBe(true);
+    expect(matchesQuery(player, andQuery2)).toBe(false);
+  });
+
+  it('matches an $nor query', () => {
+    const player = {
+      id: new Id('Player', 'P1'),
+      name: 'Player 1',
+      score: 12,
+    };
+
+    const q = new Parse.Query('Player');
+    q.equalTo('name', 'Player 1');
+    const q2 = new Parse.Query('Player');
+    q2.equalTo('name', 'Player 2');
+    const q3 = new Parse.Query('Player');
+    q3.equalTo('name', 'Player 3');
+
+    const norQuery1 = Parse.Query.nor(q, q2);
+    const norQuery2 = Parse.Query.nor(q2, q3);
+    expect(matchesQuery(player, q)).toBe(true);
+    expect(matchesQuery(player, q2)).toBe(false);
+    expect(matchesQuery(player, q3)).toBe(false);
+    expect(matchesQuery(player, norQuery1)).toBe(false);
+    expect(matchesQuery(player, norQuery2)).toBe(true);
+  });
+
   it('matches $regex queries', function () {
     const player = {
       id: new Id('Player', 'P1'),
@@ -631,5 +675,100 @@ describe('matchesQuery', function () {
     q.greaterThanOrEqualTo('dateObject', now);
     q.greaterThanOrEqualTo('dateJSON', now);
     expect(matchesQuery(Object.assign({}, obj), q)).toBe(true);
+  });
+
+  it('should support containedBy query', () => {
+    const obj1 = {
+      id: new Id('Numbers', 'N1'),
+      numbers: [0, 1, 2],
+    };
+    const obj2 = {
+      id: new Id('Numbers', 'N2'),
+      numbers: [2, 0],
+    };
+    const obj3 = {
+      id: new Id('Numbers', 'N3'),
+      numbers: [1, 2, 3, 4],
+    };
+
+    const q = new Parse.Query('Numbers');
+    q.containedBy('numbers', [1, 2, 3, 4, 5]);
+    expect(matchesQuery(obj1, q)).toBe(false);
+    expect(matchesQuery(obj2, q)).toBe(false);
+    expect(matchesQuery(obj3, q)).toBe(true);
+  });
+
+  it('should support withinPolygon query', () => {
+    const sacramento = {
+      id: new Id('Location', 'L1'),
+      location: new Parse.GeoPoint(38.52, -121.5),
+      name: 'Sacramento',
+    };
+    const honolulu = {
+      id: new Id('Location', 'L2'),
+      location: new Parse.GeoPoint(21.35, -157.93),
+      name: 'Honolulu',
+    };
+    const sf = {
+      id: new Id('Location', 'L3'),
+      location: new Parse.GeoPoint(37.75, -122.68),
+      name: 'San Francisco',
+    };
+
+    const points = [
+      new Parse.GeoPoint(37.85, -122.33),
+      new Parse.GeoPoint(37.85, -122.9),
+      new Parse.GeoPoint(37.68, -122.9),
+      new Parse.GeoPoint(37.68, -122.33),
+    ];
+    const q = new Parse.Query('Location');
+    q.withinPolygon('location', points);
+
+    expect(matchesQuery(sacramento, q)).toBe(false);
+    expect(matchesQuery(honolulu, q)).toBe(false);
+    expect(matchesQuery(sf, q)).toBe(true);
+  });
+
+  it('should support polygonContains query', () => {
+    const p1 = [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+    ];
+    const p2 = [
+      [0, 0],
+      [0, 2],
+      [2, 2],
+      [2, 0],
+    ];
+    const p3 = [
+      [10, 10],
+      [10, 15],
+      [15, 15],
+      [15, 10],
+      [10, 10],
+    ];
+
+    const obj1 = {
+      id: new Id('Bounds', 'B1'),
+      polygon: new Parse.Polygon(p1),
+    };
+    const obj2 = {
+      id: new Id('Bounds', 'B2'),
+      polygon: new Parse.Polygon(p2),
+    };
+    const obj3 = {
+      id: new Id('Bounds', 'B3'),
+      polygon: new Parse.Polygon(p3),
+    };
+
+    const point = new Parse.GeoPoint(0.5, 0.5);
+    const q = new Parse.Query('Bounds');
+    q.polygonContains('polygon', point);
+
+    expect(matchesQuery(obj1, q)).toBe(true);
+    expect(matchesQuery(obj2, q)).toBe(true);
+    expect(matchesQuery(obj3, q)).toBe(false);
   });
 });
