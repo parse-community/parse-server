@@ -44,6 +44,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
+      - [Node.js Support](#node.js-support)
       - [MongoDB Support](#mongodb-support)
       - [Postgres Support](#postgres-support)
     - [Locally](#locally)
