@@ -68,6 +68,7 @@
     "@babel/plugin-transform-flow-strip-types": "7.9.0",
     "@babel/preset-env": "7.10.0",
     "@parse/minami": "1.0.0",
+    "all-node-versions": "8.0.0",
     "apollo-cache-inmemory": "1.6.6",
     "apollo-client": "2.6.10",
     "apollo-link": "1.2.14",
@@ -97,7 +98,7 @@
     "yaml": "1.10.0"
   },
   "scripts": {
-    "ci:check": "node ./resources/checkMongodbVersions.js",
+    "ci:check": "node ./resources/ci/ciCheck.js",
     "definitions": "node ./resources/buildConfigDefinitions.js && prettier --write 'src/Options/*.js'",
     "docs": "jsdoc -c ./jsdoc-conf.json",
     "lint": "flow && eslint --cache ./",
