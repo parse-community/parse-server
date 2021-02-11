@@ -278,7 +278,8 @@ describe('cloud validator', () => {
         },
       }
     );
-    await Parse.Cloud.run('hello', { data: [{ foo: 'bar' }] });
+    const result = await Parse.Cloud.run('hello', { data: [{ foo: 'bar' }] });
+    expect(result).toBe('Hello world!');
   });
 
   it('set params type', done => {
