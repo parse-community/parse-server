@@ -44,9 +44,9 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
-      - [Node.js Support](#nodejs-support)
-      - [MongoDB Support](#mongodb-support)
-      - [Postgres Support](#postgres-support)
+      - [Node.js](#nodejs-support)
+      - [MongoDB](#mongodb-support)
+      - [PostgreSQL](#postgresql-support)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
     - [Saving an Object](#saving-an-object)
@@ -121,10 +121,10 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
 | MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
   
-#### Postgres
-Parse Server is continuously tested with the most recent releases of Postgres and Postgis to ensure compatibility. We follow the [Postgis docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
+#### PostgreSQL
+Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility. We follow the [PostGIS docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Postgres Version | Postgis Version | End-of-Life Date | Compatibility      |
+| Version          | PostGIS Version | End-of-Life Date | Compatibility      |
 |------------------|-----------------|------------------|--------------------|
 | Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
 | Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
