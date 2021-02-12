@@ -2,7 +2,19 @@
 
 We really want Parse to be yours, to see it grow and thrive in the open source community.
 
+Before you jump into the coding element of contributing, please make sure you first [open an issue](https://github.com/parse-community/parse-server/issues/new/choose) relating to your contribution, or continue the discussion in the existing issue.
+
+This helps us all plan out the best conceptual approach for the contribution, so that your time isn't wasted on approaches or features that could be tackled in a different way. Our team are also happy to give you pointers and suggestions to speed up the process.
+
+When opening an issue, please make sure you follow the templates and provide as much detail as possible.
+
+After you've completed the contribution, you'll need to submit a Pull Request (PR).
+
 If you are not familiar with Pull Requests and want to know more about them, you can visit the [Creating a pull request](https://help.github.com/articles/creating-a-pull-request/) article. It contains detailed informations about the process.
+
+If you need any help along the way, you can open a Draft PR where we can help finalize your contribution.
+
+Contributing can be challenging, so don't be discouraged if you're having difficulties. Please don't hesitate to ask for help.
 
 ## Setting up the project for debugging and contributing:
 
@@ -53,6 +65,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 * Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
+* Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
 ### Run your tests against Postgres (optional)
 
