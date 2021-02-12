@@ -32,12 +32,13 @@ jobs:
         run: npm ci
       - name: CI Self-Check
         run: npm run ci:check
+        continue-on-error: true
       - name: Create PR to upgrade CI environments if needed
         if: ${{ always() }}
         uses: peter-evans/create-pull-request@v3
         with:
           title: Upgrade CI environments
-          body: This is an automated PR to upgrade package versions in CI environments for MongoDB, Node.js.
+          body: This is an automated PR to upgrade package versions in CI environments.
           commit-message: Upgrading versions of MongoDB / Node.js
           branch: upgrade-ci-environments
           base: master
