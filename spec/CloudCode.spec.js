@@ -1779,6 +1779,39 @@ describe('beforeSave hooks', () => {
     const myObject = new MyObject();
     myObject.save().then(() => done());
   });
+
+  it('should respect custom object ids (#6733)', async () => {
+    Parse.Cloud.beforeSave('TestObject', req => {
+      expect(req.object.id).toEqual('test_6733');
+    });
+
+    await reconfigureServer({ allowCustomObjectId: true });
+
+    const req = request({
+      // Parse JS SDK does not currently support custom object ids (see #1097), so we do a REST request
+      method: 'POST',
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      body: {
+        objectId: 'test_6733',
+        foo: 'bar',
+      },
+    });
+
+    {
+      const res = await req;
+      expect(res.data.objectId).toEqual('test_6733');
+    }
+
+    const query = new Parse.Query('TestObject');
+    query.equalTo('objectId', 'test_6733');
+    const res = await query.find();
+    expect(res.length).toEqual(1);
+    expect(res[0].get('foo')).toEqual('bar');
+  });
 });
 
 describe('afterSave hooks', () => {
