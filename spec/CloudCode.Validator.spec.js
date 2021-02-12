@@ -878,6 +878,150 @@ describe('cloud validator', () => {
       });
   });
 
+  it('basic validator requireAnyUserRoles', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireUser: true,
+        requireAnyUserRoles: ['Admin'],
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. User does not match the required roles.');
+    }
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('Admin', roleACL);
+    role.getUsers().add(user);
+    await role.save({ useMasterKey: true });
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
+  it('basic validator requireAllUserRoles', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireUser: true,
+        requireAllUserRoles: ['Admin', 'Admin2'],
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. User does not match all the required roles.');
+    }
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('Admin', roleACL);
+    role.getUsers().add(user);
+
+    const role2 = new Parse.Role('Admin2', roleACL);
+    role2.getUsers().add(user);
+    await Promise.all([role.save({ useMasterKey: true }), role2.save({ useMasterKey: true })]);
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
+  it('allow requireAnyUserRoles to be a function', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireUser: true,
+        requireAnyUserRoles: () => {
+          return ['Admin Func'];
+        },
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. User does not match the required roles.');
+    }
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('Admin Func', roleACL);
+    role.getUsers().add(user);
+    await role.save({ useMasterKey: true });
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
+  it('allow requireAllUserRoles to be a function', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireUser: true,
+        requireAllUserRoles: () => {
+          return ['AdminA', 'AdminB'];
+        },
+      }
+    );
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. User does not match all the required roles.');
+    }
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('AdminA', roleACL);
+    role.getUsers().add(user);
+
+    const role2 = new Parse.Role('AdminB', roleACL);
+    role2.getUsers().add(user);
+    await Promise.all([role.save({ useMasterKey: true }), role2.save({ useMasterKey: true })]);
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
+  it('basic requireAllUserRoles but no user', async function (done) {
+    Parse.Cloud.define(
+      'cloudFunction',
+      () => {
+        return true;
+      },
+      {
+        requireAllUserRoles: ['Admin'],
+      }
+    );
+    try {
+      await Parse.Cloud.run('cloudFunction');
+      fail('cloud validator should have failed.');
+    } catch (e) {
+      expect(e.message).toBe('Validation failed. Please login to continue.');
+    }
+    const user = await Parse.User.signUp('testuser', 'p@ssword');
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('Admin', roleACL);
+    role.getUsers().add(user);
+    await role.save({ useMasterKey: true });
+    await Parse.Cloud.run('cloudFunction');
+    done();
+  });
+
   it('basic beforeSave requireMaster', function (done) {
     Parse.Cloud.beforeSave('BeforeSaveFail', () => {}, {
       requireMaster: true,

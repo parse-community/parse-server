@@ -168,6 +168,17 @@ export function getTrigger(className, triggerType, applicationId) {
   return get(Category.Triggers, `${triggerType}.${className}`, applicationId);
 }
 
+export async function runTrigger(trigger, name, request, auth) {
+  if (!trigger) {
+    return;
+  }
+  await maybeRunValidator(request, name, auth);
+  if (request.skipWithMasterKey) {
+    return;
+  }
+  return await trigger(request);
+}
+
 export function getFileTrigger(type, applicationId) {
   return getTrigger(FileClassName, type, applicationId);
 }
@@ -424,7 +435,7 @@ export function maybeRunAfterFindTrigger(
     });
     return Promise.resolve()
       .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${className}`);
+        return maybeRunValidator(request, `${triggerType}.${className}`, auth);
       })
       .then(() => {
         if (request.skipWithMasterKey) {
@@ -489,7 +500,7 @@ export function maybeRunQueryTrigger(
   );
   return Promise.resolve()
     .then(() => {
-      return maybeRunValidator(requestObject, `${triggerType}.${className}`);
+      return maybeRunValidator(requestObject, `${triggerType}.${className}`, auth);
     })
     .then(() => {
       if (requestObject.skipWithMasterKey) {
@@ -591,7 +602,7 @@ export function resolveError(message, defaultOpts) {
   }
   return error;
 }
-export function maybeRunValidator(request, functionName) {
+export function maybeRunValidator(request, functionName, auth) {
   const theValidator = getValidator(functionName, Parse.applicationId);
   if (!theValidator) {
     return;
@@ -603,7 +614,7 @@ export function maybeRunValidator(request, functionName) {
     return Promise.resolve()
       .then(() => {
         return typeof theValidator === 'object'
-          ? builtInTriggerValidator(theValidator, request)
+          ? builtInTriggerValidator(theValidator, request, auth)
           : theValidator(request);
       })
       .then(() => {
@@ -618,7 +629,7 @@ export function maybeRunValidator(request, functionName) {
       });
   });
 }
-function builtInTriggerValidator(options, request) {
+async function builtInTriggerValidator(options, request, auth) {
   if (request.master && !options.validateMasterKey) {
     return;
   }
@@ -631,7 +642,10 @@ function builtInTriggerValidator(options, request) {
   ) {
     reqUser = request.object;
   }
-  if (options.requireUser && !reqUser) {
+  if (
+    (options.requireUser || options.requireAnyUserRoles || options.requireAllUserRoles) &&
+    !reqUser
+  ) {
     throw 'Validation failed. Please login to continue.';
   }
   if (options.requireMaster && !request.master) {
@@ -722,6 +736,38 @@ function builtInTriggerValidator(options, request) {
       }
     }
   }
+  let userRoles = options.requireAnyUserRoles;
+  let requireAllRoles = options.requireAllUserRoles;
+  const promises = [Promise.resolve(), Promise.resolve(), Promise.resolve()];
+  if (userRoles || requireAllRoles) {
+    promises[0] = auth.getUserRoles();
+  }
+  if (typeof userRoles === 'function') {
+    promises[1] = userRoles();
+  }
+  if (typeof requireAllRoles === 'function') {
+    promises[2] = requireAllRoles();
+  }
+  const [roles, resolvedUserRoles, resolvedRequireAll] = await Promise.all(promises);
+  if (resolvedUserRoles && Array.isArray(resolvedUserRoles)) {
+    userRoles = resolvedUserRoles;
+  }
+  if (resolvedRequireAll && Array.isArray(resolvedRequireAll)) {
+    requireAllRoles = resolvedRequireAll;
+  }
+  if (userRoles) {
+    const hasRole = userRoles.some(requiredRole => roles.includes(`role:${requiredRole}`));
+    if (!hasRole) {
+      throw `Validation failed. User does not match the required roles.`;
+    }
+  }
+  if (requireAllRoles) {
+    for (const requiredRole of requireAllRoles) {
+      if (!roles.includes(`role:${requiredRole}`)) {
+        throw `Validation failed. User does not match all the required roles.`;
+      }
+    }
+  }
   const userKeys = options.requireUserKeys || [];
   if (Array.isArray(userKeys)) {
     for (const key of userKeys) {
@@ -809,7 +855,7 @@ export function maybeRunTrigger(
     // to the RestWrite.execute() call.
     return Promise.resolve()
       .then(() => {
-        return maybeRunValidator(request, `${triggerType}.${parseObject.className}`);
+        return maybeRunValidator(request, `${triggerType}.${parseObject.className}`, auth);
       })
       .then(() => {
         if (request.skipWithMasterKey) {
@@ -890,7 +936,7 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
   if (typeof fileTrigger === 'function') {
     try {
       const request = getRequestFileObject(triggerType, auth, fileObject, config);
-      await maybeRunValidator(request, `${triggerType}.${FileClassName}`);
+      await maybeRunValidator(request, `${triggerType}.${FileClassName}`, auth);
       if (request.skipWithMasterKey) {
         return fileObject;
       }
@@ -915,71 +961,4 @@ export async function maybeRunFileTrigger(triggerType, fileObject, config, auth)
     }
   }
   return fileObject;
-}
-
-export async function maybeRunConnectTrigger(triggerType, request) {
-  const trigger = getTrigger(ConnectClassName, triggerType, Parse.applicationId);
-  if (!trigger) {
-    return;
-  }
-  request.user = await userForSessionToken(request.sessionToken);
-  await maybeRunValidator(request, `${triggerType}.${ConnectClassName}`);
-  if (request.skipWithMasterKey) {
-    return;
-  }
-  return trigger(request);
-}
-
-export async function maybeRunSubscribeTrigger(triggerType, className, request) {
-  const trigger = getTrigger(className, triggerType, Parse.applicationId);
-  if (!trigger) {
-    return;
-  }
-  const parseQuery = new Parse.Query(className);
-  parseQuery.withJSON(request.query);
-  request.query = parseQuery;
-  request.user = await userForSessionToken(request.sessionToken);
-  await maybeRunValidator(request, `${triggerType}.${className}`);
-  if (request.skipWithMasterKey) {
-    return;
-  }
-  await trigger(request);
-  const query = request.query.toJSON();
-  if (query.keys) {
-    query.fields = query.keys.split(',');
-  }
-  request.query = query;
-}
-
-export async function maybeRunAfterEventTrigger(triggerType, className, request) {
-  const trigger = getTrigger(className, triggerType, Parse.applicationId);
-  if (!trigger) {
-    return;
-  }
-  if (request.object) {
-    request.object = Parse.Object.fromJSON(request.object);
-  }
-  if (request.original) {
-    request.original = Parse.Object.fromJSON(request.original);
-  }
-  request.user = await userForSessionToken(request.sessionToken);
-  await maybeRunValidator(request, `${triggerType}.${className}`);
-  if (request.skipWithMasterKey) {
-    return;
-  }
-  return trigger(request);
-}
-
-async function userForSessionToken(sessionToken) {
-  if (!sessionToken) {
-    return;
-  }
-  const q = new Parse.Query('_Session');
-  q.equalTo('sessionToken', sessionToken);
-  q.include('user');
-  const session = await q.first({ useMasterKey: true });
-  if (!session) {
-    return;
-  }
-  return session.get('user');
 }

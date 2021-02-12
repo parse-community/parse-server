@@ -17,6 +17,8 @@ ___
 - IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - IMPROVE: Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
+- NEW: `requireAnyUserRoles` and `requireAllUserRoles` for Parse Cloud validator. [#7097](https://github.com/parse-community/parse-server/pull/7097). Thanks to [dblythy](https://github.com/dblythy)
+- NEW: Added convenience method Parse.Cloud.sendEmail(...) to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
 - FIX: Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
 
 ### 4.5.0
