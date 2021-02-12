@@ -327,6 +327,7 @@ export function getResponseObject(request, resolve, reject) {
       response = {};
       if (request.triggerName === Types.beforeSave) {
         response['object'] = request.object._getSaveJSON();
+        response['object']['objectId'] = request.object.id;
       }
       return resolve(response);
     },
