@@ -264,6 +264,24 @@ describe('cloud validator', () => {
       });
   });
 
+  it('set params type allow array', async () => {
+    Parse.Cloud.define(
+      'hello',
+      () => {
+        return 'Hello world!';
+      },
+      {
+        fields: {
+          data: {
+            type: Array,
+          },
+        },
+      }
+    );
+    const result = await Parse.Cloud.run('hello', { data: [{ foo: 'bar' }] });
+    expect(result).toBe('Hello world!');
+  });
+
   it('set params type', done => {
     Parse.Cloud.define(
       'hello',

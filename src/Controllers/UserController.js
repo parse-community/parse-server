@@ -308,15 +308,17 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(user, password, config) {
-  return rest.update(
-    config,
-    Auth.master(config),
-    '_User',
-    { objectId: user.objectId },
-    {
-      password: password,
-    }
-  ).then(() => user);
+  return rest
+    .update(
+      config,
+      Auth.master(config),
+      '_User',
+      { objectId: user.objectId },
+      {
+        password: password,
+      }
+    )
+    .then(() => user);
 }
 
 function buildEmailLink(destination, username, token, config) {
