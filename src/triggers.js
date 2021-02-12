@@ -735,11 +735,24 @@ async function builtInTriggerValidator(options, request, auth) {
       }
     }
   }
-  const userRoles = options.requireAnyUserRoles;
-  const requireAllRoles = options.requireAllUserRoles;
-  let roles;
+  let userRoles = options.requireAnyUserRoles;
+  let requireAllRoles = options.requireAllUserRoles;
+  const promises = [Promise.resolve(), Promise.resolve(), Promise.resolve()];
   if (userRoles || requireAllRoles) {
-    roles = await auth.getUserRoles();
+    promises[0] = auth.getUserRoles();
+  }
+  if (typeof userRoles === 'function') {
+    promises[1] = userRoles();
+  }
+  if (typeof requireAllRoles === 'function') {
+    promises[2] = requireAllRoles();
+  }
+  const [roles, resolvedUserRoles, resolvedRequireAll] = await Promise.all(promises);
+  if (resolvedUserRoles && Array.isArray(resolvedUserRoles)) {
+    userRoles = resolvedUserRoles;
+  }
+  if (resolvedRequireAll && Array.isArray(resolvedRequireAll)) {
+    requireAllRoles = resolvedRequireAll;
   }
   if (userRoles) {
     const hasRole = userRoles.some(requiredRole => roles.includes(`role:${requiredRole}`));
