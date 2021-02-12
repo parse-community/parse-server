@@ -32,6 +32,13 @@ jobs:
         run: npm ci
       - name: CI Self-Check
         run: npm run ci:check
+      - name: Create PR to upgrade CI environments if needed
+        uses: peter-evans/create-pull-request@v3
+        with:
+          title: Upgrade CI environments
+          body: This is an automated PR to upgrade package versions in CI environments for MongoDB, Node.js.
+          commit-message: Upgrading versions of MongoDB / Node.js
+          branch: ci/upgrade-ci-environments
   check-lint:
     name: Lint
     timeout-minutes: 30
@@ -99,6 +106,7 @@ jobs:
             NODE_VERSION: 15.8.0
     name: ${{ matrix.name }}
     timeout-minutes: 30
+    needs: check-ci
     runs-on: ubuntu-18.04
     services:
       redis:
@@ -147,6 +155,7 @@ jobs:
             POSTGRES_IMAGE: postgis/postgis:13-3.1
     name: ${{ matrix.name }}
     timeout-minutes: 30
+    needs: check-ci
     runs-on: ubuntu-18.04
     services:
       redis:
