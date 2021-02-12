@@ -29,7 +29,7 @@ function Auth({
 
 // Whether this auth could possibly modify the given user id.
 // It still could be forbidden via ACLs even if this returns true.
-Auth.prototype.isUnauthenticated = function() {
+Auth.prototype.isUnauthenticated = function () {
   if (this.isMaster) {
     return false;
   }
@@ -55,7 +55,7 @@ function nobody(config) {
 }
 
 // Returns a promise that resolves to an Auth object
-const getAuthForSessionToken = async function({
+const getAuthForSessionToken = async function ({
   config,
   cacheController,
   sessionToken,
@@ -94,11 +94,13 @@ const getAuthForSessionToken = async function({
     );
     results = (await query.execute()).results;
   } else {
-    results = (await new Parse.Query(Parse.Session)
-      .limit(1)
-      .include('user')
-      .equalTo('sessionToken', sessionToken)
-      .find({ useMasterKey: true })).map(obj => obj.toJSON());
+    results = (
+      await new Parse.Query(Parse.Session)
+        .limit(1)
+        .include('user')
+        .equalTo('sessionToken', sessionToken)
+        .find({ useMasterKey: true })
+    ).map(obj => obj.toJSON());
   }
 
   if (results.length !== 1 || !results[0]['user']) {
@@ -134,7 +136,7 @@ const getAuthForSessionToken = async function({
   });
 };
 
-var getAuthForLegacySessionToken = function({
+var getAuthForLegacySessionToken = function ({
   config,
   sessionToken,
   installationId,
@@ -201,6 +203,7 @@ Auth.prototype._loadUserRolesForAccess = async function () {
     {},
     {
       pipeline: this._generateRoleGraphPipeline(),
+      readPreference: 'SECONDARY_PREFERRED',
     }
   ).execute();
 
@@ -210,7 +213,7 @@ Auth.prototype._loadUserRolesForAccess = async function () {
   };
 
   const roles = [...directRoles, ...childRoles];
-  this.userRoles = roles.map((role) => `role:${role.name}`);
+  this.userRoles = roles.map(role => `role:${role.name}`);
   this.fetchedRoles = true;
   this.rolePromise = null;
   this.cacheRoles();
@@ -307,7 +310,7 @@ Auth.prototype._generateRoleGraphPipeline = function () {
   ];
 };
 
-Auth.prototype.getRolesForUser = async function() {
+Auth.prototype.getRolesForUser = async function () {
   //Stack all Parse.Role
   const results = [];
   if (this.config) {
@@ -334,7 +337,7 @@ Auth.prototype.getRolesForUser = async function() {
 };
 
 // Iterates through the role tree and compiles a user's roles
-Auth.prototype._loadRoles = async function() {
+Auth.prototype._loadRoles = async function () {
   if (this.cacheController) {
     const cachedRoles = await this.cacheController.role.get(this.user.id);
     if (cachedRoles != null) {
@@ -378,7 +381,7 @@ Auth.prototype._loadRoles = async function() {
   return this.userRoles;
 };
 
-Auth.prototype.cacheRoles = function() {
+Auth.prototype.cacheRoles = function () {
   if (!this.cacheController) {
     return false;
   }
@@ -386,7 +389,7 @@ Auth.prototype.cacheRoles = function() {
   return true;
 };
 
-Auth.prototype.getRolesByIds = async function(ins) {
+Auth.prototype.getRolesByIds = async function (ins) {
   const results = [];
   // Build an OR query across all parentRoles
   if (!this.config) {
@@ -421,7 +424,7 @@ Auth.prototype.getRolesByIds = async function(ins) {
 };
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
-Auth.prototype._getAllRolesNamesForRoleIds = function(
+Auth.prototype._getAllRolesNamesForRoleIds = function (
   roleIDs,
   names = [],
   queriedRoles = {}
@@ -466,7 +469,7 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(
     });
 };
 
-const createSession = function(
+const createSession = function (
   config,
   { userId, createdWith, installationId, additionalSessionData }
 ) {
