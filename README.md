@@ -119,7 +119,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
 | MongoDB 4.0 | 4.0.22               | January 2022     | ✅ Fully compatible |
 | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
-| MongoDB 4.4 | 4.4.3                | TBD              | ✅ Fully compatible |
+| MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
   
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility. We follow the [PostGIS docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.

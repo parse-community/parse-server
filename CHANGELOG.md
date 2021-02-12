@@ -6,6 +6,7 @@
 __BREAKING CHANGES:__
 - NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
 ___
+- UPGRADE: Bump tests to use Mongo 4.4.4 [#7184](https://github.com/parse-community/parse-server/pull/7184). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 - NEW (EXPERIMENTAL): Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification. **Caution, this is an experimental feature that may not be appropriate for production.** [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - NEW: Added convenience method `Parse.Cloud.sendEmail(...)` to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
 - NEW: LiveQuery support for $and, $nor, $containedBy, $geoWithin, $geoIntersects queries [#7113](https://github.com/parse-community/parse-server/pull/7113). Thanks to [dplewis](https://github.com/dplewis)
