@@ -144,11 +144,7 @@ class CiVersionCheck {
     // ];
 
     // Determine operator for range comparison
-    const operator = versionComponent == CiVersionCheck.versionComponents.major
-      ? '>='
-      : versionComponent == CiVersionCheck.versionComponents.minor
-        ? '^'
-        : '~'
+    const operator = this._getOperatorForVersionComponent(versionComponent);
 
     // Get all untested versions
     const untestedVersions = releasedVersions.reduce((m, v) => {
@@ -187,11 +183,7 @@ class CiVersionCheck {
    */
   getNewerVersion(versions, version, versionComponent) {
     // Determine operator for range comparison
-    const operator = versionComponent == CiVersionCheck.versionComponents.major
-      ? '>='
-      : versionComponent == CiVersionCheck.versionComponents.minor
-        ? '^'
-        : '~'
+    const operator = this._getOperatorForVersionComponent(versionComponent);
     const latest = semver.maxSatisfying(versions, `${operator}${version}`);
     return semver.gt(latest, version) ? latest : undefined;
   }
@@ -207,6 +199,23 @@ class CiVersionCheck {
         throw version;
       }
     }
+  }
+
+  /**
+   * Returns the semver range operator that relates to the a version component.
+   * For example, the operator for the `patch` version component defines a
+   * range up to the highest patch version.
+   * @param {String} component The version component (`patch`, `minor`,
+   * `major`).
+   * @returns {String} The semver operator.
+   */
+  _getOperatorForVersionComponent(component) {
+    // Determine operator for range comparison
+    return component == CiVersionCheck.versionComponents.major
+      ? '>='
+      : component == CiVersionCheck.versionComponents.minor
+        ? '^'
+        : '~'
   }
 
   /**
