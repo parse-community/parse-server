@@ -197,7 +197,7 @@ describe('ParseServerRESTController', () => {
           .then(() => {
             spyOn(databaseAdapter, 'createObject').and.callThrough();
 
-            RESTController.request('POST', 'batch', {
+            return RESTController.request('POST', 'batch', {
               requests: [
                 {
                   method: 'POST',
@@ -218,7 +218,7 @@ describe('ParseServerRESTController', () => {
               expect(response[1].success.objectId).toBeDefined();
               expect(response[1].success.createdAt).toBeDefined();
               const query = new Parse.Query('MyObject');
-              query.find().then(results => {
+              return query.find().then(results => {
                 expect(databaseAdapter.createObject.calls.count()).toBe(2);
                 expect(databaseAdapter.createObject.calls.argsFor(0)[3]).toBe(
                   databaseAdapter.createObject.calls.argsFor(1)[3]
@@ -230,7 +230,8 @@ describe('ParseServerRESTController', () => {
                 done();
               });
             });
-          });
+          })
+          .catch(done.fail);
       });
 
       it('should not save anything when one operation fails in a transaction', done => {

@@ -1046,9 +1046,20 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   commitTransactionalSession(transactionalSection: any): Promise<void> {
-    return transactionalSection.commitTransaction().then(() => {
-      transactionalSection.endSession();
-    });
+    const commit = retries => {
+      return transactionalSection
+        .commitTransaction()
+        .catch(error => {
+          if (error && error.hasErrorLabel('TransientTransactionError') && retries > 0) {
+            return commit(retries - 1);
+          }
+          throw error;
+        })
+        .then(() => {
+          transactionalSection.endSession();
+        });
+    };
+    return commit(5);
   }
 
   abortTransactionalSession(transactionalSection: any): Promise<void> {
