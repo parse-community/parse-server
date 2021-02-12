@@ -33,6 +33,7 @@ jobs:
       - name: CI Self-Check
         run: npm run ci:check
       - name: Create PR to upgrade CI environments if needed
+        if: ${{ always() }}
         uses: peter-evans/create-pull-request@v3
         with:
           title: Upgrade CI environments
