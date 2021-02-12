@@ -641,7 +641,10 @@ async function builtInTriggerValidator(options, request, auth) {
   ) {
     reqUser = request.object;
   }
-  if ((options.requireUser || options.requireUserRole || options.requireUserRoles) && !reqUser) {
+  if (
+    (options.requireUser || options.requireAnyUserRoles || options.requireAllUserRoles) &&
+    !reqUser
+  ) {
     throw 'Validation failed. Please login to continue.';
   }
   if (options.requireMaster && !request.master) {
@@ -732,8 +735,8 @@ async function builtInTriggerValidator(options, request, auth) {
       }
     }
   }
-  const userRoles = options.requireUserRole;
-  const requireAllRoles = options.requireUserRoles;
+  const userRoles = options.requireAnyUserRoles;
+  const requireAllRoles = options.requireAllUserRoles;
   let roles;
   if (userRoles || requireAllRoles) {
     roles = await auth.getUserRoles();

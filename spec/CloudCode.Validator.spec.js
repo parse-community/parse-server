@@ -878,7 +878,7 @@ describe('cloud validator', () => {
       });
   });
 
-  it('basic validator requireUserRole', async function (done) {
+  it('basic validator requireAnyUserRoles', async function (done) {
     Parse.Cloud.define(
       'cloudFunction',
       () => {
@@ -886,7 +886,7 @@ describe('cloud validator', () => {
       },
       {
         requireUser: true,
-        requireUserRole: ['Admin'],
+        requireAnyUserRoles: ['Admin'],
       }
     );
     const user = await Parse.User.signUp('testuser', 'p@ssword');
@@ -905,7 +905,7 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic validator requireUserRoles', async function (done) {
+  it('basic validator requireAllUserRoles', async function (done) {
     Parse.Cloud.define(
       'cloudFunction',
       () => {
@@ -913,7 +913,7 @@ describe('cloud validator', () => {
       },
       {
         requireUser: true,
-        requireUserRoles: ['Admin', 'Admin2'],
+        requireAllUserRoles: ['Admin', 'Admin2'],
       }
     );
     const user = await Parse.User.signUp('testuser', 'p@ssword');
@@ -935,14 +935,14 @@ describe('cloud validator', () => {
     done();
   });
 
-  it('basic requireUserRoles but no user', async function (done) {
+  it('basic requireAllUserRoles but no user', async function (done) {
     Parse.Cloud.define(
       'cloudFunction',
       () => {
         return true;
       },
       {
-        requireUserRoles: ['Admin'],
+        requireAllUserRoles: ['Admin'],
       }
     );
     try {
