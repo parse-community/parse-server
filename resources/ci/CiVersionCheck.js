@@ -334,8 +334,8 @@ class CiVersionCheck {
         core.setFailed(
           `CI environments are not up-to-date with the latest ${this.packageName} versions.` +
           `\n\nCheck the error messages above and update the ${this.packageName} versions in the CI YAML ` +
-          `file.\n\nℹ️ Additionally, there may be versions of ${this.packageName} that have reached their official end-of-life ` +
-          `support date and should be removed from the CI, see ${this.packageSupportUrl}.`
+          `file. Additionally, check for versions of ${this.packageName} that have reached their official end-of-life ` +
+          `support date and may be removed from the CI, see ${this.packageSupportUrl}.`
         );
 
         // If packages in YAML file should be updated
