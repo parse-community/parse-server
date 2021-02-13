@@ -173,7 +173,7 @@ export class FunctionsRouter extends PromiseRouter {
       );
       return Promise.resolve()
         .then(() => {
-          return triggers.maybeRunValidator(request, functionName);
+          return triggers.maybeRunValidator(request, functionName, req.auth);
         })
         .then(() => {
           return theFunction(request);
