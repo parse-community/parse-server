@@ -19,17 +19,17 @@
 
 ## Contributing
 
-Before you start to code, please first open a [new issue](https://github.com/parse-community/parse-server/issues/new/choose) related to your contribution, or search for and continue the discussion in an [existing issue](https://github.com/parse-community/parse-server/issues).
+Before you start to code, please open a [new issue](https://github.com/parse-community/parse-server/issues/new/choose) to describe your idea, or search for and continue the discussion in an [existing issue](https://github.com/parse-community/parse-server/issues).
 
 > ⚠️ Please do not post a security vulnerability on GitHub or in the Parse Community Forum. Instead, follow the [Parse Community Security Policy](https://github.com/parse-community/parse-server/security/policy).
 
-Together we plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
-
 Please completely fill out any templates to provide essential information about your new feature or the bug you discovered.
 
-More information about opening a pull request can be found in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
+Together we plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
 
-Whether this is your first contribution or you are already an experienced contributor, the Parse Community has your back – don't hesitate to ask for help.
+When you are ready to code, you can find more information about opening a pull request in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
+
+Whether this is your first contribution or you are already an experienced contributor, the Parse Community has your back – don't hesitate to ask for help!
 
 ## Why Contributing?
 
