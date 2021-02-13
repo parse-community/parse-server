@@ -52,8 +52,6 @@ Consider the benefits you get:
 
 Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
 
-If this is your first contribution, or you are already a seasoned contributor, the Parse Community has your back when you write it!
-
 ## Environment Setup
 
 ### Recommended Tools
