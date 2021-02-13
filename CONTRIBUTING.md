@@ -39,11 +39,16 @@ There are two ways of writing a feature or fixing a bug. Sometimes the quick sol
 
 Consider the benefits you get:
 
-- 🚀 Higher efficiency: Your code is examined for efficiency and interoperability with existing features by the community.
-- 🛡 Stronger security: Your code is scrutinized for bugs and vulnerabilities and automated checks help to identify security issues that may arise in the future.
-- 🧬 Continuous improvement: If your feature is used by others it is likely to be continuously improved and extended by the community.
-- 💝 Giving back: You give back to the community that contributed to make the Parse Platform become what it is today and for future developers to come.
-- 🧑‍🎓 Improving yourself: You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
+- #### 🚀 Higher efficiency
+  Your code is examined for efficiency and interoperability with existing features by the community.
+- #### 🛡 Stronger security
+  Your code is scrutinized for bugs and vulnerabilities and automated checks help to identify security issues that may arise in the future.
+- #### 🧬 Continuous improvement
+  If your feature is used by others it is likely to be continuously improved and extended by the community.
+- #### 💝 Giving back
+  You give back to the community that contributed to make the Parse Platform become what it is today and for future developers to come.
+- #### 🧑‍🎓 Improving yourself
+  You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
 
 Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
 
