@@ -25,7 +25,7 @@ Before you start to code, please open a [new issue](https://github.com/parse-com
 
 Please completely fill out any templates to provide essential information about your new feature or the bug you discovered.
 
-Together we plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
+Together we will plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
 
 When you are ready to code, you can find more information about opening a pull request in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
 
