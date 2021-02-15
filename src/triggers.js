@@ -337,7 +337,16 @@ export function getResponseObject(request, resolve, reject) {
       }
       response = {};
       if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object._getSaveJSON();
+        try {
+          response['object'] = request.object._getSaveJSON();
+        } catch (error) {
+          // https://github.com/parse-community/parse-server/issues/7192
+          const e = resolveError(error, {
+            code: Parse.Error.VALIDATION_ERROR,
+            message: 'Script success. But return object failed to converted to valid JSON.',
+          });
+          return reject(e);
+        }
         response['object']['objectId'] = request.object.id;
       }
       return resolve(response);
@@ -837,13 +846,17 @@ export function maybeRunTrigger(
         resolve(object);
       },
       error => {
-        logTriggerErrorBeforeHook(
-          triggerType,
-          parseObject.className,
-          parseObject.toJSON(),
-          auth,
-          error
-        );
+        try {
+          logTriggerErrorBeforeHook(
+            triggerType,
+            parseObject.className,
+            parseObject.toJSON(),
+            auth,
+            error
+          );
+        } catch (error2) {
+          // https://github.com/parse-community/parse-server/issues/7192
+        }
         reject(error);
       }
     );
