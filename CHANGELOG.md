@@ -98,6 +98,7 @@ ___
 - EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows (Manuel Trezza) [#7231](https://github.com/parse-community/parse-server/issues/7231)
 - Remove support for Node 10 which has reached its End-of-Life support date (Manuel Trezza) [#7314](https://github.com/parse-community/parse-server/pull/7314)
 - Remove support for MongoDB 3.6 which has reached its End-of-Life support date (Manuel Trezza) [#7315](https://github.com/parse-community/parse-server/pull/7315)
+- Added Deprecation Policy to govern the introduction of braking changes in a phased pattern that is more predictable for developers (Manuel Trezza) [#7199](https://github.com/parse-community/parse-server/pull/7199)
 ### Other Changes
 - Fix error when a not yet inserted job is updated (Antonio Davi Macedo Coelho de Castro) [#7196](https://github.com/parse-community/parse-server/pull/7196)
 - request.context for afterFind triggers (dblythy) [#7078](https://github.com/parse-community/parse-server/pull/7078)
