@@ -60,7 +60,7 @@ Most importantly, with every contribution you improve your skills so that future
 
 ### Recommended Tools
 
-* [vscode](https://code.visualstudio.com), the popular IDE.
+* [Visual Studio Code](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
 ### Setting up your local machine
@@ -168,9 +168,9 @@ Note that the script above will ONLY be executed during initialization of the co
 
 ## Breaking Changes
 
-We want to avoid sudden breaking changes which has been often been pointed out in community feedback. Therefore we intend to follow the [Deprecation Policy](#deprecation-policy) when changing or removing existing features.
+To make breaking changes more predictable we follow a [Deprecation Policy](#deprecation-policy) when changing or removing existing features.
 
-Please consider that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt a production environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+We acknowledge that Parse Server is just one component in a stack that requires attention. A breaking change requires resources and effort to adapt a production environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
 - "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
 - less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
 - less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
