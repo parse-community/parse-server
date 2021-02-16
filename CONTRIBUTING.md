@@ -173,7 +173,7 @@ We want to avoid sudden breaking changes which has been often been pointed out i
 Please consider that Parse Server is just one component in a stack for many developers. A breaking change requires resources and effort to adapt a production environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
 - "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
 - less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
-- less feedback on feature, slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
+- less feedback and slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
 
 ### Phased Deprecation Policy
 
