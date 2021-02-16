@@ -1,29 +1,65 @@
-# Contributing to Parse Server
+# Contributing to Parse Server <!-- omit in toc -->
 
-We really want Parse to be yours, to see it grow and thrive in the open source community.
+## Table of Contents <!-- omit in toc -->
+- [Contributing](#contributing)
+- [Why Contributing?](#why-contributing)
+- [Environment Setup](#environment-setup)
+  - [Recommended Tools](#recommended-tools)
+  - [Setting up your local machine](#setting-up-your-local-machine)
+  - [Good to Know](#good-to-know)
+  - [Troubleshooting](#troubleshooting)
+  - [Please Do's](#please-dos)
+  - [Test against Postgres](#test-against-postgres)
+    - [Postgres with Docker](#postgres-with-docker)
+- [Feature Considerations](#feature-considerations)
+  - [Security Checks](#security-checks)
+  - [Parse Error](#parse-error)
+  - [Parse Server Configuration](#parse-server-configuration)
+- [Code of Conduct](#code-of-conduct)
 
-Before you jump into the coding element of contributing, please make sure you first [open an issue](https://github.com/parse-community/parse-server/issues/new/choose) relating to your contribution, or continue the discussion in the existing issue.
+## Contributing
 
-This helps us all plan out the best conceptual approach for the contribution, so that your time isn't wasted on approaches or features that could be tackled in a different way. Our team are also happy to give you pointers and suggestions to speed up the process.
+Before you start to code, please open a [new issue](https://github.com/parse-community/parse-server/issues/new/choose) to describe your idea, or search for and continue the discussion in an [existing issue](https://github.com/parse-community/parse-server/issues).
 
-When opening an issue, please make sure you follow the templates and provide as much detail as possible.
+> ⚠️ Please do not post a security vulnerability on GitHub or in the Parse Community Forum. Instead, follow the [Parse Community Security Policy](https://github.com/parse-community/parse-server/security/policy).
 
-After you've completed the contribution, you'll need to submit a Pull Request (PR).
+Please completely fill out any templates to provide essential information about your new feature or the bug you discovered.
 
-If you are not familiar with Pull Requests and want to know more about them, you can visit the [Creating a pull request](https://help.github.com/articles/creating-a-pull-request/) article. It contains detailed informations about the process.
+Together we will plan out the best conceptual approach for your contribution, so that your and our time is invested in the best possible approach. The discussion often reveals how to leverage existing features of Parse Server to reach your goal with even less effort and in a more sustainable way.
 
-If you need any help along the way, you can open a Draft PR where we can help finalize your contribution.
+When you are ready to code, you can find more information about opening a pull request in the [GitHub docs](https://help.github.com/articles/creating-a-pull-request/).
 
-Contributing can be challenging, so don't be discouraged if you're having difficulties. Please don't hesitate to ask for help.
+Whether this is your first contribution or you are already an experienced contributor, the Parse Community has your back – don't hesitate to ask for help!
 
-## Setting up the project for debugging and contributing:
+## Why Contributing?
 
-### Recommended setup:
+Buy cheap, buy twice. What? No, this is not the Economics 101 class, but the same is true for contributing.
+
+There are two ways of writing a feature or fixing a bug. Sometimes the quick solution is to just write a Cloud Code function that does what you want. Contributing by making the change directly in Parse Server may take a bit longer, but it actually saves you much more time in the long run.
+
+Consider the benefits you get:
+
+- #### 🚀 Higher efficiency
+  Your code is examined for efficiency and interoperability with existing features by the community.
+- #### 🛡 Stronger security
+  Your code is scrutinized for bugs and vulnerabilities and automated checks help to identify security issues that may arise in the future.
+- #### 🧬 Continuous improvement
+  If your feature is used by others it is likely to be continuously improved and extended by the community.
+- #### 💝 Giving back
+  You give back to the community that contributed to make the Parse Platform become what it is today and for future developers to come.
+- #### 🧑‍🎓 Improving yourself
+  You learn to better understand the inner workings of Parse Server, which will help you to write more efficient and resilient code for your own application.
+
+Most importantly, with every contribution you improve your skills so that future contributions take even less time and you get all the benefits above for free — easy choice, right?
+
+## Environment Setup
+
+### Recommended Tools
 
 * [vscode](https://code.visualstudio.com), the popular IDE.
 * [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-jasmine-test-adapter), a very practical test exploration plugin which let you run, debug and see the test results inline.
 
-### Setting up you local machine:
+### Setting up your local machine
 
 * [Fork](https://github.com/parse-community/parse-server) this project and clone the fork on your local machine:
 
@@ -39,13 +75,13 @@ $ npm run watch # run babel watching for local file changes
 
 Once you have babel running in watch mode, you can start making changes to parse-server.
 
-### Good to know:
+### Good to Know
 
-* The `lib/` folder is not commited, so never make changes in there.
+* The `lib/` folder is not committed, so never make changes in there.
 * Always make changes to files in the `src/` folder.
 * All the tests should point to sources in the `lib/` folder.
 
-### Troubleshooting:
+### Troubleshooting
 
 *Question*: I modify the code in the src folder but it doesn't seem to have any effect.<br/>
 *Answer*: Check that `npm run watch` is running
@@ -67,7 +103,7 @@ Once you have babel running in watch mode, you can start making changes to parse
 * **Do not** publish the *lib* folder.
 * Please consider if any changes to the [docs](http://docs.parseplatform.org) are needed or add additional sections in the case of an enhancement or feature.
 
-### Run your tests against Postgres (optional)
+### Test against Postgres
 
 If your pull request introduces a change that may affect the storage or retrieval of objects, you may want to make sure it plays nice with Postgres.
 
@@ -89,7 +125,7 @@ If your pull request introduces a change that may affect the storage or retrieva
   - `it_only_mongodb_version('>=4.4')` // will test with any version of Postgres but only with version >=4.4 of MongoDB; accepts semver notation to specify a version range
   - `it_exclude_mongodb_version('<4.4')` // will test with any version of Postgres and MongoDB, excluding version <4.4 of MongoDB; accepts semver notation to specify a version range
 
-#### Run Postgres setup for Parse with Docker
+#### Postgres with Docker
 
 [PostGIS images (select one with v2.2 or higher) on docker dashboard](https://hub.docker.com/r/postgis/postgis) is based off of the official [postgres](https://registry.hub.docker.com/_/postgres/) image and will work out-of-the-box (as long as you create a user with the necessary extensions for each of your Parse databases; see below). To launch the compatible Postgres instance, copy and paste the following line into your shell:
 
