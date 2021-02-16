@@ -184,7 +184,7 @@ If you change or remove an existing feature that would lead to a breaking change
    - Use a default value that falls back to the existing behavior.
    - Add a warning log message to the Parse Server options validation in [Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js) that the option value will be deprecated in the future, for example:
      > `Warning: The option <option_name>: <old_option_value> will be deprecated in a future release. Use <option_name>: <new_option_value> instead which will become the new default.`
-3. Breaking changes are collected into the next major release of Parse Server. Developers should be notified of breaking changes for at least 6 months before they become mandatory.
+3. Breaking changes are collected into the next major release of Parse Server. Developers should be notified of breaking changes at least 6 months before they become mandatory.
 
 ## Feature Considerations
 ### Security Checks
