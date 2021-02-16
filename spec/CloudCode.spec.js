@@ -1549,7 +1549,9 @@ describe('Cloud Code', () => {
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
-        Parse.Cloud.job('myJob', () => {});
+        Parse.Cloud.job('myJob', ({ message }) => {
+          message('Hello, world!!!');
+        });
       }).not.toThrow();
 
       request({
