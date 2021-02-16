@@ -11,6 +11,8 @@
   - [Please Do's](#please-dos)
   - [Test against Postgres](#test-against-postgres)
     - [Postgres with Docker](#postgres-with-docker)
+- [Change and Removal of Existing Features](#change-and-removal-of-existing-features)
+  - [Phased Deprecation Policy](#phased-deprecation-policy)
 - [Feature Considerations](#feature-considerations)
   - [Security Checks](#security-checks)
     - [Add Security Check](#add-security-check)
@@ -163,6 +165,26 @@ RUN chmod +x /docker-entrypoint-initdb.d/setup-dbs.sh
 ```
 
 Note that the script above will ONLY be executed during initialization of the container with no data in the database, see the official [Postgres image](https://hub.docker.com/_/postgres) for details. If you want to use the script to run again be sure there is no data in the /var/lib/postgresql/data of the container.
+
+## Change and Removal of Existing Features
+
+We want to avoid sudden breaking changes which has been often been pointed out in community feedback. Therefore we intend to follow the [Phased Deprecation Policy](#phased-deprecation-policy) when changing or removing existing features.
+
+Please consider that Parse Server is just one component in a stack for many developers. A breaking change requires resources and effort to adapt a production environment. An unnecessarily high frequency of breaking changes can have detrimental side effects such as:
+- "upgrade fatigue" where developers run old versions of Parse Server because they cannot always attend to every update that contains a breaking change
+- less secure Parse Server deployments that run on old versions which is contrary to the security evangelism Parse Server intends to facilitate for developers
+- less feedback on feature, slower identification of bugs and an overall slow-down of Parse Server development because new versions with breaking changes also include new features we want to get feedback on
+
+### Phased Deprecation Policy
+
+If you change or remove an existing feature that would lead to a breaking change, consider the following:
+1. Only urgent changes with security relevance are allowed to be sudden breaking changes.
+2. Use a phased deprecation pattern for all other changes:
+   - Make the new feature or change optional, if necessary with a new Parse Server option parameter.
+   - Use a default value that falls back to the existing behavior.
+   - Add a warning log message to the Parse Server options validation in [Config.js](https://github.com/parse-community/parse-server/blob/master/src/Config.js) that the option value will be deprecated in the future:
+     > `Warning: The option <option_name>: <old_option_value> will be deprecated in a future release. Use <option_name>: <new_option_value> instead which will become the new default.`
+3. Breaking changes are to be collected into the next major release of Parse Server.
 
 ## Feature Considerations
 ### Security Checks
