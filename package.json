@@ -108,7 +108,7 @@
     "test:mongodb:runnerstart": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} mongodb-runner start",
     "test:mongodb:testonly": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=$npm_config_dbversion} MONGODB_TOPOLOGY=${MONGODB_TOPOLOGY:=standalone} MONGODB_STORAGE_ENGINE=${MONGODB_STORAGE_ENGINE:=wiredTiger} TESTING=1 jasmine",
     "test:mongodb": "npm run test:mongodb:runnerstart --dbversion=$npm_config_dbversion && npm run test:mongodb:testonly --dbversion=$npm_config_dbversion",
-    "test:mongodb:4.0.22": "npm run test:mongodb --dbversion=4.0.22",
+    "test:mongodb:4.0.23": "npm run test:mongodb --dbversion=4.0.23",
     "test:mongodb:4.2.12": "npm run test:mongodb --dbversion=4.2.12",
     "test:mongodb:4.4.4": "npm run test:mongodb --dbversion=4.4.4",
     "posttest:mongodb": "mongodb-runner stop",
