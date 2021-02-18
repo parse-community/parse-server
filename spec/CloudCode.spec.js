@@ -1547,38 +1547,36 @@ describe('Cloud Code', () => {
   });
 
   describe('cloud jobs', () => {
-    for (let x = 0; x < 1000; x++) {
-      fit('should define a job', done => {
-        expect(() => {
-          Parse.Cloud.job('myJob', ({ message }) => {
-            message('Hello, world!!!');
-          });
-        }).not.toThrow();
+    it('should define a job', done => {
+      expect(() => {
+        Parse.Cloud.job('myJob', ({ message }) => {
+          message('Hello, world!!!');
+        });
+      }).not.toThrow();
 
-        request({
-          method: 'POST',
-          url: 'http://localhost:8378/1/jobs/myJob',
-          headers: {
-            'X-Parse-Application-Id': Parse.applicationId,
-            'X-Parse-Master-Key': Parse.masterKey,
-          },
+      request({
+        method: 'POST',
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await new Parse.Query('_JobStatus').get(jobStatusId, {
+              useMasterKey: true,
+            });
+            return jobStatus.get('finishedAt') && jobStatus.get('message') === 'Hello, world!!!';
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
         })
-          .then(async response => {
-            const jobStatusId = response.headers['x-parse-job-status-id'];
-            const checkJobStatus = async () => {
-              const jobStatus = await new Parse.Query('_JobStatus').get(jobStatusId, {
-                useMasterKey: true,
-              });
-              return jobStatus.get('finishedAt') && jobStatus.get('message') === 'Hello, world!!!';
-            };
-            while (!(await checkJobStatus())) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-            }
-          })
-          .then(done)
-          .catch(done.fail);
-      });
-    }
+        .then(done)
+        .catch(done.fail);
+    });
 
     it('should not run without master key', done => {
       expect(() => {
