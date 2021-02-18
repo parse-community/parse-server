@@ -41,7 +41,7 @@ function statusHandler(className, database) {
 
   function update(where, object) {
     lastPromise = lastPromise.then(() => {
-      return database.update(className, where, object, { upsert: true });
+      return database.update(className, where, object);
     });
     return lastPromise;
   }
