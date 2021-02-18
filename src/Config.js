@@ -446,6 +446,13 @@ export class Config {
     );
   }
 
+  get passwordResetInitiatedURL() {
+    return (
+      this.customPages.passwordResetInitiated ||
+      `${this.publicServerURL}/apps/password_reset_initiated.html`
+    );
+  }
+
   get choosePasswordURL() {
     return this.customPages.choosePassword || `${this.publicServerURL}/apps/choose_password`;
   }

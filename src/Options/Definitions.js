@@ -502,6 +502,10 @@ module.exports.PagesCustomUrlsOptions = {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS',
     help: 'The URL to the custom page for email verification -> success.',
   },
+  passwordResetInitiated: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_INITIATED',
+    help: 'The URL to the custom page for password reset initiated.',
+  },
   passwordReset: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET',
     help: 'The URL to the custom page for password reset.',
@@ -516,6 +520,10 @@ module.exports.PagesCustomUrlsOptions = {
   },
 };
 module.exports.CustomPagesOptions = {
+  passwordResetInitiated: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_PASSWORD_RESET_INITIATED',
+    help: 'password reset initiated page path',
+  },
   choosePassword: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD',
     help: 'choose password page path',

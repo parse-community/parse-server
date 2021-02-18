@@ -157,6 +157,25 @@ export class PublicAPIRouter extends PromiseRouter {
     const { username, new_password, token: rawToken } = req.body;
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
 
+    if (username && (!token || !new_password) && req.xhr === false) {
+      return config.userController
+        .sendPasswordResetEmail(username)
+        .catch(() => {
+          /* ignore any errors */
+        })
+        .finally(() => {
+          const params = qs.stringify({
+            id: config.applicationId,
+            username,
+            app: config.appName,
+          });
+          return Promise.resolve({
+            status: 302,
+            location: `${config.passwordResetInitiatedURL}?${params}`,
+          });
+        });
+    }
+
     if ((!username || !token || !new_password) && req.xhr === false) {
       return this.invalidLink(req);
     }

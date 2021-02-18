@@ -10,6 +10,10 @@ import Page from '../Page';
 
 // All pages with custom page key for reference and file name
 const pages = Object.freeze({
+  passwordResetInitiated: new Page({
+    id: 'passwordResetInitiated',
+    defaultFile: 'password_reset_initiated.html',
+  }),
   passwordReset: new Page({ id: 'passwordReset', defaultFile: 'password_reset.html' }),
   passwordResetSuccess: new Page({
     id: 'passwordResetSuccess',
@@ -187,6 +191,22 @@ export class PagesRouter extends PromiseRouter {
 
     const { username, new_password, token: rawToken } = req.body;
     const token = rawToken && typeof rawToken !== 'string' ? rawToken.toString() : rawToken;
+
+    if (username && (!token || !new_password) && req.xhr === false) {
+      return config.userController
+        .sendPasswordResetEmail(username)
+        .catch(() => {
+          /* ignore any errors */
+        })
+        .finally(() => {
+          const params = {
+            [pageParams.appId]: req.params.appId,
+            [pageParams.appName]: config.appName,
+            [pageParams.username]: req.query.username,
+          };
+          return this.goToPage(req, pages.passwordResetInitiated, params);
+        });
+    }
 
     if ((!username || !token || !new_password) && req.xhr === false) {
       return this.goToPage(req, pages.passwordResetLinkInvalid);

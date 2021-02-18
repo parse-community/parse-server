@@ -282,6 +282,8 @@ export interface CustomPagesOptions {
   invalidLink: ?string;
   /* verification link send fail page path */
   linkSendFail: ?string;
+  /* password reset initiated page path */
+  passwordResetInitiated: ?string;
   /* choose password page path */
   choosePassword: ?string;
   /* verification link send success page path */
