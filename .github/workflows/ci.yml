@@ -47,7 +47,7 @@ jobs:
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.15.5
           - name: Mongo 4.0, ReplicaSet, WiredTiger
-            MONGODB_VERSION: 4.0.22
+            MONGODB_VERSION: 4.0.23
             MONGODB_TOPOLOGY: replicaset
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 14.15.5
@@ -76,7 +76,7 @@ jobs:
             MONGODB_VERSION: 4.4.4
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
-            NODE_VERSION: 15.8.0
+            NODE_VERSION: 15.9.0
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
