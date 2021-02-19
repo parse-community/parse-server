@@ -5,7 +5,7 @@ const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 const responses = {
   gpgames: { playerId: 'userId' },
-  instagram: { data: { id: 'userId' } },
+  instagram: { id: 'userId' },
   janrainengage: { stat: 'ok', profile: { identifier: 'userId' } },
   janraincapture: { stat: 'ok', result: 'userId' },
   line: { userId: 'userId' },
@@ -492,7 +492,15 @@ describe('instagram auth adapter', () => {
       'https://graph.instagram.com/me?fields=id&access_token=the_token'
     );
   });
-
+  it('response object without data child', async () => {
+    spyOn(httpsRequest, 'get').and.callFake(() => {
+      return Promise.resolve({ id: 'userId' });
+    });
+    await instagram.validateAuthData({ id: 'userId', access_token: 'the_token' }, {});
+    expect(httpsRequest.get).toHaveBeenCalledWith(
+      'https://graph.instagram.com/me?fields=id&access_token=the_token'
+    );
+  });
   it('should pass in api url', async () => {
     spyOn(httpsRequest, 'get').and.callFake(() => {
       return Promise.resolve({ data: { id: 'userId' } });
