@@ -531,7 +531,7 @@ describe('rest create', () => {
     });
   });
 
-  it('test default session length', done => {
+  fit('test default session length', done => {
     const user = {
       username: 'asdf',
       password: 'zxcv',
@@ -557,17 +557,13 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
 
-        expect(actual.getFullYear()).toEqual(expected.getFullYear());
-        expect(actual.getMonth()).toEqual(expected.getMonth());
-        expect(actual.getDate()).toEqual(expected.getDate());
-        // less than a minute, if test happen at the wrong time :/
-        expect(actual.getMinutes() - expected.getMinutes() <= 1).toBe(true);
+        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
 
         done();
       });
   });
 
-  it('test specified session length', done => {
+  fit('test specified session length', done => {
     const user = {
       username: 'asdf',
       password: 'zxcv',
