@@ -531,7 +531,7 @@ describe('rest create', () => {
     });
   });
 
-  fit('test default session length', done => {
+  it('test default session length', done => {
     const user = {
       username: 'asdf',
       password: 'zxcv',
@@ -563,7 +563,7 @@ describe('rest create', () => {
       });
   });
 
-  fit('test specified session length', done => {
+  it('test specified session length', done => {
     const user = {
       username: 'asdf',
       password: 'zxcv',
