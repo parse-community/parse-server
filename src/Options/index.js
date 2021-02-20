@@ -138,6 +138,9 @@ export interface ParseServerOptions {
   /* Public URL to your parse server with http:// or https://.
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
+  /* The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: {} */
+  pages: ?PagesOptions;
   /* custom pages for password validation and reset
   :DEFAULT: {} */
   customPages: ?CustomPagesOptions;
@@ -199,7 +202,8 @@ export interface ParseServerOptions {
   :DEFAULT: false */
   idempotencyOptions: ?IdempotencyOptions;
   /* Options for file uploads
-  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS */
+  :ENV: PARSE_SERVER_FILE_UPLOAD_OPTIONS
+  :DEFAULT: {} */
   fileUpload: ?FileUploadOptions;
   /* Full path to your GraphQL custom schema.graphql file */
   graphQLSchema: ?string;
@@ -225,21 +229,73 @@ export interface ParseServerOptions {
   serverCloseComplete: ?() => void;
 }
 
+export interface PagesOptions {
+  /* Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
+  :DEFAULT: false */
+  enableRouter: ?boolean;
+  /* Is true if pages should be localized; this has no effect on custom page redirects.
+  :DEFAULT: false */
+  enableLocalization: ?boolean;
+  /* The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale. */
+  localizationJsonPath: ?string;
+  /* The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.
+  :DEFAULT: en */
+  localizationFallbackLocale: ?string;
+  /* The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+  :DEFAULT: {} */
+  placeholders: ?Object;
+  /* Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).
+  :DEFAULT: false */
+  forceRedirect: ?boolean;
+  /* The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
+  :DEFAULT: ./public */
+  pagesPath: ?string;
+  /* The API endpoint for the pages. Default is 'apps'.
+  :DEFAULT: apps */
+  pagesEndpoint: ?string;
+  /* The URLs to the custom pages.
+  :DEFAULT: {} */
+  customUrls: ?PagesCustomUrlsOptions;
+}
+
+export interface PagesCustomUrlsOptions {
+  /* The URL to the custom page for password reset. */
+  passwordReset: ?string;
+  /* The URL to the custom page for password reset -> link invalid. */
+  passwordResetLinkInvalid: ?string;
+  /* The URL to the custom page for password reset -> success. */
+  passwordResetSuccess: ?string;
+  /* The URL to the custom page for email verification -> success. */
+  emailVerificationSuccess: ?string;
+  /* The URL to the custom page for email verification -> link send fail. */
+  emailVerificationSendFail: ?string;
+  /* The URL to the custom page for email verification -> resend link -> success. */
+  emailVerificationSendSuccess: ?string;
+  /* The URL to the custom page for email verification -> link invalid. */
+  emailVerificationLinkInvalid: ?string;
+  /* The URL to the custom page for email verification -> link expired. */
+  emailVerificationLinkExpired: ?string;
+}
+
 export interface CustomPagesOptions {
   /* invalid link page path */
   invalidLink: ?string;
-  /* verify email success page path */
-  verifyEmailSuccess: ?string;
-  /* invalid verification link page path */
-  invalidVerificationLink: ?string;
-  /* verification link send success page path */
-  linkSendSuccess: ?string;
   /* verification link send fail page path */
   linkSendFail: ?string;
   /* choose password page path */
   choosePassword: ?string;
+  /* verification link send success page path */
+  linkSendSuccess: ?string;
+  /* verify email success page path */
+  verifyEmailSuccess: ?string;
   /* password reset success page path */
   passwordResetSuccess: ?string;
+  /* invalid verification link page path */
+  invalidVerificationLink: ?string;
+  /* expired verification link page path */
+  expiredVerificationLink: ?string;
+  /* invalid password reset link page path */
+  invalidPasswordResetLink: ?string;
   /* for masking user-facing pages */
   parseFrameURL: ?string;
 }
@@ -300,6 +356,9 @@ export interface AccountLockoutOptions {
   duration: ?number;
   /* number of failed sign-in attempts that will cause a user account to be locked */
   threshold: ?number;
+  /* Is true if the account lock should be removed after a successful password reset.
+  :DEFAULT: false */
+  unlockOnPasswordReset: ?boolean;
 }
 
 export interface PasswordPolicyOptions {

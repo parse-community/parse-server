@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<!--
+  This page is displayed when a user opens a verify email link with a security
+  token that is expired or incorrect. This can either mean the user has clicked 
+  on a stale link (i.e. re-clicked on the link) or this could be a sign of a
+  malicious user trying to tamper with your app.
+-->
+<html>
+
+<head>
+  <title>Email Verification</title>
+</head>
+
+<body>
+  <h1>{{appName}}</h1>
+  <h1>Expired verification link!</h1>
+  <form method="POST" action="{{{publicServerUrl}}}/apps/{{{appId}}}/resend_verification_email">
+    <input name="username" type="hidden" value="{{{username}}}">
+    <input name="locale" type="hidden" value="{{{locale}}}">
+    <button type="submit">Resend Link</button>
+  </form>
+</body>
+
+</html>

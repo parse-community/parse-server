@@ -1,5 +1,6 @@
 import { Parse } from 'parse/node';
 import * as triggers from '../triggers';
+const Config = require('../Config');
 
 function isParseObjectConstructor(object) {
   return typeof object === 'function' && Object.prototype.hasOwnProperty.call(object, 'className');
@@ -529,6 +530,37 @@ ParseCloud.beforeConnect = function (handler, validationHandler) {
 };
 
 /**
+ * Sends an email through the Parse Server mail adapter.
+ *
+ * **Available in Cloud Code only.**
+ * **Requires a mail adapter to be configured for Parse Server.**
+ *
+ * ```
+ * Parse.Cloud.sendEmail({
+ *   from: 'Example <test@example.com>',
+ *   to: 'contact@example.com',
+ *   subject: 'Test email',
+ *   text: 'This email is a test.'
+ * });
+ *```
+ *
+ * @method sendEmail
+ * @name Parse.Cloud.sendEmail
+ * @param {Object} data The object of the mail data to send.
+ */
+ParseCloud.sendEmail = function (data) {
+  const config = Config.get(Parse.applicationId);
+  const emailAdapter = config.userController.adapter;
+  if (!emailAdapter) {
+    config.loggerController.error(
+      'Failed to send email because no mail adapter is configured for Parse Server.'
+    );
+    return;
+  }
+  return emailAdapter.sendMail(data);
+};
+
+/**
  * Registers a before live query subscription function.
  *
  * **Available in Cloud Code only.**
@@ -718,6 +750,9 @@ module.exports = ParseCloud;
  * @property {String} requireUserKeys.field If requireUserKeys is an object, name of field to validate on request user
  * @property {Array|function|Any} requireUserKeys.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
  * @property {String} requireUserKeys.field.error custom error message if field is invalid.
+ *
+ * @property {Array<String>|function}requireAnyUserRoles If set, request.user has to be part of at least one roles name to make the request. If set to a function, function must return role names.
+ * @property {Array<String>|function}requireAllUserRoles If set, request.user has to be part all roles name to make the request. If set to a function, function must return role names.
  *
  * @property {Object|Array<String>} fields if an array of strings, validator will look for keys in request.params, and throw if not provided. If Object, fields to validate. If the trigger is a cloud function, `request.params` will be validated, otherwise `request.object`.
  * @property {String} fields.field name of field to validate.
