@@ -79,19 +79,6 @@ describe('PushController', () => {
     done();
   });
 
-  it('can throw on validateDeviceType when single invalid device type is set', done => {
-    // Make query condition
-    const where = {
-      deviceType: 'osx',
-    };
-    const validPushTypes = ['ios', 'android'];
-
-    expect(function () {
-      validatePushType(where, validPushTypes);
-    }).toThrow();
-    done();
-  });
-
   it('can get expiration time in string format', done => {
     // Make mock request
     const timeStr = '2015-03-19T22:05:08Z';
