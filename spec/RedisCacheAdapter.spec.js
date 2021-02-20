@@ -89,7 +89,7 @@ describe_only(() => {
   });
 
   it('should find un-expired records', done => {
-    const cache = new RedisCacheAdapter(null, 50);
+    const cache = new RedisCacheAdapter(null, 100);
 
     cache
       .put(KEY, VALUE)
