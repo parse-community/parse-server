@@ -2048,9 +2048,9 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(TestObject);
       query.matches(
         'myString',
-        'parse # First fragment. We\'ll write this in one case but match insensitively\n' +
-        '.com  # Second fragment. This can be separated by any character, including newline;' +
-        'however, this comment must end with a newline to recognize it as a comment\n',
+        "parse # First fragment. We'll write this in one case but match insensitively\n" +
+          '.com  # Second fragment. This can be separated by any character, including newline;' +
+          'however, this comment must end with a newline to recognize it as a comment\n',
         'mixs'
       );
       query.find().then(

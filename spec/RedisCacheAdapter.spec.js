@@ -34,20 +34,20 @@ describe_only(() => {
   });
 
   it('should expire after ttl', done => {
-    const cache = new RedisCacheAdapter(null, 50);
+    const cache = new RedisCacheAdapter(null, 100);
 
     cache
       .put(KEY, VALUE)
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 52))
+      .then(wait.bind(null, 102))
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(null))
       .then(done);
   });
 
   it('should not store value for ttl=0', done => {
-    const cache = new RedisCacheAdapter(null, 5);
+    const cache = new RedisCacheAdapter(null, 100);
 
     cache
       .put(KEY, VALUE, 0)
@@ -57,20 +57,20 @@ describe_only(() => {
   });
 
   it('should not expire when ttl=Infinity', done => {
-    const cache = new RedisCacheAdapter(null, 1);
+    const cache = new RedisCacheAdapter(null, 100);
 
     cache
       .put(KEY, VALUE, Infinity)
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 5))
+      .then(wait.bind(null, 102))
       .then(() => cache.get(KEY))
       .then(value => expect(value).toEqual(VALUE))
       .then(done);
   });
 
   it('should fallback to default ttl', done => {
-    const cache = new RedisCacheAdapter(null, 1);
+    const cache = new RedisCacheAdapter(null, 100);
     let promise = Promise.resolve();
 
     [-100, null, undefined, 'not number', true].forEach(ttl => {
@@ -79,7 +79,7 @@ describe_only(() => {
           .put(KEY, VALUE, ttl)
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(VALUE))
-          .then(wait.bind(null, 5))
+          .then(wait.bind(null, 102))
           .then(() => cache.get(KEY))
           .then(value => expect(value).toEqual(null))
       );
@@ -89,7 +89,7 @@ describe_only(() => {
   });
 
   it('should find un-expired records', done => {
-    const cache = new RedisCacheAdapter(null, 5);
+    const cache = new RedisCacheAdapter(null, 100);
 
     cache
       .put(KEY, VALUE)
@@ -102,7 +102,7 @@ describe_only(() => {
   });
 
   it('handleShutdown, close connection', async () => {
-    const cache = new RedisCacheAdapter(null, 5);
+    const cache = new RedisCacheAdapter(null, 100);
 
     await cache.handleShutdown();
     setTimeout(() => {

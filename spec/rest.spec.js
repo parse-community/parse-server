@@ -557,11 +557,7 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + 1000 * 3600 * 24 * 365);
 
-        expect(actual.getFullYear()).toEqual(expected.getFullYear());
-        expect(actual.getMonth()).toEqual(expected.getMonth());
-        expect(actual.getDate()).toEqual(expected.getDate());
-        // less than a minute, if test happen at the wrong time :/
-        expect(actual.getMinutes() - expected.getMinutes() <= 1).toBe(true);
+        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
 
         done();
       });
@@ -595,11 +591,7 @@ describe('rest create', () => {
         const actual = new Date(session.expiresAt.iso);
         const expected = new Date(now.getTime() + sessionLength * 1000);
 
-        expect(actual.getFullYear()).toEqual(expected.getFullYear());
-        expect(actual.getMonth()).toEqual(expected.getMonth());
-        expect(actual.getDate()).toEqual(expected.getDate());
-        expect(actual.getHours()).toEqual(expected.getHours());
-        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+        expect(Math.abs(actual - expected) <= jasmine.DEFAULT_TIMEOUT_INTERVAL).toEqual(true);
 
         done();
       })
