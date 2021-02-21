@@ -246,6 +246,8 @@ describe('Parse.User testing', () => {
     await adapter.connect();
     await adapter.database.dropDatabase();
     delete adapter.connectionPromise;
+    const { database } = Config.get(Parse.applicationId);
+    database.schemaCache.clear();
 
     const user = new Parse.User();
     await user.signUp({
