@@ -106,7 +106,7 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - if: ${{ matrix.name == 'Mongo 3.6.21' }}
+      - if: ${{ matrix.name == 'Mongo 3.6, Standalone, MMAPv1' }}
         run: npm run lint
       - run: npm run pretest
       - run: npm run coverage
