@@ -1453,11 +1453,13 @@ describe('cloud validator', () => {
     );
     try {
       await Parse.Cloud.run('hello', { data: 'd' });
+      fail('validation should have failed');
     } catch (error) {
       expect(error.code).toEqual(Parse.Error.VALIDATION_ERROR);
       expect(error.message).toEqual('Validation failed.');
     }
-    await Parse.Cloud.run('hello', { data: 'f' });
+    const result = await Parse.Cloud.run('hello', { data: 'f' });
+    expect(result).toBe('Hello world!');
   });
 
   it('basic beforeSave requireUserKey as custom async function', async () => {
