@@ -373,7 +373,7 @@ describe('Parse.Push', () => {
         return new Promise(resolve => {
           setTimeout(() => {
             resolve();
-          }, 3000);
+          }, 1000);
         });
       })
       .then(() => {
