@@ -397,7 +397,7 @@ describe('Parse.Push', () => {
    * Simulates an extended push, where some installations may be removed,
    * resulting in a non-zero count
    */
-  it("does not get stuck with _PushStatus 'running' on many installations removed", done => {
+  xit("does not get stuck with _PushStatus 'running' on many installations removed", done => {
     const devices = 1000;
     const installations = provideInstallations(devices);
 
@@ -421,7 +421,7 @@ describe('Parse.Push', () => {
         return new Promise(resolve => {
           setTimeout(() => {
             resolve();
-          }, 3000);
+          }, 1000);
         });
       })
       .then(() => {
@@ -446,7 +446,7 @@ describe('Parse.Push', () => {
    * Simulates an extended push, where some installations may be added,
    * resulting in a non-zero count
    */
-  it("does not get stuck with _PushStatus 'running' on many installations added", done => {
+  xit("does not get stuck with _PushStatus 'running' on many installations added", done => {
     const devices = 1000;
     const installations = provideInstallations(devices);
 
@@ -495,7 +495,7 @@ describe('Parse.Push', () => {
         return new Promise(resolve => {
           setTimeout(() => {
             resolve();
-          }, 3000);
+          }, 1000);
         });
       })
       .then(() => {
