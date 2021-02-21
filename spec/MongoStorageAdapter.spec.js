@@ -18,6 +18,8 @@ const fakeClient = {
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses().then(done, fail);
+    const { database } = Config.get(Parse.applicationId);
+    database.schemaCache.clear();
   });
 
   it('auto-escapes symbols in auth information', () => {
@@ -314,6 +316,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     await user.signUp();
 
     const database = Config.get(Parse.applicationId).database;
+    await database.adapter.dropAllIndexes('_User');
+
     const preIndexPlan = await database.find(
       '_User',
       { username: 'bugs' },
@@ -547,6 +551,33 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         calls.forEach(call => {
           expect(call.args[2].session.transaction.state).toBe('NO_TRANSACTION');
         });
+      });
+    });
+
+    describe('watch _SCHEMA', () => {
+      it('should change', async done => {
+        const adapter = new MongoStorageAdapter({ uri: databaseURI });
+        await reconfigureServer({
+          replicaSet: true,
+          databaseAdapter: adapter,
+        });
+        expect(adapter.replicaSet).toBe(true);
+        spyOn(adapter, '_onchange');
+        const schema = {
+          fields: {
+            array: { type: 'Array' },
+            object: { type: 'Object' },
+            date: { type: 'Date' },
+          },
+        };
+
+        await adapter.createClass('Stuff', schema);
+        const myClassSchema = await adapter.getClass('Stuff');
+        expect(myClassSchema).toBeDefined();
+        setTimeout(() => {
+          expect(adapter._onchange).toHaveBeenCalledTimes(1);
+          done();
+        }, 5000);
       });
     });
   }

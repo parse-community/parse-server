@@ -15,7 +15,6 @@ import { PushController } from './PushController';
 import { PushQueue } from '../Push/PushQueue';
 import { PushWorker } from '../Push/PushWorker';
 import DatabaseController from './DatabaseController';
-import SchemaCache from './SchemaCache';
 
 // Adapters
 import { GridFSBucketAdapter } from '../Adapters/Files/GridFSBucketAdapter';
@@ -41,7 +40,7 @@ export function getControllers(options: ParseServerOptions) {
   const cacheController = getCacheController(options);
   const analyticsController = getAnalyticsController(options);
   const liveQueryController = getLiveQueryController(options);
-  const databaseController = getDatabaseController(options, cacheController);
+  const databaseController = getDatabaseController(options);
   const hooksController = getHooksController(options, databaseController);
   const authDataManager = getAuthDataManager(options);
   const parseGraphQLController = getParseGraphQLController(options, {
@@ -141,18 +140,9 @@ export function getLiveQueryController(options: ParseServerOptions): LiveQueryCo
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(
-  options: ParseServerOptions,
-  cacheController: CacheController
-): DatabaseController {
-  const {
-    databaseURI,
-    databaseOptions,
-    collectionPrefix,
-    schemaCacheTTL,
-    enableSingleSchemaCache,
-  } = options;
-  let { databaseAdapter } = options;
+export function getDatabaseController(options: ParseServerOptions): DatabaseController {
+  const { databaseURI, collectionPrefix, replicaSet } = options;
+  let { databaseAdapter, databaseOptions } = options;
   if (
     (databaseOptions ||
       (databaseURI && databaseURI !== defaults.databaseURI) ||
@@ -161,14 +151,14 @@ export function getDatabaseController(
   ) {
     throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
   } else if (!databaseAdapter) {
+    databaseOptions = databaseOptions || {};
+    databaseOptions.replicaSet = replicaSet;
     databaseAdapter = getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions);
   } else {
     databaseAdapter = loadAdapter(databaseAdapter);
+    databaseAdapter.replicaSet = !!replicaSet;
   }
-  return new DatabaseController(
-    databaseAdapter,
-    new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache)
-  );
+  return new DatabaseController(databaseAdapter);
 }
 
 export function getHooksController(

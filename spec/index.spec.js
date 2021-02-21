@@ -70,6 +70,8 @@ describe('server', () => {
         },
       }),
     }).catch(() => {
+      const config = Config.get('test');
+      config.database.schemaCache.clear();
       //Need to use rest api because saving via JS SDK results in fail() not getting called
       request({
         method: 'POST',

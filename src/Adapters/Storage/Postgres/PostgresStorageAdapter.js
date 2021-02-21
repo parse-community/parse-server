@@ -798,14 +798,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Private
   _collectionPrefix: string;
   _client: any;
+  _onchange: any;
   _pgp: any;
+  _stream: any;
 
   constructor({ uri, collectionPrefix = '', databaseOptions }: any) {
     this._collectionPrefix = collectionPrefix;
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
+    this._onchange = () => {};
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
+  }
+
+  watch(callback: () => void): void {
+    this._onchange = callback;
   }
 
   //Note that analyze=true will run the query, executing INSERTS, DELETES, etc.
@@ -818,10 +825,22 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   handleShutdown() {
+    if (this._stream) {
+      this._stream.done();
+      delete this._stream;
+    }
     if (!this._client) {
       return;
     }
     this._client.$pool.end();
+  }
+
+  _notifySchemaChange() {
+    if (this._stream) {
+      this._stream.none('NOTIFY $1~, $2', ['schema.change', '']).catch(error => {
+        console.log('Failed to Notify:', error); // unlikely to ever happen
+      });
+    }
   }
 
   async _ensureSchemaCollectionExists(conn: any) {
@@ -861,6 +880,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         values
       );
     });
+    this._notifySchemaChange();
   }
 
   async setIndexesWithSchemaFormat(
@@ -923,6 +943,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
       );
     });
+    this._notifySchemaChange();
   }
 
   async createClass(className: string, schema: SchemaType, conn: ?any) {
@@ -1079,6 +1100,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         );
       }
     });
+    this._notifySchemaChange();
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -1091,9 +1113,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
         values: [className],
       },
     ];
-    return this._client
+    const response = await this._client
       .tx(t => t.none(this._pgp.helpers.concat(operations)))
       .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
+
+    this._notifySchemaChange();
+    return response;
   }
 
   // Delete all data known to this adapter. Used for testing.
@@ -1179,6 +1204,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         await t.none(`ALTER TABLE $1:name DROP COLUMN IF EXISTS ${columns}`, values);
       }
     });
+    this._notifySchemaChange();
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
@@ -2244,6 +2270,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async performInitialization({ VolatileClassesSchemas }: any) {
     // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
+    if (!this._stream) {
+      this._stream = await this._client.connect({ direct: true });
+      this._stream.client.on('notification', () => this._onchange());
+      await this._stream.none('LISTEN $1~', 'schema.change');
+    }
     const promises = VolatileClassesSchemas.map(schema => {
       return this.createTable(schema.className, schema)
         .catch(err => {

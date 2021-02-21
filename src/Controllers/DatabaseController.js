@@ -398,14 +398,18 @@ class DatabaseController {
   schemaPromise: ?Promise<SchemaController.SchemaController>;
   _transactionalSession: ?any;
 
-  constructor(adapter: StorageAdapter, schemaCache: any) {
+  constructor(adapter: StorageAdapter) {
     this.adapter = adapter;
-    this.schemaCache = schemaCache;
     // We don't want a mutable this.schema, because then you could have
     // one request that uses different schemas for different parts of
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
+    // Used for Testing only
+    this.schemaCache = {
+      clear: () => SchemaController.clearSingleSchemaCache(),
+      get: () => SchemaController.getSingleSchemaCache(),
+    };
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -434,7 +438,7 @@ class DatabaseController {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
-    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
+    this.schemaPromise = SchemaController.load(this.adapter, options);
     this.schemaPromise.then(
       () => delete this.schemaPromise,
       () => delete this.schemaPromise
@@ -916,7 +920,8 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    return Promise.all([this.adapter.deleteAllClasses(fast), this.schemaCache.clear()]);
+    this.schemaCache.clear();
+    return this.adapter.deleteAllClasses(fast);
   }
 
   // Returns a promise for a list of related ids given an owning id.
@@ -1325,8 +1330,12 @@ class DatabaseController {
   }
 
   deleteSchema(className: string): Promise<void> {
+    let schemaController;
     return this.loadSchema({ clearCache: true })
-      .then(schemaController => schemaController.getOneSchema(className, true))
+      .then(s => {
+        schemaController = s;
+        return schemaController.getOneSchema(className, true);
+      })
       .catch(error => {
         if (error === undefined) {
           return { fields: {} };
@@ -1356,7 +1365,10 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                return;
+                schemaController._cache.allClasses = (
+                  schemaController._cache.allClasses || []
+                ).filter(cached => cached.className !== className);
+                return schemaController.reloadData();
               });
             } else {
               return Promise.resolve();

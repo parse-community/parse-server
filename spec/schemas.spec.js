@@ -4,7 +4,6 @@ const Parse = require('parse/node').Parse;
 const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
-const TestUtils = require('../lib/TestUtils');
 
 let config;
 
@@ -142,11 +141,6 @@ const masterKeyHeaders = {
 describe('schemas', () => {
   beforeEach(() => {
     config = Config.get('test');
-  });
-
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-    await TestUtils.destroyAllDataPermanently(false);
   });
 
   it('requires the master key to get all schemas', done => {

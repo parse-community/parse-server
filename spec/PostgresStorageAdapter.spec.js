@@ -235,12 +235,13 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
-    const database = Config.get(Parse.applicationId).database;
 
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
@@ -289,12 +290,14 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   });
 
   it('should use index for caseInsensitive query using default indexname', async () => {
+    const database = Config.get(Parse.applicationId).database;
+    await database.loadSchema({ clearCache: true });
     const tableName = '_User';
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
     await user.signUp();
-    const database = Config.get(Parse.applicationId).database;
+
     const fieldToSearch = 'username';
     //Create index before data is inserted
     const schema = await new Parse.Schema('_User').get();
@@ -376,6 +379,21 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(innerElement.Plan['Index Name']).toContain(uniqueField);
       });
     });
+  });
+
+  it('should watch _SCHEMA changes', async () => {
+    const { database } = Config.get(Parse.applicationId);
+    const { adapter } = database;
+
+    spyOn(adapter, 'watch');
+    spyOn(adapter, '_onchange');
+    const schema = await database.loadSchema();
+    // Create a valid class
+    await schema.validateObject('Stuff', { foo: 'bar' });
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    expect(adapter.watch).toHaveBeenCalledTimes(1);
+    expect(adapter._onchange).toHaveBeenCalledTimes(1);
   });
 });
 

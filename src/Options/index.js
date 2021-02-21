@@ -157,9 +157,6 @@ export interface ParseServerOptions {
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
   :DEFAULT: true */
   revokeSessionOnPasswordReset: ?boolean;
-  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
-  :DEFAULT: 5000 */
-  schemaCacheTTL: ?number;
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)
   :DEFAULT: 5000 */
   cacheTTL: ?number;
@@ -170,9 +167,6 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS
   :DEFAULT: false */
   directAccess: ?boolean;
-  /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA, defaults to false, i.e. unique schema cache per request.
-  :DEFAULT: false */
-  enableSingleSchemaCache: ?boolean;
   /* Enables the default express error handler for all errors
   :DEFAULT: false */
   enableExpressErrorHandler: ?boolean;
@@ -223,6 +217,10 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
+  /* If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.
+  :ENV: PARSE_SERVER_REPLICA_SET
+  :DEFAULT: false */
+  replicaSet: ?boolean;
   /* Callback when server has started */
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
