@@ -4,6 +4,7 @@ import { createClient } from './PostgresClient';
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
+// @flow-disable-next
 import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
 
@@ -811,7 +812,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._onchange = () => {};
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
-    this.uuid = uuidv4();
+    this._uuid = uuidv4();
   }
 
   watch(callback: () => void): void {
@@ -843,7 +844,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       this._stream = await this._client.connect({ direct: true });
       this._stream.client.on('notification', data => {
         const payload = JSON.parse(data.payload);
-        if (payload.senderId !== this.uuid) {
+        if (payload.senderId !== this._uuid) {
           this._onchange();
         }
       });
@@ -854,7 +855,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _notifySchemaChange() {
     if (this._stream) {
       this._stream
-        .none('NOTIFY $1~, $2', ['schema.change', { senderId: this.uuid }])
+        .none('NOTIFY $1~, $2', ['schema.change', { senderId: this._uuid }])
         .catch(error => {
           console.log('Failed to Notify:', error); // unlikely to ever happen
         });

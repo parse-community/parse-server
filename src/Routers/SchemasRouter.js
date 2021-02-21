@@ -35,7 +35,7 @@ function getOneSchema(req) {
     });
 }
 
-async function createSchema(req) {
+function createSchema(req) {
   if (req.auth.isReadOnly) {
     throw new Parse.Error(
       Parse.Error.OPERATION_FORBIDDEN,
@@ -53,16 +53,17 @@ async function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  const schema = await req.config.database.loadSchema({ clearCache: true });
-  const parseSchema = await schema.addClassIfNotExists(
-    className,
-    req.body.fields,
-    req.body.classLevelPermissions,
-    req.body.indexes
-  );
-  // TODO: Improve by directly updating global schema cache
-  await schema.reloadData({ clearCache: true });
-  return { response: parseSchema };
+  return req.config.database
+    .loadSchema({ clearCache: true })
+    .then(schema =>
+      schema.addClassIfNotExists(
+        className,
+        req.body.fields,
+        req.body.classLevelPermissions,
+        req.body.indexes
+      )
+    )
+    .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {

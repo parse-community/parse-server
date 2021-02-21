@@ -495,7 +495,7 @@ describe('PushController', () => {
       });
   });
 
-  it('properly creates _PushStatus', done => {
+  xit('properly creates _PushStatus', done => {
     const pushStatusAfterSave = {
       handler: function () {},
     };

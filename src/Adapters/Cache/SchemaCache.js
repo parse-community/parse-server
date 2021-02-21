@@ -1,8 +1,12 @@
 const SchemaCache = {};
 
 export default {
-  get() {
-    return SchemaCache.allClasses || [];
+  all() {
+    return [...(SchemaCache.allClasses || [])];
+  },
+
+  get(className) {
+    return this.all().find(cached => cached.className === className);
   },
 
   put(allSchema) {
