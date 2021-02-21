@@ -13,6 +13,9 @@ import deepcopy from 'deepcopy';
 import logger from '../logger';
 import * as SchemaController from './SchemaController';
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
+import type { LoadSchemaOptions } from './types';
 import type { QueryOptions, FullQueryOptions } from '../Adapters/Storage/StorageAdapter';
 
 function addWriteACL(query, acl) {
@@ -230,9 +233,6 @@ const filterSensitiveData = (
   return object;
 };
 
-import type { LoadSchemaOptions } from './types';
-import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
 // modifications that don't know their results ahead of time, like
@@ -405,11 +405,6 @@ class DatabaseController {
     // it. Instead, use loadSchema to get a schema.
     this.schemaPromise = null;
     this._transactionalSession = null;
-    // Used for Testing only
-    this.schemaCache = {
-      clear: () => SchemaController.clearSingleSchemaCache(),
-      get: () => SchemaController.getSingleSchemaCache(),
-    };
   }
 
   collectionExists(className: string): Promise<boolean> {
@@ -920,7 +915,7 @@ class DatabaseController {
    */
   deleteEverything(fast: boolean = false): Promise<any> {
     this.schemaPromise = null;
-    this.schemaCache.clear();
+    SchemaCache.clear();
     return this.adapter.deleteAllClasses(fast);
   }
 
@@ -1365,9 +1360,7 @@ class DatabaseController {
                   this.adapter.deleteClass(joinTableName(className, name))
                 )
               ).then(() => {
-                schemaController._cache.allClasses = (
-                  schemaController._cache.allClasses || []
-                ).filter(cached => cached.className !== className);
+                SchemaCache.del(className);
                 return schemaController.reloadData();
               });
             } else {

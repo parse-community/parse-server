@@ -18,8 +18,7 @@ const fakeClient = {
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI }).deleteAllClasses().then(done, fail);
-    const { database } = Config.get(Parse.applicationId);
-    database.schemaCache.clear();
+    Config.get(Parse.applicationId).schemaCache.clear();
   });
 
   it('auto-escapes symbols in auth information', () => {

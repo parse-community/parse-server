@@ -17,6 +17,7 @@
 // @flow-disable-next
 const Parse = require('parse/node').Parse;
 import { StorageAdapter } from '../Adapters/Storage/StorageAdapter';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 import DatabaseController from './DatabaseController';
 import Config from '../Config';
 // @flow-disable-next
@@ -682,15 +683,13 @@ const typeToString = (type: SchemaField | string): string => {
 export default class SchemaController {
   _dbAdapter: StorageAdapter;
   schemaData: { [string]: Schema };
-  _cache: any;
   reloadDataPromise: ?Promise<any>;
   protectedFields: any;
   userIdRegEx: RegExp;
 
-  constructor(databaseAdapter: StorageAdapter, singleSchemaCache: Object) {
+  constructor(databaseAdapter: StorageAdapter) {
     this._dbAdapter = databaseAdapter;
-    this._cache = singleSchemaCache;
-    this.schemaData = new SchemaData(this._cache.allClasses || [], this.protectedFields);
+    this.schemaData = new SchemaData(SchemaCache.get(), this.protectedFields);
     this.protectedFields = Config.get(Parse.applicationId).protectedFields;
 
     const customIds = Config.get(Parse.applicationId).allowCustomObjectId;
@@ -729,8 +728,9 @@ export default class SchemaController {
     if (options.clearCache) {
       return this.setAllClasses();
     }
-    if (this._cache.allClasses && this._cache.allClasses.length) {
-      return Promise.resolve(this._cache.allClasses);
+    const cached = SchemaCache.get();
+    if (cached && cached.length) {
+      return Promise.resolve(cached);
     }
     return this.setAllClasses();
   }
@@ -740,7 +740,7 @@ export default class SchemaController {
       .getAllClasses()
       .then(allSchemas => allSchemas.map(injectDefaultSchema))
       .then(allSchemas => {
-        this._cache.allClasses = allSchemas;
+        SchemaCache.put(allSchemas);
         return allSchemas;
       });
   }
@@ -751,7 +751,7 @@ export default class SchemaController {
     options: LoadSchemaOptions = { clearCache: false }
   ): Promise<Schema> {
     if (options.clearCache) {
-      delete this._cache.allClasses;
+      SchemaCache.clear();
     }
     if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
       const data = this.schemaData[className];
@@ -762,7 +762,7 @@ export default class SchemaController {
         indexes: data.indexes,
       });
     }
-    const cached = (this._cache.allClasses || []).find(schema => schema.className === className);
+    const cached = SchemaCache.get().find(schema => schema.className === className);
     if (cached && !options.clearCache) {
       return Promise.resolve(cached);
     }
@@ -1050,7 +1050,7 @@ export default class SchemaController {
     }
     validateCLP(perms, newSchema, this.userIdRegEx);
     await this._dbAdapter.setClassLevelPermissions(className, perms);
-    const cached = (this._cache.allClasses || []).find(schema => schema.className === className);
+    const cached = SchemaCache.get().find(schema => schema.className === className);
     if (cached) {
       cached.classLevelPermissions = perms;
     }
@@ -1202,7 +1202,7 @@ export default class SchemaController {
         });
       })
       .then(() => {
-        delete this._cache.allClasses;
+        SchemaCache.clear();
       });
   }
 
@@ -1412,19 +1412,11 @@ export default class SchemaController {
   }
 }
 
-const singleSchemaCache = {};
-
 // Returns a promise for a new Schema.
 const load = (dbAdapter: StorageAdapter, options: any): Promise<SchemaController> => {
-  const schema = new SchemaController(dbAdapter, singleSchemaCache);
+  const schema = new SchemaController(dbAdapter);
   return schema.reloadData(options).then(() => schema);
 };
-
-const clearSingleSchemaCache = () => {
-  delete singleSchemaCache.allClasses;
-};
-
-const getSingleSchemaCache = () => singleSchemaCache.allClasses;
 
 // Builds a new schema (in schema API response format) out of an
 // existing mongo schema + a schemas API put request. This response
@@ -1585,8 +1577,6 @@ function getObjectType(obj): ?(SchemaField | string) {
 
 export {
   load,
-  clearSingleSchemaCache,
-  getSingleSchemaCache,
   classNameIsValid,
   fieldNameIsValid,
   invalidClassNameMessage,

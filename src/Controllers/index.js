@@ -25,6 +25,7 @@ import MongoStorageAdapter from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParsePushAdapter from '@parse/push-adapter';
 import ParseGraphQLController from './ParseGraphQLController';
+import SchemaCache from '../Adapters/Cache/SchemaCache';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
@@ -63,6 +64,7 @@ export function getControllers(options: ParseServerOptions) {
     databaseController,
     hooksController,
     authDataManager,
+    schemaCache: SchemaCache,
   };
 }
 

@@ -60,6 +60,7 @@ async function createSchema(req) {
     req.body.classLevelPermissions,
     req.body.indexes
   );
+  // TODO: Improve by directly updating global schema cache
   await schema.reloadData({ clearCache: true });
   return { response: parseSchema };
 }

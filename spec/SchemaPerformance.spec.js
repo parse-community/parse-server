@@ -8,7 +8,7 @@ describe_only_db('mongo')('Schema Performance', function () {
 
   beforeEach(async () => {
     config = Config.get('test');
-    config.database.schemaCache.clear();
+    config.schemaCache.clear();
     const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
     await reconfigureServer({
       replicaSet: false,
