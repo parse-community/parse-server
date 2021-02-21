@@ -392,8 +392,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     await schema.validateObject('Stuff', { foo: 'bar' });
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    expect(adapter.watch).toHaveBeenCalledTimes(1);
-    expect(adapter._onchange).toHaveBeenCalledTimes(1);
+    expect(adapter.watch).toHaveBeenCalled();
+    expect(adapter._onchange).toHaveBeenCalled();
   });
 });
 

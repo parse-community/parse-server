@@ -575,7 +575,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         const myClassSchema = await adapter.getClass('Stuff');
         expect(myClassSchema).toBeDefined();
         setTimeout(() => {
-          expect(adapter._onchange).toHaveBeenCalledTimes(1);
+          expect(adapter._onchange).toHaveBeenCalled();
           done();
         }, 5000);
       });
