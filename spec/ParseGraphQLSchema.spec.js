@@ -70,7 +70,7 @@ describe('ParseGraphQLSchema', () => {
       const graphQLSubscriptions = parseGraphQLSchema.graphQLSubscriptions;
       const newClassObject = new Parse.Object('NewClass');
       await newClassObject.save();
-      await databaseController.schemaCache.clear();
+      await parseServer.config.schemaCache.clear();
       await new Promise(resolve => setTimeout(resolve, 200));
       await parseGraphQLSchema.load();
       expect(parseClasses).not.toBe(parseGraphQLSchema.parseClasses);
@@ -428,14 +428,14 @@ describe('ParseGraphQLSchema', () => {
         log: defaultLogger,
         appId,
       });
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
       const types1 = parseGraphQLSchema.graphQLTypes;
       const queries1 = parseGraphQLSchema.graphQLQueries;
       const mutations1 = parseGraphQLSchema.graphQLMutations;
       const user = new Parse.Object('User');
       await user.save();
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
       const types2 = parseGraphQLSchema.graphQLTypes;
       const queries2 = parseGraphQLSchema.graphQLQueries;
@@ -458,14 +458,14 @@ describe('ParseGraphQLSchema', () => {
       });
       const car1 = new Parse.Object('Car');
       await car1.save();
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
       const types1 = parseGraphQLSchema.graphQLTypes;
       const queries1 = parseGraphQLSchema.graphQLQueries;
       const mutations1 = parseGraphQLSchema.graphQLMutations;
       const car2 = new Parse.Object('car');
       await car2.save();
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
       const types2 = parseGraphQLSchema.graphQLTypes;
       const queries2 = parseGraphQLSchema.graphQLQueries;
@@ -488,13 +488,13 @@ describe('ParseGraphQLSchema', () => {
       });
       const car = new Parse.Object('Car');
       await car.save();
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema1 = await parseGraphQLSchema.load();
       const queries1 = parseGraphQLSchema.graphQLQueries;
       const mutations1 = parseGraphQLSchema.graphQLMutations;
       const cars = new Parse.Object('cars');
       await cars.save();
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       const schema2 = await parseGraphQLSchema.load();
       const queries2 = parseGraphQLSchema.graphQLQueries;
       const mutations2 = parseGraphQLSchema.graphQLMutations;
@@ -534,7 +534,7 @@ describe('ParseGraphQLSchema', () => {
 
       await data.save();
 
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       await parseGraphQLSchema.load();
 
       const queries1 = parseGraphQLSchema.graphQLQueries;
@@ -571,7 +571,7 @@ describe('ParseGraphQLSchema', () => {
 
       await data.save();
 
-      await parseGraphQLSchema.databaseController.schemaCache.clear();
+      await parseGraphQLSchema.schemaCache.clear();
       await parseGraphQLSchema.load();
 
       const mutations = parseGraphQLSchema.graphQLMutations;
