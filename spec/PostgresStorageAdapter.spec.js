@@ -385,14 +385,23 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const { database } = Config.get(Parse.applicationId);
     const { adapter } = database;
 
-    spyOn(adapter, 'watch');
     spyOn(adapter, '_onchange');
-    const schema = await database.loadSchema();
-    // Create a valid class
-    await schema.validateObject('Stuff', { foo: 'bar' });
-    await new Promise(resolve => setTimeout(resolve, 500));
 
-    expect(adapter.watch).toHaveBeenCalled();
+    const otherInstance = new PostgresStorageAdapter({ uri: databaseURI });
+    otherInstance._listenToSchema();
+
+    await otherInstance.createClass('Stuff', {
+      className: 'Stuff',
+      fields: {
+        objectId: { type: 'String' },
+        createdAt: { type: 'Date' },
+        updatedAt: { type: 'Date' },
+        _rperm: { type: 'Array' },
+        _wperm: { type: 'Array' },
+      },
+      classLevelPermissions: undefined,
+    });
+    await new Promise(resolve => setTimeout(resolve, 500));
     expect(adapter._onchange).toHaveBeenCalled();
   });
 });

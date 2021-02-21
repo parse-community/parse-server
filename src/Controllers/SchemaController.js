@@ -808,19 +808,7 @@ export default class SchemaController {
           className,
         })
       )
-      .then(adapterSchema => {
-        const parseSchema = convertAdapterSchemaToParseSchema(adapterSchema);
-        this._cache.allClasses = this._cache.allClasses || [];
-        const index = this._cache.allClasses.findIndex(
-          cached => cached.className === parseSchema.className
-        );
-        if (index >= 0) {
-          this._cache.allClasses[index] = parseSchema;
-        } else {
-          this._cache.allClasses.push(parseSchema);
-        }
-        return parseSchema;
-      })
+      .then(convertAdapterSchemaToParseSchema)
       .catch(error => {
         if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
           throw new Parse.Error(
@@ -946,7 +934,7 @@ export default class SchemaController {
     return (
       this.addClassIfNotExists(className)
         // The schema update succeeded. Reload the schema
-        .then(() => this.reloadData())
+        .then(() => this.reloadData({ clearCache: true }))
         .catch(() => {
           // The schema update failed. This can be okay - it might
           // have failed because there's a race condition and a different
@@ -1132,12 +1120,6 @@ export default class SchemaController {
         return Promise.resolve();
       })
       .then(() => {
-        const cached = (this._cache.allClasses || []).find(
-          schema => schema.className === className
-        );
-        if (cached && !cached.fields[fieldName]) {
-          cached.fields[fieldName] = type;
-        }
         return {
           className,
           fieldName,
@@ -1230,7 +1212,7 @@ export default class SchemaController {
   async validateObject(className: string, object: any, query: any) {
     let geocount = 0;
     const schema = await this.enforceClassExists(className);
-    const results = [];
+    const promises = [];
 
     for (const fieldName in object) {
       if (object[fieldName] === undefined) {
@@ -1257,12 +1239,13 @@ export default class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      results.push(await schema.enforceFieldExists(className, fieldName, expected));
+      promises.push(schema.enforceFieldExists(className, fieldName, expected));
     }
+    const results = await Promise.all(promises);
     const enforceFields = results.filter(result => !!result);
 
     if (enforceFields.length !== 0) {
-      await this.reloadData();
+      await this.reloadData({ clearCache: true });
     }
     this.ensureFields(enforceFields);
 

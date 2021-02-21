@@ -4,6 +4,7 @@ import { createClient } from './PostgresClient';
 import Parse from 'parse/node';
 // @flow-disable-next
 import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
 import sql from './sql';
 
 const PostgresRelationDoesNotExistError = '42P01';
@@ -801,6 +802,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   _onchange: any;
   _pgp: any;
   _stream: any;
+  _uuid: any;
 
   constructor({ uri, collectionPrefix = '', databaseOptions }: any) {
     this._collectionPrefix = collectionPrefix;
@@ -809,6 +811,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._onchange = () => {};
     this._pgp = pgp;
     this.canSortOnJoinTables = false;
+    this.uuid = uuidv4();
   }
 
   watch(callback: () => void): void {
@@ -835,11 +838,26 @@ export class PostgresStorageAdapter implements StorageAdapter {
     this._client.$pool.end();
   }
 
+  async _listenToSchema() {
+    if (!this._stream) {
+      this._stream = await this._client.connect({ direct: true });
+      this._stream.client.on('notification', data => {
+        const payload = JSON.parse(data.payload);
+        if (payload.senderId !== this.uuid) {
+          this._onchange();
+        }
+      });
+      await this._stream.none('LISTEN $1~', 'schema.change');
+    }
+  }
+
   _notifySchemaChange() {
     if (this._stream) {
-      this._stream.none('NOTIFY $1~, $2', ['schema.change', '']).catch(error => {
-        console.log('Failed to Notify:', error); // unlikely to ever happen
-      });
+      this._stream
+        .none('NOTIFY $1~, $2', ['schema.change', { senderId: this.uuid }])
+        .catch(error => {
+          console.log('Failed to Notify:', error); // unlikely to ever happen
+        });
     }
   }
 
@@ -948,7 +966,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   async createClass(className: string, schema: SchemaType, conn: ?any) {
     conn = conn || this._client;
-    return conn
+    const parseSchema = await conn
       .tx('create-class', async t => {
         await this.createTable(className, schema, t);
         await t.none(
@@ -964,6 +982,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         throw err;
       });
+    this._notifySchemaChange();
+    return parseSchema;
   }
 
   // Just create a table, do not insert in schema
@@ -2270,11 +2290,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async performInitialization({ VolatileClassesSchemas }: any) {
     // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
-    if (!this._stream) {
-      this._stream = await this._client.connect({ direct: true });
-      this._stream.client.on('notification', () => this._onchange());
-      await this._stream.none('LISTEN $1~', 'schema.change');
-    }
     const promises = VolatileClassesSchemas.map(schema => {
       return this.createTable(schema.className, schema)
         .catch(err => {
@@ -2288,6 +2303,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         })
         .then(() => this.schemaUpgrade(schema.className, schema));
     });
+    promises.push(this._listenToSchema());
     return Promise.all(promises)
       .then(() => {
         return this._client.tx('perform-initialization', async t => {
