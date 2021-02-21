@@ -80,6 +80,8 @@ Once you have babel running in watch mode, you can start making changes to parse
 * The `lib/` folder is not committed, so never make changes in there.
 * Always make changes to files in the `src/` folder.
 * All the tests should point to sources in the `lib/` folder.
+* The `lib/` folder is produced by `babel` using either the `npm run build`, `npm run watch`, or the `npm run prepare` step.
+* The `npm run prepare` step is automatically invoked when your package depends on forked parse-server installed via git for example using `npm install --save git+https://github.com/[username]/parse-server#[branch/commit]`.
 
 ### Troubleshooting
 
@@ -90,7 +92,10 @@ Once you have babel running in watch mode, you can start making changes to parse
 *Answer*: The easiest way is to install [Jasmine Test Explorer](https://marketplace.visualstudio.com/items?itemName=hbenl.vscode-test-explorer), it will let you run selectively tests and debug them.
 
 *Question*: How do I deploy my forked version on my servers?<br/>
-*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/MY_USERNAME/parse-server#MY_FEATURE`. Run `npm install`, commit the changes and deploy to your servers.
+*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/[username]/parse-server#[branch/commit]`. Run `npm install`, commit the changes and deploy to your servers.
+
+*Question*: How do I deploy my forked version using docker?<br/>
+*Answer*: In your `package.json`, update the `parse-server` dependency to `https://github.com/[username]/parse-server#[branch/commit]`. Make sure the `npm install` step in your `Dockerfile` is running under non-privileged user for the ``npm run prepare`` step to work correctly. For official node images from hub.docker.com that non-privileged user is `node` with `/home/node` working directory.
 
 
 ### Please Do's
