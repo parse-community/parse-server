@@ -27,6 +27,8 @@ function validateValidator(validator) {
   };
   const allowedKeys = {
     requireUser: [Boolean],
+    requireAnyUserRoles: [Boolean],
+    requireAllUserRoles: [Boolean],
     requireMaster: [Boolean],
     validateMasterKey: [Boolean],
     skipWithMasterKey: [Boolean],
