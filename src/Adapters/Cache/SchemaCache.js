@@ -14,7 +14,7 @@ export default {
   },
 
   del(className) {
-    this.put(this.get().filter(cached => cached.className !== className));
+    this.put(this.all().filter(cached => cached.className !== className));
   },
 
   clear() {
