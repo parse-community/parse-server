@@ -76,7 +76,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
       .then(done, done.fail);
   });
 
-  it('should fail to create server if schema databaseOptions does not exist', done => {
+  xit('should fail to create server if schema databaseOptions does not exist', done => {
     const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
