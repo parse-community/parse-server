@@ -32,6 +32,26 @@ jobs:
         run: npm ci
       - name: CI Self-Check
         run: npm run ci:check
+  check-lint:
+     name: Lint
+     timeout-minutes: 30
+     runs-on: ubuntu-18.04
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.NODE_VERSION }}
+         uses: actions/setup-node@v1
+         with:
+           node-version: ${{ matrix.node-version }}
+       - name: Cache Node.js modules
+         uses: actions/cache@v2
+         with:
+           path: ~/.npm
+           key: ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
+           restore-keys: |
+             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
+       - name: Install dependencies
+         run: npm ci
+       - run: npm run lint
   check-mongo:
     strategy:
       matrix:
@@ -106,8 +126,6 @@ jobs:
             ${{ runner.os }}-node-${{ matrix.NODE_VERSION }}-
       - name: Install dependencies
         run: npm ci
-      - if: ${{ matrix.name == 'Mongo 3.6.21' }}
-        run: npm run lint
       - run: npm run pretest
       - run: npm run coverage
         env:
