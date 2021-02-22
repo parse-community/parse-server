@@ -495,7 +495,7 @@ describe('PushController', () => {
       });
   });
 
-  it('properly creates _PushStatus', done => {
+  it('properly creates _PushStatus', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -540,83 +540,76 @@ describe('PushController', () => {
       isMaster: true,
     };
     const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // it is enqueued so it can take time
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const result = results[0];
-        expect(result.createdAt instanceof Date).toBe(true);
-        expect(result.updatedAt instanceof Date).toBe(true);
-        expect(result.id.length).toBe(10);
-        expect(result.get('source')).toEqual('rest');
-        expect(result.get('query')).toEqual(JSON.stringify({}));
-        expect(typeof result.get('payload')).toEqual('string');
-        expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
-        expect(result.get('status')).toEqual('succeeded');
-        expect(result.get('numSent')).toEqual(10);
-        expect(result.get('sentPerType')).toEqual({
-          ios: 10, // 10 ios
-        });
-        expect(result.get('numFailed')).toEqual(5);
-        expect(result.get('failedPerType')).toEqual({
-          android: 5, // android
-        });
-        // Try to get it without masterKey
-        const query = new Parse.Query('_PushStatus');
-        return query.find();
-      })
-      .catch(error => {
-        expect(error.code).toBe(119);
-      })
-      .then(() => {
-        function getPushStatus(callIndex) {
-          return spy.calls.all()[callIndex].args[0].object;
-        }
-        expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(4);
-        const allCalls = spy.calls.all();
-        allCalls.forEach(call => {
-          expect(call.args.length).toBe(1);
-          const object = call.args[0].object;
-          expect(object instanceof Parse.Object).toBe(true);
-        });
-        expect(getPushStatus(0).get('status')).toBe('pending');
-        expect(getPushStatus(1).get('status')).toBe('running');
-        expect(getPushStatus(1).get('numSent')).toBe(0);
-        expect(getPushStatus(2).get('status')).toBe('running');
-        expect(getPushStatus(2).get('numSent')).toBe(10);
-        expect(getPushStatus(2).get('numFailed')).toBe(5);
-        // Those are updated from a nested . operation, this would
-        // not render correctly before
-        expect(getPushStatus(2).get('failedPerType')).toEqual({
-          android: 5,
-        });
-        expect(getPushStatus(2).get('sentPerType')).toEqual({
-          ios: 10,
-        });
-        expect(getPushStatus(3).get('status')).toBe('succeeded');
-      })
-      .then(done)
-      .catch(done.fail);
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await new Promise((resolve, reject) => {
+      pushController.sendPush(payload, {}, config, auth, resolve).catch(reject);
+    });
+    const checkPushStatus = async () => {
+      const query = new Parse.Query('_PushStatus');
+      const pushStatus = await query.get(pushStatusId, { useMasterKey: true });
+      return pushStatus.get('status') === 'succeeded';
+    };
+    while (!(await checkPushStatus())) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const query = new Parse.Query('_PushStatus');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(1);
+    const result = results[0];
+    expect(result.createdAt instanceof Date).toBe(true);
+    expect(result.updatedAt instanceof Date).toBe(true);
+    expect(result.id.length).toBe(10);
+    expect(result.get('source')).toEqual('rest');
+    expect(result.get('query')).toEqual(JSON.stringify({}));
+    expect(typeof result.get('payload')).toEqual('string');
+    expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
+    expect(result.get('status')).toEqual('succeeded');
+    expect(result.get('numSent')).toEqual(10);
+    expect(result.get('sentPerType')).toEqual({
+      ios: 10, // 10 ios
+    });
+    expect(result.get('numFailed')).toEqual(5);
+    expect(result.get('failedPerType')).toEqual({
+      android: 5, // android
+    });
+    try {
+      // Try to get it without masterKey
+      const query = new Parse.Query('_PushStatus');
+      await query.find();
+      fail();
+    } catch (error) {
+      expect(error.code).toBe(119);
+    }
+
+    function getPushStatus(callIndex) {
+      return spy.calls.all()[callIndex].args[0].object;
+    }
+    expect(spy).toHaveBeenCalled();
+    expect(spy.calls.count()).toBe(4);
+    const allCalls = spy.calls.all();
+    allCalls.forEach(call => {
+      expect(call.args.length).toBe(1);
+      const object = call.args[0].object;
+      expect(object instanceof Parse.Object).toBe(true);
+    });
+    expect(getPushStatus(0).get('status')).toBe('pending');
+    expect(getPushStatus(1).get('status')).toBe('running');
+    expect(getPushStatus(1).get('numSent')).toBe(0);
+    expect(getPushStatus(2).get('status')).toBe('running');
+    expect(getPushStatus(2).get('numSent')).toBe(10);
+    expect(getPushStatus(2).get('numFailed')).toBe(5);
+    // Those are updated from a nested . operation, this would
+    // not render correctly before
+    expect(getPushStatus(2).get('failedPerType')).toEqual({
+      android: 5,
+    });
+    expect(getPushStatus(2).get('sentPerType')).toEqual({
+      ios: 10,
+    });
+    expect(getPushStatus(3).get('status')).toBe('succeeded');
   });
 
   it('properly creates _PushStatus without serverURL', done => {

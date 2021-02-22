@@ -8,6 +8,12 @@ const delayPromise = delay => {
   });
 };
 
+const checkPushStatus = async () => {
+  const query = new Parse.Query('_PushStatus');
+  const results = await query.find({ useMasterKey: true });
+  return results[0].get('status') === 'succeeded';
+};
+
 describe('Parse.Push', () => {
   const setup = function () {
     const sendToInstallationSpy = jasmine.createSpy();
@@ -397,48 +403,31 @@ describe('Parse.Push', () => {
    * Simulates an extended push, where some installations may be removed,
    * resulting in a non-zero count
    */
-  it("does not get stuck with _PushStatus 'running' on many installations removed", done => {
+  it("does not get stuck with _PushStatus 'running' on many installations removed", async () => {
     const devices = 1000;
     const installations = provideInstallations(devices);
 
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: losingAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: 'android' },
-          },
-          { useMasterKey: true }
-        );
-      })
-      .then(() => {
-        // it is enqueued so it can take time
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        // query for push status
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        // verify status is NOT broken
-        expect(results.length).toBe(1);
-        const result = results[0];
-        expect(result.get('status')).toEqual('succeeded');
-        // expect # less than # of batches used, assuming each batch is 100 pushes
-        expect(result.get('numSent')).toEqual(devices - devices / 100);
-        expect(result.get('count')).toEqual(undefined);
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+    await Parse.Push.send({
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: 'android' },
+    });
+    while (!(await checkPushStatus())) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const query = new Parse.Query('_PushStatus');
+    const results = await query.find({ useMasterKey: true });
+
+    // verify status is NOT broken
+    expect(results.length).toBe(1);
+    const result = results[0];
+    expect(result.get('status')).toEqual('succeeded');
+    // expect # less than # of batches used, assuming each batch is 100 pushes
+    expect(result.get('numSent')).toEqual(devices - devices / 100);
+    expect(result.get('count')).toEqual(undefined);
   });
 
   /**
@@ -446,7 +435,7 @@ describe('Parse.Push', () => {
    * Simulates an extended push, where some installations may be added,
    * resulting in a non-zero count
    */
-  it("does not get stuck with _PushStatus 'running' on many installations added", done => {
+  it("does not get stuck with _PushStatus 'running' on many installations added", async () => {
     const devices = 1000;
     const installations = provideInstallations(devices);
 
@@ -462,7 +451,7 @@ describe('Parse.Push', () => {
       iOSInstallations.push(iOSInstallation);
     }
 
-    reconfigureServer({
+    await reconfigureServer({
       push: {
         adapter: {
           send: function (body, installations) {
@@ -477,41 +466,25 @@ describe('Parse.Push', () => {
           },
         },
       },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return Parse.Push.send(
-          {
-            data: { alert: 'We fixed our status!' },
-            where: { deviceType: { $ne: 'random' } },
-          },
-          { useMasterKey: true }
-        );
-      })
-      .then(() => {
-        // it is enqueued so it can take time
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        // query for push status
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        // verify status is NOT broken
-        expect(results.length).toBe(1);
-        const result = results[0];
-        expect(result.get('status')).toEqual('succeeded');
-        // expect # less than # of batches used, assuming each batch is 100 pushes
-        expect(result.get('numSent')).toEqual(devices + devices / 100);
-        expect(result.get('count')).toEqual(undefined);
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+
+    await Parse.Push.send({
+      data: { alert: 'We fixed our status!' },
+      where: { deviceType: { $ne: 'random' } },
+    });
+    while (!(await checkPushStatus())) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const query = new Parse.Query('_PushStatus');
+    const results = await query.find({ useMasterKey: true });
+
+    // verify status is NOT broken
+    expect(results.length).toBe(1);
+    const result = results[0];
+    expect(result.get('status')).toEqual('succeeded');
+    // expect # less than # of batches used, assuming each batch is 100 pushes
+    expect(result.get('numSent')).toEqual(devices + devices / 100);
+    expect(result.get('count')).toEqual(undefined);
   });
 });
