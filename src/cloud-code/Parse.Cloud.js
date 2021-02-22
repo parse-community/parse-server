@@ -632,6 +632,40 @@ ParseCloud.sendEmail = function (data) {
 };
 
 /**
+ * Returns a password reset link for user with given email.
+ *
+ * **Available in Cloud Code only.**
+ *
+ * The returned link can be used to trigger the password reset flow.
+ * For example, in a custom login emails sent using ``ParseCloud.sendEmail`` method
+ * from ``ParseCloud.afterLogin`` hook like this:
+ *
+ * ```
+ * Parse.Cloud.afterLogin(async request => {
+ *   const { object: user }  = request;
+ *   const email = user.get('email');
+ *
+ *   const password_reset_link = await Parse.Cloud.createPasswordResetLink(email);
+ *
+ *   return Parse.Cloud.sendEmail({
+ *   from: 'Example <test@example.com>',
+ *   to: email,
+ *   subject: 'New Login Detected',
+ *   text: 'Somebody logged into your account. If it was not you, reset your password here: ' + password_reset_link
+ * });
+ *```
+ *
+ * @method createPasswordResetLink
+ * @name Parse.Cloud.createPasswordResetLink
+ * @param {String} email The user's email
+ */
+ParseCloud.createPasswordResetLink = function (email) {
+  const config = Config.get(Parse.applicationId);
+  const userController = config.userController;
+  return userController.createPasswordResetLink(email);
+};
+
+/**
  * Registers a before live query subscription function.
  *
  * **Available in Cloud Code only.**
