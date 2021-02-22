@@ -11,7 +11,7 @@ const delayPromise = delay => {
 const checkPushStatus = async () => {
   const query = new Parse.Query('_PushStatus');
   const results = await query.find({ useMasterKey: true });
-  return results[0].get('status') === 'succeeded';
+  return results.length > 0 && results[0].get('status') === 'succeeded';
 };
 
 describe('Parse.Push', () => {
@@ -415,6 +415,8 @@ describe('Parse.Push', () => {
       data: { alert: 'We fixed our status!' },
       where: { deviceType: 'android' },
     });
+    // it is enqueued so it can take time
+    await new Promise(resolve => setTimeout(resolve, 1000));
     while (!(await checkPushStatus())) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -473,6 +475,8 @@ describe('Parse.Push', () => {
       data: { alert: 'We fixed our status!' },
       where: { deviceType: { $ne: 'random' } },
     });
+    // it is enqueued so it can take time
+    await new Promise(resolve => setTimeout(resolve, 1000));
     while (!(await checkPushStatus())) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
