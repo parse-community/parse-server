@@ -125,30 +125,18 @@ const verifyIdToken = async ({ token, id }, { clientId, cacheMaxEntries, cacheMa
 function validateAuthData(authData, options) {
   if (authData.token) {
     return verifyIdToken(authData, options);
-  }
-
-  if (authData.access_token) {
+  } else {
     return validateGraphToken(authData, options);
   }
-
-  return Promise.reject(
-    new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.')
-  );
 }
 
 // Returns a promise that fulfills iff this app id is valid.
 function validateAppId(appIds, authData, options) {
   if (authData.token) {
     return Promise.resolve();
-  }
-
-  if (authData.access_token) {
+  } else {
     return validateGraphAppId(appIds, authData, options);
   }
-
-  return Promise.reject(
-    new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Facebook auth is not configured.')
-  );
 }
 
 // A promisey wrapper for FB graph requests.

@@ -92,6 +92,7 @@ describe('AuthenticationProviders', function () {
         await provider.validateAuthData({ id: 'userId' }, params);
         params.appVersion = '5.123';
       }
+
       await provider.validateAuthData({ id: 'userId' }, params);
     });
   });
@@ -1762,7 +1763,8 @@ describe('facebook limited auth adapter', () => {
   const jwt = require('jsonwebtoken');
   const util = require('util');
 
-  it('(using client id as string) should throw error with missing id_token', async () => {
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as string) should throw error with missing id_token', async () => {
     try {
       await facebook.validateAuthData({}, { clientId: 'secret' });
       fail();
@@ -1771,7 +1773,8 @@ describe('facebook limited auth adapter', () => {
     }
   });
 
-  it('(using client id as array) should throw error with missing id_token', async () => {
+  // TODO: figure out a way to run this test alongside facebook classic tests
+  xit('(using client id as array) should throw error with missing id_token', async () => {
     try {
       await facebook.validateAuthData({}, { clientId: ['secret'] });
       fail();
@@ -1793,7 +1796,9 @@ describe('facebook limited auth adapter', () => {
   });
 
   it('should throw error if public key used to encode token is not available', async () => {
-    const fakeDecodedToken = { header: { kid: '789', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '789', alg: 'RS256' },
+    };
     try {
       spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
 
@@ -1816,11 +1821,16 @@ describe('facebook limited auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
@@ -1833,10 +1843,15 @@ describe('facebook limited auth adapter', () => {
   });
 
   it('should not verify invalid id_token', async () => {
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
 
@@ -1870,10 +1885,15 @@ describe('facebook limited auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -1892,10 +1912,15 @@ describe('facebook limited auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -1914,10 +1939,15 @@ describe('facebook limited auth adapter', () => {
       exp: Date.now(),
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -1934,10 +1964,15 @@ describe('facebook limited auth adapter', () => {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -1962,10 +1997,15 @@ describe('facebook limited auth adapter', () => {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -1991,10 +2031,15 @@ describe('facebook limited auth adapter', () => {
       iss: 'https://not.facebook.com',
       sub: 'the_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
@@ -2020,7 +2065,10 @@ describe('facebook limited auth adapter', () => {
   xit('(using client id as string) should throw error with invalid jwt clientId', async () => {
     try {
       await facebook.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT FACEBOOK TOKEN HERE' },
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
         { clientId: 'secret' }
       );
       fail();
@@ -2034,7 +2082,10 @@ describe('facebook limited auth adapter', () => {
   xit('(using client id as array) should throw error with invalid jwt clientId', async () => {
     try {
       await facebook.validateAuthData(
-        { id: 'INSERT ID HERE', token: 'INSERT FACEBOOK TOKEN HERE' },
+        {
+          id: 'INSERT ID HERE',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
         { clientId: ['secret'] }
       );
       fail();
@@ -2048,7 +2099,10 @@ describe('facebook limited auth adapter', () => {
   xit('should throw error with invalid user id', async () => {
     try {
       await facebook.validateAuthData(
-        { id: 'invalid user', token: 'INSERT FACEBOOK TOKEN HERE' },
+        {
+          id: 'invalid user',
+          token: 'INSERT FACEBOOK TOKEN HERE',
+        },
         { clientId: 'INSERT CLIENT ID HERE' }
       );
       fail();
@@ -2063,10 +2117,15 @@ describe('facebook limited auth adapter', () => {
       aud: 'invalid_client_id',
       sub: 'a_different_user_id',
     };
-    const fakeDecodedToken = { header: { kid: '123', alg: 'RS256' } };
+    const fakeDecodedToken = {
+      header: { kid: '123', alg: 'RS256' },
+    };
     spyOn(jwt, 'decode').and.callFake(() => fakeDecodedToken);
     const fakeGetSigningKeyAsyncFunction = () => {
-      return { kid: '123', rsaPublicKey: 'the_rsa_public_key' };
+      return {
+        kid: '123',
+        rsaPublicKey: 'the_rsa_public_key',
+      };
     };
     spyOn(util, 'promisify').and.callFake(() => fakeGetSigningKeyAsyncFunction);
     spyOn(jwt, 'verify').and.callFake(() => fakeClaim);
