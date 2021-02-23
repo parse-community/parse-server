@@ -1549,7 +1549,9 @@ describe('Cloud Code', () => {
   describe('cloud jobs', () => {
     it('should define a job', done => {
       expect(() => {
-        Parse.Cloud.job('myJob', () => {});
+        Parse.Cloud.job('myJob', ({ message }) => {
+          message('Hello, world!!!');
+        });
       }).not.toThrow();
 
       request({
@@ -1559,15 +1561,19 @@ describe('Cloud Code', () => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then(
-        () => {
-          done();
-        },
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return jobStatus.get('finishedAt') && jobStatus.get('message') === 'Hello, world!!!';
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
     });
 
     it('should not run without master key', done => {
@@ -1602,7 +1608,6 @@ describe('Cloud Code', () => {
           expect(typeof req.jobId).toBe('string');
           expect(typeof req.message).toBe('function');
           expect(typeof res).toBe('undefined');
-          done();
         });
       }).not.toThrow();
 
@@ -1613,13 +1618,19 @@ describe('Cloud Code', () => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then(
-        () => {},
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return jobStatus.get('finishedAt');
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
     });
 
     it('should run with master key basic auth', done => {
@@ -1630,25 +1641,30 @@ describe('Cloud Code', () => {
           expect(typeof req.jobId).toBe('string');
           expect(typeof req.message).toBe('function');
           expect(typeof res).toBe('undefined');
-          done();
         });
       }).not.toThrow();
 
       request({
         method: 'POST',
         url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
-      }).then(
-        () => {},
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return jobStatus.get('finishedAt');
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
     });
 
     it('should set the message / success on the job', done => {
       Parse.Cloud.job('myJob', req => {
-        const promise = req
+        return req
           .message('hello')
           .then(() => {
             return getJobStatus(req.jobId);
@@ -1657,21 +1673,6 @@ describe('Cloud Code', () => {
             expect(jobStatus.get('message')).toEqual('hello');
             expect(jobStatus.get('status')).toEqual('running');
           });
-        promise
-          .then(() => {
-            return getJobStatus(req.jobId);
-          })
-          .then(jobStatus => {
-            expect(jobStatus.get('message')).toEqual('hello');
-            expect(jobStatus.get('status')).toEqual('succeeded');
-            done();
-          })
-          .catch(err => {
-            console.error(err);
-            jfail(err);
-            done();
-          });
-        return promise;
       });
 
       request({
@@ -1681,32 +1682,28 @@ describe('Cloud Code', () => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then(
-        () => {},
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return (
+              jobStatus.get('finishedAt') &&
+              jobStatus.get('message') === 'hello' &&
+              jobStatus.get('status') === 'succeeded'
+            );
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
     });
 
     it('should set the failure on the job', done => {
-      Parse.Cloud.job('myJob', req => {
-        const promise = Promise.reject('Something went wrong');
-        new Promise(resolve => setTimeout(resolve, 200))
-          .then(() => {
-            return getJobStatus(req.jobId);
-          })
-          .then(jobStatus => {
-            expect(jobStatus.get('message')).toEqual('Something went wrong');
-            expect(jobStatus.get('status')).toEqual('failed');
-            done();
-          })
-          .catch(err => {
-            jfail(err);
-            done();
-          });
-        return promise;
+      Parse.Cloud.job('myJob', () => {
+        return Promise.reject('Something went wrong');
       });
 
       request({
@@ -1716,13 +1713,23 @@ describe('Cloud Code', () => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then(
-        () => {},
-        err => {
-          fail(err);
-          done();
-        }
-      );
+      })
+        .then(async response => {
+          const jobStatusId = response.headers['x-parse-job-status-id'];
+          const checkJobStatus = async () => {
+            const jobStatus = await getJobStatus(jobStatusId);
+            return (
+              jobStatus.get('finishedAt') &&
+              jobStatus.get('message') === 'Something went wrong' &&
+              jobStatus.get('status') === 'failed'
+            );
+          };
+          while (!(await checkJobStatus())) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        })
+        .then(done)
+        .catch(done.fail);
     });
 
     it('should set the failure message on the job error', async () => {
