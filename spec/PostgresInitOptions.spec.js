@@ -56,7 +56,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
     }
   });
 
-  it('should create server with public schema databaseOptions', done => {
+  xit('should create server with public schema databaseOptions', done => {
     const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
