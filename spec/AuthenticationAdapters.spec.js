@@ -1767,7 +1767,7 @@ describe('facebook limited auth adapter', () => {
       await facebook.validateAuthData({}, { clientId: 'secret' });
       fail();
     } catch (e) {
-      expect(e.message).toBe('id token is invalid for this user.');
+      expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
 
@@ -1776,7 +1776,7 @@ describe('facebook limited auth adapter', () => {
       await facebook.validateAuthData({}, { clientId: ['secret'] });
       fail();
     } catch (e) {
-      expect(e.message).toBe('id token is invalid for this user.');
+      expect(e.message).toBe('Facebook auth is not configured.');
     }
   });
 
