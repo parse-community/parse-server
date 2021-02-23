@@ -1831,7 +1831,7 @@ describe('beforeSave hooks', () => {
       const obj = new Parse.Object('TestObject');
       obj.set('date', date);
       await expectAsync(obj.save()).toBeRejectedWith(
-        new ParseError(111, 'This is not a valid Date')
+        new Parse.Error(111, 'This is not a valid Date')
       );
     }
   });
