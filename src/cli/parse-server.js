@@ -91,6 +91,15 @@ runner({
             options.graphQLPath
         );
       }
+      if (options.mountSubscriptions) {
+        console.log(
+          '[' +
+            process.pid +
+            '] Subscriptions running on ws://localhost:' +
+            options.port +
+            options.subscriptionsPath
+        );
+      }
       if (options.mountPlayground) {
         console.log(
           '[' +

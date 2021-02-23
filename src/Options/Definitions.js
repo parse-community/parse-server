@@ -283,6 +283,12 @@ module.exports.ParseServerOptions = {
     action: parsers.booleanParser,
     default: false,
   },
+  mountSubscriptions: {
+    env: 'PARSE_SERVER_MOUNT_SUBSCRIPTIONS',
+    help: 'Mounts the GraphQL Subscriptions endpoint',
+    action: parsers.booleanParser,
+    default: false,
+  },
   objectIdSize: {
     env: 'PARSE_SERVER_OBJECT_ID_SIZE',
     help: "Sets the number of characters in generated object id's, default 10",
@@ -401,6 +407,11 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_START_LIVE_QUERY_SERVER',
     help: 'Starts the liveQuery server',
     action: parsers.booleanParser,
+  },
+  subscriptionsPath: {
+    env: 'PARSE_SERVER_SUBSCRIPTIONS_PATH',
+    help: 'Mount path for the GraphQL Subscriptions endpoint, defaults to /subscriptions',
+    default: '/subscriptions',
   },
   userSensitiveFields: {
     env: 'PARSE_SERVER_USER_SENSITIVE_FIELDS',

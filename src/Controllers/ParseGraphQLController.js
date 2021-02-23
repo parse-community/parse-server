@@ -24,7 +24,7 @@ class ParseGraphQLController {
         `ParseGraphQLController requires a "databaseController" to be instantiated.`
       );
     this.cacheController = params.cacheController;
-    this.isMounted = !!params.mountGraphQL;
+    this.isMounted = !!params.mountGraphQL || !!params.mountSubscriptions;
     this.configCacheKey = GraphQLConfigKey;
   }
 

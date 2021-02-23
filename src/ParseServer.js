@@ -251,7 +251,12 @@ class ParseServer {
 
     app.use(options.mountPath, this.app);
 
-    if (options.mountGraphQL === true || options.mountPlayground === true) {
+    let parseGraphQLServer;
+    if (
+      options.mountGraphQL === true ||
+      options.mountSubscriptions === true ||
+      options.mountPlayground === true
+    ) {
       let graphQLCustomTypeDefs = undefined;
       if (typeof options.graphQLSchema === 'string') {
         graphQLCustomTypeDefs = parse(fs.readFileSync(options.graphQLSchema, 'utf8'));
@@ -262,8 +267,9 @@ class ParseServer {
         graphQLCustomTypeDefs = options.graphQLSchema;
       }
 
-      const parseGraphQLServer = new ParseGraphQLServer(this, {
+      parseGraphQLServer = new ParseGraphQLServer(this, {
         graphQLPath: options.graphQLPath,
+        subscriptionsPath: options.subscriptionsPath,
         playgroundPath: options.playgroundPath,
         graphQLCustomTypeDefs,
       });
@@ -279,6 +285,10 @@ class ParseServer {
 
     const server = app.listen(options.port, options.host, callback);
     this.server = server;
+
+    if (options.mountSubscriptions) {
+      parseGraphQLServer.createSubscriptions(server);
+    }
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       this.liveQueryServer = ParseServer.createLiveQueryServer(
