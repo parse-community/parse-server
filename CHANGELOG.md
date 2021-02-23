@@ -30,6 +30,7 @@ ___
 - FIX: Fix error when a not yet inserted job is updated [#7196](https://github.com/parse-community/parse-server/pull/7196). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 - FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
 - FIX: Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
+- NEW: Support Facebook Limited Login [#7219](https://github.com/parse-community/parse-server/pull/7219). Thanks to [miguel-s](https://github.com/miguel-s)
 
 ### 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
