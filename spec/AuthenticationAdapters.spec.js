@@ -92,7 +92,6 @@ describe('AuthenticationProviders', function () {
         await provider.validateAuthData({ id: 'userId' }, params);
         params.appVersion = '5.123';
       }
-
       await provider.validateAuthData({ id: 'userId' }, params);
     });
   });
