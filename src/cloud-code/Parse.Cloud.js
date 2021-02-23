@@ -27,44 +27,39 @@ function validateValidator(validator) {
   };
   const allowedKeys = {
     requireUser: [Boolean],
-    requireAnyUserRoles: [Boolean],
-    requireAllUserRoles: [Boolean],
+    requireAnyUserRoles: [Array, 'function'],
+    requireAllUserRoles: [Array, 'function'],
     requireMaster: [Boolean],
     validateMasterKey: [Boolean],
     skipWithMasterKey: [Boolean],
     requireUserKeys: [Array, Object],
     fields: [Array, Object],
   };
-  const config = Config.get(Parse.applicationId);
-  const logger = config.loggerController;
   const getType = fn => {
     if (Array.isArray(fn)) {
       return 'array';
     }
-    if (fn === 'Any') {
+    if (fn === 'Any' || fn === 'function') {
       return fn;
     }
     const type = typeof fn;
     if (typeof fn === 'function') {
       const match = fn && fn.toString().match(/^\s*function (\w+)/);
-      return (match ? match[1] : '').toLowerCase();
+      return (match ? match[1] : 'function').toLowerCase();
     }
     return type;
   };
   const checkKey = (key, data, validatorParam) => {
     const parameter = data[key];
     if (!parameter) {
-      logger.error(`${key} is not a supported parameter for Parse.Cloud validators.`);
-      return;
+      throw `${key} is not a supported parameter for Cloud Function validations.`;
     }
     const types = parameter.map(type => getType(type));
     const type = getType(validatorParam);
     if (!types.includes(type) && !types.includes('Any')) {
-      logger.error(
-        `Invalid type for Parse.Cloud validator key ${key}. Expected ${types.join(
-          '|'
-        )}, actual ${type}`
-      );
+      throw `Invalid type for Cloud Function validation key ${key}. Expected ${types.join(
+        '|'
+      )}, actual ${type}`;
     }
   };
   for (const key in validator) {

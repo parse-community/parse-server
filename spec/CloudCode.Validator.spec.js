@@ -1420,8 +1420,6 @@ describe('cloud validator', () => {
   });
 
   it('does not log on valid config', () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
     Parse.Cloud.define('myFunction', () => {}, {
       requireUser: true,
       requireMaster: true,
@@ -1448,68 +1446,127 @@ describe('cloud validator', () => {
         },
       },
     });
-    expect(logger.error).not.toHaveBeenCalled();
   });
   it('Logs on invalid config', () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    Parse.Cloud.define('myFunction', () => {}, {
-      requiredUser: true,
-      requireUser: ['foo'],
-      requireMaster: ['foo'],
-      validateMasterKey: ['foo'],
-      skipWithMasterKey: ['foo'],
-      requireUserKeys: true,
-      fields: true,
-    });
-    expect(logger.error).toHaveBeenCalledWith(
-      'requiredUser is not a supported parameter for Parse.Cloud validators.'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key requireUser. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key requireMaster. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key validateMasterKey. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key skipWithMasterKey. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key fields. Expected array|object, actual boolean'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key requireUserKeys. Expected array|object, actual boolean'
-    );
+    const fields = [
+      {
+        field: 'requiredUser',
+        value: true,
+        error: 'requiredUser is not a supported parameter for Cloud Function validations.',
+      },
+      {
+        field: 'requireUser',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key requireUser. Expected boolean, actual array',
+      },
+      {
+        field: 'requireMaster',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key requireMaster. Expected boolean, actual array',
+      },
+      {
+        field: 'validateMasterKey',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key validateMasterKey. Expected boolean, actual array',
+      },
+      {
+        field: 'skipWithMasterKey',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key skipWithMasterKey. Expected boolean, actual array',
+      },
+      {
+        field: 'requireAllUserRoles',
+        value: true,
+        error:
+          'Invalid type for Cloud Function validation key requireAllUserRoles. Expected array|function, actual boolean',
+      },
+      {
+        field: 'requireAnyUserRoles',
+        value: true,
+        error:
+          'Invalid type for Cloud Function validation key requireAnyUserRoles. Expected array|function, actual boolean',
+      },
+      {
+        field: 'fields',
+        value: true,
+        error:
+          'Invalid type for Cloud Function validation key fields. Expected array|object, actual boolean',
+      },
+      {
+        field: 'requireUserKeys',
+        value: true,
+        error:
+          'Invalid type for Cloud Function validation key requireUserKeys. Expected array|object, actual boolean',
+      },
+    ];
+    for (const field of fields) {
+      try {
+        Parse.Cloud.define('myFunction', () => {}, {
+          [field.field]: field.value,
+        });
+        fail(`Expected error registering invalid Cloud Function validation ${field.field}.`);
+      } catch (e) {
+        expect(e).toBe(field.error);
+      }
+    }
   });
 
   it('Logs on invalid config', () => {
-    const logger = require('../lib/logger').logger;
-    spyOn(logger, 'error').and.callFake(() => {});
-    Parse.Cloud.define('myFunction', () => {}, {
-      fields: {
-        name: {
-          constant: ['foo'],
-          required: ['foo'],
-          error: ['foo'],
-          otherKey: true,
-        },
+    const fields = [
+      {
+        field: 'otherKey',
+        value: true,
+        error: 'otherKey is not a supported parameter for Cloud Function validations.',
       },
-    });
-    expect(logger.error).toHaveBeenCalledWith(
-      'otherKey is not a supported parameter for Parse.Cloud validators.'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key constant. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key required. Expected boolean, actual array'
-    );
-    expect(logger.error).toHaveBeenCalledWith(
-      'Invalid type for Parse.Cloud validator key error. Expected string, actual array'
-    );
+      {
+        field: 'constant',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key constant. Expected boolean, actual array',
+      },
+      {
+        field: 'required',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key required. Expected boolean, actual array',
+      },
+      {
+        field: 'error',
+        value: [],
+        error:
+          'Invalid type for Cloud Function validation key error. Expected string, actual array',
+      },
+    ];
+    for (const field of fields) {
+      try {
+        Parse.Cloud.define('myFunction', () => {}, {
+          fields: {
+            name: {
+              [field.field]: field.value,
+            },
+          },
+        });
+        fail(`Expected error registering invalid Cloud Function validation ${field.field}.`);
+      } catch (e) {
+        expect(e).toBe(field.error);
+      }
+      try {
+        Parse.Cloud.define('myFunction', () => {}, {
+          requireUserKeys: {
+            name: {
+              [field.field]: field.value,
+            },
+          },
+        });
+        fail(`Expected error registering invalid Cloud Function validation ${field.field}.`);
+      } catch (e) {
+        expect(e).toBe(field.error);
+      }
+    }
   });
 
   it('set params options function async', async () => {
