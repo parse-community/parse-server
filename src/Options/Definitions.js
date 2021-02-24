@@ -746,7 +746,11 @@ module.exports.PasswordPolicyOptions = {
   resetTokenReuseIfValid: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
     help:
+<<<<<<< HEAD
       'Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.',
+=======
+      'Reuse password reset token if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.',
+>>>>>>> improved resetTokenReuseIfValid docs
     action: parsers.booleanParser,
     default: false,
   },
