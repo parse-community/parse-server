@@ -747,17 +747,25 @@ module.exports.PasswordPolicyOptions = {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_REUSE_IF_VALID',
     help:
 <<<<<<< HEAD
+<<<<<<< HEAD
       'Set to `true` if a password reset token should be reused in case another token is requested but there is a token that is still valid, i.e. has not expired. This avoids the often observed issue that a user requests multiple emails and does not know which link contains a valid token because each newly generated token would invalidate the previous token.<br><br>Default is `false`.',
 =======
       'Reuse password reset token if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.',
 >>>>>>> improved resetTokenReuseIfValid docs
+=======
+      'Is true if the password reset token should be reused if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.',
+>>>>>>> improved resetTokenValidityDuration docs
     action: parsers.booleanParser,
     default: false,
   },
   resetTokenValidityDuration: {
     env: 'PARSE_SERVER_PASSWORD_POLICY_RESET_TOKEN_VALIDITY_DURATION',
     help:
+<<<<<<< HEAD
       'Set the validity duration of the password reset token in seconds after which the token expires. The token is used in the link that is set in the email. After the token expires, the link becomes invalid and a new link has to be sent. If the option is not set or set to `undefined`, then the token never expires.<br><br>For example, to expire the token after 2 hours, set a value of 7200 seconds (= 60 seconds * 60 minutes * 2 hours).<br><br>Default is `undefined`.',
+=======
+      'The time duration in seconds after which a password reset token expires and becomes invalid. Default is indefinite (never expires).',
+>>>>>>> improved resetTokenValidityDuration docs
     action: parsers.numberParser('resetTokenValidityDuration'),
   },
   validationError: {

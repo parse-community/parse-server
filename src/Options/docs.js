@@ -186,8 +186,8 @@
  * @property {Boolean} doNotAllowUsername disallow username in passwords
  * @property {Number} maxPasswordAge days for password expiry
  * @property {Number} maxPasswordHistory setting to prevent reuse of previous n passwords
- * @property {Boolean} resetTokenReuseIfValid Reuse password reset token if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.
- * @property {Number} resetTokenValidityDuration time for token to expire
+ * @property {Boolean} resetTokenReuseIfValid Is true if the password reset token should be reused if it has not expired; requires `resetTokenValidityDuration` to be set. Default is `false`.
+ * @property {Number} resetTokenValidityDuration The time duration in seconds after which a password reset token expires and becomes invalid. Default is indefinite (never expires).
  * @property {Function} validatorCallback a callback function to be invoked to validate the password
  * @property {String} validatorPattern a RegExp object or a regex string representing the pattern to enforce
 >>>>>>> improved resetTokenReuseIfValid docs
