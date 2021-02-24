@@ -45,7 +45,7 @@ node_modules
 .vscode
 
 # Babel.js
-# lib/ - Inlcuded built version
+lib/
 
 # cache folder
 .cache
