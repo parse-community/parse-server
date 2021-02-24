@@ -46,7 +46,7 @@
     "lodash": "4.17.21",
     "lru-cache": "5.1.1",
     "mime": "2.5.0",
-    "mongodb": "3.6.3",
+    "mongodb": "3.6.4",
     "mustache": "4.1.0",
     "parse": "3.0.0",
     "pg-promise": "10.9.2",
