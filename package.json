@@ -43,7 +43,7 @@
     "jsonwebtoken": "8.5.1",
     "jwks-rsa": "1.12.2",
     "ldapjs": "2.2.3",
-    "lodash": "4.17.20",
+    "lodash": "4.17.21",
     "lru-cache": "5.1.1",
     "mime": "2.5.0",
     "mongodb": "3.6.3",
@@ -58,7 +58,7 @@
     "uuid": "8.3.2",
     "winston": "3.3.3",
     "winston-daily-rotate-file": "4.5.0",
-    "ws": "7.4.2"
+    "ws": "7.4.3"
   },
   "devDependencies": {
     "@actions/core": "1.2.6",
