@@ -587,9 +587,7 @@ describe('ParseLiveQuery', function () {
     let object = new TestObject();
     object.set('date', new Date());
     const json = object.toJSON();
-    expect(json.className).toBe('TestObject');
-    expect(json.__type).toBe('Object');
-    object = Parse.Object.fromJSON(json);
+    object = Parse.Object.fromJSON(json, false, true);
     await object.save();
   });
 
