@@ -751,6 +751,9 @@ module.exports = ParseCloud;
  * @property {Array|function|Any} requireUserKeys.field.options array of options that the field can be, function to validate field, or single value. Throw an error if value is invalid.
  * @property {String} requireUserKeys.field.error custom error message if field is invalid.
  *
+ * @property {Array<String>|function}requireAnyUserRoles If set, request.user has to be part of at least one roles name to make the request. If set to a function, function must return role names.
+ * @property {Array<String>|function}requireAllUserRoles If set, request.user has to be part all roles name to make the request. If set to a function, function must return role names.
+ *
  * @property {Object|Array<String>} fields if an array of strings, validator will look for keys in request.params, and throw if not provided. If Object, fields to validate. If the trigger is a cloud function, `request.params` will be validated, otherwise `request.object`.
  * @property {String} fields.field name of field to validate.
  * @property {String} fields.field.type expected type of data for field.

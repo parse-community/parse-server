@@ -9,8 +9,7 @@ export class LiveQueryController {
     if (!config || !config.classNames) {
       this.classNames = new Set();
     } else if (config.classNames instanceof Array) {
-      const classNames = config.classNames
-        .map(name => new RegExp("^" + name + "$"));
+      const classNames = config.classNames.map(name => new RegExp('^' + name + '$'));
       this.classNames = new Set(classNames);
     } else {
       throw 'liveQuery.classes should be an array of string';
