@@ -165,7 +165,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     ]);
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
@@ -245,7 +245,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
     const caseInsensitiveData = 'bugs';
@@ -303,7 +303,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [tableName, 'objectId', 'username']
     );
 
@@ -345,11 +345,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     //Postgres won't take advantage of the index until it has a lot of records because sequential is faster for small db's
     const client = adapter._client;
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [firstTableName, 'objectId', uniqueField]
     );
     await client.none(
-      'INSERT INTO $1:name ($2:name, $3:name) SELECT MD5(random()::text), MD5(random()::text) FROM generate_series(1,5000)',
+      'INSERT INTO $1:name ($2:name, $3:name) SELECT gen_random_uuid(), gen_random_uuid() FROM generate_series(1,5000)',
       [secondTableName, 'objectId', uniqueField]
     );
 
