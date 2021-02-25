@@ -7,6 +7,7 @@ import * as defaultGraphQLTypes from './loaders/defaultGraphQLTypes';
 import * as parseClassTypes from './loaders/parseClassTypes';
 import * as parseClassQueries from './loaders/parseClassQueries';
 import * as parseClassMutations from './loaders/parseClassMutations';
+import * as parseClassSubscriptions from './loaders/parseClassSubscriptions';
 import * as defaultGraphQLQueries from './loaders/defaultGraphQLQueries';
 import * as defaultGraphQLMutations from './loaders/defaultGraphQLMutations';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
@@ -58,6 +59,7 @@ const RESERVED_GRAPHQL_MUTATION_NAMES = [
   'updateClass',
   'deleteClass',
 ];
+const RESERVED_GRAPHQL_SUBSCRIPTION_NAMES = [];
 
 class ParseGraphQLSchema {
   databaseController: DatabaseController;
@@ -66,6 +68,7 @@ class ParseGraphQLSchema {
   log: any;
   appId: string;
   graphQLCustomTypeDefs: ?(string | GraphQLSchema | DocumentNode | GraphQLNamedType[]);
+  liveQueryClassNames: any;
 
   constructor(
     params: {
@@ -74,6 +77,7 @@ class ParseGraphQLSchema {
       log: any,
       appId: string,
       graphQLCustomTypeDefs: ?(string | GraphQLSchema | DocumentNode | GraphQLNamedType[]),
+      liveQueryClassNames: any,
     } = {}
   ) {
     this.parseGraphQLController =
@@ -85,6 +89,7 @@ class ParseGraphQLSchema {
     this.log = params.log || requiredParameter('You must provide a log instance!');
     this.graphQLCustomTypeDefs = params.graphQLCustomTypeDefs;
     this.appId = params.appId || requiredParameter('You must provide the appId!');
+    this.liveQueryClassNames = params.liveQueryClassNames;
   }
 
   async load() {
@@ -132,6 +137,9 @@ class ParseGraphQLSchema {
         parseClassTypes.load(this, parseClass, parseClassConfig);
         parseClassQueries.load(this, parseClass, parseClassConfig);
         parseClassMutations.load(this, parseClass, parseClassConfig);
+        if (this.liveQueryClassNames && this.liveQueryClassNames.includes(parseClass.className)) {
+          parseClassSubscriptions.load(this, parseClass, parseClassConfig);
+        }
       }
     );
 
@@ -339,6 +347,22 @@ class ParseGraphQLSchema {
       return undefined;
     }
     this.graphQLMutations[fieldName] = field;
+    return field;
+  }
+
+  addGraphQLSubscription(fieldName, field, throwError = false, ignoreReserved = false) {
+    if (
+      (!ignoreReserved && RESERVED_GRAPHQL_SUBSCRIPTION_NAMES.includes(fieldName)) ||
+      this.graphQLSubscriptions[fieldName]
+    ) {
+      const message = `Subscription ${fieldName} could not be added to the auto schema because it collided with an existing field.`;
+      if (throwError) {
+        throw new Error(message);
+      }
+      this.log.warn(message);
+      return undefined;
+    }
+    this.graphQLSubscriptions[fieldName] = field;
     return field;
   }
 

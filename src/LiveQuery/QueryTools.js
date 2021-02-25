@@ -242,6 +242,11 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
+      case '$eq':
+        if (!equalObjects(object[key], compareTo)) {
+          return false;
+        }
+        break;
       case '$in':
         if (!contains(compareTo, object[key])) {
           return false;
