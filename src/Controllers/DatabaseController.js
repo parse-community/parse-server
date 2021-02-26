@@ -1686,8 +1686,16 @@ class DatabaseController {
       },
     };
 
+    const requiredSessionFields = {
+      fields: {
+        ...SchemaController.defaultColumns._Default,
+        ...SchemaController.defaultColumns._Session,
+      },
+    };
+
     const userClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_User'));
     const roleClassPromise = this.loadSchema().then(schema => schema.enforceClassExists('_Role'));
+
     const idempotencyClassPromise =
       this.adapter instanceof MongoStorageAdapter
         ? this.loadSchema().then(schema => schema.enforceClassExists('_Idempotency'))
@@ -1775,6 +1783,16 @@ class DatabaseController {
           })
         : Promise.resolve();
 
+    const sessionClassIndex =
+      this.adapter instanceof MongoStorageAdapter
+        ? this.adapter.ensureIndex(
+          '_Session',
+          requiredSessionFields,
+          ['_session_token'],
+          'session_token'
+        )
+        : Promise.resolve();
+
     const indexPromise = this.adapter.updateSchemaWithIndexes();
 
     // Create tables for volatile classes
@@ -1789,6 +1807,7 @@ class DatabaseController {
       roleUniqueness,
       idempotencyRequestIdIndex,
       idempotencyExpireIndex,
+      sessionClassIndex,
       adapterInit,
       indexPromise,
     ]);
