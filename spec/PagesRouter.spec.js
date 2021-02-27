@@ -252,6 +252,9 @@ describe('Pages Router', () => {
         expect(Config.get(Parse.applicationId).pages.customUrls).toBe(
           Definitions.PagesOptions.customUrls.default
         );
+        expect(Config.get(Parse.applicationId).pages.customRoutes).toBe(
+          Definitions.PagesOptions.customRoutes.default
+        );
       });
 
       it('throws on invalid configuration', async () => {
@@ -296,6 +299,10 @@ describe('Pages Router', () => {
           { localizationFallbackLocale: 0 },
           { localizationFallbackLocale: {} },
           { localizationFallbackLocale: [] },
+          { customRoutes: true },
+          { customRoutes: 0 },
+          { customRoutes: 'a' },
+          { customRoutes: {} },
         ];
         for (const option of options) {
           await expectAsync(reconfigureServerWithPagesConfig(option)).toBeRejected();

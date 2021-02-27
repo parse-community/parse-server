@@ -168,6 +168,11 @@ export class Config {
     } else if (Object.prototype.toString.call(pages.customUrls) !== '[object Object]') {
       throw 'Parse Server option pages.customUrls must be an object.';
     }
+    if (pages.customRoutes === undefined) {
+      pages.customRoutes = PagesOptions.customRoutes.default;
+    } else if (!(pages.customRoutes instanceof Array)) {
+      throw 'Parse Server option pages.customRoutes must be an array.';
+    }
   }
 
   static validateIdempotencyOptions(idempotencyOptions) {
