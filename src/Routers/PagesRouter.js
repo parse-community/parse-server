@@ -77,6 +77,8 @@ export class PagesRouter extends PromiseRouter {
       : path.resolve(__dirname, '../../public');
     this.loadJsonResource();
     this.mountPagesRoutes();
+    this.mountCustomRoutes();
+    this.mountStaticRoute();
   }
 
   verifyEmail(req) {
@@ -696,7 +698,26 @@ export class PagesRouter extends PromiseRouter {
         return this.requestResetPassword(req);
       }
     );
+  }
 
+  mountCustomRoutes() {
+    for (const route of this.pagesConfig.customRoutes || []) {
+      this.route(
+        route.method,
+        `/${this.pagesEndpoint}/:appId/${route.path}`,
+        req => {
+          this.setConfig(req);
+        },
+        async req => {
+          const { file, query = {} } = await route.handler(req);
+          const page = new Page({ id: file, defaultFile: file });
+          return this.goToPage(req, page, query, false);
+        }
+      );
+    }
+  }
+
+  mountStaticRoute() {
     this.route(
       'GET',
       `/${this.pagesEndpoint}/(*)?`,

@@ -425,6 +425,12 @@ module.exports.ParseServerOptions = {
   },
 };
 module.exports.PagesOptions = {
+  customRoutes: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_ROUTES',
+    help: 'The custom routes.',
+    action: parsers.arrayParser,
+    default: [],
+  },
   customUrls: {
     env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
     help: 'The URLs to the custom pages.',
@@ -479,6 +485,18 @@ module.exports.PagesOptions = {
       'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
     action: parsers.objectParser,
     default: {},
+  },
+};
+module.exports.PagesRoute = {
+  method: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_METHOD',
+    help: "The route method, e.g. 'GET' or 'POST'.",
+    required: true,
+  },
+  path: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_PATH',
+    help: 'The route path.',
+    required: true,
   },
 };
 module.exports.PagesCustomUrlsOptions = {

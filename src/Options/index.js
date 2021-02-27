@@ -256,6 +256,16 @@ export interface PagesOptions {
   /* The URLs to the custom pages.
   :DEFAULT: {} */
   customUrls: ?PagesCustomUrlsOptions;
+  /* The custom routes.
+  :DEFAULT: [] */
+  customRoutes: ?(PagesRoute[]);
+}
+
+export interface PagesRoute {
+  /* The route path. */
+  path: string;
+  /* The route method, e.g. 'GET' or 'POST'. */
+  method: string;
 }
 
 export interface PagesCustomUrlsOptions {

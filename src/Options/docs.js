@@ -82,6 +82,7 @@
 
 /**
  * @interface PagesOptions
+ * @property {Generic[]} customRoutes The custom routes.
  * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
@@ -91,6 +92,12 @@
  * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
  * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
  * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+ */
+
+/**
+ * @interface PagesRoute
+ * @property {String} method The route method, e.g. 'GET' or 'POST'.
+ * @property {String} path The route path.
  */
 
 /**
