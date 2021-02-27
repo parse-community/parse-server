@@ -709,7 +709,14 @@ export class PagesRouter extends PromiseRouter {
           this.setConfig(req);
         },
         async req => {
-          const { file, query = {} } = await route.handler(req);
+          const { file, query = {} } = (await route.handler(req)) || {};
+
+          // If route handler did not return a page send 404 response
+          if (!file) {
+            return this.notFound();
+          }
+
+          // Send page response
           const page = new Page({ id: file, defaultFile: file });
           return this.goToPage(req, page, query, false);
         }

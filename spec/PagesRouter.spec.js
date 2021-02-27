@@ -1103,6 +1103,27 @@ describe('Pages Router', () => {
         expect(response.text).toMatch(config.appName);
         expect(handlerSpy).toHaveBeenCalled();
       });
+
+      it('returns 404 if custom route does not return page', async () => {
+        config.pages.customRoutes = [
+          {
+            method: 'GET',
+            path: 'custom_page',
+            handler: async () => {},
+          },
+        ];
+        await reconfigureServer(config);
+        const handlerSpy = spyOn(config.pages.customRoutes[0], 'handler').and.callThrough();
+
+        const url = `${config.publicServerURL}/apps/${config.appId}/custom_page`;
+        const response = await request({
+          url: url,
+          followRedirects: false,
+        }).catch(e => e);
+        expect(response.status).toBe(404);
+        expect(response.text).toMatch('Not found');
+        expect(handlerSpy).toHaveBeenCalled();
+      });
     });
   });
 });
