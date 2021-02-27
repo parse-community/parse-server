@@ -285,7 +285,7 @@ export class PagesRouter extends PromiseRouter {
 
     // Add locale to params to ensure it is passed on with every request;
     // that means, once a locale is set, it is passed on to any follow-up page,
-    // e.g. request_password_reset -> password_reset -> passwort_reset_success
+    // e.g. request_password_reset -> password_reset -> password_reset_success
     const locale = this.getLocale(req);
     params[pageParams.locale] = locale;
 
@@ -565,7 +565,7 @@ export class PagesRouter extends PromiseRouter {
   }
 
   /**
-   * Creates a response with http rediret.
+   * Creates a response with http redirect.
    * @param {Object} req The express request.
    * @param {String} path The path of the file to return.
    * @param {Object} params The query parameters to include.
