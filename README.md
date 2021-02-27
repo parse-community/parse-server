@@ -58,6 +58,10 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
+  - [Custom Routes](#custom-routes)
+    - [Example](#example)
+    - [Reserved Paths](#reserved-paths)
+    - [Parameters](#parameters)
   - [Custom Pages](#custom-pages)
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
@@ -67,7 +71,9 @@ The full documentation for Parse Server is available in the [wiki](https://githu
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
       - [Localization with JSON Resource](#localization-with-json-resource)
-      - [Parameters](#parameters)
+      - [Dynamic placeholders](#dynamic-placeholders)
+      - [Reserved Keys](#reserved-keys)
+      - [Parameters](#parameters-1)
   - [Logging](#logging)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
@@ -387,6 +393,60 @@ You can also use other email adapters contributed by the community such as:
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
 - [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter)
+
+## Custom Routes
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
+
+### Example
+
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for custom routes
+    customRoutes: [{
+      method: 'GET',
+      path: 'custom_route',
+      handler: async request => {
+        // custom logic
+        // ...
+        // then, depending on the outcome, return a HTML file as response
+        return { file: 'custom_page.html' };
+      }
+    }]
+  }
+}
+```
+
+The above route can be invoked by sending a `GET` request to:
+`https://[parseServerPublicUrl]/[parseMount]/[pagesEndpoint]/[appId]/[customRoute]`
+ 
+The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
+
+### Reserved Paths
+The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
+
+| Path                        | HTTP Method | Feature            |
+|-----------------------------|-------------|--------------------|
+| `verify_email`              | `GET`       | email verification |
+| `resend_verification_email` | `POST`      | email verification |
+| `choose_password`           | `GET`       | password reset     |
+| `request_password_reset`    | `GET`       | password reset     |
+| `request_password_reset`    | `POST`      | password reset     |
+
+### Parameters
+
+| Parameter                    | Optional | Type            | Default value | Example values        | Environment variable               | Description                                                                                                                                                                                                                                                  |
+|------------------------------|----------|-----------------|---------------|-----------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pages`                      | yes      | `Object`        | `undefined`   | -                     | `PARSE_SERVER_PAGES`               | The options for pages such as password reset and email verification.                                                                                                                                                                                         |
+| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**                                                      |
+| `pages.customRoutes`         | yes      | `Array`         | `[]`          | -                     | `PARSE_SERVER_PAGES_CUSTOM_ROUTES` | The custom routes. The routes are added in the order they are defined here, which has to be considered since requests traverse routes in an ordered manner. Custom routes are traversed after build-in routes such as password reset and email verification. |
+| `pages.customRoutes.method`  |          | `String`        | -             | `GET`, `POST`         | -                                  | The HTTP method of the custom route.                                                                                                                                                                                                                         |
+| `pages.customRoutes.path`    |          | `String`        | -             | `custom_page`         | -                                  | The path of the custom route. Note that the same path can used if the `method` is different, for example a path `custom_page` can have two routes, a `GET` and `POST` route, which will be invoked depending on the HTTP request method.                     |
+| `pages.customRoutes.handler` |          | `AsyncFunction` | -             | `async () => { ... }` | -                                  | The route handler that is invoked when the route matches the HTTP request. If the handler does not return a page, the request is answered with a 404 `Not found.` response.                                                                                  |
 
 ## Custom Pages
 
