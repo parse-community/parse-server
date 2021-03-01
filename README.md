@@ -44,9 +44,9 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 - [Getting Started](#getting-started)
   - [Running Parse Server](#running-parse-server)
     - [Compatibility](#compatibility)
-      - [Node.js](#nodejs-support)
-      - [MongoDB](#mongodb-support)
-      - [PostgreSQL](#postgresql-support)
+      - [Node.js](#nodejs)
+      - [MongoDB](#mongodb)
+      - [PostgreSQL](#postgresql)
     - [Locally](#locally)
     - [Docker Container](#docker-container)
     - [Saving an Object](#saving-an-object)
@@ -106,10 +106,10 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 
 | Version    | Latest Patch Version | End-of-Life Date | Compatibility      |
 |------------|----------------------|------------------|--------------------|
-| Node.js 10 | 10.23.2              | April 2021       | ✅ Fully compatible |
-| Node.js 12 | 12.20.1              | April 2022       | ✅ Fully compatible |
-| Node.js 14 | 14.15.4              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.8.0               | June 2021        | ✅ Fully compatible |
+| Node.js 10 | 10.24.0              | April 2021       | ✅ Fully compatible |
+| Node.js 12 | 12.21.0              | April 2022       | ✅ Fully compatible |
+| Node.js 14 | 14.16.0              | April 2023       | ✅ Fully compatible |
+| Node.js 15 | 15.10.0               | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
@@ -117,7 +117,7 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 | Version     | Latest Patch Version | End-of-Life Date | Compatibility      |
 |-------------|----------------------|------------------|--------------------|
 | MongoDB 3.6 | 3.6.21               | April 2021       | ✅ Fully compatible |
-| MongoDB 4.0 | 4.0.22               | January 2022     | ✅ Fully compatible |
+| MongoDB 4.0 | 4.0.23               | January 2022     | ✅ Fully compatible |
 | MongoDB 4.2 | 4.2.12               | TBD              | ✅ Fully compatible |
 | MongoDB 4.4 | 4.4.4                | TBD              | ✅ Fully compatible |
   
@@ -155,7 +155,7 @@ $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server -v config-vol:/parse-server/config -p 1337:1337 --link my-mongo:mongo -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```
 
-***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/) feature, please add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to command above. Make sure the `main.js` file is available in the `cloud-code-vol` directory before run this command. Otherwise, an error will occur.*
+***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server.*
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
 
@@ -432,7 +432,7 @@ For the full list of configurable environment variables, run `parse-server --hel
 
 ## Available Adapters
 
-All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
+All official adapters are distributed as scoped packages on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
 
 Some well maintained adapters are also available on the [Parse Server Modules](https://github.com/parse-server-modules) organization.
 
@@ -452,9 +452,9 @@ Parse Server allows developers to choose from several options when hosting files
  
 **Caution, this is an experimental feature that may not be appropriate for production.**
 
-This feature deduplicates identical requests that are received by Parse Server mutliple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
+This feature deduplicates identical requests that are received by Parse Server multiple times, typically due to network issues or network adapter access restrictions on mobile operating systems.
 
-Identical requests are identified by their request header `X-Parse-Request-Id`. Therefore a client request has to include this header for deduplication to be applied. Requests that do not contain this header cannot be deduplicated and are processed normally by Parse Server. This means rolling out this feature to clients is seamless as Parse Server still processes request without this header when this feature is enbabled.
+Identical requests are identified by their request header `X-Parse-Request-Id`. Therefore a client request has to include this header for deduplication to be applied. Requests that do not contain this header cannot be deduplicated and are processed normally by Parse Server. This means rolling out this feature to clients is seamless as Parse Server still processes requests without this header when this feature is enabled.
 
 > This feature needs to be enabled on the client side to send the header and on the server to process the header. Refer to the specific Parse SDK docs to see whether the feature is supported yet.
 
@@ -474,7 +474,7 @@ let api = new ParseServer({
 | Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 |----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
-| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specifiy the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
+| `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
 | `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
 
 ### Notes <!-- omit in toc -->
@@ -554,7 +554,7 @@ Pros:
 - All files are complete in their content and can be easily opened and previewed by viewing the file in a browser.
 
 Cons:
-- In most cases, a localized page differs only slighly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
+- In most cases, a localized page differs only slightly from the default page, which could cause a lot of duplicate code that is difficult to maintain.
 
 #### Localization with JSON Resource
 
@@ -564,7 +564,7 @@ Pages are localized by adding placeholders in the HTML files and providing a JSO
 ```js
 root/
 ├── public/                  // pages base path
-│   ├── example.html         // the page containg placeholders
+│   ├── example.html         // the page containing placeholders
 ├── private/                 // folder outside of public scope
 │   └── translations.json    // JSON resource file
 ```
@@ -689,7 +689,7 @@ Logs are also viewable in Parse Dashboard.
 
 **Want to log each request and response?** Set the `VERBOSE` environment variable when starting `parse-server`. Usage :-  `VERBOSE='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
-**Want logs to be in placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
+**Want logs to be placed in a different folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
 **Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
 
@@ -738,7 +738,7 @@ $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server --link my-mongo:mongo -v config-vol:/parse-server/config -p 1337:1337 -d parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test --publicServerURL http://localhost:1337/parse --mountGraphQL --mountPlayground
 ```
 
-***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/) feature, please add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to command above. Make sure the `main.js` file is available in the `cloud-code-vol` directory before run this command. Otherwise, an error will occur.*
+***Note:*** *If you want to use [Cloud Code](https://docs.parseplatform.org/cloudcode/guide/), add `-v cloud-code-vol:/parse-server/cloud --cloud /parse-server/cloud/main.js` to the command above. Make sure `main.js` is in the `cloud-code-vol` directory before starting Parse Server.*
 
 After starting the server, you can visit http://localhost:1337/playground in your browser to start playing with your GraphQL API.
 
