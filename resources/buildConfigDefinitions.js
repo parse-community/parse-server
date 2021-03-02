@@ -218,7 +218,9 @@ function inject(t, list) {
       type = elt.typeAnnotation.id.name;
     }
     if (type === 'Array') {
-      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+      type = elt.typeAnnotation.elementType.id
+        ? `${elt.typeAnnotation.elementType.id.name}[]`
+        : `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
     }
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';
