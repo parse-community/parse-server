@@ -82,7 +82,7 @@
 
 /**
  * @interface PagesOptions
- * @property {Generic[]} customRoutes The custom routes.
+ * @property {PagesRoute[]} customRoutes The custom routes.
  * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
