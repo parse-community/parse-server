@@ -451,7 +451,7 @@ export class Config {
   }
 
   get requestResetPasswordURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/request_password_reset`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/request_password_reset`;
   }
 
   get passwordResetSuccessURL() {
@@ -466,7 +466,15 @@ export class Config {
   }
 
   get verifyEmailURL() {
-    return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
+    return `${this.publicServerURL}/${this.pagesEndpoint}/${this.applicationId}/verify_email`;
+  }
+
+  // TODO: Remove this function once PagesRouter replaces the PublicAPIRouter;
+  // the (default) endpoint has to be defined in PagesRouter only.
+  get pagesEndpoint() {
+    return this.pages && this.pages.enableRouter && this.pages.pagesEndpoint
+      ? this.pages.pagesEndpoint
+      : 'apps';
   }
 }
 
