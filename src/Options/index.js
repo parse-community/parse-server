@@ -266,6 +266,8 @@ export interface PagesRoute {
   path: string;
   /* The route method, e.g. 'GET' or 'POST'. */
   method: string;
+  /* The route handler that is an async function. */
+  handler: () => void;
 }
 
 export interface PagesCustomUrlsOptions {

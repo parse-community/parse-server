@@ -96,6 +96,7 @@
 
 /**
  * @interface PagesRoute
+ * @property {Function} handler The route handler that is an async function.
  * @property {String} method The route method, e.g. 'GET' or 'POST'.
  * @property {String} path The route path.
  */

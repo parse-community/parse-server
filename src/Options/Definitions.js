@@ -488,6 +488,11 @@ module.exports.PagesOptions = {
   },
 };
 module.exports.PagesRoute = {
+  handler: {
+    env: 'PARSE_SERVER_PAGES_ROUTE_HANDLER',
+    help: 'The route handler that is an async function.',
+    required: true,
+  },
   method: {
     env: 'PARSE_SERVER_PAGES_ROUTE_METHOD',
     help: "The route method, e.g. 'GET' or 'POST'.",
