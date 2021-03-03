@@ -83,18 +83,6 @@ describe('Parse.Query Aggregate testing', () => {
     );
   });
 
-  it('invalid query invalid key', done => {
-    const options = Object.assign({}, masterKeyOptions, {
-      body: {
-        unknown: {},
-      },
-    });
-    get(Parse.serverURL + '/aggregate/TestObject', options).catch(error => {
-      expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
-      done();
-    });
-  });
-
   it('invalid query group _id', done => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
