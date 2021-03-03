@@ -63,7 +63,7 @@ describe('Pages Router', () => {
       expect(response.status).toBe(200);
     });
 
-    it('responds with 404 if publicServerURL is not confgured', async () => {
+    it('responds with 404 if publicServerURL is not configured', async () => {
       await reconfigureServer({
         appName: 'unused',
         pages: { enableRouter: true },
@@ -1123,6 +1123,83 @@ describe('Pages Router', () => {
         expect(response.status).toBe(404);
         expect(response.text).toMatch('Not found');
         expect(handlerSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('custom endpoint', () => {
+      it('password reset works with custom endpoint', async () => {
+        config.pages.pagesEndpoint = 'customEndpoint';
+        await reconfigureServer(config);
+        const sendPasswordResetEmail = spyOn(
+          config.emailAdapter,
+          'sendPasswordResetEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+        await Parse.User.requestPasswordReset(user.getEmail());
+
+        const link = sendPasswordResetEmail.calls.all()[0].args[0].link;
+        const linkResponse = await request({
+          url: link,
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const appId = linkResponse.headers['x-parse-page-param-appid'];
+        const token = linkResponse.headers['x-parse-page-param-token'];
+        const username = linkResponse.headers['x-parse-page-param-username'];
+        const publicServerUrl = linkResponse.headers['x-parse-page-param-publicserverurl'];
+        const passwordResetPagePath = pageResponse.calls.all()[0].args[0];
+        expect(appId).toBeDefined();
+        expect(token).toBeDefined();
+        expect(username).toBeDefined();
+        expect(publicServerUrl).toBeDefined();
+        expect(passwordResetPagePath).toMatch(new RegExp(`\/${pages.passwordReset.defaultFile}`));
+        pageResponse.calls.reset();
+
+        const formUrl = `${publicServerUrl}/${config.pages.pagesEndpoint}/${appId}/request_password_reset`;
+        const formResponse = await request({
+          url: formUrl,
+          method: 'POST',
+          body: {
+            token,
+            username,
+            new_password: 'newPassword',
+          },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          followRedirects: false,
+        });
+        expect(formResponse.status).toEqual(200);
+        expect(pageResponse.calls.all()[0].args[0]).toContain(
+          `/${pages.passwordResetSuccess.defaultFile}`
+        );
+      });
+
+      it('email verification works with custom endpoint', async () => {
+        config.pages.pagesEndpoint = 'customEndpoint';
+        await reconfigureServer(config);
+        const sendVerificationEmail = spyOn(
+          config.emailAdapter,
+          'sendVerificationEmail'
+        ).and.callThrough();
+        const user = new Parse.User();
+        user.setUsername('exampleUsername');
+        user.setPassword('examplePassword');
+        user.set('email', 'mail@example.com');
+        await user.signUp();
+
+        const link = sendVerificationEmail.calls.all()[0].args[0].link;
+        const linkResponse = await request({
+          url: link,
+          followRedirects: false,
+        });
+        expect(linkResponse.status).toBe(200);
+
+        const pagePath = pageResponse.calls.all()[0].args[0];
+        expect(pagePath).toMatch(new RegExp(`\/${pages.emailVerificationSuccess.defaultFile}`));
       });
     });
   });
