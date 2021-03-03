@@ -289,6 +289,13 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('objectIdSize'),
     default: 10,
   },
+  pages: {
+    env: 'PARSE_SERVER_PAGES',
+    help:
+      'The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.objectParser,
+    default: {},
+  },
   passwordPolicy: {
     env: 'PARSE_SERVER_PASSWORD_POLICY',
     help: 'Password policy for enforcing password related rules',
@@ -417,14 +424,113 @@ module.exports.ParseServerOptions = {
     help: 'Key sent with outgoing webhook calls',
   },
 };
+module.exports.PagesOptions = {
+  customUrls: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URLS',
+    help: 'The URLs to the custom pages.',
+    action: parsers.objectParser,
+    default: {},
+  },
+  enableLocalization: {
+    env: 'PARSE_SERVER_PAGES_ENABLE_LOCALIZATION',
+    help: 'Is true if pages should be localized; this has no effect on custom page redirects.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableRouter: {
+    env: 'PARSE_SERVER_PAGES_ENABLE_ROUTER',
+    help:
+      'Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  forceRedirect: {
+    env: 'PARSE_SERVER_PAGES_FORCE_REDIRECT',
+    help:
+      'Is true if responses should always be redirects and never content, false if the response type should depend on the request type (GET request -> content response; POST request -> redirect response).',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  localizationFallbackLocale: {
+    env: 'PARSE_SERVER_PAGES_LOCALIZATION_FALLBACK_LOCALE',
+    help:
+      'The fallback locale for localization if no matching translation is provided for the given locale. This is only relevant when providing translation resources via JSON file.',
+    default: 'en',
+  },
+  localizationJsonPath: {
+    env: 'PARSE_SERVER_PAGES_LOCALIZATION_JSON_PATH',
+    help:
+      'The path to the JSON file for localization; the translations will be used to fill template placeholders according to the locale.',
+  },
+  pagesEndpoint: {
+    env: 'PARSE_SERVER_PAGES_PAGES_ENDPOINT',
+    help: "The API endpoint for the pages. Default is 'apps'.",
+    default: 'apps',
+  },
+  pagesPath: {
+    env: 'PARSE_SERVER_PAGES_PAGES_PATH',
+    help:
+      "The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.",
+    default: './public',
+  },
+  placeholders: {
+    env: 'PARSE_SERVER_PAGES_PLACEHOLDERS',
+    help:
+      'The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.',
+    action: parsers.objectParser,
+    default: {},
+  },
+};
+module.exports.PagesCustomUrlsOptions = {
+  emailVerificationLinkExpired: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_EXPIRED',
+    help: 'The URL to the custom page for email verification -> link expired.',
+  },
+  emailVerificationLinkInvalid: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_LINK_INVALID',
+    help: 'The URL to the custom page for email verification -> link invalid.',
+  },
+  emailVerificationSendFail: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_FAIL',
+    help: 'The URL to the custom page for email verification -> link send fail.',
+  },
+  emailVerificationSendSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SEND_SUCCESS',
+    help: 'The URL to the custom page for email verification -> resend link -> success.',
+  },
+  emailVerificationSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_EMAIL_VERIFICATION_SUCCESS',
+    help: 'The URL to the custom page for email verification -> success.',
+  },
+  passwordReset: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET',
+    help: 'The URL to the custom page for password reset.',
+  },
+  passwordResetLinkInvalid: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_LINK_INVALID',
+    help: 'The URL to the custom page for password reset -> link invalid.',
+  },
+  passwordResetSuccess: {
+    env: 'PARSE_SERVER_PAGES_CUSTOM_URL_PASSWORD_RESET_SUCCESS',
+    help: 'The URL to the custom page for password reset -> success.',
+  },
+};
 module.exports.CustomPagesOptions = {
   choosePassword: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD',
     help: 'choose password page path',
   },
+  expiredVerificationLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_EXPIRED_VERIFICATION_LINK',
+    help: 'expired verification link page path',
+  },
   invalidLink: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK',
     help: 'invalid link page path',
+  },
+  invalidPasswordResetLink: {
+    env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_PASSWORD_RESET_LINK',
+    help: 'invalid password reset link page path',
   },
   invalidVerificationLink: {
     env: 'PARSE_SERVER_CUSTOM_PAGES_INVALID_VERIFICATION_LINK',
@@ -569,6 +675,12 @@ module.exports.AccountLockoutOptions = {
     env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_THRESHOLD',
     help: 'number of failed sign-in attempts that will cause a user account to be locked',
     action: parsers.numberParser('threshold'),
+  },
+  unlockOnPasswordReset: {
+    env: 'PARSE_SERVER_ACCOUNT_LOCKOUT_UNLOCK_ON_PASSWORD_RESET',
+    help: 'Is true if the account lock should be removed after a successful password reset.',
+    action: parsers.booleanParser,
+    default: false,
   },
 };
 module.exports.PasswordPolicyOptions = {
