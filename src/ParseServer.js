@@ -41,6 +41,7 @@ import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
+import { SecurityRouter } from './Routers/SecurityRouter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -219,6 +220,7 @@ class ParseServer {
       new CloudCodeRouter(),
       new AudiencesRouter(),
       new AggregateRouter(),
+      new SecurityRouter(),
     ];
 
     const routes = routers.reduce((memo, router) => {
