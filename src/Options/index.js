@@ -227,6 +227,18 @@ export interface ParseServerOptions {
   serverStartComplete: ?(error: ?Error) => void;
   /* Callback when server has closed */
   serverCloseComplete: ?() => void;
+  /* The security options to identify and report weak security settings.
+  :DEFAULT: {} */
+  security: ?SecurityOptions;
+}
+
+export interface SecurityOptions {
+  /* Is true if Parse Server should check for weak security settings.
+  :DEFAULT: false */
+  enableCheck: ?boolean;
+  /* Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+  :DEFAULT: false */
+  enableCheckLog: ?boolean;
 }
 
 export interface PagesOptions {

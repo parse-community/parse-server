@@ -373,6 +373,12 @@ module.exports.ParseServerOptions = {
     action: parsers.numberParser('schemaCacheTTL'),
     default: 5000,
   },
+  security: {
+    env: 'PARSE_SERVER_SECURITY',
+    help: 'The security options to identify and report weak security settings.',
+    action: parsers.objectParser,
+    default: {},
+  },
   serverCloseComplete: {
     env: 'PARSE_SERVER_SERVER_CLOSE_COMPLETE',
     help: 'Callback when server has closed',
@@ -422,6 +428,21 @@ module.exports.ParseServerOptions = {
   webhookKey: {
     env: 'PARSE_SERVER_WEBHOOK_KEY',
     help: 'Key sent with outgoing webhook calls',
+  },
+};
+module.exports.SecurityOptions = {
+  enableCheck: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK',
+    help: 'Is true if Parse Server should check for weak security settings.',
+    action: parsers.booleanParser,
+    default: false,
+  },
+  enableCheckLog: {
+    env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK_LOG',
+    help:
+      'Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.',
+    action: parsers.booleanParser,
+    default: false,
   },
 };
 module.exports.PagesOptions = {
