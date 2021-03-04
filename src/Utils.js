@@ -118,6 +118,41 @@ class Utils {
     }
     return result;
   }
+
+  /**
+   * Determines whether an object is a Promise.
+   * @param {any} object The object to validate.
+   * @returns {Boolean} Returns true if the object is a promise.
+   */
+  static isPromise(object) {
+    return object instanceof Promise;
+  }
+
+  /**
+   * Creates an object with all permutations of the original keys.
+   * @param {Object} object The object to permutate.
+   * @param {Integer} [index=0] The current key index.
+   * @param {Object} [current={}] The current result entry being composed.
+   * @param {Array} [results=[]] The resulting array of permutations.
+   */
+  static getObjectKeyPermutations(object, index = 0, current = {}, results = []) {
+    const keys = Object.keys(object);
+    const key = keys[index];
+    const values = object[key];
+
+    for (const value of values) {
+      current[key] = value;
+      const nextIndex = index + 1;
+
+      if (nextIndex < keys.length) {
+        this.getObjectKeyPermutations(object, nextIndex, current, results);
+      } else {
+        const result = Object.assign({}, current);
+        results.push(result);
+      }
+    }
+    return results;
+  }
 }
 
 module.exports = Utils;

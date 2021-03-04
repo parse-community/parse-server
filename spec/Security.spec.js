@@ -1,7 +1,9 @@
 'use strict';
 
+const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const { Check, CheckState } = require('../lib/Security/Check');
 const Definitions = require('../lib/Options/Definitions');
 
 describe('Security Checks', () => {
@@ -83,6 +85,73 @@ describe('Security Checks', () => {
     it('responds with 200 with masterkey and security check enabled', async () => {
       const response = await securityRequest();
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe('check', () => {
+    const initCheck = config => (() => new Check(config)).bind(null);
+
+    it('instantiates check with valid parameters', async () => {
+      const configs = [
+        {
+          group: 'string',
+          title: 'string',
+          warning: 'string',
+          solution: 'string',
+          script: () => {}
+        },
+        {
+          group: 'string',
+          title: 'string',
+          warning: 'string',
+          solution: 'string',
+          script: async () => {},
+        },
+      ];
+      for (const config of configs) {
+        expect(initCheck(config)).not.toThrow();
+      }
+    });
+
+    it('throws instantiating check with invalid parameters', async () => {
+      const configDefinition = {
+        group: [false, true, 0, 1, [], {}, () => {}],
+        title: [false, true, 0, 1, [], {}, () => {}],
+        warning: [false, true, 0, 1, [], {}, () => {}],
+        solution: [false, true, 0, 1, [], {}, () => {}],
+        script: [false, true, 0, 1, [], {}, 'string'],
+      };
+      const configs = Utils.getObjectKeyPermutations(configDefinition);
+
+      for (const config of configs) {
+        expect(initCheck(config)).toThrow();
+      }
+    });
+
+    it('sets correct states for check success', async () => {
+      const check = new Check({
+        group: 'string',
+        title: 'string',
+        warning: 'string',
+        solution: 'string',
+        script: () => {},
+      });
+      expect(check._checkState == CheckState.none);
+      check.run();
+      expect(check._checkState == CheckState.success);
+    });
+
+    it('sets correct states for check fail', async () => {
+      const check = new Check({
+        group: 'string',
+        title: 'string',
+        warning: 'string',
+        solution: 'string',
+        script: () => { throw 'error' },
+      });
+      expect(check._checkState == CheckState.none);
+      check.run();
+      expect(check._checkState == CheckState.fail);
     });
   });
 });
