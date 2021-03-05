@@ -2,6 +2,7 @@
  * @module SecurityCheck
  */
 
+import Utils from '../Utils';
 import { isFunction, isString } from 'lodash';
 
 /**
@@ -58,18 +59,13 @@ class Check {
    * @param {Object} params The parameters to validate.
    */
   _validateParams(params) {
-    const types = {
-      group: { t: 'string', c: isString },
-      title: { t: 'string', c: isString },
-      warning: { t: 'string', c: isString },
-      solution: { t: 'string', c: isString },
-      script: { t: 'function', c: isFunction },
-    };
-    for (const key of Object.keys(params)) {
-      if (!types[key].c(params[key])) {
-        throw `Invalid check parameter ${key} must be of type ${types[key].t} but is ${typeof params[key]}`;
-      }
-    }
+    Utils.validateParams(params, {
+      group: { t: 'string', v: isString },
+      title: { t: 'string', v: isString },
+      warning: { t: 'string', v: isString },
+      solution: { t: 'string', v: isString },
+      script: { t: 'function', v: isFunction },
+    });
   }
 }
 

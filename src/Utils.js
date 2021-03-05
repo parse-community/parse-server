@@ -153,6 +153,36 @@ class Utils {
     }
     return results;
   }
+
+  /**
+   * Validates parameters and throws if a parameter is invalid.
+   * Example parameter types syntax:
+   * ```
+   * {
+   *   parameterName: {
+   *      t: 'boolean',
+   *      v: isBoolean,
+   *      o: true
+   *   },
+   *   ...
+   * }
+   * ```
+   * @param {Object} params The parameters to validate.
+   * @param {Array<Object>} types The parameter types used for validation.
+   * @param {Object} types.t The parameter type; used for error message, not for validation.
+   * @param {Object} types.v The function to validate the parameter value.
+   * @param {Boolean} [types.o=false] Is true if the parameter is optional.
+   */
+  static validateParams(params, types) {
+    for (const key of Object.keys(params)) {
+      const type = types[key];
+      const isOptional = !!type.o;
+      const param = params[key];
+      if (!(isOptional && param == null) && (!type.v(param))) {
+        throw `Invalid parameter ${key} must be of type ${type.t} but is ${typeof param}`;
+      }
+    }
+  }
 }
 
 module.exports = Utils;
