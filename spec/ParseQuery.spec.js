@@ -3140,7 +3140,7 @@ describe('Parse.Query testing', () => {
   });
 
   it('select keys query', function (done) {
-    const obj = new TestObject({ foo: 'baz', bar: 1 });
+    const obj = new TestObject({ foo: 'baz', bar: 1, qux: 2 });
 
     obj
       .save()
@@ -3157,23 +3157,28 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), undefined, "expected 'bar' field to be unset");
+        strictEqual(result.get('qux'), undefined, "expected 'qux' field to be unset");
         return result.fetch();
       })
       .then(function (result) {
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(result.get('qux'), 2);
       })
       .then(function () {
         obj._clearServerData();
         const query = new Parse.Query(TestObject);
-        query.select([]);
+        query.select(['foo']);
         return query.first();
       })
       .then(function (result) {
         ok(result.id, 'expected object id to be set');
+        ok(result.createdAt, 'expected object createdAt to be set');
+        ok(result.updatedAt, 'expected object updatedAt to be set');
         ok(!result.dirty(), 'expected result not to be dirty');
-        strictEqual(result.get('foo'), undefined, "expected 'foo' field to be unset");
+        strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), undefined, "expected 'bar' field to be unset");
+        strictEqual(result.get('qux'), undefined, "expected 'qux' field to be unset");
       })
       .then(function () {
         obj._clearServerData();
@@ -3186,6 +3191,7 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(result.get('qux'), undefined, "expected 'qux' field to be unset");
       })
       .then(function () {
         obj._clearServerData();
@@ -3198,6 +3204,7 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), 1);
+        strictEqual(result.get('qux'), undefined, "expected 'qux' field to be unset");
       })
       .then(
         function () {

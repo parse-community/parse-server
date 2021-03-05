@@ -57,14 +57,14 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (typeof body.keys === 'string') {
-      options.keys = body.keys;
+    if (body.keys) {
+      options.keys = String(body.keys);
     }
     if (body.include) {
       options.include = String(body.include);
     }
-    if (typeof body.excludeKeys == 'string') {
-      options.excludeKeys = body.excludeKeys;
+    if (body.excludeKeys) {
+      options.excludeKeys = String(body.excludeKeys);
     }
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
@@ -187,11 +187,11 @@ export class ClassesRouter extends PromiseRouter {
     if (body.count) {
       options.count = true;
     }
-    if (typeof body.keys == 'string') {
-      options.keys = body.keys;
+    if (body.keys) {
+      options.keys = String(body.keys);
     }
-    if (typeof body.excludeKeys == 'string') {
-      options.excludeKeys = body.excludeKeys;
+    if (body.excludeKeys) {
+      options.excludeKeys = String(body.excludeKeys);
     }
     if (body.include) {
       options.include = String(body.include);
