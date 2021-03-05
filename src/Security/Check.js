@@ -16,16 +16,16 @@ class Check {
    * @param {String} params.title The title.
    * @param {String} params.warning The warning message if the check fails.
    * @param {String} params.solution The solution to fix the check.
-   * @param {Promise} params.script The check script; can be an synchronous or asynchronous function.
+   * @param {Promise} params.check The check as synchronous or asynchronous function.
    */
   constructor(params) {
     this._validateParams(params);
-    const { title, warning, solution, script } = params;
+    const { title, warning, solution, check } = params;
 
     this.title = title;
     this.warning = warning;
     this.solution = solution;
-    this.script = script;
+    this.check = check;
 
     // Set default properties
     this._checkState = CheckState.none;
@@ -41,12 +41,12 @@ class Check {
   }
 
   async run() {
-    // Get check script as synchronous or asynchronous function
-    const script = this.script instanceof Promise ? await this.script : this.script;
+    // Get check as synchronous or asynchronous function
+    const check = this.check instanceof Promise ? await this.check : this.check;
 
-    // Run script
+    // Run check
     try {
-      script();
+      check();
       this._checkState = CheckState.success;
     } catch (e) {
       this.stateFailError = e;
@@ -64,7 +64,7 @@ class Check {
       title: { t: 'string', v: isString },
       warning: { t: 'string', v: isString },
       solution: { t: 'string', v: isString },
-      script: { t: 'function', v: isFunction },
+      check: { t: 'function', v: isFunction },
     });
   }
 }

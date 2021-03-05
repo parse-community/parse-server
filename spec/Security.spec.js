@@ -39,7 +39,7 @@ describe('Security Checks', () => {
       title: 'TestTitleSuccess',
       warning: 'TestWarning',
       solution: 'TestSolution',
-      script: () => {
+      check: () => {
         return true;
       }
     });
@@ -48,7 +48,7 @@ describe('Security Checks', () => {
       title: 'TestTitleFail',
       warning: 'TestWarning',
       solution: 'TestSolution',
-      script: () => {
+      check: () => {
         throw 'Fail';
       }
     });
@@ -154,14 +154,14 @@ describe('Security Checks', () => {
           title: 'string',
           warning: 'string',
           solution: 'string',
-          script: () => {}
+          check: () => {}
         },
         {
           group: 'string',
           title: 'string',
           warning: 'string',
           solution: 'string',
-          script: async () => {},
+          check: async () => {},
         },
       ];
       for (const config of configs) {
@@ -175,7 +175,7 @@ describe('Security Checks', () => {
         title: [false, true, 0, 1, [], {}, () => {}],
         warning: [false, true, 0, 1, [], {}, () => {}],
         solution: [false, true, 0, 1, [], {}, () => {}],
-        script: [false, true, 0, 1, [], {}, 'string'],
+        check: [false, true, 0, 1, [], {}, 'string'],
       };
       const configs = Utils.getObjectKeyPermutations(configDefinition);
 
@@ -190,7 +190,7 @@ describe('Security Checks', () => {
         title: 'string',
         warning: 'string',
         solution: 'string',
-        script: () => {},
+        check: () => {},
       });
       expect(check._checkState == CheckState.none);
       check.run();
@@ -203,7 +203,7 @@ describe('Security Checks', () => {
         title: 'string',
         warning: 'string',
         solution: 'string',
-        script: () => { throw 'error' },
+        check: () => { throw 'error' },
       });
       expect(check._checkState == CheckState.none);
       check.run();
