@@ -57,7 +57,7 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (body.keys) {
+    if (body.keys || body.keys === '') {
       options.keys = String(body.keys);
     }
     if (body.include) {
