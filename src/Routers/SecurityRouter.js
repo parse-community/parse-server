@@ -1,24 +1,24 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
-import Config from '../Config';
-import Parse from 'parse/node';
+import CheckRunner from '../Security/CheckRunner';
 
 export class SecurityRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET', '/security',
       middleware.promiseEnforceMasterKeyAccess,
       this._enforceSecurityCheckEnabled,
-      async () => {
+      async (req) => {
+        const report = await new CheckRunner(req.config.security).run();
         return {
           status: 200,
-          text: 'OK',
+          response: report,
         };
       }
     );
   }
 
-  async _enforceSecurityCheckEnabled() {
-    const config = Config.get(Parse.applicationId);
+  async _enforceSecurityCheckEnabled(req) {
+    const config = req.config;
     if (!config.security || !config.security.enableCheck) {
       const error = new Error();
       error.status = 409;

@@ -3,11 +3,17 @@
 const Utils = require('../lib/Utils');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
-const { Check, CheckState } = require('../lib/Security/Check');
 const Definitions = require('../lib/Options/Definitions');
+const { Check, CheckState } = require('../lib/Security/Check');
 const CheckGroup = require('../lib/Security/CheckGroup');
+const CheckRunner = require('../lib/Security/CheckRunner');
+const CheckGroups = require('../lib/Security/CheckGroups/CheckGroups');
 
 describe('Security Checks', () => {
+  let Group;
+  let groupName;
+  let checkSuccess;
+  let checkFail;
   let config;
   const publicServerURL = 'http://localhost:8378/1';
   const securityUrl = publicServerURL + '/security';
@@ -27,6 +33,33 @@ describe('Security Checks', () => {
   }, options)).catch(e => e);
 
   beforeEach(async () => {
+    groupName = 'Example Group Name';
+    checkSuccess = new Check({
+      group: 'TestGroup',
+      title: 'TestTitleSuccess',
+      warning: 'TestWarning',
+      solution: 'TestSolution',
+      script: () => {
+        return true;
+      }
+    });
+    checkFail = new Check({
+      group: 'TestGroup',
+      title: 'TestTitleFail',
+      warning: 'TestWarning',
+      solution: 'TestSolution',
+      script: () => {
+        throw 'Fail';
+      }
+    });
+    Group = class Group extends CheckGroup {
+      setName() {
+        return groupName;
+      }
+      setChecks() {
+        return [ checkSuccess, checkFail ];
+      }
+    };
     config = {
       appId: 'test',
       appName: 'ExampleAppName',
@@ -157,41 +190,6 @@ describe('Security Checks', () => {
   });
 
   describe('check group', () => {
-    let groupName;
-    let checkSuccess;
-    let checkFail;
-    let Group;
-
-    beforeEach(async () => {
-      groupName = 'Example Group Name';
-      checkSuccess = new Check({
-        group: 'TestGroup',
-        title: 'TestTitleSuccess',
-        warning: 'TestWarning',
-        solution: 'TestSolution',
-        script: () => {
-          return true;
-        }
-      });
-      checkFail = new Check({
-        group: 'TestGroup',
-        title: 'TestTitleFail',
-        warning: 'TestWarning',
-        solution: 'TestSolution',
-        script: () => {
-          throw 'Fail';
-        }
-      });
-      Group = class Group extends CheckGroup {
-        setName() {
-          return groupName;
-        }
-        setChecks() {
-          return [ checkSuccess, checkFail ];
-        }
-      };
-    });
-
     it('returns properties if subclassed correctly', async () => {
       const group = new Group();
       expect(group.name()).toBe(groupName);
@@ -218,6 +216,96 @@ describe('Security Checks', () => {
       expect((() => group.run()).bind(null)).not.toThrow();
       expect(group.checks()[0].checkState()).toBe(CheckState.success);
       expect(group.checks()[1].checkState()).toBe(CheckState.fail);
+    });
+  });
+
+  describe('check runner', () => {
+    const initRunner = config => (() => new CheckRunner(config)).bind(null);
+
+    it('instantiates runner with valid parameters', async () => {
+      const configDefinition = {
+        enableCheck: [false, true, undefined],
+        enableCheckLog: [false, true, undefined],
+        checkGroups: [[], undefined],
+      };
+      const configs = Utils.getObjectKeyPermutations(configDefinition);
+      for (const config of configs) {
+        expect(initRunner(config)).not.toThrow();
+      }
+    });
+
+    it('throws instantiating runner with invalid parameters', async () => {
+      const configDefinition = {
+        enableCheck: [0, 1, [], {}, () => {}],
+        enableCheckLog: [0, 1, [], {}, () => {}],
+        checkGroups: [false, true, 0, 1, {}, () => {}],
+      };
+      const configs = Utils.getObjectKeyPermutations(configDefinition);
+
+      for (const config of configs) {
+        expect(initRunner(config)).toThrow();
+      }
+    });
+
+    it('instantiates runner with default parameters', async () => {
+      const runner = new CheckRunner();
+      expect(runner.enableCheck).toBeFalse();
+      expect(runner.enableCheckLog).toBeFalse();
+      expect(runner.checkGroups).toBe(CheckGroups);
+    });
+
+    it('runs all checks of all groups', async () => {
+      const checkGroups = [ Group, Group ];
+      const runner = new CheckRunner({ checkGroups });
+      const report = await runner.run();
+      expect(report.report.groups[0].checks[0].state).toBe(CheckState.success);
+      expect(report.report.groups[0].checks[1].state).toBe(CheckState.fail);
+      expect(report.report.groups[1].checks[0].state).toBe(CheckState.success);
+      expect(report.report.groups[1].checks[1].state).toBe(CheckState.fail);
+    });
+
+    it('reports correct default syntax version 1.0.0', async () => {
+      const checkGroups = [ Group ];
+      const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
+      const report = await runner.run();
+      expect(report).toEqual({
+        report: {
+          version: "1.0.0",
+          state: "fail",
+          groups: [
+            {
+              name: "Example Group Name",
+              state: "fail",
+              checks: [
+                {
+                  title: "TestTitleSuccess",
+                  state: "success",
+                },
+                {
+                  title: "TestTitleFail",
+                  state: "fail",
+                  warning: "TestWarning",
+                  solution: "TestSolution",
+                },
+              ],
+            },
+          ],
+        },
+      });
+    });
+
+    it('logs report', async () => {
+      const logger = require('../lib/logger').logger;
+      const logSpy = spyOn(logger, 'warn').and.callThrough();
+      const checkGroups = [ Group ];
+      const runner = new CheckRunner({ checkGroups, enableCheckLog: true });
+      const report = await runner.run();
+      const titles = report.report.groups.flatMap(group => group.checks.map(check => check.title));
+      expect(titles.length).toBe(2);
+
+      for (const title of titles) {
+        expect(logSpy.calls.all()[0].args[0]).toContain(title);
+      }
     });
   });
 });
