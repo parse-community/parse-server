@@ -150,8 +150,8 @@ class CheckRunner {
 
         if (check.state == CheckState.fail) {
           failedChecksCount++;
-          output += `\n${indent}${indent}${check.warning}`;
-          output += `\n${indent}${indent}${check.solution}`;
+          output += `\n${indent}${indent}Warning: ${check.warning}`;
+          output += ` ${check.solution}`;
         } else if (check.state == CheckState.none) {
           skippedCheckCount++;
           output += `\n${indent}${indent}Test did not execute, this is likely an internal server issue, please report.`;
