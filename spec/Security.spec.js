@@ -5,6 +5,7 @@ const Config = require('../lib/Config');
 const request = require('../lib/request');
 const { Check, CheckState } = require('../lib/Security/Check');
 const Definitions = require('../lib/Options/Definitions');
+const CheckGroup = require('../lib/Security/CheckGroup');
 
 describe('Security Checks', () => {
   let config;
@@ -152,6 +153,71 @@ describe('Security Checks', () => {
       expect(check._checkState == CheckState.none);
       check.run();
       expect(check._checkState == CheckState.fail);
+    });
+  });
+
+  describe('check group', () => {
+    let groupName;
+    let checkSuccess;
+    let checkFail;
+    let Group;
+
+    beforeEach(async () => {
+      groupName = 'Example Group Name';
+      checkSuccess = new Check({
+        group: 'TestGroup',
+        title: 'TestTitleSuccess',
+        warning: 'TestWarning',
+        solution: 'TestSolution',
+        script: () => {
+          return true;
+        }
+      });
+      checkFail = new Check({
+        group: 'TestGroup',
+        title: 'TestTitleFail',
+        warning: 'TestWarning',
+        solution: 'TestSolution',
+        script: () => {
+          throw 'Fail';
+        }
+      });
+      Group = class Group extends CheckGroup {
+        setName() {
+          return groupName;
+        }
+        setChecks() {
+          return [ checkSuccess, checkFail ];
+        }
+      };
+    });
+
+    it('returns properties if subclassed correctly', async () => {
+      const group = new Group();
+      expect(group.name()).toBe(groupName);
+      expect(group.checks().length).toBe(2);
+      expect(group.checks()[0]).toEqual(checkSuccess);
+      expect(group.checks()[1]).toEqual(checkFail);
+    });
+
+    it('throws if subclassed incorrectly', async () => {
+      class InvalidGroup1 extends CheckGroup {}
+      expect((() => new InvalidGroup1()).bind()).toThrow('Check group has no name.');
+      class InvalidGroup2 extends CheckGroup {
+        setName() {
+          return groupName;
+        }
+      }
+      expect((() => new InvalidGroup2()).bind()).toThrow('Check group has no checks.');
+    });
+
+    it('runs checks', async () => {
+      const group = new Group();
+      expect(group.checks()[0].checkState()).toBe(CheckState.none);
+      expect(group.checks()[1].checkState()).toBe(CheckState.none);
+      expect((() => group.run()).bind(null)).not.toThrow();
+      expect(group.checks()[0].checkState()).toBe(CheckState.success);
+      expect(group.checks()[1].checkState()).toBe(CheckState.fail);
     });
   });
 });
