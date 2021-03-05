@@ -20,8 +20,8 @@ class CheckGroupServerConfig extends CheckGroup {
     return [
       new Check({
         title: 'Secure master key',
-        warning: 'The Parse Server master key is weak, which makes it vulnerable to a brute force attack.',
-        solution: 'Make the master key longer and a combination of upper- and lowercase character, numbers and special characters.',
+        warning: 'The Parse Server master key is insecure and vulnerable to brute force attacks.',
+        solution: 'Choose a more complex master key with a combination of upper- and lowercase characters, numbers and special characters.',
         check: () => {
           const masterKey = config.masterKey;
           const hasUpperCase = /[A-Z]/.test(masterKey);
@@ -34,6 +34,16 @@ class CheckGroupServerConfig extends CheckGroup {
           }
           // Ensure at least 3 out of 4 requirements passed
           if (hasUpperCase + hasLowerCase + hasNumbers + hasNonAlphasNumerics < 3) {
+            throw 1;
+          }
+        },
+      }),
+      new Check({
+        title: 'Security log disabled',
+        warning: 'Security report in log.',
+        solution: 'Set Parse Server configuration `security.enableCheckLog` to false.',
+        check: () => {
+          if (config.security && config.security.enableCheckLog) {
             throw 1;
           }
         },
