@@ -104,6 +104,28 @@ describe('Security Checks', () => {
     });
   });
 
+  describe('auto-run', () => {
+    it('runs security checks on server start if enabled', async () => {
+      const runnerSpy = spyOn(CheckRunner.prototype, 'run').and.callThrough();
+      await reconfigureServerWithSecurityConfig({ enableCheck: true, enableCheckLog: true });
+      expect(runnerSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not run security checks on server start if disabled', async () => {
+      const runnerSpy = spyOn(CheckRunner.prototype, 'run').and.callThrough();
+      const configs = [
+        { enableCheck: true, enableCheckLog: false },
+        { enableCheck: false, enableCheckLog: false },
+        { enableCheck: false },
+        {},
+      ];
+      for (const config of configs) {
+        await reconfigureServerWithSecurityConfig(config);
+        expect(runnerSpy).not.toHaveBeenCalled();
+      }
+    });
+  });
+
   describe('security endpoint accessibility', () => {
     it('responds with 403 without masterkey', async () => {
       const response = await securityRequest({ headers: {} });

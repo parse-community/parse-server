@@ -42,6 +42,7 @@ import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
 import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
+import CheckRunner from './Security/CheckRunner';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -59,6 +60,7 @@ class ParseServer {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
       cloud,
+      security,
       javascriptKey,
       serverURL = requiredParameter('You must provide a serverURL!'),
       serverStartComplete,
@@ -101,6 +103,10 @@ class ParseServer {
       } else {
         throw "argument 'cloud' must either be a string or a function";
       }
+    }
+
+    if (security && security.enableCheck && security.enableCheckLog) {
+      new CheckRunner(options.security).run();
     }
   }
 
