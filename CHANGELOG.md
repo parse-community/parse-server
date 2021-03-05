@@ -14,6 +14,7 @@
 
 __BREAKING CHANGES:__
 - NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
+- FIX: select and excludeKey queries to properly accept JSON arrays. If you use `select()` or `select([])`, they may not work as they previously did as you will receive all keys instead of only receiving the default Parse keys, `createdAt`, `objectId`, etc. [#7242](https://github.com/parse-community/parse-server/pull/7242). Thanks to [Corey Baker](https://github.com/cbaker6).
 ___
 - FIX: Move graphql-tag from devDependencies to dependencies. [7183](https://github.com/parse-community/parse-server/pull/7183). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 - IMPROVE: Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy)
