@@ -431,6 +431,12 @@ module.exports.ParseServerOptions = {
   },
 };
 module.exports.SecurityOptions = {
+  checkGroups: {
+    env: 'PARSE_SERVER_SECURITY_CHECK_GROUPS',
+    help:
+      'The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.',
+    action: parsers.arrayParser,
+  },
   enableCheck: {
     env: 'PARSE_SERVER_SECURITY_ENABLE_CHECK',
     help: 'Is true if Parse Server should check for weak security settings.',

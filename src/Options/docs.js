@@ -83,6 +83,7 @@
 
 /**
  * @interface SecurityOptions
+ * @property {CheckGroup[]} checkGroups The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.
  * @property {Boolean} enableCheck Is true if Parse Server should check for weak security settings.
  * @property {Boolean} enableCheckLog Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
  */
