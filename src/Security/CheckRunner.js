@@ -142,7 +142,7 @@ class CheckRunner {
 
     // Traverse all groups and checks for compose output
     for (const group of report.report.groups) {
-      output += `${this._getLogIconForState(group.state)} ${group.name}:`
+      output += `- ${group.name}`
 
       for (const check of group.checks) {
         checksCount++;
@@ -160,11 +160,17 @@ class CheckRunner {
     }
 
     output =
-      `Parse Server Security Check` +
-      `\n\n${failedChecksCount} weak security settings identified; ${checksCount} checks executed; ${skippedCheckCount} checks not executed.` +
-      `\n\n` +
-      output +
-      ``;
+      `\n###################################` +
+      `\n#                                 #` +
+      `\n#   Parse Server Security Check   #` +
+      `\n#                                 #` +
+      `\n###################################` +
+      `\n` +
+      `\n${failedChecksCount > 0 ? 'Warning: ' : ''}${failedChecksCount} weak security setting(s) found${failedChecksCount > 0 ? '!' : ''}` +
+      `\n${checksCount} check(s) executed` +
+      `\n${skippedCheckCount} check(s) skipped` +
+      `\n` +
+      `\n${output}\n`;
 
     // Write log
     log(output);
