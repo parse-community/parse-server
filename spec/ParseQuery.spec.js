@@ -3231,6 +3231,17 @@ describe('Parse.Query testing', () => {
     });
     expect(response.data.results[0].foo).toBeUndefined();
     expect(response.data.results[0].hello).toBe('world');
+
+    const response2 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: ['foo', 'hello'],
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response2.data.results[0].foo).toBeUndefined();
+    expect(response2.data.results[0].hello).toBeUndefined();
   });
 
   it('exclude keys with select same key', async () => {
