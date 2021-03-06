@@ -142,7 +142,7 @@ class CheckRunner {
 
     // Traverse all groups and checks for compose output
     for (const group of report.report.groups) {
-      output += `- ${group.name}`
+      output += `\n- ${group.name}`
 
       for (const check of group.checks) {
         checksCount++;
@@ -170,7 +170,7 @@ class CheckRunner {
       `\n${checksCount} check(s) executed` +
       `\n${skippedCheckCount} check(s) skipped` +
       `\n` +
-      `\n${output}\n`;
+      `${output}`;
 
     // Write log
     log(output);
