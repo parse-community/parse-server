@@ -9,7 +9,7 @@ const CheckGroup = require('../lib/Security/CheckGroup');
 const CheckRunner = require('../lib/Security/CheckRunner');
 const CheckGroups = require('../lib/Security/CheckGroups/CheckGroups');
 
-describe('Security Checks', () => {
+describe('Security Check', () => {
   let Group;
   let groupName;
   let checkSuccess;
