@@ -202,6 +202,7 @@ Adding a new security check for your feature is easy and fast:
     ```
     export { default as CheckGroupNewCategory } from './CheckGroupNewCategory';
     ```
+4. Add a test that covers the new check to [SecurityCheckGroups.js](https://github.com/parse-community/parse-server/blob/master/spec/SecurityCheckGroups.js) for the cases of success and failure.
 
 #### Wording Guideline
 Consider the following when adding a new security check:
