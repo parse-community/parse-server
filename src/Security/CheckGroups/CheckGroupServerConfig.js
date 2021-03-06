@@ -40,14 +40,24 @@ class CheckGroupServerConfig extends CheckGroup {
       }),
       new Check({
         title: 'Security log disabled',
-        warning: 'Security report in log.',
-        solution: 'Set Parse Server configuration `security.enableCheckLog` to false.',
+        warning: 'Security checks in logs may expose vulnerabilities to anyone access to logs.',
+        solution: 'Change Parse Server configuration to \'security.enableCheckLog: false\'.',
         check: () => {
           if (config.security && config.security.enableCheckLog) {
             throw 1;
           }
         },
-      })
+      }),
+      new Check({
+        title: 'Client class creation disabled',
+        warning: 'Attackers are allowed to create new classes without restriction and flood the database.',
+        solution: 'Change Parse Server configuration to \'allowClientClassCreation: false\'.',
+        check: () => {
+          if (config.allowClientClassCreation || config.allowClientClassCreation == null) {
+            throw 1;
+          }
+        },
+      }),
     ];
   }
 }
