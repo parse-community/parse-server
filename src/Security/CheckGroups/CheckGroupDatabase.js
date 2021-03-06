@@ -19,23 +19,7 @@ class CheckGroupDatabase extends CheckGroup {
     const config = Config.get(Parse.applicationId);
     const databaseAdapter = config.database.adapter;
     const databaseUrl = databaseAdapter._uri;
-    const MongoClient = require('mongodb').MongoClient;
     return [
-      new Check({
-        title: `Database requires authentication`,
-        warning: 'Database requires no authentication to connect which allows anyone to connect and potentially access data.',
-        solution: 'Change database access settings.',
-        check: async () => {
-          try {
-            const urlWithoutCredentials = databaseUrl.replace(/\/\/(\S+:\S+)@/, '//');
-            const client = await MongoClient.connect(urlWithoutCredentials, { useNewUrlParser: true });
-            await client.db("admin").command({ ping: 1 });
-            throw 1;
-          } catch {
-            return;
-          }
-        },
-      }),
       new Check({
         title: 'Secure database password',
         warning: 'The database password is insecure and vulnerable to brute force attacks.',
