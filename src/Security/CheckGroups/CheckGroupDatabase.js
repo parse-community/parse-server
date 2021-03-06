@@ -38,16 +38,16 @@ class CheckGroupDatabase extends CheckGroup {
       }),
       new Check({
         title: 'Secure database password',
-        warning: 'The Parse Server master key is insecure and vulnerable to brute force attacks.',
-        solution: 'Choose a more complex master key with a combination of upper- and lowercase characters, numbers and special characters.',
+        warning: 'The database password is insecure and vulnerable to brute force attacks.',
+        solution: 'Choose a longer and/or more complex password with a combination of upper- and lowercase characters, numbers and special characters.',
         check: () => {
-          const masterKey = config.masterKey;
-          const hasUpperCase = /[A-Z]/.test(masterKey);
-          const hasLowerCase = /[a-z]/.test(masterKey);
-          const hasNumbers = /\d/.test(masterKey);
-          const hasNonAlphasNumerics = /\W/.test(masterKey);
+          const password = databaseUrl.match(/\/\/\S+:(\S+)@/)[1];
+          const hasUpperCase = /[A-Z]/.test(password);
+          const hasLowerCase = /[a-z]/.test(password);
+          const hasNumbers = /\d/.test(password);
+          const hasNonAlphasNumerics = /\W/.test(password);
           // Ensure length
-          if (masterKey.length < 14) {
+          if (password.length < 14) {
             throw 1;
           }
           // Ensure at least 3 out of 4 requirements passed
