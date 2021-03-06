@@ -212,7 +212,7 @@ Consider the following when adding a new security check:
 - *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
 - The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
 - The wordings should be concise and not contain verbose explanations. Remember that these phrases contribute to data traffic and are therefore a cost factor that can become significant when scaling up.
-- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do no use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
+- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
 
 ### Parse Error
 
