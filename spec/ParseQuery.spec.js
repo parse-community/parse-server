@@ -3478,6 +3478,28 @@ describe('Parse.Query testing', () => {
     ok(response5.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response5.data.results[0].foo).toBe('baz');
     expect(response5.data.results[0].hello).toBe('world');
+
+    const response6 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '["hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response6.data.results[0].foo).toBe('baz');
+    expect(response6.data.results[0].hello).toBeUndefined();
+
+    const response7 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '["foo", "hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response7.data.results[0].foo).toBeUndefined();
+    expect(response7.data.results[0].hello).toBeUndefined();
   });
 
   it('exclude keys with select same key', async () => {
