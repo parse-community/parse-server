@@ -89,22 +89,23 @@
 ## Master Branch (unreleased)
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
 
-### BREAKING CHANGES
+### Breaking Changes
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
-### NOTABLE CHANGES
-#### New
+### Notable Changes
 - Added Parse Sever Security Check to report weak security settings. [#7247](https://github.com/parse-community/parse-server/issues/7247). Thanks to [Manuel Trezza](https://github.com/mtrezza), [dblythy](https://github.com/dblythy).
 - EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification. **Caution, this is an experimental feature that may not be appropriate for production.** [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows. **Caution, this is an experimental feature that may not be appropriate for production.** [#7231](https://github.com/parse-community/parse-server/issues/7231). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-___
-### OTHER COMMITS
-#### New
+### Bug Fixes
+- Fix error when a not yet inserted job is updated [#7196](https://github.com/parse-community/parse-server/pull/7196). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
+- Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
+- Move graphql-tag from devDependencies to dependencies. [7183](https://github.com/parse-community/parse-server/pull/7183). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+### Other Commits
 - Added convenience method `Parse.Cloud.sendEmail(...)` to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
 - LiveQuery support for $and, $nor, $containedBy, $geoWithin, $geoIntersects queries [#7113](https://github.com/parse-community/parse-server/pull/7113). Thanks to [dplewis](https://github.com/dplewis)
 - Supporting patterns in LiveQuery server's config parameter `classNames` [#7131](https://github.com/parse-community/parse-server/pull/7131). Thanks to [Nes-si](https://github.com/Nes-si)
 - Added `requireAnyUserRoles` and `requireAllUserRoles` for Parse Cloud validator. [#7097](https://github.com/parse-community/parse-server/pull/7097). Thanks to [dblythy](https://github.com/dblythy)
 - Support Facebook Limited Login [#7219](https://github.com/parse-community/parse-server/pull/7219). Thanks to [miguel-s](https://github.com/miguel-s)
-#### Improvement
 - Removed Stage name check on aggregate pipelines [#7237](https://github.com/parse-community/parse-server/pull/7237). Thanks to [BRETT71](https://github.com/BRETT71)
 - Retry transactions on MongoDB when it fails due to transient error [#7187](https://github.com/parse-community/parse-server/pull/7187). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 - Bump tests to use Mongo 4.4.4 [#7184](https://github.com/parse-community/parse-server/pull/7184). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
@@ -116,18 +117,12 @@ ___
 - Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
 - Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy).
-#### Fix
-- Fix error when a not yet inserted job is updated [#7196](https://github.com/parse-community/parse-server/pull/7196). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
-- request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
-- Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
-- Move graphql-tag from devDependencies to dependencies. [7183](https://github.com/parse-community/parse-server/pull/7183). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 
 ## 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
-
-__BREAKING CHANGES:__
+### Breaking Changes
 - FIX: Consistent casing for afterLiveQueryEvent. The afterLiveQueryEvent was introduced in 4.4.0 with inconsistent casing for the event names, which was fixed in 4.5.0. [#7023](https://github.com/parse-community/parse-server/pull/7023). Thanks to [dblythy](https://github.com/dblythy).
-___
+### Other Commits
 - FIX: Properly handle serverURL and publicServerUrl in Batch requests. [#7049](https://github.com/parse-community/parse-server/pull/7049). Thanks to [Zach Goldberg](https://github.com/ZachGoldberg).
 - IMPROVE: Prevent invalid column names (className and length). [#7053](https://github.com/parse-community/parse-server/pull/7053). Thanks to [Diamond Lewis](https://github.com/dplewis).
 - IMPROVE: GraphQL: Remove viewer from logout mutation. [#7029](https://github.com/parse-community/parse-server/pull/7029). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
