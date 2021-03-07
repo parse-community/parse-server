@@ -1,11 +1,10 @@
 # Parse Server Changelog
-## Current Major Version
 
 Jump directly to a version:
 
 | 4.x               |
 |-------------------|
-| [**4.5.0**](#450) |
+| [**4.5.0 (latest release)**](#450) |
 | [4.4.0](#440)     |
 | [4.3.0](#430)     |
 | [4.2.0](#420)     |
