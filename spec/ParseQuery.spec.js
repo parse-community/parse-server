@@ -3313,6 +3313,9 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response6.data.results[0].objectId, 'expected objectId to be set');
+    ok(response6.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response6.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response6.data.results[0].foo).toBe('baz');
     expect(response6.data.results[0].bar).toBeUndefined();
     expect(response6.data.results[0].hello).toBe('world');
@@ -3423,6 +3426,9 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response.data.results[0].objectId, 'expected objectId to be set');
+    ok(response.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response.data.results[0].foo).toBeUndefined();
     expect(response.data.results[0].hello).toBe('world');
 
@@ -3434,6 +3440,9 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response2.data.results[0].objectId, 'expected objectId to be set');
+    ok(response2.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response2.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response2.data.results[0].foo).toBeUndefined();
     expect(response2.data.results[0].hello).toBeUndefined();
 
@@ -3487,6 +3496,9 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response6.data.results[0].objectId, 'expected objectId to be set');
+    ok(response6.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response6.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response6.data.results[0].foo).toBe('baz');
     expect(response6.data.results[0].hello).toBeUndefined();
 
@@ -3498,6 +3510,9 @@ describe('Parse.Query testing', () => {
       },
       headers: masterKeyHeaders,
     });
+    ok(response7.data.results[0].objectId, 'expected objectId to be set');
+    ok(response7.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response7.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response7.data.results[0].foo).toBeUndefined();
     expect(response7.data.results[0].hello).toBeUndefined();
   });
