@@ -43,6 +43,7 @@ function getENVPrefix(iface) {
   const options = {
     'ParseServerOptions' : 'PARSE_SERVER_',
     'PagesOptions' : 'PARSE_SERVER_PAGES_',
+    'PagesRoute': 'PARSE_SERVER_PAGES_ROUTE_',
     'PagesCustomUrlsOptions' : 'PARSE_SERVER_PAGES_CUSTOM_URL_',
     'CustomPagesOptions' : 'PARSE_SERVER_CUSTOM_PAGES_',
     'LiveQueryServerOptions' : 'PARSE_LIVE_QUERY_SERVER_',
@@ -166,7 +167,7 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    const literalTypes = ['Object', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
+    const literalTypes = ['Object', 'PagesRoute', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
     if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
@@ -217,7 +218,9 @@ function inject(t, list) {
       type = elt.typeAnnotation.id.name;
     }
     if (type === 'Array') {
-      type = `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
+      type = elt.typeAnnotation.elementType.id
+        ? `${elt.typeAnnotation.elementType.id.name}[]`
+        : `${elt.typeAnnotation.elementType.type.replace('TypeAnnotation', '')}[]`;
     }
     if (type === 'NumberOrBoolean') {
       type = 'Number|Boolean';
