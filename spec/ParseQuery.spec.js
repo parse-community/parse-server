@@ -3285,6 +3285,20 @@ describe('Parse.Query testing', () => {
     ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response4.data.results[0].foo).toBe('baz');
     expect(response4.data.results[0].hello).toBe('world');
+
+    const response5 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: '',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response5.data.results[0].objectId, 'expected objectId to be set');
+    ok(response5.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response5.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response5.data.results[0].foo).toBeUndefined();
+    expect(response5.data.results[0].hello).toBeUndefined();
   });
 
   it('exclude keys query JS SDK', function (done) {
@@ -3433,6 +3447,20 @@ describe('Parse.Query testing', () => {
     ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response4.data.results[0].foo).toBe('baz');
     expect(response4.data.results[0].hello).toBe('world');
+
+    const response5 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        excludeKeys: '',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    ok(response5.data.results[0].objectId, 'expected objectId to be set');
+    ok(response5.data.results[0].createdAt, 'expected object createdAt to be set');
+    ok(response5.data.results[0].updatedAt, 'expected object updatedAt to be set');
+    expect(response5.data.results[0].foo).toBe('baz');
+    expect(response5.data.results[0].hello).toBe('world');
   });
 
   it('exclude keys with select same key', async () => {
