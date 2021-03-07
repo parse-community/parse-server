@@ -63,7 +63,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.include) {
       options.include = String(body.include);
     }
-    if (body.excludeKeys) {
+    if (body.excludeKeys != null) {
       options.excludeKeys = String(body.excludeKeys);
     }
     if (typeof body.readPreference === 'string') {
@@ -190,7 +190,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.keys != null) {
       options.keys = String(body.keys);
     }
-    if (body.excludeKeys) {
+    if (body.excludeKeys != null) {
       options.excludeKeys = String(body.excludeKeys);
     }
     if (body.include) {
