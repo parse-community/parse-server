@@ -3233,7 +3233,7 @@ describe('Parse.Query testing', () => {
   });
 
   it('select keys', async () => {
-    const obj = new TestObject({ foo: 'baz', hello: 'world' });
+    const obj = new TestObject({ foo: 'baz', bar: 1, hello: 'world' });
     await obj.save();
 
     const response = await request({
@@ -3245,6 +3245,7 @@ describe('Parse.Query testing', () => {
       headers: masterKeyHeaders,
     });
     expect(response.data.results[0].foo).toBeUndefined();
+    expect(response.data.results[0].bar).toBeUndefined();
     expect(response.data.results[0].hello).toBe('world');
 
     const response2 = await request({
@@ -3256,6 +3257,7 @@ describe('Parse.Query testing', () => {
       headers: masterKeyHeaders,
     });
     expect(response2.data.results[0].foo).toBe('baz');
+    expect(response2.data.results[0].bar).toBeUndefined();
     expect(response2.data.results[0].hello).toBe('world');
 
     const response3 = await request({
@@ -3270,6 +3272,7 @@ describe('Parse.Query testing', () => {
     ok(response3.data.results[0].createdAt, 'expected object createdAt to be set');
     ok(response3.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response3.data.results[0].foo).toBeUndefined();
+    expect(response3.data.results[0].bar).toBeUndefined();
     expect(response3.data.results[0].hello).toBeUndefined();
 
     const response4 = await request({
@@ -3284,6 +3287,7 @@ describe('Parse.Query testing', () => {
     ok(response4.data.results[0].createdAt, 'expected object createdAt to be set');
     ok(response4.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response4.data.results[0].foo).toBe('baz');
+    expect(response4.data.results[0].bar).toBe(1);
     expect(response4.data.results[0].hello).toBe('world');
 
     const response5 = await request({
@@ -3298,7 +3302,20 @@ describe('Parse.Query testing', () => {
     ok(response5.data.results[0].createdAt, 'expected object createdAt to be set');
     ok(response5.data.results[0].updatedAt, 'expected object updatedAt to be set');
     expect(response5.data.results[0].foo).toBeUndefined();
+    expect(response5.data.results[0].bar).toBeUndefined();
     expect(response5.data.results[0].hello).toBeUndefined();
+
+    const response6 = await request({
+      url: Parse.serverURL + '/classes/TestObject',
+      qs: {
+        keys: '["foo", "hello"]',
+        where: JSON.stringify({ objectId: obj.id }),
+      },
+      headers: masterKeyHeaders,
+    });
+    expect(response6.data.results[0].foo).toBe('baz');
+    expect(response6.data.results[0].bar).toBeUndefined();
+    expect(response6.data.results[0].hello).toBe('world');
   });
 
   it('exclude keys query JS SDK', function (done) {
