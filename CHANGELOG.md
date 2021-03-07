@@ -1430,7 +1430,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Perf: Use native bcrypt implementation if available, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
 
-### [2.2.17](https://github.com/ParsePlatform/parse-server/tree/2.2.17) (07/23/2016)
+### 2.2.17
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.16...2.2.17)
 
 * Cloud code logs [\#2370](https://github.com/ParsePlatform/parse-server/pull/2370) ([flovilmart](https://github.com/flovilmart))
@@ -1465,7 +1465,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Adds support for multiple twitter auths options [\#2256](https://github.com/ParsePlatform/parse-server/pull/2256) ([flovilmart](https://github.com/flovilmart))
 * validate\_purchase fix for SANDBOX requests [\#2253](https://github.com/ParsePlatform/parse-server/pull/2253) ([valeryvaskabovich](https://github.com/valeryvaskabovich))
 
-### 2.2.16 (7/10/2016)
+### 2.2.16
 
 * New: Expose InMemoryCacheAdapter publicly, thanks to [Steven Shipton](https://github.com/steven-supersolid)
 * New: Add ability to prevent login with unverified email, thanks to [Diwakar Cherukumilli](https://github.com/cherukumilli)
@@ -1476,7 +1476,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Issues with email adapter validation, thanks to [Tyler Brock](https://github.com/TylerBrock)
 * Fix: Issues with nested $or queries, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
-### 2.2.15 (6/30/2016)
+### 2.2.15
 
 * Fix: Type in description for Parse.Error.INVALID_QUERY, thanks to [Andrew Lane](https://github.com/AndrewLane)
 * Improvement: Stop requiring verifyUserEmails for password reset functionality, thanks to [Tyler Brock](https://github.com/TylerBrock)
@@ -1488,15 +1488,15 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: make http response serializable, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * New: Add postmark email adapter alternative [Glenn Reyes](https://github.com/glennreyes)
 
-### 2.2.14 (6/25/2016)
+### 2.2.14
 
 * Hotfix: Fix Parse.Cloud.HTTPResponse serialization
 
-### 2.2.13 (6/12/2016)
+### 2.2.13
 
 * Hotfix: Pin version of deepcopy
 
-### 2.2.12 (6/9/2016)
+### 2.2.12
 
 * New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
 * Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
@@ -1505,7 +1505,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Fix nested date parsing in Cloud Code, thanks to [Marco Cheung](https://github.com/Marco129)
 * Fix: Support very old file formats from Parse.com
 
-### 2.2.11 (5/31/2016)
+### 2.2.11
 
 * Security: Censor user password in logs, thanks to [Marco Cheung](https://github.com/Marco129)
 * New: Add PARSE_SERVER_LOGS_FOLDER env var for setting log folder, thanks to [KartikeyaRokde](https://github.com/KartikeyaRokde)
@@ -1534,7 +1534,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Issues with pointed getting un-fetched due to changes in beforeSave
 * Fix: Fixed crash when deleting classes that have CLPs
 
-### 2.2.10 (5/15/2016)
+### 2.2.10
 
 * Fix: Write legacy ACLs to Mongo so that clients that still go through Parse.com can read them, thanks to [Tyler Brock](https://github.com/TylerBrock) and [carmenlau](https://github.com/carmenlau)
 * Fix: Querying installations with limit = 0 and count = 1 now works, thanks to [ssk7833](https://github.com/ssk7833)
@@ -1542,11 +1542,11 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Allow unsetting user's email, thanks to [Marco Cheung](https://github.com/Marco129)
 * New: Support for Node 6.1
 
-### 2.2.9 (5/9/2016)
+### 2.2.9
 
 * Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
 
-### 2.2.8 (5/8/2016)
+### 2.2.8
 
 * New: Support for Pointer Permissions
 * New: Expose logger in Cloud Code
@@ -1563,7 +1563,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Properly encode "Date" parameters to cloud code functions
 
 
-### 2.2.7 (4/15/2016)
+### 2.2.7
 
 * Adds support for --verbose and verbose option when running ParseServer [\#1414](https://github.com/ParsePlatform/parse-server/pull/1414) ([flovilmart](https://github.com/flovilmart))
 * Adds limit = 0 as a valid parameter for queries [\#1493](https://github.com/ParsePlatform/parse-server/pull/1493) ([seijiakiyama](https://github.com/seijiakiyama))
@@ -1601,14 +1601,14 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Spotify authentication [\#1226](https://github.com/ParsePlatform/parse-server/pull/1226) ([1nput0utput](https://github.com/1nput0utput))
 * Expose DatabaseAdapter to simplify application tests [\#1121](https://github.com/ParsePlatform/parse-server/pull/1121) ([steven-supersolid](https://github.com/steven-supersolid))
 
-### 2.2.6 (4/5/2016)
+### 2.2.6
 
 * Important Fix: Disables find on installation from clients [\#1374](https://github.com/ParsePlatform/parse-server/pull/1374) ([flovilmart](https://github.com/flovilmart))
 * Adds missing options to the CLI [\#1368](https://github.com/ParsePlatform/parse-server/pull/1368) ([flovilmart](https://github.com/flovilmart))
 * Removes only master on travis [\#1367](https://github.com/ParsePlatform/parse-server/pull/1367) ([flovilmart](https://github.com/flovilmart))
 * Auth.\_loadRoles should not query the same role twice. [\#1366](https://github.com/ParsePlatform/parse-server/pull/1366) ([blacha](https://github.com/blacha))
 
-### 2.2.5 (4/4/2016)
+### 2.2.5
 
 * Improves config loading and tests [\#1363](https://github.com/ParsePlatform/parse-server/pull/1363) ([flovilmart](https://github.com/flovilmart))
 * Adds travis configuration to deploy NPM on new version tags [\#1361](https://github.com/ParsePlatform/parse-server/pull/1361) ([gfosco](https://github.com/gfosco))
@@ -1636,12 +1636,12 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fixes bug related to include in queries [\#1312](https://github.com/ParsePlatform/parse-server/pull/1312) ([flovilmart](https://github.com/flovilmart))
 
 
-### 2.2.4 (3/29/2016)
+### 2.2.4
 
 * Hotfix: fixed imports issue for S3Adapter, GCSAdapter, FileSystemAdapter [\#1263](https://github.com/ParsePlatform/parse-server/pull/1263) ([drew-gross](https://github.com/drew-gross)
 * Fix: Clean null authData values on _User update [\#1199](https://github.com/ParsePlatform/parse-server/pull/1199) ([yuzeh](https://github.com/yuzeh))
 
-### 2.2.3 (3/29/2016)
+### 2.2.3
 
 * Fixed bug with invalid email verification link on email update. [\#1253](https://github.com/ParsePlatform/parse-server/pull/1253) ([kzielonka](https://github.com/kzielonka))
 * Badge update supports increment as well as Increment [\#1248](https://github.com/ParsePlatform/parse-server/pull/1248) ([flovilmart](https://github.com/flovilmart))
@@ -1657,7 +1657,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Document email adapter [\#1144](https://github.com/ParsePlatform/parse-server/pull/1144) ([drew-gross](https://github.com/drew-gross))
 * Reset password fix [\#1133](https://github.com/ParsePlatform/parse-server/pull/1133) ([carmenlau](https://github.com/carmenlau))
 
-### 2.2.2 (3/23/2016)
+### 2.2.2
 
 * Important Fix: Mounts createLiveQueryServer, fix babel induced problem [\#1153](https://github.com/ParsePlatform/parse-server/pull/1153) (flovilmart)
 * Move ParseServer to it's own file [\#1166](https://github.com/ParsePlatform/parse-server/pull/1166) (flovilmart)
@@ -1666,7 +1666,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Do not override username [\#1142](https://github.com/ParsePlatform/parse-server/pull/1142) (flovilmart)
 * Fix: Add pushId back to GCM payload [\#1168](https://github.com/ParsePlatform/parse-server/pull/1168) (wangmengyan95)
 
-### 2.2.1 (3/22/2016)
+### 2.2.1
 
 * New: Add FileSystemAdapter file adapter [\#1098](https://github.com/ParsePlatform/parse-server/pull/1098) (dtsolis)
 * New: Enabled CLP editing [\#1128](https://github.com/ParsePlatform/parse-server/pull/1128) (drew-gross)
@@ -1676,7 +1676,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Generates default CLP, freezes objects [\#1132](https://github.com/ParsePlatform/parse-server/pull/1132) (flovilmart)
 * Fix: Properly sets installationId on creating session with 3rd party auth [\#1110](https://github.com/ParsePlatform/parse-server/pull/1110) (flovilmart)
 
-### 2.2.0 (3/18/2016)
+### 2.2.0
 
 * New Feature: Real-time functionality with Live Queries! [\#1092](https://github.com/ParsePlatform/parse-server/pull/1092) (wangmengyan95)
 * Improvement: Push Status API [\#1004](https://github.com/ParsePlatform/parse-server/pull/1004) (flovilmart)
@@ -1693,7 +1693,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Better sanitization/decoding of object data for afterSave triggers [\#992](https://github.com/ParsePlatform/parse-server/pull/992) (flovilmart)
 * Fix: Changes default encoding for httpRequest [\#892](https://github.com/ParsePlatform/parse-server/pull/892) (flovilmart)
 
-### 2.1.6 (3/11/2016)
+### 2.1.6
 
 * Improvement: Full query support for badge Increment \(\#931\) [\#983](https://github.com/ParsePlatform/parse-server/pull/983) (flovilmart)
 * Improvement: Shutdown standalone parse server gracefully [\#958](https://github.com/ParsePlatform/parse-server/pull/958) (raulr)
@@ -1707,7 +1707,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: re-add shebang [\#944](https://github.com/ParsePlatform/parse-server/pull/944) (flovilmart)
 * Fix: Added test command for Windows support [\#886](https://github.com/ParsePlatform/parse-server/pull/886) (aneeshd16)
 
-### 2.1.5 (3/9/2016)
+### 2.1.5
 
 * New: FileAdapter for Google Cloud Storage [\#708](https://github.com/ParsePlatform/parse-server/pull/708) (mcdonamp)
 * Improvement: Minimize extra schema queries in some scenarios. [\#919](https://github.com/ParsePlatform/parse-server/pull/919) (Marco129)
@@ -1743,7 +1743,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Improves loading of Push Adapter, fix loading of S3Adapter [\#833](https://github.com/ParsePlatform/parse-server/pull/833) (flovilmart)
 * Fix: Add field to system schema [\#828](https://github.com/ParsePlatform/parse-server/pull/828) (Marco129)
 
-### 2.1.4 (3/3/2016)
+### 2.1.4
 
 * New: serverInfo endpoint that returns server version and info about the server's features
 * Improvement: Add support for badges on iOS
@@ -1779,7 +1779,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: allow both objectId or installationId when modifying installation
 * Fix: Command line works better when not given options
 
-### 2.1.3 (2/24/2016)
+### 2.1.3
 
 * Feature: Add initial support for in-app purchases
 * Feature: Better error messages when attempting to run the server on a port that is already in use or without a server URL
@@ -1797,21 +1797,21 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Allow nested keys in objects to begin with underscores
 * Fix: Allow correct headers for CORS
 
-### 2.1.2 (2/19/2016)
+### 2.1.2
 
 * Change: The S3 file adapter constructor requires a bucket name
 * Fix: Parse Query should throw if improperly encoded
 * Fix: Issue where roles were not used in some requests
 * Fix: serverURL will no longer default to api.parse.com/1
 
-### 2.1.1 (2/18/2016)
+### 2.1.1
 
 * Experimental: Schemas API support for DELETE operations
 * Fix: Session token issue fetching Users
 * Fix: Facebook auth validation
 * Fix: Invalid error when deleting missing session
 
-### 2.1.0 (2/17/2016)
+### 2.1.0
 
 * Feature: Support for additional OAuth providers
 * Feature: Ability to implement custom OAuth providers
@@ -1834,7 +1834,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Issues during install process
 * Fix: Issue with Unity SDK sending _noBody
 
-### 2.0.8 (2/11/2016)
+### 2.0.8
 
 * Add: support for Android and iOS push notifications
 * Experimental: cloud code validation hooks (can mark as non-experimental after we have docs)
