@@ -1,45 +1,128 @@
-## Parse Server Changelog
-<!--
-    Please make sure you add your feature at the bottom of the associated group.
-    Groups should be ordered:
-    - NEW (EXPERIMENTAL)
-    - NEW
-    - IMPROVE
-    - FIX
-    Thanks for contributing to Parse Server!
--->
+# Parse Server Changelog
+## Current Major Version
 
-### master
+| 4.x               |
+|-------------------|
+| [**4.5.0**](#450) |
+| [4.4.0](#440)     |
+| [4.3.0](#430)     |
+| [4.2.0](#420)     |
+| [4.1.0](#410)     |
+| [4.0.2](#402)     |
+| [4.0.1](#401)     |
+| [4.0.0](#400)     |
+
+<details>
+<summary>Previous Versions</summary>
+
+| 3.x             | 2.x             |
+|-----------------|-----------------|
+| [3.10.0](#3100) | [2.8.4](#284)   |
+| [3.9.0](#390)   | [2.8.3](#283)   |
+| [3.8.0](#380)   | [2.8.2](#282)   |
+| [3.7.2](#372)   | [2.8.1](#281)   |
+| [3.7.1](#371)   | [2.8.0](#280)   |
+| [3.7.0](#370)   | [2.7.4](#274)   |
+| [3.6.0](#360)   | [2.7.3](#273)   |
+| [3.5.0](#350)   | [2.7.2](#272)   |
+| [3.4.4](#344)   | [2.7.1](#271)   |
+| [3.4.3](#343)   | [2.7.0](#270)   |
+| [3.4.2](#342)   | [2.6.5](#265)   |
+| [3.4.1](#341)   | [2.6.4](#264)   |
+| [3.4.0](#340)   | [2.6.3](#263)   |
+| [3.3.0](#330)   | [2.6.2](#262)   |
+| [3.2.3](#323)   | [2.6.1](#261)   |
+| [3.2.2](#322)   | [2.6.0](#260)   |
+| [3.2.1](#321)   | [2.5.3](#253)   |
+| [3.2.0](#320)   | [2.5.2](#252)   |
+| [3.1.3](#313)   | [2.5.1](#251)   |
+| [3.1.2](#312)   | [2.5.0](#250)   |
+| [3.1.1](#311)   | [2.4.2](#242)   |
+| [3.1.0](#310)   | [2.4.1](#241)   |
+| [3.0.0](#300)   | [2.4.0](#240)   |
+|                 | [2.3.8](#238)   |
+|                 | [2.3.7](#237)   |
+|                 | [2.3.6](#236)   |
+|                 | [2.3.5](#235)   |
+|                 | [2.3.3](#233)   |
+|                 | [2.3.2](#232)   |
+|                 | [2.3.1](#231)   |
+|                 | [2.3.0](#230)   |
+|                 | [2.2.25](#2225) |
+|                 | [2.2.24](#2224) |
+|                 | [2.2.23](#2223) |
+|                 | [2.2.22](#2222) |
+|                 | [2.2.21](#2221) |
+|                 | [2.2.20](#2220) |
+|                 | [2.2.19](#2219) |
+|                 | [2.2.18](#2218) |
+|                 | [2.2.17](#2217) |
+|                 | [2.2.16](#2216) |
+|                 | [2.2.15](#2215) |
+|                 | [2.2.14](#2214) |
+|                 | [2.2.13](#2213) |
+|                 | [2.2.12](#2212) |
+|                 | [2.2.11](#2211) |
+|                 | [2.2.10](#2210) |
+|                 | [2.2.9](#229)   |
+|                 | [2.2.8](#228)   |
+|                 | [2.2.7](#227)   |
+|                 | [2.2.6](#226)   |
+|                 | [2.2.5](#225)   |
+|                 | [2.2.4](#224)   |
+|                 | [2.2.3](#223)   |
+|                 | [2.2.2](#222)   |
+|                 | [2.2.1](#221)   |
+|                 | [2.2.0](#220)   |
+|                 | [2.1.6](#216)   |
+|                 | [2.1.5](#215)   |
+|                 | [2.1.4](#214)   |
+|                 | [2.1.3](#213)   |
+|                 | [2.1.2](#212)   |
+|                 | [2.1.1](#211)   |
+|                 | [2.1.0](#210)   |
+|                 | [2.0.8](#208)   |
+</details>
+
+[Master Branch (unreleased)](#master-branch-unreleased)
+
+## Master Branch (unreleased)
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
 
-__BREAKING CHANGES:__
-- NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
+### BREAKING CHANGES
+- Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
+### NOTABLE CHANGES
+#### New
+- Added Parse Sever Security Check to report weak security settings. [#7247](https://github.com/parse-community/parse-server/issues/7247). Thanks to [Manuel Trezza](https://github.com/mtrezza), [dblythy](https://github.com/dblythy).
+- EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification. **Caution, this is an experimental feature that may not be appropriate for production.** [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows. **Caution, this is an experimental feature that may not be appropriate for production.** [#7231](https://github.com/parse-community/parse-server/issues/7231). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 ___
-- NEW (EXPERIMENTAL): Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification. **Caution, this is an experimental feature that may not be appropriate for production.** [#6891](https://github.com/parse-community/parse-server/issues/6891). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-- NEW (EXPERIMENTAL): Added custom routes to easily customize flows for password reset, email verification or build entirely new flows. **Caution, this is an experimental feature that may not be appropriate for production.** [#7231](https://github.com/parse-community/parse-server/issues/7231). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-- NEW: Added convenience method `Parse.Cloud.sendEmail(...)` to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
-- NEW: LiveQuery support for $and, $nor, $containedBy, $geoWithin, $geoIntersects queries [#7113](https://github.com/parse-community/parse-server/pull/7113). Thanks to [dplewis](https://github.com/dplewis)
-- NEW: Supporting patterns in LiveQuery server's config parameter `classNames` [#7131](https://github.com/parse-community/parse-server/pull/7131). Thanks to [Nes-si](https://github.com/Nes-si)
-- NEW: `requireAnyUserRoles` and `requireAllUserRoles` for Parse Cloud validator. [#7097](https://github.com/parse-community/parse-server/pull/7097). Thanks to [dblythy](https://github.com/dblythy)
-- NEW: Support Facebook Limited Login [#7219](https://github.com/parse-community/parse-server/pull/7219). Thanks to [miguel-s](https://github.com/miguel-s)
-- IMPROVE: Removed Stage name check on aggregate pipelines [#7237](https://github.com/parse-community/parse-server/pull/7237). Thanks to [BRETT71](https://github.com/BRETT71)
-- IMPROVE: Retry transactions on MongoDB when it fails due to transient error [#7187](https://github.com/parse-community/parse-server/pull/7187). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
-- IMPROVE: Bump tests to use Mongo 4.4.4 [#7184](https://github.com/parse-community/parse-server/pull/7184). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
-- IMPROVE: Added new account lockout policy option `accountLockout.unlockOnPasswordReset` to automatically unlock account on password reset. [#7146](https://github.com/parse-community/parse-server/pull/7146). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-- IMPROVE: Parse Server is from now on continuously tested against all recent MongoDB versions that have not reached their end-of-life support date. Added MongoDB compatibility table to Parse Server docs. [7161](https://github.com/parse-community/parse-server/pull/7161). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-- IMPROVE: Parse Server is from now on continuously tested against all recent Node.js versions that have not reached their end-of-life support date. [7161](https://github.com/parse-community/parse-server/pull/7177). Thanks to [Manuel Trezza](https://github.com/mtrezza).
-- IMPROVE: Throw error on invalid Cloud Function validation configuration. [#7154](https://github.com/parse-community/parse-server/pull/7154). Thanks to [dblythy](https://github.com/dblythy)
-- IMPROVE: Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy)
-- IMPROVE: Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
-- IMPROVE: Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
-- IMPROVE: Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy)
-- IMPROVE: Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy)
-- FIX: Fix error when a not yet inserted job is updated [#7196](https://github.com/parse-community/parse-server/pull/7196). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
-- FIX: request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
-- FIX: Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
-- FIX: Move graphql-tag from devDependencies to dependencies. [7183](https://github.com/parse-community/parse-server/pull/7183). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+### OTHER COMMITS
+#### New
+- Added convenience method `Parse.Cloud.sendEmail(...)` to send email via email adapter in Cloud Code. [#7089](https://github.com/parse-community/parse-server/pull/7089). Thanks to [dblythy](https://github.com/dblythy)
+- LiveQuery support for $and, $nor, $containedBy, $geoWithin, $geoIntersects queries [#7113](https://github.com/parse-community/parse-server/pull/7113). Thanks to [dplewis](https://github.com/dplewis)
+- Supporting patterns in LiveQuery server's config parameter `classNames` [#7131](https://github.com/parse-community/parse-server/pull/7131). Thanks to [Nes-si](https://github.com/Nes-si)
+- Added `requireAnyUserRoles` and `requireAllUserRoles` for Parse Cloud validator. [#7097](https://github.com/parse-community/parse-server/pull/7097). Thanks to [dblythy](https://github.com/dblythy)
+- Support Facebook Limited Login [#7219](https://github.com/parse-community/parse-server/pull/7219). Thanks to [miguel-s](https://github.com/miguel-s)
+#### Improvement
+- Removed Stage name check on aggregate pipelines [#7237](https://github.com/parse-community/parse-server/pull/7237). Thanks to [BRETT71](https://github.com/BRETT71)
+- Retry transactions on MongoDB when it fails due to transient error [#7187](https://github.com/parse-community/parse-server/pull/7187). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- Bump tests to use Mongo 4.4.4 [#7184](https://github.com/parse-community/parse-server/pull/7184). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- Added new account lockout policy option `accountLockout.unlockOnPasswordReset` to automatically unlock account on password reset. [#7146](https://github.com/parse-community/parse-server/pull/7146). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- Parse Server is from now on continuously tested against all recent MongoDB versions that have not reached their end-of-life support date. Added MongoDB compatibility table to Parse Server docs. [7161](https://github.com/parse-community/parse-server/pull/7161). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- Parse Server is from now on continuously tested against all recent Node.js versions that have not reached their end-of-life support date. [7161](https://github.com/parse-community/parse-server/pull/7177). Thanks to [Manuel Trezza](https://github.com/mtrezza).
+- Throw error on invalid Cloud Function validation configuration. [#7154](https://github.com/parse-community/parse-server/pull/7154). Thanks to [dblythy](https://github.com/dblythy)
+- Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy)
+- Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
+- Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
+- Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy).
+#### Fix
+- Fix error when a not yet inserted job is updated [#7196](https://github.com/parse-community/parse-server/pull/7196). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
+- request.context for afterFind triggers. [#7078](https://github.com/parse-community/parse-server/pull/7078). Thanks to [dblythy](https://github.com/dblythy)
+- Winston Logger interpolating stdout to console [#7114](https://github.com/parse-community/parse-server/pull/7114). Thanks to [dplewis](https://github.com/dplewis)
+- Move graphql-tag from devDependencies to dependencies. [7183](https://github.com/parse-community/parse-server/pull/7183). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo).
 
-### 4.5.0
+## 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
 
 __BREAKING CHANGES:__
@@ -61,7 +144,7 @@ ___
 - FIX: Add encryptionKey to src/options/index.js. [#6999](https://github.com/parse-community/parse-server/pull/6999). Thanks to [dblythy](https://github.com/dblythy).
 - IMPROVE: Update PostgresStorageAdapter.js. [#6989](https://github.com/parse-community/parse-server/pull/6989). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t).
 
-### 4.4.0
+## 4.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.3.0...4.4.0)
 - IMPROVE: Update PostgresStorageAdapter.js. [#6981](https://github.com/parse-community/parse-server/pull/6981). Thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
 - NEW: skipWithMasterKey on Built-In Validator. [#6972](https://github.com/parse-community/parse-server/issues/6972). Thanks to [dblythy](https://github.com/dblythy).
@@ -96,7 +179,7 @@ ___
 - IMPROVE: Optimized deletion of class field from schema by using an index if available to do an index scan instead of a collection scan. [#6815](https://github.com/parse-community/parse-server/issues/6815). Thanks to [Manuel Trezza](https://github.com/mtrezza).
 - IMPROVE: Enable MongoDB transaction test for MongoDB >= 4.0.4 [#6827](https://github.com/parse-community/parse-server/pull/6827). Thanks to [Manuel](https://github.com/mtrezza).
 
-### 4.3.0
+## 4.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...4.3.0)
 - PERFORMANCE: Optimizing pointer CLP query decoration done by DatabaseController#addPointerPermissions [#6747](https://github.com/parse-community/parse-server/pull/6747). Thanks to [mess-lelouch](https://github.com/mess-lelouch).
 - SECURITY: Fix security breach on GraphQL viewer [78239ac](https://github.com/parse-community/parse-server/commit/78239ac9071167fdf243c55ae4bc9a2c0b0d89aa), [secuity advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-236h-rqv8-8q73). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
@@ -135,7 +218,7 @@ ___
 - FIX: Fix Postgres group aggregation [#6522](https://github.com/parse-community/parse-server/pull/6522). Thanks to [Siddharth Ramesh](https://github.com/srameshr).
 - NEW: Allow set user mapped from JWT directly on request [#6411](https://github.com/parse-community/parse-server/pull/6411). Thanks to [Gordon Sun](https://github.com/sunshineo).
 
-### 4.2.0
+## 4.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.1.0...4.2.0)
 
 __BREAKING CHANGES:__
@@ -165,13 +248,13 @@ ___
 - NEW: Case insensitive username and email indexing and query planning for Postgres [#6506](https://github.com/parse-community/parse-server/issues/6441). Thanks to
 [Corey Baker](https://github.com/cbaker6).
 
-### 4.1.0
+## 4.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.2...4.1.0)
 
 _SECURITY RELEASE_: see [advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-h4mf-75hf-67w4) for details
 - SECURITY FIX: Patch Regex vulnerabilities. See [3a3a5ee](https://github.com/parse-community/parse-server/commit/3a3a5eee5ffa48da1352423312cb767de14de269). Special thanks to [W0lfw00d](https://github.com/W0lfw00d) for identifying and [responsibly reporting](https://github.com/parse-community/parse-server/blob/master/SECURITY.md) the vulnerability. Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo) for the speedy fix.
 
-### 4.0.2
+## 4.0.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.1...4.0.2)
 
 __BREAKING CHANGES:__
@@ -188,12 +271,12 @@ __BREAKING CHANGES:__
 
 - FIX: attempt to get travis to deploy to npmjs again. See [#6475](https://github.com/parse-community/parse-server/pull/6457). Thanks to [Arthur Cinader](https://github.com/acinader).
 
-### 4.0.1
+## 4.0.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.0.0...4.0.1)
 - FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
 - FIX: Better message on not allowed to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 
-### 4.0
+## 4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 
 > __Special Note on Upgrading to Parse Server 4.0.0 and above__
@@ -221,7 +304,7 @@ __BREAKING CHANGES:__
 - NEW: Allow true GraphQL Schema Customization. [#6360](https://github.com/parse-community/parse-server/pull/6360). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
 - __BREAKING CHANGE__: Remove Support for Mongo version < 3.6 [#6445](https://github.com/parse-community/parse-server/pull/6445). Thanks to [Arthur Cinader](https://github.com/acinader)
 
-### 3.10.0
+## 3.10.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.9.0...3.10.0)
 - FIX: correct and cover ordering queries in GraphQL [#6316](https://github.com/parse-community/parse-server/pull/6316).  Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - NEW: GraphQL support for reset password email [#6301](https://github.com/parse-community/parse-server/pull/6301). Thanks to [Antoine Cormouls](https://github.com/Moumouls)
@@ -268,7 +351,7 @@ __BREAKING CHANGES:__
 - NEW: Use #!/bin/bash instead of #!/bin/sh [#6062](https://github.com/parse-community/parse-server/pull/6062). Thanks to [Julian Dax](https://github.com/brodo)
 - DOC: Update GraphQL readme section [#6030](https://github.com/parse-community/parse-server/pull/6030). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
-### 3.9.0
+## 3.9.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.8.0...3.9.0)
 - NEW: Add allowHeaders to Options [#6044](https://github.com/parse-community/parse-server/pull/6044). Thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
 - CHANGE: Introduce ReadOptionsInput to GraphQL API [#6030](https://github.com/parse-community/parse-server/pull/6030). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
@@ -288,7 +371,7 @@ __BREAKING CHANGES:__
 - FIX: Fix beforeLogin trigger when user has a file [#6001](https://github.com/parse-community/parse-server/pull/6001). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - DOC: Update GraphQL Docs with the latest changes [#5980](https://github.com/parse-community/parse-server/pull/5980). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
-### 3.8.0
+## 3.8.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.2...3.8.0)
 - NEW:  Protected fields pointer-permissions support [#5951](https://github.com/parse-community/parse-server/pull/5951).  Thanks to [Dobbias Nan](https://github.com/Dobbias)
 - NEW: GraphQL DX: Relation/Pointer [#5946](https://github.com/parse-community/parse-server/pull/5946).  Thanks to [Antoine Cormouls](https://github.com/Moumouls)
@@ -322,22 +405,22 @@ __BREAKING CHANGES:__
 - FIX: Transaction was aborting before all promises have either resolved or rejected [#5878](https://github.com/parse-community/parse-server/pull/5878). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - NEW: Use transactions for batch operation [#5849](https://github.com/parse-community/parse-server/pull/5849). Thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 
-#### Breaking Changes:
+### Breaking Changes
 - If you are running Parse Server on top of a MongoDB deployment which does not fit the [Retryable Writes Requirements](https://docs.mongodb.com/manual/core/retryable-writes/#prerequisites), you will have to add `retryWrites=false` to your connection string in order to upgrade to Parse Server 3.8.
 
-### 3.7.2
+## 3.7.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.1...3.7.2)
 
 - FIX: Live Query was failing on release 3.7.1
 
-### 3.7.1
+## 3.7.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.7.0...3.7.1)
 
 - FIX: Missing APN module
 - FIX: Set falsy values as default to schema fields [#5868](https://github.com/parse-community/parse-server/pull/5868), thanks to [Lucas Alencar](https://github.com/alencarlucas)
 - NEW: Implement WebSocketServer Adapter [#5866](https://github.com/parse-community/parse-server/pull/5866), thanks to [Diamond Lewis](https://github.com/dplewis)
 
-### 3.7.0
+## 3.7.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.6.0...3.7.0)
 
 - FIX: Prevent linkWith sessionToken from generating new session [#5801](https://github.com/parse-community/parse-server/pull/5801), thanks to [Diamond Lewis](https://github.com/dplewis)
@@ -356,7 +439,7 @@ __BREAKING CHANGES:__
 - NEW: Support PhantAuth authentication [#5850](https://github.com/parse-community/parse-server/pull/5850), thanks to [Ivan SZKIBA](https://github.com/szkiba)
 - FIX: Remove uws package [#5860](https://github.com/parse-community/parse-server/pull/5860), thanks to [Zeal Murapa](https://github.com/GoGross)
 
-### 3.6.0
+## 3.6.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.5.0...3.6.0)
 
 - SECURITY FIX: Address [Security Advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-8w3j-g983-8jh5) of a potential [Enumeration Attack](https://www.owasp.org/index.php/Testing_for_User_Enumeration_and_Guessable_User_Account_(OWASP-AT-002)#Description_of_the_Issue) [73b0f9a](https://github.com/parse-community/parse-server/commit/73b0f9a339b81f5d757725dc557955a7b670a3ec), big thanks to [Fabian Strachanski](https://github.com/fastrde) for identifying the problem, creating a fix and following the [vulnerability disclosure guidelines](https://github.com/parse-community/parse-server/blob/master/SECURITY.md#parse-community-vulnerability-disclosure-program)
@@ -364,7 +447,7 @@ __BREAKING CHANGES:__
 - FIX: LiveQuery create event with fields [#5790](https://github.com/parse-community/parse-server/pull/5790), thanks to [Diamond Lewis](https://github.com/dplewis)
 - FIX: Generate sessionToken with linkWith [#5799](https://github.com/parse-community/parse-server/pull/5799), thanks to [Diamond Lewis](https://github.com/dplewis)
 
-### 3.5.0
+## 3.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.4...3.5.0)
 
 - NEW: GraphQL Support [#5674](https://github.com/parse-community/parse-server/pull/5674), thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
@@ -376,27 +459,27 @@ __BREAKING CHANGES:__
 - NEW: Postgres: Regex support foreign characters [#5598](https://github.com/parse-community/parse-server/pull/5598), thanks to [Jeff Gu Kang](https://github.com/JeffGuKang)
 - FIX: Winston Logger string interpolation [#5729](https://github.com/parse-community/parse-server/pull/5729), thanks to [Diamond Lewis](https://github.com/dplewis)
 
-### 3.4.4
+## 3.4.4
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.3...3.4.4)
 
 Fix: Commit changes
 
-### 3.4.3
+## 3.4.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.2...3.4.3)
 
 Fix: Use changes in master to travis configuration to enable pushing to npm and gh_pages.  See diff for details.
 
-### 3.4.2
+## 3.4.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.1...3.4.2)
 
 Fix: In my haste to get a [Security Fix](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) out, I added [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5) to master instead of to 3.4.1.  This commit fixes that.  [Arthur Cinader](https://github.com/acinader)
 
-### 3.4.1
+## 3.4.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.4.0...3.4.1)
 
 Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-community/parse-server/security/advisories/GHSA-2479-qvv7-47qq) for details [8709daf](https://github.com/parse-community/parse-server/commit/8709daf698ea69b59268cb66f0f7cee75b52daa5). Big thanks to: [Benjamin Simonsson](https://github.com/BenniPlejd) for identifying the issue and promptly bringing it to the Parse Community's attention and also big thanks to the indefatigable [Diamond Lewis](https://github.com/dplewis) for crafting a failing test and then a solution within an hour of the report.
 
-### 3.4.0
+## 3.4.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.3.0...3.4.0)
 - NEW: Aggregate supports group by date fields [#5538](https://github.com/parse-community/parse-server/pull/5538) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
 - NEW: API for Read Preferences [#3963](https://github.com/parse-community/parse-server/pull/3963) thanks to [Antonio Davi Macedo Coelho de Castro](https://github.com/davimacedo)
@@ -410,7 +493,7 @@ Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-commun
 - FIX: Decode Date JSON value in LiveQuery. [#5540](https://github.com/parse-community/parse-server/pull/5540), thanks to [ananfang](https://github.com/ananfang)
 
 
-### 3.3.0
+## 3.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.3...3.3.0)
 - NEW: beforeLogin trigger with support for auth providers ([#5445](https://github.com/parse-community/parse-server/pull/5445)), thanks to [Omair Vaiyani](https://github.com/omairvaiyani)
 - NEW: RFC 7662 compliant OAuth2 auth adapter ([#4910](https://github.com/parse-community/parse-server/pull/4910)), thanks to [Müller Zsolt](https://github.com/zsmuller)
@@ -419,21 +502,21 @@ Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-commun
 - FIX: using per-key basis queue ([#5420](https://github.com/parse-community/parse-server/pull/5420)), thanks to [Georges Jamous](https://github.com/georgesjamous)
 - FIX: issue on count with Geo constraints and mongo ([#5286](https://github.com/parse-community/parse-server/pull/5286)), thanks to [Julien Quéré](https://github.com/jlnquere)
 
-### 3.2.3
+## 3.2.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.2...3.2.3)
 - Correct previous release with patch that is fully merged
 
-### 3.2.2
+## 3.2.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.1...3.2.2)
 - Security fix to properly process userSensitiveFields when parse-server is started with
   ../lib/cli/parse-server [#5463](https://github.com/parse-community/parse-server/pull/5463
   )
 
-### 3.2.1
+## 3.2.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.2.0...3.2.1)
 - Increment package.json version to match the deployment tag
 
-### 3.2.0
+## 3.2.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.3...3.2.0)
 - NEW: Support accessing sensitive fields with an explicit ACL.  Not documented yet, see [tests](https://github.com/parse-community/parse-server/blob/f2c332ea6a984808ad5b2e3ce34864a20724f72b/spec/UserPII.spec.js#L526) for examples
 - Upgrade Parse SDK JS to 2.3.1 [#5457](https://github.com/parse-community/parse-server/pull/5457)
@@ -445,7 +528,7 @@ Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-commun
 - Fixes issue when querying user roles [#5276](https://github.com/parse-community/parse-server/pull/5276)
 - Fixes issue affecting update with CLP [#5269](https://github.com/parse-community/parse-server/pull/5269)
 
-### 3.1.3
+## 3.1.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.2...3.1.3)
 
 - Postgres: Fixes support for global configuration
@@ -456,66 +539,66 @@ Security Fix: see Advisory: [GHSA-2479-qvv7-47q](https://github.com/parse-commun
 - Docker: Reduces the size of the docker image to 154Mb
 
 
-### 3.1.2
+## 3.1.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.1...3.1.2)
 
 - Removes dev script, use TDD instead of server.
 - Removes nodemon and problematic dependencies.
 - Addressed event-stream security debacle.
 
-### 3.1.1
+## 3.1.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.1.0...3.1.1)
 
-#### Improvements:
+### Improvements:
 * Fixes issue that would prevent users with large number of roles to resolve all of them [Antoine Cormouls](https://github.com/Moumouls) (#5131, #5132)
 * Fixes distinct query on special fields ([#5144](https://github.com/parse-community/parse-server/pull/5144))
 
 
-### 3.1.0
+## 3.1.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.0.0...3.1.0)
 
-#### Breaking Changes:
+### Breaking Changes:
 * Return success on sendPasswordResetEmail even if email not found. (#7fe4030)
-#### Security Fix:
+### Security Fix:
 * Expire password reset tokens on email change (#5104)
-#### Improvements:
+### Improvements:
 * Live Query CLPs (#4387)
 * Reduces number of calls to injectDefaultSchema (#5107)
 * Remove runtime dependency on request (#5076)
-#### Bug fixes:
+### Bug fixes:
 * Fixes issue with vkontatke authentication (#4977)
 * Use the correct function when validating google auth tokens (#5018)
 * fix unexpected 'delete' trigger issue on LiveQuery (#5031)
 * Improves performance for roles and ACL's in live query server (#5126)
 
 
-### 3.0.0
+## 3.0.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.4...3.0.0)
 
 `parse-server` 3.0.0 comes with brand new handlers for cloud code. It now fully supports promises and async / await.
 For more informations, visit the v3.0.0 [migration guide](https://github.com/parse-community/parse-server/blob/master/3.0.0.md).
 
-#### Breaking changes:
+### Breaking changes:
 * Cloud Code handlers have a new interface based on promises.
 * response.success / response.error are removed in Cloud Code
 * Cloud Code runs with Parse-SDK 2.0
 * The aggregate now require aggregates to be passed in the form: `{"pipeline": [...]}` (REST Only)
 
-#### Improvements:
+### Improvements:
 * Adds Pipeline Operator to Aggregate Router.
 * Adds documentations for parse-server's adapters, constructors and more.
 * Adds ability to pass a context object between `beforeSave` and `afterSave` affecting the same object.
 
-#### Bug Fixes:
+### Bug Fixes:
 * Fixes issue that would crash the server when mongo objects had undefined values [#4966](https://github.com/parse-community/parse-server/issues/4966)
 * Fixes issue that prevented ACL's from being used with `select` (see [#571](https://github.com/parse-community/Parse-SDK-JS/issues/571))
 
-#### Dependency updates:
+### Dependency updates:
 * [@parse/simple-mailgun-adapter@1.1.0](https://www.npmjs.com/package/@parse/simple-mailgun-adapter)
 * [mongodb@3.1.3](https://www.npmjs.com/package/mongodb)
 * [request@2.88.0](https://www.npmjs.com/package/request)
 
-##### Devevelopment Dependencies Updates:
+### Devevelopment Dependencies Updates:
 * [@parse/minami@1.0.0](https://www.npmjs.com/package/@parse/minami)
 * [deep-diff@1.0.2](https://www.npmjs.com/package/deep-diff)
 * [flow-bin@0.79.0](https://www.npmjs.com/package/flow-bin)
