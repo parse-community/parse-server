@@ -271,7 +271,7 @@ __BREAKING CHANGES:__
 - FIX: correct 'new' travis config to properly deploy.  See [#6452](https://github.com/parse-community/parse-server/pull/6452). Thanks to [Arthur Cinader](https://github.com/acinader).
 - FIX: Better message on not allowed to protect default fields. See [#6439](https://github.com/parse-community/parse-server/pull/6439).Thanks to [Old Grandpa](https://github.com/BufferUnderflower)
 
-## 4.0
+## 4.0.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/3.10.0...4.0.0)
 
 > __Special Note on Upgrading to Parse Server 4.0.0 and above__
