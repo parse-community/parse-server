@@ -1,6 +1,8 @@
 # Parse Server Changelog
 ## Current Major Version
 
+Jump directly to a version:
+
 | 4.x               |
 |-------------------|
 | [**4.5.0**](#450) |
@@ -84,11 +86,9 @@
 |                 | [2.0.8](#208)   |
 </details>
 
-[Master Branch (unreleased)](#master-branch-unreleased)
-
-## Master Branch (unreleased)
+___
+## Unreleased (Master Branch)
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.5.0...master)
-
 ### Breaking Changes
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
 ### Notable Changes
@@ -117,7 +117,7 @@
 - Optimize queries on classes with pointer permissions. [#7061](https://github.com/parse-community/parse-server/pull/7061). Thanks to [Pedro Diaz](https://github.com/pdiaz)
 - Parse Server will from now on be continuously tested against all relevant Postgres versions (minor versions). Added Postgres compatibility table to Parse Server docs. [#7176](https://github.com/parse-community/parse-server/pull/7176). Thanks to [Corey Baker](https://github.com/cbaker6).
 - Allow Cloud Validator `options` to be async [#7155](https://github.com/parse-community/parse-server/pull/7155). Thanks to [dblythy](https://github.com/dblythy).
-
+___
 ## 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
 ### Breaking Changes
