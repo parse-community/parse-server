@@ -91,7 +91,7 @@ ___
 ### Breaking Changes
 - Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html) (dblythy, Manuel Trezza) [#7071](https://github.com/parse-community/parse-server/pull/7071)
 ### Notable Changes
-- Added Parse Sever Security Check to report weak security settings (Manuel Trezza, dblythy) [#7247](https://github.com/parse-community/parse-server/issues/7247)
+- Added Parse Server Security Check to report weak security settings (Manuel Trezza, dblythy) [#7247](https://github.com/parse-community/parse-server/issues/7247)
 - EXPERIMENTAL: Added new page router with placeholder rendering and localization of custom and feature pages such as password reset and email verification (Manuel Trezza) [#6891](https://github.com/parse-community/parse-server/issues/6891)
 - EXPERIMENTAL: Added custom routes to easily customize flows for password reset, email verification or build entirely new flows (Manuel Trezza) [#7231](https://github.com/parse-community/parse-server/issues/7231)
 ### Other Commits
@@ -114,7 +114,6 @@ ___
 - Allow Cloud Validator `options` to be async (dblythy) [#7155](https://github.com/parse-community/parse-server/pull/7155)
 - Optimize queries on classes with pointer permissions (Pedro Diaz) [#7061](https://github.com/parse-community/parse-server/pull/7061)
 - Test Parse Server continuously against all relevant Postgres versions (minor versions), added Postgres compatibility table to Parse Server docs (Corey Baker) [#7176](https://github.com/parse-community/parse-server/pull/7176)
-- Allow Cloud Validator `options` to be async (dblythy) [#7155](https://github.com/parse-community/parse-server/pull/7155)
 ___
 ## 4.5.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.4.0...4.5.0)
@@ -175,7 +174,7 @@ ___
 ## 4.3.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/4.2.0...4.3.0)
 - PERFORMANCE: Optimizing pointer CLP query decoration done by DatabaseController#addPointerPermissions [#6747](https://github.com/parse-community/parse-server/pull/6747). Thanks to [mess-lelouch](https://github.com/mess-lelouch).
-- SECURITY: Fix security breach on GraphQL viewer [78239ac](https://github.com/parse-community/parse-server/commit/78239ac9071167fdf243c55ae4bc9a2c0b0d89aa), [secuity advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-236h-rqv8-8q73). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
+- SECURITY: Fix security breach on GraphQL viewer [78239ac](https://github.com/parse-community/parse-server/commit/78239ac9071167fdf243c55ae4bc9a2c0b0d89aa), [security advisory](https://github.com/parse-community/parse-server/security/advisories/GHSA-236h-rqv8-8q73). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
 - FIX: Save context not present if direct access enabled [#6764](https://github.com/parse-community/parse-server/pull/6764). Thanks to [Omair Vaiyani](https://github.com/omairvaiyani).
 - NEW: Before Connect + Before Subscribe [#6793](https://github.com/parse-community/parse-server/pull/6793). Thanks to [dblythy](https://github.com/dblythy).
 - FIX: Add version to playground to fix CDN [#6804](https://github.com/parse-community/parse-server/pull/6804). Thanks to [Antoine Cormouls](https://github.com/Moumouls).
@@ -591,7 +590,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * [mongodb@3.1.3](https://www.npmjs.com/package/mongodb)
 * [request@2.88.0](https://www.npmjs.com/package/request)
 
-### Devevelopment Dependencies Updates:
+### Development Dependencies Updates:
 * [@parse/minami@1.0.0](https://www.npmjs.com/package/@parse/minami)
 * [deep-diff@1.0.2](https://www.npmjs.com/package/deep-diff)
 * [flow-bin@0.79.0](https://www.npmjs.com/package/flow-bin)
@@ -623,7 +622,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * [bcrypt@3.0.0](https://www.npmjs.com/package/bcrypt)
 * [uws@10.148.1](https://www.npmjs.com/package/uws)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [cross-env@5.2.0](https://www.npmjs.com/package/cross-env)
 * [eslint@5.0.0](https://www.npmjs.com/package/eslint)
 * [flow-bin@0.76.0](https://www.npmjs.com/package/flow-bin)
@@ -657,7 +656,7 @@ For more informations, visit the v3.0.0 [migration guide](https://github.com/par
 * [commander@2.15.1](https://www.npmjs.com/package/commander)
 * [nodemon@1.17.5](https://www.npmjs.com/package/nodemon)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [flow-bin@0.73.0](https://www.npmjs.com/package/flow-bin)
 * [cross-env@5.1.6](https://www.npmjs.com/package/cross-env)
 * [gaze@1.1.3](https://www.npmjs.com/package/gaze)
@@ -705,7 +704,7 @@ Ensure all the files are properly exported to the final package.
 * [bcrypt@2.0.1](https://www.npmjs.com/package/bcrypt)
 * [ws@5.1.1](https://www.npmjs.com/package/ws)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [cross-env@5.1.5](https://www.npmjs.com/package/cross-env)
 * [flow-bin@0.71.0](https://www.npmjs.com/package/flow-bin)
 * [deep-diff@1.0.0](https://www.npmjs.com/package/deep-diff)
@@ -751,7 +750,7 @@ Ensure all the files are properly exported to the final package.
 * [mongodb@3.0.4](https://www.npmjs.com/package/mongodb)
 * [lodash@4.17.5](https://www.npmjs.com/package/lodash)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [cross-env@5.1.4](https://www.npmjs.com/package/cross-env)
 * [flow-bin@0.67.1](https://www.npmjs.com/package/flow-bin)
 * [jasmine@3.1.0](https://www.npmjs.com/package/jasmine)
@@ -785,7 +784,7 @@ Ensure all the files are properly exported to the final package.
 * [mime@2.2.0](https://www.npmjs.com/package/mime)
 * [parse@1.11.0](https://www.npmjs.com/package/parse)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [nodemon@1.14.11](https://www.npmjs.com/package/nodemon)
 * [flow-bin@0.64.0](https://www.npmjs.com/package/flow-bin)
 * [jasmine@2.9.0](https://www.npmjs.com/package/jasmine)
@@ -831,7 +830,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [parse@1.10.2](https://www.npmjs.com/package/parse)
 * [pg-promise@7.3.1](https://www.npmjs.com/package/pg-promise)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [cross-env@5.1.1](https://www.npmjs.com/package/cross-env)
 
 
@@ -875,7 +874,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [mime@1.4.1](https://www.npmjs.com/package/mime)
 * [parse-server-simple-mailgun-adapter@1.0.1](https://www.npmjs.com/package/parse-server-simple-mailgun-adapter)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [babel-preset-env@1.6.1](https://www.npmjs.com/package/babel-preset-env)
 * [cross-env@5.1.0](https://www.npmjs.com/package/cross-env)
 * [mongodb-runner@3.6.1](https://www.npmjs.com/package/mongodb-runner)
@@ -908,7 +907,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [request@2.83.0](https://www.npmjs.com/package/request)
 * [body-parser@1.18.2](https://www.npmjs.com/package/body-parser)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [request-promise@4.2.2](https://www.npmjs.com/package/request-promise)
 * [eslint@4.7.1](https://www.npmjs.com/package/eslint)
 
@@ -931,7 +930,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [winston-daily-rotate-file@1.5.0](https://www.npmjs.com/package/winston-daily-rotate-file)
 * [body-parser@1.18.1](https://www.npmjs.com/package/body-parser)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [nodemon@1.12.1](https://www.npmjs.com/package/nodemon)
 * [mongodb-runner@3.6.0](https://www.npmjs.com/package/mongodb-runner)
 * [babel-eslint@8.0.0](https://www.npmjs.com/package/babel-eslint)
@@ -962,7 +961,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [body-parser@1.18.0](https://www.npmjs.com/package/body-parser)
 * [nodemon@1.11.1](https://www.npmjs.com/package/nodemon)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [babel-cli@6.26.0](https://www.npmjs.com/package/babel-cli)
 
 ### 2.6.0
@@ -997,7 +996,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [pg-promise@6.3.1](https://www.npmjs.com/package/pg-promise)
 * [commander@2.11.0](https://www.npmjs.com/package/commander)
 
-##### Devevelopment Dependencies Updates:
+##### Development Dependencies Updates:
 * [jasmine@2.8.0](https://www.npmjs.com/package/jasmine)
 * [babel-register@6.26.0](https://www.npmjs.com/package/babel-register)
 * [babel-core@6.26.0](https://www.npmjs.com/package/babel-core)
@@ -1066,7 +1065,7 @@ Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update
 * [lru-cache@4.1.0](https://www.npmjs.com/package/lru-cache)
 * [mongodb@2.2.28](https://www.npmjs.com/package/mongodb)
 
-##### Devevelopment dependencies
+##### Development dependencies
 * [babel-core@6.25.0](https://www.npmjs.com/package/babel-core)
 * [cross-env@5.0.1](https://www.npmjs.com/package/cross-env)
 * [nyc@11.0.2](https://www.npmjs.com/package/nyc)
@@ -1140,7 +1139,7 @@ If you experience issues with older versions, please [open a issue](https://gith
 * [pg-promise@5.7.0](https://www.npmjs.com/package/pg-promise)
 * [semver@5.3.0](https://www.npmjs.com/package/semver)
 
-##### Devevelopment dependencies
+##### Development dependencies
 * [babel-cli@6.24.1](https://www.npmjs.com/package/babel-cli)
 * [babel-core@6.24.1](https://www.npmjs.com/package/babel-core)
 * [babel-preset-es2015@6.24.1](https://www.npmjs.com/package/babel-preset-es2015)
