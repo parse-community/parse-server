@@ -852,9 +852,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   async setClassLevelPermissions(className: string, CLPs: any) {
-    const self = this;
     await this._client.task('set-class-level-permissions', async t => {
-      await self._ensureSchemaCollectionExists(t);
       const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
       await t.none(
         `UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1`,
@@ -917,7 +915,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
       if (deletedIndexes.length > 0) {
         await self.dropIndexes(className, deletedIndexes, t);
       }
-      await self._ensureSchemaCollectionExists(t);
       await t.none(
         'UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className" = $1',
         [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
@@ -948,7 +945,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Just create a table, do not insert in schema
   async createTable(className: string, schema: SchemaType, conn: any) {
     conn = conn || this._client;
-    const self = this;
     debug('createTable', className, schema);
     const valuesArray = [];
     const patternsArray = [];
@@ -990,7 +986,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug(qs, values);
     return conn.task('create-table', async t => {
       try {
-        await self._ensureSchemaCollectionExists(t);
         await t.none(qs, values);
       } catch (error) {
         if (error.code !== PostgresDuplicateRelationError) {
@@ -1185,9 +1180,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   async getAllClasses() {
-    const self = this;
     return this._client.task('get-all-classes', async t => {
-      await self._ensureSchemaCollectionExists(t);
       return await t.map('SELECT * FROM "_SCHEMA"', null, row =>
         toParseSchema({ className: row.className, ...row.schema })
       );
@@ -2244,6 +2237,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   async performInitialization({ VolatileClassesSchemas }: any) {
     // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
+    await this._ensureSchemaCollectionExists();
     const promises = VolatileClassesSchemas.map(schema => {
       return this.createTable(schema.className, schema)
         .catch(err => {

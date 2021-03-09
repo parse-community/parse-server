@@ -170,6 +170,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter
@@ -210,6 +211,7 @@ describe('miscellaneous', function () {
     const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
+      .then(() => config.database.adapter.performInitialization({ VolatileClassesSchemas: [] }))
       .then(() => config.database.adapter.createClass('_User', userSchema))
       .then(() =>
         config.database.adapter.createObject('_User', userSchema, {

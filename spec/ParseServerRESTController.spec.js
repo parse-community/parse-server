@@ -2,7 +2,6 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
   .ParseServerRESTController;
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
-const TestUtils = require('../lib/TestUtils');
 const semver = require('semver');
 
 let RESTController;
@@ -181,10 +180,6 @@ describe('ParseServerRESTController', () => {
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
         }
-      });
-
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
       });
 
       it('should handle a batch request with transaction = true', done => {
