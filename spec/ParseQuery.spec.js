@@ -4222,7 +4222,7 @@ describe('Parse.Query testing', () => {
     equal(result.child3.name, 'mo');
   });
 
-  it('include with [*]', async () => {
+  it('include with ["*"]', async () => {
     const child1 = new TestObject({ foo: 'bar', name: 'ac' });
     const child2 = new TestObject({ foo: 'baz', name: 'flo' });
     const child3 = new TestObject({ foo: 'bad', name: 'mo' });
