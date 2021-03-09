@@ -60,7 +60,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.keys != null) {
       options.keys = String(body.keys);
     }
-    if (body.include) {
+    if (body.include != null) {
       options.include = String(body.include);
     }
     if (body.excludeKeys != null) {
@@ -193,7 +193,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.excludeKeys != null) {
       options.excludeKeys = String(body.excludeKeys);
     }
-    if (body.include) {
+    if (body.include != null) {
       options.include = String(body.include);
     }
     if (body.includeAll) {
