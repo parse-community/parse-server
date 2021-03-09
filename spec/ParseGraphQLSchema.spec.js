@@ -53,9 +53,9 @@ describe('ParseGraphQLSchema', () => {
     it('should cache schema', async () => {
       const graphQLSchema = await parseGraphQLSchema.load();
       const updatedGraphQLSchema = await parseGraphQLSchema.load();
-      expect(graphQLSchema).toBe(updatedGraphQLSchema);
+      expect(graphQLSchema).toEqual(updatedGraphQLSchema);
       await new Promise(resolve => setTimeout(resolve, 200));
-      expect(graphQLSchema).toBe(await parseGraphQLSchema.load());
+      expect(graphQLSchema).toEqual(await parseGraphQLSchema.load());
     });
 
     it('should load a brand new GraphQL Schema if Parse Schema changes', async () => {
