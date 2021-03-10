@@ -83,16 +83,6 @@ export interface ParseServerOptions {
   /* Key for REST calls
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
-  /* Enable (or disable) the addition of OAuth 2.0
-  :ENV: PARSE_SERVER_OAUTH
-  :DEFAULT: false */
-  oauth: ?boolean;
-  /* Key for OAuth 2.0
-  :ENV: PARSE_SERVER_OAUTH_KEY */
-  oauthKey: ?string;
-  /* The TTL for Access Token
-  :DEFAULT: 1800 - 30 minutes */
-  oauthTTL: ?number;
   /* Read-only key, which has the same capabilities as MasterKey without writes */
   readOnlyMasterKey: ?string;
   /* Key sent with outgoing webhook calls */
