@@ -13,6 +13,8 @@
     - [Postgres with Docker](#postgres-with-docker)
 - [Feature Considerations](#feature-considerations)
   - [Security Checks](#security-checks)
+    - [Add Security Check](#add-security-check)
+    - [Wording Guideline](#wording-guideline)
   - [Parse Error](#parse-error)
   - [Parse Server Configuration](#parse-server-configuration)
 - [Code of Conduct](#code-of-conduct)
@@ -162,13 +164,61 @@ A security check needs to be added for every new feature or enhancement that all
 
 For example, allowing public read and write to a class may be useful to simplify development but should be disallowed in a production environment.
 
-Security checks are added in [SecurityChecks.js](https://github.com/parse-community/parse-server/blob/master/src/SecurityChecks.js).
+Security checks are added in [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups).
+
+#### Add Security Check
+Adding a new security check for your feature is easy and fast:
+1. Look into [CheckGroups](https://github.com/parse-community/parse-server/tree/master/src/Security/CheckGroups) whether there is an existing `CheckGroup[Category].js` file for the category of check to add. For example, a check regarding the database connection is added to `CheckGroupDatabase.js`.
+2. If you did not find a file, duplicate an existing file and replace the category name in `setName()` and the checks in `setChecks()`:
+    ```js
+    class CheckGroupNewCategory extends CheckGroup {
+      setName() {
+        return 'House';
+      }
+      setChecks() {
+        return [
+          new Check({
+            title: 'Door locked',
+            warning: 'Anyone can enter your house.',
+            solution: 'Lock the door.',
+            check: () => {    
+              return;     // Example of a passing check
+            }
+          }),
+          new Check({
+            title: 'Camera online',
+            warning: 'Security camera is offline.',
+            solution: 'Check the camera.',
+            check: async () => {  
+              throw 1;     // Example of a failing check
+            }
+          }),
+        ];
+      }
+    }
+    ```
+
+3. If you added a new file in the previous step, reference the file in [CheckGroups.js](https://github.com/parse-community/parse-server/blob/master/src/Security/CheckGroups/CheckGroups.js), which is the collector of all security checks:
+    ```
+    export { default as CheckGroupNewCategory } from './CheckGroupNewCategory';
+    ```
+4. Add a test that covers the new check to [SecurityCheckGroups.js](https://github.com/parse-community/parse-server/blob/master/spec/SecurityCheckGroups.js) for the cases of success and failure.
+
+#### Wording Guideline
+Consider the following when adding a new security check:
+- *Group.name*: The category name; ends without period as this is a headline.
+- *Check.title*: Is the positive hypothesis that should be checked, for example "Door locked" instead of "Door unlocked"; ends without period as this is a title.
+- *Check.warning*: The warning if the test fails; ends with period as this is a description.
+- *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
+- The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
+- The wordings should be concise and not contain verbose explanations, for example "Door locked" instead of "Door has been locked securely".
+- Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
 
 ### Parse Error
 
 Introducing new Parse Errors requires the following steps:
 
-1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, eventhough an more general Parse Error already exists.
+1. Research whether an existing Parse Error already covers the error scenario. Keep in mind that reusing an already existing Parse Error does not allow to distinguish between scenarios in which the same error is thrown, so it may be necessary to add a new and more specific Parse Error, even though a more general Parse Error already exists.
 ⚠️ Currently (as of Dec. 2020), there are inconsistencies between the Parse Errors documented in the Parse Guides, coded in the Parse JS SDK and coded in Parse Server, therefore research regarding the availability of error codes has to be conducted in all of these sources.
 1. Add the new Parse Error to [/src/ParseError.js](https://github.com/parse-community/Parse-SDK-JS/blob/master/src/ParseError.js) in the Parse JavaScript SDK. This is the primary reference for Parse Errors for the Parse JavaScript SDK and Parse Server.
 1. Create a pull request for the Parse JavaScript SDK including the new Parse Errors. The PR needs to be merged and a new Parse JS SDK version needs to be released.

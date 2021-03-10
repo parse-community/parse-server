@@ -28,6 +28,7 @@ describe('SchemaController', () => {
   afterEach(async () => {
     await config.database.schemaCache.clear();
     await TestUtils.destroyAllDataPermanently(false);
+    await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
   });
 
   it('can validate one object', done => {
