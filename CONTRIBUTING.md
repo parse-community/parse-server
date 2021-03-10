@@ -180,7 +180,7 @@ Adding a new security check for your feature is easy and fast:
           new Check({
             title: 'Door locked',
             warning: 'Anyone can enter your house.',
-            solution: 'Lock your door.',
+            solution: 'Lock the door.',
             check: () => {    
               return;     // Example of a passing check
             }
@@ -207,11 +207,11 @@ Adding a new security check for your feature is easy and fast:
 #### Wording Guideline
 Consider the following when adding a new security check:
 - *Group.name*: The category name; ends without period as this is a headline.
-- *Check.title*: Is the positive hypothesis that should be checked (for example "Door locked" instead of "Door unlocked"); ends without period as this is a title.
+- *Check.title*: Is the positive hypothesis that should be checked, for example "Door locked" instead of "Door unlocked"; ends without period as this is a title.
 - *Check.warning*: The warning if the test fails; ends with period as this is a description.
 - *Check.solution*: The recommended solution if the test fails; ends with period as this is an instruction.
 - The wordings must not contain any sensitive information such as keys, as the security report may be exposed in logs.
-- The wordings should be concise and not contain verbose explanations.
+- The wordings should be concise and not contain verbose explanations, for example "Door locked" instead of "Door has been locked securely".
 - Do not use pronouns such as "you" or "your" because log files can have various readers with different roles. Do not use pronouns such as "I" or "me" because although we love it dearly, Parse Server is not a human.
 
 ### Parse Error
