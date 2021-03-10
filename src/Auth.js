@@ -51,7 +51,7 @@ const generateRefreshToken = function () {
 };
 
 // Function to create a token JWT to authentication
-const createJWT = function (sessionToken, oauthKey, oauthTTL = 1800) {
+const createJWT = function (sessionToken, oauthKey, oauthTTL) {
   // Header
   const header = {
     alg: 'HS256',
@@ -137,7 +137,7 @@ const getAuthForSessionToken = async function ({
   cacheController = cacheController || (config && config.cacheController);
   if (cacheController) {
     // Check if you use OAuth to retrieve the sessionToken from within the JWT
-    if (config.oauth === true) {
+    if (config.oauth20 === true) {
       if (validJWT(sessionToken, config.oauthKey) === false) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
@@ -405,7 +405,7 @@ const createSession = function (
 
   // Check if you use OAuth to retrieve the sessionToken from within the JWT
   // Generate a random hash
-  if (config.oauth === true) {
+  if (config.oauth20 === true) {
     sessionData.refreshToken = generateRefreshToken();
   }
 

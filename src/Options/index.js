@@ -84,13 +84,14 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
   /* Enable (or disable) the addition of OAuth 2.0
-  :ENV: PARSE_SERVER_OAUTH
+  :ENV: PARSE_SERVER_OAUTH_20
   :DEFAULT: false */
-  oauth: ?boolean;
+  oauth20: ?boolean;
   /* Key for OAuth 2.0
   :ENV: PARSE_SERVER_OAUTH_KEY */
   oauthKey: ?string;
   /* The TTL for Access Token
+  :ENV: PARSE_SERVER_OAUTH_TTL
   :DEFAULT: 1800 - 30 minutes */
   oauthTTL: ?number;
   /* Read-only key, which has the same capabilities as MasterKey without writes */

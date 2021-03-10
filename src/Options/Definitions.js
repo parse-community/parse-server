@@ -353,8 +353,8 @@ module.exports.ParseServerOptions = {
     env: 'PARSE_SERVER_REST_API_KEY',
     help: 'Key for REST calls',
   },
-  oauth: {
-    env: 'PARSE_SERVER_OAUTH',
+  oauth20: {
+    env: 'PARSE_SERVER_OAUTH_20',
     help: 'Sets whether to use the OAuth protocol',
     action: parsers.booleanParser,
     default: false,
@@ -364,7 +364,7 @@ module.exports.ParseServerOptions = {
     help: 'Key for OAuth protocol',
   },
   oauthTTL: {
-    env: 'PARSE_SERVER_REST_API_KEY',
+    env: 'PARSE_SERVER_OAUTH_TTL',
     help: 'The JSON Web Token (JWT) expiration TTL',
     action: parsers.numberParser('oauthTTL'),
     default: 1800,

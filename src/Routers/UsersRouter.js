@@ -150,8 +150,7 @@ export class UsersRouter extends ClassesRouter {
         req.info.context
       )
       .then(response => {
-        response.response.oauth = req.config.oauth === true ? true : false;
-        if (req.config.oauth === true) {
+        if (req.config.oauth20 === true) {
           const token = Auth.createJWT(
             response.response.sessionToken,
             req.config.oauthKey,
@@ -170,7 +169,7 @@ export class UsersRouter extends ClassesRouter {
     const { client, code } = payload;
 
     if (!client || !code) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid update token or ClientID');
     }
 
     // Consulta
@@ -187,7 +186,10 @@ export class UsersRouter extends ClassesRouter {
       )
       .then(response => {
         if (!response.results || response.results.length == 0 || !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+          throw new Parse.Error(
+            Parse.Error.INVALID_SESSION_TOKEN,
+            'Invalid update token or ClientID'
+          );
         } else {
           // Retorno
           const data = response.results[0];
@@ -261,7 +263,7 @@ export class UsersRouter extends ClassesRouter {
     const originalToken = req.info.sessionToken;
 
     // Check if you use OAuth to retrieve the sessionToken from within the JWT
-    if (req.config.oauth === true) {
+    if (req.config.oauth20 === true) {
       if (Auth.validJWT(sessionToken, req.config.oauthKey) === false) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
@@ -285,8 +287,7 @@ export class UsersRouter extends ClassesRouter {
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
-          user.oauth = req.config.oauth === true ? true : false;
-          if (req.config.oauth === true) {
+          if (req.config.oauth20 === true) {
             const decoded = Auth.decodeJWT(originalToken);
             user.accessToken = originalToken;
             user.expires_in = decoded.exp;
@@ -360,8 +361,7 @@ export class UsersRouter extends ClassesRouter {
     });
 
     // Check if you use OAuth to generate a JWT to return
-    user.oauth = req.config.oauth === true ? true : false;
-    if (req.config.oauth === true) {
+    if (req.config.oauth20 === true) {
       var signedToken = Auth.createJWT(
         sessionData.sessionToken,
         req.config.oauthKey,
@@ -408,7 +408,7 @@ export class UsersRouter extends ClassesRouter {
     const success = { response: {} };
     if (req.info && req.info.sessionToken) {
       // Check if you use OAuth to retrieve the sessionToken from within the JWT
-      if (req.config.oauth === true) {
+      if (req.config.oauth20 === true) {
         const decoded = Auth.decodeJWT(req.info.sessionToken);
         req.info.sessionToken = decoded.sub;
       }
