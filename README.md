@@ -58,6 +58,10 @@ The full documentation for Parse Server is available in the [wiki](https://githu
   - [Basic Options](#basic-options)
   - [Client Key Options](#client-key-options)
   - [Email Verification and Password Reset](#email-verification-and-password-reset)
+  - [Custom Routes](#custom-routes)
+    - [Example](#example)
+    - [Reserved Paths](#reserved-paths)
+    - [Parameters](#parameters)
   - [Custom Pages](#custom-pages)
   - [Using Environment Variables](#using-environment-variables)
   - [Available Adapters](#available-adapters)
@@ -67,7 +71,9 @@ The full documentation for Parse Server is available in the [wiki](https://githu
     - [Pages](#pages)
       - [Localization with Directory Structure](#localization-with-directory-structure)
       - [Localization with JSON Resource](#localization-with-json-resource)
-      - [Parameters](#parameters)
+      - [Dynamic placeholders](#dynamic-placeholders)
+      - [Reserved Keys](#reserved-keys)
+      - [Parameters](#parameters-1)
   - [Logging](#logging)
 - [Live Query](#live-query)
 - [GraphQL](#graphql)
@@ -109,7 +115,7 @@ Parse Server is continuously tested with the most recent releases of Node.js to 
 | Node.js 10 | 10.24.0              | April 2021       | ✅ Fully compatible |
 | Node.js 12 | 12.21.0              | April 2022       | ✅ Fully compatible |
 | Node.js 14 | 14.16.0              | April 2023       | ✅ Fully compatible |
-| Node.js 15 | 15.10.0               | June 2021        | ✅ Fully compatible |
+| Node.js 15 | 15.11.0               | June 2021        | ✅ Fully compatible |
 
 #### MongoDB
 Parse Server is continuously tested with the most recent releases of MongoDB to ensure compatibility. We follow the [MongoDB support schedule](https://www.mongodb.com/support-policy) and only test against versions that are officially supported and have not reached their end-of-life date.
@@ -124,12 +130,12 @@ Parse Server is continuously tested with the most recent releases of MongoDB to 
 #### PostgreSQL
 Parse Server is continuously tested with the most recent releases of PostgreSQL and PostGIS to ensure compatibility. We follow the [PostGIS docker tags](https://registry.hub.docker.com/r/postgis/postgis/tags?page=1&ordering=last_updated) and only test against versions that are officially supported and have not reached their end-of-life date.
 
-| Version          | PostGIS Version | End-of-Life Date | Compatibility      |
-|------------------|-----------------|------------------|--------------------|
-| Postgres 10.x    | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
-| Postgres 11.x    | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
-| Postgres 12.x    | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
-| Postgres 13.x    | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
+| Version       | PostGIS Version | End-of-Life Date | Compatibility      |
+|---------------|-----------------|------------------|--------------------|
+| Postgres 10.x | 3.0.x, 3.1.x    | November 2022    | ✅ Fully compatible |
+| Postgres 11.x | 3.0.x, 3.1.x    | November 2023    | ✅ Fully compatible |
+| Postgres 12.x | 3.0.x, 3.1.x    | November 2024    | ✅ Fully compatible |
+| Postgres 13.x | 3.0.x, 3.1.x    | November 2025    | ✅ Fully compatible |
 
 ### Locally
 ```bash
@@ -388,6 +394,60 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
 - [parse-server-api-mail-adapter](https://www.npmjs.com/package/parse-server-api-mail-adapter)
 
+## Custom Routes
+**Caution, this is an experimental feature that may not be appropriate for production.**
+
+Custom routes allow to build user flows with webpages, similar to the existing password reset and email verification features. Custom routes are defined with the `pages` option in the Parse Server configuration:
+
+### Example
+
+```js
+const api = new ParseServer({
+  ...otherOptions,
+
+  pages: {
+    enableRouter: true, // Enables the experimental feature; required for custom routes
+    customRoutes: [{
+      method: 'GET',
+      path: 'custom_route',
+      handler: async request => {
+        // custom logic
+        // ...
+        // then, depending on the outcome, return a HTML file as response
+        return { file: 'custom_page.html' };
+      }
+    }]
+  }
+}
+```
+
+The above route can be invoked by sending a `GET` request to:
+`https://[parseServerPublicUrl]/[parseMount]/[pagesEndpoint]/[appId]/[customRoute]`
+ 
+The `handler` receives the `request` and returns a `custom_page.html` webpage from the `pages.pagesPath` directory as response. The advantage of building a custom route this way is that it automatically makes use of Parse Server's built-in capabilities, such as [page localization](#pages) and [dynamic placeholders](#dynamic-placeholders).
+
+### Reserved Paths
+The following paths are already used by Parse Server's built-in features and are therefore not available for custom routes. Custom routes with an identical combination of `path` and `method` are ignored.
+
+| Path                        | HTTP Method | Feature            |
+|-----------------------------|-------------|--------------------|
+| `verify_email`              | `GET`       | email verification |
+| `resend_verification_email` | `POST`      | email verification |
+| `choose_password`           | `GET`       | password reset     |
+| `request_password_reset`    | `GET`       | password reset     |
+| `request_password_reset`    | `POST`      | password reset     |
+
+### Parameters
+
+| Parameter                    | Optional | Type            | Default value | Example values        | Environment variable               | Description                                                                                                                                                                                                                                                  |
+|------------------------------|----------|-----------------|---------------|-----------------------|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `pages`                      | yes      | `Object`        | `undefined`   | -                     | `PARSE_SERVER_PAGES`               | The options for pages such as password reset and email verification.                                                                                                                                                                                         |
+| `pages.enableRouter`         | yes      | `Boolean`       | `false`       | -                     | `PARSE_SERVER_PAGES_ENABLE_ROUTER` | Is `true` if the pages router should be enabled; this is required for any of the pages options to take effect. **Caution, this is an experimental feature that may not be appropriate for production.**                                                      |
+| `pages.customRoutes`         | yes      | `Array`         | `[]`          | -                     | `PARSE_SERVER_PAGES_CUSTOM_ROUTES` | The custom routes. The routes are added in the order they are defined here, which has to be considered since requests traverse routes in an ordered manner. Custom routes are traversed after build-in routes such as password reset and email verification. |
+| `pages.customRoutes.method`  |          | `String`        | -             | `GET`, `POST`         | -                                  | The HTTP method of the custom route.                                                                                                                                                                                                                         |
+| `pages.customRoutes.path`    |          | `String`        | -             | `custom_page`         | -                                  | The path of the custom route. Note that the same path can used if the `method` is different, for example a path `custom_page` can have two routes, a `GET` and `POST` route, which will be invoked depending on the HTTP request method.                     |
+| `pages.customRoutes.handler` |          | `AsyncFunction` | -             | `async () => { ... }` | -                                  | The route handler that is invoked when the route matches the HTTP request. If the handler does not return a page, the request is answered with a 404 `Not found.` response.                                                                                  |
+
 ## Custom Pages
 
 It’s possible to change the default pages of the app and redirect the user to another path or domain.
@@ -471,11 +531,11 @@ let api = new ParseServer({
 ```
 ### Parameters <!-- omit in toc -->
 
-| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Parameter                  | Optional | Type            | Default value | Example values                                                                                                                                                                                                                                                              | Environment variable                          | Description                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|----------------------------|----------|-----------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `idempotencyOptions`       | yes      | `Object`        | `undefined`   |                                                                                                                                                                                                                                                                             | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_OPTIONS | Setting this enables idempotency enforcement for the specified paths.                                                                                                                                                                                                                                                                                                                                                                                |
 | `idempotencyOptions.paths` | yes      | `Array<String>` | `[]`          | `.*` (all paths, includes the examples below), <br>`functions/.*` (all functions), <br>`jobs/.*` (all jobs), <br>`classes/.*` (all classes), <br>`functions/.*` (all functions), <br>`users` (user creation / update), <br>`installations` (installation creation / update) | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_PATHS   | An array of path patterns that have to match the request path for request deduplication to be enabled. The mount path must not be included, for example to match the request path `/parse/functions/myFunction` specify the path pattern `functions/myFunction`. A trailing slash of the request path is ignored, for example the path pattern `functions/myFunction` matches both `/parse/functions/myFunction` and `/parse/functions/myFunction/`. |
-| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                               |
+| `idempotencyOptions.ttl`   | yes      | `Integer`       | `300`         | `60` (60 seconds)                                                                                                                                                                                                                                                           | PARSE_SERVER_EXPERIMENTAL_IDEMPOTENCY_TTL     | The duration in seconds after which a request record is discarded from the database. Duplicate requests due to network issues can be expected to arrive within milliseconds up to several seconds. This value must be greater than `0`.                                                                                                                                                                                                              |
 
 ### Notes <!-- omit in toc -->
 
