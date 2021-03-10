@@ -75,10 +75,10 @@ function RestQuery(
   if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
     keysForInclude = restOptions.keys;
   }
-  /*
+
   if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
     keysForInclude += ',' + restOptions.excludeKeys;
-  }*/
+  }
 
   if (keysForInclude.length > 0) {
     keysForInclude = keysForInclude
