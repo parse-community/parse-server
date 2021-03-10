@@ -139,11 +139,136 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  handleCreate(req) {
+    return rest
+      .create(
+        req.config,
+        req.auth,
+        this.className(req),
+        req.body,
+        req.info.clientSDK,
+        req.info.context
+      )
+      .then(response => {
+        response.response.oauth = req.config.oauth === true ? true : false;
+        if (req.config.oauth === true) {
+          const token = Auth.createJWT(
+            response.response.sessionToken,
+            req.config.oauthKey,
+            req.config.oauthTTL
+          );
+          response.response.accessToken = token.accessToken;
+          response.response.expires_in = token.expires_in;
+          delete response.response.sessionToken;
+        }
+        return response;
+      });
+  }
+
+  handleRefresh(req) {
+    const payload = req.body;
+    const { client, code } = payload;
+
+    if (!client || !code) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    }
+
+    // Consulta
+    const refreshToken = code;
+    return rest
+      .find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { refreshToken },
+        { include: 'user' },
+        req.info.clientSDK,
+        req.info.context
+      )
+      .then(response => {
+        if (!response.results || response.results.length == 0 || !response.results[0].user) {
+          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+        } else {
+          // Retorno
+          const data = response.results[0];
+          // Novo Code Refresh
+          const newCode = Auth.generateRefreshToken();
+          const sessionId = data.objectId;
+          const token = Auth.createJWT(data.sessionToken, req.config.oauthKey, req.config.oauthTTL);
+
+          // Atualizar o novo code
+          req.config.database.update(
+            '_Session',
+            { objectId: sessionId },
+            { refreshToken: newCode }
+          );
+
+          return {
+            response: {
+              client: client,
+              accesstoken: token.accessToken,
+              refreshToken: newCode,
+              expires_in: token.expires_in,
+            },
+          };
+        }
+      });
+  }
+
+  handleRevoke(req) {
+    const payload = req.body;
+    const { code } = payload;
+    const success = { response: {} };
+
+    if (!code) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+    }
+
+    return rest
+      .find(
+        req.config,
+        Auth.master(req.config),
+        '_Session',
+        { refreshToken: code },
+        undefined,
+        req.info.clientSDK,
+        req.info.context
+      )
+      .then(records => {
+        if (records.results && records.results.length) {
+          return rest
+            .del(
+              req.config,
+              Auth.master(req.config),
+              '_Session',
+              records.results[0].objectId,
+              req.info.context
+            )
+            .then(() => {
+              this._runAfterLogoutTrigger(req, records.results[0]);
+              return Promise.resolve(success);
+            });
+        }
+        return Promise.resolve(success);
+      });
+  }
+
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
     }
-    const sessionToken = req.info.sessionToken;
+    let sessionToken = req.info.sessionToken;
+    const originalToken = req.info.sessionToken;
+
+    // Check if you use OAuth to retrieve the sessionToken from within the JWT
+    if (req.config.oauth === true) {
+      if (Auth.validJWT(sessionToken, req.config.oauthKey) === false) {
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
+      }
+      const decoded = Auth.decodeJWT(sessionToken);
+      sessionToken = decoded.sub;
+    }
+
     return rest
       .find(
         req.config,
@@ -160,7 +285,14 @@ export class UsersRouter extends ClassesRouter {
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
-          user.sessionToken = sessionToken;
+          user.oauth = req.config.oauth === true ? true : false;
+          if (req.config.oauth === true) {
+            const decoded = Auth.decodeJWT(originalToken);
+            user.accessToken = originalToken;
+            user.expires_in = decoded.exp;
+          } else {
+            user.sessionToken = sessionToken;
+          }
 
           // Remove hidden properties.
           UsersRouter.removeHiddenProperties(user);
@@ -227,7 +359,23 @@ export class UsersRouter extends ClassesRouter {
       installationId: req.info.installationId,
     });
 
-    user.sessionToken = sessionData.sessionToken;
+    // Check if you use OAuth to generate a JWT to return
+    user.oauth = req.config.oauth === true ? true : false;
+    if (req.config.oauth === true) {
+      var signedToken = Auth.createJWT(
+        sessionData.sessionToken,
+        req.config.oauthKey,
+        req.config.oauthTTL
+      );
+
+      user.accessToken = signedToken.accessToken;
+      user.refreshToken = sessionData.refreshToken;
+      user.expires_in = signedToken.expires_in;
+
+      delete user.sessionToken;
+    } else {
+      user.sessionToken = sessionData.sessionToken;
+    }
 
     await createSession();
 
@@ -259,6 +407,12 @@ export class UsersRouter extends ClassesRouter {
   handleLogOut(req) {
     const success = { response: {} };
     if (req.info && req.info.sessionToken) {
+      // Check if you use OAuth to retrieve the sessionToken from within the JWT
+      if (req.config.oauth === true) {
+        const decoded = Auth.decodeJWT(req.info.sessionToken);
+        req.info.sessionToken = decoded.sub;
+      }
+
       return rest
         .find(
           req.config,
@@ -401,6 +555,12 @@ export class UsersRouter extends ClassesRouter {
     });
     this.route('GET', '/users/me', req => {
       return this.handleMe(req);
+    });
+    this.route('POST', '/users/refresh', req => {
+      return this.handleRefresh(req);
+    });
+    this.route('POST', '/users/revoke', req => {
+      return this.handleRevoke(req);
     });
     this.route('GET', '/users/:objectId', req => {
       return this.handleGet(req);
