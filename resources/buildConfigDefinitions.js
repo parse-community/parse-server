@@ -52,6 +52,7 @@ function getENVPrefix(iface) {
     'AccountLockoutOptions' : 'PARSE_SERVER_ACCOUNT_LOCKOUT_',
     'PasswordPolicyOptions' : 'PARSE_SERVER_PASSWORD_POLICY_',
     'FileUploadOptions' : 'PARSE_SERVER_FILE_UPLOAD_',
+    'SecurityOptions': 'PARSE_SERVER_SECURITY_',
   }
   if (options[iface.id.name]) {
     return options[iface.id.name]
@@ -167,7 +168,7 @@ function parseDefaultValue(elt, value, t) {
     if (type == 'NumberOrBoolean') {
       literalValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
     }
-    const literalTypes = ['Object', 'PagesRoute', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
+    const literalTypes = ['Object', 'SecurityOptions', 'PagesRoute', 'IdempotencyOptions','FileUploadOptions','CustomPagesOptions', 'PagesCustomUrlsOptions', 'PagesOptions'];
     if (literalTypes.includes(type)) {
       const object = parsers.objectParser(value);
       const props = Object.keys(object).map((key) => {
