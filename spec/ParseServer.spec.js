@@ -10,14 +10,18 @@ const { spawn } = require('child_process');
 
 describe('Server Url Checks', () => {
   let server;
-  beforeAll(done => {
-    const app = express();
-    app.get('/health', function (req, res) {
-      res.json({
-        status: 'ok',
+  beforeEach(done => {
+    if (!server) {
+      const app = express();
+      app.get('/health', function (req, res) {
+        res.json({
+          status: 'ok',
+        });
       });
-    });
-    server = app.listen(13376, undefined, done);
+      server = app.listen(13376, undefined, done);
+    } else {
+      done();
+    }
   });
 
   afterAll(done => {

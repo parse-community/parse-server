@@ -39,7 +39,8 @@ describe('WinstonLogger', () => {
     });
   });
 
-  it('should have a timestamp', done => {
+  it('should have a timestamp', async done => {
+    await reconfigureServer();
     logging.logger.info('hi');
     logging.logger.query({ limit: 1 }, (err, results) => {
       if (err) {

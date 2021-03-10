@@ -3215,7 +3215,7 @@ describe('sendEmail', () => {
       sendMail: mailData => {
         expect(mailData).toBeDefined();
         expect(mailData.to).toBe('test');
-        done();
+        reconfigureServer().then(done, done);
       },
     };
     await reconfigureServer({

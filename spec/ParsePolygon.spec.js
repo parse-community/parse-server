@@ -9,8 +9,6 @@ const defaultHeaders = {
 };
 
 describe('Parse.Polygon testing', () => {
-  beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
-
   it('polygon save open path', done => {
     const coords = [
       [0, 0],
@@ -211,8 +209,6 @@ describe('Parse.Polygon testing', () => {
   });
 
   describe('with location', () => {
-    beforeAll(() => require('../lib/TestUtils').destroyAllDataPermanently());
-
     it('polygonContain query', done => {
       const points1 = [
         [0, 0],

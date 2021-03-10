@@ -173,7 +173,7 @@ describe('batch', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&

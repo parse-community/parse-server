@@ -394,7 +394,7 @@ describe('ParseGraphQLServer', () => {
       objects.push(object1, object2, object3, object4);
     }
 
-    beforeAll(async () => {
+    beforeEach(async () => {
       const expressApp = express();
       httpServer = http.createServer(expressApp);
       expressApp.use('/parse', parseServer.app);
@@ -436,14 +436,11 @@ describe('ParseGraphQLServer', () => {
           },
         },
       });
-    });
-
-    beforeEach(() => {
       spyOn(console, 'warn').and.callFake(() => {});
       spyOn(console, 'error').and.callFake(() => {});
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
       await parseLiveQueryServer.server.close();
       await httpServer.close();
     });
