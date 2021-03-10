@@ -90,6 +90,27 @@ describe('Cloud Code', () => {
     );
   });
 
+  it('beforeSave invalid field name rejection', function (done) {
+    Parse.Cloud.beforeSave('BeforeSaveFail', function () {
+      throw new Error('Error from BeforeSave');
+    });
+
+    const obj = new Parse.Object('BeforeSaveFail');
+    obj.set('length', 1);
+    obj.save().then(
+      () => {
+        fail('Should not have been able to save BeforeSaveFailure class.');
+        done();
+      },
+      error => {
+        if (error.message != 'Error from BeforeSave') {
+          fail('Save failed before beforeSave was called.');
+        }
+        done();
+      }
+    );
+  });
+
   it('returns an error', done => {
     Parse.Cloud.define('cloudCodeWithError', () => {
       /* eslint-disable no-undef */
