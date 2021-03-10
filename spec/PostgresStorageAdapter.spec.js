@@ -19,10 +19,11 @@ const dropTable = (client, className) => {
 
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
   let adapter;
-  beforeEach(() => {
+  beforeEach(async () => {
     const config = Config.get('test');
     adapter = config.database.adapter;
-    return adapter.deleteAllClasses();
+    await adapter.deleteAllClasses();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
   });
 
   it('schemaUpgrade, upgrade the database schema when schema changes', done => {

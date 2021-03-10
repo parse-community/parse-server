@@ -275,32 +275,26 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('query with limit equal to maxlimit', function (done) {
+  it('query with limit equal to maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(1);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(1);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
-  it('query with limit exceeding maxlimit', function (done) {
+  it('query with limit exceeding maxlimit', async () => {
     const baz = new TestObject({ foo: 'baz' });
     const qux = new TestObject({ foo: 'qux' });
-    reconfigureServer({ maxLimit: 1 });
-    Parse.Object.saveAll([baz, qux]).then(function () {
-      const query = new Parse.Query(TestObject);
-      query.limit(2);
-      query.find().then(function (results) {
-        equal(results.length, 1);
-        done();
-      });
-    });
+    await reconfigureServer({ maxLimit: 1 });
+    await Parse.Object.saveAll([baz, qux]);
+    const query = new Parse.Query(TestObject);
+    query.limit(2);
+    const results = await query.find();
+    equal(results.length, 1);
   });
 
   it('containedIn object array queries', function (done) {
