@@ -90,23 +90,33 @@ describe('Cloud Code', () => {
     );
   });
 
-  it('beforeSave invalid field name rejection', function (done) {
-    Parse.Cloud.beforeSave('BeforeSaveFail', function () {
-      throw new Error('Error from BeforeSave');
+  it('unsets invalid field name in beforeSave on update', function (done) {
+    Parse.Cloud.beforeSave('InvalidFieldNameObject', function (request) {
+      const object = request.object;
+      object.unset('length');
     });
 
-    const obj = new Parse.Object('BeforeSaveFail');
-    obj.set('length', 1);
+    const obj = new Parse.Object('InvalidFieldNameObject');
+    // Create object
     obj.save().then(
       () => {
-        fail('Should not have been able to save BeforeSaveFailure class.');
-        done();
+        obj.set('length', 1);
+        // Update object
+        obj.save().then(
+          () => {
+            done();
+          },
+          error => {
+            fail(
+              'Should have unset invalid field name in beforeSave and saved successfully, \
+              but error occured before beforeSave: ' +
+                error.message
+            );
+          }
+        );
       },
       error => {
-        if (error.message != 'Error from BeforeSave') {
-          fail('Save failed before beforeSave was called.');
-        }
-        done();
+        fail(error.message);
       }
     );
   });
