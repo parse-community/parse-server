@@ -97,6 +97,31 @@ function RestQuery(
     }
   }
 
+  if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
+    const keysForInclude = restOptions.excludeKeys
+      .split(',')
+      .filter(excludeKey => {
+        // At least 2 components
+        return excludeKey.split('.').length > 1;
+      })
+      .map(excludeKey => {
+        // Slice the last component (a.b.c -> a.b)
+        // Otherwise we'll include one level too much.
+        return excludeKey.slice(0, excludeKey.lastIndexOf('.'));
+      })
+      .join(',');
+
+    // Concat the possibly present include string with the one from the keys
+    // Dedup / sorting is handle in 'include' case.
+    if (keysForInclude.length > 0) {
+      if (!restOptions.include || restOptions.include.length == 0) {
+        restOptions.include = keysForInclude;
+      } else {
+        restOptions.include += ',' + keysForInclude;
+      }
+    }
+  }
+
   for (var option in restOptions) {
     switch (option) {
       case 'keys': {
@@ -843,6 +868,26 @@ function includePath(config, auth, response, path, restOptions = {}) {
     }, new Set());
     if (keySet.size > 0) {
       includeRestOptions.keys = Array.from(keySet).join(',');
+    }
+  }
+
+  if (restOptions.excludeKeys) {
+    const keys = new Set(restOptions.excludeKeys.split(','));
+    const keySet = Array.from(keys).reduce((set, key) => {
+      const keyPath = key.split('.');
+      let i = 0;
+      for (i; i < path.length; i++) {
+        if (path[i] != keyPath[i]) {
+          return set;
+        }
+      }
+      if (i == (keyPath.length - 1)) {
+        set.add(keyPath[i]);
+      }
+      return set;
+    }, new Set());
+    if (keySet.size > 0) {
+      includeRestOptions.excludeKeys = Array.from(keySet).join(',');
     }
   }
 

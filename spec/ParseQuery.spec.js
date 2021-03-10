@@ -4141,7 +4141,6 @@ describe('Parse.Query testing', () => {
       })
       .then(function (savedFoobar) {
         const foobarQuery = new Parse.Query('Foobar');
-        foobarQuery.include('barBaz');
         foobarQuery.select(['fizz', 'barBaz.key']);
         foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
           equal(foobarObj.get('fizz'), 'buzz');
@@ -4179,9 +4178,75 @@ describe('Parse.Query testing', () => {
       })
       .then(function (savedFoobar) {
         const foobarQuery = new Parse.Query('Foobar');
-        foobarQuery.include('barBaz');
-        foobarQuery.include('barBaz.bazoo');
         foobarQuery.select(['fizz', 'barBaz.key', 'barBaz.bazoo.some']);
+        foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
+          equal(foobarObj.get('fizz'), 'buzz');
+          equal(foobarObj.get('foo'), undefined);
+          if (foobarObj.has('barBaz')) {
+            equal(foobarObj.get('barBaz').get('key'), 'value');
+            equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+            equal(foobarObj.get('barBaz').get('bazoo').get('some'), 'thing');
+            equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
+          } else {
+            fail('barBaz should be set');
+          }
+          done();
+        });
+      });
+  });
+
+  it('exclude nested keys', function (done) {
+    const Foobar = new Parse.Object('Foobar');
+    const BarBaz = new Parse.Object('Barbaz');
+    BarBaz.set('key', 'value');
+    BarBaz.set('otherKey', 'value');
+    BarBaz.save()
+      .then(() => {
+        Foobar.set('foo', 'bar');
+        Foobar.set('fizz', 'buzz');
+        Foobar.set('barBaz', BarBaz);
+        return Foobar.save();
+      })
+      .then(function (savedFoobar) {
+        const foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.exclude(['foo', 'barBaz.otherKey']);
+        foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
+          equal(foobarObj.get('fizz'), 'buzz');
+          equal(foobarObj.get('foo'), undefined);
+          if (foobarObj.has('barBaz')) {
+            equal(foobarObj.get('barBaz').get('key'), 'value');
+            equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+          } else {
+            fail('barBaz should be set');
+          }
+          done();
+        });
+      });
+  });
+
+  it('exclude nested keys 2 level', function (done) {
+    const Foobar = new Parse.Object('Foobar');
+    const BarBaz = new Parse.Object('Barbaz');
+    const Bazoo = new Parse.Object('Bazoo');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    Bazoo.save()
+      .then(() => {
+        BarBaz.set('key', 'value');
+        BarBaz.set('otherKey', 'value');
+        BarBaz.set('bazoo', Bazoo);
+        return BarBaz.save();
+      })
+      .then(() => {
+        Foobar.set('foo', 'bar');
+        Foobar.set('fizz', 'buzz');
+        Foobar.set('barBaz', BarBaz);
+        return Foobar.save();
+      })
+      .then(function (savedFoobar) {
+        const foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.exclude(['foo', 'barBaz.otherKey', 'barBaz.bazoo.otherSome']);
         foobarQuery.get(savedFoobar.id).then(function (foobarObj) {
           equal(foobarObj.get('fizz'), 'buzz');
           equal(foobarObj.get('foo'), undefined);
