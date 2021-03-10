@@ -38,7 +38,6 @@ function RestQuery(
   this.response = null;
   this.findOptions = {};
   this.context = context || {};
-
   if (!this.auth.isMaster) {
     if (this.className == '_Session') {
       if (!this.auth.user) {
@@ -69,11 +68,20 @@ function RestQuery(
   // For example, passing an arg of include=foo.bar,foo.baz could lead to
   // this.include = [['foo'], ['foo', 'baz'], ['foo', 'bar']]
   this.include = [];
+  var keysForInclude = [];
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
   if (Object.prototype.hasOwnProperty.call(restOptions, 'keys')) {
-    const keysForInclude = restOptions.keys
+    keysForInclude = restOptions.keys;
+  }
+  /*
+  if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
+    keysForInclude += ',' + restOptions.excludeKeys;
+  }*/
+
+  if (keysForInclude.length > 0) {
+    keysForInclude = keysForInclude
       .split(',')
       .filter(key => {
         // At least 2 components
@@ -83,31 +91,6 @@ function RestQuery(
         // Slice the last component (a.b.c -> a.b)
         // Otherwise we'll include one level too much.
         return key.slice(0, key.lastIndexOf('.'));
-      })
-      .join(',');
-
-    // Concat the possibly present include string with the one from the keys
-    // Dedup / sorting is handle in 'include' case.
-    if (keysForInclude.length > 0) {
-      if (!restOptions.include || restOptions.include.length == 0) {
-        restOptions.include = keysForInclude;
-      } else {
-        restOptions.include += ',' + keysForInclude;
-      }
-    }
-  }
-
-  if (Object.prototype.hasOwnProperty.call(restOptions, 'excludeKeys')) {
-    const keysForInclude = restOptions.excludeKeys
-      .split(',')
-      .filter(excludeKey => {
-        // At least 2 components
-        return excludeKey.split('.').length > 1;
-      })
-      .map(excludeKey => {
-        // Slice the last component (a.b.c -> a.b)
-        // Otherwise we'll include one level too much.
-        return excludeKey.slice(0, excludeKey.lastIndexOf('.'));
       })
       .join(',');
 
@@ -872,8 +855,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
   }
 
   if (restOptions.excludeKeys) {
-    const keys = new Set(restOptions.excludeKeys.split(','));
-    const keySet = Array.from(keys).reduce((set, key) => {
+    const excludeKeys = new Set(restOptions.excludeKeys.split(','));
+    const excludeKeySet = Array.from(excludeKeys).reduce((set, key) => {
       const keyPath = key.split('.');
       let i = 0;
       for (i; i < path.length; i++) {
@@ -886,8 +869,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
       }
       return set;
     }, new Set());
-    if (keySet.size > 0) {
-      includeRestOptions.excludeKeys = Array.from(keySet).join(',');
+    if (excludeKeySet.size > 0) {
+      includeRestOptions.excludeKeys = Array.from(excludeKeySet).join(',');
     }
   }
 
