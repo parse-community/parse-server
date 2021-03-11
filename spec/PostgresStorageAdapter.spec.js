@@ -22,11 +22,11 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
   beforeEach(async () => {
     const config = Config.get('test');
     adapter = config.database.adapter;
-    await adapter.deleteAllClasses();
-    await adapter.performInitialization({ VolatileClassesSchemas: [] });
   });
 
-  it('schemaUpgrade, upgrade the database schema when schema changes', done => {
+  it('schemaUpgrade, upgrade the database schema when schema changes', async done => {
+    await adapter.deleteAllClasses();
+    await adapter.performInitialization({ VolatileClassesSchemas: [] });
     const client = adapter._client;
     const className = '_PushStatus';
     const schema = {
@@ -237,6 +237,9 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
 
   it('should use index for caseInsensitive query', async () => {
     const tableName = '_User';
+    await adapter.deleteClass(tableName);
+    await reconfigureServer();
+
     const user = new Parse.User();
     user.set('username', 'Bugs');
     user.set('password', 'Bunny');
@@ -261,7 +264,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     preIndexPlan.forEach(element => {
       element['QUERY PLAN'].forEach(innerElement => {
         //Check that basic query plans isn't a sequential scan, be careful as find uses "any" to query
-        expect(innerElement.Plan['Node Type']).toBe('Seq Scan');
+        expect(innerElement.Plan['Node Type']).toBe('Bitmap Heap Scan');
         //Basic query plans shouldn't have an execution time
         expect(innerElement['Execution Time']).toBeUndefined();
       });

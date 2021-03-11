@@ -32,6 +32,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -167,7 +168,7 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-beforeEach(async () => {
+beforeAll(async () => {
   try {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
@@ -186,7 +187,9 @@ afterEach(function (done) {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
-    TestUtils.destroyAllDataPermanently(true).then(done, done);
+    TestUtils.destroyAllDataPermanently(true)
+      .then(() => databaseAdapter.performInitialization({ VolatileClassesSchemas }))
+      .then(done, done);
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter

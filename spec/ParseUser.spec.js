@@ -826,8 +826,9 @@ describe('Parse.User testing', () => {
     done();
   });
 
-  it('user modified while saving', done => {
+  it('user modified while saving', async done => {
     Parse.Object.disableSingleInstance();
+    await reconfigureServer();
     const user = new Parse.User();
     user.set('username', 'alice');
     user.set('password', 'password');
@@ -2907,7 +2908,8 @@ describe('Parse.User testing', () => {
       });
   });
 
-  it('should send email when upgrading from anon', done => {
+  it('should send email when upgrading from anon', async done => {
+    await reconfigureServer();
     let emailCalled = false;
     let emailOptions;
     const emailAdapter = {
@@ -3897,6 +3899,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should throw OBJECT_NOT_FOUND instead of SESSION_MISSING when using masterKey', async () => {
+    await reconfigureServer();
     // create a fake user (just so we simulate an object not found)
     const non_existent_user = Parse.User.createWithoutData('fake_id');
     try {

@@ -18,6 +18,10 @@ const masterKeyOptions = {
   headers: masterKeyHeaders,
 };
 
+const BoxedNumber = Parse.Object.extend({
+  className: 'BoxedNumber',
+});
+
 describe('Parse.Query testing', () => {
   it('basic query', function (done) {
     const baz = new TestObject({ foo: 'baz' });
@@ -284,6 +288,7 @@ describe('Parse.Query testing', () => {
     query.limit(1);
     const results = await query.find();
     equal(results.length, 1);
+    await reconfigureServer();
   });
 
   it('query with limit exceeding maxlimit', async () => {
@@ -295,6 +300,7 @@ describe('Parse.Query testing', () => {
     query.limit(2);
     const results = await query.find();
     equal(results.length, 1);
+    await reconfigureServer();
   });
 
   it('containedIn object array queries', function (done) {
@@ -931,10 +937,6 @@ describe('Parse.Query testing', () => {
         equal(response.data.error, 'bad $containedBy: should be an array');
         done();
       });
-  });
-
-  const BoxedNumber = Parse.Object.extend({
-    className: 'BoxedNumber',
   });
 
   it('equalTo queries', function (done) {
@@ -2927,10 +2929,10 @@ describe('Parse.Query testing', () => {
     const saves = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (x) {
       const obj = new Parse.Object('TestObject');
       obj.set('x', x + 1);
-      return obj.save();
+      return obj;
     });
 
-    Promise.all(saves)
+    Parse.Object.saveAll(saves)
       .then(function () {
         const query = new Parse.Query('TestObject');
         query.ascending('x');
