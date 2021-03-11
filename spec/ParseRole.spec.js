@@ -241,8 +241,7 @@ describe('Parse Role testing', () => {
         return createRole(roleName, null, aUser);
       })
       .then(
-        secondRole => {
-          console.log(secondRole.getName());
+        () => {
           fail('_Role cannot have the same name as another role');
           done();
         },
