@@ -1,6 +1,7 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
 const semver = require('semver');
+const TestUtils = require('../lib/TestUtils');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -185,12 +186,15 @@ describe('batch', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
-        } else {
-          await reconfigureServer();
+          await TestUtils.destroyAllDataPermanently(true);
         }
       });
 
-      it('should handle a batch request with transaction = true', done => {
+      afterAll(async () => {
+        await reconfigureServer();
+      });
+
+      it('should handle a batch request with transaction = true', async done => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         myObject
           .save()
