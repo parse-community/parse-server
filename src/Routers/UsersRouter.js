@@ -149,18 +149,34 @@ export class UsersRouter extends ClassesRouter {
         req.info.clientSDK,
         req.info.context
       )
-      .then(response => {
+      .then(res => {
         if (req.config.oauth20 === true) {
-          const token = Auth.createJWT(
-            response.response.sessionToken,
-            req.config.oauthKey,
-            req.config.oauthTTL
-          );
-          response.response.accessToken = token.accessToken;
-          response.response.expires_in = token.expires_in;
-          delete response.response.sessionToken;
+          const sessionToken = res.response.sessionToken;
+          return rest
+            .find(
+              req.config,
+              Auth.master(req.config),
+              '_Session',
+              { sessionToken },
+              { include: 'user' },
+              req.info.clientSDK,
+              req.info.context
+            )
+            .then(result => {
+              const user = result.results[0];
+              const token = Auth.createJWT(
+                res.response.sessionToken,
+                req.config.oauthKey,
+                req.config.oauthTTL
+              );
+              res.response.accessToken = token.accessToken;
+              res.response.refreshToken = user.refreshToken;
+              res.response.expires_in = token.expires_in;
+              delete res.response.sessionToken;
+              return res;
+            });
         }
-        return response;
+        return res;
       });
   }
 
@@ -172,7 +188,6 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid update token or ClientID');
     }
 
-    // Consulta
     const refreshToken = code;
     return rest
       .find(
@@ -191,14 +206,11 @@ export class UsersRouter extends ClassesRouter {
             'Invalid update token or ClientID'
           );
         } else {
-          // Retorno
           const data = response.results[0];
-          // Novo Code Refresh
           const newCode = Auth.generateRefreshToken();
           const sessionId = data.objectId;
           const token = Auth.createJWT(data.sessionToken, req.config.oauthKey, req.config.oauthTTL);
 
-          // Atualizar o novo code
           req.config.database.update(
             '_Session',
             { objectId: sessionId },

@@ -30,29 +30,22 @@ function Auth({
   this.rolePromise = null;
 }
 
-// A helper to convert data to base64 encoded to URL
 function base64url(source) {
-  // Encode in classical base64
   var encodedSource = CryptoJS.enc.Base64.stringify(source);
 
-  // Remove padding equal characters
   encodedSource = encodedSource.replace(/=+$/, '');
 
-  // Replace characters according to base64url specifications
   encodedSource = encodedSource.replace(/\+/g, '-');
   encodedSource = encodedSource.replace(/\//g, '_');
 
   return encodedSource;
 }
 
-// A helper to generate a random hash
 const generateRefreshToken = function () {
   return SHA256(CryptoJS.lib.WordArray.random(256)).toString();
 };
 
-// Function to create a token JWT to authentication
 const createJWT = function (sessionToken, oauthKey, oauthTTL) {
-  // Header
   const header = {
     alg: 'HS256',
     typ: 'JWT',
@@ -64,7 +57,6 @@ const createJWT = function (sessionToken, oauthKey, oauthTTL) {
   const timestamp = Math.floor(new Date().getTime() / 1000);
   const expiration = timestamp + oauthTTL;
 
-  // Payload
   const data = {
     sub: sessionToken,
     iat: timestamp,
@@ -76,7 +68,6 @@ const createJWT = function (sessionToken, oauthKey, oauthTTL) {
 
   const token = encodedHeader + '.' + encodedData;
 
-  // Signature
   let signature = CryptoJS.HmacSHA256(token, oauthKey);
   signature = base64url(signature);
 
@@ -86,7 +77,6 @@ const createJWT = function (sessionToken, oauthKey, oauthTTL) {
   };
 };
 
-// Valid if token is valid
 const validJWT = function (token, secret) {
   try {
     return jwt.verify(token, secret);
@@ -95,7 +85,6 @@ const validJWT = function (token, secret) {
   }
 };
 
-// Parse a JWT informations
 const decodeJWT = function (token) {
   return jwt.decode(token);
 };

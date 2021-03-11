@@ -86,7 +86,7 @@ Jump directly to a version:
 </details>
 
 __BREAKING CHANGES:__
-- NEW: Added a OAuth method to authentication. [#7248](https://github.com/parse-community/parse-server/issues/7248).
+- NEW: Added a OAuth 2.0 method to authentication. [#7248](https://github.com/parse-community/parse-server/issues/7248).
 - NEW: Added file upload restriction. File upload is now only allowed for authenticated users by default for improved security. To allow file upload also for Anonymous Users or Public, set the `fileUpload` parameter in the [Parse Server Options](https://parseplatform.org/parse-server/api/master/ParseServerOptions.html). [#7071](https://github.com/parse-community/parse-server/pull/7071). Thanks to [dblythy](https://github.com/dblythy), [Manuel Trezza](https://github.com/mtrezza).
 ___
 ## Unreleased (Master Branch)
