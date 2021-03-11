@@ -3932,6 +3932,7 @@ describe('Parse.User testing', () => {
     it_only_db('mongo')('should be able to login with a legacy user (no ACL)', async () => {
       // This issue is a side effect of the locked users and legacy users which don't have ACL's
       // In this scenario, a legacy user wasn't be able to login as there's no ACL on it
+      await reconfigureServer();
       const database = Config.get(Parse.applicationId).database;
       const collection = await database.adapter._adaptiveCollection('_User');
       await collection.insertOne({
@@ -3965,6 +3966,7 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
   it_only_db('mongo')(
     'should validate credentials first and check if account already linked afterwards ()',
     async done => {
+      await reconfigureServer();
       // Add User to Database with authData
       const database = Config.get(Parse.applicationId).database;
       const collection = await database.adapter._adaptiveCollection('_User');
@@ -4003,6 +4005,7 @@ describe('Security Advisory GHSA-8w3j-g983-8jh5', function () {
   );
   it_only_db('mongo')('should ignore authData field', async () => {
     // Add User to Database with authData
+    await reconfigureServer();
     const database = Config.get(Parse.applicationId).database;
     const collection = await database.adapter._adaptiveCollection('_User');
     await collection.insertOne({

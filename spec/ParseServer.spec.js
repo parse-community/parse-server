@@ -25,7 +25,10 @@ describe('Server Url Checks', () => {
   });
 
   afterAll(done => {
-    server.close(done);
+    server.close(async () => {
+      await reconfigureServer();
+      done();
+    });
   });
 
   it('validate good server url', done => {
