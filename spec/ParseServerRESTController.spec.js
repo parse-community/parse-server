@@ -176,12 +176,14 @@ describe('ParseServerRESTController', () => {
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
           if (!parseServer) {
-            await reconfigureServer({
+            parseServer = await reconfigureServer({
               databaseAdapter: undefined,
               databaseURI:
                 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
             });
           }
+        } else {
+          await reconfigureServer();
         }
       });
 

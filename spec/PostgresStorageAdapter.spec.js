@@ -50,11 +50,12 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         return adapter.schemaUpgrade(className, schema);
       })
       .then(() => getColumns(client, className))
-      .then(columns => {
+      .then(async columns => {
         expect(columns).toContain('pushTime');
         expect(columns).toContain('source');
         expect(columns).toContain('query');
         expect(columns).toContain('expiration_interval');
+        await reconfigureServer();
         done();
       })
       .catch(error => done.fail(error));

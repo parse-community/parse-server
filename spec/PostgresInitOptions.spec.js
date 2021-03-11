@@ -50,9 +50,12 @@ function createParseServer(options) {
 describe_only_db('postgres')('Postgres database init options', () => {
   let server;
 
-  afterEach(() => {
+  afterAll(done => {
     if (server) {
-      server.close();
+      server.close(async () => {
+        await reconfigureServer();
+        done();
+      });
     }
   });
 
@@ -82,7 +85,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions2,
     });
-
     createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
   });
 });
