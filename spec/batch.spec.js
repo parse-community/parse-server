@@ -90,7 +90,6 @@ describe('batch', () => {
   });
 
   it('should handle a batch request without transaction', async done => {
-    await reconfigureServer();
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -129,7 +128,6 @@ describe('batch', () => {
   });
 
   it('should handle a batch request with transaction = false', async done => {
-    await reconfigureServer();
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -366,7 +364,6 @@ describe('batch', () => {
       });
 
       it('should generate separate session for each call', async () => {
-        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();

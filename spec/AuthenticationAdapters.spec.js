@@ -188,7 +188,6 @@ describe('AuthenticationProviders', function () {
   };
 
   it('should create user with REST API', async done => {
-    await reconfigureServer();
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
       const b = body;
@@ -216,7 +215,6 @@ describe('AuthenticationProviders', function () {
   });
 
   it('should only create a single user with REST API', async done => {
-    await reconfigureServer();
     let objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
@@ -237,7 +235,6 @@ describe('AuthenticationProviders', function () {
   });
 
   it("should fail to link if session token don't match user", async done => {
-    await reconfigureServer();
     Parse.User.signUp('myUser', 'password')
       .then(user => {
         return createOAuthUserWithSessionToken(user.getSessionToken());
