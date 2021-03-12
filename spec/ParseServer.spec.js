@@ -31,11 +31,11 @@ describe('Server Url Checks', () => {
 
   it('validate good server url', done => {
     Parse.serverURL = 'http://localhost:13376';
-    ParseServer.verifyServerUrl(function (result) {
+    ParseServer.verifyServerUrl(async result => {
       if (!result) {
         done.fail('Did not pass valid url');
       }
-      Parse.serverURL = 'http://localhost:8378/1';
+      await reconfigureServer();
       done();
     });
   });
@@ -43,11 +43,11 @@ describe('Server Url Checks', () => {
   it('mark bad server url', done => {
     spyOn(console, 'warn').and.callFake(() => {});
     Parse.serverURL = 'notavalidurl';
-    ParseServer.verifyServerUrl(function (result) {
+    ParseServer.verifyServerUrl(async result => {
       if (result) {
         done.fail('Did not mark invalid url');
       }
-      Parse.serverURL = 'http://localhost:8378/1';
+      await reconfigureServer();
       done();
     });
   });
@@ -105,10 +105,11 @@ describe('Server Url Checks', () => {
     parseServerProcess.stderr.on('data', data => {
       stderr = data.toString();
     });
-    parseServerProcess.on('close', code => {
+    parseServerProcess.on('close', async code => {
       expect(code).toEqual(1);
       expect(stdout).toBeUndefined();
       expect(stderr).toContain('MongoServerSelectionError');
+      await reconfigureServer();
       done();
     });
   });
