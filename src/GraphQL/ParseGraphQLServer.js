@@ -8,8 +8,10 @@ import { SubscriptionServer } from 'subscriptions-transport-ws';
 import { handleParseErrors, handleParseHeaders } from '../middlewares';
 import requiredParameter from '../requiredParameter';
 import defaultLogger from '../logger';
+import { ParseLiveQueryServer } from '../LiveQuery/ParseLiveQueryServer';
 import { ParseGraphQLSchema } from './ParseGraphQLSchema';
 import ParseGraphQLController, { ParseGraphQLConfig } from '../Controllers/ParseGraphQLController';
+import { WSSAdapter } from '../Adapters/WebSocketServer/WSSAdapter';
 
 class ParseGraphQLServer {
   parseGraphQLController: ParseGraphQLController;
@@ -29,6 +31,8 @@ class ParseGraphQLServer {
       log: this.log,
       graphQLCustomTypeDefs: this.config.graphQLCustomTypeDefs,
       appId: this.parseServer.config.appId,
+      liveQueryClassNames:
+        this.parseServer.config.liveQuery && this.parseServer.config.liveQuery.classNames,
     });
   }
 
@@ -114,12 +118,132 @@ class ParseGraphQLServer {
   }
 
   createSubscriptions(server) {
+    const wssAdapter = new WSSAdapter();
+
+    new ParseLiveQueryServer(
+      undefined,
+      {
+        ...this.parseServer.config.liveQueryServerOptions,
+        wssAdapter,
+      },
+      this.parseServer.config
+    );
+
     SubscriptionServer.create(
       {
         execute,
         subscribe,
-        onOperation: async (_message, params, webSocket) =>
-          Object.assign({}, params, await this._getGraphQLOptions(webSocket.upgradeReq)),
+        onConnect: async connectionParams => {
+          const keyPairs = {
+            applicationId: connectionParams['X-Parse-Application-Id'],
+            sessionToken: connectionParams['X-Parse-Session-Token'],
+            masterKey: connectionParams['X-Parse-Master-Key'],
+            installationId: connectionParams['X-Parse-Installation-Id'],
+            clientKey: connectionParams['X-Parse-Client-Key'],
+            javascriptKey: connectionParams['X-Parse-Javascript-Key'],
+            windowsKey: connectionParams['X-Parse-Windows-Key'],
+            restAPIKey: connectionParams['X-Parse-REST-API-Key'],
+          };
+
+          const listeners = [];
+
+          let connectResolve, connectReject;
+          let connectIsResolved = false;
+          const connectPromise = new Promise((resolve, reject) => {
+            connectResolve = resolve;
+            connectReject = reject;
+          });
+
+          const liveQuery = {
+            OPEN: 'OPEN',
+            readyState: 'OPEN',
+            on: () => {},
+            ping: () => {},
+            onmessage: () => {},
+            onclose: () => {},
+            send: message => {
+              message = JSON.parse(message);
+              if (message.op === 'connected') {
+                connectResolve();
+                connectIsResolved = true;
+                return;
+              } else if (message.op === 'error' && !connectIsResolved) {
+                connectReject({
+                  code: message.code,
+                  message: message.error,
+                });
+                return;
+              }
+              const requestId = message && message.requestId;
+              if (
+                requestId &&
+                typeof requestId === 'number' &&
+                requestId > 0 &&
+                requestId <= listeners.length
+              ) {
+                const listener = listeners[requestId - 1];
+                if (listener) {
+                  listener(message);
+                }
+              }
+            },
+            subscribe: async (query, sessionToken, listener) => {
+              await connectPromise;
+              listeners.push(listener);
+              liveQuery.onmessage(
+                JSON.stringify({
+                  op: 'subscribe',
+                  requestId: listeners.length,
+                  query,
+                  sessionToken,
+                })
+              );
+            },
+            unsubscribe: async listener => {
+              await connectPromise;
+              const index = listeners.indexOf(listener);
+              if (index > 0) {
+                liveQuery.onmessage(
+                  JSON.stringify({
+                    op: 'unsubscribe',
+                    requestId: index + 1,
+                  })
+                );
+                listeners[index] = null;
+              }
+            },
+          };
+
+          wssAdapter.onConnection(liveQuery);
+
+          liveQuery.onmessage(
+            JSON.stringify({
+              op: 'connect',
+              ...keyPairs,
+            })
+          );
+
+          await connectPromise;
+
+          return { liveQuery, keyPairs };
+        },
+        onDisconnect: (_webSocket, context) => {
+          const { liveQuery } = context;
+
+          if (liveQuery) {
+            liveQuery.onclose();
+          }
+        },
+        onOperation: async (_message, params) => {
+          return {
+            ...params,
+            schema: await this.parseGraphQLSchema.load(),
+            formatError: error => {
+              // Allow to console.log here to debug
+              return error;
+            },
+          };
+        },
       },
       {
         server,

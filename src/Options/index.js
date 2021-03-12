@@ -216,6 +216,14 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_GRAPHQL_PATH
   :DEFAULT: /graphql */
   graphQLPath: ?string;
+  /* Mounts the GraphQL Subscriptions endpoint
+  :ENV: PARSE_SERVER_MOUNT_SUBSCRIPTIONS
+  :DEFAULT: false */
+  mountSubscriptions: ?boolean;
+  /* Mount path for the GraphQL Subscriptions endpoint, defaults to /subscriptions
+  :ENV: PARSE_SERVER_SUBSCRIPTIONS_PATH
+  :DEFAULT: /subscriptions */
+  subscriptionsPath: ?string;
   /* Mounts the GraphQL Playground - never use this option in production
   :ENV: PARSE_SERVER_MOUNT_PLAYGROUND
   :DEFAULT: false */

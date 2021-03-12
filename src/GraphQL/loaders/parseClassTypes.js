@@ -494,6 +494,24 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
     classGraphQLFindResultType = connectionType;
   }
 
+  const classGraphQLSubscriptionTypeName = `${graphQLClassName}Subscription`;
+  let classGraphQLSubscriptionType = new GraphQLObjectType({
+    name: classGraphQLSubscriptionTypeName,
+    description: `The ${classGraphQLSubscriptionTypeName} object type is used in subscriptions that involve objects of ${graphQLClassName} class.`,
+    fields: {
+      event: defaultGraphQLTypes.EVENT_KIND_ATT,
+      node: {
+        description: 'The node in which the event happened',
+        type: new GraphQLNonNull(classGraphQLOutputType || defaultGraphQLTypes.OBJECT),
+      },
+      originalNode: {
+        description: 'The original node in which the event happened',
+        type: classGraphQLOutputType || defaultGraphQLTypes.OBJECT,
+      },
+    },
+  });
+  classGraphQLSubscriptionType = parseGraphQLSchema.addGraphQLType(classGraphQLSubscriptionType);
+
   parseGraphQLSchema.parseClassTypes[className] = {
     classGraphQLPointerType,
     classGraphQLRelationType,
@@ -504,6 +522,7 @@ const load = (parseGraphQLSchema, parseClass, parseClassConfig: ?ParseGraphQLCla
     classGraphQLFindArgs,
     classGraphQLOutputType,
     classGraphQLFindResultType,
+    classGraphQLSubscriptionType,
     config: {
       parseClassConfig,
       isCreateEnabled,

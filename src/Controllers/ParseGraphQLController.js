@@ -24,7 +24,7 @@ class ParseGraphQLController {
         `ParseGraphQLController requires a "databaseController" to be instantiated.`
       );
     this.cacheController = params.cacheController;
-    this.isMounted = !!params.mountGraphQL;
+    this.isMounted = !!params.mountGraphQL || !!params.mountSubscriptions;
     this.configCacheKey = GraphQLConfigKey;
   }
 
@@ -145,7 +145,14 @@ class ParseGraphQLController {
     if (!isValidSimpleObject(classConfig)) {
       return 'it must be a valid object';
     } else {
-      const { className, type = null, query = null, mutation = null, ...invalidKeys } = classConfig;
+      const {
+        className,
+        type = null,
+        query = null,
+        mutation = null,
+        subscription = null,
+        ...invalidKeys
+      } = classConfig;
       if (Object.keys(invalidKeys).length) {
         return `"invalidKeys" [${Object.keys(invalidKeys)}] should not be present`;
       }
@@ -287,6 +294,20 @@ class ParseGraphQLController {
           return `"mutation" must be a valid object`;
         }
       }
+      if (subscription !== null) {
+        if (isValidSimpleObject(subscription)) {
+          const { enabled = null, alias = null, ...invalidKeys } = query;
+          if (Object.keys(invalidKeys).length) {
+            return `"subscription" contains invalid keys, [${Object.keys(invalidKeys)}]`;
+          } else if (enabled !== null && typeof enabled !== 'boolean') {
+            return `"subscription.enabled" must be a boolean`;
+          } else if (alias !== null && typeof alias !== 'string') {
+            return `"subscription.alias" must be a string`;
+          }
+        } else {
+          return `"subscription" must be a valid object`;
+        }
+      }
     }
   }
 }
@@ -354,6 +375,11 @@ export interface ParseGraphQLClassConfig {
     createAlias: ?String,
     updateAlias: ?String,
     destroyAlias: ?String,
+  };
+  /* The `subscription` object contains options for which class subscriptions are generated */
+  subscription: ?{
+    enabled: ?boolean,
+    alias: ?String,
   };
 }
 

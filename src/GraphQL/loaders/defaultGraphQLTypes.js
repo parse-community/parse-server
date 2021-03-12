@@ -1222,6 +1222,29 @@ const loadArrayResult = (parseGraphQLSchema, parseClasses) => {
   parseGraphQLSchema.graphQLTypes.push(ARRAY_RESULT);
 };
 
+const EVENT_KIND = new GraphQLEnumType({
+  name: 'EventKind',
+  description: 'The EventKind enum type is used in subscriptions to identify listened events.',
+  values: {
+    create: { value: 'create' },
+    enter: { value: 'enter' },
+    update: { value: 'update' },
+    leave: { value: 'leave' },
+    delete: { value: 'delete' },
+    all: { value: 'all' },
+  },
+});
+
+const EVENT_KIND_ATT = {
+  description: 'The event kind that was fired.',
+  type: new GraphQLNonNull(EVENT_KIND),
+};
+
+const EVENT_KINDS_ATT = {
+  description: 'The event kinds to be listened in the subscription.',
+  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(EVENT_KIND))),
+};
+
 const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(GraphQLUpload, true);
   parseGraphQLSchema.addGraphQLType(ANY, true);
@@ -1266,6 +1289,7 @@ const load = parseGraphQLSchema => {
   parseGraphQLSchema.addGraphQLType(PUBLIC_ACL, true);
   parseGraphQLSchema.addGraphQLType(SUBQUERY_INPUT, true);
   parseGraphQLSchema.addGraphQLType(SELECT_INPUT, true);
+  parseGraphQLSchema.addGraphQLType(EVENT_KIND, true);
 };
 
 export {
@@ -1358,6 +1382,9 @@ export {
   USER_ACL,
   ROLE_ACL,
   PUBLIC_ACL,
+  EVENT_KIND,
+  EVENT_KIND_ATT,
+  EVENT_KINDS_ATT,
   load,
   loadArrayResult,
 };

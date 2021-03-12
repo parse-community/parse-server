@@ -53,6 +53,7 @@
  * @property {Boolean} mountGraphQL Mounts the GraphQL endpoint
  * @property {String} mountPath Mount path for the server, defaults to /parse
  * @property {Boolean} mountPlayground Mounts the GraphQL Playground - never use this option in production
+ * @property {Boolean} mountSubscriptions Mounts the GraphQL Subscriptions endpoint
  * @property {Number} objectIdSize Sets the number of characters in generated object id's, default 10
  * @property {PagesOptions} pages The options for pages such as password reset and email verification. Caution, this is an experimental feature that may not be appropriate for production.
  * @property {PasswordPolicyOptions} passwordPolicy Password policy for enforcing password related rules
@@ -75,6 +76,7 @@
  * @property {Number} sessionLength Session duration, in seconds, defaults to 1 year
  * @property {Boolean} silent Disables console output
  * @property {Boolean} startLiveQueryServer Starts the liveQuery server
+ * @property {String} subscriptionsPath Mount path for the GraphQL Subscriptions endpoint, defaults to /subscriptions
  * @property {String[]} userSensitiveFields Personally identifiable information fields in the user table the should be removed for non-authorized users. Deprecated @see protectedFields
  * @property {Boolean} verbose Set the logging to verbose
  * @property {Boolean} verifyUserEmails Enable (or disable) user email validation, defaults to false

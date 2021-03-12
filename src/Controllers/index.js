@@ -127,6 +127,7 @@ export function getParseGraphQLController(
 ): ParseGraphQLController {
   return new ParseGraphQLController({
     mountGraphQL: options.mountGraphQL,
+    mountSubscriptions: options.mountSubscriptions,
     ...controllerDeps,
   });
 }
