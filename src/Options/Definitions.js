@@ -344,8 +344,7 @@ module.exports.ParseServerOptions = {
   },
   replicaSet: {
     env: 'PARSE_SERVER_REPLICA_SET',
-    help:
-      'If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.',
+    help: 'If you are using MongoDB specify whether you are using replica set.',
     action: parsers.booleanParser,
     default: false,
   },
@@ -365,13 +364,6 @@ module.exports.ParseServerOptions = {
     help: 'Configuration for push scheduling, defaults to false.',
     action: parsers.booleanParser,
     default: false,
-  },
-  schemaCacheTTL: {
-    env: 'PARSE_SERVER_SCHEMA_CACHE_TTL',
-    help:
-      'The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.',
-    action: parsers.numberParser('schemaCacheTTL'),
-    default: 5000,
   },
   security: {
     env: 'PARSE_SERVER_SECURITY',

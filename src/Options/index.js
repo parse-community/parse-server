@@ -218,7 +218,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_PLAYGROUND_PATH
   :DEFAULT: /playground */
   playgroundPath: ?string;
-  /* If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.
+  /* If you are using MongoDB specify whether you are using replica set.
   :ENV: PARSE_SERVER_REPLICA_SET
   :DEFAULT: false */
   replicaSet: ?boolean;

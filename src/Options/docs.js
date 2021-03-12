@@ -63,11 +63,10 @@
  * @property {String} publicServerURL Public URL to your parse server with http:// or https://.
  * @property {Any} push Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications
  * @property {String} readOnlyMasterKey Read-only key, which has the same capabilities as MasterKey without writes
- * @property {Boolean} replicaSet If you are using MongoDB specify that you are using replica set. This will allow Parse Server to perform optimizations.
+ * @property {Boolean} replicaSet If you are using MongoDB specify whether you are using replica set.
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
- * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
  * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started

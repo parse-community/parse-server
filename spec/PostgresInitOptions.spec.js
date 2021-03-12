@@ -56,7 +56,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
     }
   });
 
-  xit('should create server with public schema databaseOptions', done => {
+  it('should create server with public schema databaseOptions', done => {
     const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',
@@ -76,7 +76,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
       .then(done, done.fail);
   });
 
-  xit('should fail to create server if schema databaseOptions does not exist', done => {
+  it('should fail to create server if schema databaseOptions does not exist', done => {
     const adapter = new PostgresStorageAdapter({
       uri: postgresURI,
       collectionPrefix: 'test_',

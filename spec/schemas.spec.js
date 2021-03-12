@@ -4,6 +4,7 @@ const Parse = require('parse/node').Parse;
 const dd = require('deep-diff');
 const Config = require('../lib/Config');
 const request = require('../lib/request');
+const TestUtils = require('../lib/TestUtils');
 
 let config;
 
