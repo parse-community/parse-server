@@ -41,6 +41,10 @@ describe_only_db('mongo')('Idempotency', () => {
       ttl: 30,
     });
   });
+
+  afterAll(async () => {
+    await reconfigureServer();
+  });
   // Tests
   it('should enforce idempotency for cloud code function', async () => {
     let counter = 0;

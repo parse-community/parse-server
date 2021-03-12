@@ -392,6 +392,7 @@ describe_only_db('mongo')('GridFSBucket and GridStore interop', () => {
     });
     fileData = response.data;
     expect(fileData.metadata).toEqual(metadata);
+    await reconfigureServer();
   });
 
   it('should handle getMetadata error', async () => {

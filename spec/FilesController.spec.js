@@ -55,7 +55,7 @@ describe('FilesController', () => {
       )
       .then(() => new Promise(resolve => setTimeout(resolve, 200)))
       .then(() => logController.getLogs({ from: Date.now() - 1000, size: 1000 }))
-      .then(logs => {
+      .then(async logs => {
         // we get two logs here: 1. the source of the failure to save the file
         // and 2 the message that will be sent back to the client.
 
@@ -66,6 +66,7 @@ describe('FilesController', () => {
         expect(log2.level).toBe('error');
         expect(log2.code).toBe(130);
 
+        await reconfigureServer();
         done();
       });
   });
