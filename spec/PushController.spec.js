@@ -485,26 +485,37 @@ describe('PushController', () => {
     expect(spy).toHaveBeenCalled();
     expect(spy.calls.count()).toBe(4);
     const allCalls = spy.calls.all();
-    allCalls.forEach(call => {
+    let pendingCount = 0;
+    let runningCount = 0;
+    let succeedCount = 0;
+    allCalls.forEach((call, index) => {
       expect(call.args.length).toBe(1);
       const object = call.args[0].object;
       expect(object instanceof Parse.Object).toBe(true);
+      const pushStatus = getPushStatus(index);
+      if (pushStatus.get('status') === 'pending') {
+        pendingCount += 1;
+      }
+      if (pushStatus.get('status') === 'running') {
+        runningCount += 1;
+      }
+      if (pushStatus.get('status') === 'succeeded') {
+        succeedCount += 1;
+      }
+      if (pushStatus.get('status') === 'running' && pushStatus.get('numSent') > 0) {
+        expect(pushStatus.get('numSent')).toBe(10);
+        expect(pushStatus.get('numFailed')).toBe(5);
+        expect(pushStatus.get('failedPerType')).toEqual({
+          android: 5,
+        });
+        expect(pushStatus.get('sentPerType')).toEqual({
+          ios: 10,
+        });
+      }
     });
-    expect(getPushStatus(0).get('status')).toBe('pending');
-    expect(getPushStatus(1).get('status')).toBe('running');
-    expect(getPushStatus(1).get('numSent')).toBe(0);
-    expect(getPushStatus(2).get('status')).toBe('running');
-    expect(getPushStatus(2).get('numSent')).toBe(10);
-    expect(getPushStatus(2).get('numFailed')).toBe(5);
-    // Those are updated from a nested . operation, this would
-    // not render correctly before
-    expect(getPushStatus(2).get('failedPerType')).toEqual({
-      android: 5,
-    });
-    expect(getPushStatus(2).get('sentPerType')).toEqual({
-      ios: 10,
-    });
-    expect(getPushStatus(3).get('status')).toBe('succeeded');
+    expect(pendingCount).toBe(1);
+    expect(runningCount).toBe(2);
+    expect(succeedCount).toBe(1);
   });
 
   it('properly creates _PushStatus without serverURL', async () => {
