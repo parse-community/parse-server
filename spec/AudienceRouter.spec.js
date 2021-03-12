@@ -416,7 +416,6 @@ describe('AudiencesRouter', () => {
     } catch (e) {
       expect(e.data.code).toBe(107);
       expect(e.data.error).toBe('Could not add field lorem');
-      await reconfigureServer();
     }
   });
 });

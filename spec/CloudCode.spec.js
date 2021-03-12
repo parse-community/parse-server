@@ -23,9 +23,8 @@ describe('Cloud Code', () => {
     reconfigureServer({
       cloud: __dirname + '/cloud/cloudCodeRelativeFile.js',
     }).then(() => {
-      Parse.Cloud.run('cloudCodeInFile', {}).then(async result => {
+      Parse.Cloud.run('cloudCodeInFile', {}).then(result => {
         expect(result).toEqual('It is possible to define cloud code in a file.');
-        await reconfigureServer();
         done();
       });
     });
@@ -33,9 +32,8 @@ describe('Cloud Code', () => {
 
   it('can load relative cloud code file', done => {
     reconfigureServer({ cloud: './spec/cloud/cloudCodeAbsoluteFile.js' }).then(() => {
-      Parse.Cloud.run('cloudCodeInFile', {}).then(async result => {
+      Parse.Cloud.run('cloudCodeInFile', {}).then(result => {
         expect(result).toEqual('It is possible to define cloud code in a file.');
-        await reconfigureServer();
         done();
       });
     });
@@ -1264,9 +1262,8 @@ describe('Cloud Code', () => {
           },
         })
       )
-      .then(async response => {
+      .then(response => {
         expect(response.data.result).toEqual('second data');
-        await reconfigureServer();
         done();
       })
       .catch(done.fail);
@@ -1821,7 +1818,6 @@ describe('beforeSave hooks', () => {
     const res = await query.find();
     expect(res.length).toEqual(1);
     expect(res[0].get('foo')).toEqual('bar');
-    await reconfigureServer();
   });
 });
 
@@ -2931,10 +2927,6 @@ describe('afterLogin hook', () => {
 });
 
 describe('saveFile hooks', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
-
   it('beforeSaveFile should return file that is already saved and not save anything to files adapter', async () => {
     await reconfigureServer({ filesAdapter: mockAdapter });
     const createFileSpy = spyOn(mockAdapter, 'createFile').and.callThrough();

@@ -52,10 +52,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
 
   afterAll(done => {
     if (server) {
-      server.close(async () => {
-        await reconfigureServer();
-        done();
-      });
+      server.close(done);
     }
   });
 
@@ -85,6 +82,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
       collectionPrefix: 'test_',
       databaseOptions: databaseOptions2,
     });
+
     createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
   });
 });

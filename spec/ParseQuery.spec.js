@@ -288,7 +288,6 @@ describe('Parse.Query testing', () => {
     query.limit(1);
     const results = await query.find();
     equal(results.length, 1);
-    await reconfigureServer();
   });
 
   it('query with limit exceeding maxlimit', async () => {
@@ -300,7 +299,6 @@ describe('Parse.Query testing', () => {
     query.limit(2);
     const results = await query.find();
     equal(results.length, 1);
-    await reconfigureServer();
   });
 
   it('containedIn object array queries', function (done) {

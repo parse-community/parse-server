@@ -40,9 +40,6 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
 };
 
 describe('Account Lockout Policy: ', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
   it('account should not be locked even after failed login attempts if account lockout policy is not set', done => {
     reconfigureServer({
       appName: 'unlimited',

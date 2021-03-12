@@ -10,9 +10,6 @@ const request = function (url, callback) {
 };
 
 describe('public API', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
   it('should return missing username error on ajax request without username provided', async () => {
     await reconfigureServer({
       publicServerURL: 'http://localhost:8378/1',

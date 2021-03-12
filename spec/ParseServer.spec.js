@@ -25,10 +25,8 @@ describe('Server Url Checks', () => {
   });
 
   afterAll(done => {
-    server.close(async () => {
-      await reconfigureServer();
-      done();
-    });
+    Parse.serverURL = 'http://localhost:8378/1';
+    server.close(done);
   });
 
   it('validate good server url', done => {
@@ -37,6 +35,7 @@ describe('Server Url Checks', () => {
       if (!result) {
         done.fail('Did not pass valid url');
       }
+      Parse.serverURL = 'http://localhost:8378/1';
       done();
     });
   });
@@ -48,6 +47,7 @@ describe('Server Url Checks', () => {
       if (result) {
         done.fail('Did not mark invalid url');
       }
+      Parse.serverURL = 'http://localhost:8378/1';
       done();
     });
   });

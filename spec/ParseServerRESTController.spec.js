@@ -187,10 +187,6 @@ describe('ParseServerRESTController', () => {
         }
       });
 
-      afterAll(async () => {
-        await reconfigureServer();
-      });
-
       it('should handle a batch request with transaction = true', done => {
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         myObject

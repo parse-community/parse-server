@@ -4,6 +4,11 @@ const semver = require('semver');
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
+if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
+  const { SpecReporter } = require('jasmine-spec-reporter');
+  jasmine.getEnv().addReporter(new SpecReporter());
+}
+
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
     return callback();
@@ -121,8 +126,10 @@ const openConnections = {};
 // Set up a default API server for testing with default configuration.
 let server;
 
+let didChangeConfiguration = false;
+
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = changedConfiguration => {
+const reconfigureServer = (changedConfiguration = {}) => {
   return new Promise((resolve, reject) => {
     if (server) {
       return server.close(() => {
@@ -132,6 +139,7 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       let parseServer = undefined;
+      didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
         serverStartComplete: error => {
           if (error) {
@@ -182,14 +190,21 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
+let count = 0;
 afterEach(function (done) {
-  const afterLogOut = () => {
+  const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
-    TestUtils.destroyAllDataPermanently(true)
-      .then(() => databaseAdapter.performInitialization({ VolatileClassesSchemas }))
-      .then(done, done);
+    await TestUtils.destroyAllDataPermanently(true);
+    if (didChangeConfiguration) {
+      count += 1;
+      console.log(count);
+      await reconfigureServer();
+    } else {
+      await databaseAdapter.performInitialization({ VolatileClassesSchemas });
+    }
+    done();
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter

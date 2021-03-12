@@ -5,10 +5,6 @@ const port = 12345;
 const sslport = 12346;
 
 describe('Ldap Auth', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
-
   it('Should fail with missing options', done => {
     ldap
       .validateAuthData({ id: 'testuser', password: 'testpw' })

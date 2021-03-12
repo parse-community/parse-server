@@ -1313,7 +1313,6 @@ describe('SchemaController', () => {
 
   it('properly handles volatile _Schemas', async done => {
     await reconfigureServer();
-
     function validateSchemaStructure(schema) {
       expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(true);
       expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(true);
