@@ -15,7 +15,6 @@ describe('Enable single schema cache', () => {
   afterAll(async () => {
     await reconfigureServer();
   });
-
   it('can perform multiple create and query operations', done => {
     let config = fakeRequestForConfig();
     let nobody = auth.nobody(config);

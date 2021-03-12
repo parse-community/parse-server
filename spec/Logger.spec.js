@@ -41,7 +41,7 @@ describe('WinstonLogger', () => {
       .then(done);
   });
 
-  it('should have a timestamp', async done => {
+  it('should have a timestamp', done => {
     logging.logger.info('hi');
     logging.logger.query({ limit: 1 }, (err, results) => {
       if (err) {
