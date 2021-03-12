@@ -581,6 +581,7 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
+    // $ins is invalid query
     const where = {
       channels: {
         $ins: ['Giants', 'Mets'],
@@ -846,7 +847,6 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
     const pushController = new PushController();
     const payload = {
       data: {
@@ -854,7 +854,6 @@ describe('PushController', () => {
       },
       push_time: new Date().getTime() / 1000,
     };
-
     const installations = [];
     while (installations.length != 10) {
       const installation = new Parse.Object('_Installation');
@@ -865,7 +864,6 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-
     reconfigureServer({
       push: { adapter: pushAdapter },
       scheduledPush: true,
@@ -890,7 +888,7 @@ describe('PushController', () => {
       .catch(done.err);
   });
 
-  it('should not enqueue push when device token is not set', done => {
+  it('should not enqueue push when device token is not set', async () => {
     const auth = {
       isMaster: true,
     };
@@ -913,15 +911,12 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
-    const pushController = new PushController();
     const payload = {
       data: {
         alert: 'hello',
       },
       push_time: new Date().getTime() / 1000,
     };
-
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
@@ -932,7 +927,6 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-
     while (installations.length != 15) {
       const installation = new Parse.Object('_Installation');
       installation.set('installationId', 'installation_' + installations.length);
@@ -941,36 +935,19 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const config = Config.get(Parse.applicationId);
-        return Parse.Object.saveAll(installations)
-          .then(() => {
-            return pushController.sendPush(payload, {}, config, auth);
-          })
-          .then(() => new Promise(resolve => setTimeout(resolve, 100)));
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true }).then(results => {
-          expect(results.length).toBe(1);
-          const pushStatus = results[0];
-          expect(pushStatus.get('numSent')).toBe(5);
-          expect(pushStatus.get('status')).toBe('succeeded');
-          done();
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        fail('should not fail');
-        done();
-      });
+    });
+    const config = Config.get(Parse.applicationId);
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(5);
+    expect(pushStatus.get('status')).toBe('succeeded');
   });
 
-  it('should not mark the _PushStatus as failed when audience has no deviceToken', done => {
+  it('should not mark the _PushStatus as failed when audience has no deviceToken', async () => {
     const auth = {
       isMaster: true,
     };
@@ -993,15 +970,12 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
-    const pushController = new PushController();
     const payload = {
       data: {
         alert: 'hello',
       },
       push_time: new Date().getTime() / 1000,
     };
-
     const installations = [];
     while (installations.length != 5) {
       const installation = new Parse.Object('_Installation');
@@ -1011,36 +985,18 @@ describe('PushController', () => {
       installation.set('deviceType', 'ios');
       installations.push(installation);
     }
-
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const config = Config.get(Parse.applicationId);
-        return Parse.Object.saveAll(installations)
-          .then(() => {
-            return pushController.sendPush(payload, {}, config, auth);
-          })
-          .then(() => new Promise(resolve => setTimeout(resolve, 100)));
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true }).then(results => {
-          expect(results.length).toBe(1);
-          const pushStatus = results[0];
-          expect(pushStatus.get('numSent')).toBe(0);
-          expect(pushStatus.get('status')).toBe('succeeded');
-          done();
-        });
-      })
-      .catch(err => {
-        console.error(err);
-        fail('should not fail');
-        done();
-      });
+    });
+    const config = Config.get(Parse.applicationId);
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('status')).toBe('succeeded');
   });
 
-  it('should support localized payload data', done => {
+  it('should support localized payload data', async () => {
     const payload = {
       data: {
         alert: 'Hello!',
@@ -1048,7 +1004,6 @@ describe('PushController', () => {
         'alert-es': 'Ola',
       },
     };
-
     const pushAdapter = {
       send: function (body, installations) {
         return successfulTransmissions(body, installations);
@@ -1057,67 +1012,51 @@ describe('PushController', () => {
         return ['ios'];
       },
     };
-
     const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
     };
-
     const where = {
       deviceType: 'ios',
     };
-    spyOn(pushAdapter, 'send').and.callThrough();
-    const pushController = new PushController();
-    reconfigureServer({
-      push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const installations = [];
-        while (installations.length != 5) {
-          const installation = new Parse.Object('_Installation');
-          installation.set('installationId', 'installation_' + installations.length);
-          installation.set('deviceToken', 'device_token_' + installations.length);
-          installation.set('badge', installations.length);
-          installation.set('originalBadge', installations.length);
-          installation.set('deviceType', 'ios');
-          installations.push(installation);
-        }
-        installations[0].set('localeIdentifier', 'fr-CA');
-        installations[1].set('localeIdentifier', 'fr-FR');
-        installations[2].set('localeIdentifier', 'en-US');
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, where, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        expect(pushAdapter.send.calls.count()).toBe(2);
-        const firstCall = pushAdapter.send.calls.first();
-        expect(firstCall.args[0].data).toEqual({
-          alert: 'Hello!',
-        });
-        expect(firstCall.args[1].length).toBe(3); // 3 installations
+    const installations = [];
+    while (installations.length != 5) {
+      const installation = new Parse.Object('_Installation');
+      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('badge', installations.length);
+      installation.set('originalBadge', installations.length);
+      installation.set('deviceType', 'ios');
+      installations.push(installation);
+    }
+    installations[0].set('localeIdentifier', 'fr-CA');
+    installations[1].set('localeIdentifier', 'fr-FR');
+    installations[2].set('localeIdentifier', 'en-US');
 
-        const lastCall = pushAdapter.send.calls.mostRecent();
-        expect(lastCall.args[0].data).toEqual({
-          alert: 'Bonjour',
-        });
-        expect(lastCall.args[1].length).toBe(2); // 2 installations
-        // No installation is in es so only 1 call for fr, and another for default
-        done();
-      })
-      .catch(done.fail);
+    spyOn(pushAdapter, 'send').and.callThrough();
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, where, config, auth);
+    await pushCompleted(pushStatusId);
+
+    expect(pushAdapter.send.calls.count()).toBe(2);
+    const firstCall = pushAdapter.send.calls.first();
+    expect(firstCall.args[0].data).toEqual({
+      alert: 'Hello!',
+    });
+    expect(firstCall.args[1].length).toBe(3); // 3 installations
+
+    const lastCall = pushAdapter.send.calls.mostRecent();
+    expect(lastCall.args[0].data).toEqual({
+      alert: 'Bonjour',
+    });
+    expect(lastCall.args[1].length).toBe(2); // 2 installations
+    // No installation is in es so only 1 call for fr, and another for default
   });
 
-  it('should update audiences', done => {
+  it('should update audiences', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         return successfulTransmissions(body, installations);
@@ -1131,92 +1070,68 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-
     let audienceId = null;
     const now = new Date();
     let timesUsed = 0;
-
     const where = {
       deviceType: 'ios',
     };
+    const installations = [];
+    while (installations.length != 5) {
+      const installation = new Parse.Object('_Installation');
+      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('badge', installations.length);
+      installation.set('originalBadge', installations.length);
+      installation.set('deviceType', 'ios');
+      installations.push(installation);
+    }
     spyOn(pushAdapter, 'send').and.callThrough();
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const installations = [];
-        while (installations.length != 5) {
-          const installation = new Parse.Object('_Installation');
-          installation.set('installationId', 'installation_' + installations.length);
-          installation.set('deviceToken', 'device_token_' + installations.length);
-          installation.set('badge', installations.length);
-          installation.set('originalBadge', installations.length);
-          installation.set('deviceType', 'ios');
-          installations.push(installation);
+    });
+    await Parse.Object.saveAll(installations);
+
+    // Create an audience
+    const query = new Parse.Query('_Audience');
+    query.descending('createdAt');
+    query.equalTo('query', JSON.stringify(where));
+    const parseResults = results => {
+      if (results.length > 0) {
+        audienceId = results[0].id;
+        timesUsed = results[0].get('timesUsed');
+        if (!isFinite(timesUsed)) {
+          timesUsed = 0;
         }
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        // Create an audience
-        const query = new Parse.Query('_Audience');
-        query.descending('createdAt');
-        query.equalTo('query', JSON.stringify(where));
-        const parseResults = results => {
-          if (results.length > 0) {
-            audienceId = results[0].id;
-            timesUsed = results[0].get('timesUsed');
-            if (!isFinite(timesUsed)) {
-              timesUsed = 0;
-            }
-          }
-        };
-        const audience = new Parse.Object('_Audience');
-        audience.set('name', 'testAudience');
-        audience.set('query', JSON.stringify(where));
-        return Parse.Object.saveAll(audience).then(() => {
-          return query.find({ useMasterKey: true }).then(parseResults);
-        });
-      })
-      .then(() => {
-        const body = {
-          data: { alert: 'hello' },
-          audience_id: audienceId,
-        };
-        return pushController.sendPush(body, where, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        expect(pushAdapter.send.calls.count()).toBe(1);
-        const firstCall = pushAdapter.send.calls.first();
-        expect(firstCall.args[0].data).toEqual({
-          alert: 'hello',
-        });
-        expect(firstCall.args[1].length).toBe(5);
-      })
-      .then(() => {
-        // Get the audience we used above.
-        const query = new Parse.Query('_Audience');
-        query.equalTo('objectId', audienceId);
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        const audience = results[0];
-        expect(audience.get('query')).toBe(JSON.stringify(where));
-        expect(audience.get('timesUsed')).toBe(timesUsed + 1);
-        expect(audience.get('lastUsed')).not.toBeLessThan(now);
-      })
-      .then(() => {
-        done();
-      })
-      .catch(done.fail);
+      }
+    };
+    const audience = new Parse.Object('_Audience');
+    audience.set('name', 'testAudience');
+    audience.set('query', JSON.stringify(where));
+    await Parse.Object.saveAll(audience);
+    await query.find({ useMasterKey: true }).then(parseResults);
+
+    const body = {
+      data: { alert: 'hello' },
+      audience_id: audienceId,
+    };
+    const pushStatusId = await sendPush(body, where, config, auth);
+    await pushCompleted(pushStatusId);
+    expect(pushAdapter.send.calls.count()).toBe(1);
+    const firstCall = pushAdapter.send.calls.first();
+    expect(firstCall.args[0].data).toEqual({
+      alert: 'hello',
+    });
+    expect(firstCall.args[1].length).toBe(5);
+
+    // Get the audience we used above.
+    const audienceQuery = new Parse.Query('_Audience');
+    audienceQuery.equalTo('objectId', audienceId);
+    const results = await audienceQuery.find({ useMasterKey: true });
+
+    expect(results[0].get('query')).toBe(JSON.stringify(where));
+    expect(results[0].get('timesUsed')).toBe(timesUsed + 1);
+    expect(results[0].get('lastUsed')).not.toBeLessThan(now);
   });
 
   describe('pushTimeHasTimezoneComponent', () => {
@@ -1280,7 +1195,7 @@ describe('PushController', () => {
   });
 
   describe('Scheduling pushes in local time', () => {
-    it('should preserve the push time', done => {
+    it('should preserve the push time', async () => {
       const auth = { isMaster: true };
       const pushAdapter = {
         send(body, installations) {
@@ -1290,7 +1205,6 @@ describe('PushController', () => {
           return ['ios'];
         },
       };
-
       const pushTime = '2017-09-06T17:14:01.048';
       let expectedHour = 17 + new Date(pushTime).getTimezoneOffset() / 60;
       let day = '06';
@@ -1298,43 +1212,24 @@ describe('PushController', () => {
         expectedHour = expectedHour - 24;
         day = '07';
       }
-
-      reconfigureServer({
+      const payload = {
+        data: {
+          alert: 'Hello World!',
+          badge: 'Increment',
+        },
+        push_time: pushTime,
+      };
+      await reconfigureServer({
         push: { adapter: pushAdapter },
         scheduledPush: true,
-      })
-        .then(() => {
-          const config = Config.get(Parse.applicationId);
-          return new Promise((resolve, reject) => {
-            const pushController = new PushController();
-            pushController
-              .sendPush(
-                {
-                  data: {
-                    alert: 'Hello World!',
-                    badge: 'Increment',
-                  },
-                  push_time: pushTime,
-                },
-                {},
-                config,
-                auth,
-                resolve
-              )
-              .catch(reject);
-          });
-        })
-        .then(pushStatusId => {
-          const q = new Parse.Query('_PushStatus');
-          return q.get(pushStatusId, { useMasterKey: true });
-        })
-        .then(pushStatus => {
-          expect(pushStatus.get('status')).toBe('scheduled');
-          expect(pushStatus.get('pushTime')).toBe(
-            `2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`
-          );
-        })
-        .then(done, done.fail);
+      });
+      const config = Config.get(Parse.applicationId);
+      const pushStatusId = await sendPush(payload, {}, config, auth);
+      const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+      expect(pushStatus.get('status')).toBe('scheduled');
+      expect(pushStatus.get('pushTime')).toBe(
+        `2017-09-${day}T${expectedHour.toString().padStart(2, '0')}:14:01.048`
+      );
     });
   });
 
@@ -1413,47 +1308,32 @@ describe('PushController', () => {
     });
 
     describe('For immediate pushes', () => {
-      it('should transform the expiration_interval into an absolute time', done => {
+      it('should transform the expiration_interval into an absolute time', async () => {
         const now = new Date('2017-09-25T13:30:10.452Z');
-
-        reconfigureServer({
+        const payload = {
+          data: {
+            alert: 'immediate push',
+          },
+          expiration_interval: 20 * 60, // twenty minutes
+        };
+        await reconfigureServer({
           push: { adapter: pushAdapter },
-        })
-          .then(
-            () =>
-              new Promise(resolve => {
-                pushController.sendPush(
-                  {
-                    data: {
-                      alert: 'immediate push',
-                    },
-                    expiration_interval: 20 * 60, // twenty minutes
-                  },
-                  {},
-                  Config.get(Parse.applicationId),
-                  auth,
-                  resolve,
-                  now
-                );
-              })
-          )
-          .then(pushStatusId => {
-            const p = new Parse.Object('_PushStatus');
-            p.id = pushStatusId;
-            return p.fetch({ useMasterKey: true });
-          })
-          .then(pushStatus => {
-            expect(pushStatus.get('expiry')).toBeDefined('expiry must be set');
-            expect(pushStatus.get('expiry')).toEqual(
-              new Date('2017-09-25T13:50:10.452Z').valueOf()
-            );
+        });
+        const pushStatusId = await sendPush(
+          payload,
+          {},
+          Config.get(Parse.applicationId),
+          auth,
+          now
+        );
+        const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+        expect(pushStatus.get('expiry')).toBeDefined('expiry must be set');
+        expect(pushStatus.get('expiry')).toEqual(new Date('2017-09-25T13:50:10.452Z').valueOf());
 
-            expect(pushStatus.get('expiration_interval')).toBeDefined(
-              'expiration_interval must be defined'
-            );
-            expect(pushStatus.get('expiration_interval')).toBe(20 * 60);
-          })
-          .then(done, done.fail);
+        expect(pushStatus.get('expiration_interval')).toBeDefined(
+          'expiration_interval must be defined'
+        );
+        expect(pushStatus.get('expiration_interval')).toBe(20 * 60);
       });
     });
   });
