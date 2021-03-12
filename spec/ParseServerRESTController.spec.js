@@ -224,7 +224,6 @@ describe('ParseServerRESTController', () => {
               const query = new Parse.Query('MyObject');
               return query.find().then(results => {
                 expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-                expect(databaseAdapter.createObject.calls.count() > 0).toEqual(true);
                 for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
                   expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
                     databaseAdapter.createObject.calls.argsFor(i + 1)[3]
