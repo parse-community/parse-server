@@ -68,7 +68,6 @@ describe('miscellaneous', function () {
 
   it('fail to create a duplicate username', async () => {
     await reconfigureServer();
-
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -117,7 +116,6 @@ describe('miscellaneous', function () {
 
   it('ensure that email is uniquely indexed', async () => {
     await reconfigureServer();
-
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({

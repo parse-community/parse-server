@@ -9,10 +9,6 @@ const delayPromise = delay => {
 };
 
 describe('Parse.Push', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
-
   const setup = function () {
     const sendToInstallationSpy = jasmine.createSpy();
 

@@ -4,10 +4,6 @@ const analyticsAdapter = {
 };
 
 describe('AnalyticsController', () => {
-  afterAll(async () => {
-    await reconfigureServer();
-  });
-
   it('should track a simple event', done => {
     spyOn(analyticsAdapter, 'trackEvent').and.callThrough();
     reconfigureServer({
@@ -20,7 +16,7 @@ describe('AnalyticsController', () => {
         });
       })
       .then(
-        async () => {
+        () => {
           expect(analyticsAdapter.trackEvent).toHaveBeenCalled();
           const lastCall = analyticsAdapter.trackEvent.calls.first();
           const args = lastCall.args;
