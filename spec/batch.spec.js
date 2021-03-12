@@ -1,6 +1,5 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
-const TestUtils = require('../lib/TestUtils');
 const semver = require('semver');
 
 const originalURL = '/parse/batch';
@@ -185,10 +184,6 @@ describe('batch', () => {
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
         }
-      });
-
-      beforeEach(async () => {
-        await TestUtils.destroyAllDataPermanently(true);
       });
 
       it('should handle a batch request with transaction = true', done => {

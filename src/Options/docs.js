@@ -67,6 +67,8 @@
  * @property {String} restAPIKey Key for REST calls
  * @property {Boolean} revokeSessionOnPasswordReset When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
  * @property {Boolean} scheduledPush Configuration for push scheduling, defaults to false.
+ * @property {Number} schemaCacheTTL The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.
+ * @property {SecurityOptions} security The security options to identify and report weak security settings.
  * @property {Function} serverCloseComplete Callback when server has closed
  * @property {Function} serverStartComplete Callback when server has started
  * @property {String} serverURL URL to your parse server with http:// or https://.
@@ -80,7 +82,15 @@
  */
 
 /**
+ * @interface SecurityOptions
+ * @property {CheckGroup[]} checkGroups The security check groups to run. This allows to add custom security checks or override existing ones. Default are the groups defined in `CheckGroups.js`.
+ * @property {Boolean} enableCheck Is true if Parse Server should check for weak security settings.
+ * @property {Boolean} enableCheckLog Is true if the security check report should be written to logs. This should only be enabled temporarily to not expose weak security settings in logs.
+ */
+
+/**
  * @interface PagesOptions
+ * @property {PagesRoute[]} customRoutes The custom routes.
  * @property {PagesCustomUrlsOptions} customUrls The URLs to the custom pages.
  * @property {Boolean} enableLocalization Is true if pages should be localized; this has no effect on custom page redirects.
  * @property {Boolean} enableRouter Is true if the pages router should be enabled; this is required for any of the pages options to take effect. Caution, this is an experimental feature that may not be appropriate for production.
@@ -90,6 +100,13 @@
  * @property {String} pagesEndpoint The API endpoint for the pages. Default is 'apps'.
  * @property {String} pagesPath The path to the pages directory; this also defines where the static endpoint '/apps' points to. Default is the './public/' directory.
  * @property {Object} placeholders The placeholder keys and values which will be filled in pages; this can be a simple object or a callback function.
+ */
+
+/**
+ * @interface PagesRoute
+ * @property {Function} handler The route handler that is an async function.
+ * @property {String} method The route method, e.g. 'GET' or 'POST'.
+ * @property {String} path The route path.
  */
 
 /**

@@ -2810,7 +2810,11 @@ describe('schemas', () => {
   });
 
   describe('index management', () => {
-    beforeEach(() => require('../lib/TestUtils').destroyAllDataPermanently());
+    beforeEach(async () => {
+      await TestUtils.destroyAllDataPermanently(false);
+      await config.database.adapter.performInitialization({ VolatileClassesSchemas: [] });
+    });
+
     it('cannot create index if field does not exist', done => {
       request({
         url: 'http://localhost:8378/1/schemas/NewClass',

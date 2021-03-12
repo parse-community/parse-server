@@ -18,6 +18,11 @@ export function createClient(uri, databaseOptions) {
   const pgp = require('pg-promise')(initOptions);
   const client = pgp(dbOptions);
 
+  if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
+    const monitor = require('pg-monitor');
+    monitor.attach(initOptions);
+  }
+
   if (dbOptions.pgOptions) {
     for (const key in dbOptions.pgOptions) {
       pgp.pg.defaults[key] = dbOptions.pgOptions[key];
