@@ -26,6 +26,20 @@ const successfulIOS = function (body, installations) {
   return Promise.all(promises);
 };
 
+const pushCompleted = async pushId => {
+  let result = await Parse.Push.getPushStatus(pushId);
+  while (!(result && result.get('status') === 'succeeded')) {
+    result = await Parse.Push.getPushStatus(pushId);
+  }
+};
+
+const sendPush = (body, where, config, auth, now) => {
+  const pushController = new PushController();
+  return new Promise((resolve, reject) => {
+    pushController.sendPush(body, where, config, auth, resolve, now).catch(reject);
+  });
+};
+
 describe('PushController', () => {
   it('can validate device type when no device type is set', done => {
     // Make query condition
@@ -151,7 +165,7 @@ describe('PushController', () => {
     done();
   });
 
-  it('properly increment badges', done => {
+  it('properly increment badges', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -195,55 +209,28 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        // Check we actually sent 15 pushes.
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const pushStatus = results[0];
-        expect(pushStatus.get('numSent')).toBe(15);
-      })
-      .then(() => {
-        // Check that the installations were actually updated.
-        const query = new Parse.Query('_Installation');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(15);
-        for (let i = 0; i < 15; i++) {
-          const installation = results[i];
-          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
-        }
-        done();
-      })
-      .catch(err => {
-        jfail(err);
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+
+    // Check we actually sent 15 pushes.
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(15);
+
+    // Check that the installations were actually updated.
+    const query = new Parse.Query('_Installation');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(15);
+    for (let i = 0; i < 15; i++) {
+      const installation = results[i];
+      expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
+    }
   });
 
-  it('properly increment badges by more than 1', done => {
+  it('properly increment badges by more than 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -287,55 +274,25 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        // Check we actually sent 15 pushes.
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const pushStatus = results[0];
-        expect(pushStatus.get('numSent')).toBe(15);
-      })
-      .then(() => {
-        // Check that the installations were actually updated.
-        const query = new Parse.Query('_Installation');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(15);
-        for (let i = 0; i < 15; i++) {
-          const installation = results[i];
-          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 3);
-        }
-        done();
-      })
-      .catch(err => {
-        jfail(err);
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(15);
+    // Check that the installations were actually updated.
+    const query = new Parse.Query('_Installation');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(15);
+    for (let i = 0; i < 15; i++) {
+      const installation = results[i];
+      expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 3);
+    }
   });
 
-  it('properly set badges to 1', done => {
+  it('properly set badges to 1', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         const badge = body.data.badge;
@@ -371,55 +328,26 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        // Check we actually sent the pushes.
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const pushStatus = results[0];
-        expect(pushStatus.get('numSent')).toBe(10);
-      })
-      .then(() => {
-        // Check that the installations were actually updated.
-        const query = new Parse.Query('_Installation');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(10);
-        for (let i = 0; i < 10; i++) {
-          const installation = results[i];
-          expect(installation.get('badge')).toBe(1);
-        }
-        done();
-      })
-      .catch(err => {
-        jfail(err);
-        done();
-      });
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(10);
+
+    // Check that the installations were actually updated.
+    const query = new Parse.Query('_Installation');
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(10);
+    for (let i = 0; i < 10; i++) {
+      const installation = results[i];
+      expect(installation.get('badge')).toBe(1);
+    }
   });
 
-  it('properly set badges to 1 with complex query #2903 #3022', done => {
+  it('properly set badges to 1 with complex query #2903 #3022', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -456,46 +384,26 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    const pushController = new PushController();
-    reconfigureServer({
-      push: {
-        adapter: pushAdapter,
-      },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(installations => {
-        const objectIds = installations.map(installation => {
-          return installation.id;
-        });
-        const where = {
-          objectId: { $in: objectIds.slice(0, 5) },
-        };
-        return pushController.sendPush(payload, where, config, auth);
-      })
-      .then(() => {
-        return new Promise(res => {
-          setTimeout(res, 300);
-        });
-      })
-      .then(() => {
-        expect(matchedInstallationsCount).toBe(5);
-        const query = new Parse.Query(Parse.Installation);
-        query.equalTo('badge', 1);
-        return query.find({ useMasterKey: true });
-      })
-      .then(installations => {
-        expect(installations.length).toBe(5);
-        done();
-      })
-      .catch(() => {
-        fail('should not fail');
-        done();
-      });
+    await reconfigureServer({
+      push: { adapter: pushAdapter },
+    });
+    await Parse.Object.saveAll(installations);
+    const objectIds = installations.map(installation => {
+      return installation.id;
+    });
+    const where = {
+      objectId: { $in: objectIds.slice(0, 5) },
+    };
+    const pushStatusId = await sendPush(payload, where, config, auth);
+    await pushCompleted(pushStatusId);
+    expect(matchedInstallationsCount).toBe(5);
+    const query = new Parse.Query(Parse.Installation);
+    query.equalTo('badge', 1);
+    const results = await query.find({ useMasterKey: true });
+    expect(results.length).toBe(5);
   });
 
-  it('properly creates _PushStatus', done => {
+  it('properly creates _PushStatus', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -539,87 +447,78 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // it is enqueued so it can take time
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const result = results[0];
-        expect(result.createdAt instanceof Date).toBe(true);
-        expect(result.updatedAt instanceof Date).toBe(true);
-        expect(result.id.length).toBe(10);
-        expect(result.get('source')).toEqual('rest');
-        expect(result.get('query')).toEqual(JSON.stringify({}));
-        expect(typeof result.get('payload')).toEqual('string');
-        expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
-        expect(result.get('status')).toEqual('succeeded');
-        expect(result.get('numSent')).toEqual(10);
-        expect(result.get('sentPerType')).toEqual({
-          ios: 10, // 10 ios
-        });
-        expect(result.get('numFailed')).toEqual(5);
-        expect(result.get('failedPerType')).toEqual({
-          android: 5, // android
-        });
-        // Try to get it without masterKey
-        const query = new Parse.Query('_PushStatus');
-        return query.find();
-      })
-      .catch(error => {
-        expect(error.code).toBe(119);
-      })
-      .then(() => {
-        function getPushStatus(callIndex) {
-          return spy.calls.all()[callIndex].args[0].object;
-        }
-        expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(4);
-        const allCalls = spy.calls.all();
-        allCalls.forEach(call => {
-          expect(call.args.length).toBe(1);
-          const object = call.args[0].object;
-          expect(object instanceof Parse.Object).toBe(true);
-        });
-        expect(getPushStatus(0).get('status')).toBe('pending');
-        expect(getPushStatus(1).get('status')).toBe('running');
-        expect(getPushStatus(1).get('numSent')).toBe(0);
-        expect(getPushStatus(2).get('status')).toBe('running');
-        expect(getPushStatus(2).get('numSent')).toBe(10);
-        expect(getPushStatus(2).get('numFailed')).toBe(5);
-        // Those are updated from a nested . operation, this would
-        // not render correctly before
-        expect(getPushStatus(2).get('failedPerType')).toEqual({
+    });
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    await pushCompleted(pushStatusId);
+    const result = await Parse.Push.getPushStatus(pushStatusId);
+    expect(result.createdAt instanceof Date).toBe(true);
+    expect(result.updatedAt instanceof Date).toBe(true);
+    expect(result.id.length).toBe(10);
+    expect(result.get('source')).toEqual('rest');
+    expect(result.get('query')).toEqual(JSON.stringify({}));
+    expect(typeof result.get('payload')).toEqual('string');
+    expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
+    expect(result.get('status')).toEqual('succeeded');
+    expect(result.get('numSent')).toEqual(10);
+    expect(result.get('sentPerType')).toEqual({
+      ios: 10, // 10 ios
+    });
+    expect(result.get('numFailed')).toEqual(5);
+    expect(result.get('failedPerType')).toEqual({
+      android: 5, // android
+    });
+    try {
+      // Try to get it without masterKey
+      const query = new Parse.Query('_PushStatus');
+      await query.find();
+      fail();
+    } catch (error) {
+      expect(error.code).toBe(119);
+    }
+
+    function getPushStatus(callIndex) {
+      return spy.calls.all()[callIndex].args[0].object;
+    }
+    expect(spy).toHaveBeenCalled();
+    expect(spy.calls.count()).toBe(4);
+    const allCalls = spy.calls.all();
+    let pendingCount = 0;
+    let runningCount = 0;
+    let succeedCount = 0;
+    allCalls.forEach((call, index) => {
+      expect(call.args.length).toBe(1);
+      const object = call.args[0].object;
+      expect(object instanceof Parse.Object).toBe(true);
+      const pushStatus = getPushStatus(index);
+      if (pushStatus.get('status') === 'pending') {
+        pendingCount += 1;
+      }
+      if (pushStatus.get('status') === 'running') {
+        runningCount += 1;
+      }
+      if (pushStatus.get('status') === 'succeeded') {
+        succeedCount += 1;
+      }
+      if (pushStatus.get('status') === 'running' && pushStatus.get('numSent') > 0) {
+        expect(pushStatus.get('numSent')).toBe(10);
+        expect(pushStatus.get('numFailed')).toBe(5);
+        expect(pushStatus.get('failedPerType')).toEqual({
           android: 5,
         });
-        expect(getPushStatus(2).get('sentPerType')).toEqual({
+        expect(pushStatus.get('sentPerType')).toEqual({
           ios: 10,
         });
-        expect(getPushStatus(3).get('status')).toBe('succeeded');
-      })
-      .then(done)
-      .catch(done.fail);
+      }
+    });
+    expect(pendingCount).toBe(1);
+    expect(runningCount).toBe(2);
+    expect(succeedCount).toBe(1);
   });
 
-  it('properly creates _PushStatus without serverURL', done => {
+  it('properly creates _PushStatus without serverURL', async () => {
     const pushStatusAfterSave = {
       handler: function () {},
     };
@@ -651,36 +550,22 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-    const pushController = new PushController();
-    return installation
-      .save()
-      .then(() => {
-        return reconfigureServer({
-          serverURL: 'http://localhost:8378/', // server with borked URL
-          push: { adapter: pushAdapter },
-        });
-      })
-      .then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
-      })
-      .then(() => {
-        // it is enqueued so it can take time
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-      })
-      .then(done)
-      .catch(done.fail);
+    await installation.save();
+    await reconfigureServer({
+      serverURL: 'http://localhost:8378/', // server with borked URL
+      push: { adapter: pushAdapter },
+    });
+    const pushStatusId = await sendPush(payload, {}, config, auth);
+    // it is enqueued so it can take time
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
+    Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
+    const result = await Parse.Push.getPushStatus(pushStatusId);
+    expect(result).toBeDefined();
+    await pushCompleted(pushStatusId);
   });
 
   it('should properly report failures in _PushStatus', done => {
@@ -733,7 +618,7 @@ describe('PushController', () => {
       });
   });
 
-  it('should support full RESTQuery for increment', done => {
+  it('should support full RESTQuery for increment', async () => {
     const payload = {
       data: {
         alert: 'Hello World!',
@@ -759,52 +644,27 @@ describe('PushController', () => {
         $in: ['device_token_0', 'device_token_1', 'device_token_2'],
       },
     };
-
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const installations = [];
-        while (installations.length != 5) {
-          const installation = new Parse.Object('_Installation');
-          installation.set('installationId', 'installation_' + installations.length);
-          installation.set('deviceToken', 'device_token_' + installations.length);
-          installation.set('badge', installations.length);
-          installation.set('originalBadge', installations.length);
-          installation.set('deviceType', 'ios');
-          installations.push(installation);
-        }
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, where, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const pushStatus = results[0];
-        expect(pushStatus.get('numSent')).toBe(3);
-        done();
-      })
-      .catch(err => {
-        jfail(err);
-        done();
-      });
+    });
+    const installations = [];
+    while (installations.length != 5) {
+      const installation = new Parse.Object('_Installation');
+      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('badge', installations.length);
+      installation.set('originalBadge', installations.length);
+      installation.set('deviceType', 'ios');
+      installations.push(installation);
+    }
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, where, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(3);
   });
 
-  it('should support object type for alert', done => {
+  it('should support object type for alert', async () => {
     const payload = {
       data: {
         alert: {
@@ -826,53 +686,27 @@ describe('PushController', () => {
     const auth = {
       isMaster: true,
     };
-
     const where = {
       deviceType: 'ios',
     };
-
-    const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        const installations = [];
-        while (installations.length != 5) {
-          const installation = new Parse.Object('_Installation');
-          installation.set('installationId', 'installation_' + installations.length);
-          installation.set('deviceToken', 'device_token_' + installations.length);
-          installation.set('badge', installations.length);
-          installation.set('originalBadge', installations.length);
-          installation.set('deviceType', 'ios');
-          installations.push(installation);
-        }
-        return Parse.Object.saveAll(installations);
-      })
-      .then(() => {
-        return pushController.sendPush(payload, where, config, auth);
-      })
-      .then(() => {
-        // Wait so the push is completed.
-        return new Promise(resolve => {
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-        });
-      })
-      .then(() => {
-        const query = new Parse.Query('_PushStatus');
-        return query.find({ useMasterKey: true });
-      })
-      .then(results => {
-        expect(results.length).toBe(1);
-        const pushStatus = results[0];
-        expect(pushStatus.get('numSent')).toBe(5);
-        done();
-      })
-      .catch(() => {
-        fail('should not fail');
-        done();
-      });
+    });
+    const installations = [];
+    while (installations.length != 5) {
+      const installation = new Parse.Object('_Installation');
+      installation.set('installationId', 'installation_' + installations.length);
+      installation.set('deviceToken', 'device_token_' + installations.length);
+      installation.set('badge', installations.length);
+      installation.set('originalBadge', installations.length);
+      installation.set('deviceType', 'ios');
+      installations.push(installation);
+    }
+    await Parse.Object.saveAll(installations);
+    const pushStatusId = await sendPush(payload, where, config, auth);
+    await pushCompleted(pushStatusId);
+    const pushStatus = await Parse.Push.getPushStatus(pushStatusId);
+    expect(pushStatus.get('numSent')).toBe(5);
   });
 
   it('should flatten', () => {
