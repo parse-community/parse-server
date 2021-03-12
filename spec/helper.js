@@ -84,6 +84,8 @@ const defaultConfiguration = {
   dotNetKey: 'windows',
   clientKey: 'client',
   restAPIKey: 'rest',
+  oauth20: true,
+  oauthKey: 'test',
   webhookKey: 'hook',
   masterKey: 'test',
   readOnlyMasterKey: 'read-only-test',
