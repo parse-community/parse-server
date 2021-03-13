@@ -1237,7 +1237,7 @@ describe('PushController', () => {
     const auth = { isMaster: true };
     const pushController = new PushController();
 
-    let config = Config.get(Parse.applicationId);
+    let config;
 
     const pushes = [];
     const pushAdapter = {
