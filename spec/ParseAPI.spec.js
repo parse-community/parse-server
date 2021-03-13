@@ -67,6 +67,7 @@ describe('miscellaneous', function () {
   });
 
   it('fail to create a duplicate username', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -114,6 +115,7 @@ describe('miscellaneous', function () {
   });
 
   it('ensure that email is uniquely indexed', async () => {
+    await reconfigureServer();
     let numFailed = 0;
     let numCreated = 0;
     const p1 = request({
@@ -246,7 +248,8 @@ describe('miscellaneous', function () {
       });
   });
 
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', async done => {
+    await reconfigureServer();
     const config = Config.get('test');
     config.database.adapter
       .addFieldIfNotExists('_User', 'randomField', { type: 'String' })

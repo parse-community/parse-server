@@ -50,9 +50,10 @@ function createParseServer(options) {
 describe_only_db('postgres')('Postgres database init options', () => {
   let server;
 
-  afterEach(() => {
+  afterAll(done => {
     if (server) {
-      server.close();
+      Parse.serverURL = 'http://localhost:8378/1';
+      server.close(done);
     }
   });
 
@@ -73,7 +74,10 @@ describe_only_db('postgres')('Postgres database init options', () => {
         });
         return score.save();
       })
-      .then(done, done.fail);
+      .then(async () => {
+        await reconfigureServer();
+        done();
+      }, done.fail);
   });
 
   it('should fail to create server if schema databaseOptions does not exist', done => {
@@ -83,6 +87,9 @@ describe_only_db('postgres')('Postgres database init options', () => {
       databaseOptions: databaseOptions2,
     });
 
-    createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, async () => {
+      await reconfigureServer();
+      done();
+    });
   });
 });

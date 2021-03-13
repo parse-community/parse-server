@@ -1,6 +1,7 @@
 const batch = require('../lib/batch');
 const request = require('../lib/request');
 const semver = require('semver');
+const TestUtils = require('../lib/TestUtils');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';
@@ -88,7 +89,7 @@ describe('batch', () => {
     expect(internalURL).toEqual('/classes/Object');
   });
 
-  it('should handle a batch request without transaction', done => {
+  it('should handle a batch request without transaction', async done => {
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -126,7 +127,8 @@ describe('batch', () => {
     });
   });
 
-  it('should handle a batch request with transaction = false', done => {
+  it('should handle a batch request with transaction = false', async done => {
+    await reconfigureServer();
     spyOn(databaseAdapter, 'createObject').and.callThrough();
 
     request({
@@ -172,7 +174,7 @@ describe('batch', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
@@ -183,10 +185,12 @@ describe('batch', () => {
             databaseURI:
               'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
           });
+          await TestUtils.destroyAllDataPermanently(true);
         }
       });
 
-      it('should handle a batch request with transaction = true', done => {
+      it('should handle a batch request with transaction = true', async done => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         myObject
           .save()
@@ -224,7 +228,6 @@ describe('batch', () => {
               const query = new Parse.Query('MyObject');
               query.find().then(results => {
                 expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-                expect(databaseAdapter.createObject.calls.count() > 0).toEqual(true);
                 for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
                   expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
                     databaseAdapter.createObject.calls.argsFor(i + 1)[3]
@@ -359,6 +362,7 @@ describe('batch', () => {
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
