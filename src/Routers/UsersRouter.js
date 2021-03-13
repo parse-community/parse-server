@@ -171,7 +171,7 @@ export class UsersRouter extends ClassesRouter {
               );
               res.response.accessToken = token.accessToken;
               res.response.refreshToken = user.refreshToken;
-              res.response.expiresIn = token.expires_in;
+              res.response.expiresAt = token.expires_in;
               delete res.response.sessionToken;
               return res;
             });
@@ -220,7 +220,7 @@ export class UsersRouter extends ClassesRouter {
             response: {
               accesstoken: token.accessToken,
               refreshToken: newCode,
-              expiresIn: token.expires_in,
+              expiresAt: token.expires_in,
             },
           };
         }
@@ -300,7 +300,7 @@ export class UsersRouter extends ClassesRouter {
           if (req.config.oauth20 === true) {
             const decoded = Auth.decodeJWT(originalToken);
             user.accessToken = originalToken;
-            user.expiresIn = decoded.exp;
+            user.expiresAt = decoded.exp;
           } else {
             user.sessionToken = sessionToken;
           }
@@ -380,7 +380,7 @@ export class UsersRouter extends ClassesRouter {
 
       user.accessToken = signedToken.accessToken;
       user.refreshToken = sessionData.refreshToken;
-      user.expiresIn = signedToken.expires_in;
+      user.expiresAt = signedToken.expires_in;
 
       delete user.sessionToken;
     } else {
