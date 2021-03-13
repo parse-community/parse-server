@@ -147,7 +147,7 @@ const reconfigureServer = (changedConfiguration = {}) => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
+            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 3);
             resolve(parseServer);
           }
         },
