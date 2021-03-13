@@ -27,9 +27,11 @@ const successfulIOS = function (body, installations) {
 };
 
 const pushCompleted = async pushId => {
-  let result = await Parse.Push.getPushStatus(pushId);
+  const query = new Parse.Query('_PushStatus');
+  query.equalTo('objectId', pushId);
+  let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
-    result = await Parse.Push.getPushStatus(pushId);
+    result = await query.first({ useMasterKey: true });
   }
 };
 
