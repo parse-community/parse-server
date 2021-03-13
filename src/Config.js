@@ -11,6 +11,7 @@ import {
   FileUploadOptions,
   AccountLockoutOptions,
   PagesOptions,
+  SecurityOptions,
 } from './Options/Definitions';
 import { isBoolean, isString } from 'lodash';
 
@@ -79,6 +80,7 @@ export class Config {
     emailVerifyTokenReuseIfValid,
     fileUpload,
     pages,
+    security,
   }) {
     if (masterKey === readOnlyMasterKey) {
       throw new Error('masterKey and readOnlyMasterKey should be different');
@@ -114,6 +116,23 @@ export class Config {
     this.validateAllowHeaders(allowHeaders);
     this.validateIdempotencyOptions(idempotencyOptions);
     this.validatePagesOptions(pages);
+    this.validateSecurityOptions(security);
+  }
+
+  static validateSecurityOptions(security) {
+    if (Object.prototype.toString.call(security) !== '[object Object]') {
+      throw 'Parse Server option security must be an object.';
+    }
+    if (security.enableCheck === undefined) {
+      security.enableCheck = SecurityOptions.enableCheck.default;
+    } else if (!isBoolean(security.enableCheck)) {
+      throw 'Parse Server option security.enableCheck must be a boolean.';
+    }
+    if (security.enableCheckLog === undefined) {
+      security.enableCheckLog = SecurityOptions.enableCheckLog.default;
+    } else if (!isBoolean(security.enableCheckLog)) {
+      throw 'Parse Server option security.enableCheckLog must be a boolean.';
+    }
   }
 
   static validatePagesOptions(pages) {

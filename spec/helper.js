@@ -167,7 +167,7 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-beforeEach(done => {
+beforeEach(async () => {
   try {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
@@ -175,23 +175,10 @@ beforeEach(done => {
       throw error;
     }
   }
-  TestUtils.destroyAllDataPermanently(true)
-    .catch(error => {
-      // For tests that connect to their own mongo, there won't be any data to delete.
-      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
-        return;
-      } else {
-        fail(error);
-        return;
-      }
-    })
-    .then(reconfigureServer)
-    .then(() => {
-      Parse.initialize('test', 'test', 'test');
-      Parse.serverURL = 'http://localhost:' + port + '/1';
-      done();
-    })
-    .catch(done.fail);
+  await reconfigureServer();
+
+  Parse.initialize('test', 'test', 'test');
+  Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
 afterEach(function (done) {
