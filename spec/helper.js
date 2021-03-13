@@ -190,7 +190,6 @@ beforeAll(async () => {
   Parse.serverURL = 'http://localhost:' + port + '/1';
 });
 
-let count = 0;
 afterEach(function (done) {
   const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
@@ -198,8 +197,6 @@ afterEach(function (done) {
     }
     await TestUtils.destroyAllDataPermanently(true);
     if (didChangeConfiguration) {
-      count += 1;
-      console.log(count);
       await reconfigureServer();
     } else {
       await databaseAdapter.performInitialization({ VolatileClassesSchemas });
