@@ -29,8 +29,7 @@ export class Config {
   static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
-      console.trace();
-      throw '---------------Empty Cache-------------------';
+      return;
     }
     const config = new Config();
     config.applicationId = applicationId;
