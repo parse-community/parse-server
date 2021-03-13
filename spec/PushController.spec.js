@@ -4,6 +4,12 @@ const StatusHandler = require('../lib/StatusHandler');
 const Config = require('../lib/Config');
 const validatePushType = require('../lib/Push/utils').validatePushType;
 
+function sleep(ms) {
+  return new Promise(function (resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
 const successfulTransmissions = function (body, installations) {
   const promises = installations.map(device => {
     return Promise.resolve({
@@ -31,6 +37,7 @@ const pushCompleted = async pushId => {
   query.equalTo('objectId', pushId);
   let result = await query.first({ useMasterKey: true });
   while (!(result && result.get('status') === 'succeeded')) {
+    await sleep(1000);
     result = await query.first({ useMasterKey: true });
   }
 };
