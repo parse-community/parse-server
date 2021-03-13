@@ -24,10 +24,6 @@ describe('SchemaController', () => {
     config = Config.get('test');
   });
 
-  afterEach(async () => {
-    await config.database.schemaCache.clear();
-  });
-
   it('can validate one object', done => {
     config.database
       .loadSchema()
