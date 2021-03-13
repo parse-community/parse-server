@@ -28,6 +28,7 @@ if (global._babelPolyfill) {
 process.noDeprecation = true;
 
 const cache = require('../lib/cache').default;
+const defaults = require('../lib/defaults').default;
 const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
 const TestUtils = require('../lib/TestUtils');
@@ -205,6 +206,7 @@ afterEach(function (done) {
     done();
   };
   Parse.Cloud._removeAllHooks();
+  defaults.protectedFields = { _User: { '*': ['email'] } };
   databaseAdapter
     .getAllClasses()
     .then(allSchemas => {
