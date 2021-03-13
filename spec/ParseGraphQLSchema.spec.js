@@ -9,7 +9,7 @@ describe('ParseGraphQLSchema', () => {
   let parseGraphQLSchema;
   const appId = 'test';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     parseServer = await global.reconfigureServer({
       schemaCacheTTL: 100,
     });

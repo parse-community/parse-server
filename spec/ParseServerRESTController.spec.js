@@ -3,6 +3,7 @@ const ParseServerRESTController = require('../lib/ParseServerRESTController')
 const ParseServer = require('../lib/ParseServer').default;
 const Parse = require('parse/node').Parse;
 const semver = require('semver');
+const TestUtils = require('../lib/TestUtils');
 
 let RESTController;
 
@@ -168,17 +169,21 @@ describe('ParseServerRESTController', () => {
     process.env.PARSE_SERVER_TEST_DB === 'postgres'
   ) {
     describe('transactions', () => {
-      beforeAll(async () => {
+      let parseServer;
+      beforeEach(async () => {
         if (
           semver.satisfies(process.env.MONGODB_VERSION, '>=4.0.4') &&
           process.env.MONGODB_TOPOLOGY === 'replicaset' &&
           process.env.MONGODB_STORAGE_ENGINE === 'wiredTiger'
         ) {
-          await reconfigureServer({
-            databaseAdapter: undefined,
-            databaseURI:
-              'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
-          });
+          if (!parseServer) {
+            parseServer = await reconfigureServer({
+              databaseAdapter: undefined,
+              databaseURI:
+                'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
+            });
+          }
+          await TestUtils.destroyAllDataPermanently(true);
         }
       });
 
@@ -215,7 +220,6 @@ describe('ParseServerRESTController', () => {
               const query = new Parse.Query('MyObject');
               return query.find().then(results => {
                 expect(databaseAdapter.createObject.calls.count() % 2).toBe(0);
-                expect(databaseAdapter.createObject.calls.count() > 0).toEqual(true);
                 for (let i = 0; i + 1 < databaseAdapter.createObject.calls.length; i = i + 2) {
                   expect(databaseAdapter.createObject.calls.argsFor(i)[3]).toBe(
                     databaseAdapter.createObject.calls.argsFor(i + 1)[3]
@@ -346,6 +350,7 @@ describe('ParseServerRESTController', () => {
       });
 
       it('should generate separate session for each call', async () => {
+        await reconfigureServer();
         const myObject = new Parse.Object('MyObject'); // This is important because transaction only works on pre-existing collections
         await myObject.save();
         await myObject.destroy();
