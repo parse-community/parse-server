@@ -171,7 +171,7 @@ export class UsersRouter extends ClassesRouter {
               );
               res.response.accessToken = token.accessToken;
               res.response.refreshToken = user.refreshToken;
-              res.response.expires_in = token.expires_in;
+              res.response.expiresIn = token.expires_in;
               delete res.response.sessionToken;
               return res;
             });
@@ -182,13 +182,12 @@ export class UsersRouter extends ClassesRouter {
 
   handleRefresh(req) {
     const payload = req.body;
-    const { client, code } = payload;
+    const { refreshToken } = payload;
 
-    if (!client || !code) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid update token or ClientID');
+    if (!refreshToken) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid update token');
     }
 
-    const refreshToken = code;
     return rest
       .find(
         req.config,
@@ -219,10 +218,9 @@ export class UsersRouter extends ClassesRouter {
 
           return {
             response: {
-              client: client,
               accesstoken: token.accessToken,
               refreshToken: newCode,
-              expires_in: token.expires_in,
+              expiresIn: token.expires_in,
             },
           };
         }
@@ -231,10 +229,10 @@ export class UsersRouter extends ClassesRouter {
 
   handleRevoke(req) {
     const payload = req.body;
-    const { code } = payload;
+    const { refreshToken } = payload;
     const success = { response: {} };
 
-    if (!code) {
+    if (!refreshToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
     }
 
@@ -243,7 +241,7 @@ export class UsersRouter extends ClassesRouter {
         req.config,
         Auth.master(req.config),
         '_Session',
-        { refreshToken: code },
+        { refreshToken: refreshToken },
         undefined,
         req.info.clientSDK,
         req.info.context
@@ -302,7 +300,7 @@ export class UsersRouter extends ClassesRouter {
           if (req.config.oauth20 === true) {
             const decoded = Auth.decodeJWT(originalToken);
             user.accessToken = originalToken;
-            user.expires_in = decoded.exp;
+            user.expiresIn = decoded.exp;
           } else {
             user.sessionToken = sessionToken;
           }
@@ -382,7 +380,7 @@ export class UsersRouter extends ClassesRouter {
 
       user.accessToken = signedToken.accessToken;
       user.refreshToken = sessionData.refreshToken;
-      user.expires_in = signedToken.expires_in;
+      user.expiresIn = signedToken.expires_in;
 
       delete user.sessionToken;
     } else {
@@ -571,7 +569,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/users/refresh', req => {
       return this.handleRefresh(req);
     });
-    this.route('POST', '/users/revoke', req => {
+    this.route('POST', '/revoke', req => {
       return this.handleRevoke(req);
     });
     this.route('GET', '/users/:objectId', req => {
