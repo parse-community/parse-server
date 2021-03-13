@@ -15,10 +15,14 @@ const AppCache = require('../lib/cache').AppCache;
 describe('Hooks', () => {
   let server;
   let app;
-  beforeAll(done => {
-    app = express();
-    app.use(bodyParser.json({ type: '*/*' }));
-    server = app.listen(12345, undefined, done);
+  beforeEach(done => {
+    if (!app) {
+      app = express();
+      app.use(bodyParser.json({ type: '*/*' }));
+      server = app.listen(12345, undefined, done);
+    } else {
+      done();
+    }
   });
 
   afterAll(done => {

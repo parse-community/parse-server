@@ -140,8 +140,13 @@ const masterKeyHeaders = {
 };
 
 describe('schemas', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await reconfigureServer();
     config = Config.get('test');
+  });
+
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
   });
 
   it('requires the master key to get all schemas', done => {

@@ -209,8 +209,12 @@ describe('execution', () => {
   const binPath = path.resolve(__dirname, '../bin/parse-server');
   let childProcess;
 
-  afterEach(async () => {
+  afterEach(done => {
     if (childProcess) {
+      childProcess.on('close', () => {
+        childProcess = undefined;
+        done();
+      });
       childProcess.kill();
     }
   });

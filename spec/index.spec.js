@@ -165,7 +165,8 @@ describe('server', () => {
     });
   });
 
-  it('can report the server version', done => {
+  it('can report the server version', async done => {
+    await reconfigureServer();
     request({
       url: 'http://localhost:8378/1/serverInfo',
       headers: {
@@ -179,7 +180,8 @@ describe('server', () => {
     });
   });
 
-  it('can properly sets the push support', done => {
+  it('can properly sets the push support', async done => {
+    await reconfigureServer();
     // default config passes push options
     const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);

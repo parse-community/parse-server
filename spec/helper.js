@@ -1,8 +1,14 @@
 'use strict';
 const semver = require('semver');
+const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 
 // Sets up a Parse API server for testing.
-jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
+jasmine.getEnv().addReporter(new CurrentSpecReporter());
+if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
+  const { SpecReporter } = require('jasmine-spec-reporter');
+  jasmine.getEnv().addReporter(new SpecReporter());
+}
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -32,6 +38,7 @@ const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/Postgre
   .default;
 const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
+const { VolatileClassesSchemas } = require('../lib/Controllers/SchemaController');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -121,8 +128,10 @@ const openConnections = {};
 // Set up a default API server for testing with default configuration.
 let server;
 
+let didChangeConfiguration = false;
+
 // Allows testing specific configurations of Parse Server
-const reconfigureServer = changedConfiguration => {
+const reconfigureServer = (changedConfiguration = {}) => {
   return new Promise((resolve, reject) => {
     if (server) {
       return server.close(() => {
@@ -132,6 +141,7 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       let parseServer = undefined;
+      didChangeConfiguration = Object.keys(changedConfiguration).length !== 0;
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
         serverStartComplete: error => {
           if (error) {
@@ -168,7 +178,7 @@ const reconfigureServer = changedConfiguration => {
 const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
-beforeEach(async () => {
+beforeAll(async () => {
   try {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
@@ -183,11 +193,17 @@ beforeEach(async () => {
 });
 
 afterEach(function (done) {
-  const afterLogOut = () => {
+  const afterLogOut = async () => {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
-    TestUtils.destroyAllDataPermanently(true).then(done, done);
+    await TestUtils.destroyAllDataPermanently(true);
+    if (didChangeConfiguration) {
+      await reconfigureServer();
+    } else {
+      await databaseAdapter.performInitialization({ VolatileClassesSchemas });
+    }
+    done();
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter

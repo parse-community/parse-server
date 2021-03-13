@@ -24,6 +24,10 @@ describe('SchemaController', () => {
     config = Config.get('test');
   });
 
+  afterEach(async () => {
+    await config.database.schemaCache.clear();
+  });
+
   it('can validate one object', done => {
     config.database
       .loadSchema()
@@ -847,7 +851,8 @@ describe('SchemaController', () => {
       });
   });
 
-  it('creates non-custom classes which include relation field', done => {
+  it('creates non-custom classes which include relation field', async done => {
+    await reconfigureServer();
     config.database
       .loadSchema()
       //as `_Role` is always created by default, we only get it here
@@ -1306,7 +1311,8 @@ describe('SchemaController', () => {
       );
   });
 
-  it('properly handles volatile _Schemas', done => {
+  it('properly handles volatile _Schemas', async done => {
+    await reconfigureServer();
     function validateSchemaStructure(schema) {
       expect(Object.prototype.hasOwnProperty.call(schema, 'className')).toBe(true);
       expect(Object.prototype.hasOwnProperty.call(schema, 'fields')).toBe(true);

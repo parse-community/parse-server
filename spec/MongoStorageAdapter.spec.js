@@ -379,15 +379,12 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         'X-Parse-REST-API-Key': 'rest',
       };
 
-      beforeAll(async () => {
+      beforeEach(async () => {
         await reconfigureServer({
           databaseAdapter: undefined,
           databaseURI:
             'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase?replicaSet=replicaset',
         });
-      });
-
-      beforeEach(async () => {
         await TestUtils.destroyAllDataPermanently(true);
       });
 
