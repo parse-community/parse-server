@@ -46,7 +46,7 @@
     "ldapjs": "2.2.3",
     "lodash": "4.17.21",
     "lru-cache": "5.1.1",
-    "mime": "2.5.0",
+    "mime": "2.5.2",
     "mongodb": "3.6.3",
     "mustache": "4.1.0",
     "parse": "3.1.0",
