@@ -214,7 +214,7 @@ function maskSensitiveUrl(req) {
 }
 
 function clearSchemaCache(req) {
-  if (req.config && !req.config.enableSingleSchemaCache) {
+  if (req && req.config && req.config.database && !req.config.enableSingleSchemaCache) {
     req.config.database.schemaCache.clear();
   }
 }
