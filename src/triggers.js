@@ -860,6 +860,9 @@ export function maybeRunTrigger(
           );
         } catch (error2) {
           // https://github.com/parse-community/parse-server/issues/7192
+          // parseObject.toJSON() could throw exceptions like {"message":"Tried to encode an invalid date.","code":142}
+          // Here we long the error but unfortunately cannot get the input
+          logTriggerErrorBeforeHook(triggerType, parseObject.className, {}, auth, error);
         }
         reject(error);
       }
