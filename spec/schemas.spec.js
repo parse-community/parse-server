@@ -141,8 +141,8 @@ const masterKeyHeaders = {
 
 describe('schemas', () => {
   beforeEach(async () => {
-    config = Config.get('test');
     await reconfigureServer();
+    config = Config.get('test');
   });
 
   afterEach(async () => {
