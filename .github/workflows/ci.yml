@@ -97,6 +97,7 @@ jobs:
             MONGODB_TOPOLOGY: standalone
             MONGODB_STORAGE_ENGINE: wiredTiger
             NODE_VERSION: 15.11.0
+      fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
@@ -145,6 +146,7 @@ jobs:
             POSTGRES_IMAGE: postgis/postgis:12-3.0
           - name: Postgres 13, Postgis 3.1
             POSTGRES_IMAGE: postgis/postgis:13-3.1
+      fail-fast: false
     name: ${{ matrix.name }}
     timeout-minutes: 30
     runs-on: ubuntu-18.04
@@ -186,4 +188,7 @@ jobs:
       - run: npm run coverage
         env:
           CI: true
+      - name: Setup SSH Session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
       - run: bash <(curl -s https://codecov.io/bash)

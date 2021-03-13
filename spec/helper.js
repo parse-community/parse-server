@@ -83,7 +83,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
   logLevel = process.env.PARSE_SERVER_LOG_LEVEL;
 }
 // Default server configuration for tests.
-const defaultConfiguration = {
+let defaultConfiguration = {
   filesAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   databaseAdapter,
@@ -123,6 +123,8 @@ const defaultConfiguration = {
 if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
 }
+
+defaultConfiguration = Object.freeze(defaultConfiguration);
 
 const openConnections = {};
 // Set up a default API server for testing with default configuration.

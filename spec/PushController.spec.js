@@ -568,7 +568,7 @@ describe('PushController', () => {
     await pushCompleted(pushStatusId);
   });
 
-  it('should properly report failures in _PushStatus', done => {
+  it('should properly report failures in _PushStatus', async () => {
     const pushAdapter = {
       send: function (body, installations) {
         return installations.map(installation => {
@@ -593,30 +593,27 @@ describe('PushController', () => {
         badge: 1,
       },
     };
-    const config = Config.get(Parse.applicationId);
     const auth = {
       isMaster: true,
     };
     const pushController = new PushController();
-    reconfigureServer({
+    await reconfigureServer({
       push: { adapter: pushAdapter },
-    })
-      .then(() => {
-        return pushController.sendPush(payload, where, config, auth);
-      })
-      .then(() => {
-        fail('should not succeed');
-        done();
-      })
-      .catch(() => {
-        const query = new Parse.Query('_PushStatus');
-        query.find({ useMasterKey: true }).then(results => {
-          expect(results.length).toBe(1);
-          const pushStatus = results[0];
-          expect(pushStatus.get('status')).toBe('failed');
-          done();
-        });
-      });
+    });
+    const config = Config.get(Parse.applicationId);
+    try {
+      await pushController.sendPush(payload, where, config, auth);
+      fail();
+    } catch (e) {
+      const query = new Parse.Query('_PushStatus');
+      let results = await query.find({ useMasterKey: true });
+      while (results.length === 0) {
+        results = await query.find({ useMasterKey: true });
+      }
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('status')).toBe('failed');
+    }
   });
 
   it('should support full RESTQuery for increment', async () => {
