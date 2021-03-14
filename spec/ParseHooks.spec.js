@@ -10,7 +10,6 @@ const Config = require('../lib/Config');
 
 const port = 12345;
 const hookServerURL = 'http://localhost:' + port;
-const AppCache = require('../lib/cache').AppCache;
 
 describe('Hooks', () => {
   let server;
@@ -383,7 +382,7 @@ describe('Hooks', () => {
           }
           const hooksController = new HooksController(
             Parse.applicationId,
-            AppCache.get('test').databaseController
+            Config.get('test').database
           );
           return hooksController.load();
         },
