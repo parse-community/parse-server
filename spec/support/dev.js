@@ -1,4 +1,4 @@
-const Config = require('../lib/Config');
+const Config = require('../../lib/Config');
 const Parse = require('parse/node');
 
 const className = 'AnObject';

@@ -8,7 +8,7 @@ const bodyParser = require('body-parser');
 const auth = require('../lib/Auth');
 const Config = require('../lib/Config');
 
-const port = 12345;
+const port = 34567;
 const hookServerURL = 'http://localhost:' + port;
 
 describe('Hooks', () => {
@@ -18,7 +18,7 @@ describe('Hooks', () => {
     if (!app) {
       app = express();
       app.use(bodyParser.json({ type: '*/*' }));
-      server = app.listen(12345, undefined, done);
+      server = app.listen(port, undefined, done);
     } else {
       done();
     }

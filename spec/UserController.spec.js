@@ -1,5 +1,5 @@
 const UserController = require('../lib/Controllers/UserController').UserController;
-const emailAdapter = require('./MockEmailAdapter');
+const emailAdapter = require('./support/MockEmailAdapter');
 
 describe('UserController', () => {
   const user = {

@@ -1,7 +1,7 @@
 'use strict';
 const request = require('../lib/request');
 const parseServerPackage = require('../package.json');
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const MockEmailAdapterWithOptions = require('./support/MockEmailAdapterWithOptions');
 const ParseServer = require('../lib/index');
 const Config = require('../lib/Config');
 const express = require('express');
