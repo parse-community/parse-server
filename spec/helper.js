@@ -5,10 +5,10 @@ const CurrentSpecReporter = require('./support/CurrentSpecReporter.js');
 // Sets up a Parse API server for testing.
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 10000;
 jasmine.getEnv().addReporter(new CurrentSpecReporter());
-// if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
-const { SpecReporter } = require('jasmine-spec-reporter');
-jasmine.getEnv().addReporter(new SpecReporter());
-// }
+if (process.env.PARSE_SERVER_LOG_LEVEL === 'debug') {
+  const { SpecReporter } = require('jasmine-spec-reporter');
+  jasmine.getEnv().addReporter(new SpecReporter());
+}
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -83,7 +83,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
   logLevel = process.env.PARSE_SERVER_LOG_LEVEL;
 }
 // Default server configuration for tests.
-let defaultConfiguration = {
+const defaultConfiguration = {
   filesAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   databaseAdapter,
@@ -124,8 +124,6 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
 }
 
-defaultConfiguration = Object.freeze(defaultConfiguration);
-
 const openConnections = {};
 // Set up a default API server for testing with default configuration.
 let server;
@@ -149,7 +147,7 @@ const reconfigureServer = (changedConfiguration = {}) => {
           if (error) {
             reject(error);
           } else {
-            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 3);
+            Parse.CoreManager.set('REQUEST_ATTEMPT_LIMIT', 1);
             resolve(parseServer);
           }
         },

@@ -84,6 +84,14 @@ Once you have babel running in watch mode, you can start making changes to parse
 * All the tests should point to sources in the `lib/` folder.
 * The `lib/` folder is produced by `babel` using either the `npm run build`, `npm run watch`, or the `npm run prepare` step.
 * The `npm run prepare` step is automatically invoked when your package depends on forked parse-server installed via git for example using `npm install --save git+https://github.com/[username]/parse-server#[branch/commit]`.
+* The tests are run against a single server instance. You can change the server configurations using `await reconfigureServer({ ... some configuration })` found in `spec/helper.js`.
+* The tests are ran at random.
+* Caches and Configurations are reset after every test.
+* Users are logged out after every test.
+* Cloud Code hooks are removed after every test.
+* Database is deleted after every test (indexes are not removed for speed)
+* Tests are located in the `spec` folder
+* For better test reporting enable `PARSE_SERVER_LOG_LEVEL=debug`
 
 ### Troubleshooting
 
